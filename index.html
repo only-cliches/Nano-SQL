@@ -27,6 +27,24 @@
             });
 */
 
+
+/*
+
+            //spec for dbs like MySQL:
+            var mySQL = new mySQLDriver({
+                address:'localhost',
+                user:'username',
+                pass:'password',
+                db:'dbname';
+            });
+            
+            //Declare models, actions, and views
+
+            someSQL().connect(mySQL).then(function() {
+                //database ready
+            })
+*/
+
             someSQL('users')//Table/Store Name
             .model([ //Data Model
                 {key:'id',type:'int',props:['pk','ai']},
@@ -37,16 +55,16 @@
                 {key:'meta',type:'map'}
             ])
             .views({ //Cached views to show specific data
-                'get_user_by_name':[['name:string'],function(table, args) {
-                    return table.query('select').where(['name','=',args.name]).exec();
+                'get_user_by_name':[['name:string'],function(args) {
+                    return this.query('select').where(['name','=',args.name]).exec();
                 }],
-                'list_all_users':[['page:int'],function(table, args) {
-                    return table.query('select',['id','name']).exec();
+                'list_all_users':[['page:int'],function(args) {
+                    return this.query('select',['id','name']).exec();
                 }],                       
             })
             .actions({ //Cached actions to update specific data
-                'add_new_user':[['user:map'],function(table, args) {
-                    return table.query('upsert',args.user).exec();
+                'add_new_user':[['user:map'],function(args) {
+                    return this.query('upsert',args.user).exec();
                 }]
             }).connect();
 

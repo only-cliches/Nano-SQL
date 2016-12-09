@@ -20,7 +20,7 @@ export class someSQL_Instance {
      * @type {Array<any>}
      * @memberOf someSQL_Instance
      */
-    private _query:Array<any>; //Query
+    private _query:Array<tsMap<string,Object|Array<any>>>; 
 
     /**
      * The backend currently being used
@@ -38,7 +38,7 @@ export class someSQL_Instance {
      * @type {*}
      * @memberOf someSQL_Instance
      */
-    private _callbacks:any;
+    private _callbacks:tsMap<string,tsMap<string,Array<Function>>>;
 
     /**
      * An array of possible events
@@ -56,7 +56,7 @@ export class someSQL_Instance {
      * @type {*}
      * @memberOf someSQL_Instance
      */
-    private _views:any; //Views
+    private _views:tsMap<string,Object>; //Views
 
     /**
      * A map containing the actions
@@ -65,7 +65,7 @@ export class someSQL_Instance {
      * @type {*}
      * @memberOf someSQL_Instance
      */
-    private _actions:any; //Actions
+    private _actions:tsMap<string,Object>; //Actions
 
     /**
      * A map containing the models
@@ -74,29 +74,30 @@ export class someSQL_Instance {
      * @type {*}
      * @memberOf someSQL_Instance
      */
-    private _models:any; //Models
+    private _models:tsMap<string,Array<Object>>; //Models
 
     /**
-     * An array containing a temporary list of event callbacks
+     * An array containing a temporary list of events to trigger
      * 
      * @internal
      * @type {Array<string>}
      * @memberOf someSQL_Instance
      */
-    private _triggerEvents:Array<string>;//Evens to trigger
+    private _triggerEvents:Array<string>;
 
     constructor() {
         let t = this;
-        
-        t._callbacks = {"*":{}};
-        t._actions = {};
-        t._views = {};
-        t._models = {};
+        t._callbacks = new tsMap<string,tsMap<string,Array<Function>>>();
+        t._callbacks.set("*",new tsMap<string,Array<Function>>());
+
+        t._actions = new tsMap<string,Object>();
+        t._views = new tsMap<string,Object>();
+        t._models = new tsMap<string,Array<Object>>();
         t._query = [];
 
         t._events = ['change','delete','upsert','drop','select'];  
         t._events.forEach((e) => {
-            t._callbacks['*'][e] = [];
+            t._callbacks.get("*").set(e,[]);
         });  
     }
 
@@ -121,7 +122,7 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public connect(backend?:someSQL_Backend):tsPromise<any> {
+    public connect(backend?:someSQL_Backend):tsPromise<Object|string> {
         let t = this;
         t._backend = backend || new someSQL_MemDB();  
         return new someSQL_Promise(t,(res, rej) => {
@@ -143,7 +144,7 @@ export class someSQL_Instance {
             if(this._events.indexOf(a) == -1) {
                 throw new Error(a + "ins't a valid attachable event!");
             }
-            this._callbacks[this._selectedTable][a].push(callBack);
+            this._callbacks.get(this._selectedTable).get(a).push(callBack);
         });
         return this;
     }
@@ -156,20 +157,17 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public model(dataModel:Array<any>):someSQL_Instance {
+    public model(dataModel:Array<Object>):someSQL_Instance {
         let t = this;
         let l = t._selectedTable;
-        t._callbacks[l] = {};
+        t._callbacks.set(l,new tsMap<string,Array<Function>>());
         t._events.forEach((v) => {
-            t._callbacks[l][v] = [];
+            t._callbacks.get("*").set(v,[]);
         });
-        t._models[l] = dataModel;
-        t._views[l] = {};
-        t._actions[l] = {};
+        t._models.set(l,dataModel);
+        t._views.set(l,{});
+        t._actions.set(l,{});
         return this;
-        /*return new someSQL_Promise(this, (res, rej) => {
-            t._backend.newModel(l, dataModel, res, rej);
-        });*/
     }
 
     /**
@@ -180,8 +178,8 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public views(viewMap):someSQL_Instance {
-        this._views[this._selectedTable] = viewMap;
+    public views(viewMap:Object):someSQL_Instance {
+        this._views.set(this._selectedTable,viewMap);
         return this;
     }
 
@@ -194,11 +192,11 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public getView(viewName, viewArgs):tsPromise<any> {
+    public getView(viewName:string, viewArgs:Object):tsPromise<Object|string> {
         let t = this;
         let l = t._selectedTable;
-        let v = t._views[l][viewName];
-        return v[1](t.init(l), t._cleanArgs(v, viewArgs));
+        let v = t._views.get(l)[viewName];
+        return v[1].apply(t,[t._cleanArgs(v[0], viewArgs)]);
     }
 
     /**
@@ -211,12 +209,11 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    private _cleanArgs(funcArray:Array<any>, args:any):any {
+    private _cleanArgs(argDeclarations:Array<string>, args:Object):Object {
         let t = this;
         let l = t._selectedTable;
         let a = {};
-        let v = funcArray;
-        v[0].forEach((k) => {
+        argDeclarations.forEach((k) => {
             let k2 = k.split(':');
             if(k2.length > 1) {
                 a[k2[0]] = t._cast(k2[1], args[k2[0]]);
@@ -237,14 +234,14 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    private _cast(type:string, val:any) {
+    private _cast(type:string, val:any):any {
         switch(['string','int','float','array','map'].indexOf(type)) {
             case 0:return String(val);
             case 1:return parseInt(val);
             case 2:return parseFloat(val);
             case 3:
             case 4:return JSON.parse(JSON.stringify(val));
-            default:return val;
+            default:return "";//Nullify the variable if it isn't castable
         }
     }
 
@@ -256,8 +253,8 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public actions(actionMap):someSQL_Instance {
-        this._actions[this._selectedTable] = actionMap;
+    public actions(actionMap:Object):someSQL_Instance {
+        this._actions.set(this._selectedTable,actionMap);
         return this;
     }
 
@@ -270,27 +267,27 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public doAction(actionName, actionArgs):tsPromise<any> {
+    public doAction(actionName:string, actionArgs:Object):tsPromise<Object|string> {
         let t = this;
         let l = t._selectedTable;
-        let a = t._actions[l][actionName];
-        return a[1](t.init(l), t._cleanArgs(a, actionArgs));
+        let a = t._actions.get(l)[actionName];
+        return a[1].apply(t,[t._cleanArgs(a[0], actionArgs)]);
     }
 
     /**
      * Start a query into the current selected table.
      * 
      * @param {string} action
-     * @param {*} [args]
+     * @param {Object} [args]
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public query(action:string, args?:any):someSQL_Instance {
+    public query(action:string, args?:Object):someSQL_Instance {
         this._query = [];
         let a = action.toLowerCase();
         if(['select','upsert','delete','drop'].indexOf(a) != -1) {
-            this._query.push({type:a,args:args});
+            this._query.push(new tsMap<string, Object|Array<any>>([['type',a],['args',args]]));
         }
         return this;
     }
@@ -298,42 +295,40 @@ export class someSQL_Instance {
     /**
      * Narrow down your search by a single where clause:
      * [value,comparison,check], for example:
-     * ['name','=','berry'] or ['name','IN',['berry','john']]
      * 
-     * @param {any} args
+     * @param {Array<any>} args ['name','=','berry'] or ['name','IN',['berry','john']]
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public where(args):someSQL_Instance {
-        this._query.push({type:'where',args:args});
+    public where(args:Array<any>):someSQL_Instance {
+        this._addCmd('where',args);
         return this;
     }
 
     /**
      * An array of where statements, identical to chaining multiple where statements.
-     * [whereStatement,whereStatement,whereStatement]
      * 
-     * @param {any} args
+     * @param {Array<Array<any>>} args [whereStatement,whereStatement,whereStatement]
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public andWhere(args):someSQL_Instance {
-        this._query.push({type:'andWhere',args:args});
+    public andWhere(args:Array<Array<any>>):someSQL_Instance {
+        this._addCmd('andWhere',args);
         return this;
     }
 
     /**
      * An array of where statements that do an OR comparison instead of AND.
      * 
-     * @param {any} args
+     * @param {Array<Array<any>>} args [whereStatement,whereStatement,whereStatement]
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public orWhere(args):someSQL_Instance {
-        this._query.push({type:'orWhere',args:args});
+    public orWhere(args:Array<Array<any>>):someSQL_Instance {
+        this._addCmd('orWhere',args);
         return this;
     }
 
@@ -341,65 +336,77 @@ export class someSQL_Instance {
      * Order the results by specific values
      * Args is an array of maps, where each map represents a column to sort by and it's order.
      * 
-     * @param {any} args Example: [{"name":"asc"},{"age":"desc"}]
+     * @param {Array<Object>} args Array of objects for each column to sort, Example: [{name:'desc'},{age:'asc'}]
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public orderBy(args):someSQL_Instance {
-        this._query.push({type:'orderby',args:args});
+    public orderBy(args:Array<Object>):someSQL_Instance {
+        this._addCmd('orderby',args);
         return this;
     }
 
     /**
      * Limits the result to a specific amount.
      * 
-     * 
-     * @param {any} args A number representing the current limit amount
+     * @param {number} args How many items to limit to?
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public limit(args):someSQL_Instance {
-        this._query.push({type:'limit',args:args});
+    public limit(args:number):someSQL_Instance {
+        this._addCmd('limit',args);
         return this;
     }
 
     /**
      * Offsets the results by a specific amount from the beginning.
      * 
-     * @param {any} args A number representing the desired offset
+     * @param {number} args What's the offset length?
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public offset(args):someSQL_Instance {
-        this._query.push({type:'offset',args:args});
+    public offset(args:number):someSQL_Instance {
+        this._addCmd('offset',args);
         return this;
+    }
+
+    /**
+     * Used to add a command to the query
+     * 
+     * @internal
+     * @param {string} type Command name
+     * @param {(Array<any>|Object)} args Command arguments
+     * 
+     * @memberOf someSQL_Instance
+     */
+    private _addCmd(type:string,args:Array<any>|Object):void {
+        this._query.push(new tsMap<string, Object|Array<any>>([['type',type],['args',args]]));
     }
 
     /**
      * Executes the current pending query to the db engine.
      * 
-     * @returns {tsPromise<any>}
+     * @returns {tsPromise<Object|string>}
      * 
      * @memberOf someSQL_Instance
      */
-    public exec():tsPromise<any> {
+    public exec():tsPromise<Array<Object|string>> {
         //trigger events
         let t = this;
         let _t = t._selectedTable;
         t._triggerEvents = [];
         this._query.map((q) => {
-            switch(q.type) {
-                case "select":return [q.type];
+            switch(q.get('type')) {
+                case "select":return [q.get('type')];
                 case "delete":
                 case "upsert":
-                case "drop":return [q.type,'change'];
+                case "drop":return [q.get('type'),'change'];
                 default:return []
             }
         }).forEach((events) => {
-            events.forEach((event) => {
+            events.forEach((event:string) => {
                 t._triggerEvents.push(event);
             });
         });
@@ -407,17 +414,19 @@ export class someSQL_Instance {
         return new someSQL_Promise(this, (res, rej) => {  
             t._backend.exec(_t, t._query,function(rows) {
                 t._triggerEvents.forEach((e) => {
-                    t._callbacks[_t][e].concat(t._callbacks['*'][e]).forEach((cb) => {
-                        cb({
+                    t._callbacks.get(_t).get(e).concat(t._callbacks.get('*').get(e)).forEach((cb) => {
+                        cb.apply(t,[{
                             type:e,
                             table:_t,
                             query:t._query,
                             time:new Date().getTime(),
                             result:rows
-                        });
+                        }]);
                     });
                 });
                 res(rows);
+            },(err) => {
+                rej(err);
             });
         });
     }
@@ -435,7 +444,7 @@ export class someSQL_Instance {
         let t = this;
         return new someSQL_Promise(t, (res, rej) => {
             if(t._backend.custom) {
-                t._backend.custom(argType, args, res)
+                t._backend.custom(argType, args, res, rej)
             } else {
                 res();
             }
@@ -455,10 +464,10 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public loadJS(rows:Array<any>):tsPromise<any> {
+    public loadJS(rows:Array<Object>):tsPromise<Object|string> {
         let t = this;
-        return tsPromise.all( rows.map((row) => {
-            return <any> t.init(t._selectedTable).query('upsert',row).exec();
+        return tsPromise.all(rows.map((row) => {
+            return t.init(t._selectedTable).query('upsert',row).exec();
         }));
     } 
 
@@ -470,7 +479,7 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public loadCSV(csv:string):tsPromise<any> {
+    public loadCSV(csv:string):tsPromise<Object|string> {
         let t = this;
         let fields = [];
 
@@ -508,14 +517,15 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public toCSV(headers?:boolean):tsPromise<any> {
+    public toCSV(headers?:boolean):tsPromise<string> {
         let t = this;
         return new someSQL_Promise(t,(res, rej) => {
-            t.exec().then(function(json) {
+
+            t.exec().then(function(json:Array<Object>) {
                 let header = t._query.filter((q) => {
-                    return q.type == 'select';
+                    return q.get('type') == 'select';
                 }).map((q) => {
-                    return q.args ? q.args.map((m) => {
+                    return q.get('args') ? (<Array<any>> q.get('args')).map((m) => {
                         return t._models[t._selectedTable].filter((f) => f.key == m)[0]
                     }) : t._models[t._selectedTable];
                 })[0];
@@ -573,7 +583,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    connect(models:any, onSuccess:Function, onFail?:Function):void
+    connect(models:tsMap<string,Array<Object>>, onSuccess:Function, onFail?:Function):void
 
     /**
      * Executes a specific query on the database with a specific table
