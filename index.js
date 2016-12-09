@@ -70,9 +70,10 @@ module.exports =
 	        return this;
 	    };
 	    someSQL_Instance.prototype.connect = function (backend) {
+	        var _this = this;
 	        this._backend = backend;
 	        return new someSQL_Promise(this, function (res, rej) {
-	            backend.connect(res, rej);
+	            backend.connect(_this._models, res, rej);
 	        });
 	    };
 	    someSQL_Instance.prototype.on = function (actions, callBack) {
@@ -95,9 +96,7 @@ module.exports =
 	        t._models[l] = dataModel;
 	        t._views[l] = {};
 	        t._actions[l] = {};
-	        return new someSQL_Promise(this, function (res, rej) {
-	            t._backend.newModel(l, dataModel, res, rej);
-	        });
+	        return this;
 	    };
 	    someSQL_Instance.prototype.views = function (viewMap) {
 	        this._views[this._selectedTable] = viewMap;

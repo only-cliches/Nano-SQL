@@ -4,7 +4,7 @@ export declare class someSQL_Instance {
     init(table?: string): someSQL_Instance;
     connect(backend: someSQL_Backend): tsPromise<any>;
     on(actions: string, callBack: Function): someSQL_Instance;
-    model(dataModel: Array<any>): tsPromise<any>;
+    model(dataModel: Array<any>): someSQL_Instance;
     views(viewMap: any): someSQL_Instance;
     getView(viewName: any, viewArgs: any): tsPromise<any>;
     actions(actionMap: any): someSQL_Instance;
@@ -24,8 +24,7 @@ export declare class someSQL_Instance {
     static uuid(inputUUID?: string): string;
 }
 export interface someSQL_Backend {
-    connect?(onSuccess: Function, onFail?: Function): void;
-    newModel(table: string, args: any, onSuccess: Function, onFail?: Function): void;
+    connect(models: any, onSuccess: Function, onFail?: Function): void;
     exec(table: string, query: Array<any>, onSuccess: Function, onFail?: Function): void;
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }

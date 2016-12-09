@@ -124,14 +124,15 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public connect(backend:someSQL_Backend):tsPromise<any> {
+        //this._backend = backend ? backend : new someSQL_MemDB();
         this._backend = backend;
         return new someSQL_Promise(this,(res, rej) => {
-            backend.connect(res, rej);
+            backend.connect(this._models, res, rej);
         });
     }
 
     /**
-     * Allows you to connect to any valid event for listening to changes
+     * Allows you to apply a callback function to any valid event.
      * 
      * @param {string} actions
      * @param {Function} callBack
@@ -157,7 +158,7 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public model(dataModel:Array<any>):tsPromise<any> {
+    public model(dataModel:Array<any>):someSQL_Instance {
         let t = this;
         let l = t._selectedTable;
         t._callbacks[l] = {};
@@ -167,9 +168,10 @@ export class someSQL_Instance {
         t._models[l] = dataModel;
         t._views[l] = {};
         t._actions[l] = {};
-        return new someSQL_Promise(this, (res, rej) => {
+        return this;
+        /*return new someSQL_Promise(this, (res, rej) => {
             t._backend.newModel(l, dataModel, res, rej);
-        });
+        });*/
     }
 
     /**
@@ -567,22 +569,13 @@ export interface someSQL_Backend {
     /**
      * Inilitize the database for use, async so you can connect to remote stuff as needed.
      * 
+     * @param {*} models //Map of data models
      * @param {Function} onSuccess
      * @param {Function} [onFail]
      * 
      * @memberOf someSQL_Backend
      */
-    connect?(onSuccess:Function, onFail?:Function):void
-
-    /**
-     * Adds a table and it's data model to the database
-     * 
-     * @param {string} table
-     * @param {*} args
-     * 
-     * @memberOf someSQL_Backend
-     */
-    newModel(table:string,args:any, onSuccess:Function, onFail?:Function):void
+    connect(models:any, onSuccess:Function, onFail?:Function):void
 
     /**
      * Executes a specific query on the database with a specific table
