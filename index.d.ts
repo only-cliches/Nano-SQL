@@ -38,6 +38,6 @@ export interface someSQL_Backend {
     new (parent: someSQL_Instance, args?: any): any;
     newModel(table: string, args: any): void;
     exec(table: string, query: Array<any>, callback: Function): void;
-    custom(command: string, args: any, callback: Function): void;
+    custom?(command: string, args: any, callback: Function): void;
 }
 export declare function someSQL(table?: string): someSQL_Instance;

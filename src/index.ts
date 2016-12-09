@@ -338,7 +338,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    custom(command:string, args:any, callback:Function):void
+    custom?(command:string, args:any, callback:Function):void
 }
 
 /**
