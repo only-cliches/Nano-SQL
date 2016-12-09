@@ -306,7 +306,7 @@ export class someSQL_Instance {
 
 export interface someSQL_Backend {
 
-    constructor(parent:someSQL_Instance, args?:any)
+    new(parent:someSQL_Instance, args?:any);
 
     /**
      * Adds a table and it's data model to the database
