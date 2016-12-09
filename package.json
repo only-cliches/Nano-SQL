@@ -1,0 +1,31 @@
+{
+  "name": "some-sql",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "serve": "./node_modules/.bin/webpack-dev-server --config wpack.config.js",
+    "build": "bash build.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Some-SQL.git"
+  },
+  "typescript": {
+    "definition": "some-sql.d.ts"
+  },
+  "devDependencies": {
+    "ts-loader": "^0.8.2",
+    "typescript": "^2.0.3",
+    "webpack": "^1.13.2",
+    "webpack-dev-server": "^1.16.1",
+    "write-file-webpack-plugin": "^3.3.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",
+    "typescript-promise": "git+https://github.com/ClickSimply/typescript-promise.git"
+  }
+}

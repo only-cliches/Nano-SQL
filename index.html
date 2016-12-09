@@ -1,0 +1,137 @@
+<html>
+    <head>
+        <script src="build/some-sql.min.js"></script>
+    </head>
+    <body>
+        <script>
+  
+/*
+            someSQL('users') // <= Table Name
+            .model([ // <= create table model before you can use it
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'name',type:'string'},
+            ])
+            .upsert({id:null,name:'Scott'}).exec() // <= drop in some data
+            .then(function(value) {
+                console.log(value.response) // <= '1 Row Upserted'
+                return value.table.select().exec(); // <= Select entire table
+            })
+            .then(function(value) {
+                console.log(value.response) // <= [{id:1,name:'Scott'}]
+            });
+*/
+
+
+            someSQL('users')//Table/Store Name
+            .model([ //Data Model
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'name',type:'string'},
+                {key:'age',type:'int'},
+                {key:'balance',type:'float'},
+                {key:'postIDs',type:'array'},
+                {key:'meta',type:'map'}
+            ])
+            .views({ //Cached views to show specific data
+                'get_user_by_name':[['name:string'],function(table, args) {
+                    return table.query('select').where(['name','=',args.name]).exec();
+                }],
+                'list_all_users':[['page:int'],function(table, args) {
+                    return table.query('select',['id','name']).exec();
+                }],                       
+            })
+            .actions({ //Cached actions to update specific data
+                'add_new_user':[['user:map'],function(table, args) {
+                    return table.query('upsert',args.user).exec();
+                }]
+            })
+
+            someSQL('*').on('change',function(e) {
+                //console.log(e);
+            });
+
+            someSQL('users')
+            .doAction('add_new_user',{user:{
+                id:null,
+                name:'jim',
+                age:30,
+                balance:25.02,
+                postIDs:[0,20,5],
+                meta:{
+                    favorteColor:'blue'
+                }
+            }})
+            .then(function(result) {
+                      
+               return this.query('upsert',{
+                    id:null,
+                    name:'bob',
+                    age:20,
+                    balance:25.02,
+                    postIDs:[0,20,5],
+                    meta:{
+                        favorteColor:'blue'
+                    }
+                }).exec();
+            })
+            .then(function(result) {
+                
+               return this.query('upsert',{
+                    id:null,
+                    name:'jeb',
+                    age:25,
+                    balance:25.02,
+                    postIDs:[0,20,5],
+                    meta:{
+                        favorteColor:'blue'
+                    }
+                }).exec();
+            })
+            .then(function(result) {
+               return this.query('upsert',{
+                    id:null,
+                    name:'kevin',
+                    age:50,
+                    balance:22.02,
+                    postIDs:[0,20,5],
+                    meta:{
+                        favorteColor:'blue'
+                    }
+                }).exec();
+            })
+            .then(function(result) {
+               return this.query('upsert',{
+                    id:null,
+                    name:'scott',
+                    age:21,
+                    balance:25.02,
+                    postIDs:[0,20,5],
+                    meta:{
+                        favorteColor:'blue'
+                    }
+                }).exec();
+            })
+            .then(function(result) {
+                
+               return this.query('upsert',{balance:50}).where(['name','=','jeb']).exec();
+            })   
+            /*.then(function(result) {
+               return this.query('delete').where(['age','>=',25]).exec();
+            })*/         
+            .then(function(result) {
+               return this.query('select').exec();
+            })
+            .then(function(result) {
+                /*var compare = result.response;
+                this.query('select').exec().then(function(result) {
+                    console.log(result.response === compare);
+                });*/
+                
+                return this.query('select').where(['age','>=',25]).toCSV(true);
+            })  
+            .then(function(result) {
+                console.log(result);
+                return someSQL('users').query('drop').exec();
+            })
+        </script>
+    </body>
+</html> 
