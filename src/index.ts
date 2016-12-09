@@ -1,5 +1,6 @@
 import { tsMap } from "typescript-map";
 import { tsPromise } from "typescript-promise";
+import { someSQL_MemDB } from "Some-SQL-Memory";
 
 export class someSQL_Instance {
 
@@ -19,7 +20,7 @@ export class someSQL_Instance {
         if(backend) {
             t.connect(backend);
         } else {
-            t.connect(new someSQL_Backend(t));
+            t.connect(<any>new someSQL_MemDB(<any> t));
         }
 
         t._callbacks = {"*":{}};
@@ -303,12 +304,8 @@ export class someSQL_Instance {
     }
 }
 
-export class someSQL_Backend {
-    public parent:someSQL_Instance;
-
-    constructor(parent:someSQL_Instance) {
-        this.parent = parent;
-    }
+export interface someSQL_Backend {
+    parent:someSQL_Instance;
 
     /**
      * Adds a table and it's data model to the database
@@ -318,7 +315,7 @@ export class someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    public newModel(table:string,args:any):void {}
+    newModel(table:string,args:any):void
 
     /**
      * Executes a specific query on the database with a specific table
@@ -329,9 +326,7 @@ export class someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    public exec(table:string, query:Array<any>, callback:Function):void {
-        callback();
-    }
+    exec(table:string, query:Array<any>, callback:Function):void
     
     /**
      * Custom implimentations for this db type, can be literally anything.
@@ -342,9 +337,7 @@ export class someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    public custom(command:string, args:any, callback:Function):void {
-        callback();
-    }
+    custom(command:string, args:any, callback:Function):void
 }
 
 /**
