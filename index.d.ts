@@ -35,7 +35,7 @@ export declare class someSQL_Instance {
     toCSV(headers?: boolean): tsPromise<any>;
 }
 export interface someSQL_Backend {
-    new (parent: someSQL_Instance, args?: any): any;
+    new (parent: someSQL_Instance, args?: any): someSQL_Backend;
     newModel(table: string, args: any): void;
     exec(table: string, query: Array<any>, callback: Function): void;
     custom?(command: string, args: any, callback: Function): void;
