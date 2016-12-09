@@ -88,8 +88,6 @@ export class someSQL_Instance {
     constructor() {
         let t = this;
         
-        //t.connect(new someSQL_MemDB(<any> this));
-
         t._callbacks = {"*":{}};
         t._actions = {};
         t._views = {};
@@ -111,7 +109,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public init(table?:string):someSQL_Instance {
-        this._selectedTable = table || '';
+        if(table) this._selectedTable = table;
         return this;
     }
 
@@ -123,11 +121,11 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public connect(backend:someSQL_Backend):tsPromise<any> {
-        //this._backend = backend ? backend : new someSQL_MemDB();
-        this._backend = backend;
-        return new someSQL_Promise(this,(res, rej) => {
-            backend.connect(this._models, res, rej);
+    public connect(backend?:someSQL_Backend):tsPromise<any> {
+        let t = this;
+        t._backend = backend || new someSQL_MemDB();  
+        return new someSQL_Promise(t,(res, rej) => {
+            t._backend.connect(t._models, res, rej);
         });
     }
 

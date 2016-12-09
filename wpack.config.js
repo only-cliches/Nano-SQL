@@ -4,6 +4,7 @@ const PATHS = {
     app: path.join(__dirname, 'src'),
     build: path.join(__dirname, 'dist')
 };
+const WriteFilePlugin = require("write-file-webpack-plugin");
 
 module.exports = {
     entry: {
@@ -24,7 +25,8 @@ module.exports = {
             compress: {
                 warnings: false
             }
-        })
+        }),
+        new WriteFilePlugin()
     ],
     module: {
         loaders: [{

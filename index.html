@@ -1,6 +1,6 @@
 <html>
     <head>
-        <script src="build/some-sql.min.js"></script>
+        <script src="dist/some-sql.min.js"></script>
     </head>
     <body>
         <script>
@@ -11,16 +11,21 @@
                 {key:'id',type:'int',props:['pk','ai']},
                 {key:'name',type:'string'},
             ])
-            .upsert({id:null,name:'Scott'}).exec() // <= drop in some data
-            .then(function(value) {
-                console.log(value.response) // <= '1 Row Upserted'
-                return value.table.select().exec(); // <= Select entire table
-            })
-            .then(function(value) {
-                console.log(value.response) // <= [{id:1,name:'Scott'}]
+            .connect()
+            .then(function() {
+                this.query('upsert',{id:null,name:'Scott'}).exec() // <= drop in some data
+                .then(function(response) {
+                    return this.query('select').exec(); // <= Select entire table
+                })
+                .then(function(response) {
+                    console.log(response) // <= [{id:1,name:'Scott'}]
+                    return this.query('select').toCSV(); //<= convert the table to CSV
+                })
+                .then(function(response) {
+                    console.log(response); //<= 1,"Scott"
+                })
             });
 */
-
 
             someSQL('users')//Table/Store Name
             .model([ //Data Model
@@ -43,7 +48,7 @@
                 'add_new_user':[['user:map'],function(table, args) {
                     return table.query('upsert',args.user).exec();
                 }]
-            })
+            }).connect();
 
             someSQL('*').on('change',function(e) {
                 //console.log(e);

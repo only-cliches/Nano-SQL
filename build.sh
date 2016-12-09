@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./node_modules/.bin/tsc
+./node_modules/.bin/tsc -d true --declarationDir "." --outDir "dist";
 cp dist/index.js index.js
 ./node_modules/.bin/webpack --output-library-target 'commonjs2' index.js index.js
 cd dist

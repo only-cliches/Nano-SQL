@@ -8,9 +8,6 @@
     "experimentalDecorators": true,
     "removeComments": true,
     "noImplicitAny": false,
-    "declaration": true,
-    "declarationDir": ".",
-    "outDir": "dist",
     "stripInternal":true
   },
   "files": [

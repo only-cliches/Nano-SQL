@@ -2,7 +2,7 @@ import { tsPromise } from "typescript-promise";
 export declare class someSQL_Instance {
     constructor();
     init(table?: string): someSQL_Instance;
-    connect(backend: someSQL_Backend): tsPromise<any>;
+    connect(backend?: someSQL_Backend): tsPromise<any>;
     on(actions: string, callBack: Function): someSQL_Instance;
     model(dataModel: Array<any>): someSQL_Instance;
     views(viewMap: any): someSQL_Instance;
