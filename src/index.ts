@@ -4,24 +4,91 @@ import { someSQL_MemDB } from "Some-SQL-Memory";
 
 export class someSQL_Instance {
 
-    private _selectedTable:string; //Selected Table
+    /**
+     * Holds the current selected table
+     * 
+     * @internal
+     * @type {string}
+     * @memberOf someSQL_Instance
+     */
+    private _selectedTable:string;
+
+    /**
+     * Holds an array of the query arguments
+     * 
+     * @internal
+     * @type {Array<any>}
+     * @memberOf someSQL_Instance
+     */
     private _query:Array<any>; //Query
-    private _backend:someSQL_Backend; //System Backend/Plugin
-    private _callbacks:any;//Event Callbacks
-    private _events:Array<string>; //Event Types
+
+    /**
+     * The backend currently being used
+     * 
+     * @internal
+     * @type {someSQL_Backend}
+     * @memberOf someSQL_Instance
+     */
+    private _backend:someSQL_Backend;
+
+    /**
+     * The callbacks for events
+     * 
+     * @internal
+     * @type {*}
+     * @memberOf someSQL_Instance
+     */
+    private _callbacks:any;
+
+    /**
+     * An array of possible events
+     * 
+     * @internal
+     * @type {Array<string>}
+     * @memberOf someSQL_Instance
+     */
+    private _events:Array<string>;
+
+    /**
+     * A map containing the views
+     * 
+     * @internal
+     * @type {*}
+     * @memberOf someSQL_Instance
+     */
     private _views:any; //Views
+
+    /**
+     * A map containing the actions
+     * 
+     * @internal
+     * @type {*}
+     * @memberOf someSQL_Instance
+     */
     private _actions:any; //Actions
+
+    /**
+     * A map containing the models
+     * 
+     * @internal
+     * @type {*}
+     * @memberOf someSQL_Instance
+     */
     private _models:any; //Models
+
+    /**
+     * An array containing a temporary list of event callbacks
+     * 
+     * @internal
+     * @type {Array<string>}
+     * @memberOf someSQL_Instance
+     */
     private _triggerEvents:Array<string>;//Evens to trigger
 
-    constructor(backend?:any) {
+    constructor() {
         let t = this;
         
-        if(backend) {
-            t.connect(backend);
-        } else {
-            t.connect(<any>new someSQL_MemDB(<any> t));
-        }
+        //t.connect(new someSQL_MemDB(<any> this));
 
         t._callbacks = {"*":{}};
         t._actions = {};
@@ -35,21 +102,42 @@ export class someSQL_Instance {
         });  
     }
 
+    /**
+     * Changes the table pointer
+     * 
+     * @param {string} [table]
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public init(table?:string):someSQL_Instance {
         this._selectedTable = table || '';
         return this;
     }
 
     /**
-     * Plugin System
+     * Inits the backend database for use
+     * 
+     * @param {someSQL_Backend} backend
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
      */
-    public connect(backend:someSQL_Backend):someSQL_Instance {
+    public connect(backend:someSQL_Backend):tsPromise<any> {
         this._backend = backend;
-        return this;
+        return new someSQL_Promise(this,(res, rej) => {
+            backend.connect(res, rej);
+        });
     }
 
-    /** 
-     * Events
+    /**
+     * Allows you to connect to any valid event for listening to changes
+     * 
+     * @param {string} actions
+     * @param {Function} callBack
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
      */
     public on(actions:string, callBack:Function):someSQL_Instance {
         actions.split(' ').forEach((a) => {
@@ -62,9 +150,14 @@ export class someSQL_Instance {
     }
 
     /**
-     * Table Editing Functions
+     * Create a new data model for the current selected table.
+     * 
+     * @param {Array<any>} dataModel
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
      */
-    public model(dataModel:Array<any>):someSQL_Instance {
+    public model(dataModel:Array<any>):tsPromise<any> {
         let t = this;
         let l = t._selectedTable;
         t._callbacks[l] = {};
@@ -74,15 +167,33 @@ export class someSQL_Instance {
         t._models[l] = dataModel;
         t._views[l] = {};
         t._actions[l] = {};
-        t._backend.newModel(l, dataModel);
-        return t;
+        return new someSQL_Promise(this, (res, rej) => {
+            t._backend.newModel(l, dataModel, res, rej);
+        });
     }
 
+    /**
+     * Set views for the current selected table.
+     * 
+     * @param {any} viewMap
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public views(viewMap):someSQL_Instance {
         this._views[this._selectedTable] = viewMap;
         return this;
     }
 
+    /**
+     * Execute a specific view.
+     * 
+     * @param {any} viewName
+     * @param {any} viewArgs
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public getView(viewName, viewArgs):tsPromise<any> {
         let t = this;
         let l = t._selectedTable;
@@ -90,6 +201,16 @@ export class someSQL_Instance {
         return v[1](t.init(l), t._cleanArgs(v, viewArgs));
     }
 
+    /**
+     * Take an action or view and it's args, then make sure the args comform to the types declared in the model.
+     * 
+     * @internal
+     * @param {Array<any>} funcArray
+     * @param {*} args
+     * @returns {*}
+     * 
+     * @memberOf someSQL_Instance
+     */
     private _cleanArgs(funcArray:Array<any>, args:any):any {
         let t = this;
         let l = t._selectedTable;
@@ -106,6 +227,16 @@ export class someSQL_Instance {
         return a;
     }
 
+    /**
+     * Cast variables to a specific type.
+     * 
+     * @internal
+     * @param {string} type
+     * @param {*} val
+     * @returns
+     * 
+     * @memberOf someSQL_Instance
+     */
     private _cast(type:string, val:any) {
         switch(['string','int','float','array','map'].indexOf(type)) {
             case 0:return String(val);
@@ -117,11 +248,28 @@ export class someSQL_Instance {
         }
     }
 
+    /**
+     * Declare a map of actions for the current table.
+     * 
+     * @param {any} actionMap
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public actions(actionMap):someSQL_Instance {
         this._actions[this._selectedTable] = actionMap;
         return this;
     }
 
+    /**
+     * Init an action for the current selected table.
+     * 
+     * @param {any} actionName
+     * @param {any} actionArgs
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public doAction(actionName, actionArgs):tsPromise<any> {
         let t = this;
         let l = t._selectedTable;
@@ -129,6 +277,15 @@ export class someSQL_Instance {
         return a[1](t.init(l), t._cleanArgs(a, actionArgs));
     }
 
+    /**
+     * Start a query into the current selected table.
+     * 
+     * @param {string} action
+     * @param {*} [args]
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public query(action:string, args?:any):someSQL_Instance {
         this._query = [];
         let a = action.toLowerCase();
@@ -139,38 +296,95 @@ export class someSQL_Instance {
     }
 
     /**
-     * Select Functions
+     * Narrow down your search by a single where clause:
+     * [value,comparison,check], for example:
+     * ['name','=','berry'] or ['name','IN',['berry','john']]
+     * 
+     * @param {any} args
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
      */
     public where(args):someSQL_Instance {
         this._query.push({type:'where',args:args});
         return this;
     }
 
+    /**
+     * An array of where statements, identical to chaining multiple where statements.
+     * [whereStatement,whereStatement,whereStatement]
+     * 
+     * @param {any} args
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public andWhere(args):someSQL_Instance {
         this._query.push({type:'andWhere',args:args});
         return this;
     }
 
+    /**
+     * An array of where statements that do an OR comparison instead of AND.
+     * 
+     * @param {any} args
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public orWhere(args):someSQL_Instance {
         this._query.push({type:'orWhere',args:args});
         return this;
     }
 
+    /**
+     * Order the results by specific values
+     * Args is an array of maps, where each map represents a column to sort by and it's order.
+     * 
+     * @param {any} args Example: [{"name":"asc"},{"age":"desc"}]
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public orderBy(args):someSQL_Instance {
         this._query.push({type:'orderby',args:args});
         return this;
     }
 
+    /**
+     * Limits the result to a specific amount.
+     * 
+     * 
+     * @param {any} args A number representing the current limit amount
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public limit(args):someSQL_Instance {
         this._query.push({type:'limit',args:args});
         return this;
     }
 
+    /**
+     * Offsets the results by a specific amount from the beginning.
+     * 
+     * @param {any} args A number representing the desired offset
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public offset(args):someSQL_Instance {
         this._query.push({type:'offset',args:args});
         return this;
     }
 
+    /**
+     * Executes the current pending query to the db engine.
+     * 
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public exec():tsPromise<any> {
         //trigger events
         let t = this;
@@ -208,6 +422,15 @@ export class someSQL_Instance {
         });
     }
 
+    /**
+     * Plugin system, allows the db engine to support any custom functionality as needed.
+     * 
+     * @param {string} argType
+     * @param {*} args
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public custom(argType:string, args:any):tsPromise<any> {
         let t = this;
         return new someSQL_Promise(t, (res, rej) => {
@@ -219,17 +442,18 @@ export class someSQL_Instance {
         });
     }
 
-    public uuid(inputUUID?:string):string {
-        return inputUUID ? inputUUID : (function() {
-            return  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-                return v.toString(16);
-            });   
-        })();
-    }
-
     /**
-     * Export Functions
+     * Load JSON directly into the DB.
+     * JSON must be an array of maps, like this:
+     * [
+     *  {"name":"billy","age":20},
+     *  {"name":"johnny":"age":30}
+     * ]
+     * 
+     * @param {Array<any>} rows
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
      */
     public loadJS(rows:Array<any>):tsPromise<any> {
         let t = this;
@@ -238,6 +462,14 @@ export class someSQL_Instance {
         }));
     } 
 
+    /**
+     * Load a CSV file into the DB.
+     * 
+     * @param {string} csv
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public loadCSV(csv:string):tsPromise<any> {
         let t = this;
         let fields = [];
@@ -268,6 +500,14 @@ export class someSQL_Instance {
         });
     }
 
+    /**
+     * Export the current query to a CSV file.
+     * 
+     * @param {boolean} [headers]
+     * @returns {tsPromise<any>}
+     * 
+     * @memberOf someSQL_Instance
+     */
     public toCSV(headers?:boolean):tsPromise<any> {
         let t = this;
         return new someSQL_Promise(t,(res, rej) => {
@@ -300,11 +540,39 @@ export class someSQL_Instance {
                 }).join('\n'));
             })
         });
- 
+    }
+
+    /**
+     * Generate a Psudo Random UUID
+     * Stolen shamelessly from http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
+     * 
+     * @static
+     * @param {string} [inputUUID]
+     * @returns {string}
+     * 
+     * @memberOf someSQL_Instance
+     */
+    public static uuid(inputUUID?:string):string {
+        return inputUUID ? inputUUID : (function() {
+            return  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+                return v.toString(16);
+            });   
+        })();
     }
 }
 
 export interface someSQL_Backend {
+
+    /**
+     * Inilitize the database for use, async so you can connect to remote stuff as needed.
+     * 
+     * @param {Function} onSuccess
+     * @param {Function} [onFail]
+     * 
+     * @memberOf someSQL_Backend
+     */
+    connect?(onSuccess:Function, onFail?:Function):void
 
     /**
      * Adds a table and it's data model to the database
@@ -314,7 +582,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    newModel(table:string,args:any):void
+    newModel(table:string,args:any, onSuccess:Function, onFail?:Function):void
 
     /**
      * Executes a specific query on the database with a specific table
@@ -325,7 +593,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    exec(table:string, query:Array<any>, callback:Function):void
+    exec(table:string, query:Array<any>, onSuccess:Function, onFail?:Function):void
     
     /**
      * Custom implimentations for this db type, can be literally anything.
@@ -336,7 +604,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    custom?(command:string, args:any, callback:Function):void
+    custom?(command:string, args:any, onSuccess:Function, onFail?:Function):void
 }
 
 /**

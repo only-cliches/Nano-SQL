@@ -126,7 +126,7 @@
                     console.log(result.response === compare);
                 });*/
                 
-                return this.query('select').where(['age','>=',25]).toCSV(true);
+                return this.query('select').orderBy(['name','DESC']).where(['age','>=',25]).toCSV(true);
             })  
             .then(function(result) {
                 console.log(result);
