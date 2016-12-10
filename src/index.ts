@@ -92,7 +92,7 @@ export class someSQL_Instance {
         t._views = new tsMap<string,Object>();
         t._models = new tsMap<string,Array<Object>>();
         t._query = [];
-        t._events = ['change','delete','upsert','drop','select'];  
+        t._events = ['change','delete','upsert','drop','select','error'];  
 
         t._callbacks = new tsMap<string,tsMap<string,Array<Function>>>();
         t._callbacks.set("*",new tsMap<string,Array<Function>>());
@@ -288,7 +288,7 @@ export class someSQL_Instance {
     public query(action:string, args?:Object):someSQL_Instance {
         this._query = [];
         let a = action.toLowerCase();
-        if(['select','upsert','delete','drop','error'].indexOf(a) != -1) {
+        if(['select','upsert','delete','drop'].indexOf(a) != -1) {
             this._query.push(new tsMap<string, Object|Array<any>>([['type',a],['args',args]]));
         }
         return this;
