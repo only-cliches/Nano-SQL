@@ -25,7 +25,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "Some-SQL-Memory": "git+https://github.com/ClickSimply/Some-SQL-Memory.git",
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",
     "typescript-promise": "git+https://github.com/ClickSimply/typescript-promise.git"
   }
