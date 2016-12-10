@@ -647,10 +647,31 @@ class someSQL_Promise extends tsPromise<any> {
     public then(onSuccess?:Function, onFail?:Function):tsPromise<any> {
         var t = this;
         return new someSQL_Promise(t.scope,(resolve, reject) => {
-            t.done(function (value) {
-                resolve(onSuccess.apply(t.scope,[value]));
-            }, function (value) {
-                reject(onFail.apply(t.scope,[value]));
+            t.done((value) => {
+                if (typeof onSuccess === 'function') {
+                    try {
+                        value = onSuccess.apply(t.scope,[value]);
+                    }
+                    catch (e) {
+                        reject(e);
+                        return;
+                    }
+                }
+                resolve(value);
+            }, (value) => {
+                if (typeof onFail === 'function') {
+                    try {
+                        value = onFail.apply(t.scope,[value]);
+                    }
+                    catch (e) {
+                        reject(e);
+                        return;
+                    }
+                    resolve(value);
+                }
+                else {
+                    reject(value);
+                }
             });
         });
     }
@@ -660,3 +681,4 @@ var staticSQL = new someSQL_Instance();
 export function someSQL(table?:string):someSQL_Instance {
     return staticSQL.init(table);
 }
+
