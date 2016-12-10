@@ -143,7 +143,7 @@ export class someSQL_Instance {
         let t = this;
         actions.split(' ').forEach((a) => {
             if(this._events.indexOf(a) == -1) {
-                throw new Error(a + "ins't a valid attachable event!");
+                throw Error(a + "ins't a valid event!");
             }
             t._callbacks.get(t._selectedTable).get(a).push(callBack);
         });
@@ -271,8 +271,7 @@ export class someSQL_Instance {
      */
     public doAction(actionName:string, actionArgs:Object):tsPromise<Object|string> {
         let t = this;
-        let l = t._selectedTable;
-        let a = t._actions.get(l)[actionName];
+        let a = t._actions.get(t._selectedTable)[actionName];
         return a[1].apply(t,[t._cleanArgs(a[0], actionArgs)]);
     }
 
@@ -304,8 +303,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public where(args:Array<any>):someSQL_Instance {
-        this._addCmd('where',args);
-        return this;
+        return this._addCmd('where',args);
     }
 
     /**
@@ -317,8 +315,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public andWhere(args:Array<Array<any>>):someSQL_Instance {
-        this._addCmd('andWhere',args);
-        return this;
+        return this._addCmd('andWhere',args);
     }
 
     /**
@@ -330,8 +327,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public orWhere(args:Array<Array<any>>):someSQL_Instance {
-        this._addCmd('orWhere',args);
-        return this;
+        return this._addCmd('orWhere',args);
     }
 
     /**
@@ -344,8 +340,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public orderBy(args:Array<Object>):someSQL_Instance {
-        this._addCmd('orderby',args);
-        return this;
+        return this._addCmd('orderby',args);
     }
 
     /**
@@ -357,8 +352,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public limit(args:number):someSQL_Instance {
-        this._addCmd('limit',args);
-        return this;
+        return this._addCmd('limit',args);
     }
 
     /**
@@ -370,8 +364,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public offset(args:number):someSQL_Instance {
-        this._addCmd('offset',args);
-        return this;
+        return this._addCmd('offset',args);
     }
 
     /**
@@ -383,8 +376,9 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    private _addCmd(type:string,args:Array<any>|Object):void {
+    private _addCmd(type:string,args:Array<any>|Object):someSQL_Instance {
         this._query.push(new tsMap<string, Object|Array<any>>([['type',type],['args',args]]));
+        return this;
     }
 
     /**
@@ -398,8 +392,7 @@ export class someSQL_Instance {
 
         let t = this;
         let _t = t._selectedTable;
-        t._triggerEvents = [];
-        this._query.map((q) => {
+        t._triggerEvents = <any> t._query.map((q) => {
             switch(q.get('type')) {
                 case "select":return [q.get('type')];
                 case "delete":
@@ -407,11 +400,7 @@ export class someSQL_Instance {
                 case "drop":return [q.get('type'),'change'];
                 default:return []
             }
-        }).forEach((events) => {
-            events.forEach((event:string) => {
-                t._triggerEvents.push(event);
-            });
-        });
+        }).reduce((a,b) => a.concat(b));
 
         let triggerEvents = (eventData:Object):void => {
             t._triggerEvents.forEach((e) => {
@@ -421,28 +410,24 @@ export class someSQL_Instance {
             });            
         }
 
-        return new someSQL_Promise(this, (res, rej) => {  
+        return new someSQL_Promise(t, (res, rej) => {  
             t._backend.exec(_t, t._query, (rows) => {
-
                 triggerEvents({
                     table:_t,
                     query:t._query.map((q) => q.toJSON()),
                     time:new Date().getTime(),
                     result:rows
                 })
-
                 //Send the response
                 res(rows);
             },(err) => {
                 t._triggerEvents = ['error'];
-
                 triggerEvents({
                     table:_t,
                     query:t._query.map((q) => q.toJSON()),
                     time:new Date().getTime(),
                     result:err
                 })
-
                 rej(err);
             });
         });
@@ -461,7 +446,7 @@ export class someSQL_Instance {
         let t = this;
         return new someSQL_Promise(t, (res, rej) => {
             if(t._backend.custom) {
-                t._backend.custom(argType, args, res, rej)
+                t._backend.custom.apply(t,[argType, args, res, rej]);
             } else {
                 res();
             }
@@ -591,6 +576,7 @@ export class someSQL_Instance {
 
     /**
      * Generate a unique hash from a given string.  The same string will always return the same hash.
+     * Stolen shamelessly from http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
      * 
      * @static
      * @param {string} str
@@ -659,18 +645,18 @@ class someSQL_Promise extends tsPromise<any> {
     }
 
     public then(onSuccess?:Function, onFail?:Function):tsPromise<any> {
-        var parent = this;
-        return new someSQL_Promise(parent.scope,(resolve, reject) => {
-            parent.done(function (value) {
-                resolve(onSuccess.apply(parent.scope,[value]));
+        var t = this;
+        return new someSQL_Promise(t.scope,(resolve, reject) => {
+            t.done(function (value) {
+                resolve(onSuccess.apply(t.scope,[value]));
             }, function (value) {
-                reject(onFail.apply(parent.scope,[value]));
+                reject(onFail.apply(t.scope,[value]));
             });
         });
     }
 }
 
-var someSQL_Selectedtableatic = new someSQL_Instance();
+var staticSQL = new someSQL_Instance();
 export function someSQL(table?:string):someSQL_Instance {
-    return someSQL_Selectedtableatic.init(table);
+    return staticSQL.init(table);
 }
