@@ -1,6 +1,6 @@
 import { tsMap } from "typescript-map";
 import { tsPromise } from "typescript-promise";
-import { someSQL_MemDB } from "Some-SQL-Memory";
+import { someSQL_MemDB } from "./memory-db.ts";
 
 export class someSQL_Instance {
 
@@ -87,18 +87,18 @@ export class someSQL_Instance {
 
     constructor() {
         let t = this;
-        t._callbacks = new tsMap<string,tsMap<string,Array<Function>>>();
-        t._callbacks.set("*",new tsMap<string,Array<Function>>());
 
         t._actions = new tsMap<string,Object>();
         t._views = new tsMap<string,Object>();
         t._models = new tsMap<string,Array<Object>>();
         t._query = [];
-
         t._events = ['change','delete','upsert','drop','select'];  
+
+        t._callbacks = new tsMap<string,tsMap<string,Array<Function>>>();
+        t._callbacks.set("*",new tsMap<string,Array<Function>>());
         t._events.forEach((e) => {
             t._callbacks.get("*").set(e,[]);
-        });  
+        });
     }
 
     /**
@@ -124,7 +124,7 @@ export class someSQL_Instance {
      */
     public connect(backend?:someSQL_Backend):tsPromise<Object|string> {
         let t = this;
-        t._backend = backend || new someSQL_MemDB();  
+        t._backend = backend || new someSQL_MemDB(); 
         return new someSQL_Promise(t,(res, rej) => {
             t._backend.connect(t._models, res, rej);
         });
@@ -140,11 +140,12 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public on(actions:string, callBack:Function):someSQL_Instance {
+        let t = this;
         actions.split(' ').forEach((a) => {
             if(this._events.indexOf(a) == -1) {
                 throw new Error(a + "ins't a valid attachable event!");
             }
-            this._callbacks.get(this._selectedTable).get(a).push(callBack);
+            t._callbacks.get(t._selectedTable).get(a).push(callBack);
         });
         return this;
     }
@@ -161,8 +162,9 @@ export class someSQL_Instance {
         let t = this;
         let l = t._selectedTable;
         t._callbacks.set(l,new tsMap<string,Array<Function>>());
+        t._callbacks.get(l).set("*",[]);
         t._events.forEach((v) => {
-            t._callbacks.get("*").set(v,[]);
+            t._callbacks.get(l).set(v,[]);
         });
         t._models.set(l,dataModel);
         t._views.set(l,{});
@@ -286,7 +288,7 @@ export class someSQL_Instance {
     public query(action:string, args?:Object):someSQL_Instance {
         this._query = [];
         let a = action.toLowerCase();
-        if(['select','upsert','delete','drop'].indexOf(a) != -1) {
+        if(['select','upsert','delete','drop','error'].indexOf(a) != -1) {
             this._query.push(new tsMap<string, Object|Array<any>>([['type',a],['args',args]]));
         }
         return this;
@@ -393,7 +395,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public exec():tsPromise<Array<Object|string>> {
-        //trigger events
+
         let t = this;
         let _t = t._selectedTable;
         t._triggerEvents = [];
@@ -411,21 +413,36 @@ export class someSQL_Instance {
             });
         });
 
-        return new someSQL_Promise(this, (res, rej) => {  
-            t._backend.exec(_t, t._query,function(rows) {
-                t._triggerEvents.forEach((e) => {
-                    t._callbacks.get(_t).get(e).concat(t._callbacks.get('*').get(e)).forEach((cb) => {
-                        cb.apply(t,[{
-                            type:e,
-                            table:_t,
-                            query:t._query,
-                            time:new Date().getTime(),
-                            result:rows
-                        }]);
-                    });
+        let triggerEvents = (eventData:Object):void => {
+            t._triggerEvents.forEach((e) => {
+                t._callbacks.get(_t).get(e).concat(t._callbacks.get('*').get(e)).forEach((cb) => {
+                    cb.apply(t,[e,eventData]);
                 });
+            });            
+        }
+
+        return new someSQL_Promise(this, (res, rej) => {  
+            t._backend.exec(_t, t._query, (rows) => {
+
+                triggerEvents({
+                    table:_t,
+                    query:t._query.map((q) => q.toJSON()),
+                    time:new Date().getTime(),
+                    result:rows
+                })
+
+                //Send the response
                 res(rows);
             },(err) => {
+                t._triggerEvents = ['error'];
+
+                triggerEvents({
+                    table:_t,
+                    query:t._query.map((q) => q.toJSON()),
+                    time:new Date().getTime(),
+                    result:err
+                })
+
                 rej(err);
             });
         });
@@ -522,12 +539,13 @@ export class someSQL_Instance {
         return new someSQL_Promise(t,(res, rej) => {
 
             t.exec().then(function(json:Array<Object>) {
+
                 let header = t._query.filter((q) => {
                     return q.get('type') == 'select';
                 }).map((q) => {
                     return q.get('args') ? (<Array<any>> q.get('args')).map((m) => {
                         return t._models[t._selectedTable].filter((f) => f.key == m)[0]
-                    }) : t._models[t._selectedTable];
+                    }) : t._models.get(t._selectedTable);
                 })[0];
 
                 if(headers) {
@@ -569,6 +587,24 @@ export class someSQL_Instance {
                 return v.toString(16);
             });   
         })();
+    }
+
+    /**
+     * Generate a unique hash from a given string.  The same string will always return the same hash.
+     * 
+     * @static
+     * @param {string} str
+     * @returns {string}
+     * 
+     * @memberOf someSQL_Instance
+     */
+    public static hash(str:string):string {
+        var hash = 5381;
+        for (let i = 0; i < str.length; i++) {
+            let char = str.charCodeAt(i);
+            hash = ((hash << 5) + hash) + char; /* hash * 33 + c */
+        }
+        return String(hash);
     }
 }
 
@@ -626,27 +662,9 @@ class someSQL_Promise extends tsPromise<any> {
         var parent = this;
         return new someSQL_Promise(parent.scope,(resolve, reject) => {
             parent.done(function (value) {
-                if (typeof onSuccess === 'function') {
-                    try {
-                        value = onSuccess.apply(parent.scope,[value]);
-                    } catch (e) {
-                        reject(e);
-                        return;
-                    }
-                }
-                resolve(value);
+                resolve(onSuccess.apply(parent.scope,[value]));
             }, function (value) {
-                if (typeof onFail === 'function') {
-                    try {
-                        value = onFail.apply(parent.scope,[value]);
-                    } catch (e) {
-                        reject(e);
-                        return;
-                    }
-                    resolve(value);
-                } else {
-                    reject(value);
-                }
+                reject(onFail.apply(parent.scope,[value]));
             });
         });
     }

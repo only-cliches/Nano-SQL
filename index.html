@@ -84,7 +84,6 @@
                 }
             }})
             .then(function(result) {
-                      
                return this.query('upsert',{
                     id:null,
                     name:'bob',
@@ -97,7 +96,6 @@
                 }).exec();
             })
             .then(function(result) {
-                
                return this.query('upsert',{
                     id:null,
                     name:'jeb',
@@ -141,6 +139,7 @@
                return this.query('delete').where(['age','>=',25]).exec();
             })*/         
             .then(function(result) {
+
                return this.query('select').exec();
             })
             .then(function(result) {
@@ -148,8 +147,7 @@
                 this.query('select').exec().then(function(result) {
                     console.log(result.response === compare);
                 });*/
-                
-                return this.query('select').orderBy(['name','DESC']).where(['age','>=',25]).toCSV(true);
+                return this.query('select').where(['age','>=',25]).toCSV(true);
             })  
             .then(function(result) {
                 console.log(result);

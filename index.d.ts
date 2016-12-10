@@ -23,6 +23,7 @@ export declare class someSQL_Instance {
     loadCSV(csv: string): tsPromise<Object | string>;
     toCSV(headers?: boolean): tsPromise<string>;
     static uuid(inputUUID?: string): string;
+    static hash(str: string): string;
 }
 export interface someSQL_Backend {
     connect(models: tsMap<string, Array<Object>>, onSuccess: Function, onFail?: Function): void;

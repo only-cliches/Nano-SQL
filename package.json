@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "serve": "./node_modules/.bin/webpack-dev-server --config wpack.config.js",
-    "build": "bash build.sh"
+    "serve": "bash bin/serve.sh",
+    "build": "bash bin/build.sh"
   },
   "repository": {
     "type": "git",
@@ -25,6 +25,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "Some-SQL-Memory": "git+https://github.com/ClickSimply/Some-SQL-Memory.git",
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",
     "typescript-promise": "git+https://github.com/ClickSimply/typescript-promise.git"
   }

@@ -7,8 +7,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "removeComments": true,
-    "noImplicitAny": false,
-    "stripInternal":true
+    "noImplicitAny": false
   },
   "files": [
     "src/index.ts"
