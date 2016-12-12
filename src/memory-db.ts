@@ -29,7 +29,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @type {string}
      * @memberOf someSQL_MemDB
      */
-    private _sT:string; //Selected table
+    private _selectedTable:string; //Selected table
 
     /**
      * Holds a single query object of the current query actions.
@@ -112,7 +112,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      */
     public exec(table:string, query:Array<tsMap<string,Object|Array<any>>>, viewOrAction:string, onSuccess:Function, onFail?:Function):void {
         let t = this;
-        t._sT = table;
+        t._selectedTable = table;
         t._mod = [];
         t._act = null;
         t._cacheKey = someSQL_Instance.hash(JSON.stringify(query));
@@ -174,8 +174,8 @@ export class someSQL_MemDB implements someSQL_Backend {
                 };
 
                 if(hasWhere.length) {
-                    let rows = t._where(t._tIndex.get(t._sT));
-                    let ta = t._tables.get(t._sT);
+                    let rows = t._where(t._tIndex.get(t._selectedTable));
+                    let ta = t._tables.get(t._selectedTable);
                     rows.forEach((v,k) => {
                         //Perform the upsert
                         for(var key in qArgs) {
@@ -187,7 +187,7 @@ export class someSQL_MemDB implements someSQL_Backend {
                     });
                 } else {
                     let key = "";
-                    t._models.get(t._sT).forEach((m) => {
+                    t._models.get(t._selectedTable).forEach((m) => {
                         //Gemerate new UUIDs as needed
                         if(m['type'] == 'uuid' && !qArgs[m['key']]) {
                             qArgs[m['key']] = someSQL_Instance.uuid();
@@ -196,23 +196,23 @@ export class someSQL_MemDB implements someSQL_Backend {
                         if(m['props'] && m['props'].indexOf('pk') != -1) {
                             key = m['key'];
                             if(m['props'].indexOf('ai') != -1 && !qArgs[m['key']]) {
-                                qArgs[m['key']] = t._i.get(t._sT);
-                                t._i.set(t._sT,t._i.get(t._sT)+1);
+                                qArgs[m['key']] = t._i.get(t._selectedTable);
+                                t._i.set(t._selectedTable,t._i.get(t._selectedTable)+1);
                             }
                         }
                     });
                     //set Index
                     let i = qArgs[key];
-                    if(t._tIndex.get(t._sT).indexOf(i) == -1) { 
+                    if(t._tIndex.get(t._selectedTable).indexOf(i) == -1) { 
                         //Add index to the table
-                        t._tIndex.get(t._sT).push(i); 
+                        t._tIndex.get(t._selectedTable).push(i); 
                     } else {
                         //Invalidate immutable cache as needed
                         cacheInvalidate(i);
                     }
 
                     //Set data into table.  Data is stored in a mutable state.
-                    t._tables.get(t._sT)[i] = qArgs;     
+                    t._tables.get(t._selectedTable)[i] = qArgs;     
                     msg++;
                 }
                 callBack(msg + " row(s) upserted");
@@ -222,10 +222,10 @@ export class someSQL_MemDB implements someSQL_Backend {
                 //if(!t._immu.has(t._cacheKey)) {
 
                     //TODO: Fix the query caching to get the immutable magic back
-                    let table = t._tables.get(t._sT);
+                    let table = t._tables.get(t._selectedTable);
      
                     t._tCacheI.set(t._cacheKey,[]);
-                    t._immu.set(t._cacheKey, JSON.parse(JSON.stringify(t._where(t._tIndex.get(t._sT)) //WHERE
+                    t._immu.set(t._cacheKey, JSON.parse(JSON.stringify(t._where(t._tIndex.get(t._selectedTable)) //WHERE
                         .sort((a, b) => { //Handle Order By
                             return t._mod.filter((v) => {
                                 return v.get('type') == 'orderby'
@@ -255,7 +255,7 @@ export class someSQL_MemDB implements someSQL_Backend {
                             //t._tCacheI.get(t._cacheKey).push(rowIndex);
                             if(qArgs && qArgs.length) {
                                 let obj = {};
-                                t._models.get(t._sT).forEach((m) => {
+                                t._models.get(t._selectedTable).forEach((m) => {
                                     if(qArgs.indexOf(m['key']) != -1) {
                                         obj[m['key']] = table[rowIndex][m['key']];
                                     }
@@ -270,11 +270,11 @@ export class someSQL_MemDB implements someSQL_Backend {
             break;
             case "delete":
                 if(hasWhere.length) {
-                    let rows = t._where(t._tIndex.get(t._sT));
-                    let ta = t._tables.get(t._sT);
+                    let rows = t._where(t._tIndex.get(t._selectedTable));
+                    let ta = t._tables.get(t._selectedTable);
                     rows.forEach((rowIndex,whereIndex) => {
                         delete ta[rowIndex];
-                        t._tIndex.get(t._sT).splice(t._tIndex.get(t._sT).indexOf(<number> rowIndex),1);
+                        t._tIndex.get(t._selectedTable).splice(t._tIndex.get(t._selectedTable).indexOf(<number> rowIndex),1);
                         /*t._tCacheI.forEach((val, key2) => {
                             if(val && val.indexOf(<number> v) != -1) {
                                 t._tCacheI.delete(key2);
@@ -284,12 +284,12 @@ export class someSQL_MemDB implements someSQL_Backend {
                     });
                     callBack(rows.length + " row(s) deleted");  
                 } else {
-                    t._newModel(t._sT, t._models.get(t._sT));
+                    t._newModel(t._selectedTable, t._models.get(t._selectedTable));
                     callBack('Table dropped.');
                 }
             break;
             case "drop":
-                t._newModel(t._sT, t._models.get(t._sT));
+                t._newModel(t._selectedTable, t._models.get(t._selectedTable));
                 callBack('Table dropped.');
             break;
         }
@@ -306,7 +306,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      */
     private _where(tableIndexes:Array<string|number>):Array<number|string> {
         let t = this;
-        let ta = t._tables.get(t._sT);
+        let ta = t._tables.get(t._selectedTable);
         return tableIndexes.filter((v, k) => {//Handle WHERE/ and WHERE statements
             let andWhere = [];
             //Put all the andWheres together with the wheres
@@ -324,7 +324,7 @@ export class someSQL_MemDB implements someSQL_Backend {
                 return f.get('type') == 'where'; //only where commands
             }).concat(andWhere).map((f) => {
                 //perform comparison
-                return t._models.get(t._sT).map((m) => {
+                return t._models.get(t._selectedTable).map((m) => {
                     return m['key'] == f.get('args')[0] ? t._compare(f.get('args')[2], f.get('args')[1], ta[<string> v][m['key']]) : 0;
                 }).reduce((a, b) => a + b, 0);
             }).reduce((a, b) => a + b, 0) == 0 ? true : false;
@@ -340,7 +340,7 @@ export class someSQL_MemDB implements someSQL_Backend {
 
             if(ors.length == 0) return true;
 
-            return t._models.get(t._sT).map((m) => {
+            return t._models.get(t._selectedTable).map((m) => {
                 return ors.filter((arg) => {
                     return t._compare(arg[2], arg[1], ta[<string> index][m['key']]) == 1 ? false : true;
                 }).length

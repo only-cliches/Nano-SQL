@@ -38,6 +38,9 @@ switch(process.env.NODE_ENV) {
         options['plugins'].push(new webpack.optimize.UglifyJsPlugin({
             compress: {
                 warnings: false
+            },
+            mangle:{
+                props:{regex:new RegExp(/^_/)}
             }
         }));
     break;
