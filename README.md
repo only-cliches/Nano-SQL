@@ -5,7 +5,6 @@ Typescript database abstraction layer
 * Includes a fast built in memory only DB.
 * Handles sorting, filtering, etc.
 * Uses explicit model declerations.
-* Memory DB returns immutable values.
 * Flux like usage pattern.
 * Modular and extensable.
 * 4KB Gzipped.
@@ -80,7 +79,7 @@ someSQL('users').query('select',['name','id']).exec(); //Get all records but onl
 
 someSQL('users').query('select').where(['name','=','scott']).exec() //only show rows where the name == "scott"
 
-someSQL('users').query('select').orderBy([{name:'asc'},{age:'desc'}]).exec() //Order the results by name ascending, then age descending.
+someSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() //Order the results by name ascending, then age descending.
 
 someSQL('users').query('select',['name']).where(['age','>',20]).orderBy([{age:'desc'}]).exec() //combine any patterns as you'd like.
 
@@ -109,8 +108,8 @@ someSQL('users').query('select').exec().then(function() {
 You can listen to any number of database events on any table or all tables.
 
 ```
-someSQL("users").on('select',function(eventName, eventData) {}) //Listen to "select" commands from the users table
-someSQL("*").on('change',function(eventName, eventData) {}) //Listen for any changes to any table in the database.
+someSQL("users").on('select',function(eventData) {}) //Listen to "select" commands from the users table
+someSQL("*").on('change',function(eventData) {}) //Listen for any changes to any table in the database.
 
 ```
 

@@ -4,11 +4,51 @@ import { tsMap } from "typescript-map";
 
 export class someSQL_MemDB implements someSQL_Backend {
 
+    /**
+     * Holds the actual table data.
+     * 
+     * @private
+     * @type {tsMap<string,Array<Object>>}
+     * @memberOf someSQL_MemDB
+     */
     private _tables:tsMap<string,Array<Object>>; //Tables object
+
+    /**
+     * Holds the data models for each table
+     * 
+     * @private
+     * @type {tsMap<string,Array<Object>>}
+     * @memberOf someSQL_MemDB
+     */
     private _models:tsMap<string,Array<Object>>; //Modles object
+
+    /**
+     * Holds a pointer to the current selected table.
+     * 
+     * @private
+     * @type {string}
+     * @memberOf someSQL_MemDB
+     */
     private _sT:string; //Selected table
-    private _act:tsMap<string,any>; //Query action
-    private _mod:Array<tsMap<string,any>>; //Query modifiers
+
+    /**
+     * Holds a single query object of the current query actions.
+     * 
+     * @private
+     * @type {(tsMap<string,Object|Array<any>>)}
+     * @memberOf someSQL_MemDB
+     */
+    private _act:tsMap<string,Object|Array<any>>; //Query action
+
+    /**
+     * Holds an array of the remaining query objects to modify the query in some way.
+     * 
+     * @private
+     * @type {(Array<tsMap<string,Object|Array<any>>>)}
+     * @memberOf someSQL_MemDB
+     */
+    private _mod:Array<tsMap<string,Object|Array<any>>>; //Query modifiers
+
     private _cacheKey:string; //Cache key for current query
     private _tIndex:tsMap<string,Array<number>>; //Table index
     private _tCacheI:tsMap<string,Array<number>>; //Table cache index
@@ -25,7 +65,17 @@ export class someSQL_MemDB implements someSQL_Backend {
         t._i = new tsMap<string,number>();
     }
 
-    public connect(models:tsMap<string,Array<Object>>,callback:Function):void {
+    /**
+     * Creates all the tables and prepares the database for use.
+     * 
+     * @param {tsMap<string,Array<Object>>} models
+     * @param {tsMap<string,Object>} actions
+     * @param {tsMap<string,Object>} views
+     * @param {Function} callback
+     * 
+     * @memberOf someSQL_MemDB
+     */
+    public connect(models:tsMap<string,Array<Object>>, actions:tsMap<string,Object>, views:tsMap<string,Object>, callback:Function):void {
         let t = this;
         models.forEach((model, table) => {
             t._newModel(table, model);
@@ -33,6 +83,15 @@ export class someSQL_MemDB implements someSQL_Backend {
         callback();
     }
 
+    /**
+     * Creats a new table in the database or clears and existing one.
+     * 
+     * @private
+     * @param {string} table
+     * @param {Array<Object>} args
+     * 
+     * @memberOf someSQL_MemDB
+     */
     private _newModel(table:string, args:Array<Object>):void {
         this._models.set(table, args);
         this._tables.set(table, []);
@@ -40,7 +99,18 @@ export class someSQL_MemDB implements someSQL_Backend {
         this._i.set(table,1);
     }
 
-    public exec(table:string, query:Array<tsMap<string,Object|Array<any>>>, onSuccess:Function, onFail?:Function):void {
+    /**
+     * Public exec option.  Organizes the query then sends it to the internal execution function.
+     * 
+     * @param {string} table
+     * @param {(Array<tsMap<string,Object|Array<any>>>)} query
+     * @param {string} viewOrAction
+     * @param {Function} onSuccess
+     * @param {Function} [onFail]
+     * 
+     * @memberOf someSQL_MemDB
+     */
+    public exec(table:string, query:Array<tsMap<string,Object|Array<any>>>, viewOrAction:string, onSuccess:Function, onFail?:Function):void {
         let t = this;
         t._sT = table;
         t._mod = [];
@@ -55,7 +125,15 @@ export class someSQL_MemDB implements someSQL_Backend {
         });
     }
 
-
+    /**
+     * Puts the query from the someSQL Instance into query actions and mofidiers to make execution easier.
+     * 
+     * @private
+     * @param {(tsMap<string,number|Object|Array<any>>)} queryArg
+     * @param {Function} resolve
+     * 
+     * @memberOf someSQL_MemDB
+     */
     private _query(queryArg:tsMap<string,number|Object|Array<any>>, resolve:Function):void {
         if(['upsert','select','delete','drop'].indexOf(<string> queryArg.get("type")) != -1) {
             this._act = queryArg;
@@ -66,30 +144,42 @@ export class someSQL_MemDB implements someSQL_Backend {
         resolve();
     }
 
+    /**
+     * Execute commands on the databse to retrieve or modify data as desired.
+     * 
+     * @private
+     * @param {Function} callBack
+     * 
+     * @memberOf someSQL_MemDB
+     */
     private _exec(callBack:Function):void {
         let t = this;
+
+        let hasWhere = t._mod.filter((v) => {
+            return ['where','andWhere','orWhere'].indexOf(<string> v.get('type')) == -1 ? false : true;
+        });
+
+        let qArgs:any = t._act.get('args');
 
         switch(t._act.get('type')) {
             case "upsert": 
                 let msg = 0;
-                let cacheInvalidate = (index:string|number) => {
+                let cacheInvalidate = (rowIndex:string|number) => {
                     t._tCacheI.forEach((v, key2) => {
-                        if(v && v.indexOf(<any> index) != -1) {
+                        if(v && v.indexOf(<any> rowIndex) != -1) {
                             t._tCacheI.delete(key2);
                             t._immu.delete(key2);
                         }
                     });
                 };
-                let hasWhere = t._mod.filter((v) => {
-                    return ['where','andWhere','orWhere'].indexOf(<string> v.get('type')) == -1 ? false : true;
-                });
+
                 if(hasWhere.length) {
                     let rows = t._where(t._tIndex.get(t._sT));
                     let ta = t._tables.get(t._sT);
                     rows.forEach((v,k) => {
                         //Perform the upsert
-                        for(var key in t._act.get('args')) {
-                            ta[v][key] = t._act.get('args')[key];
+                        for(var key in qArgs) {
+                            ta[v][key] = qArgs[key];
                         }
                         //Invalidate Cache
                         cacheInvalidate(k);
@@ -99,20 +189,20 @@ export class someSQL_MemDB implements someSQL_Backend {
                     let key = "";
                     t._models.get(t._sT).forEach((m) => {
                         //Gemerate new UUIDs as needed
-                        if(m['type'] == 'uuid' && !t._act.get('args')[m['key']]) {
-                            t._act.get('args')[m['key']] = someSQL_Instance.uuid();
+                        if(m['type'] == 'uuid' && !qArgs[m['key']]) {
+                            qArgs[m['key']] = someSQL_Instance.uuid();
                         }
                         //Find primary key
                         if(m['props'] && m['props'].indexOf('pk') != -1) {
                             key = m['key'];
-                            if(m['props'].indexOf('ai') != -1 && !t._act.get('args')[m['key']]) {
-                                t._act.get('args')[m['key']] = t._i.get(t._sT);
+                            if(m['props'].indexOf('ai') != -1 && !qArgs[m['key']]) {
+                                qArgs[m['key']] = t._i.get(t._sT);
                                 t._i.set(t._sT,t._i.get(t._sT)+1);
                             }
                         }
                     });
                     //set Index
-                    let i = t._act.get('args')[key];
+                    let i = qArgs[key];
                     if(t._tIndex.get(t._sT).indexOf(i) == -1) { 
                         //Add index to the table
                         t._tIndex.get(t._sT).push(i); 
@@ -122,83 +212,98 @@ export class someSQL_MemDB implements someSQL_Backend {
                     }
 
                     //Set data into table.  Data is stored in a mutable state.
-                    t._tables.get(t._sT)[i] = t._act.get('args');     
+                    t._tables.get(t._sT)[i] = qArgs;     
                     msg++;
                 }
                 callBack(msg + " row(s) upserted");
             break;
             case "select":
 
-                if(!t._immu.has(t._cacheKey)) {
-                    let ta = t._tables.get(t._sT);
+                //if(!t._immu.has(t._cacheKey)) {
+
+                    //TODO: Fix the query caching to get the immutable magic back
+                    let table = t._tables.get(t._sT);
+     
                     t._tCacheI.set(t._cacheKey,[]);
                     t._immu.set(t._cacheKey, JSON.parse(JSON.stringify(t._where(t._tIndex.get(t._sT)) //WHERE
                         .sort((a, b) => { //Handle Order By
                             return t._mod.filter((v) => {
-                                return v['type'] == 'orderby'
+                                return v.get('type') == 'orderby'
                             }).map((v) => {
                                 for (var prop in v.get('args')) {
-                                    if(ta[a][prop] == ta[b][prop]) return 0;
-                                    let result = ta[a][prop] > ta[b][prop] ? 1 : -1;
+                                    if(table[a][prop] == table[b][prop]) return 0;
+                                    let result = table[a][prop] > table[b][prop] ? 1 : -1;
                                     return v.get('args')[prop] == 'asc' ? result : -result;
                                 } 
                             }).reduce((c, d) => c + d, 0) || 0;
                         })
-                        .filter((v, k) => { //Handle offset/limit
+                        .filter((rowIndex, whereIndex) => { //Handle offset/limit
                             let os = 0;//offset
                             return !t._mod.filter((f) => {
-                                return ['limit','offset'].indexOf(f['type']) != -1;
+                                return ['limit','offset'].indexOf(<string> f.get('type')) != -1;
                             }).sort((a, b) => {
                                 //force offset commands first
-                                return a['type'] < b['type'] ? 1 : -1;
+                                return a.get('type') < b.get('type') ? 1 : -1;
                             }).map((f, i) => {
-                                switch(f['type']) {
-                                    case"offset":os=f.get('args');return k >= f.get('args') ? 0 : 1; 
-                                    case"limit":return k < (os+f.get('args')) ? 0 : 1;
+                                switch(f.get('type')) {
+                                    case"offset":os=<number> f.get('args');return whereIndex >= f.get('args') ? 0 : 1; 
+                                    case"limit":return whereIndex < (os+(<number> f.get('args'))) ? 0 : 1;
                                 }
                             }).reduce((c, d) => c + d, 0);
                         })
-                        .map((v, k) => { //Select specific columns
-                            t._tCacheI.get(t._cacheKey).push(k);
-                            if(t._act.get('args') && t._act.get('args').length) {
-                                let obj = JSON.parse(JSON.stringify(ta[v]));
+                        .map((rowIndex, whereIndex) => { //Select specific columns
+                            //t._tCacheI.get(t._cacheKey).push(rowIndex);
+                            if(qArgs && qArgs.length) {
+                                let obj = {};
                                 t._models.get(t._sT).forEach((m) => {
-                                    if(t._act.get('args').indexOf(m['key']) == -1) {
-                                        delete obj[m['key']];
+                                    if(qArgs.indexOf(m['key']) != -1) {
+                                        obj[m['key']] = table[rowIndex][m['key']];
                                     }
-                                })
+                                });
                                 return obj;
                             } else {
-                                return ta[v]; 
+                                return table[rowIndex]; 
                             }
                     }))));
-                }
+                //}
                 callBack(t._immu.get(t._cacheKey));
             break;
             case "delete":
-                let rows = t._where(t._tIndex.get(t._sT));
-                let ta = t._tables.get(t._sT);
-                rows.forEach((v,k) => {
-                    delete ta[v];
-                    t._tIndex.get(t._sT).splice(t._tIndex.get(t._sT).indexOf(<number> v),1);
-                    t._tCacheI.forEach((val, key2) => {
-                        if(val && val.indexOf(<number> v) != -1) {
-                            t._tCacheI.delete(key2);
-                            t._immu.delete(key2);
-                        }
+                if(hasWhere.length) {
+                    let rows = t._where(t._tIndex.get(t._sT));
+                    let ta = t._tables.get(t._sT);
+                    rows.forEach((rowIndex,whereIndex) => {
+                        delete ta[rowIndex];
+                        t._tIndex.get(t._sT).splice(t._tIndex.get(t._sT).indexOf(<number> rowIndex),1);
+                        /*t._tCacheI.forEach((val, key2) => {
+                            if(val && val.indexOf(<number> v) != -1) {
+                                t._tCacheI.delete(key2);
+                                t._immu.delete(key2);
+                            }
+                        });*/
                     });
-                });
-                callBack(rows.length + " row(s) deleted");      
+                    callBack(rows.length + " row(s) deleted");  
+                } else {
+                    t._newModel(t._sT, t._models.get(t._sT));
+                    callBack('Table dropped.');
+                }
             break;
             case "drop":
-                t._tables.set(t._sT,[]);
-                t._tIndex.set(t._sT,[]);
-                t._i.set(t._sT,1);
-                callBack('Success');
+                t._newModel(t._sT, t._models.get(t._sT));
+                callBack('Table dropped.');
             break;
         }
     }
 
+    /**
+     * Accepts an array of table indexes to narrow down, then uses the current query to reduce the indexes down to the desired ones.
+     * 
+     * @private
+     * @param {(Array<string|number>)} tableIndexes
+     * @returns {(Array<number|string>)}
+     * 
+     * @memberOf someSQL_MemDB
+     */
     private _where(tableIndexes:Array<string|number>):Array<number|string> {
         let t = this;
         let ta = t._tables.get(t._sT);
@@ -208,17 +313,17 @@ export class someSQL_MemDB implements someSQL_Backend {
             t._mod.filter((f) => {
                 return f.get('type') == 'andWhere';
             }).forEach((f) => {
-                f.get('args').forEach((f2) => {
+                (<Array<any>> f.get('args')).forEach((f2) => {
                     andWhere.push({
                         type:'where',
                         args:f2
                     });
                 });
             });
-
             return t._mod.filter((f) => {
-                return f.get('type') == 'where';
+                return f.get('type') == 'where'; //only where commands
             }).concat(andWhere).map((f) => {
+                //perform comparison
                 return t._models.get(t._sT).map((m) => {
                     return m['key'] == f.get('args')[0] ? t._compare(f.get('args')[2], f.get('args')[1], ta[<string> v][m['key']]) : 0;
                 }).reduce((a, b) => a + b, 0);
@@ -243,7 +348,18 @@ export class someSQL_MemDB implements someSQL_Backend {
         });
     }
 
-    private _compare(val1, compare, val2) {
+    /**
+     * Accepts two values and something to comapre them against, returns a boolean that can be used in an array FILTER function.
+     * 
+     * @private
+     * @param {*} val1
+     * @param {string} compare
+     * @param {*} val2
+     * @returns {number}
+     * 
+     * @memberOf someSQL_MemDB
+     */
+    private _compare(val1:any, compare:string, val2:any):number {
         switch(compare) {
             case "=":return val2 == val1 ? 0 : 1;
             case ">":return val2 > val1 ? 0 : 1;

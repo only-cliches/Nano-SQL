@@ -26,8 +26,8 @@ export declare class someSQL_Instance {
     static hash(str: string): string;
 }
 export interface someSQL_Backend {
-    connect(models: tsMap<string, Array<Object>>, onSuccess: Function, onFail?: Function): void;
-    exec(table: string, query: Array<any>, onSuccess: Function, onFail?: Function): void;
+    connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, onSuccess: Function, onFail?: Function): void;
+    exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }
 export declare function someSQL(table?: string): someSQL_Instance;

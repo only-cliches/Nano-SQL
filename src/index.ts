@@ -85,6 +85,15 @@ export class someSQL_Instance {
      */
     private _triggerEvents:Array<string>;
 
+    /**
+     * The current action or view being triggered.
+     * 
+     * @internal
+     * @type {string}
+     * @memberOf someSQL_Instance
+     */
+    private _activeActionOrView:string;
+
     constructor() {
         let t = this;
 
@@ -126,7 +135,7 @@ export class someSQL_Instance {
         let t = this;
         t._backend = backend || new someSQL_MemDB(); 
         return new someSQL_Promise(t,(res, rej) => {
-            t._backend.connect(t._models, res, rej);
+            t._backend.connect(t._models, t._actions, t._views, res, rej);
         });
     }
 
@@ -198,6 +207,7 @@ export class someSQL_Instance {
         let t = this;
         let l = t._selectedTable;
         let v = t._views.get(l)[viewName];
+        t._activeActionOrView = viewName;
         return v[1].apply(t,[t._cleanArgs(v[0], viewArgs)]);
     }
 
@@ -272,6 +282,7 @@ export class someSQL_Instance {
     public doAction(actionName:string, actionArgs:Object):tsPromise<Object|string> {
         let t = this;
         let a = t._actions.get(t._selectedTable)[actionName];
+        t._activeActionOrView = actionName;
         return a[1].apply(t,[t._cleanArgs(a[0], actionArgs)]);
     }
 
@@ -405,13 +416,16 @@ export class someSQL_Instance {
         let triggerEvents = (eventData:Object):void => {
             t._triggerEvents.forEach((e) => {
                 t._callbacks.get(_t).get(e).concat(t._callbacks.get('*').get(e)).forEach((cb) => {
-                    cb.apply(t,[e,eventData]);
+                    eventData['name'] = e;
+                    eventData['actionOrView'] = t._activeActionOrView;
+                    cb.apply(t,[eventData]);
                 });
-            });            
+            });         
+            t._activeActionOrView = undefined;   
         }
 
         return new someSQL_Promise(t, (res, rej) => {  
-            t._backend.exec(_t, t._query, (rows) => {
+            t._backend.exec(_t, t._query, t._activeActionOrView, (rows) => {
                 triggerEvents({
                     table:_t,
                     query:t._query.map((q) => q.toJSON()),
@@ -523,31 +537,31 @@ export class someSQL_Instance {
         let t = this;
         return new someSQL_Promise(t,(res, rej) => {
 
-            t.exec().then(function(json:Array<Object>) {
+            t.exec().then(function(json:Array<Object>) {    
 
                 let header = t._query.filter((q) => {
                     return q.get('type') == 'select';
                 }).map((q) => {
                     return q.get('args') ? (<Array<any>> q.get('args')).map((m) => {
-                        return t._models[t._selectedTable].filter((f) => f.key == m)[0]
+                        return t._models.get(t._selectedTable).filter((f) => f['key'] == m)[0]
                     }) : t._models.get(t._selectedTable);
                 })[0];
 
                 if(headers) {
                     json.unshift(header.map((h) => {
-                        return h.key;
+                        return h['key'];
                     }));
                 }
 
                 res(json.map((row, i) => {
                     if(headers && i == 0) return row;
                     return header.filter((column) => {
-                        return row[column.key] ? true : false;
+                        return row[column['key']] ? true : false;
                     }).map((column) => {
-                        switch(column.type) {
-                            case "map":return '"' + JSON.stringify(row[column.key]).replace(/"/g,"'") + '"';
-                            case "array":return '"' + JSON.stringify(row[column.key]).replace(/"/g,"'") + '"';
-                            default:return JSON.stringify(row[column.key]);
+                        switch(column['type']) {
+                            case "map":return '"' + JSON.stringify(row[column['key']]).replace(/"/g,"'") + '"';
+                            case "array":return '"' + JSON.stringify(row[column['key']]).replace(/"/g,"'") + '"';
+                            default:return JSON.stringify(row[column['key']]);
                         }
                     }).join(',');
                 }).join('\n'));
@@ -568,7 +582,7 @@ export class someSQL_Instance {
     public static uuid(inputUUID?:string):string {
         return inputUUID ? inputUUID : (function() {
             return  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+            let r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
                 return v.toString(16);
             });   
         })();
@@ -585,7 +599,7 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public static hash(str:string):string {
-        var hash = 5381;
+        let hash = 5381;
         for (let i = 0; i < str.length; i++) {
             let char = str.charCodeAt(i);
             hash = ((hash << 5) + hash) + char; /* hash * 33 + c */
@@ -599,13 +613,15 @@ export interface someSQL_Backend {
     /**
      * Inilitize the database for use, async so you can connect to remote stuff as needed.
      * 
-     * @param {*} models //Map of data models
+     * @param {tsMap<string,Array<Object>>} models
+     * @param {tsMap<string,Object>} actions
+     * @param {tsMap<string,Object>} views
      * @param {Function} onSuccess
      * @param {Function} [onFail]
      * 
      * @memberOf someSQL_Backend
      */
-    connect(models:tsMap<string,Array<Object>>, onSuccess:Function, onFail?:Function):void
+    connect(models:tsMap<string,Array<Object>>, actions:tsMap<string,Object>, views:tsMap<string,Object>, onSuccess:Function, onFail?:Function):void
 
     /**
      * Executes a specific query on the database with a specific table
@@ -616,7 +632,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    exec(table:string, query:Array<any>, onSuccess:Function, onFail?:Function):void
+    exec(table:string, query:Array<tsMap<string,Object|Array<any>>>, viewOrAction:string, onSuccess:Function, onFail?:Function):void
     
     /**
      * Custom implimentations for this db type, can be literally anything.
