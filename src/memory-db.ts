@@ -2,6 +2,159 @@ import { someSQL_Instance, someSQL_Backend } from "./index.ts";
 import { tsPromise } from "typescript-promise";
 import { tsMap } from "typescript-map";
 
+class _memDB_Table {
+    public _index:Array<string|number>;
+    public _table:Array<Object>;
+    public _model:Array<Object>;
+    public _primaryKey:string;
+    public _pkType:string;
+    public length:number;
+    private _incriment:number;
+
+    constructor(model:Array<Object>, index?:Array<string>, table?:Array<Object>) {
+        let t = this;
+        t._model = model;
+        t._index = index || [];
+        t._table = table || [];
+        t._incriment = 1;
+        t.length = 0;
+        t._primaryKey = <any> t._model.reduce((prev, cur) => { 
+            if(cur['props'] && cur['props'].indexOf('pk') != -1) {
+                t._pkType = cur['type'];
+                return cur['key']; 
+            } else {
+                return prev;
+            }
+        },"");
+    }
+
+    public static _detach(input:Object):Object {
+        return JSON.parse(JSON.stringify(input));
+    }
+
+    public _get(index:string|number):Object {
+        return this._table[this._index.indexOf(index)];
+    }
+
+    public _set(index:string|number, value:Object):void {
+        this._table[this._index.indexOf(index)] = value;
+    }
+
+    public _add(data:Object):void {
+        let t = this;
+        if(!data[t._primaryKey]) {
+            switch(t._pkType) {
+                case "int": data[t._primaryKey] = t._incriment; t._incriment++;
+                break;
+                case "uuid": data[t._primaryKey] = someSQL_Instance.uuid();
+                break;
+            }
+            t._index.push(data[t._primaryKey]);
+            t._table.push(data);
+            t.length = t._index.length;
+        } else {
+            t._set(data[t._primaryKey],data);
+        }
+    }
+
+    public _filter(func:(value:Object,index?:string|number) => Boolean):_memDB_Table {
+        let t = this;
+        t._index.forEach((idx) => {
+            if(!func.apply(t, [t._get(idx),idx])) t._remove(idx);
+        });
+        t.length = t._index.length;
+        return this;
+    }
+
+    public _forEach(func:(value:Object,index?:string|number) => void):_memDB_Table {
+        let t = this;
+        t._index.forEach((idx) => {
+            func.apply(t,[t._get(idx),idx]);
+        })
+        return t;
+    }
+
+    public _sort(func:(value:Object,index?:string|number) => number):_memDB_Table {
+        let t = this;
+        let r = [];
+        let i = -1;
+        t._index.sort((a,b) => {
+            let result = func.apply(t,[t._get(a),t._get(b)]);
+            r.push(result);
+            return result;
+        });
+        t._table.sort((a,b) => {
+            i++;
+            return r[i];
+        });
+        return t;
+    }
+
+    public _join(type:string, table:_memDB_Table, joinKeys?:Array<string|number>, mergeRowData?:Boolean):_memDB_Table {
+        let t = this;
+
+        let joinKs = [];
+
+        if(!joinKeys) {joinKs = [t._primaryKey,table._primaryKey];} else { joinKs = joinKeys }
+
+        let tables = [this,table].sort((a,b) => {
+            return a.length > b.length ? -1 : 1;
+        });           
+
+        switch(type) {
+            case "inner": //remove any elements that aren't common to both tables
+                let tables = [this,table].sort((a,b) => {
+                    return a.length > b.length ? -1 : 1;
+                });    
+
+                //N^2, YAY!
+                return tables[0]._filter((row, idx) => {
+                    let found = false;
+                    tables[1]._forEach((row2, idx2) => {
+                        if(found == false) {
+                            if(row[joinKs[0]] == row2[joinKs[1]]) found = true;
+                        }
+                    });
+                    return found;
+                });
+
+            case "outer": //Add new rows and combine existing ones.
+
+                //N^2, YAY!
+                table._forEach((v, k) => {
+                    let found = false;
+                    t._forEach((v2, k2) => {
+                        if(found == false) {
+                            if(v2[joinKs[0]] == v[joinKs[1]]) found = true;
+                        }
+                    });
+                    if(!found) t._add(v);
+                });
+
+                t._sort((a, b) => {
+                    return a[joinKeys[0]] > b[joinKeys[0]] ? 1 : -1;
+                });
+
+                return t;
+        }
+    }
+
+    public _remove(index:string|number):void {
+        let t = this;
+        let f = t._index.indexOf(index);
+        t._index.splice(f,1);
+        t._table.splice(f,1);
+        t.length = t._index.length;
+    }
+
+    public _clone():_memDB_Table {
+        let ta = new _memDB_Table(this._model, <any> _memDB_Table._detach(this._index),<any> _memDB_Table._detach(this._table));
+        ta._incriment = this._incriment;
+        ta.length = this.length;
+        return ta;
+    }
+}
+
 export class someSQL_MemDB implements someSQL_Backend {
 
     /**
@@ -11,16 +164,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @type {tsMap<string,Array<Object>>}
      * @memberOf someSQL_MemDB
      */
-    private _tables:tsMap<string,Array<Object>>; //Tables object
-
-    /**
-     * Holds the data models for each table
-     * 
-     * @private
-     * @type {tsMap<string,Array<Object>>}
-     * @memberOf someSQL_MemDB
-     */
-    private _models:tsMap<string,Array<Object>>; //Modles object
+    private _tables:tsMap<string,_memDB_Table>;
 
     /**
      * Holds a pointer to the current selected table.
@@ -29,7 +173,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @type {string}
      * @memberOf someSQL_MemDB
      */
-    private _selectedTable:string; //Selected table
+    private _selectedTable:string;
 
     /**
      * Holds a single query object of the current query actions.
@@ -38,7 +182,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @type {(tsMap<string,Object|Array<any>>)}
      * @memberOf someSQL_MemDB
      */
-    private _act:tsMap<string,Object|Array<any>>; //Query action
+    private _act:tsMap<string,Object|Array<any>>;
 
     /**
      * Holds an array of the remaining query objects to modify the query in some way.
@@ -47,22 +191,16 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @type {(Array<tsMap<string,Object|Array<any>>>)}
      * @memberOf someSQL_MemDB
      */
-    private _mod:Array<tsMap<string,Object|Array<any>>>; //Query modifiers
+    private _mod:Array<tsMap<string,Object|Array<any>>>;
 
     private _cacheKey:string; //Cache key for current query
-    private _tIndex:tsMap<string,Array<number>>; //Table index
-    private _tCacheI:tsMap<string,Array<number>>; //Table cache index
-    private _immu:tsMap<string,Object>; //Immutable cache store
-    private _i:tsMap<string,number>; //Auto incriment holder
+    private _filters:tsMap<string,Function>;
 
     constructor() {
         let t = this;
-        t._tables = new tsMap<string,Array<Object>>();
-        t._tIndex = new tsMap<string,Array<number>>();
-        t._models = new tsMap<string,Array<Object>>();
-        t._tCacheI = new tsMap<string,Array<number>>();
-        t._immu = new tsMap<string,Object>();
-        t._i = new tsMap<string,number>();
+        t._filters = new tsMap<string,Function>();
+        t._tables = new tsMap<string,_memDB_Table>();
+        t._initFilters()
     }
 
     /**
@@ -75,10 +213,14 @@ export class someSQL_MemDB implements someSQL_Backend {
      * 
      * @memberOf someSQL_MemDB
      */
-    public connect(models:tsMap<string,Array<Object>>, actions:tsMap<string,Object>, views:tsMap<string,Object>, callback:Function):void {
+    public connect(models:tsMap<string,Array<Object>>, actions:tsMap<string,Object>, views:tsMap<string,Object>, filters:tsMap<string,Function>, callback:Function):void {
         let t = this;
         models.forEach((model, table) => {
             t._newModel(table, model);
+        });
+
+        filters.forEach((func, name) => {
+            t._filters.set(name, func);
         });
         callback();
     }
@@ -93,10 +235,7 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @memberOf someSQL_MemDB
      */
     private _newModel(table:string, args:Array<Object>):void {
-        this._models.set(table, args);
-        this._tables.set(table, []);
-        this._tIndex.set(table, []);
-        this._i.set(table,1);
+        this._tables.set(table, new _memDB_Table(args));
     }
 
     /**
@@ -137,11 +276,66 @@ export class someSQL_MemDB implements someSQL_Backend {
     private _query(queryArg:tsMap<string,number|Object|Array<any>>, resolve:Function):void {
         if(['upsert','select','delete','drop'].indexOf(<string> queryArg.get("type")) != -1) {
             this._act = queryArg;
-        }
-        if(['where','orderby','limit','offset','andWhere','orWhere'].indexOf(<string> queryArg.get("type")) != -1) {
+        } else {
             this._mod.push(queryArg);
         }
         resolve();
+    }
+
+    /**
+     * Declare built in filters
+     * 
+     * @private
+     * 
+     * @memberOf someSQL_MemDB
+     */
+    private _initFilters() {
+        let t = this;
+        let f = t._filters;
+        f.set('sum',(rows:Array<Object>) => {
+            return rows.map((r) => r[t._act.get('args')[0]]).reduce((a,b) => a+b,0);
+        });
+        f.set('first',(rows:Array<Object>) => {
+            return rows[0];
+        });
+        f.set('last',(rows:Array<Object>) => {
+            return rows.pop();
+        });
+        f.set('min',(rows:Array<Object>) => {
+            return rows.map((r) => r[t._act.get('args')[0]]).sort((a,b) => a < b ? -1 : 1)[0];
+        });
+        f.set('max',(rows:Array<Object>) => {
+            return rows.map((r) => r[t._act.get('args')[0]]).sort((a,b) => a > b ? -1 : 1)[0];
+        });
+        f.set('average',(rows:Array<Object>) => {
+            return t._doFilter('sum',rows)/rows.length;
+        });
+        f.set('count',(rows:Array<Object>) => {
+            return rows.length;
+        });
+    }
+
+    /**
+     * Execute on a given set of rows
+     * 
+     * @private
+     * @param {string} filterName
+     * @param {*} filterArgs
+     * @param {Array<Object>} rows
+     * @returns {*}
+     * 
+     * @memberOf someSQL_MemDB
+     */
+    private _doFilter(filterName:string, rows:Array<Object>, filterArgs?:any):any {
+        return this._filters.get(filterName).apply(this,[rows,filterArgs]);
+    }
+
+    private _runFilters(dbRows:Array<Object>):any {
+        let t = this;
+        let filters = t._mod.filter((m) => (<string> m.get('type')).indexOf('filter-') == 0);
+        return filters.length ? filters.reduce((prev, cur, i) => {
+            return t._doFilter((<string>filters[i].get('type')).replace('filter-',''), prev, filters[i].get('args'));
+        },dbRows) : dbRows;
     }
 
     /**
@@ -155,196 +349,167 @@ export class someSQL_MemDB implements someSQL_Backend {
     private _exec(callBack:Function):void {
         let t = this;
 
-        let hasWhere = t._mod.filter((v) => {
-            return ['where','andWhere','orWhere'].indexOf(<string> v.get('type')) == -1 ? false : true;
+        let _hasWhere = t._mod.filter((v) => {
+            return v.get('type') == 'where'
         });
+        let _whereStatement = _hasWhere.length ? _hasWhere[0].get('args') : undefined;
 
         let qArgs:any = t._act.get('args');
 
+        let ta = t._tables.get(t._selectedTable);
+
+        let msg:number = 0;
+
+        let whereTable:_memDB_Table;
+
         switch(t._act.get('type')) {
             case "upsert": 
-                let msg = 0;
-                let cacheInvalidate = (rowIndex:string|number) => {
-                    t._tCacheI.forEach((v, key2) => {
-                        if(v && v.indexOf(<any> rowIndex) != -1) {
-                            t._tCacheI.delete(key2);
-                            t._immu.delete(key2);
-                        }
-                    });
-                };
+            
+                if(_whereStatement) { //Upserting existing rows
+                    whereTable = t._newWhere(ta,<any> _whereStatement);
 
-                if(hasWhere.length) {
-                    let rows = t._where(t._tIndex.get(t._selectedTable));
-                    let ta = t._tables.get(t._selectedTable);
-                    rows.forEach((v,k) => {
-                        //Perform the upsert
+                    whereTable._forEach((v,k) => {
                         for(var key in qArgs) {
-                            ta[v][key] = qArgs[key];
+                            ta._get(k)[key] = qArgs[key];
                         }
-                        //Invalidate Cache
-                        cacheInvalidate(k);
                         msg++;
                     });
-                } else {
-                    let key = "";
-                    t._models.get(t._selectedTable).forEach((m) => {
-                        //Gemerate new UUIDs as needed
-                        if(m['type'] == 'uuid' && !qArgs[m['key']]) {
-                            qArgs[m['key']] = someSQL_Instance.uuid();
-                        }
-                        //Find primary key
-                        if(m['props'] && m['props'].indexOf('pk') != -1) {
-                            key = m['key'];
-                            if(m['props'].indexOf('ai') != -1 && !qArgs[m['key']]) {
-                                qArgs[m['key']] = t._i.get(t._selectedTable);
-                                t._i.set(t._selectedTable,t._i.get(t._selectedTable)+1);
-                            }
-                        }
-                    });
-                    //set Index
-                    let i = qArgs[key];
-                    if(t._tIndex.get(t._selectedTable).indexOf(i) == -1) { 
-                        //Add index to the table
-                        t._tIndex.get(t._selectedTable).push(i); 
-                    } else {
-                        //Invalidate immutable cache as needed
-                        cacheInvalidate(i);
-                    }
-
-                    //Set data into table.  Data is stored in a mutable state.
-                    t._tables.get(t._selectedTable)[i] = qArgs;     
+                } else { //Adding new rows
+                    ta._add(qArgs);  
                     msg++;
                 }
+
                 callBack(msg + " row(s) upserted");
+
             break;
             case "select":
 
-                //if(!t._immu.has(t._cacheKey)) {
+                //TODO: Fix the query caching to get the immutable magic back
+                if(_whereStatement) {
+                    whereTable = t._newWhere(ta, <any> _whereStatement);
+                } else {
+                    whereTable = ta._clone();
+                }
+                
+                let mods:Array<any> = ['ordr','ofs','lmt','clms'];
+                                
+                let getMod = function(name):tsMap<any,any> {
+                    return t._mod.filter((v) => v.get('type') == name).pop();
+                }
 
-                    //TODO: Fix the query caching to get the immutable magic back
-                    let table = t._tables.get(t._selectedTable);
-     
-                    t._tCacheI.set(t._cacheKey,[]);
-                    t._immu.set(t._cacheKey, JSON.parse(JSON.stringify(t._where(t._tIndex.get(t._selectedTable)) //WHERE
-                        .sort((a, b) => { //Handle Order By
-                            return t._mod.filter((v) => {
-                                return v.get('type') == 'orderby'
-                            }).map((v) => {
-                                for (var prop in v.get('args')) {
-                                    if(table[a][prop] == table[b][prop]) return 0;
-                                    let result = table[a][prop] > table[b][prop] ? 1 : -1;
-                                    return v.get('args')[prop] == 'asc' ? result : -result;
-                                } 
-                            }).reduce((c, d) => c + d, 0) || 0;
-                        })
-                        .filter((rowIndex, whereIndex) => { //Handle offset/limit
-                            let os = 0;//offset
-                            return !t._mod.filter((f) => {
-                                return ['limit','offset'].indexOf(<string> f.get('type')) != -1;
-                            }).sort((a, b) => {
-                                //force offset commands first
-                                return a.get('type') < b.get('type') ? 1 : -1;
-                            }).map((f, i) => {
-                                switch(f.get('type')) {
-                                    case"offset":os=<number> f.get('args');return whereIndex >= f.get('args') ? 0 : 1; 
-                                    case"limit":return whereIndex < (os+(<number> f.get('args'))) ? 0 : 1;
-                                }
-                            }).reduce((c, d) => c + d, 0);
-                        })
-                        .map((rowIndex, whereIndex) => { //Select specific columns
-                            //t._tCacheI.get(t._cacheKey).push(rowIndex);
-                            if(qArgs && qArgs.length) {
-                                let obj = {};
-                                t._models.get(t._selectedTable).forEach((m) => {
-                                    if(qArgs.indexOf(m['key']) != -1) {
-                                        obj[m['key']] = table[rowIndex][m['key']];
-                                    }
+                callBack(t._runFilters(mods.reduce((prev, cur, i) => {
+                    switch(mods[i]) {
+                        case "ordr": 
+                            if(getMod('orderby')) {
+                                let orderBy = getMod('orderby');
+                                return prev.sort((a, b) => {
+                                    return orderBy.map((direction, column) => {
+                                        if(a[column] == b[column]) {
+                                            return 0;
+                                        } else {
+                                            return (a[column] > b[column] ? 1 : -1) * (direction == 'asc' ? 1 : -1);
+                                        }
+                                    });
                                 });
-                                return obj;
-                            } else {
-                                return table[rowIndex]; 
                             }
-                    }))));
-                //}
-                callBack(t._immu.get(t._cacheKey));
+                        case "ofs": 
+                            if(getMod('offset')) {
+                                let offset = getMod('offset').get('args');
+                                return prev.filter((row, index) => {
+                                    return index >= offset;
+                                });
+                            }
+                        case "lmt": 
+                            if(getMod('limit')) {
+                                let limit = getMod('limit').get('args');
+                                return prev.filter((row, index) => {
+                                    return index < limit;
+                                });                                    
+                            }
+                        case "clms":
+                            if(qArgs) {
+                                let columns = ta._model.map((model) => {
+                                    return model['key'];
+                                }).filter((col) => {
+                                    return qArgs.indexOf(col) == -1;
+                                })
+                                return prev.map((row) => {
+                                        columns.forEach((col) => delete row[col]);
+                                        return row;
+                                });
+                            }
+                        default: return prev;
+                    }
+                }, whereTable._table)));
+
             break;
             case "delete":
-                if(hasWhere.length) {
-                    let rows = t._where(t._tIndex.get(t._selectedTable));
-                    let ta = t._tables.get(t._selectedTable);
-                    rows.forEach((rowIndex,whereIndex) => {
-                        delete ta[rowIndex];
-                        t._tIndex.get(t._selectedTable).splice(t._tIndex.get(t._selectedTable).indexOf(<number> rowIndex),1);
-                        /*t._tCacheI.forEach((val, key2) => {
-                            if(val && val.indexOf(<number> v) != -1) {
-                                t._tCacheI.delete(key2);
-                                t._immu.delete(key2);
-                            }
-                        });*/
+
+                if(_whereStatement) {
+                    let whereTable = t._newWhere(ta,<any> _whereStatement)
+                    whereTable._forEach((value, index) => {
+                        ta._remove(index);
                     });
-                    callBack(rows.length + " row(s) deleted");  
+                    callBack(whereTable.length + " row(s) deleted");  
                 } else {
-                    t._newModel(t._selectedTable, t._models.get(t._selectedTable));
+                    t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
                     callBack('Table dropped.');
                 }
+
             break;
             case "drop":
-                t._newModel(t._selectedTable, t._models.get(t._selectedTable));
+
+                t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
                 callBack('Table dropped.');
+
             break;
         }
     }
 
-    /**
-     * Accepts an array of table indexes to narrow down, then uses the current query to reduce the indexes down to the desired ones.
-     * 
-     * @private
-     * @param {(Array<string|number>)} tableIndexes
-     * @returns {(Array<number|string>)}
-     * 
-     * @memberOf someSQL_MemDB
-     */
-    private _where(tableIndexes:Array<string|number>):Array<number|string> {
+    private _newWhere(table:_memDB_Table,whereStatement:Array<Array<string>|string>):_memDB_Table {
         let t = this;
-        let ta = t._tables.get(t._selectedTable);
-        return tableIndexes.filter((v, k) => {//Handle WHERE/ and WHERE statements
-            let andWhere = [];
-            //Put all the andWheres together with the wheres
-            t._mod.filter((f) => {
-                return f.get('type') == 'andWhere';
-            }).forEach((f) => {
-                (<Array<any>> f.get('args')).forEach((f2) => {
-                    andWhere.push({
-                        type:'where',
-                        args:f2
-                    });
+
+        if(whereStatement && whereStatement.length) {
+            if(typeof(whereStatement[0]) == "string") { 
+                //Single where statement like ['name','=','billy']
+                return t._singleWhereResolve(table._clone(),<any> whereStatement);
+            } else { 
+                //nested where statement like [['name','=','billy'],'or',['name','=','bill']]
+                let ptr = 0;
+                let compare = null;
+                return whereStatement.map((statement) => {
+                    return t._singleWhereResolve(table._clone(), <any> statement);
+                }).reduce((prev, cur, i) => {
+                    if(i == 0) return cur;
+                    if(ptr == 0) return compare = whereStatement[i], ptr = 1, prev;
+                    if(ptr == 1) return ptr = 0, t._joinWhereTables(compare, prev, cur);
                 });
-            });
-            return t._mod.filter((f) => {
-                return f.get('type') == 'where'; //only where commands
-            }).concat(andWhere).map((f) => {
-                //perform comparison
-                return t._models.get(t._selectedTable).map((m) => {
-                    return m['key'] == f.get('args')[0] ? t._compare(f.get('args')[2], f.get('args')[1], ta[<string> v][m['key']]) : 0;
-                }).reduce((a, b) => a + b, 0);
-            }).reduce((a, b) => a + b, 0) == 0 ? true : false;
-        }).filter((index) => {//Handle or WHERE statements
-            let ors = [];
-            t._mod.map((mo) => {
-                if(mo['type'] == 'orWhere') {
-                    mo['args'].forEach((a) => {
-                        ors.push(a);
-                    })
-                }
-            });
+            }
+        } else {
+            return table._clone();
+        }
+    }
 
-            if(ors.length == 0) return true;
+    private _joinWhereTables(type:string, table1:_memDB_Table, table2:_memDB_Table):_memDB_Table {
+        switch(type) {
+            //Only return items that exist in both tables
+            case "and":                 
+                return table1._join('inner',table2);
 
-            return t._models.get(t._selectedTable).map((m) => {
-                return ors.filter((arg) => {
-                    return t._compare(arg[2], arg[1], ta[<string> index][m['key']]) == 1 ? false : true;
-                }).length
-            }).filter(f => f > 0).length > 0 ? true : false
+            //Merge the tables and remove duplicates
+            case "or": 
+                return table1._join('outer',table2);
+            default: return table1;
+        }
+    }
+
+    private _singleWhereResolve(table:_memDB_Table,whereStatement:Array<string>):_memDB_Table {
+        let t = this;
+        let left = whereStatement[0];
+        let operator = whereStatement[1];
+        let right = whereStatement[2];
+        return table._filter((row) => {
+            return t._compare(right,operator,row[left]) == 0;
         });
     }
 

@@ -10,13 +10,13 @@ export declare class someSQL_Instance {
     getView(viewName: string, viewArgs: Object): tsPromise<Object | string>;
     actions(actionMap: Object): someSQL_Instance;
     doAction(actionName: string, actionArgs: Object): tsPromise<Object | string>;
+    addFilter(filterName: string, filterFunction: Function): someSQL_Instance;
     query(action: string, args?: Object): someSQL_Instance;
     where(args: Array<any>): someSQL_Instance;
-    andWhere(args: Array<Array<any>>): someSQL_Instance;
-    orWhere(args: Array<Array<any>>): someSQL_Instance;
     orderBy(args: Array<Object>): someSQL_Instance;
     limit(args: number): someSQL_Instance;
     offset(args: number): someSQL_Instance;
+    filter(name: string, args?: any): someSQL_Instance;
     exec(): tsPromise<Array<Object | string>>;
     custom(argType: string, args: any): tsPromise<any>;
     loadJS(rows: Array<Object>): tsPromise<Object | string>;
@@ -26,7 +26,7 @@ export declare class someSQL_Instance {
     static hash(str: string): string;
 }
 export interface someSQL_Backend {
-    connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, onSuccess: Function, onFail?: Function): void;
+    connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, filters: tsMap<string, Function>, onSuccess: Function, onFail?: Function): void;
     exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }

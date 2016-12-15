@@ -134,26 +134,37 @@
                 }).exec();
             })
             .then(function(result) {
-                
+                console.log(result);
                return this.query('upsert',{balance:50}).where(['name','=','jeb']).exec();
             })   
             /*.then(function(result) {
                return this.query('delete').where(['age','>=',25]).exec();
             })*/         
             .then(function(result) {
-               return this.query('select').exec();
+                console.log(result);
+                return this.query('select',['name','age','id']).orderBy({name:'asc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
             })
             .then(function(result) {
                 /*var compare = result.response;
                 this.query('select').exec().then(function(result) {
                     console.log(result.response === compare);
                 });*/
-                return this.query('select').toCSV(true);
+                console.log(result);
+                return this.query('select').toCSV();
             })  
             .then(function(result) {
                 console.log(result);
                 return this.query('drop').exec();
             })
+/*
+            //Possible Join API
+            someSQL('orders').query('select',['orders.id','orders.title','users.name']).join({
+                type:'inner',//left, inner, right
+                query:someSQL('users').query('select'),
+                where:[['orders.customerID','=','user.id'],'and',['something','<','somethingElse'],'or',['yourface','=','yourface']]
+            }).exec().then(function(result) {
+
+            });*/
         </script>
     </body>
 </html> 

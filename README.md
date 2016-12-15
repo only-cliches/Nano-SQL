@@ -1,15 +1,54 @@
-# some-sql
-Typescript database abstraction layer
+# SomeSQL
+Small and efficient database abstraction layer.
 
-## Minimalist JS Database Engine
+I looked everywhere for a data store with these features and couldn't find it:
+
+1. Backend agnostic & can be extended to use any possible backend (like Knex).
+2. Can store data in memory and run in nodeJS (like TaffyDB).
+3. Used a strong data model to force data consistency (like Lovefield DB).
+4. Had RDBMS capability out of the box (also like Lovefield DB).
+5. Allowed you to declare actions and views in a simple way (like Redux).
+6. Returned immutable data sets to improve React performance (like ImmutableJS).
+7. Isn't ten million kilobytes in size (like TaffyDB).
+
+So SomeSQL was born to bring all this togheter.  It's an extensable database abstraction layer first, then includes an in memory store to make immidiate use easy.
+
+## Features
 * Includes a fast built in memory only DB.
 * Handles sorting, filtering, etc.
 * Uses explicit model declerations.
 * Flux like usage pattern.
-* Modular and extensable.
+* Extensable.
 * 4KB Gzipped.
 
-## Usage
+## Simple Usage
+
+1 minute minimal quick start:
+
+```
+someSQL('users') // "users" is our table name.
+.model([ //Declare data model
+    {key:'id',type:'int',props:['pk','ai']},
+    {key:'name',type:'string'},
+    {key:'age',type:'int'}, 
+])
+.connect() //Init the data store for usage.
+.then(function() {
+    return this.query('upsert',{ //Add a record
+        name:"Billy",
+        age:5
+    }).exec();
+})
+.then(function() {
+    return this.query('select').exec(); //select all rows from the current active table
+})
+.then(function(rows) {
+    console.log(rows) //<= [{id:1,name:"Billy",age:5}]
+})
+
+```
+
+## Detailed Usage
 First you declare your models, connect the db, then you execute queries.
 
 ### Declare DB model
@@ -63,7 +102,7 @@ someSQL().connect().then(function() {
 
 ```
 
-### Arbitraty Commands
+### Arbitrary Commands
 
 You can execute a db command at any point from the `someSQL` object after the DB is connected.
 
@@ -81,7 +120,7 @@ someSQL('users').query('select').where(['name','=','scott']).exec() //only show 
 
 someSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() //Order the results by name ascending, then age descending.
 
-someSQL('users').query('select',['name']).where(['age','>',20]).orderBy([{age:'desc'}]).exec() //combine any patterns as you'd like.
+someSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() //combine any patterns as you'd like.
 
 someSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() //Where statements work on upserts as well.
 

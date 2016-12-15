@@ -94,6 +94,15 @@ export class someSQL_Instance {
      */
     private _activeActionOrView:string;
 
+    /**
+     * Holds custom filters implimented by the user
+     * 
+     * @internal
+     * @type {tsMap<string,Function>}
+     * @memberOf someSQL_Instance
+     */
+    private _filters:tsMap<string,Function>;
+
     constructor() {
         let t = this;
 
@@ -108,6 +117,8 @@ export class someSQL_Instance {
         t._events.forEach((e) => {
             t._callbacks.get("*").set(e,[]);
         });
+
+        t._filters = new tsMap<string,Function>();
     }
 
     /**
@@ -135,7 +146,7 @@ export class someSQL_Instance {
         let t = this;
         t._backend = backend || new someSQL_MemDB(); 
         return new someSQL_Promise(t,(res, rej) => {
-            t._backend.connect(t._models, t._actions, t._views, res, rej);
+            t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
         });
     }
 
@@ -151,10 +162,9 @@ export class someSQL_Instance {
     public on(actions:string, callBack:Function):someSQL_Instance {
         let t = this;
         actions.split(' ').forEach((a) => {
-            if(this._events.indexOf(a) == -1) {
-                throw Error(a + "ins't a valid event!");
+            if(t._events.indexOf(a) != -1) {
+                t._callbacks.get(t._selectedTable).get(a).push(callBack);
             }
-            t._callbacks.get(t._selectedTable).get(a).push(callBack);
         });
         return this;
     }
@@ -286,6 +296,11 @@ export class someSQL_Instance {
         return a[1].apply(t,[t._cleanArgs(a[0], actionArgs)]);
     }
 
+    public addFilter(filterName:string, filterFunction:Function):someSQL_Instance {
+        this._filters.set(filterName,filterFunction);
+        return this;
+    }
+
     /**
      * Start a query into the current selected table.
      * 
@@ -315,30 +330,6 @@ export class someSQL_Instance {
      */
     public where(args:Array<any>):someSQL_Instance {
         return this._addCmd('where',args);
-    }
-
-    /**
-     * An array of where statements, identical to chaining multiple where statements.
-     * 
-     * @param {Array<Array<any>>} args [whereStatement,whereStatement,whereStatement]
-     * @returns {someSQL_Instance}
-     * 
-     * @memberOf someSQL_Instance
-     */
-    public andWhere(args:Array<Array<any>>):someSQL_Instance {
-        return this._addCmd('andWhere',args);
-    }
-
-    /**
-     * An array of where statements that do an OR comparison instead of AND.
-     * 
-     * @param {Array<Array<any>>} args [whereStatement,whereStatement,whereStatement]
-     * @returns {someSQL_Instance}
-     * 
-     * @memberOf someSQL_Instance
-     */
-    public orWhere(args:Array<Array<any>>):someSQL_Instance {
-        return this._addCmd('orWhere',args);
     }
 
     /**
@@ -377,6 +368,21 @@ export class someSQL_Instance {
     public offset(args:number):someSQL_Instance {
         return this._addCmd('offset',args);
     }
+
+    /**
+     * Adds a custom filter to the query
+     * 
+     * @param {string} name
+     * @param {*} args
+     * @returns {someSQL_Instance}
+     * 
+     * @memberOf someSQL_Instance
+     */
+    public filter(name:string,args?:any):someSQL_Instance {
+        return this._addCmd('filter-' + name,args);
+    }
+
+
 
     /**
      * Used to add a command to the query
@@ -621,7 +627,7 @@ export interface someSQL_Backend {
      * 
      * @memberOf someSQL_Backend
      */
-    connect(models:tsMap<string,Array<Object>>, actions:tsMap<string,Object>, views:tsMap<string,Object>, onSuccess:Function, onFail?:Function):void
+    connect(models:tsMap<string,Array<Object>>, actions:tsMap<string,Object>, views:tsMap<string,Object>, filters:tsMap<string,Function>, onSuccess:Function, onFail?:Function):void
 
     /**
      * Executes a specific query on the database with a specific table
