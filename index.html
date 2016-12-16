@@ -142,7 +142,7 @@
             })*/         
             .then(function(result) {
                 console.log(result);
-                return this.query('select',['name','age','id']).orderBy({name:'asc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
+                return this.query('select').orderBy({name:'asc'}).where([['age','>',25],'and',['id','>',2]]).filter('first').exec();
             })
             .then(function(result) {
                 /*var compare = result.response;

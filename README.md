@@ -11,14 +11,15 @@ I looked everywhere for a data store with these features and couldn't find it:
 6. Returned immutable data sets to improve React performance (like ImmutableJS).
 7. Isn't ten million kilobytes in size (like TaffyDB).
 
-So SomeSQL was born to bring all this togheter.  It's an extensable database abstraction layer first, then includes an in memory store to make immidiate use easy.
+So SomeSQL was born to bring all this together.  It's an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.
 
 ## Features
 * Includes a fast built in memory only DB.
 * Handles sorting, filtering, etc.
-* Uses explicit model declerations.
+* Uses explicit model declarations.
+* Returns immutable objects.
 * Flux like usage pattern.
-* Extensable.
+* Extensible.
 * 4KB Gzipped.
 
 ## Simple Usage
@@ -170,7 +171,7 @@ Keep in mind you MUST declare all your models and tables BEFORE calling the `con
 
 ### Multiple Data Stores
 
-If you need more than one data store with a collection of seperate tables, you can declare a completely new someSQL db at any point.
+If you need more than one data store with a collection of separate tables, you can declare a completely new someSQL db at any point.
 
 ```
 var myDB = new someSQL_Instance().init;
@@ -178,8 +179,8 @@ var myDB = new someSQL_Instance().init;
 //And now use it just like you use the someSQL var.
 myDB('users').query("select").exec()...
 
-Keep in mind that the tables and models are completely seperate for each instance; there is no shared data, events or anything else.
+Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.
 
 ```
 
-The code is heavily comented so that will have to stand in for full API docs for now. :)
+The code is heavily commented so that will have to stand in for full API docs for now. :)

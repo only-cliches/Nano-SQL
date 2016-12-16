@@ -192,15 +192,22 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @memberOf someSQL_MemDB
      */
     private _mod:Array<tsMap<string,Object|Array<any>>>;
-
-    private _cacheKey:string; //Cache key for current query
+    
+    
     private _filters:tsMap<string,Function>;
+
+    private _cacheKey:string;
+
+    private _cacheIndex:tsMap<string,tsMap<string,Array<string|number>>>;
+    private _cache:tsMap<string,tsMap<string,_memDB_Table>>;
 
     constructor() {
         let t = this;
         t._filters = new tsMap<string,Function>();
         t._tables = new tsMap<string,_memDB_Table>();
-        t._initFilters()
+        t._cacheIndex = new tsMap<string,tsMap<string,Array<string|number>>>();
+        t._cache = new tsMap<string,tsMap<string,_memDB_Table>>();
+        t._initFilters();
     }
 
     /**
@@ -235,6 +242,8 @@ export class someSQL_MemDB implements someSQL_Backend {
      * @memberOf someSQL_MemDB
      */
     private _newModel(table:string, args:Array<Object>):void {
+        this._cache.set(table, new tsMap<string,_memDB_Table>());
+        this._cacheIndex.set(table, new tsMap<string,Array<string|number>>());
         this._tables.set(table, new _memDB_Table(args));
     }
 
@@ -337,6 +346,18 @@ export class someSQL_MemDB implements someSQL_Backend {
             return t._doFilter((<string>filters[i].get('type')).replace('filter-',''), prev, filters[i].get('args'));
         },dbRows) : dbRows;
     }
+    
+    private _removeCacheFromKeys(affectedKeys:Array<number|string>):void {
+        let t = this;
+        affectedKeys.forEach((key) => {
+            t._cacheIndex.get(t._selectedTable).forEach((queryIndex, key) => {
+                if(queryIndex.indexOf(key) != -1) {
+                    t._cacheIndex.get(t._selectedTable).delete(key);
+                    t._cache.get(t._selectedTable).delete(key);
+                }
+            });
+        });        
+    }
 
     /**
      * Execute commands on the databse to retrieve or modify data as desired.
@@ -367,16 +388,28 @@ export class someSQL_MemDB implements someSQL_Backend {
             
                 if(_whereStatement) { //Upserting existing rows
                     whereTable = t._newWhere(ta,<any> _whereStatement);
+                    let affectedKeys = [];
 
                     whereTable._forEach((v,k) => {
                         for(var key in qArgs) {
                             ta._get(k)[key] = qArgs[key];
                         }
+                        affectedKeys.push(k);
                         msg++;
                     });
+
+
+                    t._removeCacheFromKeys(affectedKeys);
+
                 } else { //Adding new rows
                     ta._add(qArgs);  
                     msg++;
+
+                    //remove cache for entire current table
+                    //This is a very naive approach, a future implimentation would have all the cache
+                    //queries running again and updating only the cache entries affected.
+                    t._cache.set(t._selectedTable, new tsMap<string,_memDB_Table>());
+                    t._cacheIndex.set(t._selectedTable, new tsMap<string,Array<string|number>>());
                 }
 
                 callBack(msg + " row(s) upserted");
@@ -384,7 +417,12 @@ export class someSQL_MemDB implements someSQL_Backend {
             break;
             case "select":
 
-                //TODO: Fix the query caching to get the immutable magic back
+                //Return immutable cache if it's there.
+                if(t._cache.get(t._selectedTable).has(t._cacheKey)) {
+                    callBack(t._cache.get(t._selectedTable).get(t._cacheKey));
+                    return;
+                }
+
                 if(_whereStatement) {
                     whereTable = t._newWhere(ta, <any> _whereStatement);
                 } else {
@@ -397,7 +435,7 @@ export class someSQL_MemDB implements someSQL_Backend {
                     return t._mod.filter((v) => v.get('type') == name).pop();
                 }
 
-                callBack(t._runFilters(mods.reduce((prev, cur, i) => {
+                let result = mods.reduce((prev, cur, i) => {
                     switch(mods[i]) {
                         case "ordr": 
                             if(getMod('orderby')) {
@@ -440,16 +478,31 @@ export class someSQL_MemDB implements someSQL_Backend {
                             }
                         default: return prev;
                     }
-                }, whereTable._table)));
+                }, whereTable._table);
+
+                //Set the immutable cache
+                let filterEffect = t._runFilters(result);
+
+                t._cache.get(t._selectedTable).set(t._cacheKey, filterEffect);
+                t._cacheIndex.get(t._selectedTable).set(t._cacheKey,result.map((row) => {
+                    return row[whereTable._primaryKey];
+                }));
+
+                callBack(filterEffect);
 
             break;
             case "delete":
 
                 if(_whereStatement) {
-                    let whereTable = t._newWhere(ta,<any> _whereStatement)
+                    let affectedKeys = [];
+                    let whereTable = t._newWhere(ta,<any> _whereStatement);
+                    
                     whereTable._forEach((value, index) => {
                         ta._remove(index);
+                        affectedKeys.push(index);
                     });
+
+                    t._removeCacheFromKeys(affectedKeys);
                     callBack(whereTable.length + " row(s) deleted");  
                 } else {
                     t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);

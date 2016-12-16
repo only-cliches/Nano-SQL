@@ -383,7 +383,6 @@ export class someSQL_Instance {
     }
 
 
-
     /**
      * Used to add a command to the query
      * 
