@@ -4,6 +4,7 @@
     </head>
     <body>
         <script>
+        /* This file used to run tests and play with the lib */
   
 /*
             someSQL('users') // <= Table Name
@@ -142,13 +143,13 @@
             })*/         
             .then(function(result) {
                 console.log(result);
-                return this.query('select').orderBy({name:'asc'}).where([['age','>',25],'and',['id','>',2]]).filter('first').exec();
+                //return this.query('select').orderBy({name:'desc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
+                return this.query('select',['name','age']).orderBy({name:'asc',age:'asc'}).toCSV();
             })
             .then(function(result) {
-                /*var compare = result.response;
-                this.query('select').exec().then(function(result) {
-                    console.log(result.response === compare);
-                });*/
+                this.query('select').toCSV().then(function(result2) {
+                    console.log('immuTest: ' + (result === result2));
+                });
                 console.log(result);
                 return this.query('select').toCSV();
             })  

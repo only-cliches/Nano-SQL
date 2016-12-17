@@ -20,7 +20,7 @@ So SomeSQL was born to bring all this together.  It's an extensible database abs
 * Returns immutable objects.
 * Flux like usage pattern.
 * Extensible.
-* 4KB Gzipped.
+* 4.5KB Gzipped.
 
 ## Simple Usage
 
@@ -84,7 +84,7 @@ someSQL('users')//Table/Store Name, required to declare model and attach it to t
 //Initializes the db.
 someSQL().connect().then(function() {
     //DB ready to use.
-    someSQL('users').doAction('add_new_user',{user:{
+    this.doAction('add_new_user',{user:{
         id:null,
         name:'jim',
         age:30,
@@ -108,9 +108,9 @@ someSQL().connect().then(function() {
 You can execute a db command at any point from the `someSQL` object after the DB is connected.
 
 Every query follows the same pattern:
-`someSQL(#TABLE_NAME#).query(#ACTION#,#VARS#)....optional filtering, sorting, etc...exec()`
+`someSQL(#TABLE_NAME#).query(#ACTION#,#ARGS#)....optional filtering, sorting, etc...exec()`
 
-For example a query to get all rows from the users table might look like this:
+For example a query to get all rows from the users table looks like this:
 `someSQL('users').query('select').exec()`
 
 Here are some more examples:
@@ -183,4 +183,4 @@ Keep in mind that the tables and models are completely separate for each instanc
 
 ```
 
-The code is heavily commented so that will have to stand in for full API docs for now. :)
+The code is heavily commented and typescript definitions are setup so those will have to stand in for full API docs for now. :)

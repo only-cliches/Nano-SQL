@@ -2,159 +2,6 @@ import { someSQL_Instance, someSQL_Backend } from "./index.ts";
 import { tsPromise } from "typescript-promise";
 import { tsMap } from "typescript-map";
 
-class _memDB_Table {
-    public _index:Array<string|number>;
-    public _table:Array<Object>;
-    public _model:Array<Object>;
-    public _primaryKey:string;
-    public _pkType:string;
-    public length:number;
-    private _incriment:number;
-
-    constructor(model:Array<Object>, index?:Array<string>, table?:Array<Object>) {
-        let t = this;
-        t._model = model;
-        t._index = index || [];
-        t._table = table || [];
-        t._incriment = 1;
-        t.length = 0;
-        t._primaryKey = <any> t._model.reduce((prev, cur) => { 
-            if(cur['props'] && cur['props'].indexOf('pk') != -1) {
-                t._pkType = cur['type'];
-                return cur['key']; 
-            } else {
-                return prev;
-            }
-        },"");
-    }
-
-    public static _detach(input:Object):Object {
-        return JSON.parse(JSON.stringify(input));
-    }
-
-    public _get(index:string|number):Object {
-        return this._table[this._index.indexOf(index)];
-    }
-
-    public _set(index:string|number, value:Object):void {
-        this._table[this._index.indexOf(index)] = value;
-    }
-
-    public _add(data:Object):void {
-        let t = this;
-        if(!data[t._primaryKey]) {
-            switch(t._pkType) {
-                case "int": data[t._primaryKey] = t._incriment; t._incriment++;
-                break;
-                case "uuid": data[t._primaryKey] = someSQL_Instance.uuid();
-                break;
-            }
-            t._index.push(data[t._primaryKey]);
-            t._table.push(data);
-            t.length = t._index.length;
-        } else {
-            t._set(data[t._primaryKey],data);
-        }
-    }
-
-    public _filter(func:(value:Object,index?:string|number) => Boolean):_memDB_Table {
-        let t = this;
-        t._index.forEach((idx) => {
-            if(!func.apply(t, [t._get(idx),idx])) t._remove(idx);
-        });
-        t.length = t._index.length;
-        return this;
-    }
-
-    public _forEach(func:(value:Object,index?:string|number) => void):_memDB_Table {
-        let t = this;
-        t._index.forEach((idx) => {
-            func.apply(t,[t._get(idx),idx]);
-        })
-        return t;
-    }
-
-    public _sort(func:(value:Object,index?:string|number) => number):_memDB_Table {
-        let t = this;
-        let r = [];
-        let i = -1;
-        t._index.sort((a,b) => {
-            let result = func.apply(t,[t._get(a),t._get(b)]);
-            r.push(result);
-            return result;
-        });
-        t._table.sort((a,b) => {
-            i++;
-            return r[i];
-        });
-        return t;
-    }
-
-    public _join(type:string, table:_memDB_Table, joinKeys?:Array<string|number>, mergeRowData?:Boolean):_memDB_Table {
-        let t = this;
-
-        let joinKs = [];
-
-        if(!joinKeys) {joinKs = [t._primaryKey,table._primaryKey];} else { joinKs = joinKeys }
-
-        let tables = [this,table].sort((a,b) => {
-            return a.length > b.length ? -1 : 1;
-        });           
-
-        switch(type) {
-            case "inner": //remove any elements that aren't common to both tables
-                let tables = [this,table].sort((a,b) => {
-                    return a.length > b.length ? -1 : 1;
-                });    
-
-                //N^2, YAY!
-                return tables[0]._filter((row, idx) => {
-                    let found = false;
-                    tables[1]._forEach((row2, idx2) => {
-                        if(found == false) {
-                            if(row[joinKs[0]] == row2[joinKs[1]]) found = true;
-                        }
-                    });
-                    return found;
-                });
-
-            case "outer": //Add new rows and combine existing ones.
-
-                //N^2, YAY!
-                table._forEach((v, k) => {
-                    let found = false;
-                    t._forEach((v2, k2) => {
-                        if(found == false) {
-                            if(v2[joinKs[0]] == v[joinKs[1]]) found = true;
-                        }
-                    });
-                    if(!found) t._add(v);
-                });
-
-                t._sort((a, b) => {
-                    return a[joinKeys[0]] > b[joinKeys[0]] ? 1 : -1;
-                });
-
-                return t;
-        }
-    }
-
-    public _remove(index:string|number):void {
-        let t = this;
-        let f = t._index.indexOf(index);
-        t._index.splice(f,1);
-        t._table.splice(f,1);
-        t.length = t._index.length;
-    }
-
-    public _clone():_memDB_Table {
-        let ta = new _memDB_Table(this._model, <any> _memDB_Table._detach(this._index),<any> _memDB_Table._detach(this._table));
-        ta._incriment = this._incriment;
-        ta.length = this.length;
-        return ta;
-    }
-}
-
 export class someSQL_MemDB implements someSQL_Backend {
 
     /**
@@ -197,8 +44,8 @@ export class someSQL_MemDB implements someSQL_Backend {
     private _filters:tsMap<string,Function>;
 
     private _cacheKey:string;
-
     private _cacheIndex:tsMap<string,tsMap<string,Array<string|number>>>;
+    private _cacheQueryIndex:tsMap<string,Array<Object>>;
     private _cache:tsMap<string,tsMap<string,_memDB_Table>>;
 
     constructor() {
@@ -207,6 +54,7 @@ export class someSQL_MemDB implements someSQL_Backend {
         t._tables = new tsMap<string,_memDB_Table>();
         t._cacheIndex = new tsMap<string,tsMap<string,Array<string|number>>>();
         t._cache = new tsMap<string,tsMap<string,_memDB_Table>>();
+        t._cacheQueryIndex = new tsMap<string,Array<Object>>();
         t._initFilters();
     }
 
@@ -263,7 +111,10 @@ export class someSQL_MemDB implements someSQL_Backend {
         t._selectedTable = table;
         t._mod = [];
         t._act = null;
+        
         t._cacheKey = someSQL_Instance.hash(JSON.stringify(query));
+        t._cacheQueryIndex.set(t._cacheKey,query);//working on smarter cache invalidation
+
         tsPromise.all(query.map((q) => {
             return new tsPromise(function(resolve, reject) {
                 t._query(q, resolve);
@@ -438,16 +289,18 @@ export class someSQL_MemDB implements someSQL_Backend {
                 let result = mods.reduce((prev, cur, i) => {
                     switch(mods[i]) {
                         case "ordr": 
-                            if(getMod('orderby')) {
-                                let orderBy = getMod('orderby');
+                            if(getMod('orderby')) { 
+                                let orderBy = new tsMap();
+                                orderBy.fromJSON(getMod('orderby').get('args'));
                                 return prev.sort((a, b) => {
-                                    return orderBy.map((direction, column) => {
+                                    return orderBy.keys().reduce((prev, cur, i) => {
+                                        let column = <string> orderBy.keys()[i];
                                         if(a[column] == b[column]) {
-                                            return 0;
+                                            return 0 + (<number> prev);
                                         } else {
-                                            return (a[column] > b[column] ? 1 : -1) * (direction == 'asc' ? 1 : -1);
+                                            return ((a[column] > b[column] ? 1 : -1) * (orderBy.get(column) == 'asc' ? 1 : -1)) + (<number> prev);
                                         }
-                                    });
+                                    },0);
                                 });
                             }
                         case "ofs": 
@@ -472,8 +325,8 @@ export class someSQL_MemDB implements someSQL_Backend {
                                     return qArgs.indexOf(col) == -1;
                                 })
                                 return prev.map((row) => {
-                                        columns.forEach((col) => delete row[col]);
-                                        return row;
+                                    columns.forEach((col) => delete row[col]);
+                                    return row;
                                 });
                             }
                         default: return prev;
@@ -535,24 +388,18 @@ export class someSQL_MemDB implements someSQL_Backend {
                 }).reduce((prev, cur, i) => {
                     if(i == 0) return cur;
                     if(ptr == 0) return compare = whereStatement[i], ptr = 1, prev;
-                    if(ptr == 1) return ptr = 0, t._joinWhereTables(compare, prev, cur);
+                    if(ptr == 1) {
+                        ptr = 0;
+                        switch(compare) {
+                            case "and": return prev._join('inner',cur);
+                            case "or":  return prev._join('outer',cur);
+                            default: return prev;
+                        }
+                    }
                 });
             }
         } else {
             return table._clone();
-        }
-    }
-
-    private _joinWhereTables(type:string, table1:_memDB_Table, table2:_memDB_Table):_memDB_Table {
-        switch(type) {
-            //Only return items that exist in both tables
-            case "and":                 
-                return table1._join('inner',table2);
-
-            //Merge the tables and remove duplicates
-            case "or": 
-                return table1._join('outer',table2);
-            default: return table1;
         }
     }
 
@@ -586,8 +433,155 @@ export class someSQL_MemDB implements someSQL_Backend {
             case ">=":return val2 >= val1 ? 0 : 1;
             case "IN":return val1.indexOf(val2) == -1 ? 1 : 0;
             case "NOT IN":return val1.indexOf(val2) == -1 ? 0 : 1;
+            case "REGEX":
             case "LIKE":return val2.search(val1) == -1 ? 1 : 0;
             default:return 0;
         }       
+    }
+}
+
+class _memDB_Table {
+    public _index:Array<string|number>;
+    public _table:Array<Object>;
+    public _model:Array<Object>;
+    public _primaryKey:string;
+    public _pkType:string;
+    public length:number;
+    private _incriment:number;
+
+    constructor(model:Array<Object>, index?:Array<string>, table?:Array<Object>) {
+        let t = this;
+        t._model = model;
+        t._index = index || [];
+        t._table = table || [];
+        t._incriment = 1;
+        t.length = 0;
+        t._primaryKey = <any> t._model.reduce((prev, cur) => { 
+            if(cur['props'] && cur['props'].indexOf('pk') != -1) {
+                t._pkType = cur['type'];
+                return cur['key']; 
+            } else {
+                return prev;
+            }
+        },"");
+    }
+
+    public static _detach(input:Object):Object {
+        return JSON.parse(JSON.stringify(input));
+    }
+
+    public _get(index:string|number):Object {
+        return this._table[this._index.indexOf(index)];
+    }
+
+    public _set(index:string|number, value:Object):void {
+        this._table[this._index.indexOf(index)] = value;
+    }
+
+    public _add(data:Object):void {
+        let t = this;
+        if(!data[t._primaryKey]) {
+            switch(t._pkType) {
+                case "int": data[t._primaryKey] = t._incriment; t._incriment++;
+                break;
+                case "uuid": data[t._primaryKey] = someSQL_Instance.uuid();
+                break;
+            }
+            t._index.push(data[t._primaryKey]);
+            t._table.push(data);
+            t.length = t._index.length;
+        } else {
+            t._set(data[t._primaryKey],data);
+        }
+    }
+
+    public _filter(func:(value:Object,index?:string|number) => Boolean):_memDB_Table {
+        let t = this;
+        t._index.forEach((idx) => {
+            if(!func.apply(t, [t._get(idx),idx])) t._remove(idx);
+        });
+        t.length = t._index.length;
+        return this;
+    }
+
+    public _forEach(func:(value:Object,index?:string|number) => void):_memDB_Table {
+        let t = this;
+        t._index.forEach((idx) => {
+            func.apply(t,[t._get(idx),idx]);
+        })
+        return t;
+    }
+
+    public _sort(func:(value:Object,value2:Object) => number):_memDB_Table {
+        let t = this;
+        let r = [];
+        let i = -1;
+        t._index.sort((a,b) => {
+            let result = func.apply(t,[t._get(a),t._get(b)]);
+            r.push(result);
+            return result;
+        });
+        t._table.sort((a,b) => {
+            i++;
+            return r[i];
+        });
+        return t;
+    }
+
+    public _join(type:string, table:_memDB_Table, joinKeys?:Array<string|number>, mergeRowData?:Boolean):_memDB_Table {
+        let t = this;
+
+        let joinKs = [];
+
+        if(!joinKeys) {joinKs = [t._primaryKey,table._primaryKey];} else { joinKs = joinKeys }
+
+        let tables = [this,table];
+
+        if(type == 'inner') {
+            tables.sort((a,b) => {
+                return a.length > b.length ? -1 : 1;
+            });     
+        }     
+
+        //N^2, YAY!
+        tables[0]._forEach((row, idx) => {
+            let found;
+            tables[1]._forEach((row2, idx2) => {
+                if(found == undefined) {
+                    if(row[joinKs[0]] == row2[joinKs[1]]) found = row2;
+                }
+            });
+            if(found == undefined) {
+                switch(type) {
+                    case "inner": tables[0]._remove(idx);  //remove any elements that aren't common to both tables
+                        break;
+                    case "outer": tables[1]._add(found);  //Add new rows and combine existing ones.
+                        break;
+                }
+            }
+        });
+
+        if(type == 'outer') {
+            tables[0]._sort((a, b) => {
+                return a[tables[0]._primaryKey] > b[tables[0]._primaryKey] ? 1 : -1;
+            });   
+        }     
+
+        return tables[0];
+    }
+
+    public _remove(index:string|number):void {
+        let t = this;
+        let f = t._index.indexOf(index);
+        t._index.splice(f,1);
+        t._table.splice(f,1);
+        t.length = t._index.length;
+    }
+
+    public _clone():_memDB_Table {
+        let ta = new _memDB_Table(this._model, <any> _memDB_Table._detach(this._index),<any> _memDB_Table._detach(this._table));
+        ta._incriment = this._incriment;
+        ta.length = this.length;
+        return ta;
     }
 }
