@@ -183,4 +183,81 @@ Keep in mind that the tables and models are completely separate for each instanc
 
 ```
 
-The code is heavily commented and typescript definitions are setup so those will have to stand in for full API docs for now. :)
+# API Index
+
+Possible commands are split into three groups, one group is used before you connect to the database.  
+The other group is used after you connect to the database, and it's used to query the database data.
+
+All commands can be chained or return a promise unless otherwise noted.
+
+## Events
+
+Events can be called before or after setup mode, at any time.
+
+| Command      | Definition                                                                  |          |
+|--------------|-----------------------------------------------------------------------------|----------|
+| .on()        | Listen to specific database events with a callback function.                | Examples |
+| .off()       | Remove a listening function from being triggered by events.                 | Examples |
+
+## Group 1: Setup Mode
+
+| Command      | Definition                                                                  |          |
+|--------------|-----------------------------------------------------------------------------|----------|
+| .model()     | Declare database model, required.                                           | Examples |
+| .views()     | Declare views to use.                                                       | Examples |
+| .actions()   | Declare actions to use.                                                     | Examples |
+| .addFilter() | Add a filter that can be used on queries.                                   | Examples |
+| .connect()   | Complete setup mode and optionally connect to a specific backend, required. | Examples |
+
+## Group 2: Query Mode 
+
+Every database query looks like this:
+`someSQL(#Table Name#).query(#Query Type#, #Query Args#)...Optional Query Modifiers...exec()`
+
+This gives each query three distinct sections, the query section, the query modifier section, and the execute section.
+
+### Query Init
+
+There is only one possible function to start a query, and it has several different possible arguments.  Check out the examples to see those.
+
+| Command    | Definition                                                   |          |
+|------------|--------------------------------------------------------------|----------|
+| .query()   | Starts a database query.                                     | Examples |
+
+### Query Modifiers
+
+Each modifier can take up to two arguments and normally can only be used once.  Check each example for usage.
+
+| Command    | Definition                                                   |          |
+|------------|--------------------------------------------------------------|----------|
+| .where()   | Adds a search component to the current query.                | Examples |
+| .orderBy() | Adds a order by component to the current query.              | Examples |
+| .offset()  | Offset the current query by a given value                    | Examples |
+| .limit()   | Limits the current query by a given value                    | Examples |
+| .filter()  | Applies a custom filter to the current query                 | Examples |
+| .custom()  | Use a custom query modifier provided by the database driver. | Examples |
+
+### Query Execution
+
+These come at the end of a query to execute it on the database.  All of these return a promise with the result, the promise also keeps the `this` scope of the query, so you can chain additional commands afterwards.
+
+| Command    | Definition                                                             |          |
+|------------|------------------------------------------------------------------------|----------|
+| .exec()    | Executes a pending query, returns a promise.                           | Examples |
+| .toCSV()   | Executes the pending query and returns a CSV of it, returns a promise. | Examples |
+
+
+### Actions & Views
+
+These can be used in replacement of the query..exec pattern to execute a given view or action.
+
+| Command     | Definition                                                             |          |
+|-------------|------------------------------------------------------------------------|----------|
+| .getView()  | Gets a specific view, returns a promise.                               | Examples |
+| .doAction() | Does a specific action, returns a promise.                             | Examples |
+
+
+##TODO:Rest of the API Stuff
+
+
+

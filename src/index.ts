@@ -161,11 +161,31 @@ export class someSQL_Instance {
      */
     public on(actions:string, callBack:Function):someSQL_Instance {
         let t = this;
+        let l = t._selectedTable;
+        
+        if(!t._callbacks.get(l)) {
+            t._events.forEach((v) => {
+                t._callbacks.get(l).set(v,[]);
+            });
+        }
+
         actions.split(' ').forEach((a) => {
             if(t._events.indexOf(a) != -1) {
-                t._callbacks.get(t._selectedTable).get(a).push(callBack);
+                t._callbacks.get(l).get(a).push(callBack);
             }
         });
+        return t;
+    }
+
+    public off(callBack:Function):someSQL_Instance {
+        this._callbacks.forEach((tables) => {
+            tables.forEach((actions) => {
+                actions.filter((cBs) => {
+                    return cBs != callBack;
+                });
+            });
+        });
+
         return this;
     }
 
@@ -182,9 +202,6 @@ export class someSQL_Instance {
         let l = t._selectedTable;
         t._callbacks.set(l,new tsMap<string,Array<Function>>());
         t._callbacks.get(l).set("*",[]);
-        t._events.forEach((v) => {
-            t._callbacks.get(l).set(v,[]);
-        });
         t._models.set(l,dataModel);
         t._views.set(l,{});
         t._actions.set(l,{});

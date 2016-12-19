@@ -66,6 +66,9 @@
             .actions({ //Cached actions to update specific data
                 'add_new_user':[['user:map'],function(args) {
                     return this.query('upsert',args.user).exec();
+                }],
+                'login':[['username:string','password:string'], function(args) {
+                    return this.query('select',['id']).where([['username','=',args.username],'and',['password','=',args.password]]).exec();
                 }]
             }).connect();
 
