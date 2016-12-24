@@ -30,7 +30,7 @@ export declare class someSQL_Instance {
     addFilter(filterName: string, filterFunction: Function): someSQL_Instance;
     query(action: string, args?: Object): someSQL_Instance;
     where(args: Array<any>): someSQL_Instance;
-    orderBy(args: Array<Object>): someSQL_Instance;
+    orderBy(args: Object): someSQL_Instance;
     limit(args: number): someSQL_Instance;
     offset(args: number): someSQL_Instance;
     filter(name: string, args?: any): someSQL_Instance;

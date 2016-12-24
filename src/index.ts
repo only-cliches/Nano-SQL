@@ -344,12 +344,12 @@ export class someSQL_Instance {
      * Order the results by specific values
      * Args is an array of maps, where each map represents a column to sort by and it's order.
      * 
-     * @param {Array<Object>} args Array of objects for each column to sort, Example: [{name:'desc'},{age:'asc'}]
+     * @param {Object} args Objects for each column to sort, Example: {name:'desc',age:'asc'}
      * @returns {someSQL_Instance}
      * 
      * @memberOf someSQL_Instance
      */
-    public orderBy(args:Array<Object>):someSQL_Instance {
+    public orderBy(args:Object):someSQL_Instance {
         return this._addCmd('orderby',args);
     }
 
