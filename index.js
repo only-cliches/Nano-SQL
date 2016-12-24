@@ -729,6 +729,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        if (t._act != null) {
 	            t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
+	            return;
 	        }
 	        t._selectedTable = table;
 	        t._mod = [];

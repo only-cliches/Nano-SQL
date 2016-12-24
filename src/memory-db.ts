@@ -113,6 +113,7 @@ export class someSQL_MemDB implements someSQL_Backend {
 
         if(t._act != null) {
             t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
+            return;
         }
 
         t._selectedTable = table;
