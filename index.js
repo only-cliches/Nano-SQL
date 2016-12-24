@@ -87,7 +87,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._permanentFilters = [];
 	    }
 	    SomeSQLInstance.prototype.table = function (table) {
-	        console.log(this);
 	        if (table)
 	            this._selectedTable = table;
 	        return this;

@@ -143,7 +143,6 @@ export class SomeSQLInstance {
     * @memberOf SomeSQLInstance
     */
     public table(table?: string): SomeSQLInstance {
-        console.log(this);
         if (table) this._selectedTable = table;
         return this;
     }
