@@ -103,6 +103,8 @@ export class someSQL_Instance {
      */
     private _filters:tsMap<string,Function>;
 
+    private _permanentFilters:Array<string>;
+
     constructor() {
         let t = this;
 
@@ -119,6 +121,7 @@ export class someSQL_Instance {
         });
 
         t._filters = new tsMap<string,Function>();
+        t._permanentFilters = [];
     }
 
     /**
@@ -186,6 +189,13 @@ export class someSQL_Instance {
             });
         });
 
+        return this;
+    }
+
+    public alwaysApplyFilter(filterName:string):someSQL_Instance {
+        if(this._permanentFilters.indexOf(filterName) == -1) {
+            this._permanentFilters.push(filterName);
+        }
         return this;
     }
 
@@ -274,12 +284,13 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     private _cast(type:string, val:any):any {
-        switch(['string','int','float','array','map'].indexOf(type)) {
+        switch(['string','int','float','array','map','bool'].indexOf(type)) {
             case 0:return String(val);
             case 1:return parseInt(val);
             case 2:return parseFloat(val);
             case 3:
             case 4:return JSON.parse(JSON.stringify(val));
+            case 5:return val == true;
             default:return "";//Nullify the variable if it isn't castable
         }
     }
@@ -447,24 +458,30 @@ export class someSQL_Instance {
         }
 
         return new someSQL_Promise(t, (res, rej) => {  
-            t._backend.exec(_t, t._query, t._activeActionOrView, (rows) => {
+
+            let _tEvent = function(data, callBack, isError) {
+                
+                if(t._permanentFilters.length && isError != true) {
+                    data = t._permanentFilters.reduce((prev, cur, i) => {
+                        return t._filters.get(t._permanentFilters[i]).apply(t, [data]);
+                    },data);
+                }
+                
                 triggerEvents({
                     table:_t,
                     query:t._query.map((q) => q.toJSON()),
                     time:new Date().getTime(),
-                    result:rows
-                })
-                //Send the response
-                res(rows);
+                    result:data
+                });
+
+                callBack(data);
+            }
+
+            t._backend.exec(_t, t._query, t._activeActionOrView, (rows) => {
+                _tEvent(rows, res, false);
             },(err) => {
                 t._triggerEvents = ['error'];
-                triggerEvents({
-                    table:_t,
-                    query:t._query.map((q) => q.toJSON()),
-                    time:new Date().getTime(),
-                    result:err
-                })
-                rej(err);
+                _tEvent(err, rej, true);
             });
         });
     }
