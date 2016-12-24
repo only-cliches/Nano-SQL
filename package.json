@@ -22,7 +22,7 @@
     "write-file-webpack-plugin": "^3.3.0"
   },
   "keywords": [],
-  "author": "",
+  "author": "Scott Lott",
   "license": "MIT",
   "dependencies": {
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",

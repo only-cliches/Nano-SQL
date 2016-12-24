@@ -1,4 +1,4 @@
-import { someSQL_Instance, someSQL_Backend } from "./index.ts";
+import { someSQL_Instance, someSQL_Backend } from "./index";
 import { tsPromise } from "typescript-promise";
 import { tsMap } from "typescript-map";
 

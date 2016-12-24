@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
+		module.exports = factory(require("typescript-map"), require("typescript-promise"));
 	else if(typeof define === 'function' && define.amd)
-		define([], factory);
+		define(["typescript-map", "typescript-promise"], factory);
 	else {
-		var a = factory();
+		var a = typeof exports === 'object' ? factory(require("typescript-map"), require("typescript-promise")) : factory(root["typescript-map"], root["typescript-promise"]);
 		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
 	}
-})(this, function() {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_2__, __WEBPACK_EXTERNAL_MODULE_3__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -69,7 +69,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	var typescript_map_1 = __webpack_require__(2);
 	var typescript_promise_1 = __webpack_require__(3);
-	var memory_db_ts_1 = __webpack_require__(4);
+	var memory_db_1 = __webpack_require__(4);
 	var someSQL_Instance = (function () {
 	    function someSQL_Instance() {
 	        var t = this;
@@ -86,14 +86,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._filters = new typescript_map_1.tsMap();
 	        t._permanentFilters = [];
 	    }
-	    someSQL_Instance.prototype.init = function (table) {
+	    someSQL_Instance.prototype.table = function (table) {
 	        if (table)
 	            this._selectedTable = table;
 	        return this;
 	    };
 	    someSQL_Instance.prototype.connect = function (backend) {
 	        var t = this;
-	        t._backend = backend || new memory_db_ts_1.someSQL_MemDB();
+	        t._backend = backend || new memory_db_1.someSQL_MemDB();
 	        return new someSQL_Promise(t, function (res, rej) {
 	            t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
 	        });
@@ -293,7 +293,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    someSQL_Instance.prototype.loadJS = function (rows) {
 	        var t = this;
 	        return typescript_promise_1.tsPromise.all(rows.map(function (row) {
-	            return t.init(t._selectedTable).query('upsert', row).exec();
+	            return t.table(t._selectedTable).query('upsert', row).exec();
 	        }));
 	    };
 	    someSQL_Instance.prototype.loadCSV = function (csv) {
@@ -315,7 +315,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            }
 	                            record_1[f] = row_1[i];
 	                        });
-	                        t.init(t._selectedTable).query('upsert', row_1).exec().then(function () {
+	                        t.table(t._selectedTable).query('upsert', row_1).exec().then(function () {
 	                            resolve();
 	                        });
 	                    }
@@ -416,287 +416,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    return someSQL_Promise;
 	}(typescript_promise_1.tsPromise));
-	var staticSQL = new someSQL_Instance();
-	function someSQL(table) {
-	    return staticSQL.init(table);
-	}
-	exports.someSQL = someSQL;
+	exports.someSQL = new someSQL_Instance().table;
 
 
 /***/ },
 /* 2 */
 /***/ function(module, exports) {
 
-	"use strict";
-	var tsMap = (function () {
-	    function tsMap(inputMap) {
-	        var t = this;
-	        t._items = [];
-	        t._keys = [];
-	        t._values = [];
-	        t.length = 0;
-	        if (inputMap) {
-	            inputMap.forEach(function (v, k) {
-	                t.set(v[0], v[1]);
-	            });
-	        }
-	    }
-	    tsMap.prototype.fromJSON = function (jsonObject) {
-	        for (var property in jsonObject) {
-	            if (jsonObject.hasOwnProperty(property)) {
-	                this.set(property, jsonObject[property]);
-	            }
-	        }
-	    };
-	    tsMap.prototype.toJSON = function () {
-	        var obj = {};
-	        var t = this;
-	        t.keys().forEach(function (k) {
-	            obj[String(k)] = t.get(k);
-	        });
-	        return obj;
-	    };
-	    tsMap.prototype.entries = function () {
-	        return [].slice.call(this._items);
-	    };
-	    tsMap.prototype.keys = function () {
-	        return [].slice.call(this._keys);
-	    };
-	    tsMap.prototype.values = function () {
-	        return [].slice.call(this._values);
-	    };
-	    tsMap.prototype.has = function (key) {
-	        return this._keys.indexOf(key) > -1;
-	    };
-	    tsMap.prototype.get = function (key) {
-	        var i = this._keys.indexOf(key);
-	        return i > -1 ? this._values[i] : undefined;
-	    };
-	    tsMap.prototype.set = function (key, value) {
-	        var t = this;
-	        var i = this._keys.indexOf(key);
-	        if (i > -1) {
-	            t._items[i][1] = value;
-	            t._values[i] = value;
-	        }
-	        else {
-	            t._items.push([key, value]);
-	            t._keys.push(key);
-	            t._values.push(value);
-	        }
-	        t.length = t.size();
-	    };
-	    tsMap.prototype.size = function () {
-	        return this._items.length;
-	    };
-	    tsMap.prototype.clear = function () {
-	        var t = this;
-	        t._keys.length = t._values.length = t._items.length = 0;
-	        t.length = t.size();
-	    };
-	    tsMap.prototype.delete = function (key) {
-	        var t = this;
-	        var i = t._keys.indexOf(key);
-	        if (i > -1) {
-	            t._keys.splice(i, 1);
-	            t._values.splice(i, 1);
-	            t._items.splice(i, 1);
-	            t.length = t.size();
-	            return true;
-	        }
-	        return false;
-	    };
-	    tsMap.prototype.forEach = function (callbackfn) {
-	        var t = this;
-	        t._keys.forEach(function (v) {
-	            callbackfn(t.get(v), v);
-	        });
-	    };
-	    tsMap.prototype.map = function (callbackfn) {
-	        var t = this;
-	        return this._keys.map(function (itemKey) {
-	            return callbackfn(t.get(itemKey), itemKey);
-	        });
-	    };
-	    tsMap.prototype.filter = function (callbackfn) {
-	        var t = this;
-	        t._keys.forEach(function (v) {
-	            if (callbackfn(t.get(v), v) == false)
-	                t.delete(v);
-	        });
-	        return this;
-	    };
-	    tsMap.prototype.clone = function () {
-	        return new tsMap(JSON.parse(JSON.stringify(this._items)));
-	    };
-	    return tsMap;
-	}());
-	exports.tsMap = tsMap;
-
+	module.exports = __WEBPACK_EXTERNAL_MODULE_2__;
 
 /***/ },
 /* 3 */
 /***/ function(module, exports) {
 
-	"use strict";
-	var tsPromise = (function () {
-	    function tsPromise(callFunc) {
-	        this._callbacks = [];
-	        this._failed = false;
-	        this._resolved = false;
-	        this._settled = false;
-	        callFunc(this._resolve.bind(this), this._reject.bind(this));
-	    }
-	    tsPromise.resolve = function (value) {
-	        return new tsPromise(function (resolve) { resolve(value); });
-	    };
-	    tsPromise.reject = function (error) {
-	        return new tsPromise(function (resolve, reject) { reject(error); });
-	    };
-	    tsPromise.race = function (promises) {
-	        var complete = false;
-	        return new tsPromise(function (resolve, reject) {
-	            promises.forEach(function (p) {
-	                p.then(function (res) {
-	                    if (!complete)
-	                        resolve(res), complete = true;
-	                }).catch(function (error) {
-	                    reject(error);
-	                    complete = true;
-	                });
-	            });
-	        });
-	    };
-	    tsPromise.chain = function (promises) {
-	        var index = 0;
-	        var resolve;
-	        var results = [];
-	        var nextPromise = function (promise) {
-	            if (index == promises.length) {
-	                resolve(results);
-	            }
-	            else {
-	                promise.then(function (result) {
-	                    results.push(result);
-	                    index++;
-	                    nextPromise(promises[index]);
-	                });
-	            }
-	        };
-	        return new tsPromise(function (res) {
-	            resolve = res;
-	            nextPromise(promises[index]);
-	        });
-	    };
-	    tsPromise.all = function (promises) {
-	        return new tsPromise(function (resolve, reject) {
-	            var count = promises.length;
-	            var results = [];
-	            var complete = false;
-	            promises.forEach(function (p, i) {
-	                p.then(function (res) {
-	                    if (!complete) {
-	                        count--;
-	                        results[i] = res;
-	                        if (count == 0)
-	                            resolve(results);
-	                    }
-	                }).catch(function (error) {
-	                    reject(error);
-	                    complete = true;
-	                });
-	            });
-	        });
-	    };
-	    tsPromise.prototype.done = function (onSuccess, onFail) {
-	        if (this._settled) {
-	            setTimeout(this._release.bind(this, onSuccess, onFail), 0);
-	        }
-	        else {
-	            this._callbacks.push({ onSuccess: onSuccess, onFail: onFail });
-	        }
-	    };
-	    tsPromise.prototype.then = function (onSuccess, onFail) {
-	        var parent = this;
-	        return new tsPromise(function (resolve, reject) {
-	            parent.done(function (value) {
-	                if (typeof onSuccess === 'function') {
-	                    try {
-	                        value = onSuccess(value);
-	                    }
-	                    catch (e) {
-	                        reject(e);
-	                        return;
-	                    }
-	                }
-	                resolve(value);
-	            }, function (value) {
-	                if (typeof onFail === 'function') {
-	                    try {
-	                        value = onFail(value);
-	                    }
-	                    catch (e) {
-	                        reject(e);
-	                        return;
-	                    }
-	                    resolve(value);
-	                }
-	                else {
-	                    reject(value);
-	                }
-	            });
-	        });
-	    };
-	    tsPromise.prototype.catch = function (onFail) {
-	        return this.then(null, onFail);
-	    };
-	    tsPromise.prototype._release = function (onSuccess, onFail) {
-	        if (this._failed) {
-	            onFail(this._value);
-	        }
-	        else {
-	            onSuccess(this._value);
-	        }
-	    };
-	    tsPromise.prototype._resolve = function (value) {
-	        if (this._resolved)
-	            return;
-	        this._resolved = true;
-	        if (value instanceof tsPromise) {
-	            value.done(this._settle.bind(this), function (error) {
-	                this._failed = true;
-	                this._settle(error);
-	            }.bind(this));
-	        }
-	        else {
-	            this._settle(value);
-	        }
-	    };
-	    tsPromise.prototype._reject = function (value) {
-	        if (this._resolved)
-	            return;
-	        this._resolved = true;
-	        this._failed = true;
-	        this._settle(value);
-	    };
-	    tsPromise.prototype._settle = function (value) {
-	        this._settled = true;
-	        this._value = value;
-	        setTimeout(this._callbacks.forEach.bind(this._callbacks, function (data) {
-	            this._release(data.onSuccess, data.onFail);
-	        }, this), 0);
-	    };
-	    return tsPromise;
-	}());
-	exports.tsPromise = tsPromise;
-
+	module.exports = __WEBPACK_EXTERNAL_MODULE_3__;
 
 /***/ },
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var index_ts_1 = __webpack_require__(1);
+	var index_1 = __webpack_require__(1);
 	var typescript_promise_1 = __webpack_require__(3);
 	var typescript_map_1 = __webpack_require__(2);
 	var someSQL_MemDB = (function () {
@@ -734,7 +474,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._selectedTable = table;
 	        t._mod = [];
 	        t._act = null;
-	        t._cacheKey = index_ts_1.someSQL_Instance.hash(JSON.stringify(query));
+	        t._cacheKey = index_1.someSQL_Instance.hash(JSON.stringify(query));
 	        t._cacheQueryIndex.set(t._cacheKey, query);
 	        typescript_promise_1.tsPromise.all(query.map(function (q) {
 	            return new typescript_promise_1.tsPromise(function (resolve, reject) {
@@ -1022,7 +762,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    t._incriment++;
 	                    break;
 	                case "uuid":
-	                    data[t._primaryKey] = index_ts_1.someSQL_Instance.uuid();
+	                    data[t._primaryKey] = index_1.someSQL_Instance.uuid();
 	                    break;
 	            }
 	            t._index.push(data[t._primaryKey]);

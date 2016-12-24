@@ -1,6 +1,6 @@
 import { tsMap } from "typescript-map";
 import { tsPromise } from "typescript-promise";
-import { someSQL_MemDB } from "./memory-db.ts";
+import { someSQL_MemDB } from "./memory-db";
 
 export class someSQL_Instance {
 
@@ -119,7 +119,7 @@ export class someSQL_Instance {
      * 
      * @memberOf someSQL_Instance
      */
-    public init(table?:string):someSQL_Instance {
+    public table(table?:string):someSQL_Instance {
         if(table) this._selectedTable = table;
         return this;
     }
@@ -502,7 +502,7 @@ export class someSQL_Instance {
     public loadJS(rows:Array<Object>):tsPromise<Object|string> {
         let t = this;
         return tsPromise.all(rows.map((row) => {
-            return t.init(t._selectedTable).query('upsert',row).exec();
+            return t.table(t._selectedTable).query('upsert',row).exec();
         }));
     } 
 
@@ -533,7 +533,7 @@ export class someSQL_Instance {
                             }
                             record[f] = row[i];
                         });
-                        t.init(t._selectedTable).query('upsert',row).exec().then(() => {
+                        t.table(t._selectedTable).query('upsert',row).exec().then(() => {
                             resolve();
                         });
                     }
@@ -712,8 +712,5 @@ class someSQL_Promise extends tsPromise<any> {
     }
 }
 
-var staticSQL = new someSQL_Instance();
-export function someSQL(table?:string):someSQL_Instance {
-    return staticSQL.init(table);
-}
+export var someSQL = new someSQL_Instance().table;
 

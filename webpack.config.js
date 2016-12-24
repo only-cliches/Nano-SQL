@@ -16,6 +16,9 @@ var options = {
         libraryTarget: 'umd',
         umdNamedDefine: true
     },
+    resolve: {
+        extensions: ['','.ts', '.tsx', '.js']
+    },
     plugins: [],
     module: {
         loaders: [{
@@ -34,6 +37,9 @@ switch(process.env.NODE_ENV) {
             outputPath: path.join(__dirname, './dist')
         };
     break;  
+    case "build": //for nodejs index.js
+        options['externals'] = ['typescript-map','typescript-promise'];
+    break;
     case "production":
         options['plugins'].push(new webpack.optimize.UglifyJsPlugin({
             compress: {

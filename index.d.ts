@@ -5,7 +5,7 @@ export declare class someSQL_Instance {
     private _actions;
     private _permanentFilters;
     constructor();
-    init(table?: string): someSQL_Instance;
+    table(table?: string): someSQL_Instance;
     connect(backend?: someSQL_Backend): tsPromise<Object | string>;
     on(actions: string, callBack: Function): someSQL_Instance;
     off(callBack: Function): someSQL_Instance;
@@ -47,4 +47,4 @@ export interface someSQL_Backend {
     exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }
-export declare function someSQL(table?: string): someSQL_Instance;
+export declare var someSQL: (table?: string) => someSQL_Instance;
