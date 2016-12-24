@@ -480,6 +480,7 @@ class _memDB_Table {
 
     public _add(data:Object):void {
         let t = this;
+        data = JSON.parse(JSON.stringify(data));
         if(!data[t._primaryKey]) {
             switch(t._pkType) {
                 case "int": data[t._primaryKey] = t._incriment; t._incriment++;

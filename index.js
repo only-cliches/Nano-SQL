@@ -1003,6 +1003,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    _memDB_Table.prototype._add = function (data) {
 	        var t = this;
+	        data = JSON.parse(JSON.stringify(data));
 	        if (!data[t._primaryKey]) {
 	            switch (t._pkType) {
 	                case "int":
