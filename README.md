@@ -63,19 +63,31 @@ someSQL('users')//Table/Store Name, required to declare model and attach it to t
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
-.actions({ //Optional
-    'add_new_user':[['user:map'],function(args) {
-        return this.query('upsert',args.user).exec();
-    }]
-})
-.views({ //Optional
-    'get_user_by_name':[['name:string'],function(args) {
-        return this.query('select').where(['name','=',args.name]).exec();
-    }],
-    'list_all_users':[[],function(args) {
-        return this.query('select',['id','name']).exec();
-    }],                       
-})
+.actions([ //Optional
+    {
+        name:'add_new_user',
+        args:['user:map'],
+        call:function(args) {
+            return this.query('upsert',args.user).exec();
+        }
+    }
+])
+.views([ //Optional
+    {
+        name: 'get_user_by_name',
+        args: ['name:string'],
+        call: function(args) {
+            return this.query('select').where(['name','=',args.name]).exec();
+        }
+    },
+    {
+        name: 'list_all_users',
+        args: ['page:int'],
+        call: function(args) {
+            return this.query('select',['id','name']).exec();
+        }
+    }                       
+])
 
 ```
 
@@ -174,7 +186,7 @@ Keep in mind you MUST declare all your models and tables BEFORE calling the `con
 If you need more than one data store with a collection of separate tables, you can declare a completely new someSQL db at any point.
 
 ```
-var myDB = new someSQL_Instance().init;
+var myDB = new someSQL_Instance().table;
 
 //And now use it just like you use the someSQL var.
 myDB('users').query("select").exec()...

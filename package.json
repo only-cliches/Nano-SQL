@@ -1,6 +1,6 @@
 {
   "name": "some-sql",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -12,17 +12,38 @@
     "url": "https://github.com/ClickSimply/Some-SQL.git"
   },
   "typescript": {
-    "definition": "some-sql.d.ts"
+    "definition": "index.d.ts"
   },
   "devDependencies": {
     "ts-loader": "^0.8.2",
-    "typescript": "^2.0.3",
+    "tslint": "^4.2.0",
+    "tslint-loader": "^3.3.0",
+    "typescript": "^2.1.4",
     "webpack": "^1.13.2",
     "webpack-dev-server": "^1.16.1",
     "write-file-webpack-plugin": "^3.3.0"
   },
-  "keywords": [],
-  "author": "Scott Lott",
+  "keywords": [
+    "database",
+    "browser",
+    "json",
+    "collection",
+    "records",
+    "node",
+    "nodejs",
+    "sql",
+    "nosql",
+    "DBMS",
+    "data",
+    "query",
+    "localStorage",
+    "IndexedDB",
+    "DOM-storage",
+    "SQLite",
+    "JSON",
+    "CSV"
+  ],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",

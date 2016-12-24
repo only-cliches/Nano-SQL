@@ -24,7 +24,13 @@ var options = {
         loaders: [{
             test: /\.ts$/,
             loader: 'ts-loader'
-        }]
+        }],
+        preLoaders: [
+            {
+                test: /\.ts$/,
+                loader: 'tslint-loader'
+            }
+        ]
     }
 };
 

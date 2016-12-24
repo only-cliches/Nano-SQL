@@ -1,39 +1,36 @@
 import { tsMap } from "typescript-map";
 import { tsPromise } from "typescript-promise";
-export declare class someSQL_Instance {
-    private _views;
-    private _actions;
-    private _permanentFilters;
+export declare class SomeSQLInstance {
     constructor();
-    table(table?: string): someSQL_Instance;
-    connect(backend?: someSQL_Backend): tsPromise<Object | string>;
-    on(actions: string, callBack: Function): someSQL_Instance;
-    off(callBack: Function): someSQL_Instance;
-    alwaysApplyFilter(filterName: string): someSQL_Instance;
+    table(table?: string): SomeSQLInstance;
+    connect(backend?: SomeSQLBackend): tsPromise<Object | string>;
+    on(actions: string, callBack: Function): SomeSQLInstance;
+    off(callBack: Function): SomeSQLInstance;
+    alwaysApplyFilter(filterName: string): SomeSQLInstance;
     model(dataModel: Array<{
         key: string;
         type: string;
         props?: Array<any>;
-    }>): someSQL_Instance;
+    }>): SomeSQLInstance;
     views(viewArray: Array<{
         name: string;
         args?: Array<string>;
         call: (args?: Object) => any;
-    }>): someSQL_Instance;
+    }>): SomeSQLInstance;
     getView(viewName: string, viewArgs: Object): tsPromise<Object | string>;
     actions(actionArray: Array<{
         name: string;
         args?: Array<string>;
         call: (args?: Object) => any;
-    }>): someSQL_Instance;
+    }>): SomeSQLInstance;
     doAction(actionName: string, actionArgs: Object): tsPromise<Object | string>;
-    addFilter(filterName: string, filterFunction: Function): someSQL_Instance;
-    query(action: string, args?: Object): someSQL_Instance;
-    where(args: Array<any>): someSQL_Instance;
-    orderBy(args: Object): someSQL_Instance;
-    limit(args: number): someSQL_Instance;
-    offset(args: number): someSQL_Instance;
-    filter(name: string, args?: any): someSQL_Instance;
+    addFilter(filterName: string, filterFunction: Function): SomeSQLInstance;
+    query(action: string, args?: Object): SomeSQLInstance;
+    where(args: Array<any>): SomeSQLInstance;
+    orderBy(args: Object): SomeSQLInstance;
+    limit(args: number): SomeSQLInstance;
+    offset(args: number): SomeSQLInstance;
+    filter(name: string, args?: any): SomeSQLInstance;
     exec(): tsPromise<Array<Object | string>>;
     custom(argType: string, args: any): tsPromise<any>;
     loadJS(rows: Array<Object>): tsPromise<Object | string>;
@@ -42,9 +39,9 @@ export declare class someSQL_Instance {
     static uuid(inputUUID?: string): string;
     static hash(str: string): string;
 }
-export interface someSQL_Backend {
+export interface SomeSQLBackend {
     connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, filters: tsMap<string, Function>, onSuccess: Function, onFail?: Function): void;
     exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }
-export declare var someSQL: (table?: string) => someSQL_Instance;
+export declare function someSQL(table: string): SomeSQLInstance;

@@ -70,14 +70,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	var typescript_map_1 = __webpack_require__(2);
 	var typescript_promise_1 = __webpack_require__(3);
 	var memory_db_1 = __webpack_require__(4);
-	var someSQL_Instance = (function () {
-	    function someSQL_Instance() {
+	var SomeSQLInstance = (function () {
+	    function SomeSQLInstance() {
 	        var t = this;
 	        t._actions = new typescript_map_1.tsMap();
 	        t._views = new typescript_map_1.tsMap();
 	        t._models = new typescript_map_1.tsMap();
 	        t._query = [];
-	        t._events = ['change', 'delete', 'upsert', 'drop', 'select', 'error'];
+	        t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 	        t._callbacks = new typescript_map_1.tsMap();
 	        t._callbacks.set("*", new typescript_map_1.tsMap());
 	        t._events.forEach(function (e) {
@@ -86,19 +86,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._filters = new typescript_map_1.tsMap();
 	        t._permanentFilters = [];
 	    }
-	    someSQL_Instance.prototype.table = function (table) {
+	    SomeSQLInstance.prototype.table = function (table) {
+	        console.log(this);
 	        if (table)
 	            this._selectedTable = table;
 	        return this;
 	    };
-	    someSQL_Instance.prototype.connect = function (backend) {
+	    SomeSQLInstance.prototype.connect = function (backend) {
 	        var t = this;
-	        t._backend = backend || new memory_db_1.someSQL_MemDB();
-	        return new someSQL_Promise(t, function (res, rej) {
+	        t._backend = backend || new memory_db_1.SomeSQLMemDB();
+	        return new SomeSQLPromise(t, function (res, rej) {
 	            t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
 	        });
 	    };
-	    someSQL_Instance.prototype.on = function (actions, callBack) {
+	    SomeSQLInstance.prototype.on = function (actions, callBack) {
 	        var t = this;
 	        var l = t._selectedTable;
 	        if (!t._callbacks.get(l)) {
@@ -106,30 +107,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	                t._callbacks.get(l).set(v, []);
 	            });
 	        }
-	        actions.split(' ').forEach(function (a) {
-	            if (t._events.indexOf(a) != -1) {
+	        actions.split(" ").forEach(function (a) {
+	            if (t._events.indexOf(a) !== -1) {
 	                t._callbacks.get(l).get(a).push(callBack);
 	            }
 	        });
 	        return t;
 	    };
-	    someSQL_Instance.prototype.off = function (callBack) {
+	    SomeSQLInstance.prototype.off = function (callBack) {
 	        this._callbacks.forEach(function (tables) {
 	            tables.forEach(function (actions) {
 	                actions.filter(function (cBs) {
-	                    return cBs != callBack;
+	                    return cBs !== callBack;
 	                });
 	            });
 	        });
 	        return this;
 	    };
-	    someSQL_Instance.prototype.alwaysApplyFilter = function (filterName) {
-	        if (this._permanentFilters.indexOf(filterName) == -1) {
+	    SomeSQLInstance.prototype.alwaysApplyFilter = function (filterName) {
+	        if (this._permanentFilters.indexOf(filterName) === -1) {
 	            this._permanentFilters.push(filterName);
 	        }
 	        return this;
 	    };
-	    someSQL_Instance.prototype.model = function (dataModel) {
+	    SomeSQLInstance.prototype.model = function (dataModel) {
 	        var t = this;
 	        var l = t._selectedTable;
 	        t._callbacks.set(l, new typescript_map_1.tsMap());
@@ -142,30 +143,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._actions.set(l, []);
 	        return this;
 	    };
-	    someSQL_Instance.prototype.views = function (viewArray) {
+	    SomeSQLInstance.prototype.views = function (viewArray) {
 	        this._views.set(this._selectedTable, viewArray);
 	        return this;
 	    };
-	    someSQL_Instance.prototype.getView = function (viewName, viewArgs) {
+	    SomeSQLInstance.prototype.getView = function (viewName, viewArgs) {
 	        var t = this;
 	        var l = t._selectedTable;
 	        var selView;
 	        t._views.get(l).forEach(function (view) {
-	            if (view.name == viewName) {
+	            if (view.name === viewName) {
 	                selView = view;
 	            }
 	        });
 	        if (!selView)
-	            throw Error('View does not exist');
+	            throw Error("View does not exist");
 	        t._activeActionOrView = viewName;
 	        return selView.call.apply(t, [t._cleanArgs(selView.args, viewArgs)]);
 	    };
-	    someSQL_Instance.prototype._cleanArgs = function (argDeclarations, args) {
+	    SomeSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
 	        var t = this;
 	        var l = t._selectedTable;
 	        var a = {};
 	        argDeclarations.forEach(function (k) {
-	            var k2 = k.split(':');
+	            var k2 = k.split(":");
 	            if (k2.length > 1) {
 	                a[k2[0]] = t._cast(k2[1], args[k2[0]]);
 	            }
@@ -175,90 +176,90 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        return a;
 	    };
-	    someSQL_Instance.prototype._cast = function (type, val) {
-	        switch (['string', 'int', 'float', 'array', 'map', 'bool'].indexOf(type)) {
+	    SomeSQLInstance.prototype._cast = function (type, val) {
+	        switch (["string", "int", "float", "array", "map", "bool"].indexOf(type)) {
 	            case 0: return String(val);
 	            case 1: return parseInt(val);
 	            case 2: return parseFloat(val);
 	            case 3:
 	            case 4: return JSON.parse(JSON.stringify(val));
-	            case 5: return val == true;
+	            case 5: return val === true;
 	            default: return "";
 	        }
 	    };
-	    someSQL_Instance.prototype.actions = function (actionArray) {
+	    SomeSQLInstance.prototype.actions = function (actionArray) {
 	        this._actions.set(this._selectedTable, actionArray);
 	        return this;
 	    };
-	    someSQL_Instance.prototype.doAction = function (actionName, actionArgs) {
+	    SomeSQLInstance.prototype.doAction = function (actionName, actionArgs) {
 	        var t = this;
 	        var l = t._selectedTable;
 	        var selAction = t._actions.get(l).reduce(function (prev, cur) {
-	            if (prev != undefined)
+	            if (prev !== undefined)
 	                return prev;
-	            return cur.name == actionName ? cur : undefined;
+	            return cur.name === actionName ? cur : undefined;
 	        });
 	        if (!selAction)
-	            throw Error('Action does not exist');
+	            throw Error("Action does not exist");
 	        t._activeActionOrView = actionName;
 	        return selAction.call.apply(t, [t._cleanArgs(selAction.args, actionArgs)]);
 	    };
-	    someSQL_Instance.prototype.addFilter = function (filterName, filterFunction) {
+	    SomeSQLInstance.prototype.addFilter = function (filterName, filterFunction) {
 	        this._filters.set(filterName, filterFunction);
 	        return this;
 	    };
-	    someSQL_Instance.prototype.query = function (action, args) {
+	    SomeSQLInstance.prototype.query = function (action, args) {
 	        this._query = [];
 	        var a = action.toLowerCase();
-	        if (['select', 'upsert', 'delete', 'drop'].indexOf(a) != -1) {
-	            this._query.push(new typescript_map_1.tsMap([['type', a], ['args', args]]));
+	        if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
+	            this._query.push(new typescript_map_1.tsMap([["type", a], ["args", args]]));
 	        }
 	        return this;
 	    };
-	    someSQL_Instance.prototype.where = function (args) {
-	        return this._addCmd('where', args);
+	    SomeSQLInstance.prototype.where = function (args) {
+	        return this._addCmd("where", args);
 	    };
-	    someSQL_Instance.prototype.orderBy = function (args) {
-	        return this._addCmd('orderby', args);
+	    SomeSQLInstance.prototype.orderBy = function (args) {
+	        return this._addCmd("orderby", args);
 	    };
-	    someSQL_Instance.prototype.limit = function (args) {
-	        return this._addCmd('limit', args);
+	    SomeSQLInstance.prototype.limit = function (args) {
+	        return this._addCmd("limit", args);
 	    };
-	    someSQL_Instance.prototype.offset = function (args) {
-	        return this._addCmd('offset', args);
+	    SomeSQLInstance.prototype.offset = function (args) {
+	        return this._addCmd("offset", args);
 	    };
-	    someSQL_Instance.prototype.filter = function (name, args) {
-	        return this._addCmd('filter-' + name, args);
+	    SomeSQLInstance.prototype.filter = function (name, args) {
+	        return this._addCmd("filter-" + name, args);
 	    };
-	    someSQL_Instance.prototype._addCmd = function (type, args) {
-	        this._query.push(new typescript_map_1.tsMap([['type', type], ['args', args]]));
+	    SomeSQLInstance.prototype._addCmd = function (type, args) {
+	        this._query.push(new typescript_map_1.tsMap([["type", type], ["args", args]]));
 	        return this;
 	    };
-	    someSQL_Instance.prototype.exec = function () {
+	    SomeSQLInstance.prototype.exec = function () {
 	        var t = this;
 	        var _t = t._selectedTable;
 	        t._triggerEvents = t._query.map(function (q) {
-	            switch (q.get('type')) {
-	                case "select": return [q.get('type')];
+	            switch (q.get("type")) {
+	                case "select": return [q.get("type")];
 	                case "delete":
 	                case "upsert":
-	                case "drop": return [q.get('type'), 'change'];
+	                case "drop": return [q.get("type"), "change"];
 	                default: return [];
 	            }
 	        }).reduce(function (a, b) { return a.concat(b); });
 	        var triggerEvents = function (eventData) {
 	            t._triggerEvents.forEach(function (e) {
 	                t._callbacks.get(_t).get(e).concat(t._callbacks.get(_t).get("*")).forEach(function (cb) {
-	                    eventData['name'] = e;
-	                    eventData['actionOrView'] = t._activeActionOrView;
+	                    eventData["name"] = e;
+	                    eventData["actionOrView"] = t._activeActionOrView;
 	                    cb.apply(t, [eventData]);
 	                });
 	            });
 	            t._activeActionOrView = undefined;
 	        };
-	        return new someSQL_Promise(t, function (res, rej) {
+	        return new SomeSQLPromise(t, function (res, rej) {
 	            var _tEvent = function (data, callBack, isError) {
-	                if (t._permanentFilters.length && isError != true) {
+	                if (t._permanentFilters.length && isError !== true) {
 	                    data = t._permanentFilters.reduce(function (prev, cur, i) {
 	                        return t._filters.get(t._permanentFilters[i]).apply(t, [data]);
 	                    }, data);
@@ -274,14 +275,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            t._backend.exec(_t, t._query, t._activeActionOrView, function (rows) {
 	                _tEvent(rows, res, false);
 	            }, function (err) {
-	                t._triggerEvents = ['error'];
+	                t._triggerEvents = ["error"];
 	                _tEvent(err, rej, true);
 	            });
 	        });
 	    };
-	    someSQL_Instance.prototype.custom = function (argType, args) {
+	    SomeSQLInstance.prototype.custom = function (argType, args) {
 	        var t = this;
-	        return new someSQL_Promise(t, function (res, rej) {
+	        return new SomeSQLPromise(t, function (res, rej) {
 	            if (t._backend.custom) {
 	                t._backend.custom.apply(t, [argType, args, res, rej]);
 	            }
@@ -290,32 +291,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        });
 	    };
-	    someSQL_Instance.prototype.loadJS = function (rows) {
+	    SomeSQLInstance.prototype.loadJS = function (rows) {
 	        var t = this;
 	        return typescript_promise_1.tsPromise.all(rows.map(function (row) {
-	            return t.table(t._selectedTable).query('upsert', row).exec();
+	            return t.table(t._selectedTable).query("upsert", row).exec();
 	        }));
 	    };
-	    someSQL_Instance.prototype.loadCSV = function (csv) {
+	    SomeSQLInstance.prototype.loadCSV = function (csv) {
 	        var t = this;
 	        var fields = [];
-	        return new someSQL_Promise(t, function (res, rej) {
-	            typescript_promise_1.tsPromise.all(csv.split('\n').map(function (v, k) {
-	                return new someSQL_Promise(t, function (resolve, reject) {
-	                    if (k == 0) {
-	                        fields = v.split(',');
+	        return new SomeSQLPromise(t, function (res, rej) {
+	            typescript_promise_1.tsPromise.all(csv.split("\n").map(function (v, k) {
+	                return new SomeSQLPromise(t, function (resolve, reject) {
+	                    if (k === 0) {
+	                        fields = v.split(",");
 	                        resolve();
 	                    }
 	                    else {
 	                        var record_1 = {};
-	                        var row_1 = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(function (str) { return str.replace(/^"(.+(?="$))"$/, '$1'); });
+	                        var row_1 = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(function (str) { return str.replace(/^"(.+(?="$))"$/, "$1"); });
 	                        fields.forEach(function (f, i) {
-	                            if (row_1[i].indexOf('{') == 0 || row_1[i].indexOf('[') == 0) {
-	                                row_1[i] = JSON.parse(row_1[i].replace(/'/g, '"'));
+	                            if (row_1[i].indexOf("{") === 0 || row_1[i].indexOf("[") === 0) {
+	                                row_1[i] = JSON.parse(row_1[i].replace(/'/g, ""));
 	                            }
 	                            record_1[f] = row_1[i];
 	                        });
-	                        t.table(t._selectedTable).query('upsert', row_1).exec().then(function () {
+	                        t.table(t._selectedTable).query("upsert", row_1).exec().then(function () {
 	                            resolve();
 	                        });
 	                    }
@@ -325,47 +326,47 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        });
 	    };
-	    someSQL_Instance.prototype.toCSV = function (headers) {
+	    SomeSQLInstance.prototype.toCSV = function (headers) {
 	        var t = this;
-	        return new someSQL_Promise(t, function (res, rej) {
+	        return new SomeSQLPromise(t, function (res, rej) {
 	            t.exec().then(function (json) {
 	                var header = t._query.filter(function (q) {
-	                    return q.get('type') == 'select';
+	                    return q.get("type") === "select";
 	                }).map(function (q) {
-	                    return q.get('args') ? q.get('args').map(function (m) {
-	                        return t._models.get(t._selectedTable).filter(function (f) { return f['key'] == m; })[0];
+	                    return q.get("args") ? q.get("args").map(function (m) {
+	                        return t._models.get(t._selectedTable).filter(function (f) { return f["key"] === m; })[0];
 	                    }) : t._models.get(t._selectedTable);
 	                })[0];
 	                if (headers) {
 	                    json.unshift(header.map(function (h) {
-	                        return h['key'];
+	                        return h["key"];
 	                    }));
 	                }
 	                res(json.map(function (row, i) {
-	                    if (headers && i == 0)
+	                    if (headers && i === 0)
 	                        return row;
 	                    return header.filter(function (column) {
-	                        return row[column['key']] ? true : false;
+	                        return row[column["key"]] ? true : false;
 	                    }).map(function (column) {
-	                        switch (column['type']) {
-	                            case "map": return '"' + JSON.stringify(row[column['key']]).replace(/"/g, "'") + '"';
-	                            case "array": return '"' + JSON.stringify(row[column['key']]).replace(/"/g, "'") + '"';
-	                            default: return JSON.stringify(row[column['key']]);
+	                        switch (column["type"]) {
+	                            case "map": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
+	                            case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
+	                            default: return JSON.stringify(row[column["key"]]);
 	                        }
-	                    }).join(',');
-	                }).join('\n'));
+	                    }).join(",");
+	                }).join("\n"));
 	            });
 	        });
 	    };
-	    someSQL_Instance.uuid = function (inputUUID) {
+	    SomeSQLInstance.uuid = function (inputUUID) {
 	        return inputUUID ? inputUUID : (function () {
-	            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-	                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+	            return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+	                var r = Math.random() * 16 | 0, v = c === "x" ? r : (r & 0x3 | 0x8);
 	                return v.toString(16);
 	            });
 	        })();
 	    };
-	    someSQL_Instance.hash = function (str) {
+	    SomeSQLInstance.hash = function (str) {
 	        var hash = 5381;
 	        for (var i = 0; i < str.length; i++) {
 	            var char = str.charCodeAt(i);
@@ -373,21 +374,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        return String(hash);
 	    };
-	    return someSQL_Instance;
+	    return SomeSQLInstance;
 	}());
-	exports.someSQL_Instance = someSQL_Instance;
-	var someSQL_Promise = (function (_super) {
-	    __extends(someSQL_Promise, _super);
-	    function someSQL_Promise(scope, callBackFunc) {
+	exports.SomeSQLInstance = SomeSQLInstance;
+	var SomeSQLPromise = (function (_super) {
+	    __extends(SomeSQLPromise, _super);
+	    function SomeSQLPromise(scope, callBackFunc) {
 	        var _this = _super.call(this, callBackFunc) || this;
 	        _this.scope = scope;
 	        return _this;
 	    }
-	    someSQL_Promise.prototype.then = function (onSuccess, onFail) {
+	    SomeSQLPromise.prototype.then = function (onSuccess, onFail) {
 	        var t = this;
-	        return new someSQL_Promise(t.scope, function (resolve, reject) {
+	        return new SomeSQLPromise(t.scope, function (resolve, reject) {
 	            t.done(function (value) {
-	                if (typeof onSuccess === 'function') {
+	                if (typeof onSuccess === "function") {
 	                    try {
 	                        value = onSuccess.apply(t.scope, [value]);
 	                    }
@@ -398,7 +399,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	                resolve(value);
 	            }, function (value) {
-	                if (typeof onFail === 'function') {
+	                if (typeof onFail === "function") {
 	                    try {
 	                        value = onFail.apply(t.scope, [value]);
 	                    }
@@ -414,9 +415,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        });
 	    };
-	    return someSQL_Promise;
+	    return SomeSQLPromise;
 	}(typescript_promise_1.tsPromise));
-	exports.someSQL = new someSQL_Instance().table;
+	var _someSQLStatic = new SomeSQLInstance();
+	function someSQL(table) {
+	    return _someSQLStatic.table(table);
+	}
+	exports.someSQL = someSQL;
 
 
 /***/ },
@@ -439,8 +444,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var index_1 = __webpack_require__(1);
 	var typescript_promise_1 = __webpack_require__(3);
 	var typescript_map_1 = __webpack_require__(2);
-	var someSQL_MemDB = (function () {
-	    function someSQL_MemDB() {
+	var SomeSQLMemDB = (function () {
+	    function SomeSQLMemDB() {
 	        var t = this;
 	        t._filters = new typescript_map_1.tsMap();
 	        t._tables = new typescript_map_1.tsMap();
@@ -450,7 +455,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._pendingQuerys = [];
 	        t._initFilters();
 	    }
-	    someSQL_MemDB.prototype.connect = function (models, actions, views, filters, callback) {
+	    SomeSQLMemDB.prototype.connect = function (models, actions, views, filters, callback) {
 	        var t = this;
 	        models.forEach(function (model, table) {
 	            t._newModel(table, model);
@@ -460,12 +465,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        callback();
 	    };
-	    someSQL_MemDB.prototype._newModel = function (table, args) {
+	    SomeSQLMemDB.prototype._newModel = function (table, args) {
 	        this._cache.set(table, new typescript_map_1.tsMap());
 	        this._cacheIndex.set(table, new typescript_map_1.tsMap());
 	        this._tables.set(table, new _memDB_Table(args));
 	    };
-	    someSQL_MemDB.prototype.exec = function (table, query, viewOrAction, onSuccess, onFail) {
+	    SomeSQLMemDB.prototype.exec = function (table, query, viewOrAction, onSuccess, onFail) {
 	        var t = this;
 	        if (t._act != null) {
 	            t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
@@ -474,7 +479,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._selectedTable = table;
 	        t._mod = [];
 	        t._act = null;
-	        t._cacheKey = index_1.someSQL_Instance.hash(JSON.stringify(query));
+	        t._cacheKey = index_1.SomeSQLInstance.hash(JSON.stringify(query));
 	        t._cacheQueryIndex.set(t._cacheKey, query);
 	        typescript_promise_1.tsPromise.all(query.map(function (q) {
 	            return new typescript_promise_1.tsPromise(function (resolve, reject) {
@@ -490,8 +495,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        });
 	    };
-	    someSQL_MemDB.prototype._query = function (queryArg, resolve) {
-	        if (['upsert', 'select', 'delete', 'drop'].indexOf(queryArg.get("type")) != -1) {
+	    SomeSQLMemDB.prototype._query = function (queryArg, resolve) {
+	        if (["upsert", "select", "delete", "drop"].indexOf(queryArg.get("type")) !== -1) {
 	            this._act = queryArg;
 	        }
 	        else {
@@ -499,63 +504,63 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        resolve();
 	    };
-	    someSQL_MemDB.prototype._initFilters = function () {
+	    SomeSQLMemDB.prototype._initFilters = function () {
 	        var t = this;
 	        var f = t._filters;
-	        f.set('sum', function (rows) {
-	            return rows.map(function (r) { return r[t._act.get('args')[0]]; }).reduce(function (a, b) { return a + b; }, 0);
+	        f.set("sum", function (rows) {
+	            return rows.map(function (r) { return r[t._act.get("args")[0]]; }).reduce(function (a, b) { return a + b; }, 0);
 	        });
-	        f.set('first', function (rows) {
+	        f.set("first", function (rows) {
 	            return rows[0];
 	        });
-	        f.set('last', function (rows) {
+	        f.set("last", function (rows) {
 	            return rows.pop();
 	        });
-	        f.set('min', function (rows) {
-	            return rows.map(function (r) { return r[t._act.get('args')[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0];
+	        f.set("min", function (rows) {
+	            return rows.map(function (r) { return r[t._act.get("args")[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0];
 	        });
-	        f.set('max', function (rows) {
-	            return rows.map(function (r) { return r[t._act.get('args')[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0];
+	        f.set("max", function (rows) {
+	            return rows.map(function (r) { return r[t._act.get("args")[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0];
 	        });
-	        f.set('average', function (rows) {
-	            return t._doFilter('sum', rows) / rows.length;
+	        f.set("average", function (rows) {
+	            return t._doFilter("sum", rows) / rows.length;
 	        });
-	        f.set('count', function (rows) {
+	        f.set("count", function (rows) {
 	            return rows.length;
 	        });
 	    };
-	    someSQL_MemDB.prototype._doFilter = function (filterName, rows, filterArgs) {
+	    SomeSQLMemDB.prototype._doFilter = function (filterName, rows, filterArgs) {
 	        return this._filters.get(filterName).apply(this, [rows, filterArgs]);
 	    };
-	    someSQL_MemDB.prototype._runFilters = function (dbRows) {
+	    SomeSQLMemDB.prototype._runFilters = function (dbRows) {
 	        var t = this;
-	        var filters = t._mod.filter(function (m) { return m.get('type').indexOf('filter-') == 0; });
+	        var filters = t._mod.filter(function (m) { return m.get("type").indexOf("filter-") === 0; });
 	        return filters.length ? filters.reduce(function (prev, cur, i) {
-	            return t._doFilter(filters[i].get('type').replace('filter-', ''), prev, filters[i].get('args'));
+	            return t._doFilter(filters[i].get("type").replace("filter-", ""), prev, filters[i].get("args"));
 	        }, dbRows) : dbRows;
 	    };
-	    someSQL_MemDB.prototype._removeCacheFromKeys = function (affectedKeys) {
+	    SomeSQLMemDB.prototype._removeCacheFromKeys = function (affectedKeys) {
 	        var t = this;
 	        affectedKeys.forEach(function (key) {
 	            t._cacheIndex.get(t._selectedTable).forEach(function (queryIndex, key) {
-	                if (queryIndex.indexOf(key) != -1) {
+	                if (queryIndex.indexOf(key) !== -1) {
 	                    t._cacheIndex.get(t._selectedTable).delete(key);
 	                    t._cache.get(t._selectedTable).delete(key);
 	                }
 	            });
 	        });
 	    };
-	    someSQL_MemDB.prototype._exec = function (callBack) {
+	    SomeSQLMemDB.prototype._exec = function (callBack) {
 	        var t = this;
 	        var _hasWhere = t._mod.filter(function (v) {
-	            return v.get('type') == 'where';
+	            return v.get("type") === "where";
 	        });
-	        var _whereStatement = _hasWhere.length ? _hasWhere[0].get('args') : undefined;
-	        var qArgs = t._act.get('args');
+	        var _whereStatement = _hasWhere.length ? _hasWhere[0].get("args") : undefined;
+	        var qArgs = t._act.get("args");
 	        var ta = t._tables.get(t._selectedTable);
 	        var msg = 0;
 	        var whereTable;
-	        switch (t._act.get('type')) {
+	        switch (t._act.get("type")) {
 	            case "upsert":
 	                if (_whereStatement) {
 	                    whereTable = t._newWhere(ta, _whereStatement);
@@ -588,38 +593,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	                else {
 	                    whereTable = ta._clone();
 	                }
-	                var mods_1 = ['ordr', 'ofs', 'lmt', 'clms'];
+	                var mods_1 = ["ordr", "ofs", "lmt", "clms"];
 	                var getMod_1 = function (name) {
-	                    return t._mod.filter(function (v) { return v.get('type') == name; }).pop();
+	                    return t._mod.filter(function (v) { return v.get("type") === name; }).pop();
 	                };
 	                var result = mods_1.reduce(function (prev, cur, i) {
 	                    switch (mods_1[i]) {
 	                        case "ordr":
-	                            if (getMod_1('orderby')) {
+	                            if (getMod_1("orderby")) {
 	                                var orderBy_1 = new typescript_map_1.tsMap();
-	                                orderBy_1.fromJSON(getMod_1('orderby').get('args'));
+	                                orderBy_1.fromJSON(getMod_1("orderby").get("args"));
 	                                return prev.sort(function (a, b) {
 	                                    return orderBy_1.keys().reduce(function (prev, cur, i) {
 	                                        var column = orderBy_1.keys()[i];
-	                                        if (a[column] == b[column]) {
+	                                        if (a[column] === b[column]) {
 	                                            return 0 + prev;
 	                                        }
 	                                        else {
-	                                            return ((a[column] > b[column] ? 1 : -1) * (orderBy_1.get(column) == 'asc' ? 1 : -1)) + prev;
+	                                            return ((a[column] > b[column] ? 1 : -1) * (orderBy_1.get(column) === "asc" ? 1 : -1)) + prev;
 	                                        }
 	                                    }, 0);
 	                                });
 	                            }
 	                        case "ofs":
-	                            if (getMod_1('offset')) {
-	                                var offset_1 = getMod_1('offset').get('args');
+	                            if (getMod_1("offset")) {
+	                                var offset_1 = getMod_1("offset").get("args");
 	                                return prev.filter(function (row, index) {
 	                                    return index >= offset_1;
 	                                });
 	                            }
 	                        case "lmt":
-	                            if (getMod_1('limit')) {
-	                                var limit_1 = getMod_1('limit').get('args');
+	                            if (getMod_1("limit")) {
+	                                var limit_1 = getMod_1("limit").get("args");
 	                                return prev.filter(function (row, index) {
 	                                    return index < limit_1;
 	                                });
@@ -627,9 +632,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	                        case "clms":
 	                            if (qArgs) {
 	                                var columns_1 = ta._model.map(function (model) {
-	                                    return model['key'];
+	                                    return model["key"];
 	                                }).filter(function (col) {
-	                                    return qArgs.indexOf(col) == -1;
+	                                    return qArgs.indexOf(col) === -1;
 	                                });
 	                                return prev.map(function (row) {
 	                                    columns_1.forEach(function (col) { return delete row[col]; });
@@ -659,19 +664,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	                else {
 	                    t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
-	                    callBack('Table dropped.');
+	                    callBack("Table dropped.");
 	                }
 	                break;
 	            case "drop":
 	                t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
-	                callBack('Table dropped.');
+	                callBack("Table dropped.");
 	                break;
 	        }
 	    };
-	    someSQL_MemDB.prototype._newWhere = function (table, whereStatement) {
+	    SomeSQLMemDB.prototype._newWhere = function (table, whereStatement) {
 	        var t = this;
 	        if (whereStatement && whereStatement.length) {
-	            if (typeof (whereStatement[0]) == "string") {
+	            if (typeof (whereStatement[0]) === "string") {
 	                return t._singleWhereResolve(table._clone(), whereStatement);
 	            }
 	            else {
@@ -680,15 +685,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	                return whereStatement.map(function (statement) {
 	                    return t._singleWhereResolve(table._clone(), statement);
 	                }).reduce(function (prev, cur, i) {
-	                    if (i == 0)
+	                    if (i === 0)
 	                        return cur;
-	                    if (ptr_1 == 0)
+	                    if (ptr_1 === 0)
 	                        return compare_1 = whereStatement[i], ptr_1 = 1, prev;
-	                    if (ptr_1 == 1) {
+	                    if (ptr_1 === 1) {
 	                        ptr_1 = 0;
 	                        switch (compare_1) {
-	                            case "and": return prev._join('inner', cur);
-	                            case "or": return prev._join('outer', cur);
+	                            case "and": return prev._join("inner", cur);
+	                            case "or": return prev._join("outer", cur);
 	                            default: return prev;
 	                        }
 	                    }
@@ -699,32 +704,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return table._clone();
 	        }
 	    };
-	    someSQL_MemDB.prototype._singleWhereResolve = function (table, whereStatement) {
+	    SomeSQLMemDB.prototype._singleWhereResolve = function (table, whereStatement) {
 	        var t = this;
 	        var left = whereStatement[0];
 	        var operator = whereStatement[1];
 	        var right = whereStatement[2];
 	        return table._filter(function (row) {
-	            return t._compare(right, operator, row[left]) == 0;
+	            return t._compare(right, operator, row[left]) === 0;
 	        });
 	    };
-	    someSQL_MemDB.prototype._compare = function (val1, compare, val2) {
+	    SomeSQLMemDB.prototype._compare = function (val1, compare, val2) {
 	        switch (compare) {
-	            case "=": return val2 == val1 ? 0 : 1;
+	            case "=": return val2 === val1 ? 0 : 1;
 	            case ">": return val2 > val1 ? 0 : 1;
 	            case "<": return val2 < val1 ? 0 : 1;
 	            case "<=": return val2 <= val1 ? 0 : 1;
 	            case ">=": return val2 >= val1 ? 0 : 1;
-	            case "IN": return val1.indexOf(val2) == -1 ? 1 : 0;
-	            case "NOT IN": return val1.indexOf(val2) == -1 ? 0 : 1;
+	            case "IN": return val1.indexOf(val2) === -1 ? 1 : 0;
+	            case "NOT IN": return val1.indexOf(val2) === -1 ? 0 : 1;
 	            case "REGEX":
-	            case "LIKE": return val2.search(val1) == -1 ? 1 : 0;
+	            case "LIKE": return val2.search(val1) === -1 ? 1 : 0;
 	            default: return 0;
 	        }
 	    };
-	    return someSQL_MemDB;
+	    return SomeSQLMemDB;
 	}());
-	exports.someSQL_MemDB = someSQL_MemDB;
+	exports.SomeSQLMemDB = SomeSQLMemDB;
 	var _memDB_Table = (function () {
 	    function _memDB_Table(model, index, table) {
 	        var t = this;
@@ -734,9 +739,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._incriment = 1;
 	        t.length = 0;
 	        t._primaryKey = t._model.reduce(function (prev, cur) {
-	            if (cur['props'] && cur['props'].indexOf('pk') != -1) {
-	                t._pkType = cur['type'];
-	                return cur['key'];
+	            if (cur["props"] && cur["props"].indexOf("pk") !== -1) {
+	                t._pkType = cur["type"];
+	                return cur["key"];
 	            }
 	            else {
 	                return prev;
@@ -762,7 +767,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    t._incriment++;
 	                    break;
 	                case "uuid":
-	                    data[t._primaryKey] = index_1.someSQL_Instance.uuid();
+	                    data[t._primaryKey] = index_1.SomeSQLInstance.uuid();
 	                    break;
 	            }
 	            t._index.push(data[t._primaryKey]);
@@ -814,7 +819,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            joinKs = joinKeys;
 	        }
 	        var tables = [this, table];
-	        if (type == 'inner') {
+	        if (type === "inner") {
 	            tables.sort(function (a, b) {
 	                return a.length > b.length ? -1 : 1;
 	            });
@@ -822,12 +827,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        tables[0]._forEach(function (row, idx) {
 	            var found;
 	            tables[1]._forEach(function (row2, idx2) {
-	                if (found == undefined) {
-	                    if (row[joinKs[0]] == row2[joinKs[1]])
+	                if (found === undefined) {
+	                    if (row[joinKs[0]] === row2[joinKs[1]])
 	                        found = row2;
 	                }
 	            });
-	            if (found == undefined) {
+	            if (found === undefined) {
 	                switch (type) {
 	                    case "inner":
 	                        tables[0]._remove(idx);
@@ -838,7 +843,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            }
 	        });
-	        if (type == 'outer') {
+	        if (type === "outer") {
 	            tables[0]._sort(function (a, b) {
 	                return a[tables[0]._primaryKey] > b[tables[0]._primaryKey] ? 1 : -1;
 	            });

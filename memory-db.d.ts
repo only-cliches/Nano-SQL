@@ -1,6 +1,6 @@
-import { someSQL_Backend } from "./index";
+import { SomeSQLBackend } from "./index";
 import { tsMap } from "typescript-map";
-export declare class someSQL_MemDB implements someSQL_Backend {
+export declare class SomeSQLMemDB implements SomeSQLBackend {
     private _tables;
     private _selectedTable;
     private _act;
