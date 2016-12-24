@@ -1,6 +1,8 @@
 import { tsMap } from "typescript-map";
 import { tsPromise } from "typescript-promise";
 export declare class someSQL_Instance {
+    private _views;
+    private _actions;
     private _permanentFilters;
     constructor();
     init(table?: string): someSQL_Instance;
@@ -8,10 +10,22 @@ export declare class someSQL_Instance {
     on(actions: string, callBack: Function): someSQL_Instance;
     off(callBack: Function): someSQL_Instance;
     alwaysApplyFilter(filterName: string): someSQL_Instance;
-    model(dataModel: Array<Object>): someSQL_Instance;
-    views(viewMap: Object): someSQL_Instance;
+    model(dataModel: Array<{
+        key: string;
+        type: string;
+        props?: Array<any>;
+    }>): someSQL_Instance;
+    views(viewArray: Array<{
+        name: string;
+        args?: Array<string>;
+        call: (args?: Object) => any;
+    }>): someSQL_Instance;
     getView(viewName: string, viewArgs: Object): tsPromise<Object | string>;
-    actions(actionMap: Object): someSQL_Instance;
+    actions(actionArray: Array<{
+        name: string;
+        args?: Array<string>;
+        call: (args?: Object) => any;
+    }>): someSQL_Instance;
     doAction(actionName: string, actionArgs: Object): tsPromise<Object | string>;
     addFilter(filterName: string, filterFunction: Function): someSQL_Instance;
     query(action: string, args?: Object): someSQL_Instance;

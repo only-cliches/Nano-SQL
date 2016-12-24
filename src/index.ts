@@ -49,23 +49,10 @@ export class someSQL_Instance {
      */
     private _events:Array<string>;
 
-    /**
-     * A map containing the views
-     * 
-     * @internal
-     * @type {*}
-     * @memberOf someSQL_Instance
-     */
-    private _views:tsMap<string,Object>; //Views
 
-    /**
-     * A map containing the actions
-     * 
-     * @internal
-     * @type {*}
-     * @memberOf someSQL_Instance
-     */
-    private _actions:tsMap<string,Object>; //Actions
+    private _views:tsMap<string,Array<{name:string,args?:Array<string>,call:(args?:Object) => any}>>; //Views
+
+    private _actions:tsMap<string,Array<{name:string,args?:Array<string>,call:(args?:Object) => any}>>; //Actions
 
     /**
      * A map containing the models
@@ -108,8 +95,8 @@ export class someSQL_Instance {
     constructor() {
         let t = this;
 
-        t._actions = new tsMap<string,Object>();
-        t._views = new tsMap<string,Object>();
+        t._actions = new tsMap<string,Array<any>>();
+        t._views = new tsMap<string,Array<any>>();
         t._models = new tsMap<string,Array<Object>>();
         t._query = [];
         t._events = ['change','delete','upsert','drop','select','error'];  
@@ -199,35 +186,24 @@ export class someSQL_Instance {
         return this;
     }
 
-    /**
-     * Create a new data model for the current selected table.
-     * 
-     * @param {Array<any>} dataModel
-     * @returns {someSQL_Instance}
-     * 
-     * @memberOf someSQL_Instance
-     */
-    public model(dataModel:Array<Object>):someSQL_Instance {
+
+    public model(dataModel:Array<{key:string,type:string,props?:Array<any>}>):someSQL_Instance {
         let t = this;
         let l = t._selectedTable;
         t._callbacks.set(l,new tsMap<string,Array<Function>>());
         t._callbacks.get(l).set("*",[]);
+        t._events.forEach((e) => {
+            t._callbacks.get(l).set(e,[]);
+        });
         t._models.set(l,dataModel);
-        t._views.set(l,{});
-        t._actions.set(l,{});
+        t._views.set(l,[]);
+        t._actions.set(l,[]);
         return this;
     }
 
-    /**
-     * Set views for the current selected table.
-     * 
-     * @param {any} viewMap
-     * @returns {someSQL_Instance}
-     * 
-     * @memberOf someSQL_Instance
-     */
-    public views(viewMap:Object):someSQL_Instance {
-        this._views.set(this._selectedTable,viewMap);
+
+    public views(viewArray:Array<{name:string,args?:Array<string>,call:(args?:Object) => any}>):someSQL_Instance {
+        this._views.set(this._selectedTable,viewArray);
         return this;
     }
 
@@ -243,9 +219,15 @@ export class someSQL_Instance {
     public getView(viewName:string, viewArgs:Object):tsPromise<Object|string> {
         let t = this;
         let l = t._selectedTable;
-        let v = t._views.get(l)[viewName];
+        let selView;
+        t._views.get(l).forEach((view) => {
+            if(view.name == viewName) {
+                selView = view;
+            }
+        })
+        if(!selView) throw Error('View does not exist');
         t._activeActionOrView = viewName;
-        return v[1].apply(t,[t._cleanArgs(v[0], viewArgs)]);
+        return selView.call.apply(t,[t._cleanArgs(selView.args, viewArgs)]);
     }
 
     /**
@@ -295,16 +277,9 @@ export class someSQL_Instance {
         }
     }
 
-    /**
-     * Declare a map of actions for the current table.
-     * 
-     * @param {any} actionMap
-     * @returns {someSQL_Instance}
-     * 
-     * @memberOf someSQL_Instance
-     */
-    public actions(actionMap:Object):someSQL_Instance {
-        this._actions.set(this._selectedTable,actionMap);
+    
+    public actions(actionArray:Array<{name:string,args?:Array<string>,call:(args?:Object) => any}>):someSQL_Instance {
+        this._actions.set(this._selectedTable,actionArray);
         return this;
     }
 
@@ -319,9 +294,14 @@ export class someSQL_Instance {
      */
     public doAction(actionName:string, actionArgs:Object):tsPromise<Object|string> {
         let t = this;
-        let a = t._actions.get(t._selectedTable)[actionName];
+        let l = t._selectedTable;
+        let selAction = t._actions.get(l).reduce((prev, cur) => {
+            if(prev != undefined) return prev;
+            return cur.name == actionName ? cur : undefined;
+        });
+        if(!selAction) throw Error('Action does not exist');
         t._activeActionOrView = actionName;
-        return a[1].apply(t,[t._cleanArgs(a[0], actionArgs)]);
+        return selAction.call.apply(t,[t._cleanArgs(selAction.args, actionArgs)]);
     }
 
     public addFilter(filterName:string, filterFunction:Function):someSQL_Instance {
@@ -433,9 +413,10 @@ export class someSQL_Instance {
      * @memberOf someSQL_Instance
      */
     public exec():tsPromise<Array<Object|string>> {
-
+        
         let t = this;
         let _t = t._selectedTable;
+
         t._triggerEvents = <any> t._query.map((q) => {
             switch(q.get('type')) {
                 case "select":return [q.get('type')];
@@ -448,7 +429,7 @@ export class someSQL_Instance {
 
         let triggerEvents = (eventData:Object):void => {
             t._triggerEvents.forEach((e) => {
-                t._callbacks.get(_t).get(e).concat(t._callbacks.get('*').get(e)).forEach((cb) => {
+                t._callbacks.get(_t).get(e).concat(t._callbacks.get(_t).get("*")).forEach((cb) => {
                     eventData['name'] = e;
                     eventData['actionOrView'] = t._activeActionOrView;
                     cb.apply(t,[eventData]);
@@ -458,15 +439,14 @@ export class someSQL_Instance {
         }
 
         return new someSQL_Promise(t, (res, rej) => {  
-
+  
             let _tEvent = function(data, callBack, isError) {
-                
                 if(t._permanentFilters.length && isError != true) {
                     data = t._permanentFilters.reduce((prev, cur, i) => {
                         return t._filters.get(t._permanentFilters[i]).apply(t, [data]);
                     },data);
                 }
-                
+
                 triggerEvents({
                     table:_t,
                     query:t._query.map((q) => q.toJSON()),
