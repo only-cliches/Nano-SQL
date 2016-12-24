@@ -707,6 +707,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._cacheIndex = new typescript_map_1.tsMap();
 	        t._cache = new typescript_map_1.tsMap();
 	        t._cacheQueryIndex = new typescript_map_1.tsMap();
+	        t._pendingQuerys = [];
 	        t._initFilters();
 	    }
 	    someSQL_MemDB.prototype.connect = function (models, actions, views, filters, callback) {
@@ -726,6 +727,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    someSQL_MemDB.prototype.exec = function (table, query, viewOrAction, onSuccess, onFail) {
 	        var t = this;
+	        if (t._act != null) {
+	            t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
+	        }
 	        t._selectedTable = table;
 	        t._mod = [];
 	        t._act = null;
@@ -736,7 +740,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	                t._query(q, resolve);
 	            });
 	        })).then(function () {
-	            t._exec(onSuccess);
+	            t._exec(function (args) {
+	                onSuccess(args);
+	                t._act = null;
+	                if (t._pendingQuerys.length) {
+	                    t.exec.apply(t, t._pendingQuerys.pop());
+	                }
+	            });
 	        });
 	    };
 	    someSQL_MemDB.prototype._query = function (queryArg, resolve) {

@@ -47,6 +47,7 @@ export class someSQL_MemDB implements someSQL_Backend {
     private _cacheIndex:tsMap<string,tsMap<string,Array<string|number>>>;
     private _cacheQueryIndex:tsMap<string,Array<Object>>;
     private _cache:tsMap<string,tsMap<string,_memDB_Table>>;
+    private _pendingQuerys:Array<Array<any>>;
 
     constructor() {
         let t = this;
@@ -55,6 +56,7 @@ export class someSQL_MemDB implements someSQL_Backend {
         t._cacheIndex = new tsMap<string,tsMap<string,Array<string|number>>>();
         t._cache = new tsMap<string,tsMap<string,_memDB_Table>>();
         t._cacheQueryIndex = new tsMap<string,Array<Object>>();
+        t._pendingQuerys = [];
         t._initFilters();
     }
 
@@ -108,6 +110,11 @@ export class someSQL_MemDB implements someSQL_Backend {
      */
     public exec(table:string, query:Array<tsMap<string,Object|Array<any>>>, viewOrAction:string, onSuccess:Function, onFail?:Function):void {
         let t = this;
+
+        if(t._act != null) {
+            t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
+        }
+
         t._selectedTable = table;
         t._mod = [];
         t._act = null;
@@ -120,7 +127,13 @@ export class someSQL_MemDB implements someSQL_Backend {
                 t._query(q, resolve);
             });
         })).then(function() {
-            t._exec(onSuccess);
+            t._exec(function(args) {
+                onSuccess(args);
+                t._act = null;
+                if(t._pendingQuerys.length) {
+                    t.exec.apply(t,t._pendingQuerys.pop());
+                }
+            });
         });
     }
 
