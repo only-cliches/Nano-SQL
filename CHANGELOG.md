@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.1.2] 12-28-2016
+- Fixed a typo in one of the interface declarations.
+- Cleaned up the readme a bit.
+- Updated to newest Typescript map lib. 
+
 ## [0.1.1] 12-28-2016
 - Updated TSPromise to newest version with scoping built in.
 - Removed the special scoped promise class.

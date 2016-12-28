@@ -68,17 +68,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	var SomeSQLInstance = (function () {
 	    function SomeSQLInstance() {
 	        var t = this;
-	        t._actions = new typescript_map_1.tsMap();
-	        t._views = new typescript_map_1.tsMap();
-	        t._models = new typescript_map_1.tsMap();
+	        t._actions = new typescript_map_1.TSMap();
+	        t._views = new typescript_map_1.TSMap();
+	        t._models = new typescript_map_1.TSMap();
 	        t._query = [];
 	        t._events = ["change", "delete", "upsert", "drop", "select", "error"];
-	        t._callbacks = new typescript_map_1.tsMap();
-	        t._callbacks.set("*", new typescript_map_1.tsMap());
+	        t._callbacks = new typescript_map_1.TSMap();
+	        t._callbacks.set("*", new typescript_map_1.TSMap());
 	        t._events.forEach(function (e) {
 	            t._callbacks.get("*").set(e, []);
 	        });
-	        t._filters = new typescript_map_1.tsMap();
+	        t._filters = new typescript_map_1.TSMap();
 	        t._permanentFilters = [];
 	    }
 	    SomeSQLInstance.prototype.table = function (table) {
@@ -127,7 +127,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    SomeSQLInstance.prototype.model = function (dataModel) {
 	        var t = this;
 	        var l = t._selectedTable;
-	        t._callbacks.set(l, new typescript_map_1.tsMap());
+	        t._callbacks.set(l, new typescript_map_1.TSMap());
 	        t._callbacks.get(l).set("*", []);
 	        t._events.forEach(function (e) {
 	            t._callbacks.get(l).set(e, []);
@@ -203,7 +203,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._query = [];
 	        var a = action.toLowerCase();
 	        if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-	            this._query.push(new typescript_map_1.tsMap([["type", a], ["args", args]]));
+	            this._query.push(new typescript_map_1.TSMap([["type", a], ["args", args]]));
 	        }
 	        return this;
 	    };
@@ -223,7 +223,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this._addCmd("filter-" + name, args);
 	    };
 	    SomeSQLInstance.prototype._addCmd = function (type, args) {
-	        return this._query.push(new typescript_map_1.tsMap([["type", type], ["args", args]])), this;
+	        return this._query.push(new typescript_map_1.TSMap([["type", type], ["args", args]])), this;
 	    };
 	    SomeSQLInstance.prototype.exec = function () {
 	        var t = this;
@@ -397,11 +397,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	var SomeSQLMemDB = (function () {
 	    function SomeSQLMemDB() {
 	        var t = this;
-	        t._filters = new typescript_map_1.tsMap();
-	        t._tables = new typescript_map_1.tsMap();
-	        t._cacheIndex = new typescript_map_1.tsMap();
-	        t._cache = new typescript_map_1.tsMap();
-	        t._cacheQueryIndex = new typescript_map_1.tsMap();
+	        t._filters = new typescript_map_1.TSMap();
+	        t._tables = new typescript_map_1.TSMap();
+	        t._cacheIndex = new typescript_map_1.TSMap();
+	        t._cache = new typescript_map_1.TSMap();
+	        t._cacheQueryIndex = new typescript_map_1.TSMap();
 	        t._pendingQuerys = [];
 	        t._initFilters();
 	    }
@@ -416,8 +416,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        callback();
 	    };
 	    SomeSQLMemDB.prototype._newModel = function (table, args) {
-	        this._cache.set(table, new typescript_map_1.tsMap());
-	        this._cacheIndex.set(table, new typescript_map_1.tsMap());
+	        this._cache.set(table, new typescript_map_1.TSMap());
+	        this._cacheIndex.set(table, new typescript_map_1.TSMap());
 	        this._tables.set(table, new _memDB_Table(args));
 	    };
 	    SomeSQLMemDB.prototype.exec = function (table, query, viewOrAction, onSuccess, onFail) {
@@ -527,8 +527,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	                else {
 	                    ta._add(qArgs);
 	                    msg++;
-	                    t._cache.set(t._selectedTable, new typescript_map_1.tsMap());
-	                    t._cacheIndex.set(t._selectedTable, new typescript_map_1.tsMap());
+	                    t._cache.set(t._selectedTable, new typescript_map_1.TSMap());
+	                    t._cacheIndex.set(t._selectedTable, new typescript_map_1.TSMap());
 	                }
 	                callBack(msg + " row(s) upserted");
 	                break;
@@ -551,7 +551,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    switch (mods_1[i]) {
 	                        case "ordr":
 	                            if (getMod_1("orderby")) {
-	                                var orderBy_1 = new typescript_map_1.tsMap();
+	                                var orderBy_1 = new typescript_map_1.TSMap();
 	                                orderBy_1.fromJSON(getMod_1("orderby").get("args"));
 	                                return prev.sort(function (a, b) {
 	                                    return orderBy_1.keys().reduce(function (prev, cur, i) {

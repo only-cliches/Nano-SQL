@@ -11,7 +11,7 @@ I looked everywhere for a data store with these features and couldn't find it:
 6. Returned immutable data sets to improve React performance (like ImmutableJS).
 7. Isn't ten million kilobytes in size (like TaffyDB).
 
-So SomeSQL was born to bring all this together.  It's an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.
+SomeSQL was born to bring all this together.  It's an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.
 
 ## Features
 * Includes a fast built in memory only DB.

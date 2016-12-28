@@ -14,5 +14,5 @@ export NODE_ENV=production && ./node_modules/.bin/webpack
 
 #clean up
 rm -rf src/*.js
-mv dist/some-sql.min.js dist/some-sql.min.0.1.1.js
-echo "$(cat dist/some-sql.min.0.1.1.js)" | gzip -9f | wc -c;
+mv dist/some-sql.min.js dist/some-sql.min.0.1.2.js
+echo "$(cat dist/some-sql.min.0.1.2.js)" | gzip -9f | wc -c;

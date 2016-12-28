@@ -1,4 +1,4 @@
-import { tsMap } from "typescript-map";
+import { TSMap } from "typescript-map";
 import { TSPromise } from "typescript-promise";
 import { SomeSQLMemDB } from "./memory-db";
 
@@ -8,7 +8,7 @@ export interface ActionOrView {
     call: (args?: Object) => TSPromise<any>;
 }
 
-export interface DateModel {
+export interface DataModel {
     key: string;
     type: string;
     props?: Array<any>;
@@ -32,7 +32,7 @@ export class SomeSQLInstance {
     * @type {Array<any>}
     * @memberOf SomeSQLInstance
     */
-    private _query: Array<tsMap<string, Object | Array<any>>>;
+    private _query: Array<TSMap<string, Object | Array<any>>>;
 
 	/**
     * The backend currently being used
@@ -50,7 +50,7 @@ export class SomeSQLInstance {
     * @type {*}
     * @memberOf SomeSQLInstance
     */
-    private _callbacks: tsMap<string, tsMap<string, Array<Function>>>;
+    private _callbacks: TSMap<string, TSMap<string, Array<Function>>>;
 
 	/**
     * An array of possible events
@@ -69,7 +69,7 @@ export class SomeSQLInstance {
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    private _views: tsMap<string, Array<ActionOrView>>;
+    private _views: TSMap<string, Array<ActionOrView>>;
 
 
 	/**
@@ -79,7 +79,7 @@ export class SomeSQLInstance {
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    private _actions: tsMap<string, Array<ActionOrView>>;
+    private _actions: TSMap<string, Array<ActionOrView>>;
 
 	/**
     * A map containing the models
@@ -88,7 +88,7 @@ export class SomeSQLInstance {
     * @type {*}
     * @memberOf SomeSQLInstance
     */
-    private _models: tsMap<string, Array<DateModel>>;
+    private _models: TSMap<string, Array<DataModel>>;
 
 	/**
     * An array containing a temporary list of events to trigger
@@ -112,10 +112,10 @@ export class SomeSQLInstance {
     * Holds custom filters implimented by the user
     * 
     * @internal
-    * @type {tsMap<string,Function>}
+    * @type {TSMap<string,Function>}
     * @memberOf SomeSQLInstance
     */
-    private _filters: tsMap<string, Function>;
+    private _filters: TSMap<string, Function>;
 
 
 	/**
@@ -130,19 +130,19 @@ export class SomeSQLInstance {
     constructor() {
         let t = this;
 
-        t._actions = new tsMap<string, Array<any>>();
-        t._views = new tsMap<string, Array<any>>();
-        t._models = new tsMap<string, Array<DateModel>>();
+        t._actions = new TSMap<string, Array<any>>();
+        t._views = new TSMap<string, Array<any>>();
+        t._models = new TSMap<string, Array<DataModel>>();
         t._query = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 
-        t._callbacks = new tsMap<string, tsMap<string, Array<Function>>>();
-        t._callbacks.set("*", new tsMap<string, Array<Function>>());
+        t._callbacks = new TSMap<string, TSMap<string, Array<Function>>>();
+        t._callbacks.set("*", new TSMap<string, Array<Function>>());
         t._events.forEach((e) => {
             t._callbacks.get("*").set(e, []);
         });
 
-        t._filters = new tsMap<string, Function>();
+        t._filters = new TSMap<string, Function>();
         t._permanentFilters = [];
     }
 
@@ -242,15 +242,15 @@ export class SomeSQLInstance {
 	/**
 	 * Declare the data model for the current selected table.
 	 * 
-	 * @param {Array<DateModel>} dataModel
+	 * @param {Array<DataModel>} dataModel
 	 * @returns {SomeSQLInstance}
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    public model(dataModel: Array<DateModel>): SomeSQLInstance {
+    public model(dataModel: Array<DataModel>): SomeSQLInstance {
         let t = this;
         let l = t._selectedTable;
-        t._callbacks.set(l, new tsMap<string, Array<Function>>());
+        t._callbacks.set(l, new TSMap<string, Array<Function>>());
         t._callbacks.get(l).set("*", []);
         t._events.forEach((e) => {
             t._callbacks.get(l).set(e, []);
@@ -405,7 +405,7 @@ export class SomeSQLInstance {
         this._query = [];
         let a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-            this._query.push(new tsMap<string, Object | Array<any>>([["type", a], ["args", args]]));
+            this._query.push(new TSMap<string, Object | Array<any>>([["type", a], ["args", args]]));
         }
         return this;
     }
@@ -484,7 +484,7 @@ export class SomeSQLInstance {
     * @memberOf SomeSQLInstance
     */
     private _addCmd(type: string, args: Array<any> | Object): SomeSQLInstance {
-        return this._query.push(new tsMap<string, Object | Array<any>>([["type", type], ["args", args]])), this;
+        return this._query.push(new TSMap<string, Object | Array<any>>([["type", type], ["args", args]])), this;
     }
 
 	/**
@@ -716,15 +716,15 @@ export interface SomeSQLBackend {
 	/**
     * Inilitize the database for use, async so you can connect to remote stuff as needed.
     * 
-    * @param {tsMap<string,Array<Object>>} models
-    * @param {tsMap<string,Object>} actions
-    * @param {tsMap<string,Object>} views
+    * @param {TSMap<string,Array<Object>>} models
+    * @param {TSMap<string,Object>} actions
+    * @param {TSMap<string,Object>} views
     * @param {Function} onSuccess
     * @param {Function} [onFail]
     * 
     * @memberOf SomeSQLBackend
     */
-    connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, filters: tsMap<string, Function>, onSuccess: Function, onFail?: Function): void;
+    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Object>, views: TSMap<string, Object>, filters: TSMap<string, Function>, onSuccess: Function, onFail?: Function): void;
 
 	/**
     * Executes a specific query on the database with a specific table
@@ -735,7 +735,7 @@ export interface SomeSQLBackend {
     * 
     * @memberOf SomeSQLBackend
     */
-    exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
+    exec(table: string, query: Array<TSMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
 
 	/**
     * Custom implimentations for this db type, can be literally anything.

@@ -1,11 +1,11 @@
-import { tsMap } from "typescript-map";
+import { TSMap } from "typescript-map";
 import { TSPromise } from "typescript-promise";
 export interface ActionOrView {
     name: string;
     args?: Array<string>;
     call: (args?: Object) => TSPromise<any>;
 }
-export interface DateModel {
+export interface DataModel {
     key: string;
     type: string;
     props?: Array<any>;
@@ -17,7 +17,7 @@ export declare class SomeSQLInstance {
     on(actions: string, callBack: Function): SomeSQLInstance;
     off(callBack: Function): SomeSQLInstance;
     alwaysApplyFilter(filterName: string): SomeSQLInstance;
-    model(dataModel: Array<DateModel>): SomeSQLInstance;
+    model(dataModel: Array<DataModel>): SomeSQLInstance;
     views(viewArray: Array<ActionOrView>): SomeSQLInstance;
     getView(viewName: string, viewArgs: Object): TSPromise<Object | string>;
     actions(actionArray: Array<ActionOrView>): SomeSQLInstance;
@@ -38,8 +38,8 @@ export declare class SomeSQLInstance {
     static hash(str: string): string;
 }
 export interface SomeSQLBackend {
-    connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, filters: tsMap<string, Function>, onSuccess: Function, onFail?: Function): void;
-    exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
+    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Object>, views: TSMap<string, Object>, filters: TSMap<string, Function>, onSuccess: Function, onFail?: Function): void;
+    exec(table: string, query: Array<TSMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }
 export declare function SomeSQL(table: string): SomeSQLInstance;

@@ -1,6 +1,6 @@
 import { SomeSQLInstance, SomeSQLBackend } from "./index";
 import { TSPromise } from "typescript-promise";
-import { tsMap } from "typescript-map";
+import { TSMap } from "typescript-map";
 
 export class SomeSQLMemDB implements SomeSQLBackend {
 
@@ -8,10 +8,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Holds the actual table data.
      * 
      * @private
-     * @type {tsMap<string,Array<Object>>}
+     * @type {TSMap<string,Array<Object>>}
      * @memberOf SomeSQLMemDB
      */
-    private _tables: tsMap<string, _memDB_Table>;
+    private _tables: TSMap<string, _memDB_Table>;
 
     /**
      * Holds a pointer to the current selected table.
@@ -26,36 +26,36 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Holds a single query object of the current query actions.
      * 
      * @private
-     * @type {(tsMap<string,Object|Array<any>>)}
+     * @type {(TSMap<string,Object|Array<any>>)}
      * @memberOf SomeSQLMemDB
      */
-    private _act: tsMap<string, Object | Array<any>>;
+    private _act: TSMap<string, Object | Array<any>>;
 
     /**
      * Holds an array of the remaining query objects to modify the query in some way.
      * 
      * @private
-     * @type {(Array<tsMap<string,Object|Array<any>>>)}
+     * @type {(Array<TSMap<string,Object|Array<any>>>)}
      * @memberOf SomeSQLMemDB
      */
-    private _mod: Array<tsMap<string, Object | Array<any>>>;
+    private _mod: Array<TSMap<string, Object | Array<any>>>;
 
 
-    private _filters: tsMap<string, Function>;
+    private _filters: TSMap<string, Function>;
 
     private _cacheKey: string;
-    private _cacheIndex: tsMap<string, tsMap<string, Array<string | number>>>;
-    private _cacheQueryIndex: tsMap<string, Array<Object>>;
-    private _cache: tsMap<string, tsMap<string, _memDB_Table>>;
+    private _cacheIndex: TSMap<string, TSMap<string, Array<string | number>>>;
+    private _cacheQueryIndex: TSMap<string, Array<Object>>;
+    private _cache: TSMap<string, TSMap<string, _memDB_Table>>;
     private _pendingQuerys: Array<Array<any>>;
 
     constructor() {
         let t = this;
-        t._filters = new tsMap<string, Function>();
-        t._tables = new tsMap<string, _memDB_Table>();
-        t._cacheIndex = new tsMap<string, tsMap<string, Array<string | number>>>();
-        t._cache = new tsMap<string, tsMap<string, _memDB_Table>>();
-        t._cacheQueryIndex = new tsMap<string, Array<Object>>();
+        t._filters = new TSMap<string, Function>();
+        t._tables = new TSMap<string, _memDB_Table>();
+        t._cacheIndex = new TSMap<string, TSMap<string, Array<string | number>>>();
+        t._cache = new TSMap<string, TSMap<string, _memDB_Table>>();
+        t._cacheQueryIndex = new TSMap<string, Array<Object>>();
         t._pendingQuerys = [];
         t._initFilters();
     }
@@ -63,14 +63,14 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Creates all the tables and prepares the database for use.
      * 
-     * @param {tsMap<string,Array<Object>>} models
-     * @param {tsMap<string,Object>} actions
-     * @param {tsMap<string,Object>} views
+     * @param {TSMap<string,Array<Object>>} models
+     * @param {TSMap<string,Object>} actions
+     * @param {TSMap<string,Object>} views
      * @param {Function} callback
      * 
      * @memberOf SomeSQLMemDB
      */
-    public connect(models: tsMap<string, Array<Object>>, actions: tsMap<string, Object>, views: tsMap<string, Object>, filters: tsMap<string, Function>, callback: Function): void {
+    public connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Object>, views: TSMap<string, Object>, filters: TSMap<string, Function>, callback: Function): void {
         let t = this;
         models.forEach((model, table) => {
             t._newModel(table, model);
@@ -92,8 +92,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * @memberOf SomeSQLMemDB
      */
     private _newModel(table: string, args: Array<Object>): void {
-        this._cache.set(table, new tsMap<string, _memDB_Table>());
-        this._cacheIndex.set(table, new tsMap<string, Array<string | number>>());
+        this._cache.set(table, new TSMap<string, _memDB_Table>());
+        this._cacheIndex.set(table, new TSMap<string, Array<string | number>>());
         this._tables.set(table, new _memDB_Table(args));
     }
 
@@ -101,14 +101,14 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Public exec option.  Organizes the query then sends it to the internal execution function.
      * 
      * @param {string} table
-     * @param {(Array<tsMap<string,Object|Array<any>>>)} query
+     * @param {(Array<TSMap<string,Object|Array<any>>>)} query
      * @param {string} viewOrAction
      * @param {Function} onSuccess
      * @param {Function} [onFail]
      * 
      * @memberOf SomeSQLMemDB
      */
-    public exec(table: string, query: Array<tsMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void {
+    public exec(table: string, query: Array<TSMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void {
         let t = this;
 
         if (t._act != null) {
@@ -142,12 +142,12 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Puts the query from the someSQL Instance into query actions and mofidiers to make execution easier.
      * 
      * @private
-     * @param {(tsMap<string,number|Object|Array<any>>)} queryArg
+     * @param {(TSMap<string,number|Object|Array<any>>)} queryArg
      * @param {Function} resolve
      * 
      * @memberOf SomeSQLMemDB
      */
-    private _query(queryArg: tsMap<string, number | Object | Array<any>>, resolve: Function): void {
+    private _query(queryArg: TSMap<string, number | Object | Array<any>>, resolve: Function): void {
         if (["upsert", "select", "delete", "drop"].indexOf(<string>queryArg.get("type")) !== -1) {
             this._act = queryArg;
         } else {
@@ -273,8 +273,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     // remove cache for entire current table
                     // This is a very naive approach, a future implimentation would have all the cache
                     // queries running again and updating only the cache entries affected.
-                    t._cache.set(t._selectedTable, new tsMap<string, _memDB_Table>());
-                    t._cacheIndex.set(t._selectedTable, new tsMap<string, Array<string | number>>());
+                    t._cache.set(t._selectedTable, new TSMap<string, _memDB_Table>());
+                    t._cacheIndex.set(t._selectedTable, new TSMap<string, Array<string | number>>());
                 }
 
                 callBack(msg + " row(s) upserted");
@@ -296,7 +296,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
                 let mods: Array<any> = ["ordr", "ofs", "lmt", "clms"];
 
-                let getMod = function (name): tsMap<any, any> {
+                let getMod = function (name): TSMap<any, any> {
                     return t._mod.filter((v) => v.get("type") === name).pop();
                 };
 
@@ -304,7 +304,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     switch (mods[i]) {
                         case "ordr":
                             if (getMod("orderby")) {
-                                let orderBy = new tsMap();
+                                let orderBy = new TSMap();
                                 orderBy.fromJSON(getMod("orderby").get("args"));
                                 return prev.sort((a, b) => {
                                     return orderBy.keys().reduce((prev, cur, i) => {
