@@ -27,7 +27,7 @@ So SomeSQL was born to bring all this together.  It's an extensible database abs
 1 minute minimal quick start:
 
 ```
-someSQL('users') // "users" is our table name.
+SomeSQL('users') // "users" is our table name.
 .model([ //Declare data model
     {key:'id',type:'int',props:['pk','ai']},
     {key:'name',type:'string'},
@@ -54,7 +54,7 @@ First you declare your models, connect the db, then you execute queries.
 
 ### Declare DB model
 ```
-someSQL('users')//Table/Store Name, required to declare model and attach it to this store.
+SomeSQL('users')//Table/Store Name, required to declare model and attach it to this store.
 .model([ //Data Model, required
     {key:'id',type:'int',props:['pk','ai']}, //This has the primary key and auto incriment values
     {key:'name',type:'string'},
@@ -94,7 +94,7 @@ someSQL('users')//Table/Store Name, required to declare model and attach it to t
 ### Connect the DB and execute queries
 ```
 //Initializes the db.
-someSQL().connect().then(function() {
+SomeSQL().connect().then(function() {
     //DB ready to use.
     this.doAction('add_new_user',{user:{
         id:null,
@@ -117,36 +117,36 @@ someSQL().connect().then(function() {
 
 ### Arbitrary Commands
 
-You can execute a db command at any point from the `someSQL` object after the DB is connected.
+You can execute a db command at any point from the `SomeSQL` object after the DB is connected.
 
 Every query follows the same pattern:
-`someSQL(#TABLE_NAME#).query(#ACTION#,#ARGS#)....optional filtering, sorting, etc...exec()`
+`SomeSQL(#TABLE_NAME#).query(#ACTION#,#ARGS#)....optional filtering, sorting, etc...exec()`
 
 For example a query to get all rows from the users table looks like this:
-`someSQL('users').query('select').exec()`
+`SomeSQL('users').query('select').exec()`
 
 Here are some more examples:
 ```
-someSQL('users').query('select',['name','id']).exec(); //Get all records but only return the name and id columns
+SomeSQL('users').query('select',['name','id']).exec(); //Get all records but only return the name and id columns
 
-someSQL('users').query('select').where(['name','=','scott']).exec() //only show rows where the name == "scott"
+SomeSQL('users').query('select').where(['name','=','scott']).exec() //only show rows where the name == "scott"
 
-someSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() //Order the results by name ascending, then age descending.
+SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() //Order the results by name ascending, then age descending.
 
-someSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() //combine any patterns as you'd like.
+SomeSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() //combine any patterns as you'd like.
 
-someSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() //Where statements work on upserts as well.
+SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() //Where statements work on upserts as well.
 
 ```
 
 Possible query commands are `select`, `drop`, `upsert`, and `delete`.
 
-All calls to the `exec()` return a promise, with the result of the promise being the response from the database.  The `this` of the returned promise is always the current someSQL function with the last table you selected.
+All calls to the `exec()` return a promise, with the result of the promise being the response from the database.  The `this` of the returned promise is always the current SomeSQL function with the last table you selected.
 
 This makes it easy to chain commands:
 
 ```
-someSQL('users').query('select').exec().then(function() {
+SomeSQL('users').query('select').exec().then(function() {
     return this.query('upsert',{name:"Bill"}).where(['name','=','billy']).exec();
 }).then(function(result) {
     return this.query('drop').exec();
@@ -160,8 +160,8 @@ someSQL('users').query('select').exec().then(function() {
 You can listen to any number of database events on any table or all tables.
 
 ```
-someSQL("users").on('select',function(eventData) {}) //Listen to "select" commands from the users table
-someSQL("*").on('change',function(eventData) {}) //Listen for any changes to any table in the database.
+SomeSQL("users").on('select',function(eventData) {}) //Listen to "select" commands from the users table
+SomeSQL("*").on('change',function(eventData) {}) //Listen for any changes to any table in the database.
 
 ```
 
@@ -173,7 +173,7 @@ Possible events are `change`, `delete`, `upsert`, `drop`, `select` and `error`.
 You can create a new table by selecting it and creating a new data model:
 
 ```
-someSQL('newTable').model([
+SomeSQL('newTable').model([
     {key:'name',type:'string'}
 ])
 
@@ -183,12 +183,12 @@ Keep in mind you MUST declare all your models and tables BEFORE calling the `con
 
 ### Multiple Data Stores
 
-If you need more than one data store with a collection of separate tables, you can declare a completely new someSQL db at any point.
+If you need more than one data store with a collection of separate tables, you can declare a completely new SomeSQL db at any point.
 
 ```
-var myDB = new someSQL_Instance().table;
+var myDB = new SomeSQL_Instance().table;
 
-//And now use it just like you use the someSQL var.
+//And now use it just like you use the SomeSQL var.
 myDB('users').query("select").exec()...
 
 Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.
@@ -224,7 +224,7 @@ Events can be called before or after setup mode, at any time.
 ## Group 2: Query Mode 
 
 Every database query looks like this:
-`someSQL(#Table Name#).query(#Query Type#, #Query Args#)...Optional Query Modifiers...exec()`
+`SomeSQL(#Table Name#).query(#Query Type#, #Query Args#)...Optional Query Modifiers...exec()`
 
 This gives each query three distinct sections, the query section, the query modifier section, and the execute section.
 

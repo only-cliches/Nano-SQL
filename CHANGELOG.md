@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.1.1] 12-28-2016
+- Updated TSPromise to newest version with scoping built in.
+- Removed the special scoped promise class.
+- Fixed examples to reflect the new class name to comform to TSLint standards.
+
 ## [0.1.0] 12-24-2016
 First stable release, code is safe to start *thinking* about using in production environment.
 - Added TSLint, the project now passes all TSLint checks.

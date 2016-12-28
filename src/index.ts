@@ -1,6 +1,18 @@
 import { tsMap } from "typescript-map";
-import { tsPromise } from "typescript-promise";
+import { TSPromise } from "typescript-promise";
 import { SomeSQLMemDB } from "./memory-db";
+
+export interface ActionOrView {
+    name: string;
+    args?: Array<string>;
+    call: (args?: Object) => TSPromise<any>;
+}
+
+export interface DateModel {
+    key: string;
+    type: string;
+    props?: Array<any>;
+}
 
 export class SomeSQLInstance {
 
@@ -57,7 +69,7 @@ export class SomeSQLInstance {
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    private _views: tsMap<string, Array<{ name: string, args?: Array<string>, call: (args?: Object) => any }>>;
+    private _views: tsMap<string, Array<ActionOrView>>;
 
 
 	/**
@@ -67,7 +79,7 @@ export class SomeSQLInstance {
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    private _actions: tsMap<string, Array<{ name: string, args?: Array<string>, call: (args?: Object) => any }>>;
+    private _actions: tsMap<string, Array<ActionOrView>>;
 
 	/**
     * A map containing the models
@@ -76,7 +88,7 @@ export class SomeSQLInstance {
     * @type {*}
     * @memberOf SomeSQLInstance
     */
-    private _models: tsMap<string, Array<Object>>;
+    private _models: tsMap<string, Array<DateModel>>;
 
 	/**
     * An array containing a temporary list of events to trigger
@@ -120,7 +132,7 @@ export class SomeSQLInstance {
 
         t._actions = new tsMap<string, Array<any>>();
         t._views = new tsMap<string, Array<any>>();
-        t._models = new tsMap<string, Array<Object>>();
+        t._models = new tsMap<string, Array<DateModel>>();
         t._query = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 
@@ -151,16 +163,16 @@ export class SomeSQLInstance {
     * Inits the backend database for use
     * 
     * @param {SomeSQLBackend} backend
-    * @returns {tsPromise<any>}
+    * @returns {TSPromise<any>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public connect(backend?: SomeSQLBackend): tsPromise<Object | string> {
+    public connect(backend?: SomeSQLBackend): TSPromise<Object | string> {
         let t = this;
         t._backend = backend || new SomeSQLMemDB();
-        return new SomeSQLPromise(t, (res, rej) => {
+        return new TSPromise((res, rej) => {
             t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
-        });
+        }, t);
     }
 
 	/**
@@ -230,12 +242,12 @@ export class SomeSQLInstance {
 	/**
 	 * Declare the data model for the current selected table.
 	 * 
-	 * @param {Array<{ key: string, type: string, props?: Array<any> }>} dataModel
+	 * @param {Array<DateModel>} dataModel
 	 * @returns {SomeSQLInstance}
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    public model(dataModel: Array<{ key: string, type: string, props?: Array<any> }>): SomeSQLInstance {
+    public model(dataModel: Array<DateModel>): SomeSQLInstance {
         let t = this;
         let l = t._selectedTable;
         t._callbacks.set(l, new tsMap<string, Array<Function>>());
@@ -246,7 +258,7 @@ export class SomeSQLInstance {
         t._models.set(l, dataModel);
         t._views.set(l, []);
         t._actions.set(l, []);
-        return this;
+        return t;
     }
 
 
@@ -254,14 +266,13 @@ export class SomeSQLInstance {
 	/**
 	 * Declare the views for the current selected table.
 	 * 
-	 * @param {Array<{ name: string, args?: Array<string>, call: (args?: Object) => any }>} viewArray
+	 * @param {Array<ActionOrView>} viewArray
 	 * @returns {SomeSQLInstance}
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    public views(viewArray: Array<{ name: string, args?: Array<string>, call: (args?: Object) => any }>): SomeSQLInstance {
-        this._views.set(this._selectedTable, viewArray);
-        return this;
+    public views(viewArray: Array<ActionOrView>): SomeSQLInstance {
+        return this._views.set(this._selectedTable, viewArray), this;
     }
 
 	/**
@@ -269,11 +280,11 @@ export class SomeSQLInstance {
 		* 
 		* @param {any} viewName
 		* @param {any} viewArgs
-		* @returns {tsPromise<any>}
+		* @returns {TSPromise<any>}
 		* 
 		* @memberOf SomeSQLInstance
 		*/
-    public getView(viewName: string, viewArgs: Object): tsPromise<Object | string> {
+    public getView(viewName: string, viewArgs: Object): TSPromise<Object | string> {
         let t = this;
         let l = t._selectedTable;
         let selView;
@@ -338,14 +349,13 @@ export class SomeSQLInstance {
 	/**
 	 * Declare actions for the current selected table.
 	 * 
-	 * @param {Array<{ name: string, args?: Array<string>, call: (args?: Object) => any }>} actionArray
+	 * @param {Array<ActionOrView>} actionArray
 	 * @returns {SomeSQLInstance}
 	 * 
 	 * @memberOf SomeSQLInstance
 	 */
-    public actions(actionArray: Array<{ name: string, args?: Array<string>, call: (args?: Object) => any }>): SomeSQLInstance {
-        this._actions.set(this._selectedTable, actionArray);
-        return this;
+    public actions(actionArray: Array<ActionOrView>): SomeSQLInstance {
+        return this._actions.set(this._selectedTable, actionArray), this;
     }
 
 	/**
@@ -353,11 +363,11 @@ export class SomeSQLInstance {
     * 
     * @param {any} actionName
     * @param {any} actionArgs
-    * @returns {tsPromise<any>}
+    * @returns {TSPromise<any>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public doAction(actionName: string, actionArgs: Object): tsPromise<Object | string> {
+    public doAction(actionName: string, actionArgs: Object): TSPromise<Object | string> {
         let t = this;
         let l = t._selectedTable;
         let selAction = t._actions.get(l).reduce((prev, cur) => {
@@ -379,8 +389,7 @@ export class SomeSQLInstance {
 	 * @memberOf SomeSQLInstance
 	 */
     public addFilter(filterName: string, filterFunction: Function): SomeSQLInstance {
-        this._filters.set(filterName, filterFunction);
-        return this;
+        return this._filters.set(filterName, filterFunction), this;
     }
 
 	/**
@@ -475,18 +484,17 @@ export class SomeSQLInstance {
     * @memberOf SomeSQLInstance
     */
     private _addCmd(type: string, args: Array<any> | Object): SomeSQLInstance {
-        this._query.push(new tsMap<string, Object | Array<any>>([["type", type], ["args", args]]));
-        return this;
+        return this._query.push(new tsMap<string, Object | Array<any>>([["type", type], ["args", args]])), this;
     }
 
 	/**
     * Executes the current pending query to the db engine.
     * 
-    * @returns {tsPromise<Object|string>}
+    * @returns {TSPromise<Object|string>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public exec(): tsPromise<Array<Object | string>> {
+    public exec(): TSPromise<Array<Object | string>> {
 
         let t = this;
         let _t = t._selectedTable;
@@ -512,7 +520,7 @@ export class SomeSQLInstance {
             t._activeActionOrView = undefined;
         };
 
-        return new SomeSQLPromise(t, (res, rej) => {
+        return new TSPromise((res, rej) => {
 
             let _tEvent = function (data, callBack, isError) {
                 if (t._permanentFilters.length && isError !== true) {
@@ -537,7 +545,7 @@ export class SomeSQLInstance {
                 t._triggerEvents = ["error"];
                 _tEvent(err, rej, true);
             });
-        });
+        }, t);
     }
 
 	/**
@@ -545,19 +553,19 @@ export class SomeSQLInstance {
     * 
     * @param {string} argType
     * @param {*} args
-    * @returns {tsPromise<any>}
+    * @returns {TSPromise<any>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public custom(argType: string, args: any): tsPromise<any> {
+    public custom(argType: string, args: any): TSPromise<any> {
         let t = this;
-        return new SomeSQLPromise(t, (res, rej) => {
+        return new TSPromise((res, rej) => {
             if (t._backend.custom) {
                 t._backend.custom.apply(t, [argType, args, res, rej]);
             } else {
                 res();
             }
-        });
+        }, t);
     }
 
 	/**
@@ -569,13 +577,13 @@ export class SomeSQLInstance {
     * ]
     * 
     * @param {Array<any>} rows
-    * @returns {tsPromise<any>}
+    * @returns {TSPromise<any>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public loadJS(rows: Array<Object>): tsPromise<Object | string> {
+    public loadJS(rows: Array<Object>): TSPromise<Object | string> {
         let t = this;
-        return tsPromise.all(rows.map((row) => {
+        return TSPromise.all(rows.map((row) => {
             return t.table(t._selectedTable).query("upsert", row).exec();
         }));
     }
@@ -584,17 +592,17 @@ export class SomeSQLInstance {
     * Load a CSV file into the DB.
     * 
     * @param {string} csv
-    * @returns {tsPromise<any>}
+    * @returns {TSPromise<any>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public loadCSV(csv: string): tsPromise<Object | string> {
+    public loadCSV(csv: string): TSPromise<Object | string> {
         let t = this;
         let fields = [];
 
-        return new SomeSQLPromise(t, (res, rej) => {
-            tsPromise.all(csv.split("\n").map((v, k) => {
-                return new SomeSQLPromise(t, (resolve, reject) => {
+        return new TSPromise((res, rej) => {
+            TSPromise.all(csv.split("\n").map((v, k) => {
+                return new TSPromise((resolve, reject) => {
                     if (k === 0) {
                         fields = v.split(",");
                         resolve();
@@ -611,24 +619,24 @@ export class SomeSQLInstance {
                             resolve();
                         });
                     }
-                });
+                }, t);
             })).then(function () {
                 res();
             });
-        });
+        }, t);
     }
 
 	/**
     * Export the current query to a CSV file.
     * 
     * @param {boolean} [headers]
-    * @returns {tsPromise<any>}
+    * @returns {TSPromise<any>}
     * 
     * @memberOf SomeSQLInstance
     */
-    public toCSV(headers?: boolean): tsPromise<string> {
+    public toCSV(headers?: boolean): TSPromise<string> {
         let t = this;
-        return new SomeSQLPromise(t, (res, rej) => {
+        return new TSPromise((res, rej) => {
 
             t.exec().then(function (json: Array<Object>) {
 
@@ -661,7 +669,7 @@ export class SomeSQLInstance {
                     }).join(",");
                 }).join("\n"));
             });
-        });
+        }, t);
     }
 
 	/**
@@ -723,7 +731,7 @@ export interface SomeSQLBackend {
     * 
     * @param {string} table
     * @param {Array<any>} query
-    * @returns {(tsPromise<Array<any>|string>)}
+    * @returns {(TSPromise<Array<any>|string>)}
     * 
     * @memberOf SomeSQLBackend
     */
@@ -741,56 +749,9 @@ export interface SomeSQLBackend {
     custom?(command: string, args: any, onSuccess: Function, onFail?: Function): void;
 }
 
-/**
- * Extended classs of the promise to make sure the "Then" and "catch" functions maintain scope of the database "this" var.
- * 
- * @class SomeSQLPromise
- * @extends {tsPromise<any>}
- */
-class SomeSQLPromise extends tsPromise<any> {
-    private scope: SomeSQLInstance;
-
-    constructor(scope: SomeSQLInstance, callBackFunc?: (res?: Function, rej?: Function) => void) {
-        super(callBackFunc);
-        this.scope = scope;
-    }
-
-    public then(onSuccess?: Function, onFail?: Function): tsPromise<any> {
-        let t = this;
-        return new SomeSQLPromise(t.scope, (resolve, reject) => {
-            t.done((value) => {
-                if (typeof onSuccess === "function") {
-                    try {
-                        value = onSuccess.apply(t.scope, [value]);
-                    }
-                    catch (e) {
-                        reject(e);
-                        return;
-                    }
-                }
-                resolve(value);
-            }, (value) => {
-                if (typeof onFail === "function") {
-                    try {
-                        value = onFail.apply(t.scope, [value]);
-                    }
-                    catch (e) {
-                        reject(e);
-                        return;
-                    }
-                    resolve(value);
-                }
-                else {
-                    reject(value);
-                }
-            });
-        });
-    }
-}
-
 let _someSQLStatic = new SomeSQLInstance();
 
-export function someSQL(table: string) {
+export function SomeSQL(table: string) {
     return _someSQLStatic.table(table);
 }
 

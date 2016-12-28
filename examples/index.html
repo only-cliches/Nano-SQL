@@ -7,7 +7,7 @@
         /* This file used to run tests and play with the lib */
   
 /*
-            someSQL('users') // <= Table Name
+            SomeSQL('users') // <= Table Name
             .model([ // <= create table model before you can use it
                 {key:'id',type:'int',props:['pk','ai']},
                 {key:'name',type:'string'},
@@ -41,13 +41,13 @@
             
             //Declare models, actions, and views
 
-            someSQL().connect(mySQL).then(function() {
+            SomeSQL().connect(mySQL).then(function() {
                 //database ready
             })
 */
 
-
-            someSQL('users')//Table/Store Name
+ 
+            SomeSQL('users')//Table/Store Name
             .model([ //Data Model
                 {key:'id',type:'int',props:['pk','ai']},
                 {key:'name',type:'string'},
@@ -89,11 +89,11 @@
                 }
             ]).connect();
 
-            someSQL('*').on('change',function(e) {
+            SomeSQL('*').on('change',function(e) {
                 //console.log(e);
             });
 
-            someSQL('users')
+            SomeSQL('users')
             .doAction('add_new_user',{user:{
                 id:null,
                 name:'jim',
@@ -117,7 +117,6 @@
                 }).exec();
             })
             .then(function(result) {
-                
                return this.query('upsert',{
                     id:null,
                     name:'jeb',
@@ -178,9 +177,9 @@
             })
 /*
             //Possible Join API
-            someSQL('orders').query('select',['orders.id','orders.title','users.name']).join({
+            SomeSQL('orders').query('select',['orders.id','orders.title','users.name']).join({
                 type:'inner',//left, inner, right
-                query:someSQL('users').query('select'),
+                query:SomeSQL('users').query('select'),
                 where:[['orders.customerID','=','user.id'],'and',['something','<','somethingElse'],'or',['yourface','=','yourface']]
             }).exec().then(function(result) {
 

@@ -1,5 +1,5 @@
 import { SomeSQLInstance, SomeSQLBackend } from "./index";
-import { tsPromise } from "typescript-promise";
+import { TSPromise } from "typescript-promise";
 import { tsMap } from "typescript-map";
 
 export class SomeSQLMemDB implements SomeSQLBackend {
@@ -123,8 +123,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         t._cacheKey = SomeSQLInstance.hash(JSON.stringify(query));
         t._cacheQueryIndex.set(t._cacheKey, query); // working on smarter cache invalidation
 
-        tsPromise.all(query.map((q) => {
-            return new tsPromise(function (resolve, reject) {
+        TSPromise.all(query.map((q) => {
+            return new TSPromise(function (resolve, reject) {
                 t._query(q, resolve);
             });
         })).then(function () {

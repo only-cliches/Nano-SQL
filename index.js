@@ -62,11 +62,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
 	var typescript_map_1 = __webpack_require__(2);
 	var typescript_promise_1 = __webpack_require__(3);
 	var memory_db_1 = __webpack_require__(4);
@@ -94,9 +89,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    SomeSQLInstance.prototype.connect = function (backend) {
 	        var t = this;
 	        t._backend = backend || new memory_db_1.SomeSQLMemDB();
-	        return new SomeSQLPromise(t, function (res, rej) {
+	        return new typescript_promise_1.TSPromise(function (res, rej) {
 	            t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
-	        });
+	        }, t);
 	    };
 	    SomeSQLInstance.prototype.on = function (actions, callBack) {
 	        var t = this;
@@ -140,11 +135,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._models.set(l, dataModel);
 	        t._views.set(l, []);
 	        t._actions.set(l, []);
-	        return this;
+	        return t;
 	    };
 	    SomeSQLInstance.prototype.views = function (viewArray) {
-	        this._views.set(this._selectedTable, viewArray);
-	        return this;
+	        return this._views.set(this._selectedTable, viewArray), this;
 	    };
 	    SomeSQLInstance.prototype.getView = function (viewName, viewArgs) {
 	        var t = this;
@@ -187,8 +181,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    };
 	    SomeSQLInstance.prototype.actions = function (actionArray) {
-	        this._actions.set(this._selectedTable, actionArray);
-	        return this;
+	        return this._actions.set(this._selectedTable, actionArray), this;
 	    };
 	    SomeSQLInstance.prototype.doAction = function (actionName, actionArgs) {
 	        var t = this;
@@ -204,8 +197,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return selAction.call.apply(t, [t._cleanArgs(selAction.args, actionArgs)]);
 	    };
 	    SomeSQLInstance.prototype.addFilter = function (filterName, filterFunction) {
-	        this._filters.set(filterName, filterFunction);
-	        return this;
+	        return this._filters.set(filterName, filterFunction), this;
 	    };
 	    SomeSQLInstance.prototype.query = function (action, args) {
 	        this._query = [];
@@ -231,8 +223,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this._addCmd("filter-" + name, args);
 	    };
 	    SomeSQLInstance.prototype._addCmd = function (type, args) {
-	        this._query.push(new typescript_map_1.tsMap([["type", type], ["args", args]]));
-	        return this;
+	        return this._query.push(new typescript_map_1.tsMap([["type", type], ["args", args]])), this;
 	    };
 	    SomeSQLInstance.prototype.exec = function () {
 	        var t = this;
@@ -256,7 +247,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	            t._activeActionOrView = undefined;
 	        };
-	        return new SomeSQLPromise(t, function (res, rej) {
+	        return new typescript_promise_1.TSPromise(function (res, rej) {
 	            var _tEvent = function (data, callBack, isError) {
 	                if (t._permanentFilters.length && isError !== true) {
 	                    data = t._permanentFilters.reduce(function (prev, cur, i) {
@@ -277,31 +268,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	                t._triggerEvents = ["error"];
 	                _tEvent(err, rej, true);
 	            });
-	        });
+	        }, t);
 	    };
 	    SomeSQLInstance.prototype.custom = function (argType, args) {
 	        var t = this;
-	        return new SomeSQLPromise(t, function (res, rej) {
+	        return new typescript_promise_1.TSPromise(function (res, rej) {
 	            if (t._backend.custom) {
 	                t._backend.custom.apply(t, [argType, args, res, rej]);
 	            }
 	            else {
 	                res();
 	            }
-	        });
+	        }, t);
 	    };
 	    SomeSQLInstance.prototype.loadJS = function (rows) {
 	        var t = this;
-	        return typescript_promise_1.tsPromise.all(rows.map(function (row) {
+	        return typescript_promise_1.TSPromise.all(rows.map(function (row) {
 	            return t.table(t._selectedTable).query("upsert", row).exec();
 	        }));
 	    };
 	    SomeSQLInstance.prototype.loadCSV = function (csv) {
 	        var t = this;
 	        var fields = [];
-	        return new SomeSQLPromise(t, function (res, rej) {
-	            typescript_promise_1.tsPromise.all(csv.split("\n").map(function (v, k) {
-	                return new SomeSQLPromise(t, function (resolve, reject) {
+	        return new typescript_promise_1.TSPromise(function (res, rej) {
+	            typescript_promise_1.TSPromise.all(csv.split("\n").map(function (v, k) {
+	                return new typescript_promise_1.TSPromise(function (resolve, reject) {
 	                    if (k === 0) {
 	                        fields = v.split(",");
 	                        resolve();
@@ -319,15 +310,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            resolve();
 	                        });
 	                    }
-	                });
+	                }, t);
 	            })).then(function () {
 	                res();
 	            });
-	        });
+	        }, t);
 	    };
 	    SomeSQLInstance.prototype.toCSV = function (headers) {
 	        var t = this;
-	        return new SomeSQLPromise(t, function (res, rej) {
+	        return new typescript_promise_1.TSPromise(function (res, rej) {
 	            t.exec().then(function (json) {
 	                var header = t._query.filter(function (q) {
 	                    return q.get("type") === "select";
@@ -355,7 +346,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }).join(",");
 	                }).join("\n"));
 	            });
-	        });
+	        }, t);
 	    };
 	    SomeSQLInstance.uuid = function (inputUUID) {
 	        return inputUUID ? inputUUID : (function () {
@@ -376,51 +367,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return SomeSQLInstance;
 	}());
 	exports.SomeSQLInstance = SomeSQLInstance;
-	var SomeSQLPromise = (function (_super) {
-	    __extends(SomeSQLPromise, _super);
-	    function SomeSQLPromise(scope, callBackFunc) {
-	        var _this = _super.call(this, callBackFunc) || this;
-	        _this.scope = scope;
-	        return _this;
-	    }
-	    SomeSQLPromise.prototype.then = function (onSuccess, onFail) {
-	        var t = this;
-	        return new SomeSQLPromise(t.scope, function (resolve, reject) {
-	            t.done(function (value) {
-	                if (typeof onSuccess === "function") {
-	                    try {
-	                        value = onSuccess.apply(t.scope, [value]);
-	                    }
-	                    catch (e) {
-	                        reject(e);
-	                        return;
-	                    }
-	                }
-	                resolve(value);
-	            }, function (value) {
-	                if (typeof onFail === "function") {
-	                    try {
-	                        value = onFail.apply(t.scope, [value]);
-	                    }
-	                    catch (e) {
-	                        reject(e);
-	                        return;
-	                    }
-	                    resolve(value);
-	                }
-	                else {
-	                    reject(value);
-	                }
-	            });
-	        });
-	    };
-	    return SomeSQLPromise;
-	}(typescript_promise_1.tsPromise));
 	var _someSQLStatic = new SomeSQLInstance();
-	function someSQL(table) {
+	function SomeSQL(table) {
 	    return _someSQLStatic.table(table);
 	}
-	exports.someSQL = someSQL;
+	exports.SomeSQL = SomeSQL;
 
 
 /***/ },
@@ -480,8 +431,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._act = null;
 	        t._cacheKey = index_1.SomeSQLInstance.hash(JSON.stringify(query));
 	        t._cacheQueryIndex.set(t._cacheKey, query);
-	        typescript_promise_1.tsPromise.all(query.map(function (q) {
-	            return new typescript_promise_1.tsPromise(function (resolve, reject) {
+	        typescript_promise_1.TSPromise.all(query.map(function (q) {
+	            return new typescript_promise_1.TSPromise(function (resolve, reject) {
 	                t._query(q, resolve);
 	            });
 	        })).then(function () {

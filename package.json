@@ -1,6 +1,6 @@
 {
   "name": "some-sql",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -46,6 +46,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
+    "tslib": "^1.4.0",
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",
     "typescript-promise": "git+https://github.com/ClickSimply/typescript-promise.git"
   }
