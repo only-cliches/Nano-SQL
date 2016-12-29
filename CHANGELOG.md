@@ -2,7 +2,7 @@
 
 ## [0.1.3] 12-28-2016
 - Added a ton of documentation.
-- Implemented TSDocs
+- Implemented TypeDoc
 - Cleaned up a bunch of typings.
 
 ## [0.1.2] 12-28-2016

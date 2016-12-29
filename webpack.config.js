@@ -10,6 +10,7 @@ var options = {
     entry: {
         'some-sql': [path.join(__dirname, 'src', 'index.ts')]
     },
+    watch: false,
     output: {
         path: PATHS.build,
         filename: '[name].min.js',

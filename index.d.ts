@@ -15,18 +15,6 @@ export interface QueryLine {
     args?: any;
 }
 export declare class SomeSQLInstance {
-    private _selectedTable;
-    private _query;
-    private _backend;
-    private _callbacks;
-    private _events;
-    private _views;
-    private _actions;
-    private _models;
-    private _triggerEvents;
-    private _activeActionOrView;
-    private _filters;
-    private _permanentFilters;
     constructor();
     table(table?: string): SomeSQLInstance;
     connect(backend?: SomeSQLBackend): TSPromise<Object | string>;
@@ -36,8 +24,6 @@ export declare class SomeSQLInstance {
     model(dataModel: Array<DataModel>): SomeSQLInstance;
     views(viewArray: Array<ActionOrView>): SomeSQLInstance;
     getView(viewName: string, viewArgs: Object): TSPromise<Object | string>;
-    private _cleanArgs(argDeclarations, args);
-    private _cast(type, val);
     actions(actionArray: Array<ActionOrView>): SomeSQLInstance;
     doAction(actionName: string, actionArgs: Object): TSPromise<Object | string>;
     addFilter(filterName: string, filterFunction: Function): SomeSQLInstance;
@@ -47,7 +33,6 @@ export declare class SomeSQLInstance {
     limit(args: number): SomeSQLInstance;
     offset(args: number): SomeSQLInstance;
     filter(name: string, args?: any): SomeSQLInstance;
-    private _addCmd(type, args);
     exec(): TSPromise<Array<Object | string>>;
     custom(argType: string, args?: any): any;
     loadJS(rows: Array<Object>): TSPromise<Object | string>;

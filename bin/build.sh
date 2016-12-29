@@ -15,6 +15,7 @@ export NODE_ENV=production && ./node_modules/.bin/webpack
 
 #docs 
 ./node_modules/.bin/typedoc --out docs . --target ES5 --exclude memory-db.ts --excludeExternals --excludePrivate
+touch docs/.nojekyll
 
 #clean up
 rm -rf src/*.js

@@ -51,7 +51,7 @@ export class SomeSQLInstance {
     /**
      * Holds the current selected table
      * 
-     * @private
+     * @internal
      * @type {string}
      * @memberOf SomeSQLInstance
      */
@@ -61,7 +61,7 @@ export class SomeSQLInstance {
     /**
      * Holds an array of the query arguments
      * 
-     * @private
+     * @internal
      * @type {Array<QueryLine>}
      * @memberOf SomeSQLInstance
      */
@@ -70,7 +70,7 @@ export class SomeSQLInstance {
     /**
      * The backend currently being used
      * 
-     * @private
+     * @internal
      * @type {SomeSQLBackend}
      * @memberOf SomeSQLInstance
      */
@@ -80,7 +80,7 @@ export class SomeSQLInstance {
     /**
      * The callbacks for events
      * 
-     * @private
+     * @internal
      * @type {TSMap<string, TSMap<string, Array<Function>>>}
      * @memberOf SomeSQLInstance
      */
@@ -90,7 +90,7 @@ export class SomeSQLInstance {
     /**
      * An array of possible events
      * 
-     * @private
+     * @internal
      * @type {Array<string>}
      * @memberOf SomeSQLInstance
      */
@@ -101,7 +101,7 @@ export class SomeSQLInstance {
     /**
      * Holds a map of the current views for this database.
      * 
-     * @private
+     * @internal
      * @type {TSMap<string, Array<ActionOrView>>}
      * @memberOf SomeSQLInstance
      */
@@ -112,7 +112,7 @@ export class SomeSQLInstance {
     /**
      * Holds a map of the current actions for this database.
      * 
-     * @private
+     * @internal
      * @type {TSMap<string, Array<ActionOrView>>}
      * @memberOf SomeSQLInstance
      */
@@ -122,7 +122,7 @@ export class SomeSQLInstance {
     /**
      * A map containing the models
      * 
-     * @private
+     * @internal
      * @type {TSMap<string, Array<DataModel>>}
      * @memberOf SomeSQLInstance
      */
@@ -132,7 +132,7 @@ export class SomeSQLInstance {
     /**
      * An array containing a temporary list of events to trigger
      * 
-     * @private
+     * @internal
      * @type {Array<string>}
      * @memberOf SomeSQLInstance
      */
@@ -142,7 +142,7 @@ export class SomeSQLInstance {
     /**
      * The current action or view being triggered.
      * 
-     * @private
+     * @internal
      * @type {string}
      * @memberOf SomeSQLInstance
      */
@@ -152,7 +152,7 @@ export class SomeSQLInstance {
     /**
      * Holds custom filters implimented by the user
      * 
-     * @private
+     * @internal
      * @type {TSMap<string, Function>}
      * @memberOf SomeSQLInstance
      */
@@ -163,7 +163,7 @@ export class SomeSQLInstance {
     /**
      * Holds an array of filters to apply to EVERY query.
      * 
-     * @private
+     * @internal
      * @type {Array<string>}
      * @memberOf SomeSQLInstance
      */
@@ -395,7 +395,7 @@ export class SomeSQLInstance {
     /**
      * Take an action or view and it's args, then make sure the args comform to the types declared in the model.
      * 
-     * @private
+     * @internal
      * @param {Array<string>} argDeclarations
      * @param {Object} args
      * @returns {Object}
@@ -421,7 +421,7 @@ export class SomeSQLInstance {
     /**
      * Cast variables to a specific type.
      * 
-     * @private
+     * @internal
      * @param {string} type
      * @param {*} val
      * @returns {*}
@@ -677,7 +677,7 @@ export class SomeSQLInstance {
     /**
      * Used to add a command to the query
      * 
-     * @private
+     * @internal
      * @param {string} type
      * @param {(Array<any> | Object)} args
      * @returns {SomeSQLInstance}
