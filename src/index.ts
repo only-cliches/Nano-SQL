@@ -350,6 +350,7 @@ export class SomeSQLInstance {
      * ```
      * 
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
+     * 
      * ```
      * .views[{
      *      name:...
@@ -537,11 +538,12 @@ export class SomeSQLInstance {
 	/**
 	 * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
      * Example:
+     * 
      * ```
      *  SomeSQL().addFilter('addOne',function(rows) {
      *  return rows.map((row) => row.balance + 1);
      * })
-     * ...
+     * ```
      * 
      * Then to use it in a query: 
      * ```
@@ -792,7 +794,8 @@ export class SomeSQLInstance {
     }
 
     /**
-     * Syncronous database extension.
+     * Perform a custom action supported by the database driver.
+     * This currently does nothing.
      * 
      * @param {string} argType
      * @param {*} [args]

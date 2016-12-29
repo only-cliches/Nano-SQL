@@ -164,7 +164,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:504</li>
+									<li>Defined in index.ts:505</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -227,20 +227,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:557</li>
+									<li>Defined in index.ts:559</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
-										Example:
-										```
-										SomeSQL().addFilter(&#39;addOne&#39;,function(rows) {
-										return rows.map((row) =&gt; row.balance + 1);
-										})
-									...</p>
+									Example:</p>
 								</div>
-								<p>Then to use it in a query:</p>
+								<pre><code> SomeSQL().addFilter(<span class="hljs-string">'addOne'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{
+ <span class="hljs-keyword">return</span> rows.map(<span class="hljs-function">(<span class="hljs-params">row</span>) =&gt;</span> row.balance + <span class="hljs-number">1</span>);
+})
+</code></pre><p>Then to use it in a query:</p>
 								<pre><code><span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">"users"</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>)<span class="hljs-selector-class">.filter</span>(<span class="hljs-string">'addOne'</span>)<span class="hljs-selector-class">.exec</span>();
 </code></pre>
 								<dl class="tsd-comment-tags">
@@ -338,12 +336,13 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:803</li>
+									<li>Defined in index.ts:806</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Syncronous database extension.</p>
+									<p>Perform a custom action supported by the database driver.
+									This currently does nothing.</p>
 								</div>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -374,7 +373,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:525</li>
+									<li>Defined in index.ts:526</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -415,7 +414,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:740</li>
+									<li>Defined in index.ts:742</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -442,7 +441,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:712</li>
+									<li>Defined in index.ts:714</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -483,7 +482,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:391</li>
+									<li>Defined in index.ts:392</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -524,7 +523,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:674</li>
+									<li>Defined in index.ts:676</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -559,7 +558,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:846</li>
+									<li>Defined in index.ts:849</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -593,7 +592,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:828</li>
+									<li>Defined in index.ts:831</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -704,7 +703,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:691</li>
+									<li>Defined in index.ts:693</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -775,7 +774,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:657</li>
+									<li>Defined in index.ts:659</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -812,7 +811,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:605</li>
+									<li>Defined in index.ts:607</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -902,7 +901,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:885</li>
+									<li>Defined in index.ts:888</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -935,7 +934,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:370</li>
+									<li>Defined in index.ts:371</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -998,7 +997,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:637</li>
+									<li>Defined in index.ts:639</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1040,7 +1039,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:954</li>
+									<li>Defined in index.ts:957</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1076,7 +1075,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:934</li>
+									<li>Defined in index.ts:937</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
