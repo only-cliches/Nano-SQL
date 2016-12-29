@@ -1,4 +1,4 @@
-import { SomeSQLBackend } from "./index";
+import { SomeSQLBackend, ActionOrView, QueryLine } from "./index";
 import { TSMap } from "typescript-map";
 export declare class SomeSQLMemDB implements SomeSQLBackend {
     private _tables;
@@ -12,9 +12,9 @@ export declare class SomeSQLMemDB implements SomeSQLBackend {
     private _cache;
     private _pendingQuerys;
     constructor();
-    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Object>, views: TSMap<string, Object>, filters: TSMap<string, Function>, callback: Function): void;
+    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, callback: Function): void;
     private _newModel(table, args);
-    exec(table: string, query: Array<TSMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
+    exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
     private _query(queryArg, resolve);
     private _initFilters();
     private _doFilter(filterName, rows, filterArgs?);

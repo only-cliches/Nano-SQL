@@ -11,6 +11,7 @@ I looked everywhere for a data store with these features and couldn't find it:
 6. Returned immutable data sets to improve React performance (like ImmutableJS).
 7. Isn't ten million kilobytes in size (like TaffyDB).
 
+
 SomeSQL was born to bring all this together.  It's an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.
 
 ## Features
@@ -19,32 +20,33 @@ SomeSQL was born to bring all this together.  It's an extensible database abstra
 * Uses explicit model declarations.
 * Returns immutable objects.
 * Flux like usage pattern.
+* Written in Typescript.
 * Extensible.
-* 4.5KB Gzipped.
+* Under 5KB Gzipped.
 
 ## Simple Usage
 
 1 minute minimal quick start:
 
 ```
-SomeSQL('users') // "users" is our table name.
-.model([ //Declare data model
+SomeSQL('users') //  "users" is our table name.
+.model([ // Declare data model
     {key:'id',type:'int',props:['pk','ai']},
     {key:'name',type:'string'},
     {key:'age',type:'int'}, 
 ])
-.connect() //Init the data store for usage.
+.connect() // Init the data store for usage.
 .then(function() {
-    return this.query('upsert',{ //Add a record
+    return this.query('upsert',{ // Add a record
         name:"Billy",
         age:5
     }).exec();
 })
 .then(function() {
-    return this.query('select').exec(); //select all rows from the current active table
+    return this.query('select').exec(); // select all rows from the current active table
 })
 .then(function(rows) {
-    console.log(rows) //<= [{id:1,name:"Billy",age:5}]
+    console.log(rows) // <= [{id:1,name:"Billy",age:5}]
 })
 
 ```
@@ -54,16 +56,16 @@ First you declare your models, connect the db, then you execute queries.
 
 ### Declare DB model
 ```
-SomeSQL('users')//Table/Store Name, required to declare model and attach it to this store.
-.model([ //Data Model, required
-    {key:'id',type:'int',props:['pk','ai']}, //This has the primary key and auto incriment values
+SomeSQL('users')// Table/Store Name, required to declare model and attach it to this store.
+.model([ // Data Model, required
+    {key:'id',type:'int',props:['pk','ai']}, // This has the primary key and auto incriment values
     {key:'name',type:'string'},
     {key:'age',type:'int'},
     {key:'balance',type:'float'},
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
-.actions([ //Optional
+.actions([ // Optional
     {
         name:'add_new_user',
         args:['user:map'],
@@ -72,7 +74,7 @@ SomeSQL('users')//Table/Store Name, required to declare model and attach it to t
         }
     }
 ])
-.views([ //Optional
+.views([ // Optional
     {
         name: 'get_user_by_name',
         args: ['name:string'],
@@ -93,9 +95,9 @@ SomeSQL('users')//Table/Store Name, required to declare model and attach it to t
 
 ### Connect the DB and execute queries
 ```
-//Initializes the db.
+// Initializes the db.
 SomeSQL().connect().then(function() {
-    //DB ready to use.
+    // DB ready to use.
     this.doAction('add_new_user',{user:{
         id:null,
         name:'jim',
@@ -106,10 +108,10 @@ SomeSQL().connect().then(function() {
             favorteColor:'blue'
         }
     }}).then(function(result) {
-        console.log(result) // <- "1 Row(s) upserted"
+        console.log(result) //  <- "1 Row(s) upserted"
         return this.getView('list_all_users');
     }).then(function(result) {
-        console.log(result) // <- single object array containing the row we inserted.
+        console.log(result) //  <- single object array containing the row we inserted.
     });
 });
 
@@ -127,15 +129,34 @@ For example a query to get all rows from the users table looks like this:
 
 Here are some more examples:
 ```
-SomeSQL('users').query('select',['name','id']).exec(); //Get all records but only return the name and id columns
+// Get all records but only return the name and id columns
+SomeSQL('users').query('select',['name','id']).exec(); 
 
-SomeSQL('users').query('select').where(['name','=','scott']).exec() //only show rows where the name == "scott"
+// only show rows where the name == "scott"
+SomeSQL('users').query('select').where(['name','=','scott']).exec() 
 
-SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() //Order the results by name ascending, then age descending.
+// Compound where statement with AND
+SomeSQL('users).query('select').where([['name','=','billy'],'and',['balance','>',20]]).exec();
 
-SomeSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() //combine any patterns as you'd like.
+// Compund where statement with OR
+SomeSQL('users).query('select').where([['name','=','billy'],'or',['balance','>',20]]).exec();
 
-SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() //Where statements work on upserts as well.
+// Order the results by name ascending, then age descending.
+SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() 
+
+// Limit and Offset
+SomeSQL('users').query('select').limit(20).offset(10).exec();
+
+// Filters (Must be supported by the database driver)
+SomeSQL('users').query('select',['age']).filter('average').exec();
+
+// The Memory DB supports sum, first, last, min, max, average, and count
+
+// combine any patterns as you'd like.
+SomeSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() 
+
+// Where statements work on upserts as well.
+SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() 
 
 ```
 
@@ -160,8 +181,8 @@ SomeSQL('users').query('select').exec().then(function() {
 You can listen to any number of database events on any table or all tables.
 
 ```
-SomeSQL("users").on('select',function(eventData) {}) //Listen to "select" commands from the users table
-SomeSQL("*").on('change',function(eventData) {}) //Listen for any changes to any table in the database.
+SomeSQL("users").on('select',function(eventData) {}) // Listen to "select" commands from the users table
+SomeSQL("*").on('change',function(eventData) {}) // Listen for any changes to any table in the database.
 
 ```
 
@@ -188,7 +209,7 @@ If you need more than one data store with a collection of separate tables, you c
 ```
 var myDB = new SomeSQL_Instance().table;
 
-//And now use it just like you use the SomeSQL var.
+// And now use it just like you use the SomeSQL var.
 myDB('users').query("select").exec()...
 
 Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.

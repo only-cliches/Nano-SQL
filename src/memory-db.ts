@@ -1,7 +1,14 @@
-import { SomeSQLInstance, SomeSQLBackend } from "./index";
+import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine } from "./index";
 import { TSPromise } from "typescript-promise";
 import { TSMap } from "typescript-map";
 
+/**
+ * In memory storage implimentation.
+ * 
+ * @export
+ * @class SomeSQLMemDB
+ * @implements {SomeSQLBackend}
+ */
 export class SomeSQLMemDB implements SomeSQLBackend {
 
     /**
@@ -29,7 +36,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * @type {(TSMap<string,Object|Array<any>>)}
      * @memberOf SomeSQLMemDB
      */
-    private _act: TSMap<string, Object | Array<any>>;
+    private _act: QueryLine;
 
     /**
      * Holds an array of the remaining query objects to modify the query in some way.
@@ -38,7 +45,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * @type {(Array<TSMap<string,Object|Array<any>>>)}
      * @memberOf SomeSQLMemDB
      */
-    private _mod: Array<TSMap<string, Object | Array<any>>>;
+    private _mod: Array<QueryLine>;
 
 
     private _filters: TSMap<string, Function>;
@@ -70,7 +77,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @memberOf SomeSQLMemDB
      */
-    public connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Object>, views: TSMap<string, Object>, filters: TSMap<string, Function>, callback: Function): void {
+    public connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, callback: Function): void {
         let t = this;
         models.forEach((model, table) => {
             t._newModel(table, model);
@@ -108,7 +115,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @memberOf SomeSQLMemDB
      */
-    public exec(table: string, query: Array<TSMap<string, Object | Array<any>>>, viewOrAction: string, onSuccess: Function, onFail?: Function): void {
+    public exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: Function, onFail?: Function): void {
         let t = this;
 
         if (t._act != null) {
@@ -147,8 +154,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @memberOf SomeSQLMemDB
      */
-    private _query(queryArg: TSMap<string, number | Object | Array<any>>, resolve: Function): void {
-        if (["upsert", "select", "delete", "drop"].indexOf(<string>queryArg.get("type")) !== -1) {
+    private _query(queryArg: QueryLine, resolve: Function): void {
+        if (["upsert", "select", "delete", "drop"].indexOf(<string>queryArg.type) !== -1) {
             this._act = queryArg;
         } else {
             this._mod.push(queryArg);
@@ -167,7 +174,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         let t = this;
         let f = t._filters;
         f.set("sum", (rows: Array<Object>) => {
-            return rows.map((r) => r[t._act.get("args")[0]]).reduce((a, b) => a + b, 0);
+            return rows.map((r) => r[t._act.args[0]]).reduce((a, b) => a + b, 0);
         });
         f.set("first", (rows: Array<Object>) => {
             return rows[0];
@@ -176,10 +183,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
             return rows.pop();
         });
         f.set("min", (rows: Array<Object>) => {
-            return rows.map((r) => r[t._act.get("args")[0]]).sort((a, b) => a < b ? -1 : 1)[0];
+            return rows.map((r) => r[t._act.args[0]]).sort((a, b) => a < b ? -1 : 1)[0];
         });
         f.set("max", (rows: Array<Object>) => {
-            return rows.map((r) => r[t._act.get("args")[0]]).sort((a, b) => a > b ? -1 : 1)[0];
+            return rows.map((r) => r[t._act.args[0]]).sort((a, b) => a > b ? -1 : 1)[0];
         });
         f.set("average", (rows: Array<Object>) => {
             return t._doFilter("sum", rows) / rows.length;
@@ -206,9 +213,9 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
     private _runFilters(dbRows: Array<Object>): any {
         let t = this;
-        let filters = t._mod.filter((m) => (<string>m.get("type")).indexOf("filter-") === 0);
+        let filters = t._mod.filter((m) => (<string>m.type).indexOf("filter-") === 0);
         return filters.length ? filters.reduce((prev, cur, i) => {
-            return t._doFilter((<string>filters[i].get("type")).replace("filter-", ""), prev, filters[i].get("args"));
+            return t._doFilter((<string>filters[i].type).replace("filter-", ""), prev, filters[i].args);
         }, dbRows) : dbRows;
     }
 
@@ -236,11 +243,11 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         let t = this;
 
         let _hasWhere = t._mod.filter((v) => {
-            return v.get("type") === "where";
+            return v.type === "where";
         });
-        let _whereStatement = _hasWhere.length ? _hasWhere[0].get("args") : undefined;
+        let _whereStatement = _hasWhere.length ? _hasWhere[0].args : undefined;
 
-        let qArgs: any = t._act.get("args");
+        let qArgs: any = t._act.args;
 
         let ta = t._tables.get(t._selectedTable);
 
@@ -248,7 +255,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
         let whereTable: _memDB_Table;
 
-        switch (t._act.get("type")) {
+        switch (t._act.type) {
             case "upsert":
 
                 if (_whereStatement) { // Upserting existing rows
@@ -296,8 +303,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
                 let mods: Array<any> = ["ordr", "ofs", "lmt", "clms"];
 
-                let getMod = function (name): TSMap<any, any> {
-                    return t._mod.filter((v) => v.get("type") === name).pop();
+                let getMod = function (name): QueryLine {
+                    return t._mod.filter((v) => v.type === name).pop();
                 };
 
                 let result = mods.reduce((prev, cur, i) => {
@@ -305,7 +312,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                         case "ordr":
                             if (getMod("orderby")) {
                                 let orderBy = new TSMap();
-                                orderBy.fromJSON(getMod("orderby").get("args"));
+                                orderBy.fromJSON(getMod("orderby").args);
                                 return prev.sort((a, b) => {
                                     return orderBy.keys().reduce((prev, cur, i) => {
                                         let column = <string>orderBy.keys()[i];
@@ -319,14 +326,14 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                             }
                         case "ofs":
                             if (getMod("offset")) {
-                                let offset = getMod("offset").get("args");
+                                let offset = getMod("offset").args;
                                 return prev.filter((row, index) => {
                                     return index >= offset;
                                 });
                             }
                         case "lmt":
                             if (getMod("limit")) {
-                                let limit = getMod("limit").get("args");
+                                let limit = getMod("limit").args;
                                 return prev.filter((row, index) => {
                                     return index < limit;
                                 });
@@ -454,6 +461,12 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     }
 }
 
+
+/**
+ * Internal class used to hold an organized memory table data
+ * 
+ * @class _memDB_Table
+ */
 // tslint:disable-next-line
 class _memDB_Table {
     public _index: Array<string | number>;

@@ -203,7 +203,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._query = [];
 	        var a = action.toLowerCase();
 	        if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-	            this._query.push(new typescript_map_1.TSMap([["type", a], ["args", args]]));
+	            this._query.push({ type: a, args: args });
+	        }
+	        else {
+	            console.error("Invalid query '" + action + "'!");
 	        }
 	        return this;
 	    };
@@ -223,17 +226,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this._addCmd("filter-" + name, args);
 	    };
 	    SomeSQLInstance.prototype._addCmd = function (type, args) {
-	        return this._query.push(new typescript_map_1.TSMap([["type", type], ["args", args]])), this;
+	        return this._query.push({ type: type, args: args }), this;
 	    };
 	    SomeSQLInstance.prototype.exec = function () {
 	        var t = this;
 	        var _t = t._selectedTable;
 	        t._triggerEvents = t._query.map(function (q) {
-	            switch (q.get("type")) {
-	                case "select": return [q.get("type")];
+	            switch (q.type) {
+	                case "select": return [q.type];
 	                case "delete":
 	                case "upsert":
-	                case "drop": return [q.get("type"), "change"];
+	                case "drop": return [q.type, "change"];
 	                default: return [];
 	            }
 	        }).reduce(function (a, b) { return a.concat(b); });
@@ -256,7 +259,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	                triggerEvents({
 	                    table: _t,
-	                    query: t._query.map(function (q) { return q.toJSON(); }),
+	                    query: t._query,
 	                    time: new Date().getTime(),
 	                    result: data
 	                });
@@ -272,14 +275,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    SomeSQLInstance.prototype.custom = function (argType, args) {
 	        var t = this;
-	        return new typescript_promise_1.TSPromise(function (res, rej) {
-	            if (t._backend.custom) {
-	                t._backend.custom.apply(t, [argType, args, res, rej]);
-	            }
-	            else {
-	                res();
-	            }
-	        }, t);
+	        if (t._backend.custom) {
+	            return t._backend.custom.apply(t, [argType, args]);
+	        }
+	        else {
+	            return undefined;
+	        }
 	    };
 	    SomeSQLInstance.prototype.loadJS = function (rows) {
 	        var t = this;
@@ -321,9 +322,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return new typescript_promise_1.TSPromise(function (res, rej) {
 	            t.exec().then(function (json) {
 	                var header = t._query.filter(function (q) {
-	                    return q.get("type") === "select";
+	                    return q.type === "select";
 	                }).map(function (q) {
-	                    return q.get("args") ? q.get("args").map(function (m) {
+	                    return q.args ? q.args.map(function (m) {
 	                        return t._models.get(t._selectedTable).filter(function (f) { return f["key"] === m; })[0];
 	                    }) : t._models.get(t._selectedTable);
 	                })[0];
@@ -446,7 +447,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    };
 	    SomeSQLMemDB.prototype._query = function (queryArg, resolve) {
-	        if (["upsert", "select", "delete", "drop"].indexOf(queryArg.get("type")) !== -1) {
+	        if (["upsert", "select", "delete", "drop"].indexOf(queryArg.type) !== -1) {
 	            this._act = queryArg;
 	        }
 	        else {
@@ -458,7 +459,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        var f = t._filters;
 	        f.set("sum", function (rows) {
-	            return rows.map(function (r) { return r[t._act.get("args")[0]]; }).reduce(function (a, b) { return a + b; }, 0);
+	            return rows.map(function (r) { return r[t._act.args[0]]; }).reduce(function (a, b) { return a + b; }, 0);
 	        });
 	        f.set("first", function (rows) {
 	            return rows[0];
@@ -467,10 +468,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return rows.pop();
 	        });
 	        f.set("min", function (rows) {
-	            return rows.map(function (r) { return r[t._act.get("args")[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0];
+	            return rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0];
 	        });
 	        f.set("max", function (rows) {
-	            return rows.map(function (r) { return r[t._act.get("args")[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0];
+	            return rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0];
 	        });
 	        f.set("average", function (rows) {
 	            return t._doFilter("sum", rows) / rows.length;
@@ -484,9 +485,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    SomeSQLMemDB.prototype._runFilters = function (dbRows) {
 	        var t = this;
-	        var filters = t._mod.filter(function (m) { return m.get("type").indexOf("filter-") === 0; });
+	        var filters = t._mod.filter(function (m) { return m.type.indexOf("filter-") === 0; });
 	        return filters.length ? filters.reduce(function (prev, cur, i) {
-	            return t._doFilter(filters[i].get("type").replace("filter-", ""), prev, filters[i].get("args"));
+	            return t._doFilter(filters[i].type.replace("filter-", ""), prev, filters[i].args);
 	        }, dbRows) : dbRows;
 	    };
 	    SomeSQLMemDB.prototype._removeCacheFromKeys = function (affectedKeys) {
@@ -503,14 +504,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    SomeSQLMemDB.prototype._exec = function (callBack) {
 	        var t = this;
 	        var _hasWhere = t._mod.filter(function (v) {
-	            return v.get("type") === "where";
+	            return v.type === "where";
 	        });
-	        var _whereStatement = _hasWhere.length ? _hasWhere[0].get("args") : undefined;
-	        var qArgs = t._act.get("args");
+	        var _whereStatement = _hasWhere.length ? _hasWhere[0].args : undefined;
+	        var qArgs = t._act.args;
 	        var ta = t._tables.get(t._selectedTable);
 	        var msg = 0;
 	        var whereTable;
-	        switch (t._act.get("type")) {
+	        switch (t._act.type) {
 	            case "upsert":
 	                if (_whereStatement) {
 	                    whereTable = t._newWhere(ta, _whereStatement);
@@ -545,14 +546,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	                var mods_1 = ["ordr", "ofs", "lmt", "clms"];
 	                var getMod_1 = function (name) {
-	                    return t._mod.filter(function (v) { return v.get("type") === name; }).pop();
+	                    return t._mod.filter(function (v) { return v.type === name; }).pop();
 	                };
 	                var result = mods_1.reduce(function (prev, cur, i) {
 	                    switch (mods_1[i]) {
 	                        case "ordr":
 	                            if (getMod_1("orderby")) {
 	                                var orderBy_1 = new typescript_map_1.TSMap();
-	                                orderBy_1.fromJSON(getMod_1("orderby").get("args"));
+	                                orderBy_1.fromJSON(getMod_1("orderby").args);
 	                                return prev.sort(function (a, b) {
 	                                    return orderBy_1.keys().reduce(function (prev, cur, i) {
 	                                        var column = orderBy_1.keys()[i];
@@ -567,14 +568,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            }
 	                        case "ofs":
 	                            if (getMod_1("offset")) {
-	                                var offset_1 = getMod_1("offset").get("args");
+	                                var offset_1 = getMod_1("offset").args;
 	                                return prev.filter(function (row, index) {
 	                                    return index >= offset_1;
 	                                });
 	                            }
 	                        case "lmt":
 	                            if (getMod_1("limit")) {
-	                                var limit_1 = getMod_1("limit").get("args");
+	                                var limit_1 = getMod_1("limit").args;
 	                                return prev.filter(function (row, index) {
 	                                    return index < limit_1;
 	                                });
