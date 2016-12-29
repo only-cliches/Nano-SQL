@@ -190,7 +190,7 @@ export class SomeSQLInstance {
 
 
     /**
-     * Changes the table pointer
+     * Changes the table pointer to a new table.
      * 
      * @param {string} [table]
      * @returns {SomeSQLInstance}
@@ -203,7 +203,7 @@ export class SomeSQLInstance {
     }
 
     /**
-     * Inits the backend database for use
+     * Inits the backend database for use.
      * 
      * @param {SomeSQLBackend} [backend]
      * @returns {(TSPromise<Object | string>)}

@@ -229,18 +229,18 @@ Events can be called before or after setup mode, at any time.
 
 | Command      | Definition                                                                  |          |
 |--------------|-----------------------------------------------------------------------------|----------|
-| .on()        | Listen to specific database events with a callback function.                | Examples |
-| .off()       | Remove a listening function from being triggered by events.                 | Examples |
+| .on()        | Listen to specific database events with a callback function.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#on) |
+| .off()       | Remove a listening function from being triggered by events.                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#off) |
 
 ## Group 1: Setup Mode
 
 | Command      | Definition                                                                  |          |
 |--------------|-----------------------------------------------------------------------------|----------|
-| .model()     | Declare database model, required.                                           | Examples |
-| .views()     | Declare views to use.                                                       | Examples |
-| .actions()   | Declare actions to use.                                                     | Examples |
-| .addFilter() | Add a filter that can be used on queries.                                   | Examples |
-| .connect()   | Complete setup mode and optionally connect to a specific backend, required. | Examples |
+| .model()     | Declare database model, required.                                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#model) |
+| .views()     | Declare views to use.                                                       | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#views) |
+| .actions()   | Declare actions to use.                                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#actions) |
+| .addFilter() | Add a filter that can be used on queries.                                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#addfilter) |
+| .connect()   | Complete setup mode and optionally connect to a specific backend, required. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#connect) |
 
 ## Group 2: Query Mode 
 
@@ -255,7 +255,7 @@ There is only one possible function to start a query, and it has several differe
 
 | Command    | Definition                                                   |          |
 |------------|--------------------------------------------------------------|----------|
-| .query()   | Starts a database query.                                     | Examples |
+| .query()   | Starts a database query.                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#query) |
 
 ### Query Modifiers
 
@@ -263,12 +263,12 @@ Each modifier can take up to two arguments and normally can only be used once.  
 
 | Command    | Definition                                                   |          |
 |------------|--------------------------------------------------------------|----------|
-| .where()   | Adds a search component to the current query.                | Examples |
-| .orderBy() | Adds a order by component to the current query.              | Examples |
-| .offset()  | Offset the current query by a given value                    | Examples |
-| .limit()   | Limits the current query by a given value                    | Examples |
-| .filter()  | Applies a custom filter to the current query                 | Examples |
-| .custom()  | Use a custom query modifier provided by the database driver. | Examples |
+| .where()   | Adds a search component to the current query.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#where) |
+| .orderBy() | Adds a order by component to the current query.              | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#orderby) |
+| .offset()  | Offset the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#offset) |
+| .limit()   | Limits the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#limit) |
+| .filter()  | Applies a custom filter to the current query                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter) |
+| .custom()  | Use a custom query modifier provided by the database driver. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#custom) |
 
 ### Query Execution
 
@@ -276,8 +276,8 @@ These come at the end of a query to execute it on the database.  All of these re
 
 | Command    | Definition                                                             |          |
 |------------|------------------------------------------------------------------------|----------|
-| .exec()    | Executes a pending query, returns a promise.                           | Examples |
-| .toCSV()   | Executes the pending query and returns a CSV of it, returns a promise. | Examples |
+| .exec()    | Executes a pending query, returns a promise.                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#exec) |
+| .toCSV()   | Executes the pending query and returns a CSV of it, returns a promise. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#tocsv) |
 
 
 ### Actions & Views
@@ -286,11 +286,9 @@ These can be used in replacement of the query..exec pattern to execute a given v
 
 | Command     | Definition                                                             |          |
 |-------------|------------------------------------------------------------------------|----------|
-| .getView()  | Gets a specific view, returns a promise.                               | Examples |
-| .doAction() | Does a specific action, returns a promise.                             | Examples |
+| .getView()  | Gets a specific view, returns a promise.                               | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#getview) |
+| .doAction() | Does a specific action, returns a promise.                             | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#doaction) |
 
 
-##TODO:Rest of the API Stuff
-
-
+[View Complete Official Docs](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html)
 

@@ -14,7 +14,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Holds the actual table data.
      * 
-     * @private
+     * @internal
      * @type {TSMap<string,Array<Object>>}
      * @memberOf SomeSQLMemDB
      */
@@ -23,7 +23,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Holds a pointer to the current selected table.
      * 
-     * @private
+     * @internal
      * @type {string}
      * @memberOf SomeSQLMemDB
      */
@@ -32,7 +32,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Holds a single query object of the current query actions.
      * 
-     * @private
+     * @internal
      * @type {(TSMap<string,Object|Array<any>>)}
      * @memberOf SomeSQLMemDB
      */
@@ -41,19 +41,70 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Holds an array of the remaining query objects to modify the query in some way.
      * 
-     * @private
+     * @internal
      * @type {(Array<TSMap<string,Object|Array<any>>>)}
      * @memberOf SomeSQLMemDB
      */
     private _mod: Array<QueryLine>;
 
 
+    /**
+     * Holds all possible filters
+     * 
+     * @internal
+     * @type {TSMap<string, Function>}
+     * @memberOf SomeSQLMemDB
+     */
     private _filters: TSMap<string, Function>;
 
+
+    /**
+     * Temporary home for the current query cache key.
+     * 
+     * @internal
+     * @type {string}
+     * @memberOf SomeSQLMemDB
+     */
     private _cacheKey: string;
+
+
+    /**
+     * An index of the contents of the immutable cache
+     * 
+     * @internal
+     * @type {(TSMap<string, TSMap<string, Array<string | number>>>)}
+     * @memberOf SomeSQLMemDB
+     */
     private _cacheIndex: TSMap<string, TSMap<string, Array<string | number>>>;
+
+
+    /**
+     * An index of the immutable cache queries
+     * 
+     * @internal
+     * @type {TSMap<string, Array<Object>>}
+     * @memberOf SomeSQLMemDB
+     */
     private _cacheQueryIndex: TSMap<string, Array<Object>>;
+
+
+    /**
+     * The actual immutable cache is stored here.
+     * 
+     * @internal
+     * @type {TSMap<string, TSMap<string, _memDB_Table>>}
+     * @memberOf SomeSQLMemDB
+     */
     private _cache: TSMap<string, TSMap<string, _memDB_Table>>;
+
+
+    /**
+     * Push quries into this array if theres already a query running
+     * 
+     * @internal
+     * @type {Array<Array<any>>}
+     * @memberOf SomeSQLMemDB
+     */
     private _pendingQuerys: Array<Array<any>>;
 
     constructor() {
@@ -92,7 +143,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Creats a new table in the database or clears and existing one.
      * 
-     * @private
+     * @internal
      * @param {string} table
      * @param {Array<Object>} args
      * 
@@ -148,7 +199,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Puts the query from the someSQL Instance into query actions and mofidiers to make execution easier.
      * 
-     * @private
+     * @internal
      * @param {(TSMap<string,number|Object|Array<any>>)} queryArg
      * @param {Function} resolve
      * 
@@ -166,7 +217,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Declare built in filters
      * 
-     * @private
+     * @internal
      * 
      * @memberOf SomeSQLMemDB
      */
@@ -199,7 +250,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Execute on a given set of rows
      * 
-     * @private
+     * @internal
      * @param {string} filterName
      * @param {*} filterArgs
      * @param {Array<Object>} rows
@@ -211,6 +262,15 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         return this._filters.get(filterName).apply(this, [rows, filterArgs]);
     }
 
+    /**
+     * Run filters on the database
+     * 
+     * @internal
+     * @param {Array<Object>} dbRows
+     * @returns {*}
+     * 
+     * @memberOf SomeSQLMemDB
+     */
     private _runFilters(dbRows: Array<Object>): any {
         let t = this;
         let filters = t._mod.filter((m) => (<string>m.type).indexOf("filter-") === 0);
@@ -219,6 +279,14 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         }, dbRows) : dbRows;
     }
 
+    /**
+     * Clean up the cache based on an array of primary keys
+     * 
+     * @internal
+     * @param {(Array<number | string>)} affectedKeys
+     * 
+     * @memberOf SomeSQLMemDB
+     */
     private _removeCacheFromKeys(affectedKeys: Array<number | string>): void {
         let t = this;
         affectedKeys.forEach((key) => {
@@ -234,7 +302,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Execute commands on the databse to retrieve or modify data as desired.
      * 
-     * @private
+     * @internal
      * @param {Function} callBack
      * 
      * @memberOf SomeSQLMemDB
@@ -393,6 +461,16 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         }
     }
 
+    /**
+     * Handle where statements
+     * 
+     * @internal
+     * @param {_memDB_Table} table
+     * @param {(Array<Array<string> | string>)} whereStatement
+     * @returns {_memDB_Table}
+     * 
+     * @memberOf SomeSQLMemDB
+     */
     private _newWhere(table: _memDB_Table, whereStatement: Array<Array<string> | string>): _memDB_Table {
         let t = this;
 
@@ -424,6 +502,16 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         }
     }
 
+    /**
+     * Single where statement resolver.
+     * 
+     * @internal
+     * @param {_memDB_Table} table
+     * @param {Array<string>} whereStatement
+     * @returns {_memDB_Table}
+     * 
+     * @memberOf SomeSQLMemDB
+     */
     private _singleWhereResolve(table: _memDB_Table, whereStatement: Array<string>): _memDB_Table {
         let t = this;
         let left = whereStatement[0];
@@ -437,7 +525,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Accepts two values and something to comapre them against, returns a boolean that can be used in an array FILTER function.
      * 
-     * @private
+     * @internal
      * @param {*} val1
      * @param {string} compare
      * @param {*} val2
