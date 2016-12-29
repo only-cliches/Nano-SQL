@@ -164,42 +164,42 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:487</li>
+									<li>Defined in index.ts:504</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Declare the actions for the current selected table.  Must be called before connect()</p>
 								</div>
-								<p>Actions are created like this:
-									.actions([
-									{
-									name:&quot;action-name&quot;,
-									args: [&quot;array&quot;,&quot;of&quot;,&quot;arguments&quot;],
-									call: function(args) {
-									// Because of our &quot;args&quot; array the args input of this function will look like this:
-									// SomeSQL will not let any other arguments into this function.
-									args:{
-									array:&#39;&#39;,
-									of:&#39;&#39;,
-									arguments:&#39;&#39;
-									}
-									//We can use them in our query
-									return this.query(&quot;upsert&quot;,{balance:0}).where([&#39;name&#39;,&#39;IN&#39;,args.array]).exec();
-									}
-									}
-								])</p>
-								<p>Then later in your app..</p>
-								<p>SomeSQL(&quot;users&quot;).doAction(&quot;action-name&quot;,{array:&#39;&#39;,of:&quot;&quot;,arguments:&quot;&quot;}).then(function(result) {
-									console.log(result) &lt;=== result of your view will be there.
-								})</p>
-								<p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
-									.actions[{
-									name:...
-									args:[&quot;name:string&quot;,&quot;balance:float&quot;,&quot;active:bool&quot;]
-									call:...
-								}]</p>
-								<p>SomeSQL will force the arguments passed into the function to those types.</p>
+								<p>Actions are created like this:</p>
+								<pre><code><span class="hljs-selector-class">.actions</span>([
+ {
+     <span class="hljs-attribute">name</span>:<span class="hljs-string">"action-name"</span>,
+     <span class="hljs-attribute">args</span>: [<span class="hljs-string">"array"</span>,<span class="hljs-string">"of"</span>,<span class="hljs-string">"arguments"</span>],
+     <span class="hljs-attribute">call</span>: function(args) {
+         <span class="hljs-comment">// Because of our "args" array the args input of this function will look like this:</span>
+         <span class="hljs-comment">// SomeSQL will not let any other arguments into this function.</span>
+         <span class="hljs-attribute">args</span>:{
+             <span class="hljs-attribute">array</span>:<span class="hljs-string">''</span>,
+             <span class="hljs-attribute">of</span>:<span class="hljs-string">''</span>,
+             <span class="hljs-attribute">arguments</span>:<span class="hljs-string">''</span>
+         }
+         <span class="hljs-comment">//We can use them in our query</span>
+         <span class="hljs-selector-tag">return</span> <span class="hljs-selector-tag">this</span><span class="hljs-selector-class">.query</span>(<span class="hljs-string">"upsert"</span>,{<span class="hljs-attribute">balance</span>:<span class="hljs-number">0</span>})<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'name'</span>,<span class="hljs-string">'IN'</span>,args.array])<span class="hljs-selector-class">.exec</span>();
+     }
+ }
+])
+</code></pre><p>Then later in your app..</p>
+								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).doAction(<span class="hljs-string">"action-name"</span>,{array:<span class="hljs-string">''</span>,of:<span class="hljs-string">""</span>,<span class="hljs-keyword">argument</span><span class="hljs-variable">s:</span><span class="hljs-string">""</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(result)</span> {</span>
+ console.<span class="hljs-built_in">log</span>(result) &lt;=== result of your <span class="hljs-keyword">view</span> will <span class="hljs-keyword">be</span> there.
+})
+</code></pre><p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:</p>
+								<pre><code>.actions[{
+<span class="hljs-symbol">     name:</span>...
+<span class="hljs-symbol">     args:</span>[<span class="hljs-string">"name:string"</span>,<span class="hljs-string">"balance:float"</span>,<span class="hljs-string">"active:bool"</span>]
+<span class="hljs-symbol">     call:</span>...
+}]
+</code></pre><p>SomeSQL will force the arguments passed into the function to those types.</p>
 								<p>Possible types are string, bool, float, int, map, array and bool.</p>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -227,18 +227,22 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:535</li>
+									<li>Defined in index.ts:557</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().</p>
+									<p>Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
+										Example:
+										```
+										SomeSQL().addFilter(&#39;addOne&#39;,function(rows) {
+										return rows.map((row) =&gt; row.balance + 1);
+										})
+									...</p>
 								</div>
-								<p>Example: SomeSQL().addFilter(&#39;addOne&#39;,function(rows) {
-									return rows.map((row) =&gt; row.balance + 1);
-								})</p>
-								<p>...</p>
-								<p>Then to use it in a query: SomeSQL(&quot;users&quot;).query(&quot;select&quot;).filter(&#39;addOne&#39;).exec();</p>
+								<p>Then to use it in a query:</p>
+								<pre><code><span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">"users"</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>)<span class="hljs-selector-class">.filter</span>(<span class="hljs-string">'addOne'</span>)<span class="hljs-selector-class">.exec</span>();
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -334,7 +338,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:762</li>
+									<li>Defined in index.ts:803</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -370,17 +374,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:506</li>
+									<li>Defined in index.ts:525</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Init an action for the current selected table. Reference the &quot;actions&quot; method for more info.</p>
 								</div>
-								<p>Example:
-									SomeSQL(&quot;users&quot;).doAction(&#39;action-name&#39;,{foo:&quot;bar&quot;}).then(function(result) {
-									console.log(result) &lt;== result of your action
-								});</p>
+								<p>Example:</p>
+								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).doAction('action-<span class="hljs-built_in">name</span>',{foo:<span class="hljs-string">"bar"</span>}).<span class="hljs-keyword">then</span>(function(<span class="hljs-literal">result</span>) {
+     console.<span class="hljs-built_in">log</span>(<span class="hljs-literal">result</span>) &lt;== <span class="hljs-literal">result</span> <span class="hljs-keyword">of</span> your action
+});
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -410,7 +415,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:699</li>
+									<li>Defined in index.ts:740</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -437,7 +442,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:671</li>
+									<li>Defined in index.ts:712</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -445,9 +450,10 @@
 									<p>Adds a custom filter to the query.  The filter you use MUST be supported by the database driver OR a custom filter you provided before the connect method was called.
 									The memory DB supports sum, first, last, min, max, average, and count</p>
 								</div>
-								<p>Example:
-									//get number of results
-								SomeSQL(&quot;users&quot;).query(&quot;select&quot;).filter(&#39;count&#39;).exec();</p>
+								<p>Example:</p>
+								<pre><code><span class="hljs-comment">//get number of results</span>
+<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">"users"</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>)<span class="hljs-selector-class">.filter</span>(<span class="hljs-string">'count'</span>)<span class="hljs-selector-class">.exec</span>();
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -477,17 +483,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:380</li>
+									<li>Defined in index.ts:391</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Execute a specific view.  Refernece the &quot;views&quot; function for more description.</p>
 								</div>
-								<p>Example:
-									SomeSQL(&quot;users&quot;).getView(&#39;view-name&#39;,{foo:&quot;bar&quot;}).then(function(result) {
-									console.log(result) &lt;== view result.
-								})</p>
+								<p>Example:</p>
+								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).getView('view-<span class="hljs-built_in">name</span>',{foo:<span class="hljs-string">"bar"</span>}).<span class="hljs-keyword">then</span>(function(<span class="hljs-literal">result</span>) {
+ console.<span class="hljs-built_in">log</span>(<span class="hljs-literal">result</span>) &lt;== view <span class="hljs-literal">result</span>.
+})
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -517,14 +524,15 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:638</li>
+									<li>Defined in index.ts:674</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Limits the result to a specific amount.  Example:
-									.limit(20) // Limit to the first 20 results</p>
+									<p>Limits the result to a specific amount.  Example:</p>
 								</div>
+								<pre><code>.limit<span class="hljs-comment">(20)</span> <span class="hljs-comment">// Limit to the first 20 results</span>
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -551,7 +559,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:803</li>
+									<li>Defined in index.ts:846</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -585,17 +593,18 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:785</li>
+									<li>Defined in index.ts:828</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Load JSON directly into the DB.
-										JSON must be an array of maps, like this:
-										[
-										{&quot;name&quot;:&quot;billy&quot;,&quot;age&quot;:20},
-										{&quot;name&quot;:&quot;johnny&quot;:&quot;age&quot;:30}
-									]</p>
+									JSON must be an array of maps, like this:</p>
+									<pre><code>[
+ {<span class="hljs-attr">"name"</span>:<span class="hljs-string">"billy"</span>,<span class="hljs-attr">"age"</span>:<span class="hljs-number">20</span>},
+ {<span class="hljs-attr">"name"</span>:<span class="hljs-string">"johnny"</span>:<span class="hljs-string">"age"</span>:<span class="hljs-number">30</span>}
+]
+</code></pre>
 								</div>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -623,7 +632,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:301</li>
+									<li>Defined in index.ts:303</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -631,10 +640,11 @@
 									<p>Declare the data model for the current selected table.</p>
 								</div>
 								<p>Please reference the DataModel interface for how to impliment this, a quick example:</p>
-								<p>.model([
-									{key:&quot;id&quot;,type:&quot;int&quot;,props:[&quot;ai&quot;,&quot;pk&quot;]} //auto incriment and primary key
-									{key:&quot;name&quot;,type:&quot;string&quot;}
-								])</p>
+								<pre><code>.model([
+ {<span class="hljs-string">key:</span><span class="hljs-string">"id"</span>,<span class="hljs-string">type:</span><span class="hljs-string">"int"</span>,<span class="hljs-string">props:</span>[<span class="hljs-string">"ai"</span>,<span class="hljs-string">"pk"</span>]} <span class="hljs-comment">//auto incriment and primary key</span>
+ {<span class="hljs-string">key:</span><span class="hljs-string">"name"</span>,<span class="hljs-string">type:</span><span class="hljs-string">"string"</span>}
+])
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -694,14 +704,15 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:652</li>
+									<li>Defined in index.ts:691</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Offsets the results by a specific amount from the beginning.  Example:
-									.offset(10) //Skip the first 10 results.</p>
+									<p>Offsets the results by a specific amount from the beginning.  Example:</p>
 								</div>
+								<pre><code>.offset<span class="hljs-comment">(10)</span> <span class="hljs-comment">//Skip the first 10 results.</span>
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -764,16 +775,17 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:624</li>
+									<li>Defined in index.ts:657</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Order the results by a given column or columns.</p>
 								</div>
-								<p>Examples:
-									.orderBy({username:&quot;asc&quot;}) // order by username column, ascending
-								.orderBy({balance:&quot;desc&quot;,lastName:&quot;asc&quot;}) // order by balance descending, then lastName ascending.</p>
+								<p>Examples:</p>
+								<pre><code>.orderBy({username:<span class="hljs-string">"asc"</span>}) // <span class="hljs-keyword">order</span> <span class="hljs-keyword">by</span> username column, ascending
+.orderBy({balance:<span class="hljs-string">"desc"</span>,lastName:<span class="hljs-string">"asc"</span>}) // <span class="hljs-keyword">order</span> <span class="hljs-keyword">by</span> balance descending, <span class="hljs-keyword">then</span> lastName ascending.
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -800,7 +812,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:578</li>
+									<li>Defined in index.ts:605</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -810,23 +822,24 @@
 								</div>
 								<p>Select is used to pull a set of rows or other data from the table.
 								When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.</p>
-								<p>Select examples:
-									.query(&quot;select&quot;) // No arguments, select all columns
-									.query(&quot;select&quot;,[&#39;username&#39;]) // only get the username column
-								.query(&quot;select&quot;,[&quot;username&quot;,&quot;balance&quot;]) //Get two columns, username and balance.</p>
-								<p>Upsert is used to add data into the database.
+								<p>Select examples:</p>
+								<pre><code><span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>) <span class="hljs-comment">// No arguments, select all columns</span>
+<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>,[<span class="hljs-string">'username'</span>]) <span class="hljs-comment">// only get the username column</span>
+<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>,[<span class="hljs-string">"username"</span>,<span class="hljs-string">"balance"</span>]) <span class="hljs-comment">//Get two columns, username and balance.</span>
+</code></pre><p>Upsert is used to add data into the database.
 									If the primary key rows are null or undefined, the data will always be added. Otherwise, you might be updating existing rows.
 								The second argument of the query with upserts is always an Object of the data to upsert.</p>
-								<p>Upsert Examples:
-									.query(&quot;upsert&quot;,{id:1,username:&quot;Scott&quot;}) //Set username to &quot;Scott&quot; where the row ID is 1.
-								.query(&quot;upsert&quot;,{username:&quot;Scott&quot;}) //Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.</p>
-								<p>Delete is used to remove data from the database.
+								<p>Upsert Examples:</p>
+								<pre><code>.query(<span class="hljs-string">"upsert"</span>,{<span class="hljs-string">id:</span><span class="hljs-number">1</span>,<span class="hljs-string">username:</span><span class="hljs-string">"Scott"</span>}) <span class="hljs-comment">//Set username to "Scott" where the row ID is 1.</span>
+.query(<span class="hljs-string">"upsert"</span>,{<span class="hljs-string">username:</span><span class="hljs-string">"Scott"</span>}) <span class="hljs-comment">//Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.</span>
+</code></pre><p>Delete is used to remove data from the database.
 								It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.</p>
-								<p>Delete Examples:
-								.query(&quot;delete&quot;,[&#39;balance&#39;]) //Clear the contents of the balance column.  If a where statment is passed you&#39;ll only clear the columns of the rows selected by the where statement.</p>
-								<p>Drop is used to completely clear the contents of a database.  There are no arguments.</p>
-								<p>Drop Examples:
-								.query(&quot;drop&quot;)</p>
+								<p>Delete Examples:</p>
+								<pre><code><span class="hljs-selector-class">.query</span>(<span class="hljs-string">"delete"</span>,[<span class="hljs-string">'balance'</span>]) <span class="hljs-comment">//Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.</span>
+</code></pre><p>Drop is used to completely clear the contents of a database.  There are no arguments.</p>
+								<p>Drop Examples:</p>
+								<pre><code>.<span class="hljs-keyword">query</span>(<span class="hljs-string">"drop"</span>)
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -889,7 +902,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:842</li>
+									<li>Defined in index.ts:885</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -922,42 +935,42 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:361</li>
+									<li>Defined in index.ts:370</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Declare the views for the current selected table.  Must be called before connect()</p>
 								</div>
-								<p>Views are created like this:
-									.views([
-									{
-									name:&quot;view-name&quot;,
-									args: [&quot;array&quot;,&quot;of&quot;,&quot;arguments&quot;],
-									call: function(args) {
-									// Because of our &quot;args&quot; array the args input of this function will look like this:
-									// SomeSQL will not let any other arguments into this function.
-									args:{
-									array:&#39;&#39;,
-									of:&#39;&#39;,
-									arguments:&#39;&#39;
-									}
-									//We can use them in our query
-									return this.query(&#39;select&#39;).where([&#39;name&#39;,&#39;IN&#39;,args.array]).exec();
-									}
-									}
-								])</p>
-								<p>Then later in your app..</p>
-								<p>SomeSQL(&quot;users&quot;).getView(&quot;view-name&quot;,{array:&#39;&#39;,of:&quot;&quot;,arguments:&quot;&quot;}).then(function(result) {
-									console.log(result) &lt;=== result of your view will be there.
-								})</p>
-								<p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
-									.views[{
-									name:...
-									args:[&quot;name:string&quot;,&quot;balance:float&quot;,&quot;active:bool&quot;]
-									call:...
-								}]</p>
-								<p>SomeSQL will force the arguments passed into the function to those types.</p>
+								<p>Views are created like this:</p>
+								<pre><code><span class="hljs-selector-class">.views</span>([
+ {
+     <span class="hljs-attribute">name</span>:<span class="hljs-string">"view-name"</span>,
+     <span class="hljs-attribute">args</span>: [<span class="hljs-string">"array"</span>,<span class="hljs-string">"of"</span>,<span class="hljs-string">"arguments"</span>],
+     <span class="hljs-attribute">call</span>: function(args) {
+         <span class="hljs-comment">// Because of our "args" array the args input of this function will look like this:</span>
+         <span class="hljs-comment">// SomeSQL will not let any other arguments into this function.</span>
+         <span class="hljs-attribute">args</span>:{
+             <span class="hljs-attribute">array</span>:<span class="hljs-string">''</span>,
+             <span class="hljs-attribute">of</span>:<span class="hljs-string">''</span>,
+             <span class="hljs-attribute">arguments</span>:<span class="hljs-string">''</span>
+         }
+         <span class="hljs-comment">//We can use them in our query</span>
+         <span class="hljs-selector-tag">return</span> <span class="hljs-selector-tag">this</span><span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>)<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'name'</span>,<span class="hljs-string">'IN'</span>,args.array])<span class="hljs-selector-class">.exec</span>();
+     }
+ }
+])
+</code></pre><p>Then later in your app..</p>
+								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).getView(<span class="hljs-string">"view-name"</span>,{array:<span class="hljs-string">''</span>,of:<span class="hljs-string">""</span>,<span class="hljs-keyword">argument</span><span class="hljs-variable">s:</span><span class="hljs-string">""</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(result)</span> {</span>
+ console.<span class="hljs-built_in">log</span>(result) &lt;=== result of your <span class="hljs-keyword">view</span> will <span class="hljs-keyword">be</span> there.
+})
+</code></pre><p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:</p>
+								<pre><code>.views[{
+<span class="hljs-symbol">     name:</span>...
+<span class="hljs-symbol">     args:</span>[<span class="hljs-string">"name:string"</span>,<span class="hljs-string">"balance:float"</span>,<span class="hljs-string">"active:bool"</span>]
+<span class="hljs-symbol">     call:</span>...
+}]
+</code></pre><p>SomeSQL will force the arguments passed into the function to those types.</p>
 								<p>Possible types are string, bool, float, int, map, array and bool.</p>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -985,7 +998,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:607</li>
+									<li>Defined in index.ts:637</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -994,12 +1007,13 @@
 										You can pass in a single array with a conditional statement or an array of arrays seperated by &quot;and&quot;, &quot;or&quot; for compound selects.
 									A single where statement has the column name on the left, an operator in the middle, then a comparison on the right.</p>
 								</div>
-								<p>Where Examples:
-									.where([&#39;username&#39;,&#39;=&#39;,&#39;billy&#39;])
-									.where([&#39;balance&#39;,&#39;&gt;&#39;,20])
-									.where([&#39;catgory&#39;,&#39;IN&#39;,[&#39;jeans&#39;,&#39;shirts&#39;]])
-									.where([[&#39;name&#39;,&#39;=&#39;,&#39;scott&#39;],&#39;and&#39;,[&#39;balance&#39;,&#39;&gt;&#39;,200]])
-								.where([[&#39;id&#39;,&#39;&gt;&#39;,50],&#39;or&#39;,[&#39;postIDs&#39;,&#39;IN&#39;,[12,20,30]],&#39;and,[&#39;name&#39;,&#39;LIKE&#39;,&#39;Billy&#39;]])</p>
+								<p>Where Examples:</p>
+								<pre><code>.where([<span class="hljs-string">'username'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>])
+.where([<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">20</span>])
+.where([<span class="hljs-string">'catgory'</span>,<span class="hljs-string">'IN'</span>,[<span class="hljs-string">'jeans'</span>,<span class="hljs-string">'shirts'</span>]])
+.where([[<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'scott'</span>],<span class="hljs-string">'and'</span>,[<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">200</span>]])
+.where([[<span class="hljs-string">'id'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">50</span>],<span class="hljs-string">'or'</span>,[<span class="hljs-string">'postIDs'</span>,<span class="hljs-string">'IN'</span>,[<span class="hljs-number">12</span>,<span class="hljs-number">20</span>,<span class="hljs-number">30</span>]],<span class="hljs-string">'and,['</span>name<span class="hljs-string">','</span><span class="hljs-symbol">LIKE</span><span class="hljs-string">','</span><span class="hljs-symbol">Billy</span><span class="hljs-string">']])</span>
+</code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLInstance</p>
@@ -1026,7 +1040,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:911</li>
+									<li>Defined in index.ts:954</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1062,7 +1076,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:891</li>
+									<li>Defined in index.ts:934</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">

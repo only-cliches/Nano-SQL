@@ -288,10 +288,12 @@ export class SomeSQLInstance {
      * 
      * Please reference the DataModel interface for how to impliment this, a quick example:
      * 
+     * ```
      * .model([
      *  {key:"id",type:"int",props:["ai","pk"]} //auto incriment and primary key
      *  {key:"name",type:"string"}
      * ])
+     * ```
 	 * 
 	 * @param {Array<DataModel>} dataModel
 	 * @returns {SomeSQLInstance}
@@ -318,6 +320,8 @@ export class SomeSQLInstance {
 	 * Declare the views for the current selected table.  Must be called before connect()
      * 
      * Views are created like this:
+     * 
+     * ```
      * .views([
      *  {
      *      name:"view-name",
@@ -335,19 +339,24 @@ export class SomeSQLInstance {
      *      }
      *  }
      * ])
+     * ```
      * 
      * Then later in your app..
      * 
+     * ```
      * SomeSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
+     * ```
      * 
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
+     * ```
      * .views[{
      *      name:...
      *      args:["name:string","balance:float","active:bool"]
      *      call:...
      * }]
+     * ```
      * 
      * SomeSQL will force the arguments passed into the function to those types.
      * 
@@ -367,9 +376,11 @@ export class SomeSQLInstance {
      * Execute a specific view.  Refernece the "views" function for more description.
      * 
      * Example:
+     * ```
      * SomeSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
      *  console.log(result) <== view result.
      * })
+     * ```
      * 
      * @param {string} viewName
      * @param {Object} viewArgs
@@ -444,6 +455,7 @@ export class SomeSQLInstance {
 	 * Declare the actions for the current selected table.  Must be called before connect()
      * 
      * Actions are created like this:
+     * ```
      * .actions([
      *  {
      *      name:"action-name",
@@ -461,19 +473,24 @@ export class SomeSQLInstance {
      *      }
      *  }
      * ])
+     * ```
      * 
      * Then later in your app..
      * 
+     * ```
      * SomeSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
+     * ```
      * 
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
+     * ```
      * .actions[{
      *      name:...
      *      args:["name:string","balance:float","active:bool"]
      *      call:...
      * }]
+     * ```
      * 
      * SomeSQL will force the arguments passed into the function to those types.
      * 
@@ -493,9 +510,11 @@ export class SomeSQLInstance {
      * Init an action for the current selected table. Reference the "actions" method for more info.
      * 
      * Example:
+     * ```
      * SomeSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
      *      console.log(result) <== result of your action
      * });
+     * ```
      * 
      * @param {string} actionName
      * @param {Object} actionArgs
@@ -517,15 +536,18 @@ export class SomeSQLInstance {
 
 	/**
 	 * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
-     * 
-     * Example: SomeSQL().addFilter('addOne',function(rows) {
+     * Example:
+     * ```
+     *  SomeSQL().addFilter('addOne',function(rows) {
      *  return rows.map((row) => row.balance + 1);
      * })
-     * 
      * ...
      * 
-     * Then to use it in a query: SomeSQL("users").query("select").filter('addOne').exec();
-	 * 
+     * Then to use it in a query: 
+     * ```
+     * SomeSQL("users").query("select").filter('addOne').exec();
+	 * ```
+     * 
 	 * @param {string} filterName
 	 * @param {Function} filterFunction
 	 * @returns {SomeSQLInstance}
@@ -545,29 +567,34 @@ export class SomeSQLInstance {
      * When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.
      * 
      * Select examples:
+     * ```
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
-     * 
+     * ```
      * Upsert is used to add data into the database.  
      * If the primary key rows are null or undefined, the data will always be added. Otherwise, you might be updating existing rows.
      * The second argument of the query with upserts is always an Object of the data to upsert.
      * 
      * Upsert Examples:
+     * ```
      * .query("upsert",{id:1,username:"Scott"}) //Set username to "Scott" where the row ID is 1.
      * .query("upsert",{username:"Scott"}) //Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.
+     * ```
      * 
      * Delete is used to remove data from the database.
      * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
      * 
      * Delete Examples:
+     * ```
      * .query("delete",['balance']) //Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
-     * 
+     * ```
      * Drop is used to completely clear the contents of a database.  There are no arguments.
      * 
      * Drop Examples:
+     * ```
      * .query("drop")
-     * 
+     * ```
      * 
      * @param {("select"|"upsert"|"delete"|"drop")} action
      * @param {Object} [args]
@@ -593,11 +620,14 @@ export class SomeSQLInstance {
      * A single where statement has the column name on the left, an operator in the middle, then a comparison on the right.
      * 
      * Where Examples:
+     * 
+     * ```
      * .where(['username','=','billy'])
      * .where(['balance','>',20])
      * .where(['catgory','IN',['jeans','shirts']])
      * .where([['name','=','scott'],'and',['balance','>',200]])
      * .where([['id','>',50],'or',['postIDs','IN',[12,20,30]],'and,['name','LIKE','Billy']])
+     * ```
      * 
      * @param {(Array<any|Array<any>>)} args
      * @returns {SomeSQLInstance}
@@ -613,8 +643,11 @@ export class SomeSQLInstance {
      * Order the results by a given column or columns.
      * 
      * Examples:
+     * 
+     * ```
      * .orderBy({username:"asc"}) // order by username column, ascending
      * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
+     * ```
      * 
      * @param {Object} args
      * @returns {SomeSQLInstance}
@@ -628,7 +661,10 @@ export class SomeSQLInstance {
 
     /**
      * Limits the result to a specific amount.  Example:
+     * 
+     * ```
      * .limit(20) // Limit to the first 20 results
+     * ```
      * 
      * @param {number} args
      * @returns {SomeSQLInstance}
@@ -642,7 +678,10 @@ export class SomeSQLInstance {
 
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
+     * 
+     * ```
      * .offset(10) //Skip the first 10 results.
+     * ```
      * 
      * @param {number} args
      * @returns {SomeSQLInstance}
@@ -659,8 +698,10 @@ export class SomeSQLInstance {
      * The memory DB supports sum, first, last, min, max, average, and count
      * 
      * Example:
+     * ```
      * //get number of results
      * SomeSQL("users").query("select").filter('count').exec();
+     * ```
      * 
      * @param {string} name
      * @param {*} [args]
@@ -772,10 +813,12 @@ export class SomeSQLInstance {
     /**
      * Load JSON directly into the DB.
      * JSON must be an array of maps, like this:
+     * ```
      * [
      *  {"name":"billy","age":20},
      *  {"name":"johnny":"age":30}
      * ]
+     * ```
      * 
      * @param {Array<Object>} rows
      * @returns {(TSPromise<Object | string>)}
