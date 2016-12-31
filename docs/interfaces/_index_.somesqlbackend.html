@@ -89,8 +89,8 @@
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.somesqlbackend.html#connect" class="tsd-kind-icon">connect</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.somesqlbackend.html#custom" class="tsd-kind-icon">custom</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.somesqlbackend.html#exec" class="tsd-kind-icon">exec</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.somesqlbackend.html#extend" class="tsd-kind-icon">extend</a></li>
 							</ul>
 						</section>
 					</div>
@@ -102,13 +102,13 @@
 					<a name="connect" class="tsd-anchor"></a>
 					<h3>connect</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">connect<span class="tsd-signature-symbol">(</span>models<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, actions<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.actionorview.html" class="tsd-signature-type">ActionOrView</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, views<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.actionorview.html" class="tsd-signature-type">ActionOrView</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, filters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">&gt;</span>, onSuccess<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Function</span>, onFail<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">connect<span class="tsd-signature-symbol">(</span>models<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, actions<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.actionorview.html" class="tsd-signature-type">ActionOrView</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, views<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.actionorview.html" class="tsd-signature-type">ActionOrView</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, filters<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">&gt;</span>, extendCalls<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span>, onSuccess<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Function</span>, onFail<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:986</li>
+									<li>Defined in index.ts:1004</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -117,6 +117,7 @@
 								</div>
 								<p>This is called by SomeSQL once to the DB driver once the developer calls &quot;connect()&quot;.</p>
 								<p>Models, Views, Actions, and added Filters are all sent in at once.  Once the &quot;onSuccess&quot; function is called the database should be ready to use.</p>
+								<p>The &quot;preCustom&quot; var contains an array of calls made to the &quot;custom&quot; method before connect() was called.  All subsequent custom() calls will pass directly to the database &quot;custom()&quot; method.</p>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
 									<dd><p>SomeSQLBackend</p>
@@ -138,6 +139,9 @@
 									<h5>filters: <span class="tsd-signature-type">TSMap</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">&gt;</span></h5>
 								</li>
 								<li>
+									<h5>extendCalls: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h5>
+								</li>
+								<li>
 									<h5>onSuccess: <span class="tsd-signature-type">Function</span></h5>
 								</li>
 								<li>
@@ -145,42 +149,6 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
-					<a name="custom" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> custom</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
-						<li class="tsd-signature tsd-kind-icon">custom<span class="tsd-signature-symbol">(</span>command<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in index.ts:1022</li>
-								</ul>
-							</aside>
-							<div class="tsd-comment tsd-typography">
-								<div class="lead">
-									<p>Optional extension for the database.</p>
-								</div>
-								<dl class="tsd-comment-tags">
-									<dt>memberof</dt>
-									<dd><p>SomeSQLBackend</p>
-									</dd>
-								</dl>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>command: <span class="tsd-signature-type">string</span></h5>
-								</li>
-								<li>
-									<h5>args: <span class="tsd-signature-type">any</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -194,7 +162,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1011</li>
+									<li>Defined in index.ts:1029</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -233,6 +201,41 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
+					<a name="extend" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> extend</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
+						<li class="tsd-signature tsd-kind-icon">extend<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">...</span>args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in index.ts:1042</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Optional extension for the database.
+										The extend method for SomeSQL is just a passthrough to this method.
+									An entirely different and new API can be built around this.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>SomeSQLBackend</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5><span class="tsd-flag ts-flagRest">Rest</span> <span class="tsd-signature-symbol">...</span>args: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -275,16 +278,16 @@
 								<a href="_index_.somesqlbackend.html#connect" class="tsd-kind-icon">connect</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-interface">
-								<a href="_index_.somesqlbackend.html#custom" class="tsd-kind-icon">custom</a>
+								<a href="_index_.somesqlbackend.html#exec" class="tsd-kind-icon">exec</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-interface">
-								<a href="_index_.somesqlbackend.html#exec" class="tsd-kind-icon">exec</a>
+								<a href="_index_.somesqlbackend.html#extend" class="tsd-kind-icon">extend</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
-					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-private tsd-is-not-exported">
 						<a href="../modules/_index_.html#_somesqlstatic" class="tsd-kind-icon">_someSQLStatic</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">

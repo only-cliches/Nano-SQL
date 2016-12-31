@@ -118,17 +118,20 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         t._initFilters();
     }
 
+
     /**
      * Creates all the tables and prepares the database for use.
      * 
-     * @param {TSMap<string,Array<Object>>} models
-     * @param {TSMap<string,Object>} actions
-     * @param {TSMap<string,Object>} views
+     * @param {TSMap<string, Array<Object>>} models
+     * @param {TSMap<string, Array<ActionOrView>>} actions
+     * @param {TSMap<string, Array<ActionOrView>>} views
+     * @param {TSMap<string, Function>} filters
+     * @param {Array<any>} preCustom
      * @param {Function} callback
      * 
      * @memberOf SomeSQLMemDB
      */
-    public connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, callback: Function): void {
+    public connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, preCustom: Array<any>, callback: Function): void {
         let t = this;
         models.forEach((model, table) => {
             t._newModel(table, model);

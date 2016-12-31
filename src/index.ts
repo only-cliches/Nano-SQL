@@ -161,6 +161,15 @@ export class SomeSQLInstance {
 
 
     /**
+     * Holds an array of custom commands, this is used if the custom() is used before we connect to the db.
+     * 
+     * @internal
+     * @type {Array<Array<any>>}
+     * @memberOf SomeSQLInstance
+     */
+    private _preConnectExtend: Array<Array<any>>;
+
+    /**
      * Holds an array of filters to apply to EVERY query.
      * 
      * @internal
@@ -176,6 +185,7 @@ export class SomeSQLInstance {
         t._views = new TSMap<string, Array<any>>();
         t._models = new TSMap<string, Array<DataModel>>();
         t._query = [];
+        t._preConnectExtend = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 
         t._callbacks = new TSMap<string, TSMap<string, Array<Function>>>();
@@ -214,7 +224,7 @@ export class SomeSQLInstance {
         let t = this;
         t._backend = backend || new SomeSQLMemDB();
         return new TSPromise((res, rej) => {
-            t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
+            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, res, rej);
         }, t);
     }
 
@@ -628,7 +638,7 @@ export class SomeSQLInstance {
      * .where(['balance','>',20])
      * .where(['catgory','IN',['jeans','shirts']])
      * .where([['name','=','scott'],'and',['balance','>',200]])
-     * .where([['id','>',50],'or',['postIDs','IN',[12,20,30]],'and,['name','LIKE','Billy']])
+     * .where([['id','>',50],'or',['postIDs','IN',[12,20,30]],'and',['name','LIKE','Billy']])
      * ```
      * 
      * @param {(Array<any|Array<any>>)} args
@@ -793,22 +803,26 @@ export class SomeSQLInstance {
         }, t);
     }
 
+
     /**
      * Perform a custom action supported by the database driver.
-     * This currently does nothing.
      * 
-     * @param {string} argType
-     * @param {*} [args]
+     * @param {...Array<any>} args
      * @returns {*}
      * 
      * @memberOf SomeSQLInstance
      */
-    public custom(argType: string, args?: any): any {
+    public extend(...args: Array<any>): any|SomeSQLInstance {
         let t = this;
-        if (t._backend.custom) {
-            return t._backend.custom.apply(t, [argType, args]);
-        } else {
-            return undefined;
+
+        if (t._backend) { // Query Mode
+            if (t._backend.extend) {
+                return t._backend.extend.apply(t, args);
+            } else {
+                return undefined;
+            }
+        } else { // Setup Mode
+            return t._preConnectExtend.push(args), this;
         }
     }
 
@@ -967,6 +981,7 @@ export class SomeSQLInstance {
 export interface SomeSQLBackend {
 
 
+
     /**
      * Inilitize the database for use, async so you can connect to remote stuff as needed.
      * 
@@ -974,16 +989,19 @@ export interface SomeSQLBackend {
      *
      * Models, Views, Actions, and added Filters are all sent in at once.  Once the "onSuccess" function is called the database should be ready to use.
      * 
+     * The "preCustom" var contains an array of calls made to the "custom" method before connect() was called.  All subsequent custom() calls will pass directly to the database "custom()" method.
+     * 
      * @param {TSMap<string, Array<Object>>} models
      * @param {TSMap<string, Array<ActionOrView>>} actions
      * @param {TSMap<string, Array<ActionOrView>>} views
      * @param {TSMap<string, Function>} filters
+     * @param {Array<any>} extendCalls
      * @param {Function} onSuccess
      * @param {Function} [onFail]
      * 
      * @memberOf SomeSQLBackend
      */
-    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, onSuccess: Function, onFail?: Function): void;
+    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, extendCalls: Array<any>, onSuccess: Function, onFail?: Function): void;
 
 
     /**
@@ -1010,21 +1028,26 @@ export interface SomeSQLBackend {
      */
     exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
 
+
     /**
      * Optional extension for the database.
+     * The extend method for SomeSQL is just a passthrough to this method.
+     * An entirely different and new API can be built around this.
      * 
-     * @param {string} command
-     * @param {*} args
+     * @param {...Array<any>} args
      * @returns {*}
      * 
      * @memberOf SomeSQLBackend
      */
-    custom?(command: string, args: any): any;
+    extend?(...args: Array<any>): any;
 }
 
+/**
+ * @private
+ */
 let _someSQLStatic = new SomeSQLInstance();
 
-export function SomeSQL(table: string) {
-    return _someSQLStatic.table(table);
+export function SomeSQL(setTablePointer?: string) {
+    return _someSQLStatic.table(setTablePointer);
 }
 

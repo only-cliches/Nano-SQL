@@ -72,6 +72,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._views = new typescript_map_1.TSMap();
 	        t._models = new typescript_map_1.TSMap();
 	        t._query = [];
+	        t._preConnectExtend = [];
 	        t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 	        t._callbacks = new typescript_map_1.TSMap();
 	        t._callbacks.set("*", new typescript_map_1.TSMap());
@@ -90,7 +91,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        t._backend = backend || new memory_db_1.SomeSQLMemDB();
 	        return new typescript_promise_1.TSPromise(function (res, rej) {
-	            t._backend.connect(t._models, t._actions, t._views, t._filters, res, rej);
+	            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, res, rej);
 	        }, t);
 	    };
 	    SomeSQLInstance.prototype.on = function (actions, callBack) {
@@ -273,13 +274,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        }, t);
 	    };
-	    SomeSQLInstance.prototype.custom = function (argType, args) {
+	    SomeSQLInstance.prototype.extend = function () {
+	        var args = [];
+	        for (var _i = 0; _i < arguments.length; _i++) {
+	            args[_i] = arguments[_i];
+	        }
 	        var t = this;
-	        if (t._backend.custom) {
-	            return t._backend.custom.apply(t, [argType, args]);
+	        if (t._backend) {
+	            if (t._backend.extend) {
+	                return t._backend.extend.apply(t, args);
+	            }
+	            else {
+	                return undefined;
+	            }
 	        }
 	        else {
-	            return undefined;
+	            return t._preConnectExtend.push(args), this;
 	        }
 	    };
 	    SomeSQLInstance.prototype.loadJS = function (rows) {
@@ -369,8 +379,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	}());
 	exports.SomeSQLInstance = SomeSQLInstance;
 	var _someSQLStatic = new SomeSQLInstance();
-	function SomeSQL(table) {
-	    return _someSQLStatic.table(table);
+	function SomeSQL(setTablePointer) {
+	    return _someSQLStatic.table(setTablePointer);
 	}
 	exports.SomeSQL = SomeSQL;
 
@@ -406,7 +416,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._pendingQuerys = [];
 	        t._initFilters();
 	    }
-	    SomeSQLMemDB.prototype.connect = function (models, actions, views, filters, callback) {
+	    SomeSQLMemDB.prototype.connect = function (models, actions, views, filters, preCustom, callback) {
 	        var t = this;
 	        models.forEach(function (model, table) {
 	            t._newModel(table, model);

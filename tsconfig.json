@@ -3,9 +3,8 @@
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
-    "removeComments": true,
     "stripInternal":true,
-    "rootDir":"src",
+    "removeComments":true,
     "importHelpers":false
   }
 }

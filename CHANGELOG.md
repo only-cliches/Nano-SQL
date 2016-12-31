@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.4] 12-30-2016
+- Readme typos Fixed
+- Added ability for custom functions to be called before the db is connected.
+- Changed the way the custom arguments are handled to be more dynamic.
+- Fixed the build so comments make it to the TSD files.
+
 ## [0.1.3] 12-28-2016
 - Added a ton of documentation.
 - Implemented TypeDoc
