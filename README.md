@@ -268,7 +268,7 @@ Each modifier can take up to two arguments and normally can only be used once.  
 | .offset()  | Offset the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#offset) |
 | .limit()   | Limits the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#limit) |
 | .filter()  | Applies a custom filter to the current query                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter) |
-| .custom()  | Use a custom query modifier provided by the database driver. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#custom) |
+| .extend()  | Use a extend query modifier provided by the database driver. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#extend) |
 
 ### Query Execution
 
