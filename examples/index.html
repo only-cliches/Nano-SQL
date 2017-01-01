@@ -175,6 +175,31 @@
                 console.log(result);
                 return this.query('drop').exec();
             })
+
+            /*
+            //Possible ORM Api  
+
+            SomeSQL("posts")
+            .model([
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'title',type:'string'}
+            ])
+            SomeSQL("dog")
+            .model([
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'name',type:'string'}
+            ])
+            SomeSQL("users")
+            .model([
+                {key:'id',type:'int,props:['pk','ai']},
+                {key:'posts',type:'array',props:['many::posts']}
+                {key:'dog',type:'int',props:['one::dog']}
+            ])
+            .connect()
+            
+            
+
+            */
 /*
             //Possible Join API
             SomeSQL('orders').query('select',['orders.id','orders.title','users.name']).join({

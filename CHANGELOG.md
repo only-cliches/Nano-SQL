@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.1.5] 12-31-2016
+- Added optional "default" value in data models.
+- Modified memory DB filters to always return an array of objects.
+
 ## [0.1.4] 12-30-2016
 - Readme typos Fixed
 - Added ability for custom functions to be called before the db is connected.

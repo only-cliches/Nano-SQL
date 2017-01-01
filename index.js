@@ -469,25 +469,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        var f = t._filters;
 	        f.set("sum", function (rows) {
-	            return rows.map(function (r) { return r[t._act.args[0]]; }).reduce(function (a, b) { return a + b; }, 0);
+	            return [{ "sum": rows.map(function (r) { return r[t._act.args[0]]; }).reduce(function (a, b) { return a + b; }, 0) }];
 	        });
 	        f.set("first", function (rows) {
-	            return rows[0];
+	            return [rows[0]];
 	        });
 	        f.set("last", function (rows) {
-	            return rows.pop();
+	            return [rows.pop()];
 	        });
 	        f.set("min", function (rows) {
-	            return rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0];
+	            return [{ "min": rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0] }];
 	        });
 	        f.set("max", function (rows) {
-	            return rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0];
+	            return [{ "max": rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0] }];
 	        });
 	        f.set("average", function (rows) {
-	            return t._doFilter("sum", rows) / rows.length;
+	            return [{ "average": t._doFilter("sum", rows)[0].sum / rows.length }];
 	        });
 	        f.set("count", function (rows) {
-	            return rows.length;
+	            return [{ "length": rows.length }];
 	        });
 	    };
 	    SomeSQLMemDB.prototype._doFilter = function (filterName, rows, filterArgs) {
@@ -721,6 +721,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _memDB_Table.prototype._add = function (data) {
 	        var t = this;
 	        data = JSON.parse(JSON.stringify(data));
+	        t._model.forEach(function (model) {
+	            data[model.key] = data[model.key] || model.default;
+	        });
 	        if (!data[t._primaryKey]) {
 	            switch (t._pkType) {
 	                case "int":

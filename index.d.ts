@@ -19,7 +19,8 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string" | "int" | "float" | "array" | "map" | "bool";
+    type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid";
+    default?: any;
     props?: Array<any>;
 }
 /**
@@ -392,11 +393,11 @@ export declare class SomeSQLInstance {
     /**
      * Executes the current pending query to the db engine.
      *
-     * @returns {(TSPromise<Array<Object | string>>)}
+     * @returns {(TSPromise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    exec(): TSPromise<Array<Object | string>>;
+    exec(): TSPromise<Array<Object>>;
     /**
      * Perform a custom action supported by the database driver.
      *

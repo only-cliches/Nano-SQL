@@ -39,14 +39,14 @@ SomeSQL('users') //  "users" is our table name.
 .then(function() {
     return this.query('upsert',{ // Add a record
         name:"Billy",
-        age:5
+        age:50
     }).exec();
 })
 .then(function() {
     return this.query('select').exec(); // select all rows from the current active table
 })
 .then(function(rows) {
-    console.log(rows) // <= [{id:1,name:"Billy",age:5}]
+    console.log(rows) // <= [{id:1,name:"Billy",age:50}]
 })
 
 ```

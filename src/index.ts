@@ -22,7 +22,8 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string"|"int"|"float"|"array"|"map"|"bool";
+    type: "string"|"int"|"float"|"array"|"map"|"bool"|"uuid";
+    default?: any;
     props?: Array<any>;
 }
 
@@ -745,11 +746,11 @@ export class SomeSQLInstance {
     /**
      * Executes the current pending query to the db engine.
      * 
-     * @returns {(TSPromise<Array<Object | string>>)}
+     * @returns {(TSPromise<Array<Object>>)}
      * 
      * @memberOf SomeSQLInstance
      */
-    public exec(): TSPromise<Array<Object | string>> {
+    public exec(): TSPromise<Array<Object>> {
 
         let t = this;
         let _t = t._selectedTable;

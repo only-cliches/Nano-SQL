@@ -98,14 +98,14 @@
 .<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>
     <span class="hljs-keyword">return</span> this.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
         name:<span class="hljs-string">"Billy"</span>,
-        age:<span class="hljs-number">5</span>
+        age:<span class="hljs-number">50</span>
     }).<span class="hljs-built_in">exec</span>();
 })
 .<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>
     <span class="hljs-keyword">return</span> this.query(<span class="hljs-string">'select'</span>).<span class="hljs-built_in">exec</span>(); <span class="hljs-comment">// select all rows from the current active table</span>
 })
 .<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(rows)</span> {</span>
-    console.<span class="hljs-built_in">log</span>(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:5}]</span>
+    console.<span class="hljs-built_in">log</span>(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
 })
 </code></pre><h2 id="detailed-usage">Detailed Usage</h2>
 				<p>First you declare your models, connect the db, then you execute queries.</p>
@@ -348,9 +348,9 @@ Keep <span class="hljs-keyword">in</span> mind that the tables <span class="hljs
 							<td><a href="https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter">Examples</a></td>
 						</tr>
 						<tr>
-							<td>.custom()</td>
-							<td>Use a custom query modifier provided by the database driver.</td>
-							<td><a href="https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#custom">Examples</a></td>
+							<td>.extend()</td>
+							<td>Use a extend query modifier provided by the database driver.</td>
+							<td><a href="https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#extend">Examples</a></td>
 						</tr>
 					</tbody>
 				</table>

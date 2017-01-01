@@ -1,4 +1,4 @@
-import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine } from "./index";
+import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine, DataModel } from "./index";
 import { TSPromise } from "typescript-promise";
 import { TSMap } from "typescript-map";
 
@@ -122,7 +122,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Creates all the tables and prepares the database for use.
      * 
-     * @param {TSMap<string, Array<Object>>} models
+     * @param {TSMap<string, Array<DataModel>>} models
      * @param {TSMap<string, Array<ActionOrView>>} actions
      * @param {TSMap<string, Array<ActionOrView>>} views
      * @param {TSMap<string, Function>} filters
@@ -131,7 +131,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @memberOf SomeSQLMemDB
      */
-    public connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, preCustom: Array<any>, callback: Function): void {
+    public connect(models: TSMap<string, Array<DataModel>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, preCustom: Array<any>, callback: Function): void {
         let t = this;
         models.forEach((model, table) => {
             t._newModel(table, model);
@@ -148,11 +148,11 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @internal
      * @param {string} table
-     * @param {Array<Object>} args
+     * @param {Array<DataModel>} args
      * 
      * @memberOf SomeSQLMemDB
      */
-    private _newModel(table: string, args: Array<Object>): void {
+    private _newModel(table: string, args: Array<DataModel>): void {
         this._cache.set(table, new TSMap<string, _memDB_Table>());
         this._cacheIndex.set(table, new TSMap<string, Array<string | number>>());
         this._tables.set(table, new _memDB_Table(args));
@@ -228,30 +228,30 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         let t = this;
         let f = t._filters;
         f.set("sum", (rows: Array<Object>) => {
-            return rows.map((r) => r[t._act.args[0]]).reduce((a, b) => a + b, 0);
+            return [{"sum": rows.map((r) => r[t._act.args[0]]).reduce((a, b) => a + b, 0)}];
         });
         f.set("first", (rows: Array<Object>) => {
-            return rows[0];
+            return [rows[0]];
         });
         f.set("last", (rows: Array<Object>) => {
-            return rows.pop();
+            return [rows.pop()];
         });
         f.set("min", (rows: Array<Object>) => {
-            return rows.map((r) => r[t._act.args[0]]).sort((a, b) => a < b ? -1 : 1)[0];
+            return [{"min": rows.map((r) => r[t._act.args[0]]).sort((a, b) => a < b ? -1 : 1)[0]}];
         });
         f.set("max", (rows: Array<Object>) => {
-            return rows.map((r) => r[t._act.args[0]]).sort((a, b) => a > b ? -1 : 1)[0];
+            return [{"max": rows.map((r) => r[t._act.args[0]]).sort((a, b) => a > b ? -1 : 1)[0]}];
         });
         f.set("average", (rows: Array<Object>) => {
-            return t._doFilter("sum", rows) / rows.length;
+            return [{"average": t._doFilter("sum", rows)[0].sum / rows.length}];
         });
         f.set("count", (rows: Array<Object>) => {
-            return rows.length;
+            return [{"length": rows.length}];
         });
     }
 
     /**
-     * Execute on a given set of rows
+     * Execute filter on a given set of rows
      * 
      * @internal
      * @param {string} filterName
@@ -562,13 +562,13 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 class _memDB_Table {
     public _index: Array<string | number>;
     public _table: Array<Object>;
-    public _model: Array<Object>;
+    public _model: Array<DataModel>;
     public _primaryKey: string;
     public _pkType: string;
     public length: number;
     private _incriment: number;
 
-    constructor(model: Array<Object>, index?: Array<string>, table?: Array<Object>) {
+    constructor(model: Array<DataModel>, index?: Array<string>, table?: Array<Object>) {
         let t = this;
         t._model = model;
         t._index = index || [];
@@ -600,6 +600,10 @@ class _memDB_Table {
     public _add(data: Object): void {
         let t = this;
         data = JSON.parse(JSON.stringify(data));
+        t._model.forEach((model) => {
+            data[model.key] = data[model.key] || model.default;
+        });
+
         if (!data[t._primaryKey]) {
             switch (t._pkType) {
                 case "int": data[t._primaryKey] = t._incriment; t._incriment++;
