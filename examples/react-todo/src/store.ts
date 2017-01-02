@@ -20,13 +20,6 @@ export function initStore() {
             }
         },
         {
-            name: "delete_todo",
-            args: ["id:string"],
-            call: (args, db) => {
-                return db.query("delete").where(["id", "=", args["id"]]).exec();
-            }
-        },
-        {
             name: "mark_todo_done",
             args: ["id:string"],
             call: (args, db) => {

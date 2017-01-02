@@ -548,9 +548,11 @@ export class SomeSQLInstance {
     public doAction(actionName: string, actionArgs: any = {}): TSPromise<Array<Object>> {
         let t = this;
         let l = t._selectedTable;
-        let selAction = t._actions.get(l).reduce((prev, cur) => {
-            if (prev !== undefined) return prev;
-            return cur.name === actionName ? cur : undefined;
+        let selAction;
+        t._actions.get(l).forEach((action) => {
+            if (action.name === actionName) {
+                selAction = action;
+            }
         });
         if (!selAction) throw Error("Action does not exist");
         t._activeActionOrView = actionName;

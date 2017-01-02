@@ -294,6 +294,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      */
     private _removeCacheFromKeys(affectedKeys: Array<number | string>): void {
         let t = this;
+        t._cache.set(t._selectedTable, new TSMap<string, _memDB_Table>());
+        t._cacheIndex.set(t._selectedTable, new TSMap<string, Array<string | number>>());
+
+        /*
         affectedKeys.forEach((key) => {
             t._cacheIndex.get(t._selectedTable).forEach((queryIndex, key) => {
                 if (queryIndex.indexOf(key) !== -1) {
@@ -302,6 +306,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                 }
             });
         });
+        */
     }
 
     /**
@@ -334,7 +339,6 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                 if (_whereStatement) { // Upserting existing rows
                     whereTable = t._newWhere(ta, <any>_whereStatement);
                     let affectedKeys = [];
-
                     whereTable._forEach((v, k) => {
                         for (let key in qArgs) {
                             ta._get(k)[key] = qArgs[key];
@@ -522,9 +526,11 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         let left = whereStatement[0];
         let operator = whereStatement[1];
         let right = whereStatement[2];
-        return table._filter((row) => {
-            return t._compare(right, operator, row[left]) === 0;
+        table._index = table._index.filter((v) => {
+            return t._compare(right, operator, table._get(v)[whereStatement[0]]) === 0 ? true : false;
         });
+
+        return table;
     }
 
     /**
@@ -624,10 +630,9 @@ class _memDB_Table {
     public _filter(func: (value: Object, index?: string | number) => Boolean): _memDB_Table {
         let t = this;
         t._index.forEach((idx) => {
-            if (!func.apply(t, [t._get(idx), idx])) t._remove(idx);
+            if (func(t._get(idx), idx) === false) t._remove(idx);
         });
-        t.length = t._index.length;
-        return this;
+        return t;
     }
 
     public _forEach(func: (value: Object, index?: string | number) => void): _memDB_Table {

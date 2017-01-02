@@ -191,10 +191,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (actionArgs === void 0) { actionArgs = {}; }
 	        var t = this;
 	        var l = t._selectedTable;
-	        var selAction = t._actions.get(l).reduce(function (prev, cur) {
-	            if (prev !== undefined)
-	                return prev;
-	            return cur.name === actionName ? cur : undefined;
+	        var selAction;
+	        t._actions.get(l).forEach(function (action) {
+	            if (action.name === actionName) {
+	                selAction = action;
+	            }
 	        });
 	        if (!selAction)
 	            throw Error("Action does not exist");
@@ -506,14 +507,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    SomeSQLMemDB.prototype._removeCacheFromKeys = function (affectedKeys) {
 	        var t = this;
-	        affectedKeys.forEach(function (key) {
-	            t._cacheIndex.get(t._selectedTable).forEach(function (queryIndex, key) {
-	                if (queryIndex.indexOf(key) !== -1) {
-	                    t._cacheIndex.get(t._selectedTable).delete(key);
-	                    t._cache.get(t._selectedTable).delete(key);
-	                }
-	            });
-	        });
+	        t._cache.set(t._selectedTable, new typescript_map_1.TSMap());
+	        t._cacheIndex.set(t._selectedTable, new typescript_map_1.TSMap());
 	    };
 	    SomeSQLMemDB.prototype._exec = function (callBack) {
 	        var t = this;
@@ -674,9 +669,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var left = whereStatement[0];
 	        var operator = whereStatement[1];
 	        var right = whereStatement[2];
-	        return table._filter(function (row) {
-	            return t._compare(right, operator, row[left]) === 0;
+	        table._index = table._index.filter(function (v) {
+	            return t._compare(right, operator, table._get(v)[whereStatement[0]]) === 0 ? true : false;
 	        });
+	        return table;
 	    };
 	    SomeSQLMemDB.prototype._compare = function (val1, compare, val2) {
 	        switch (compare) {
@@ -749,11 +745,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _memDB_Table.prototype._filter = function (func) {
 	        var t = this;
 	        t._index.forEach(function (idx) {
-	            if (!func.apply(t, [t._get(idx), idx]))
+	            if (func(t._get(idx), idx) === false)
 	                t._remove(idx);
 	        });
-	        t.length = t._index.length;
-	        return this;
+	        return t;
 	    };
 	    _memDB_Table.prototype._forEach = function (func) {
 	        var t = this;
