@@ -250,7 +250,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                t._callbacks.get(_t).get(e).concat(t._callbacks.get(_t).get("*")).forEach(function (cb) {
 	                    eventData["name"] = e;
 	                    eventData["actionOrView"] = t._activeActionOrView;
-	                    cb.apply(t, [eventData]);
+	                    cb.apply(t, [eventData, t]);
 	                });
 	            });
 	            t._activeActionOrView = undefined;

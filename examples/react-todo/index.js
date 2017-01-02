@@ -76,11 +76,7 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
         }
         TodoForm.prototype.onSubmit = function (event) {
             event.preventDefault();
-            some_sql_2.SomeSQL("todos").doAction("add_todo", { title: this.state.value }).then(function () {
-                some_sql_2.SomeSQL("todos").query("select").exec().then(function (rows) {
-                    console.log(rows);
-                });
-            });
+            some_sql_2.SomeSQL("todos").doAction("add_todo", { title: this.state.value });
             this.setState({
                 value: ""
             });
@@ -107,8 +103,9 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
             _this.state = {
                 todos: []
             };
-            some_sql_2.SomeSQL("todos").on("change", function () {
-                some_sql_2.SomeSQL("todos").getView("list_all_todos").then(function (rows, db) {
+            some_sql_2.SomeSQL("todos").on("change", function (e, db) {
+                console.log(e, db);
+                db.getView("list_all_todos").then(function (rows, db) {
                     _this.setState({
                         todos: rows
                     });

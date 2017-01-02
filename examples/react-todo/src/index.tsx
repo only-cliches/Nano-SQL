@@ -35,6 +35,7 @@ class TodoForm extends React.Component<any, any> {
 
     public onSubmit(event) {
         event.preventDefault();
+        SomeSQL("todos").doAction("add_todo", {title: this.state.value});
         this.setState({
             value: ""
         });
@@ -77,8 +78,9 @@ class TodoApp extends React.Component<any, TodoAppState> {
                 });
             });
         });*/
-        SomeSQL("todos").on("change",() => {
-            SomeSQL("todos").getView("list_all_todos").then((rows, db) => {
+        SomeSQL("todos").on("change", (e, db) => {
+            console.log(e, db);
+            db.getView("list_all_todos").then((rows, db) => {
                 this.setState({
                     todos: rows
                 });
