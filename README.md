@@ -36,14 +36,14 @@ SomeSQL('users') //  "users" is our table name.
     {key:'age',type:'int'}, 
 ])
 .connect() // Init the data store for usage.
-.then(function() {
-    return this.query('upsert',{ // Add a record
+.then(function(result, db) {
+    return db.query('upsert',{ // Add a record
         name:"Billy",
         age:50
     }).exec();
 })
-.then(function() {
-    return this.query('select').exec(); // select all rows from the current active table
+.then(function(result, db) {
+    return db.query('select').exec(); // select all rows from the current active table
 })
 .then(function(rows) {
     console.log(rows) // <= [{id:1,name:"Billy",age:50}]
@@ -70,8 +70,8 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
     {
         name:'add_new_user',
         args:['user:map'],
-        call:function(args) {
-            return this.query('upsert',args.user).exec();
+        call:function(args, db) {
+            return db.query('upsert',args.user).exec();
         }
     }
 ])
@@ -79,15 +79,15 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
     {
         name: 'get_user_by_name',
         args: ['name:string'],
-        call: function(args) {
-            return this.query('select').where(['name','=',args.name]).exec();
+        call: function(args, db) {
+            return db.query('select').where(['name','=',args.name]).exec();
         }
     },
     {
         name: 'list_all_users',
         args: ['page:int'],
-        call: function(args) {
-            return this.query('select',['id','name']).exec();
+        call: function(args, db) {
+            return db.query('select',['id','name']).exec();
         }
     }                       
 ])
@@ -98,9 +98,9 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
 
 ```typescript
 // Initializes the db.
-SomeSQL().connect().then(function() {
+SomeSQL().connect().then(function(result, db) {
     // DB ready to use.
-    this.doAction('add_new_user',{user:{
+    db.doAction('add_new_user',{user:{
         id:null,
         name:'jim',
         age:30,
@@ -109,10 +109,10 @@ SomeSQL().connect().then(function() {
         meta:{
             favorteColor:'blue'
         }
-    }}).then(function(result) {
+    }}).then(function(result, db) {
         console.log(result) //  <- "1 Row(s) upserted"
-        return this.getView('list_all_users');
-    }).then(function(result) {
+        return db.getView('list_all_users');
+    }).then(function(result, db) {
         console.log(result) //  <- single object array containing the row we inserted.
     });
 });
@@ -170,10 +170,10 @@ All calls to the `exec()` return a promise, with the result of the promise being
 This makes it easy to chain commands:
 
 ```typescript
-SomeSQL('users').query('select').exec().then(function() {
-    return this.query('upsert',{name:"Bill"}).where(['name','=','billy']).exec();
-}).then(function(result) {
-    return this.query('drop').exec();
+SomeSQL('users').query('select').exec().then(function(result, db) {
+    return db.query('upsert',{name:"Bill"}).where(['name','=','billy']).exec();
+}).then(function(result, db) {
+    return db.query('drop').exec();
 })
 
 ```

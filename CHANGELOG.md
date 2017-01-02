@@ -6,6 +6,7 @@
 - Modified memory DB queries to always return an array of objects.
 - Fixed Action/Views bug if you didn't pass arguments.
 - Typescript now forces 'this' scoping, added DB argument to queries to resolve it.
+- Added database variable to events.
 - Added ReactJS Todo Example.
 
 ## [0.1.5] 12-31-2016

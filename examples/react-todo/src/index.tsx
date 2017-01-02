@@ -3,17 +3,12 @@ import * as ReactDOM from "react-dom";
 import { initStore } from "./store";
 import { SomeSQL } from "some-sql";
 
-const TodoItem = (props) => {
-    return(
-        <div>yo</div>
-    );
-};
 
 const TitleStyle = {
     width: "80%"
 }
 
-const TodoTable = (props) => {
+const TodoTable = (props: {todos: Array<any>}) => {
     return(
         <table>
             <thead>
@@ -23,13 +18,45 @@ const TodoTable = (props) => {
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>2</td>
-                </tr>
+                {props.todos.map((todo) => <tr><td>{ todo.title }</td><td></td></tr>)}
             </tbody>
         </table>
     );
+}
+
+class TodoForm extends React.Component<any, any> {
+
+    constructor() {
+        super();
+        this.state = {};
+        this.onSubmit = this.onSubmit.bind(this);
+        this.updateTitle = this.updateTitle.bind(this);
+    }
+
+    public onSubmit(event) {
+        event.preventDefault();
+        this.setState({
+            value: ""
+        });
+    }
+
+    public updateTitle(event) {
+        this.setState({
+            value: event.target.value
+        });
+    };
+
+    public render() {
+        return (
+            <form onSubmit={this.onSubmit}>
+                <label>
+                Title:
+                    <input type="text" value={this.state.value} onChange={this.updateTitle} />
+                </label>
+                <input type="submit" value="+" />
+            </form>
+        );
+    }
 }
 
 interface TodoAppState {
@@ -40,14 +67,23 @@ class TodoApp extends React.Component<any, TodoAppState> {
 
     constructor() {
         super();
-        SomeSQL("todos").doAction("add_todo",{name:"Test"}).then(() => {
-            SomeSQL("todos").getView("list_all_todos",{}).then((rows) => {
+        this.state = {
+            todos:[]
+        };
+        /*SomeSQL("todos").doAction("add_todo", {title: "Test"}).then((result, db) => {
+            db.getView("list_all_todos",{}).then((rows, db) => {
                 this.setState({
                     todos: rows
                 });
             });
-        });
-
+        });*/
+        SomeSQL("todos").on("change",() => {
+            SomeSQL("todos").getView("list_all_todos").then((rows, db) => {
+                this.setState({
+                    todos: rows
+                });
+            });
+        })
     }
 
     public shouldComponentUpdate(nextProps, nextState) {
@@ -58,7 +94,8 @@ class TodoApp extends React.Component<any, TodoAppState> {
         return (
             <div className="container">
                 <h1>Todo Items</h1>
-                <TodoTable />
+                <TodoTable todos={this.state.todos} />
+                <TodoForm />
             </div>
         )
     }

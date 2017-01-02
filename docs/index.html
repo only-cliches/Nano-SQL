@@ -95,14 +95,14 @@
     {key:<span class="hljs-string">'age'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>}, 
 ])
 .connect() <span class="hljs-comment">// Init the data store for usage.</span>
-.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
+    <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
         name:<span class="hljs-string">"Billy"</span>,
         age:<span class="hljs-number">50</span>
     }).exec();
 })
-.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>).exec(); <span class="hljs-comment">// select all rows from the current active table</span>
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
+    <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'select'</span>).exec(); <span class="hljs-comment">// select all rows from the current active table</span>
 })
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{
     <span class="hljs-built_in">console</span>.log(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
@@ -124,8 +124,8 @@
     {
         name:<span class="hljs-string">'add_new_user'</span>,
         args:[<span class="hljs-string">'user:map'</span>],
-        call:<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'upsert'</span>,args.user).exec();
+        call:<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, db</span>) </span>{
+            <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'upsert'</span>,args.user).exec();
         }
     }
 ])
@@ -133,24 +133,24 @@
     {
         name: <span class="hljs-string">'get_user_by_name'</span>,
         args: [<span class="hljs-string">'name:string'</span>],
-        call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,args.name]).exec();
+        call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, db</span>) </span>{
+            <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'select'</span>).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,args.name]).exec();
         }
     },
     {
         name: <span class="hljs-string">'list_all_users'</span>,
         args: [<span class="hljs-string">'page:int'</span>],
-        call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
-            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'id'</span>,<span class="hljs-string">'name'</span>]).exec();
+        call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args, db</span>) </span>{
+            <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'id'</span>,<span class="hljs-string">'name'</span>]).exec();
         }
     }                       
 ])
 </code></pre>
 				<h3 id="connect-the-db-and-execute-queries">Connect the DB and execute queries</h3>
 				<pre><code class="lang-typescript"><span class="hljs-comment">// Initializes the db.</span>
-SomeSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+SomeSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
     <span class="hljs-comment">// DB ready to use.</span>
-    <span class="hljs-keyword">this</span>.doAction(<span class="hljs-string">'add_new_user'</span>,{user:{
+    db.doAction(<span class="hljs-string">'add_new_user'</span>,{user:{
         id:<span class="hljs-literal">null</span>,
         name:<span class="hljs-string">'jim'</span>,
         age:<span class="hljs-number">30</span>,
@@ -159,10 +159,10 @@ SomeSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">
         meta:{
             favorteColor:<span class="hljs-string">'blue'</span>
         }
-    }}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+    }}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
         <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">//  &lt;- "1 Row(s) upserted"</span>
-        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.getView(<span class="hljs-string">'list_all_users'</span>);
-    }).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+        <span class="hljs-keyword">return</span> db.getView(<span class="hljs-string">'list_all_users'</span>);
+    }).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
         <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">//  &lt;- single object array containing the row we inserted.</span>
     });
 });
@@ -206,10 +206,10 @@ SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','&lt;'
 				<p>Possible query commands are <code>select</code>, <code>drop</code>, <code>upsert</code>, and <code>delete</code>.</p>
 				<p>All calls to the <code>exec()</code> return a promise, with the result of the promise being the response from the database.  The <code>this</code> of the returned promise is always the current SomeSQL function with the last table you selected.</p>
 				<p>This makes it easy to chain commands:</p>
-				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'upsert'</span>,{name:<span class="hljs-string">"Bill"</span>}).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>]).exec();
-}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'drop'</span>).exec();
+				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
+    <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'upsert'</span>,{name:<span class="hljs-string">"Bill"</span>}).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>]).exec();
+}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
+    <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'drop'</span>).exec();
 })
 </code></pre>
 				<h3 id="events">Events</h3>

@@ -11,7 +11,7 @@ export function initStore() {
     .actions([
         {
             name: "add_todo",
-            args: ["name:string"],
+            args: ["title:string"],
             call: (args, db) => {
                 return db.query("upsert",{
                     title: args["title"],

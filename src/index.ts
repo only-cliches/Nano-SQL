@@ -39,6 +39,15 @@ export interface QueryLine {
     args?: any;
 }
 
+export interface DatabaseEvent {
+    table: string;
+    query: Array<QueryLine>;
+    time: number;
+    result: Array<any>;
+    name: "change"|"delete"|"upsert"|"drop"|"select"|"error";
+    actionOrView: string;
+}
+
 /**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
@@ -239,7 +248,7 @@ export class SomeSQLInstance {
      * 
      * @memberOf SomeSQLInstance
      */
-    public on(actions: "change"|"delete"|"upsert"|"drop"|"select"|"error", callBack: Function): SomeSQLInstance {
+    public on(actions: "change"|"delete"|"upsert"|"drop"|"select"|"error", callBack: (event: DatabaseEvent, database: SomeSQLInstance) => void): SomeSQLInstance {
         let t = this;
         let l = t._selectedTable;
 
