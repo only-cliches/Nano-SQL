@@ -268,7 +268,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    time: new Date().getTime(),
 	                    result: data
 	                });
-	                callBack(data);
+	                callBack(data, t);
 	            };
 	            t._backend.exec(_t, t._query, t._activeActionOrView, function (rows) {
 	                _tEvent(rows, res, false);

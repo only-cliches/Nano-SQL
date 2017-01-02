@@ -9,12 +9,16 @@ const TodoItem = (props) => {
     );
 };
 
+const TitleStyle = {
+    width: "80%"
+}
+
 const TodoTable = (props) => {
     return(
         <table>
             <thead>
                 <tr>
-                    <th>Title</th>
+                    <th style={TitleStyle}>Title</th>
                     <th>Done</th>
                 </tr>
             </thead>
@@ -32,22 +36,22 @@ interface TodoAppState {
     todos?: Array<any>;
 }
 
-class TodoApp extends React.Component<any, any> {
+class TodoApp extends React.Component<any, TodoAppState> {
 
     constructor() {
         super();
-        this.state = {};
-        SomeSQL("todos").getView("list_all_todos",{}).then((rows) => {
-            console.log(rows);
+        SomeSQL("todos").doAction("add_todo",{name:"Test"}).then(() => {
+            SomeSQL("todos").getView("list_all_todos",{}).then((rows) => {
+                this.setState({
+                    todos: rows
+                });
+            });
         });
+
     }
 
     public shouldComponentUpdate(nextProps, nextState) {
-        return this.props !== nextProps;
-    }
-
-    public setState(prevState?:any, props?:any) {
-        console.log("SET STATE", prevState, props);
+        return this.state !== nextState;
     }
 
     public render() {

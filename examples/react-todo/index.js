@@ -6,7 +6,6 @@ var __extends = (this && this.__extends) || function (d, b) {
 define("store", ["require", "exports", "some-sql"], function (require, exports, some_sql_1) {
     "use strict";
     function initStore() {
-        var _this = this;
         some_sql_1.SomeSQL("todos")
             .model([
             { key: "id", type: "uuid", props: ["pk"] },
@@ -17,8 +16,8 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
             {
                 name: "add_todo",
                 args: ["name:string"],
-                call: function (args) {
-                    return _this.query("upsert", {
+                call: function (args, db) {
+                    return db.query("upsert", {
                         title: args["title"],
                         done: false,
                     }).exec();
@@ -27,23 +26,23 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
             {
                 name: "delete_todo",
                 args: ["id:string"],
-                call: function (args) {
-                    return _this.query("delete").where(["id", "=", args["id"]]).exec();
+                call: function (args, db) {
+                    return db.query("delete").where(["id", "=", args["id"]]).exec();
                 }
             },
             {
                 name: "mark_todo_done",
                 args: ["id:string"],
-                call: function (args) {
-                    return _this.query("upsert", { done: true }).where(["id", "=", args["id"]]).exec();
+                call: function (args, db) {
+                    return db.query("upsert", { done: true }).where(["id", "=", args["id"]]).exec();
                 }
             }
         ])
             .views([
             {
                 name: "list_all_todos",
-                call: function () {
-                    return _this.query("select").exec();
+                call: function (args, db) {
+                    return db.query("select").exec();
                 }
             }
         ]);
@@ -56,11 +55,14 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
     var TodoItem = function (props) {
         return (React.createElement("div", null, "yo"));
     };
+    var TitleStyle = {
+        width: "80%"
+    };
     var TodoTable = function (props) {
         return (React.createElement("table", null,
             React.createElement("thead", null,
                 React.createElement("tr", null,
-                    React.createElement("th", null, "Title"),
+                    React.createElement("th", { style: TitleStyle }, "Title"),
                     React.createElement("th", null, "Done"))),
             React.createElement("tbody", null,
                 React.createElement("tr", null,
@@ -71,17 +73,17 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
         __extends(TodoApp, _super);
         function TodoApp() {
             var _this = _super.call(this) || this;
-            _this.state = {};
-            some_sql_2.SomeSQL("todos").getView("list_all_todos", {}).then(function (rows) {
-                console.log(rows);
+            some_sql_2.SomeSQL("todos").doAction("add_todo", { name: "Test" }).then(function () {
+                some_sql_2.SomeSQL("todos").getView("list_all_todos", {}).then(function (rows) {
+                    _this.setState({
+                        todos: rows
+                    });
+                });
             });
             return _this;
         }
         TodoApp.prototype.shouldComponentUpdate = function (nextProps, nextState) {
-            return this.props !== nextProps;
-        };
-        TodoApp.prototype.setState = function (prevState, props) {
-            console.log("SET STATE", prevState, props);
+            return this.state !== nextState;
         };
         TodoApp.prototype.render = function () {
             return (React.createElement("div", { className: "container" },

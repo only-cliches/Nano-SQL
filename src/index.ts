@@ -794,7 +794,7 @@ export class SomeSQLInstance {
                     result: data
                 });
 
-                callBack(data);
+                callBack(data, t);
             };
 
             t._backend.exec(_t, t._query, t._activeActionOrView, (rows) => {

@@ -13,7 +13,7 @@ export function initStore() {
             name: "add_todo",
             args: ["name:string"],
             call: (args, db) => {
-                return this.query("upsert",{
+                return db.query("upsert",{
                     title: args["title"],
                     done: false,
                 }).exec();
@@ -23,22 +23,22 @@ export function initStore() {
             name: "delete_todo",
             args: ["id:string"],
             call: (args, db) => {
-                return this.query("delete").where(["id", "=", args["id"]]).exec();
+                return db.query("delete").where(["id", "=", args["id"]]).exec();
             }
         },
         {
             name: "mark_todo_done",
             args: ["id:string"],
             call: (args, db) => {
-                return this.query("upsert", {done: true}).where(["id", "=", args["id"]]).exec();
+                return db.query("upsert", {done: true}).where(["id", "=", args["id"]]).exec();
             }
         }
     ])
     .views([
         {
             name: "list_all_todos",
-            call: () => {
-                return this.query("select").exec();
+            call: (args, db) => {
+                return db.query("select").exec();
             }
         }
     ])
