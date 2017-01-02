@@ -158,18 +158,20 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         this._tables.set(table, new _memDB_Table(args));
     }
 
+
     /**
      * Public exec option.  Organizes the query then sends it to the internal execution function.
      * 
      * @param {string} table
-     * @param {(Array<TSMap<string,Object|Array<any>>>)} query
+     * @param {Array<QueryLine>} query
      * @param {string} viewOrAction
-     * @param {Function} onSuccess
-     * @param {Function} [onFail]
+     * @param {(rows: Array<Object>) => void} onSuccess
+     * @param {(rows: Array<Object>) => void} [onFail]
+     * @returns {void}
      * 
      * @memberOf SomeSQLMemDB
      */
-    public exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: Function, onFail?: Function): void {
+    public exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: (rows: Array<Object>) => void, onFail?: (rows: Array<Object>) => void): void {
         let t = this;
 
         if (t._act != null) {
@@ -188,8 +190,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
             return new TSPromise(function (resolve, reject) {
                 t._query(q, resolve);
             });
-        })).then(function () {
-            t._exec(function (args) {
+        })).then(() => {
+            t._exec((args) => {
                 onSuccess(args);
                 t._act = null;
                 if (t._pendingQuerys.length) {
@@ -355,7 +357,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     t._cacheIndex.set(t._selectedTable, new TSMap<string, Array<string | number>>());
                 }
 
-                callBack(msg + " row(s) upserted");
+                callBack([{result: msg + " row(s) upserted"}]);
 
                 break;
             case "select":
@@ -448,17 +450,17 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     });
 
                     t._removeCacheFromKeys(affectedKeys);
-                    callBack(whereTable.length + " row(s) deleted");
+                    callBack([{result: whereTable.length + " row(s) deleted"}]);
                 } else {
                     t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
-                    callBack("Table dropped.");
+                    callBack([{result: "Table Dropped"}]);
                 }
 
                 break;
             case "drop":
 
                 t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
-                callBack("Table dropped.");
+                callBack([{result: "Table Dropped"}]);
 
                 break;
         }
@@ -554,7 +556,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
 
 /**
- * Internal class used to hold an organized memory table data
+ * Internal class used to hold and organized memory table data
  * 
  * @class _memDB_Table
  */

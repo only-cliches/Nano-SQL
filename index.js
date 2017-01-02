@@ -142,6 +142,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this._views.set(this._selectedTable, viewArray), this;
 	    };
 	    SomeSQLInstance.prototype.getView = function (viewName, viewArgs) {
+	        if (viewArgs === void 0) { viewArgs = {}; }
 	        var t = this;
 	        var l = t._selectedTable;
 	        var selView;
@@ -153,21 +154,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!selView)
 	            throw Error("View does not exist");
 	        t._activeActionOrView = viewName;
-	        return selView.call.apply(t, [t._cleanArgs(selView.args, viewArgs)]);
+	        return selView.call.apply(t, [t._cleanArgs(selView.args, viewArgs), t]);
 	    };
 	    SomeSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
 	        var t = this;
 	        var l = t._selectedTable;
 	        var a = {};
-	        argDeclarations.forEach(function (k) {
-	            var k2 = k.split(":");
-	            if (k2.length > 1) {
-	                a[k2[0]] = t._cast(k2[1], args[k2[0]]);
-	            }
-	            else {
-	                a[k2[0]] = args[k2[0]];
-	            }
-	        });
+	        if (argDeclarations) {
+	            argDeclarations.forEach(function (k) {
+	                var k2 = k.split(":");
+	                if (k2.length > 1) {
+	                    a[k2[0]] = t._cast(k2[1], args[k2[0]] || null);
+	                }
+	                else {
+	                    a[k2[0]] = args[k2[0]] || null;
+	                }
+	            });
+	        }
 	        return a;
 	    };
 	    SomeSQLInstance.prototype._cast = function (type, val) {
@@ -185,6 +188,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this._actions.set(this._selectedTable, actionArray), this;
 	    };
 	    SomeSQLInstance.prototype.doAction = function (actionName, actionArgs) {
+	        if (actionArgs === void 0) { actionArgs = {}; }
 	        var t = this;
 	        var l = t._selectedTable;
 	        var selAction = t._actions.get(l).reduce(function (prev, cur) {
@@ -195,7 +199,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!selAction)
 	            throw Error("Action does not exist");
 	        t._activeActionOrView = actionName;
-	        return selAction.call.apply(t, [t._cleanArgs(selAction.args, actionArgs)]);
+	        return selAction.call.apply(t, [t._cleanArgs(selAction.args, actionArgs), t]);
 	    };
 	    SomeSQLInstance.prototype.addFilter = function (filterName, filterFunction) {
 	        return this._filters.set(filterName, filterFunction), this;
@@ -541,7 +545,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    t._cache.set(t._selectedTable, new typescript_map_1.TSMap());
 	                    t._cacheIndex.set(t._selectedTable, new typescript_map_1.TSMap());
 	                }
-	                callBack(msg + " row(s) upserted");
+	                callBack([{ result: msg + " row(s) upserted" }]);
 	                break;
 	            case "select":
 	                if (t._cache.get(t._selectedTable).has(t._cacheKey)) {
@@ -621,16 +625,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	                        affectedKeys_2.push(index);
 	                    });
 	                    t._removeCacheFromKeys(affectedKeys_2);
-	                    callBack(whereTable_1.length + " row(s) deleted");
+	                    callBack([{ result: whereTable_1.length + " row(s) deleted" }]);
 	                }
 	                else {
 	                    t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
-	                    callBack("Table dropped.");
+	                    callBack([{ result: "Table Dropped" }]);
 	                }
 	                break;
 	            case "drop":
 	                t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
-	                callBack("Table dropped.");
+	                callBack([{ result: "Table Dropped" }]);
 	                break;
 	        }
 	    };

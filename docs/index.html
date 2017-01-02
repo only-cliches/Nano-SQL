@@ -88,74 +88,76 @@
 				</ul>
 				<h2 id="simple-usage">Simple Usage</h2>
 				<p>1 minute minimal quick start:</p>
-				<pre><code>SomeSQL(<span class="hljs-string">'users'</span>) <span class="hljs-comment">//  "users" is our table name.</span>
-.model([ // Declare data model
-    {key:<span class="hljs-string">'id'</span>,type:<span class="hljs-string">'int'</span>,props:[<span class="hljs-string">'pk'</span>,<span class="hljs-string">'ai'</span>]},
-    {key:<span class="hljs-string">'name'</span>,<span class="hljs-built_in">type</span>:<span class="hljs-string">'string'</span>},
-    {key:<span class="hljs-string">'age'</span>,<span class="hljs-built_in">type</span>:<span class="hljs-string">'int'</span>}, 
+				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'users'</span>) <span class="hljs-comment">//  "users" is our table name.</span>
+.model([ <span class="hljs-comment">// Declare data model</span>
+    {key:<span class="hljs-string">'id'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>,props:[<span class="hljs-string">'pk'</span>,<span class="hljs-string">'ai'</span>]},
+    {key:<span class="hljs-string">'name'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'string'</span>},
+    {key:<span class="hljs-string">'age'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>}, 
 ])
 .connect() <span class="hljs-comment">// Init the data store for usage.</span>
-.<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>
-    <span class="hljs-keyword">return</span> this.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
         name:<span class="hljs-string">"Billy"</span>,
         age:<span class="hljs-number">50</span>
-    }).<span class="hljs-built_in">exec</span>();
+    }).exec();
 })
-.<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>
-    <span class="hljs-keyword">return</span> this.query(<span class="hljs-string">'select'</span>).<span class="hljs-built_in">exec</span>(); <span class="hljs-comment">// select all rows from the current active table</span>
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>).exec(); <span class="hljs-comment">// select all rows from the current active table</span>
 })
-.<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(rows)</span> {</span>
-    console.<span class="hljs-built_in">log</span>(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{
+    <span class="hljs-built_in">console</span>.log(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
 })
-</code></pre><h2 id="detailed-usage">Detailed Usage</h2>
+</code></pre>
+				<h2 id="detailed-usage">Detailed Usage</h2>
 				<p>First you declare your models, connect the db, then you execute queries.</p>
 				<h3 id="declare-db-model">Declare DB model</h3>
-				<pre><code><span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-comment">// Table/Store Name, required to declare model and attach it to this store.</span>
-<span class="hljs-selector-class">.model</span>([ <span class="hljs-comment">// Data Model, required</span>
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'id'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'int'</span>,<span class="hljs-attribute">props</span>:[<span class="hljs-string">'pk'</span>,<span class="hljs-string">'ai'</span>]}, <span class="hljs-comment">// This has the primary key and auto incriment values</span>
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'name'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'string'</span>},
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'age'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'int'</span>},
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'balance'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'float'</span>},
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'postIDs'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'array'</span>},
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'meta'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'map'</span>}
+				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'users'</span>)<span class="hljs-comment">// Table/Store Name, required to declare model and attach it to this store.</span>
+.model([ <span class="hljs-comment">// Data Model, required</span>
+    {key:<span class="hljs-string">'id'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'uuid'</span>,props:[<span class="hljs-string">'pk'</span>]}, <span class="hljs-comment">// This has the primary key value</span>
+    {key:<span class="hljs-string">'name'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'string'</span>},
+    {key:<span class="hljs-string">'age'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>},
+    {key:<span class="hljs-string">'balance'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'float'</span>},
+    {key:<span class="hljs-string">'postIDs'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'array'</span>},
+    {key:<span class="hljs-string">'meta'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'map'</span>}
 ])
-<span class="hljs-selector-class">.actions</span>([ <span class="hljs-comment">// Optional</span>
+.actions([ <span class="hljs-comment">// Optional</span>
     {
-        <span class="hljs-attribute">name</span>:<span class="hljs-string">'add_new_user'</span>,
-        <span class="hljs-attribute">args</span>:[<span class="hljs-string">'user:map'</span>],
-        <span class="hljs-attribute">call</span>:function(args) {
-            return this.query(<span class="hljs-string">'upsert'</span>,args.user).exec();
+        name:<span class="hljs-string">'add_new_user'</span>,
+        args:[<span class="hljs-string">'user:map'</span>],
+        call:<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'upsert'</span>,args.user).exec();
         }
     }
 ])
-<span class="hljs-selector-class">.views</span>([ <span class="hljs-comment">// Optional</span>
+.views([ <span class="hljs-comment">// Optional</span>
     {
-        <span class="hljs-attribute">name</span>: <span class="hljs-string">'get_user_by_name'</span>,
-        <span class="hljs-attribute">args</span>: [<span class="hljs-string">'name:string'</span>],
-        <span class="hljs-attribute">call</span>: function(args) {
-            return this.query(<span class="hljs-string">'select'</span>).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,args.name]).exec();
+        name: <span class="hljs-string">'get_user_by_name'</span>,
+        args: [<span class="hljs-string">'name:string'</span>],
+        call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,args.name]).exec();
         }
     },
     {
-        <span class="hljs-attribute">name</span>: <span class="hljs-string">'list_all_users'</span>,
-        <span class="hljs-attribute">args</span>: [<span class="hljs-string">'page:int'</span>],
-        <span class="hljs-attribute">call</span>: function(args) {
-            return this.query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'id'</span>,<span class="hljs-string">'name'</span>]).exec();
+        name: <span class="hljs-string">'list_all_users'</span>,
+        args: [<span class="hljs-string">'page:int'</span>],
+        call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'id'</span>,<span class="hljs-string">'name'</span>]).exec();
         }
     }                       
 ])
-</code></pre><h3 id="connect-the-db-and-execute-queries">Connect the DB and execute queries</h3>
-				<pre><code><span class="hljs-comment">// Initializes the db.</span>
+</code></pre>
+				<h3 id="connect-the-db-and-execute-queries">Connect the DB and execute queries</h3>
+				<pre><code class="lang-typescript"><span class="hljs-comment">// Initializes the db.</span>
 SomeSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
     <span class="hljs-comment">// DB ready to use.</span>
-    <span class="hljs-keyword">this</span>.doAction(<span class="hljs-string">'add_new_user'</span>,{<span class="hljs-attribute">user</span>:{
-        <span class="hljs-attribute">id:</span><span class="hljs-string">null</span>,
-        <span class="hljs-attribute">name</span>:<span class="hljs-string">'jim'</span>,
-        <span class="hljs-attribute">age</span>:<span class="hljs-number">30</span>,
-        <span class="hljs-attribute">balance</span>:<span class="hljs-number">25.02</span>,
-        <span class="hljs-attribute">postIDs</span>:[<span class="hljs-number">0</span>,<span class="hljs-number">20</span>,<span class="hljs-number">5</span>],
-        <span class="hljs-attribute">meta</span>:{
-            <span class="hljs-attribute">favorteColor</span>:<span class="hljs-string">'blue'</span>
+    <span class="hljs-keyword">this</span>.doAction(<span class="hljs-string">'add_new_user'</span>,{user:{
+        id:<span class="hljs-literal">null</span>,
+        name:<span class="hljs-string">'jim'</span>,
+        age:<span class="hljs-number">30</span>,
+        balance:<span class="hljs-number">25.02</span>,
+        postIDs:[<span class="hljs-number">0</span>,<span class="hljs-number">20</span>,<span class="hljs-number">5</span>],
+        meta:{
+            favorteColor:<span class="hljs-string">'blue'</span>
         }
     }}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
         <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">//  &lt;- "1 Row(s) upserted"</span>
@@ -164,69 +166,74 @@ SomeSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">
         <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">//  &lt;- single object array containing the row we inserted.</span>
     });
 });
-</code></pre><h3 id="arbitrary-commands">Arbitrary Commands</h3>
+</code></pre>
+				<h3 id="arbitrary-commands">Arbitrary Commands</h3>
 				<p>You can execute a db command at any point from the <code>SomeSQL</code> object after the DB is connected.</p>
 				<p>Every query follows the same pattern:
 				<code>SomeSQL(#TABLE_NAME#).query(#ACTION#,#ARGS#)....optional filtering, sorting, etc...exec()</code></p>
 				<p>For example a query to get all rows from the users table looks like this:
 				<code>SomeSQL(&#39;users&#39;).query(&#39;select&#39;).exec()</code></p>
 				<p>Here are some more examples:</p>
-				<pre><code><span class="hljs-comment">// Get all records but only return the name and id columns</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'name'</span>,<span class="hljs-string">'id'</span>])<span class="hljs-selector-class">.exec</span>(); 
+				<pre><code class="lang-typescript">// Get all records but only return the name and id columns
+SomeSQL('users').query('select',['name','id']).exec(); 
 
-<span class="hljs-comment">// only show rows where the name == "scott"</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>)<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'scott'</span>])<span class="hljs-selector-class">.exec</span>() 
+// only show rows where the name == "scott"
+SomeSQL('users').query('select').where(['name','=','scott']).exec() 
 
-<span class="hljs-comment">// Compound where statement with AND</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users).query('</span>select<span class="hljs-string">').where([['</span>name<span class="hljs-string">','</span>=<span class="hljs-string">','</span>billy<span class="hljs-string">'],'</span>and<span class="hljs-string">',['</span>balance<span class="hljs-string">','</span>&gt;',<span class="hljs-number">20</span>]])<span class="hljs-selector-class">.exec</span>();
+// Compound where statement with AND
+SomeSQL('users).query('select').where([['name','=','billy'],'and',['balance','&gt;',20]]).exec();
 
-<span class="hljs-comment">// Compund where statement with OR</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users).query('</span>select<span class="hljs-string">').where([['</span>name<span class="hljs-string">','</span>=<span class="hljs-string">','</span>billy<span class="hljs-string">'],'</span>or<span class="hljs-string">',['</span>balance<span class="hljs-string">','</span>&gt;',<span class="hljs-number">20</span>]])<span class="hljs-selector-class">.exec</span>();
+// Compund where statement with OR
+SomeSQL('users).query('select').where([['name','=','billy'],'or',['balance','&gt;',20]]).exec();
 
-<span class="hljs-comment">// Order the results by name ascending, then age descending.</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>)<span class="hljs-selector-class">.orderBy</span>({<span class="hljs-attribute">name</span>:<span class="hljs-string">'asc'</span>,<span class="hljs-attribute">age</span>:<span class="hljs-string">'desc'</span>})<span class="hljs-selector-class">.exec</span>() 
+// Order the results by name ascending, then age descending.
+SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() 
 
-<span class="hljs-comment">// Limit and Offset</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>)<span class="hljs-selector-class">.limit</span>(<span class="hljs-number">20</span>)<span class="hljs-selector-class">.offset</span>(<span class="hljs-number">10</span>)<span class="hljs-selector-class">.exec</span>();
+// Limit and Offset
+SomeSQL('users').query('select').limit(20).offset(10).exec();
 
-<span class="hljs-comment">// Filters (Must be supported by the database driver)</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'age'</span>])<span class="hljs-selector-class">.filter</span>(<span class="hljs-string">'average'</span>)<span class="hljs-selector-class">.exec</span>();
+// Filters (Must be supported by the database driver)
+SomeSQL('users').query('select',['age']).filter('average').exec();
 
-<span class="hljs-comment">// The Memory DB supports sum, first, last, min, max, average, and count</span>
+// The Memory DB supports sum, first, last, min, max, average, and count
 
-<span class="hljs-comment">// combine any patterns as you'd like.</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'name'</span>])<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'age'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">20</span>])<span class="hljs-selector-class">.orderBy</span>({<span class="hljs-attribute">age</span>:<span class="hljs-string">'desc'</span>})<span class="hljs-selector-class">.exec</span>() 
+// combine any patterns as you'd like.
+SomeSQL('users').query('select',['name']).where(['age','&gt;',20]).orderBy({age:'desc'}).exec() 
 
-<span class="hljs-comment">// Where statements work on upserts as well.</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'users'</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">'upsert'</span>,{<span class="hljs-attribute">name</span>:<span class="hljs-string">"Account Closed"</span>})<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&lt;'</span>,<span class="hljs-number">0</span>])<span class="hljs-selector-class">.exec</span>()
-</code></pre><p>Possible query commands are <code>select</code>, <code>drop</code>, <code>upsert</code>, and <code>delete</code>.</p>
+// Where statements work on upserts as well.
+SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','&lt;',0]).exec()
+</code></pre>
+				<p>Possible query commands are <code>select</code>, <code>drop</code>, <code>upsert</code>, and <code>delete</code>.</p>
 				<p>All calls to the <code>exec()</code> return a promise, with the result of the promise being the response from the database.  The <code>this</code> of the returned promise is always the current SomeSQL function with the last table you selected.</p>
 				<p>This makes it easy to chain commands:</p>
-				<pre><code>SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).<span class="hljs-built_in">exec</span>().<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> {</span>
-    <span class="hljs-keyword">return</span> this.query(<span class="hljs-string">'upsert'</span>,{name:<span class="hljs-string">"Bill"</span>}).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>]).<span class="hljs-built_in">exec</span>();
-}).<span class="hljs-keyword">then</span>(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(result)</span> {</span>
-    <span class="hljs-keyword">return</span> this.query(<span class="hljs-string">'drop'</span>).<span class="hljs-built_in">exec</span>();
+				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'upsert'</span>,{name:<span class="hljs-string">"Bill"</span>}).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>]).exec();
+}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'drop'</span>).exec();
 })
-</code></pre><h3 id="events">Events</h3>
+</code></pre>
+				<h3 id="events">Events</h3>
 				<p>You can listen to any number of database events on any table or all tables.</p>
-				<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).on(<span class="hljs-string">'select'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(eventData)</span></span> {}) // Listen to <span class="hljs-string">"select"</span> commands from the users <span class="hljs-built_in">table</span>
-SomeSQL(<span class="hljs-string">"*"</span>).on(<span class="hljs-string">'change'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(eventData)</span></span> {}) // Listen <span class="hljs-keyword">for</span> any changes to any <span class="hljs-built_in">table</span> <span class="hljs-keyword">in</span> the database.
-</code></pre><p>Possible events are <code>change</code>, <code>delete</code>, <code>upsert</code>, <code>drop</code>, <code>select</code> and <code>error</code>.</p>
+				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">"users"</span>).on(<span class="hljs-string">'select'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">eventData</span>) </span>{}) <span class="hljs-comment">// Listen to "select" commands from the users table</span>
+SomeSQL(<span class="hljs-string">"*"</span>).on(<span class="hljs-string">'change'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">eventData</span>) </span>{}) <span class="hljs-comment">// Listen for any changes to any table in the database.</span>
+</code></pre>
+				<p>Possible events are <code>change</code>, <code>delete</code>, <code>upsert</code>, <code>drop</code>, <code>select</code> and <code>error</code>.</p>
 				<h3 id="multiple-tables">Multiple Tables</h3>
 				<p>You can create a new table by selecting it and creating a new data model:</p>
-				<pre><code><span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">'newTable'</span>)<span class="hljs-selector-class">.model</span>([
-    {<span class="hljs-attribute">key</span>:<span class="hljs-string">'name'</span>,<span class="hljs-attribute">type</span>:<span class="hljs-string">'string'</span>}
+				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'newTable'</span>).model([
+    {key:<span class="hljs-string">'name'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'string'</span>}
 ])
-</code></pre><p>Keep in mind you MUST declare all your models and tables BEFORE calling the <code>connect()</code> command.</p>
+</code></pre>
+				<p>Keep in mind you MUST declare all your models and tables BEFORE calling the <code>connect()</code> command.</p>
 				<h3 id="multiple-data-stores">Multiple Data Stores</h3>
 				<p>If you need more than one data store with a collection of separate tables, you can declare a completely new SomeSQL db at any point.</p>
-				<pre><code><span class="hljs-built_in">var</span> myDB = <span class="hljs-literal">new</span> SomeSQL_Instance().table;
+				<pre><code class="lang-typescript"><span class="hljs-keyword">var</span> myDB = <span class="hljs-keyword">new</span> SomeSQL_Instance().table;
 
 <span class="hljs-comment">// And now use it just like you use the SomeSQL var.</span>
-myDB(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">"select"</span>).exec()<span class="hljs-params">...</span>
-
-Keep <span class="hljs-keyword">in</span> mind that the tables <span class="hljs-literal">and</span> models are completely separate for each instance; there is no shared <span class="hljs-built_in">data</span>, events <span class="hljs-literal">or</span> anything <span class="hljs-keyword">else</span>.
-</code></pre><h1 id="api-index">API Index</h1>
+myDB(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">"select"</span>).exec()...
+</code></pre>
+				<p>Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.</p>
+				<h1 id="api-index">API Index</h1>
 				<p>Possible commands are split into three groups, one group is used before you connect to the database.<br>The other group is used after you connect to the database, and it&#39;s used to query the database data.</p>
 				<p>All commands can be chained or return a promise unless otherwise noted.</p>
 				<h2 id="events">Events</h2>

@@ -26,12 +26,13 @@ export declare class SomeSQLMemDB implements SomeSQLBackend {
      * Public exec option.  Organizes the query then sends it to the internal execution function.
      *
      * @param {string} table
-     * @param {(Array<TSMap<string,Object|Array<any>>>)} query
+     * @param {Array<QueryLine>} query
      * @param {string} viewOrAction
-     * @param {Function} onSuccess
-     * @param {Function} [onFail]
+     * @param {(rows: Array<Object>) => void} onSuccess
+     * @param {(rows: Array<Object>) => void} [onFail]
+     * @returns {void}
      *
      * @memberOf SomeSQLMemDB
      */
-    exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
+    exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: (rows: Array<Object>) => void, onFail?: (rows: Array<Object>) => void): void;
 }

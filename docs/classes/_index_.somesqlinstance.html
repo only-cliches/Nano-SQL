@@ -164,7 +164,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:516</li>
+									<li>Defined in index.ts:518</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -172,34 +172,37 @@
 									<p>Declare the actions for the current selected table.  Must be called before connect()</p>
 								</div>
 								<p>Actions are created like this:</p>
-								<pre><code><span class="hljs-selector-class">.actions</span>([
+								<pre><code class="lang-typescript">.actions([
  {
-     <span class="hljs-attribute">name</span>:<span class="hljs-string">"action-name"</span>,
-     <span class="hljs-attribute">args</span>: [<span class="hljs-string">"array"</span>,<span class="hljs-string">"of"</span>,<span class="hljs-string">"arguments"</span>],
-     <span class="hljs-attribute">call</span>: function(args) {
+     name:<span class="hljs-string">"action-name"</span>,
+     args: [<span class="hljs-string">"array"</span>,<span class="hljs-string">"of"</span>,<span class="hljs-string">"arguments"</span>],
+     call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
          <span class="hljs-comment">// Because of our "args" array the args input of this function will look like this:</span>
          <span class="hljs-comment">// SomeSQL will not let any other arguments into this function.</span>
-         <span class="hljs-attribute">args</span>:{
-             <span class="hljs-attribute">array</span>:<span class="hljs-string">''</span>,
-             <span class="hljs-attribute">of</span>:<span class="hljs-string">''</span>,
-             <span class="hljs-attribute">arguments</span>:<span class="hljs-string">''</span>
+         args:{
+             array:<span class="hljs-string">''</span>,
+             of:<span class="hljs-string">''</span>,
+             <span class="hljs-built_in">arguments</span>:<span class="hljs-string">''</span>
          }
          <span class="hljs-comment">//We can use them in our query</span>
-         <span class="hljs-selector-tag">return</span> <span class="hljs-selector-tag">this</span><span class="hljs-selector-class">.query</span>(<span class="hljs-string">"upsert"</span>,{<span class="hljs-attribute">balance</span>:<span class="hljs-number">0</span>})<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'name'</span>,<span class="hljs-string">'IN'</span>,args.array])<span class="hljs-selector-class">.exec</span>();
+         <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">"upsert"</span>,{balance:<span class="hljs-number">0</span>}).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'IN'</span>,args.array]).exec();
      }
  }
 ])
-</code></pre><p>Then later in your app..</p>
-								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).doAction(<span class="hljs-string">"action-name"</span>,{array:<span class="hljs-string">''</span>,of:<span class="hljs-string">""</span>,<span class="hljs-keyword">argument</span><span class="hljs-variable">s:</span><span class="hljs-string">""</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(result)</span> {</span>
- console.<span class="hljs-built_in">log</span>(result) &lt;=== result of your <span class="hljs-keyword">view</span> will <span class="hljs-keyword">be</span> there.
+</code></pre>
+								<p>Then later in your app..</p>
+								<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">"users"</span>).doAction(<span class="hljs-string">"action-name"</span>,{array:<span class="hljs-string">''</span>,of:<span class="hljs-string">""</span>,<span class="hljs-built_in">arguments</span>:<span class="hljs-string">""</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+ <span class="hljs-built_in">console</span>.log(result) &lt;=== result of your view will be there.
 })
-</code></pre><p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:</p>
-								<pre><code>.actions[{
-<span class="hljs-symbol">     name:</span>...
-<span class="hljs-symbol">     args:</span>[<span class="hljs-string">"name:string"</span>,<span class="hljs-string">"balance:float"</span>,<span class="hljs-string">"active:bool"</span>]
-<span class="hljs-symbol">     call:</span>...
+</code></pre>
+								<p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:</p>
+								<pre><code class="lang-typescript">.actions[{
+     name:...
+     args:[<span class="hljs-string">"name:string"</span>,<span class="hljs-string">"balance:float"</span>,<span class="hljs-string">"active:bool"</span>]
+     call:...
 }]
-</code></pre><p>SomeSQL will force the arguments passed into the function to those types.</p>
+</code></pre>
+								<p>SomeSQL will force the arguments passed into the function to those types.</p>
 								<p>Possible types are string, bool, float, int, map, array and bool.</p>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -221,13 +224,13 @@
 					<a name="addfilter" class="tsd-anchor"></a>
 					<h3>add<wbr>Filter</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">add<wbr>Filter<span class="tsd-signature-symbol">(</span>filterName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, filterFunction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a></li>
+						<li class="tsd-signature tsd-kind-icon">add<wbr>Filter<span class="tsd-signature-symbol">(</span>filterName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, filterFunction<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:570</li>
+									<li>Defined in index.ts:572</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -235,11 +238,12 @@
 									<p>Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
 									Example:</p>
 								</div>
-								<pre><code> SomeSQL().addFilter(<span class="hljs-string">'addOne'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{
- <span class="hljs-keyword">return</span> rows.map(<span class="hljs-function">(<span class="hljs-params">row</span>) =&gt;</span> row.balance + <span class="hljs-number">1</span>);
+								<pre><code class="lang-typescript">SomeSQL().addFilter(<span class="hljs-string">'addBalance'</span>,<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{
+     <span class="hljs-keyword">return</span> rows.map((row) =&gt; row.balance + <span class="hljs-number">1</span>);
 })
-</code></pre><p>Then to use it in a query:</p>
-								<pre><code><span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">"users"</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>)<span class="hljs-selector-class">.filter</span>(<span class="hljs-string">'addOne'</span>)<span class="hljs-selector-class">.exec</span>();
+</code></pre>
+								<p>Then to use it in a query:</p>
+								<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).filter(<span class="hljs-string">'addOne'</span>).exec();
 </code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -253,7 +257,25 @@
 									<h5>filterName: <span class="tsd-signature-type">string</span></h5>
 								</li>
 								<li>
-									<h5>filterFunction: <span class="tsd-signature-type">Function</span></h5>
+									<h5>filterFunction: <span class="tsd-signature-type">function</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-parameters-title">Parameters</h4>
+													<ul class="tsd-parameters">
+														<li>
+															<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span></h5>
+														</li>
+													</ul>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a></h4>
@@ -330,13 +352,13 @@
 					<a name="doaction" class="tsd-anchor"></a>
 					<h3>do<wbr>Action</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">do<wbr>Action<span class="tsd-signature-symbol">(</span>actionName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, actionArgs<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">do<wbr>Action<span class="tsd-signature-symbol">(</span>actionName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, actionArgs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:537</li>
+									<li>Defined in index.ts:539</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -344,8 +366,8 @@
 									<p>Init an action for the current selected table. Reference the &quot;actions&quot; method for more info.</p>
 								</div>
 								<p>Example:</p>
-								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).doAction('action-<span class="hljs-built_in">name</span>',{foo:<span class="hljs-string">"bar"</span>}).<span class="hljs-keyword">then</span>(function(<span class="hljs-literal">result</span>) {
-     console.<span class="hljs-built_in">log</span>(<span class="hljs-literal">result</span>) &lt;== <span class="hljs-literal">result</span> <span class="hljs-keyword">of</span> your action
+								<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">"users"</span>).doAction(<span class="hljs-string">'action-name'</span>,{foo:<span class="hljs-string">"bar"</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+     <span class="hljs-built_in">console</span>.log(result) &lt;== result of your action
 });
 </code></pre>
 								<dl class="tsd-comment-tags">
@@ -360,10 +382,10 @@
 									<h5>actionName: <span class="tsd-signature-type">string</span></h5>
 								</li>
 								<li>
-									<h5>actionArgs: <span class="tsd-signature-type">Object</span></h5>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> actionArgs: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> =&nbsp;{}</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -377,7 +399,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:753</li>
+									<li>Defined in index.ts:755</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -404,7 +426,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:816</li>
+									<li>Defined in index.ts:818</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -440,7 +462,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:725</li>
+									<li>Defined in index.ts:727</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -449,8 +471,8 @@
 									The memory DB supports sum, first, last, min, max, average, and count</p>
 								</div>
 								<p>Example:</p>
-								<pre><code><span class="hljs-comment">//get number of results</span>
-<span class="hljs-selector-tag">SomeSQL</span>(<span class="hljs-string">"users"</span>)<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>)<span class="hljs-selector-class">.filter</span>(<span class="hljs-string">'count'</span>)<span class="hljs-selector-class">.exec</span>();
+								<pre><code class="lang-typescript"><span class="hljs-comment">//get number of results</span>
+SomeSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).filter(<span class="hljs-string">'count'</span>).exec();
 </code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -475,7 +497,7 @@
 					<a name="getview" class="tsd-anchor"></a>
 					<h3>get<wbr>View</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">get<wbr>View<span class="tsd-signature-symbol">(</span>viewName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, viewArgs<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">get<wbr>View<span class="tsd-signature-symbol">(</span>viewName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, viewArgs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -489,8 +511,8 @@
 									<p>Execute a specific view.  Refernece the &quot;views&quot; function for more description.</p>
 								</div>
 								<p>Example:</p>
-								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).getView('view-<span class="hljs-built_in">name</span>',{foo:<span class="hljs-string">"bar"</span>}).<span class="hljs-keyword">then</span>(function(<span class="hljs-literal">result</span>) {
- console.<span class="hljs-built_in">log</span>(<span class="hljs-literal">result</span>) &lt;== view <span class="hljs-literal">result</span>.
+								<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">"users"</span>).getView(<span class="hljs-string">'view-name'</span>,{foo:<span class="hljs-string">"bar"</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+ <span class="hljs-built_in">console</span>.log(result) &lt;== view result.
 })
 </code></pre>
 								<dl class="tsd-comment-tags">
@@ -505,10 +527,10 @@
 									<h5>viewName: <span class="tsd-signature-type">string</span></h5>
 								</li>
 								<li>
-									<h5>viewArgs: <span class="tsd-signature-type">Object</span></h5>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> viewArgs: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> =&nbsp;{}</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -522,14 +544,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:687</li>
+									<li>Defined in index.ts:689</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Limits the result to a specific amount.  Example:</p>
 								</div>
-								<pre><code>.limit<span class="hljs-comment">(20)</span> <span class="hljs-comment">// Limit to the first 20 results</span>
+								<pre><code class="lang-typescript">.limit(<span class="hljs-number">20</span>) <span class="hljs-comment">// Limit to the first 20 results</span>
 </code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -551,13 +573,13 @@
 					<a name="loadcsv" class="tsd-anchor"></a>
 					<h3>loadCSV</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">loadCSV<span class="tsd-signature-symbol">(</span>csv<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">loadCSV<span class="tsd-signature-symbol">(</span>csv<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:864</li>
+									<li>Defined in index.ts:866</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -577,7 +599,7 @@
 									<h5>csv: <span class="tsd-signature-type">string</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -585,22 +607,22 @@
 					<a name="loadjs" class="tsd-anchor"></a>
 					<h3>loadJS</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">loadJS<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">loadJS<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:846</li>
+									<li>Defined in index.ts:848</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Load JSON directly into the DB.
 									JSON must be an array of maps, like this:</p>
-									<pre><code>[
- {<span class="hljs-attr">"name"</span>:<span class="hljs-string">"billy"</span>,<span class="hljs-attr">"age"</span>:<span class="hljs-number">20</span>},
- {<span class="hljs-attr">"name"</span>:<span class="hljs-string">"johnny"</span>:<span class="hljs-string">"age"</span>:<span class="hljs-number">30</span>}
+									<pre><code class="lang-typescript">[
+ {<span class="hljs-string">"name"</span>:<span class="hljs-string">"billy"</span>,<span class="hljs-string">"age"</span>:<span class="hljs-number">20</span>},
+ {<span class="hljs-string">"name"</span>:<span class="hljs-string">"johnny"</span>:<span class="hljs-string">"age"</span>:<span class="hljs-number">30</span>}
 ]
 </code></pre>
 								</div>
@@ -616,7 +638,7 @@
 									<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -638,9 +660,9 @@
 									<p>Declare the data model for the current selected table.</p>
 								</div>
 								<p>Please reference the DataModel interface for how to impliment this, a quick example:</p>
-								<pre><code>.model([
- {<span class="hljs-string">key:</span><span class="hljs-string">"id"</span>,<span class="hljs-string">type:</span><span class="hljs-string">"int"</span>,<span class="hljs-string">props:</span>[<span class="hljs-string">"ai"</span>,<span class="hljs-string">"pk"</span>]} <span class="hljs-comment">//auto incriment and primary key</span>
- {<span class="hljs-string">key:</span><span class="hljs-string">"name"</span>,<span class="hljs-string">type:</span><span class="hljs-string">"string"</span>}
+								<pre><code class="lang-typescript">.model([
+ {key:<span class="hljs-string">"id"</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">"int"</span>,props:[<span class="hljs-string">"ai"</span>,<span class="hljs-string">"pk"</span>]} <span class="hljs-comment">//auto incriment and primary key</span>
+ {key:<span class="hljs-string">"name"</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">"string"</span>}
 ])
 </code></pre>
 								<dl class="tsd-comment-tags">
@@ -702,14 +724,14 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:704</li>
+									<li>Defined in index.ts:706</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Offsets the results by a specific amount from the beginning.  Example:</p>
 								</div>
-								<pre><code>.offset<span class="hljs-comment">(10)</span> <span class="hljs-comment">//Skip the first 10 results.</span>
+								<pre><code class="lang-typescript">.offset(<span class="hljs-number">10</span>) <span class="hljs-comment">//Skip the first 10 results.</span>
 </code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -773,7 +795,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:670</li>
+									<li>Defined in index.ts:672</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -781,8 +803,8 @@
 									<p>Order the results by a given column or columns.</p>
 								</div>
 								<p>Examples:</p>
-								<pre><code>.orderBy({username:<span class="hljs-string">"asc"</span>}) // <span class="hljs-keyword">order</span> <span class="hljs-keyword">by</span> username column, ascending
-.orderBy({balance:<span class="hljs-string">"desc"</span>,lastName:<span class="hljs-string">"asc"</span>}) // <span class="hljs-keyword">order</span> <span class="hljs-keyword">by</span> balance descending, <span class="hljs-keyword">then</span> lastName ascending.
+								<pre><code class="lang-typescript">.orderBy({username:<span class="hljs-string">"asc"</span>}) <span class="hljs-comment">// order by username column, ascending</span>
+.orderBy({balance:<span class="hljs-string">"desc"</span>,lastName:<span class="hljs-string">"asc"</span>}) <span class="hljs-comment">// order by balance descending, then lastName ascending.</span>
 </code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -810,7 +832,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:618</li>
+									<li>Defined in index.ts:620</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -821,22 +843,25 @@
 								<p>Select is used to pull a set of rows or other data from the table.
 								When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.</p>
 								<p>Select examples:</p>
-								<pre><code><span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>) <span class="hljs-comment">// No arguments, select all columns</span>
-<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>,[<span class="hljs-string">'username'</span>]) <span class="hljs-comment">// only get the username column</span>
-<span class="hljs-selector-class">.query</span>(<span class="hljs-string">"select"</span>,[<span class="hljs-string">"username"</span>,<span class="hljs-string">"balance"</span>]) <span class="hljs-comment">//Get two columns, username and balance.</span>
-</code></pre><p>Upsert is used to add data into the database.
+								<pre><code class="lang-typescript">.query(<span class="hljs-string">"select"</span>) <span class="hljs-comment">// No arguments, select all columns</span>
+.query(<span class="hljs-string">"select"</span>,[<span class="hljs-string">'username'</span>]) <span class="hljs-comment">// only get the username column</span>
+.query(<span class="hljs-string">"select"</span>,[<span class="hljs-string">"username"</span>,<span class="hljs-string">"balance"</span>]) <span class="hljs-comment">//Get two columns, username and balance.</span>
+</code></pre>
+								<p>Upsert is used to add data into the database.
 									If the primary key rows are null or undefined, the data will always be added. Otherwise, you might be updating existing rows.
 								The second argument of the query with upserts is always an Object of the data to upsert.</p>
 								<p>Upsert Examples:</p>
-								<pre><code>.query(<span class="hljs-string">"upsert"</span>,{<span class="hljs-string">id:</span><span class="hljs-number">1</span>,<span class="hljs-string">username:</span><span class="hljs-string">"Scott"</span>}) <span class="hljs-comment">//Set username to "Scott" where the row ID is 1.</span>
-.query(<span class="hljs-string">"upsert"</span>,{<span class="hljs-string">username:</span><span class="hljs-string">"Scott"</span>}) <span class="hljs-comment">//Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.</span>
-</code></pre><p>Delete is used to remove data from the database.
+								<pre><code class="lang-typescript">.query(<span class="hljs-string">"upsert"</span>,{id:<span class="hljs-number">1</span>,username:<span class="hljs-string">"Scott"</span>}) <span class="hljs-comment">//Set username to "Scott" where the row ID is 1.</span>
+.query(<span class="hljs-string">"upsert"</span>,{username:<span class="hljs-string">"Scott"</span>}) <span class="hljs-comment">//Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.</span>
+</code></pre>
+								<p>Delete is used to remove data from the database.
 								It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.</p>
 								<p>Delete Examples:</p>
-								<pre><code><span class="hljs-selector-class">.query</span>(<span class="hljs-string">"delete"</span>,[<span class="hljs-string">'balance'</span>]) <span class="hljs-comment">//Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.</span>
-</code></pre><p>Drop is used to completely clear the contents of a database.  There are no arguments.</p>
+								<pre><code class="lang-typescript">.query(<span class="hljs-string">"delete"</span>,[<span class="hljs-string">'balance'</span>]) <span class="hljs-comment">//Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.</span>
+</code></pre>
+								<p>Drop is used to completely clear the contents of a database.  There are no arguments.</p>
 								<p>Drop Examples:</p>
-								<pre><code>.<span class="hljs-keyword">query</span>(<span class="hljs-string">"drop"</span>)
+								<pre><code class="lang-typescript">.query(<span class="hljs-string">"drop"</span>)
 </code></pre>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -900,7 +925,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:903</li>
+									<li>Defined in index.ts:905</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -941,34 +966,37 @@
 									<p>Declare the views for the current selected table.  Must be called before connect()</p>
 								</div>
 								<p>Views are created like this:</p>
-								<pre><code><span class="hljs-selector-class">.views</span>([
+								<pre><code class="lang-typescript">.views([
  {
-     <span class="hljs-attribute">name</span>:<span class="hljs-string">"view-name"</span>,
-     <span class="hljs-attribute">args</span>: [<span class="hljs-string">"array"</span>,<span class="hljs-string">"of"</span>,<span class="hljs-string">"arguments"</span>],
-     <span class="hljs-attribute">call</span>: function(args) {
+     name:<span class="hljs-string">"view-name"</span>,
+     args: [<span class="hljs-string">"array"</span>,<span class="hljs-string">"of"</span>,<span class="hljs-string">"arguments"</span>],
+     call: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">args</span>) </span>{
          <span class="hljs-comment">// Because of our "args" array the args input of this function will look like this:</span>
          <span class="hljs-comment">// SomeSQL will not let any other arguments into this function.</span>
-         <span class="hljs-attribute">args</span>:{
-             <span class="hljs-attribute">array</span>:<span class="hljs-string">''</span>,
-             <span class="hljs-attribute">of</span>:<span class="hljs-string">''</span>,
-             <span class="hljs-attribute">arguments</span>:<span class="hljs-string">''</span>
+         args:{
+             array:<span class="hljs-string">''</span>,
+             of:<span class="hljs-string">''</span>,
+             <span class="hljs-built_in">arguments</span>:<span class="hljs-string">''</span>
          }
          <span class="hljs-comment">//We can use them in our query</span>
-         <span class="hljs-selector-tag">return</span> <span class="hljs-selector-tag">this</span><span class="hljs-selector-class">.query</span>(<span class="hljs-string">'select'</span>)<span class="hljs-selector-class">.where</span>([<span class="hljs-string">'name'</span>,<span class="hljs-string">'IN'</span>,args.array])<span class="hljs-selector-class">.exec</span>();
+         <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.query(<span class="hljs-string">'select'</span>).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'IN'</span>,args.array]).exec();
      }
  }
 ])
-</code></pre><p>Then later in your app..</p>
-								<pre><code>SomeSQL(<span class="hljs-string">"users"</span>).getView(<span class="hljs-string">"view-name"</span>,{array:<span class="hljs-string">''</span>,of:<span class="hljs-string">""</span>,<span class="hljs-keyword">argument</span><span class="hljs-variable">s:</span><span class="hljs-string">""</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(result)</span> {</span>
- console.<span class="hljs-built_in">log</span>(result) &lt;=== result of your <span class="hljs-keyword">view</span> will <span class="hljs-keyword">be</span> there.
+</code></pre>
+								<p>Then later in your app..</p>
+								<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">"users"</span>).getView(<span class="hljs-string">"view-name"</span>,{array:<span class="hljs-string">''</span>,of:<span class="hljs-string">""</span>,<span class="hljs-built_in">arguments</span>:<span class="hljs-string">""</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
+ <span class="hljs-built_in">console</span>.log(result) &lt;=== result of your view will be there.
 })
-</code></pre><p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:</p>
-								<pre><code>.views[{
-<span class="hljs-symbol">     name:</span>...
-<span class="hljs-symbol">     args:</span>[<span class="hljs-string">"name:string"</span>,<span class="hljs-string">"balance:float"</span>,<span class="hljs-string">"active:bool"</span>]
-<span class="hljs-symbol">     call:</span>...
+</code></pre>
+								<p>Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:</p>
+								<pre><code class="lang-typescript">.views[{
+     name:...
+     args:[<span class="hljs-string">"name:string"</span>,<span class="hljs-string">"balance:float"</span>,<span class="hljs-string">"active:bool"</span>]
+     call:...
 }]
-</code></pre><p>SomeSQL will force the arguments passed into the function to those types.</p>
+</code></pre>
+								<p>SomeSQL will force the arguments passed into the function to those types.</p>
 								<p>Possible types are string, bool, float, int, map, array and bool.</p>
 								<dl class="tsd-comment-tags">
 									<dt>memberof</dt>
@@ -996,7 +1024,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:650</li>
+									<li>Defined in index.ts:652</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1006,7 +1034,7 @@
 									A single where statement has the column name on the left, an operator in the middle, then a comparison on the right.</p>
 								</div>
 								<p>Where Examples:</p>
-								<pre><code>.where([<span class="hljs-string">'username'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>])
+								<pre><code class="lang-typescript">.where([<span class="hljs-string">'username'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>])
 .where([<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">20</span>])
 .where([<span class="hljs-string">'catgory'</span>,<span class="hljs-string">'IN'</span>,[<span class="hljs-string">'jeans'</span>,<span class="hljs-string">'shirts'</span>]])
 .where([[<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'scott'</span>],<span class="hljs-string">'and'</span>,[<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">200</span>]])
@@ -1038,7 +1066,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:972</li>
+									<li>Defined in index.ts:974</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1074,7 +1102,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:952</li>
+									<li>Defined in index.ts:954</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">

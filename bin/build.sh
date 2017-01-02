@@ -4,7 +4,7 @@ rm -rf *.d.ts
 rm -rf docs
 
 #type declerations
-./node_modules/.bin/tsc --stripInternal -d --declarationDir "." -t "ES5" --rootDir "./src" src/index.ts
+./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" --declarationDir "." -t "ES5" --rootDir "./src" src/index.ts
 
 #node build
 export NODE_ENV=build && ./node_modules/.bin/webpack
@@ -19,5 +19,5 @@ touch docs/.nojekyll
 
 #clean up
 rm -rf src/*.js
-mv dist/some-sql.min.js dist/some-sql.min.0.1.5.js
-echo "$(cat dist/some-sql.min.0.1.5.js)" | gzip -9f | wc -c;
+mv dist/some-sql.min.js dist/some-sql.min.0.1.6.js
+echo "$(cat dist/some-sql.min.0.1.6.js)" | gzip -9f | wc -c;

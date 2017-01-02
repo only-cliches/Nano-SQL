@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "amd",
+    "moduleResolution": "node",
+    "stripInternal":true,
+    "removeComments":true,
+    "importHelpers":false,
+    "jsx":"react",
+    "outFile":"index.js"
+  },
+  "files":[
+      "./src/index.tsx"
+  ],
+  "include":[
+      "some-sql"
+  ]
+}

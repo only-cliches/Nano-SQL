@@ -28,7 +28,7 @@ SomeSQL was born to bring all this together.  It's an extensible database abstra
 
 1 minute minimal quick start:
 
-```
+```typescript
 SomeSQL('users') //  "users" is our table name.
 .model([ // Declare data model
     {key:'id',type:'int',props:['pk','ai']},
@@ -55,10 +55,11 @@ SomeSQL('users') //  "users" is our table name.
 First you declare your models, connect the db, then you execute queries.
 
 ### Declare DB model
-```
+
+```typescript
 SomeSQL('users')// Table/Store Name, required to declare model and attach it to this store.
 .model([ // Data Model, required
-    {key:'id',type:'int',props:['pk','ai']}, // This has the primary key and auto incriment values
+    {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
     {key:'name',type:'string'},
     {key:'age',type:'int'},
     {key:'balance',type:'float'},
@@ -94,7 +95,8 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
 ```
 
 ### Connect the DB and execute queries
-```
+
+```typescript
 // Initializes the db.
 SomeSQL().connect().then(function() {
     // DB ready to use.
@@ -128,7 +130,8 @@ For example a query to get all rows from the users table looks like this:
 `SomeSQL('users').query('select').exec()`
 
 Here are some more examples:
-```
+
+```typescript
 // Get all records but only return the name and id columns
 SomeSQL('users').query('select',['name','id']).exec(); 
 
@@ -166,7 +169,7 @@ All calls to the `exec()` return a promise, with the result of the promise being
 
 This makes it easy to chain commands:
 
-```
+```typescript
 SomeSQL('users').query('select').exec().then(function() {
     return this.query('upsert',{name:"Bill"}).where(['name','=','billy']).exec();
 }).then(function(result) {
@@ -180,7 +183,7 @@ SomeSQL('users').query('select').exec().then(function() {
 
 You can listen to any number of database events on any table or all tables.
 
-```
+```typescript
 SomeSQL("users").on('select',function(eventData) {}) // Listen to "select" commands from the users table
 SomeSQL("*").on('change',function(eventData) {}) // Listen for any changes to any table in the database.
 
@@ -193,7 +196,7 @@ Possible events are `change`, `delete`, `upsert`, `drop`, `select` and `error`.
 
 You can create a new table by selecting it and creating a new data model:
 
-```
+```typescript
 SomeSQL('newTable').model([
     {key:'name',type:'string'}
 ])
@@ -206,15 +209,15 @@ Keep in mind you MUST declare all your models and tables BEFORE calling the `con
 
 If you need more than one data store with a collection of separate tables, you can declare a completely new SomeSQL db at any point.
 
-```
+```typescript
 var myDB = new SomeSQL_Instance().table;
 
 // And now use it just like you use the SomeSQL var.
 myDB('users').query("select").exec()...
 
-Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.
-
 ```
+
+Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.
 
 # API Index
 

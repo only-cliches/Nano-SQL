@@ -9,7 +9,7 @@ import { TSPromise } from "typescript-promise";
 export interface ActionOrView {
     name: string;
     args?: Array<string>;
-    call: (args?: Object) => TSPromise<any>;
+    call: (args?: Object, db?: SomeSQLInstance) => TSPromise<any>;
 }
 /**
  * You need an array of these to declare a data model.
@@ -93,7 +93,7 @@ export declare class SomeSQLInstance {
      *
      * Please reference the DataModel interface for how to impliment this, a quick example:
      *
-     * ```
+     * ```typescript
      * .model([
      *  {key:"id",type:"int",props:["ai","pk"]} //auto incriment and primary key
      *  {key:"name",type:"string"}
@@ -111,7 +111,7 @@ export declare class SomeSQLInstance {
      *
      * Views are created like this:
      *
-     * ```
+     * ```typescript
      * .views([
      *  {
      *      name:"view-name",
@@ -133,7 +133,7 @@ export declare class SomeSQLInstance {
      *
      * Then later in your app..
      *
-     * ```
+     * ```typescript
      * SomeSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
@@ -141,7 +141,7 @@ export declare class SomeSQLInstance {
      *
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
      *
-     * ```
+     * ```typescript
      * .views[{
      *      name:...
      *      args:["name:string","balance:float","active:bool"]
@@ -163,24 +163,24 @@ export declare class SomeSQLInstance {
      * Execute a specific view.  Refernece the "views" function for more description.
      *
      * Example:
-     * ```
+     * ```typescript
      * SomeSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
      *  console.log(result) <== view result.
      * })
      * ```
      *
      * @param {string} viewName
-     * @param {Object} viewArgs
-     * @returns {(TSPromise<Object | string>)}
+     * @param {any} viewArgs
+     * @returns {(TSPromise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    getView(viewName: string, viewArgs: Object): TSPromise<Object | string>;
+    getView(viewName: string, viewArgs?: any): TSPromise<Array<Object>>;
     /**
      * Declare the actions for the current selected table.  Must be called before connect()
      *
      * Actions are created like this:
-     * ```
+     * ```typescript
      * .actions([
      *  {
      *      name:"action-name",
@@ -202,14 +202,14 @@ export declare class SomeSQLInstance {
      *
      * Then later in your app..
      *
-     * ```
+     * ```typescript
      * SomeSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
      *
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
-     * ```
+     * ```typescript
      * .actions[{
      *      name:...
      *      args:["name:string","balance:float","active:bool"]
@@ -231,41 +231,41 @@ export declare class SomeSQLInstance {
      * Init an action for the current selected table. Reference the "actions" method for more info.
      *
      * Example:
-     * ```
+     * ```typescript
      * SomeSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
      *      console.log(result) <== result of your action
      * });
      * ```
      *
      * @param {string} actionName
-     * @param {Object} actionArgs
-     * @returns {(TSPromise<Object | string>)}
+     * @param {any} actionArgs
+     * @returns {(TSPromise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    doAction(actionName: string, actionArgs: Object): TSPromise<Object | string>;
+    doAction(actionName: string, actionArgs?: any): TSPromise<Array<Object>>;
     /**
      * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
      * Example:
      *
-     * ```
-     *  SomeSQL().addFilter('addOne',function(rows) {
-     *  return rows.map((row) => row.balance + 1);
+     * ```typescript
+     * SomeSQL().addFilter('addBalance',function(rows) {
+     *      return rows.map((row) => row.balance + 1);
      * })
      * ```
      *
      * Then to use it in a query:
-     * ```
+     * ```typescript
      * SomeSQL("users").query("select").filter('addOne').exec();
      * ```
      *
      * @param {string} filterName
-     * @param {Function} filterFunction
+     * @param {(rows: Array<Object>) => Array<Object>} filterFunction
      * @returns {SomeSQLInstance}
      *
      * @memberOf SomeSQLInstance
      */
-    addFilter(filterName: string, filterFunction: Function): SomeSQLInstance;
+    addFilter(filterName: string, filterFunction: (rows: Array<Object>) => Array<Object>): SomeSQLInstance;
     /**
      * Start a query into the current selected table.
      * Possibl querys are "select", "upsert", "delete", and "drop";
@@ -274,7 +274,7 @@ export declare class SomeSQLInstance {
      * When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.
      *
      * Select examples:
-     * ```
+     * ```typescript
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
@@ -284,7 +284,7 @@ export declare class SomeSQLInstance {
      * The second argument of the query with upserts is always an Object of the data to upsert.
      *
      * Upsert Examples:
-     * ```
+     * ```typescript
      * .query("upsert",{id:1,username:"Scott"}) //Set username to "Scott" where the row ID is 1.
      * .query("upsert",{username:"Scott"}) //Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.
      * ```
@@ -293,13 +293,13 @@ export declare class SomeSQLInstance {
      * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
      *
      * Delete Examples:
-     * ```
+     * ```typescript
      * .query("delete",['balance']) //Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
      * ```
      * Drop is used to completely clear the contents of a database.  There are no arguments.
      *
      * Drop Examples:
-     * ```
+     * ```typescript
      * .query("drop")
      * ```
      *
@@ -317,7 +317,7 @@ export declare class SomeSQLInstance {
      *
      * Where Examples:
      *
-     * ```
+     * ```typescript
      * .where(['username','=','billy'])
      * .where(['balance','>',20])
      * .where(['catgory','IN',['jeans','shirts']])
@@ -336,7 +336,7 @@ export declare class SomeSQLInstance {
      *
      * Examples:
      *
-     * ```
+     * ```typescript
      * .orderBy({username:"asc"}) // order by username column, ascending
      * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
      * ```
@@ -350,7 +350,7 @@ export declare class SomeSQLInstance {
     /**
      * Limits the result to a specific amount.  Example:
      *
-     * ```
+     * ```typescript
      * .limit(20) // Limit to the first 20 results
      * ```
      *
@@ -363,7 +363,7 @@ export declare class SomeSQLInstance {
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
      *
-     * ```
+     * ```typescript
      * .offset(10) //Skip the first 10 results.
      * ```
      *
@@ -378,7 +378,7 @@ export declare class SomeSQLInstance {
      * The memory DB supports sum, first, last, min, max, average, and count
      *
      * Example:
-     * ```
+     * ```typescript
      * //get number of results
      * SomeSQL("users").query("select").filter('count').exec();
      * ```
@@ -410,7 +410,7 @@ export declare class SomeSQLInstance {
     /**
      * Load JSON directly into the DB.
      * JSON must be an array of maps, like this:
-     * ```
+     * ```typescript
      * [
      *  {"name":"billy","age":20},
      *  {"name":"johnny":"age":30}
@@ -418,22 +418,22 @@ export declare class SomeSQLInstance {
      * ```
      *
      * @param {Array<Object>} rows
-     * @returns {(TSPromise<Object | string>)}
+     * @returns {(TSPromise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    loadJS(rows: Array<Object>): TSPromise<Object | string>;
+    loadJS(rows: Array<Object>): TSPromise<Array<Object>>;
     /**
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
      *
      * This function performs a bunch of upserts, so expect appropriate behavior based on the primary key.
      *
      * @param {string} csv
-     * @returns {(TSPromise<Object | string>)}
+     * @returns {(TSPromise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    loadCSV(csv: string): TSPromise<Object | string>;
+    loadCSV(csv: string): TSPromise<Array<Object>>;
     /**
      * Export the current query to a CSV file.
      *
@@ -493,23 +493,27 @@ export interface SomeSQLBackend {
      * This is called on "exec()" and all the query parameters are passed in as an array of Objects containing the query parameters.
      *
      * The syntax is pretty straightforward, for example a query like this: SomeSQL("users").query("select").exec() will turn into this:
+     * ```typescript
      * [{type:'select',args:undefined}]
+     * ```
      *
      * Let's say the person using the system gets crazy and does SomeSQL("users").query("select",['username']).orderBy({name:'desc'}).exec();
      * Then you get this:
+     * ```typescript
      * [{type:'select',args:['username']},{type:"orderBy",args:{name:'desc}}]
+     * ```
      *
      * With that information and the table name you can create the query as needed, then return it through the onSuccess function.
      *
      * @param {string} table
-     * @param {(Array<QueryLine>)} query
+     * @param {Array<QueryLine>} query
      * @param {string} viewOrAction
-     * @param {Function} onSuccess
-     * @param {Function} [onFail]
+     * @param {(rows: Array<Object>) => void} onSuccess
+     * @param {(rows: Array<Object>) => void} onFail
      *
      * @memberOf SomeSQLBackend
      */
-    exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: Function, onFail?: Function): void;
+    exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: (rows: Array<Object>) => void, onFail: (rows: Array<Object>) => void): void;
     /**
      * Optional extension for the database.
      * The extend method for SomeSQL is just a passthrough to this method.

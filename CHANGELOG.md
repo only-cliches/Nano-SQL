@@ -1,5 +1,13 @@
 # Change Log
 
+## [0.1.6] 1-1-2017
+- Added more typings data.
+- Made some small changes to the ReadMe and Docs.
+- Modified memory DB queries to always return an array of objects.
+- Fixed Action/Views bug if you didn't pass arguments.
+- Fixed scoping issue with actions & views with TypesSript compilation.
+- Added ReactJS Todo Example
+
 ## [0.1.5] 12-31-2016
 - Added optional "default" value in data models.
 - Modified memory DB filters to always return an array of objects.
