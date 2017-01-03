@@ -49,6 +49,6 @@
   "dependencies": {
     "tslib": "^1.4.0",
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",
-    "typescript-promise": "^0.2.3"
+    "typescript-promise": "^0.2.4"
   }
 }
