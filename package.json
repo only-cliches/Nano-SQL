@@ -1,6 +1,6 @@
 {
   "name": "some-sql",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -49,6 +49,6 @@
   "dependencies": {
     "tslib": "^1.4.0",
     "typescript-map": "git+https://github.com/ClickSimply/typescript-map.git",
-    "typescript-promise": "git+https://github.com/ClickSimply/typescript-promise.git"
+    "typescript-promise": "^0.2.3"
   }
 }

@@ -45,7 +45,7 @@ SomeSQL('users') //  "users" is our table name.
 .then(function(result, db) {
     return db.query('select').exec(); // select all rows from the current active table
 })
-.then(function(rows) {
+.then(function(rows, db) {
     console.log(rows) // <= [{id:1,name:"Billy",age:50}]
 })
 
@@ -165,9 +165,9 @@ SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]
 
 Possible query commands are `select`, `drop`, `upsert`, and `delete`.
 
-All calls to the `exec()` return a promise, with the result of the promise being the response from the database.  The `this` of the returned promise is always the current SomeSQL function with the last table you selected.
+All calls to the `exec()` return a promise, with the result of the promise being the response from the database.
 
-This makes it easy to chain commands:
+The second argument is always the SomeSQL var, making chaining commands easy.
 
 ```typescript
 SomeSQL('users').query('select').exec().then(function(result, db) {
@@ -275,7 +275,7 @@ Each modifier can take up to two arguments and normally can only be used once.  
 
 ### Query Execution
 
-These come at the end of a query to execute it on the database.  All of these return a promise with the result, the promise also keeps the `this` scope of the query, so you can chain additional commands afterwards.
+These come at the end of a query to execute it on the database.
 
 | Command    | Definition                                                             |          |
 |------------|------------------------------------------------------------------------|----------|

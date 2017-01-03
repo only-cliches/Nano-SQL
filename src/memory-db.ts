@@ -339,18 +339,18 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                 if (_whereStatement) { // Upserting existing rows
                     whereTable = t._newWhere(ta, <any>_whereStatement);
                     let affectedKeys = [];
-                    whereTable._forEach((v, k) => {
+                    whereTable._index.forEach((idx) => {
                         for (let key in qArgs) {
-                            ta._get(k)[key] = qArgs[key];
+                            ta._rows.get(<string> idx)[key] = qArgs[key];
                         }
-                        affectedKeys.push(k);
+                        affectedKeys.push(idx);
                         msg++;
                     });
-
 
                     t._removeCacheFromKeys(affectedKeys);
 
                 } else { // Adding new rows
+
                     ta._add(qArgs);
                     msg++;
 
@@ -360,7 +360,6 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     t._cache.set(t._selectedTable, new TSMap<string, _memDB_Table>());
                     t._cacheIndex.set(t._selectedTable, new TSMap<string, Array<string | number>>());
                 }
-
                 callBack([{result: msg + " row(s) upserted"}]);
 
                 break;
@@ -429,7 +428,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                             }
                         default: return prev;
                     }
-                }, whereTable._table);
+                }, whereTable._table());
 
                 // Set the immutable cache
                 let filterEffect = t._runFilters(result);
@@ -448,7 +447,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     let affectedKeys = [];
                     let whereTable = t._newWhere(ta, <any>_whereStatement);
 
-                    whereTable._forEach((value, index) => {
+                    whereTable._index.forEach((index) => {
                         ta._remove(index);
                         affectedKeys.push(index);
                     });
@@ -527,7 +526,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         let operator = whereStatement[1];
         let right = whereStatement[2];
         table._index = table._index.filter((v) => {
-            return t._compare(right, operator, table._get(v)[whereStatement[0]]) === 0 ? true : false;
+            return t._compare(right, operator, table._rows.get(<string> v)[whereStatement[0]]) === 0 ? true : false;
         });
 
         return table;
@@ -569,7 +568,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 // tslint:disable-next-line
 class _memDB_Table {
     public _index: Array<string | number>;
-    public _table: Array<Object>;
+    public _rows: TSMap<string, Object>;
     public _model: Array<DataModel>;
     public _primaryKey: string;
     public _pkType: string;
@@ -580,7 +579,7 @@ class _memDB_Table {
         let t = this;
         t._model = model;
         t._index = index || [];
-        t._table = table || [];
+        t._rows = new TSMap<string, Object>();
         t._incriment = 1;
         t.length = 0;
         t._primaryKey = <any>t._model.reduce((prev, cur) => {
@@ -591,25 +590,29 @@ class _memDB_Table {
                 return prev;
             }
         }, "");
+        if (table) {
+            table.forEach((row) => {
+                t._rows.set(row[t._primaryKey], row);
+            });
+        }
+    }
+
+    public _table(): Array<any> {
+        let t = this;
+        return t._index.map((i) => {
+            return t._rows.get(<string> i);
+        });
     }
 
     public static _detach(input: Object): Object {
         return JSON.parse(JSON.stringify(input));
     }
 
-    public _get(index: string | number): Object {
-        return this._table[this._index.indexOf(index)];
-    }
-
-    public _set(index: string | number, value: Object): void {
-        this._table[this._index.indexOf(index)] = value;
-    }
-
     public _add(data: Object): void {
         let t = this;
         data = JSON.parse(JSON.stringify(data));
         t._model.forEach((model) => {
-            data[model.key] = data[model.key] || model.default;
+            data[model.key] = data[model.key] || model.default || undefined;
         });
 
         if (!data[t._primaryKey]) {
@@ -620,43 +623,15 @@ class _memDB_Table {
                     break;
             }
             t._index.push(data[t._primaryKey]);
-            t._table.push(data);
+            t._rows.set(data[t._primaryKey], data);
             t.length = t._index.length;
         } else {
-            t._set(data[t._primaryKey], data);
+            t._rows.set(data[t._primaryKey], data);
         }
     }
 
-    public _filter(func: (value: Object, index?: string | number) => Boolean): _memDB_Table {
-        let t = this;
-        t._index.forEach((idx) => {
-            if (func(t._get(idx), idx) === false) t._remove(idx);
-        });
-        return t;
-    }
-
-    public _forEach(func: (value: Object, index?: string | number) => void): _memDB_Table {
-        let t = this;
-        t._index.forEach((idx) => {
-            func.apply(t, [t._get(idx), idx]);
-        });
-        return t;
-    }
-
-    public _sort(func: (value: Object, value2: Object) => number): _memDB_Table {
-        let t = this;
-        let r = [];
-        let i = -1;
-        t._index.sort((a, b) => {
-            let result = func.apply(t, [t._get(a), t._get(b)]);
-            r.push(result);
-            return result;
-        });
-        t._table.sort((a, b) => {
-            i++;
-            return r[i];
-        });
-        return t;
+    public _remove(index: string|number) {
+        this._index.splice(this._index.indexOf(index), 1);
     }
 
     public _join(type: string, table: _memDB_Table, joinKeys?: Array<string | number>, mergeRowData?: Boolean): _memDB_Table {
@@ -675,11 +650,12 @@ class _memDB_Table {
         }
 
         // N^2, YAY!
-        tables[0]._forEach((row, idx) => {
+        tables[0]._index.forEach((idx) => {
             let found;
-            tables[1]._forEach((row2, idx2) => {
+            tables[1]._index.forEach((idx2) => {
                 if (found === undefined) {
-                    if (row[joinKs[0]] === row2[joinKs[1]]) found = row2;
+                    if (tables[0]._rows.get(<string> idx)[joinKs[0]] === tables[1]._rows.get(<string> idx)[joinKs[1]])
+                        found = tables[1]._rows.get(<string> idx);
                 }
             });
             if (found === undefined) {
@@ -693,24 +669,16 @@ class _memDB_Table {
         });
 
         if (type === "outer") {
-            tables[0]._sort((a, b) => {
-                return a[tables[0]._primaryKey] > b[tables[0]._primaryKey] ? 1 : -1;
+            tables[0]._index.sort((a, b) => {
+                return a > b ? 1 : -1;
             });
         }
 
         return tables[0];
     }
 
-    public _remove(index: string | number): void {
-        let t = this;
-        let f = t._index.indexOf(index);
-        t._index.splice(f, 1);
-        t._table.splice(f, 1);
-        t.length = t._index.length;
-    }
-
     public _clone(): _memDB_Table {
-        let ta = new _memDB_Table(this._model, <any>_memDB_Table._detach(this._index), <any>_memDB_Table._detach(this._table));
+        let ta = new _memDB_Table(this._model, <any>_memDB_Table._detach(this._index), <any>_memDB_Table._detach(this._table()));
         ta._incriment = this._incriment;
         ta.length = this.length;
         return ta;

@@ -235,7 +235,7 @@ export class SomeSQLInstance {
         t._backend = backend || new SomeSQLMemDB();
         return new TSPromise((res, rej) => {
             t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, res, rej);
-        }, t);
+        });
     }
 
 
@@ -804,7 +804,6 @@ export class SomeSQLInstance {
                     time: new Date().getTime(),
                     result: data
                 });
-
                 callBack(data, t);
             };
 
@@ -814,7 +813,7 @@ export class SomeSQLInstance {
                 t._triggerEvents = ["error"];
                 _tEvent(err, rej, true);
             });
-        }, t);
+        });
     }
 
 
@@ -897,11 +896,11 @@ export class SomeSQLInstance {
                             resolve();
                         });
                     }
-                }, t);
+                });
             })).then(function () {
-                res();
+                res([], t);
             });
-        }, t);
+        });
     }
 
 
@@ -917,7 +916,7 @@ export class SomeSQLInstance {
         let t = this;
         return new TSPromise((res, rej) => {
 
-            t.exec().then(function (json: Array<Object>) {
+            t.exec().then((json: Array<Object>) => {
 
                 let header = t._query.filter((q) => {
                     return q.type === "select";
@@ -946,9 +945,9 @@ export class SomeSQLInstance {
                             default: return JSON.stringify(row[column["key"]]);
                         }
                     }).join(",");
-                }).join("\n"));
+                }).join("\n"), t);
             });
-        }, t);
+        });
     }
 
 

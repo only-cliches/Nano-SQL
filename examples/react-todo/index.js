@@ -43,7 +43,7 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
     }
     exports.initStore = initStore;
 });
-define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"], function (require, exports, React, ReactDOM, store_1, some_sql_2) {
+define("index", ["require", "exports", "react", "react", "react-dom", "store", "some-sql"], function (require, exports, react_1, React, ReactDOM, store_1, some_sql_2) {
     "use strict";
     var _this = this;
     var TitleStyle = {
@@ -52,6 +52,7 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
     var Done = {
         textDecoration: "line-through"
     };
+    ;
     var TodoTable = function (props) {
         return (React.createElement("table", null,
             React.createElement("thead", null,
@@ -87,7 +88,7 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
         };
         TodoForm.prototype.updateTitle = function (event) {
             this.setState({
-                value: event.target.value
+                value: event.currentTarget.value
             });
         };
         ;
@@ -100,7 +101,7 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
                         React.createElement("input", { className: "button button-outline", type: "submit", value: "+" })))));
         };
         return TodoForm;
-    }(React.Component));
+    }(react_1.Component));
     var TodoApp = (function (_super) {
         __extends(TodoApp, _super);
         function TodoApp() {
@@ -125,13 +126,12 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
         };
         TodoApp.prototype.componentWillMount = function () {
             some_sql_2.SomeSQL("todos").on("change", this.updateComponent);
-            this.updateComponent({}, some_sql_2.SomeSQL("todos"));
         };
         TodoApp.prototype.componentWillUnmount = function () {
             some_sql_2.SomeSQL("todos").off(this.updateComponent);
         };
         TodoApp.prototype.shouldComponentUpdate = function (nextProps, nextState) {
-            return this.state !== nextState;
+            return this.state.todos !== nextState.todos;
         };
         TodoApp.prototype.render = function () {
             return (React.createElement("div", { className: "container" },
@@ -140,7 +140,7 @@ define("index", ["require", "exports", "react", "react-dom", "store", "some-sql"
                 React.createElement(TodoForm, null)));
         };
         return TodoApp;
-    }(React.Component));
+    }(react_1.Component));
     store_1.initStore().then(function () {
         ReactDOM.render(React.createElement(TodoApp, null), document.body);
     });

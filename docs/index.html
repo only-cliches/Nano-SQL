@@ -104,7 +104,7 @@
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
     <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'select'</span>).exec(); <span class="hljs-comment">// select all rows from the current active table</span>
 })
-.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{
     <span class="hljs-built_in">console</span>.log(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
 })
 </code></pre>
@@ -204,8 +204,8 @@ SomeSQL('users').query('select',['name']).where(['age','&gt;',20]).orderBy({age:
 SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','&lt;',0]).exec()
 </code></pre>
 				<p>Possible query commands are <code>select</code>, <code>drop</code>, <code>upsert</code>, and <code>delete</code>.</p>
-				<p>All calls to the <code>exec()</code> return a promise, with the result of the promise being the response from the database.  The <code>this</code> of the returned promise is always the current SomeSQL function with the last table you selected.</p>
-				<p>This makes it easy to chain commands:</p>
+				<p>All calls to the <code>exec()</code> return a promise, with the result of the promise being the response from the database.</p>
+				<p>The second argument is always the SomeSQL var, making chaining commands easy.</p>
 				<pre><code class="lang-typescript">SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
     <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'upsert'</span>,{name:<span class="hljs-string">"Bill"</span>}).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>]).exec();
 }).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
@@ -362,7 +362,7 @@ myDB(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">"
 					</tbody>
 				</table>
 				<h3 id="query-execution">Query Execution</h3>
-				<p>These come at the end of a query to execute it on the database.  All of these return a promise with the result, the promise also keeps the <code>this</code> scope of the query, so you can chain additional commands afterwards.</p>
+				<p>These come at the end of a query to execute it on the database.</p>
 				<table>
 					<thead>
 						<tr>

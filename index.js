@@ -92,7 +92,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        t._backend = backend || new memory_db_1.SomeSQLMemDB();
 	        return new typescript_promise_1.TSPromise(function (res, rej) {
 	            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, res, rej);
-	        }, t);
+	        });
 	    };
 	    SomeSQLInstance.prototype.on = function (actions, callBack) {
 	        var t = this;
@@ -277,7 +277,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                t._triggerEvents = ["error"];
 	                _tEvent(err, rej, true);
 	            });
-	        }, t);
+	        });
 	    };
 	    SomeSQLInstance.prototype.extend = function () {
 	        var args = [];
@@ -326,11 +326,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            resolve();
 	                        });
 	                    }
-	                }, t);
+	                });
 	            })).then(function () {
-	                res();
+	                res([], t);
 	            });
-	        }, t);
+	        });
 	    };
 	    SomeSQLInstance.prototype.toCSV = function (headers) {
 	        var t = this;
@@ -360,9 +360,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            default: return JSON.stringify(row[column["key"]]);
 	                        }
 	                    }).join(",");
-	                }).join("\n"));
+	                }).join("\n"), t);
 	            });
-	        }, t);
+	        });
 	    };
 	    SomeSQLInstance.uuid = function (inputUUID) {
 	        return inputUUID ? inputUUID : (function () {
@@ -525,11 +525,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                if (_whereStatement) {
 	                    whereTable = t._newWhere(ta, _whereStatement);
 	                    var affectedKeys_1 = [];
-	                    whereTable._forEach(function (v, k) {
+	                    whereTable._index.forEach(function (idx) {
 	                        for (var key in qArgs) {
-	                            ta._get(k)[key] = qArgs[key];
+	                            ta._rows.get(idx)[key] = qArgs[key];
 	                        }
-	                        affectedKeys_1.push(k);
+	                        affectedKeys_1.push(idx);
 	                        msg++;
 	                    });
 	                    t._removeCacheFromKeys(affectedKeys_1);
@@ -603,7 +603,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            }
 	                        default: return prev;
 	                    }
-	                }, whereTable._table);
+	                }, whereTable._table());
 	                var filterEffect = t._runFilters(result);
 	                t._cache.get(t._selectedTable).set(t._cacheKey, filterEffect);
 	                t._cacheIndex.get(t._selectedTable).set(t._cacheKey, result.map(function (row) {
@@ -615,7 +615,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                if (_whereStatement) {
 	                    var affectedKeys_2 = [];
 	                    var whereTable_1 = t._newWhere(ta, _whereStatement);
-	                    whereTable_1._forEach(function (value, index) {
+	                    whereTable_1._index.forEach(function (index) {
 	                        ta._remove(index);
 	                        affectedKeys_2.push(index);
 	                    });
@@ -670,7 +670,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var operator = whereStatement[1];
 	        var right = whereStatement[2];
 	        table._index = table._index.filter(function (v) {
-	            return t._compare(right, operator, table._get(v)[whereStatement[0]]) === 0 ? true : false;
+	            return t._compare(right, operator, table._rows.get(v)[whereStatement[0]]) === 0 ? true : false;
 	        });
 	        return table;
 	    };
@@ -696,7 +696,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        t._model = model;
 	        t._index = index || [];
-	        t._table = table || [];
+	        t._rows = new typescript_map_1.TSMap();
 	        t._incriment = 1;
 	        t.length = 0;
 	        t._primaryKey = t._model.reduce(function (prev, cur) {
@@ -708,21 +708,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	                return prev;
 	            }
 	        }, "");
+	        if (table) {
+	            table.forEach(function (row) {
+	                t._rows.set(row[t._primaryKey], row);
+	            });
+	        }
 	    }
+	    _memDB_Table.prototype._table = function () {
+	        var t = this;
+	        return t._index.map(function (i) {
+	            return t._rows.get(i);
+	        });
+	    };
 	    _memDB_Table._detach = function (input) {
 	        return JSON.parse(JSON.stringify(input));
-	    };
-	    _memDB_Table.prototype._get = function (index) {
-	        return this._table[this._index.indexOf(index)];
-	    };
-	    _memDB_Table.prototype._set = function (index, value) {
-	        this._table[this._index.indexOf(index)] = value;
 	    };
 	    _memDB_Table.prototype._add = function (data) {
 	        var t = this;
 	        data = JSON.parse(JSON.stringify(data));
 	        t._model.forEach(function (model) {
-	            data[model.key] = data[model.key] || model.default;
+	            data[model.key] = data[model.key] || model.default || undefined;
 	        });
 	        if (!data[t._primaryKey]) {
 	            switch (t._pkType) {
@@ -735,42 +740,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    break;
 	            }
 	            t._index.push(data[t._primaryKey]);
-	            t._table.push(data);
+	            t._rows.set(data[t._primaryKey], data);
 	            t.length = t._index.length;
 	        }
 	        else {
-	            t._set(data[t._primaryKey], data);
+	            t._rows.set(data[t._primaryKey], data);
 	        }
 	    };
-	    _memDB_Table.prototype._filter = function (func) {
-	        var t = this;
-	        t._index.forEach(function (idx) {
-	            if (func(t._get(idx), idx) === false)
-	                t._remove(idx);
-	        });
-	        return t;
-	    };
-	    _memDB_Table.prototype._forEach = function (func) {
-	        var t = this;
-	        t._index.forEach(function (idx) {
-	            func.apply(t, [t._get(idx), idx]);
-	        });
-	        return t;
-	    };
-	    _memDB_Table.prototype._sort = function (func) {
-	        var t = this;
-	        var r = [];
-	        var i = -1;
-	        t._index.sort(function (a, b) {
-	            var result = func.apply(t, [t._get(a), t._get(b)]);
-	            r.push(result);
-	            return result;
-	        });
-	        t._table.sort(function (a, b) {
-	            i++;
-	            return r[i];
-	        });
-	        return t;
+	    _memDB_Table.prototype._remove = function (index) {
+	        this._index.splice(this._index.indexOf(index), 1);
 	    };
 	    _memDB_Table.prototype._join = function (type, table, joinKeys, mergeRowData) {
 	        var t = this;
@@ -787,12 +765,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                return a.length > b.length ? -1 : 1;
 	            });
 	        }
-	        tables[0]._forEach(function (row, idx) {
+	        tables[0]._index.forEach(function (idx) {
 	            var found;
-	            tables[1]._forEach(function (row2, idx2) {
+	            tables[1]._index.forEach(function (idx2) {
 	                if (found === undefined) {
-	                    if (row[joinKs[0]] === row2[joinKs[1]])
-	                        found = row2;
+	                    if (tables[0]._rows.get(idx)[joinKs[0]] === tables[1]._rows.get(idx)[joinKs[1]])
+	                        found = tables[1]._rows.get(idx);
 	                }
 	            });
 	            if (found === undefined) {
@@ -807,21 +785,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        });
 	        if (type === "outer") {
-	            tables[0]._sort(function (a, b) {
-	                return a[tables[0]._primaryKey] > b[tables[0]._primaryKey] ? 1 : -1;
+	            tables[0]._index.sort(function (a, b) {
+	                return a > b ? 1 : -1;
 	            });
 	        }
 	        return tables[0];
 	    };
-	    _memDB_Table.prototype._remove = function (index) {
-	        var t = this;
-	        var f = t._index.indexOf(index);
-	        t._index.splice(f, 1);
-	        t._table.splice(f, 1);
-	        t.length = t._index.length;
-	    };
 	    _memDB_Table.prototype._clone = function () {
-	        var ta = new _memDB_Table(this._model, _memDB_Table._detach(this._index), _memDB_Table._detach(this._table));
+	        var ta = new _memDB_Table(this._model, _memDB_Table._detach(this._index), _memDB_Table._detach(this._table()));
 	        ta._incriment = this._incriment;
 	        ta.length = this.length;
 	        return ta;

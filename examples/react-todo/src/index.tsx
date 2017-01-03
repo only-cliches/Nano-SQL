@@ -1,8 +1,8 @@
+import { EventHandler, FormEvent, Component } from "react";
 import * as React from "react";
-import { EventHandler, FormEvent } from "react";
 import * as ReactDOM from "react-dom";
 import { initStore } from "./store";
-import { SomeSQL } from "some-sql";
+import { SomeSQL, DatabaseEvent, SomeSQLInstance } from "some-sql";
 
 
 const TitleStyle = {
@@ -13,7 +13,9 @@ const Done = {
     textDecoration: "line-through"
 }
 
-const TodoTable = (props: {todos: Array<any>, markDone: EventHandler<FormEvent<HTMLInputElement>>}) => {
+interface Nothing {};
+
+const TodoTable = (props: {todos: Array<any>, markDone: (todoID: string) => void}): JSX.Element => {
     return(
         <table>
             <thead>
@@ -35,7 +37,11 @@ const TodoTable = (props: {todos: Array<any>, markDone: EventHandler<FormEvent<H
     );
 }
 
-class TodoForm extends React.Component<any, any> {
+interface FormState {
+    value: string;
+}
+
+class TodoForm extends Component<Nothing, FormState> {
 
     constructor() {
         super();
@@ -44,7 +50,7 @@ class TodoForm extends React.Component<any, any> {
         this.updateTitle = this.updateTitle.bind(this);
     }
 
-    public onSubmit(event) {
+    public onSubmit(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
         if (!this.state.value.length) return;
         SomeSQL("todos").doAction("add_todo", {title: this.state.value}).then(() => {
@@ -55,13 +61,13 @@ class TodoForm extends React.Component<any, any> {
 
     }
 
-    public updateTitle(event) {
+    public updateTitle(event: FormEvent<HTMLInputElement>): void {
         this.setState({
-            value: event.target.value
+            value: event.currentTarget.value
         });
     };
 
-    public render() {
+    public render(): JSX.Element {
         return (
             <form onSubmit={this.onSubmit}>
                 <div className="row">
@@ -81,7 +87,7 @@ interface TodoAppState {
     todos?: Array<any>;
 }
 
-class TodoApp extends React.Component<any, TodoAppState> {
+class TodoApp extends Component<Nothing, TodoAppState> {
 
     constructor() {
         super();
@@ -92,12 +98,12 @@ class TodoApp extends React.Component<any, TodoAppState> {
         this.markDone = this.markDone.bind(this);
     }
 
-    public markDone(todoID) {
+    public markDone(todoID: string): void {
         SomeSQL("todos").doAction("mark_todo_done", {id: todoID});
     }
 
     // Event handler for the db
-    public updateComponent(e, db) {
+    public updateComponent(e: DatabaseEvent, db: SomeSQLInstance): void {
         db.getView("list_all_todos").then((rows, db) => {
             this.setState({
                 todos: rows
@@ -105,23 +111,22 @@ class TodoApp extends React.Component<any, TodoAppState> {
         });
     }
 
-    // Update this component when the table gets updated, load initial data.
-    public componentWillMount() {
+    // Update this component when the table gets updated.
+    public componentWillMount(): void {
         SomeSQL("todos").on("change", this.updateComponent);
-        this.updateComponent({}, SomeSQL("todos"));
     }
 
     // Clear the event handler, otherwise it's a memory leak!
-    public componentWillUnmount() {
+    public componentWillUnmount(): void {
         SomeSQL("todos").off(this.updateComponent);
     }
 
     // Ahhh, that feels nice.
-    public shouldComponentUpdate(nextProps, nextState) {
-        return this.state !== nextState;
+    public shouldComponentUpdate(nextProps, nextState): Boolean {
+        return this.state.todos !== nextState.todos;
     }
 
-    public render() {
+    public render(): JSX.Element {
         return (
             <div className="container">
                 <h1>Todo Items</h1>
