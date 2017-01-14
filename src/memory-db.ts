@@ -1,6 +1,5 @@
-import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine, DataModel } from "./index";
+import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine, DataModel, StdObject } from "./index";
 import { TSPromise } from "typescript-promise";
-import { TSMap } from "typescript-map";
 
 /**
  * In memory storage implimentation.
@@ -11,14 +10,15 @@ import { TSMap } from "typescript-map";
  */
 export class SomeSQLMemDB implements SomeSQLBackend {
 
+
     /**
      * Holds the actual table data.
      * 
-     * @internal
-     * @type {TSMap<string,Array<Object>>}
+     * @private
+     * @type {StdObject<_memDB_Table>}
      * @memberOf SomeSQLMemDB
      */
-    private _tables: TSMap<string, _memDB_Table>;
+    private _tables: StdObject<_memDB_Table>;
 
     /**
      * Holds a pointer to the current selected table.
@@ -33,16 +33,16 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Holds a single query object of the current query actions.
      * 
      * @internal
-     * @type {(TSMap<string,Object|Array<any>>)}
+     * @type {(StdObject<bject|Array<any>>)}
      * @memberOf SomeSQLMemDB
      */
-    private _act: QueryLine;
+    private _act: QueryLine|undefined;
 
     /**
      * Holds an array of the remaining query objects to modify the query in some way.
      * 
      * @internal
-     * @type {(Array<TSMap<string,Object|Array<any>>>)}
+     * @type {(Array<StdObject<bject|Array<any>>>)}
      * @memberOf SomeSQLMemDB
      */
     private _mod: Array<QueryLine>;
@@ -52,10 +52,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Holds all possible filters
      * 
      * @internal
-     * @type {TSMap<string, Function>}
+     * @type {StdObject<Function>}
      * @memberOf SomeSQLMemDB
      */
-    private _filters: TSMap<string, Function>;
+    private _filters: StdObject<Function>;
 
 
     /**
@@ -72,30 +72,30 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * An index of the contents of the immutable cache
      * 
      * @internal
-     * @type {(TSMap<string, TSMap<string, Array<string | number>>>)}
+     * @type {(StdObject<StdObject<Array<string | number>>>)}
      * @memberOf SomeSQLMemDB
      */
-    private _cacheIndex: TSMap<string, TSMap<string, Array<string | number>>>;
+    private _cacheIndex: StdObject<StdObject<Array<string | number>>>;
 
 
     /**
      * An index of the immutable cache queries
      * 
      * @internal
-     * @type {TSMap<string, Array<Object>>}
+     * @type {StdObject<Array<Object>>}
      * @memberOf SomeSQLMemDB
      */
-    private _cacheQueryIndex: TSMap<string, Array<Object>>;
+    private _cacheQueryIndex: StdObject<Array<Object>>;
 
 
     /**
      * The actual immutable cache is stored here.
      * 
      * @internal
-     * @type {TSMap<string, TSMap<string, _memDB_Table>>}
+     * @type {StdObject<StdObject<_memDB_Table>>}
      * @memberOf SomeSQLMemDB
      */
-    private _cache: TSMap<string, TSMap<string, _memDB_Table>>;
+    private _cache: StdObject<StdObject<_memDB_Table>>;
 
 
     /**
@@ -109,11 +109,11 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
     constructor() {
         let t = this;
-        t._filters = new TSMap<string, Function>();
-        t._tables = new TSMap<string, _memDB_Table>();
-        t._cacheIndex = new TSMap<string, TSMap<string, Array<string | number>>>();
-        t._cache = new TSMap<string, TSMap<string, _memDB_Table>>();
-        t._cacheQueryIndex = new TSMap<string, Array<Object>>();
+        t._filters = {};
+        t._tables = {};
+        t._cacheIndex = {};
+        t._cache = {};
+        t._cacheQueryIndex = {};
         t._pendingQuerys = [];
         t._initFilters();
     }
@@ -122,24 +122,23 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     /**
      * Creates all the tables and prepares the database for use.
      * 
-     * @param {TSMap<string, Array<DataModel>>} models
-     * @param {TSMap<string, Array<ActionOrView>>} actions
-     * @param {TSMap<string, Array<ActionOrView>>} views
-     * @param {TSMap<string, Function>} filters
+     * @param {StdObject<Array<DataModel>>} models
+     * @param {StdObject<Array<ActionOrView>>} actions
+     * @param {StdObject<Array<ActionOrView>>} views
+     * @param {StdObject<Function>} filters
      * @param {Array<any>} preCustom
      * @param {Function} callback
      * 
      * @memberOf SomeSQLMemDB
      */
-    public connect(models: TSMap<string, Array<DataModel>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, preCustom: Array<any>, callback: Function): void {
+    public connect(models: StdObject<Array<DataModel>>, actions: StdObject<Array<ActionOrView>>, views: StdObject<Array<ActionOrView>>, filters: StdObject<Function>, preCustom: Array<any>, callback: Function): void {
         let t = this;
-        models.forEach((model, table) => {
-            t._newModel(table, model);
-        });
+        for (let tableName in models) {
+            t._newModel(tableName, models[tableName]);
+        }
 
-        filters.forEach((func, name) => {
-            t._filters.set(name, func);
-        });
+        t._filters = filters;
+
         callback();
     }
 
@@ -148,14 +147,14 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @internal
      * @param {string} table
-     * @param {Array<DataModel>} args
+     * @param {Array<DataModel>} dataModel
      * 
      * @memberOf SomeSQLMemDB
      */
-    private _newModel(table: string, args: Array<DataModel>): void {
-        this._cache.set(table, new TSMap<string, _memDB_Table>());
-        this._cacheIndex.set(table, new TSMap<string, Array<string | number>>());
-        this._tables.set(table, new _memDB_Table(args));
+    private _newModel(table: string, dataModel: Array<DataModel>): void {
+        this._cache[table] = {};
+        this._cacheIndex[table] = {};
+        this._tables[table] = new _memDB_Table(dataModel);
     }
 
 
@@ -174,26 +173,26 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     public exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: (rows: Array<Object>) => void, onFail?: (rows: Array<Object>) => void): void {
         let t = this;
 
-        if (t._act != null) {
+        if (t._act !== undefined) {
             t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
             return;
         }
 
         t._selectedTable = table;
         t._mod = [];
-        t._act = null;
+        t._act = undefined;
 
         t._cacheKey = SomeSQLInstance.hash(JSON.stringify(query));
-        t._cacheQueryIndex.set(t._cacheKey, query); // working on smarter cache invalidation
+        t._cacheQueryIndex[t._cacheKey] = query; // working on smarter cache invalidation
 
         TSPromise.all(query.map((q) => {
             return new TSPromise(function (resolve, reject) {
                 t._query(q, resolve);
             });
         })).then(() => {
-            t._exec((args) => {
+            t._exec((args: Array<Object>) => {
                 onSuccess(args);
-                t._act = null;
+                t._act = undefined;
                 if (t._pendingQuerys.length) {
                     t.exec.apply(t, t._pendingQuerys.pop());
                 }
@@ -205,7 +204,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * Puts the query from the someSQL Instance into query actions and mofidiers to make execution easier.
      * 
      * @internal
-     * @param {(TSMap<string,number|Object|Array<any>>)} queryArg
+     * @param {(StdObject<umber|Object|Array<any>>)} queryArg
      * @param {Function} resolve
      * 
      * @memberOf SomeSQLMemDB
@@ -229,27 +228,33 @@ export class SomeSQLMemDB implements SomeSQLBackend {
     private _initFilters() {
         let t = this;
         let f = t._filters;
-        f.set("sum", (rows: Array<Object>) => {
-            return [{"sum": rows.map((r) => r[t._act.args[0]]).reduce((a, b) => a + b, 0)}];
-        });
-        f.set("first", (rows: Array<Object>) => {
+        f["sum"] = (rows: Array<StdObject<any>>) => {
+            return [{"sum": rows.map((r: StdObject<any>) => {
+                    return t._act ? r[t._act.args[0]] : 0;
+                }).reduce((a, b) => a + b, 0)}];
+        };
+        f["first"] = (rows: Array<StdObject<any>>) => {
             return [rows[0]];
-        });
-        f.set("last", (rows: Array<Object>) => {
+        };
+        f["last"] = (rows: Array<StdObject<any>>) => {
             return [rows.pop()];
-        });
-        f.set("min", (rows: Array<Object>) => {
-            return [{"min": rows.map((r) => r[t._act.args[0]]).sort((a, b) => a < b ? -1 : 1)[0]}];
-        });
-        f.set("max", (rows: Array<Object>) => {
-            return [{"max": rows.map((r) => r[t._act.args[0]]).sort((a, b) => a > b ? -1 : 1)[0]}];
-        });
-        f.set("average", (rows: Array<Object>) => {
+        };
+        f["min"] = (rows: Array<StdObject<any>>) => {
+            return [{"min": rows.map((r: StdObject<any>) => {
+                    return t._act ? r[t._act.args[0]] : 0;
+                }).sort((a, b) => a < b ? -1 : 1)[0]}];
+        };
+        f["max"] = (rows: Array<StdObject<any>>) => {
+            return [{"max": rows.map((r: StdObject<any>) => {
+                    return t._act ? r[t._act.args[0]] : 0;
+                }).sort((a, b) => a > b ? -1 : 1)[0]}];
+        };
+        f["average"] = (rows: Array<StdObject<any>>) => {
             return [{"average": t._doFilter("sum", rows)[0].sum / rows.length}];
-        });
-        f.set("count", (rows: Array<Object>) => {
+        };
+        f["count"] = (rows: Array<StdObject<any>>) => {
             return [{"length": rows.length}];
-        });
+        };
     }
 
     /**
@@ -264,7 +269,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * @memberOf SomeSQLMemDB
      */
     private _doFilter(filterName: string, rows: Array<Object>, filterArgs?: any): any {
-        return this._filters.get(filterName).apply(this, [rows, filterArgs]);
+        return this._filters[filterName].apply(this, [rows, filterArgs]);
     }
 
     /**
@@ -294,8 +299,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      */
     private _removeCacheFromKeys(affectedKeys: Array<number | string>): void {
         let t = this;
-        t._cache.set(t._selectedTable, new TSMap<string, _memDB_Table>());
-        t._cacheIndex.set(t._selectedTable, new TSMap<string, Array<string | number>>());
+        t._cache[t._selectedTable] = {};
+        t._cacheIndex[t._selectedTable] = {};
 
         /*
         affectedKeys.forEach((key) => {
@@ -325,9 +330,11 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         });
         let _whereStatement = _hasWhere.length ? _hasWhere[0].args : undefined;
 
+        if (!t._act) throw Error("No action specified!");
+
         let qArgs: any = t._act.args;
 
-        let ta = t._tables.get(t._selectedTable);
+        let ta = t._tables[t._selectedTable];
 
         let msg: number = 0;
 
@@ -338,10 +345,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
                 if (_whereStatement) { // Upserting existing rows
                     whereTable = t._newWhere(ta, <any>_whereStatement);
-                    let affectedKeys = [];
+                    let affectedKeys: Array<any> = [];
                     whereTable._index.forEach((idx) => {
                         for (let key in qArgs) {
-                            ta._rows.get(<string> idx)[key] = qArgs[key];
+                            ta._rows[<string> idx][key] = qArgs[key];
                         }
                         affectedKeys.push(idx);
                         msg++;
@@ -357,8 +364,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     // remove cache for entire current table
                     // This is a very naive approach, a future implimentation would have all the cache
                     // queries running again and updating only the cache entries affected.
-                    t._cache.set(t._selectedTable, new TSMap<string, _memDB_Table>());
-                    t._cacheIndex.set(t._selectedTable, new TSMap<string, Array<string | number>>());
+                    t._cache[t._selectedTable] = {};
+                    t._cacheIndex[t._selectedTable] = {};
                 }
                 callBack([{result: msg + " row(s) upserted"}]);
 
@@ -366,8 +373,8 @@ export class SomeSQLMemDB implements SomeSQLBackend {
             case "select":
 
                 // Return immutable cache if it's there.
-                if (t._cache.get(t._selectedTable).has(t._cacheKey)) {
-                    callBack(t._cache.get(t._selectedTable).get(t._cacheKey));
+                if (t._cache[t._selectedTable][t._cacheKey]) {
+                    callBack(t._cache[t._selectedTable][t._cacheKey]);
                     return;
                 }
 
@@ -379,38 +386,45 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
                 let mods: Array<any> = ["ordr", "ofs", "lmt", "clms"];
 
-                let getMod = function (name): QueryLine {
+                let getMod = (name: string): QueryLine|undefined => {
                     return t._mod.filter((v) => v.type === name).pop();
                 };
 
                 let result = mods.reduce((prev, cur, i) => {
                     switch (mods[i]) {
                         case "ordr":
-                            if (getMod("orderby")) {
-                                let orderBy = new TSMap();
-                                orderBy.fromJSON(getMod("orderby").args);
-                                return prev.sort((a, b) => {
-                                    return orderBy.keys().reduce((prev, cur, i) => {
-                                        let column = <string>orderBy.keys()[i];
+                            let orderMod = getMod("orderby");
+                            if (orderMod) {
+                                let orderArgs = orderMod.args;
+                                return prev.sort((a: StdObject<any>, b: StdObject<any>) => {
+                                    let keys: Array<any> = [];
+                                    for (let key of orderArgs) {
+                                        keys.push(key);
+                                    }
+
+                                    return keys.reduce((prev, cur, i) => {
+                                        let column = keys[i];
                                         if (a[column] === b[column]) {
                                             return 0 + (<number>prev);
                                         } else {
-                                            return ((a[column] > b[column] ? 1 : -1) * (orderBy.get(column) === "asc" ? 1 : -1)) + (<number>prev);
+                                            return ((a[column] > b[column] ? 1 : -1) * (orderArgs[column] === "asc" ? 1 : -1)) + (<number>prev);
                                         }
                                     }, 0);
                                 });
                             }
                         case "ofs":
-                            if (getMod("offset")) {
-                                let offset = getMod("offset").args;
-                                return prev.filter((row, index) => {
+                            let offsetMod = getMod("offset");
+                            if (offsetMod) {
+                                let offset = offsetMod.args;
+                                return prev.filter((row: StdObject<any>, index: number) => {
                                     return index >= offset;
                                 });
                             }
                         case "lmt":
-                            if (getMod("limit")) {
-                                let limit = getMod("limit").args;
-                                return prev.filter((row, index) => {
+                            let limitMod = getMod("limit");
+                            if (limitMod) {
+                                let limit = limitMod.args;
+                                return prev.filter((row: StdObject<any>, index: number) => {
                                     return index < limit;
                                 });
                             }
@@ -421,7 +435,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                                 }).filter((col) => {
                                     return qArgs.indexOf(col) === -1;
                                 });
-                                return prev.map((row) => {
+                                return prev.map((row: StdObject<any>) => {
                                     columns.forEach((col) => delete row[col]);
                                     return row;
                                 });
@@ -433,10 +447,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                 // Set the immutable cache
                 let filterEffect = t._runFilters(result);
 
-                t._cache.get(t._selectedTable).set(t._cacheKey, filterEffect);
-                t._cacheIndex.get(t._selectedTable).set(t._cacheKey, result.map((row) => {
+                t._cache[t._selectedTable][t._cacheKey] = filterEffect;
+                t._cacheIndex[t._selectedTable][t._cacheKey] = result.map((row: StdObject<any>) => {
                     return row[whereTable._primaryKey];
-                }));
+                });
 
                 callBack(filterEffect);
 
@@ -444,7 +458,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
             case "delete":
 
                 if (_whereStatement) {
-                    let affectedKeys = [];
+                    let affectedKeys: Array<any> = [];
                     let whereTable = t._newWhere(ta, <any>_whereStatement);
 
                     whereTable._index.forEach((index) => {
@@ -455,14 +469,14 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     t._removeCacheFromKeys(affectedKeys);
                     callBack([{result: whereTable.length + " row(s) deleted"}]);
                 } else {
-                    t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
+                    t._newModel(t._selectedTable, t._tables[t._selectedTable]._model);
                     callBack([{result: "Table Dropped"}]);
                 }
 
                 break;
             case "drop":
 
-                t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
+                t._newModel(t._selectedTable, t._tables[t._selectedTable]._model);
                 callBack([{result: "Table Dropped"}]);
 
                 break;
@@ -489,7 +503,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
             } else {
                 // nested where statement like [['name','=','billy'],'or',['name','=','bill']]
                 let ptr = 0;
-                let compare = null;
+                let compare: any;
                 return whereStatement.map((statement) => {
                     return t._singleWhereResolve(table._clone(), <any>statement);
                 }).reduce((prev, cur, i) => {
@@ -503,6 +517,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                             default: return prev;
                         }
                     }
+                    return prev;
                 });
             }
         } else {
@@ -526,7 +541,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
         let operator = whereStatement[1];
         let right = whereStatement[2];
         table._index = table._index.filter((v) => {
-            return t._compare(right, operator, table._rows.get(<string> v)[whereStatement[0]]) === 0 ? true : false;
+            return t._compare(right, operator, table._rows[v][whereStatement[0]]) === 0 ? true : false;
         });
 
         return table;
@@ -568,22 +583,22 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 // tslint:disable-next-line
 class _memDB_Table {
     public _index: Array<string | number>;
-    public _rows: TSMap<string, Object>;
+    public _rows: StdObject<StdObject<any>>;
     public _model: Array<DataModel>;
     public _primaryKey: string;
     public _pkType: string;
     public length: number;
     private _incriment: number;
 
-    constructor(model: Array<DataModel>, index?: Array<string>, table?: Array<Object>) {
+    constructor(model: Array<DataModel>, index?: Array<string>, table?: Array<StdObject<any>>) {
         let t = this;
         t._model = model;
         t._index = index || [];
-        t._rows = new TSMap<string, Object>();
+        t._rows = {};
         t._incriment = 1;
         t.length = 0;
         t._primaryKey = <any>t._model.reduce((prev, cur) => {
-            if (cur["props"] && cur["props"].indexOf("pk") !== -1) {
+            if (cur.props && cur.props.indexOf("pk") !== -1) {
                 t._pkType = cur["type"];
                 return cur["key"];
             } else {
@@ -592,7 +607,7 @@ class _memDB_Table {
         }, "");
         if (table) {
             table.forEach((row) => {
-                t._rows.set(row[t._primaryKey], row);
+                t._rows[row[t._primaryKey]] = row;
             });
         }
     }
@@ -600,7 +615,7 @@ class _memDB_Table {
     public _table(): Array<any> {
         let t = this;
         return t._index.map((i) => {
-            return t._rows.get(<string> i);
+            return t._rows[i];
         });
     }
 
@@ -608,7 +623,7 @@ class _memDB_Table {
         return JSON.parse(JSON.stringify(input));
     }
 
-    public _add(data: Object): void {
+    public _add(data: StdObject<any>): void {
         let t = this;
         data = JSON.parse(JSON.stringify(data));
         t._model.forEach((model) => {
@@ -623,10 +638,10 @@ class _memDB_Table {
                     break;
             }
             t._index.push(data[t._primaryKey]);
-            t._rows.set(data[t._primaryKey], data);
+            t._rows[data[t._primaryKey]] = data;
             t.length = t._index.length;
         } else {
-            t._rows.set(data[t._primaryKey], data);
+            t._rows[data[t._primaryKey]] = data;
         }
     }
 
@@ -637,7 +652,7 @@ class _memDB_Table {
     public _join(type: string, table: _memDB_Table, joinKeys?: Array<string | number>, mergeRowData?: Boolean): _memDB_Table {
         let t = this;
 
-        let joinKs = [];
+        let joinKs: Array<any> = [];
 
         if (!joinKeys) { joinKs = [t._primaryKey, table._primaryKey]; } else { joinKs = joinKeys; }
 
@@ -651,17 +666,21 @@ class _memDB_Table {
 
         // N^2, YAY!
         tables[0]._index.forEach((idx) => {
-            let found;
+            let found: StdObject<any>|undefined;
+
             tables[1]._index.forEach((idx2) => {
                 if (found === undefined) {
-                    if (tables[0]._rows.get(<string> idx)[joinKs[0]] === tables[1]._rows.get(<string> idx)[joinKs[1]])
-                        found = tables[1]._rows.get(<string> idx);
+                    if (tables[0]._rows[idx][joinKs[0]] === tables[1]._rows[idx][joinKs[1]])
+                        found = tables[1]._rows[idx];
                 }
             });
             if (found === undefined) {
                 switch (type) {
                     case "inner": tables[0]._remove(idx);  // remove any elements that aren't common to both tables
                         break;
+                }
+            } else {
+                switch (type) {
                     case "outer": tables[1]._add(found);  // Add new rows and combine existing ones.
                         break;
                 }

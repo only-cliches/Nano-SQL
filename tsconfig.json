@@ -5,7 +5,11 @@
     "moduleResolution": "node",
     "stripInternal":true,
     "removeComments":true,
-    "importHelpers":false
+    "importHelpers":false,
+    "strictNullChecks":true,
+    "noImplicitAny":true,
+    "noImplicitReturns":true,
+    "noImplicitThis":true
   },
   "exclude":[
     "examples",

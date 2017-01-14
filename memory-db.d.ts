@@ -1,5 +1,4 @@
-import { SomeSQLBackend, ActionOrView, QueryLine, DataModel } from "./index";
-import { TSMap } from "typescript-map";
+import { SomeSQLBackend, ActionOrView, QueryLine, DataModel, StdObject } from "./index";
 /**
  * In memory storage implimentation.
  *
@@ -8,20 +7,28 @@ import { TSMap } from "typescript-map";
  * @implements {SomeSQLBackend}
  */
 export declare class SomeSQLMemDB implements SomeSQLBackend {
+    /**
+     * Holds the actual table data.
+     *
+     * @private
+     * @type {StdObject<_memDB_Table>}
+     * @memberOf SomeSQLMemDB
+     */
+    private _tables;
     constructor();
     /**
      * Creates all the tables and prepares the database for use.
      *
-     * @param {TSMap<string, Array<DataModel>>} models
-     * @param {TSMap<string, Array<ActionOrView>>} actions
-     * @param {TSMap<string, Array<ActionOrView>>} views
-     * @param {TSMap<string, Function>} filters
+     * @param {StdObject<Array<DataModel>>} models
+     * @param {StdObject<Array<ActionOrView>>} actions
+     * @param {StdObject<Array<ActionOrView>>} views
+     * @param {StdObject<Function>} filters
      * @param {Array<any>} preCustom
      * @param {Function} callback
      *
      * @memberOf SomeSQLMemDB
      */
-    connect(models: TSMap<string, Array<DataModel>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, preCustom: Array<any>, callback: Function): void;
+    connect(models: StdObject<Array<DataModel>>, actions: StdObject<Array<ActionOrView>>, views: StdObject<Array<ActionOrView>>, filters: StdObject<Function>, preCustom: Array<any>, callback: Function): void;
     /**
      * Public exec option.  Organizes the query then sends it to the internal execution function.
      *

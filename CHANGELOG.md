@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.9] 1-14-2017
+- Added `strictNullChecks`, `noImplicitAny`, `noImplicitReturns`, and `noImplicitThis` to tsconfig.
+- Made changes to code to remove errors introduced by stricter coding standards.
+- Removed TSMap from the lib.
+- Updated strongly typed TSPromise.
+
 ## [0.1.8] 1-7-2017
 - Cleaned up README.
 - Added "db" var to connect promise.

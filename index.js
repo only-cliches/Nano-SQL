@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("typescript-map"), require("typescript-promise"));
+		module.exports = factory(require("typescript-promise"));
 	else if(typeof define === 'function' && define.amd)
-		define(["typescript-map", "typescript-promise"], factory);
+		define(["typescript-promise"], factory);
 	else {
-		var a = typeof exports === 'object' ? factory(require("typescript-map"), require("typescript-promise")) : factory(root["typescript-map"], root["typescript-promise"]);
+		var a = typeof exports === 'object' ? factory(require("typescript-promise")) : factory(root["typescript-promise"]);
 		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
 	}
-})(this, function(__WEBPACK_EXTERNAL_MODULE_2__, __WEBPACK_EXTERNAL_MODULE_3__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_2__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -62,24 +62,23 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var typescript_map_1 = __webpack_require__(2);
-	var typescript_promise_1 = __webpack_require__(3);
-	var memory_db_1 = __webpack_require__(4);
+	var typescript_promise_1 = __webpack_require__(2);
+	var memory_db_1 = __webpack_require__(3);
 	var SomeSQLInstance = (function () {
 	    function SomeSQLInstance() {
 	        var t = this;
-	        t._actions = new typescript_map_1.TSMap();
-	        t._views = new typescript_map_1.TSMap();
-	        t._models = new typescript_map_1.TSMap();
+	        t._actions = {};
+	        t._views = {};
+	        t._models = {};
 	        t._query = [];
 	        t._preConnectExtend = [];
 	        t._events = ["change", "delete", "upsert", "drop", "select", "error"];
-	        t._callbacks = new typescript_map_1.TSMap();
-	        t._callbacks.set("*", new typescript_map_1.TSMap());
+	        t._callbacks = {};
+	        t._callbacks["*"] = {};
 	        t._events.forEach(function (e) {
-	            t._callbacks.get("*").set(e, []);
+	            t._callbacks["*"][e] = [];
 	        });
-	        t._filters = new typescript_map_1.TSMap();
+	        t._filters = {};
 	        t._permanentFilters = [];
 	    }
 	    SomeSQLInstance.prototype.table = function (table) {
@@ -94,33 +93,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, function (result) {
 	                res(result, t);
 	            }, function (rejected) {
-	                rej(rejected, t);
+	                if (rej)
+	                    rej(rejected, t);
 	            });
 	        });
 	    };
 	    SomeSQLInstance.prototype.on = function (actions, callBack) {
 	        var t = this;
 	        var l = t._selectedTable;
-	        if (!t._callbacks.get(l)) {
+	        if (!t._callbacks[l]) {
 	            t._events.forEach(function (v) {
-	                t._callbacks.get(l).set(v, []);
+	                t._callbacks[l][v] = [];
 	            });
 	        }
 	        actions.split(" ").forEach(function (a) {
 	            if (t._events.indexOf(a) !== -1) {
-	                t._callbacks.get(l).get(a).push(callBack);
+	                t._callbacks[l][a].push(callBack);
 	            }
 	        });
 	        return t;
 	    };
 	    SomeSQLInstance.prototype.off = function (callBack) {
-	        this._callbacks.forEach(function (tables) {
-	            tables.forEach(function (actions) {
-	                actions.filter(function (cBs) {
+	        for (var key in this._callbacks) {
+	            for (var key2 in this._callbacks[key]) {
+	                this._callbacks[key][key2].filter(function (cBs) {
 	                    return cBs !== callBack;
 	                });
-	            });
-	        });
+	            }
+	        }
 	        return this;
 	    };
 	    SomeSQLInstance.prototype.alwaysApplyFilter = function (filterName) {
@@ -132,25 +132,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	    SomeSQLInstance.prototype.model = function (dataModel) {
 	        var t = this;
 	        var l = t._selectedTable;
-	        t._callbacks.set(l, new typescript_map_1.TSMap());
-	        t._callbacks.get(l).set("*", []);
+	        t._callbacks[l] = {};
+	        t._callbacks[l]["*"] = [];
 	        t._events.forEach(function (e) {
-	            t._callbacks.get(l).set(e, []);
+	            t._callbacks[l][e] = [];
 	        });
-	        t._models.set(l, dataModel);
-	        t._views.set(l, []);
-	        t._actions.set(l, []);
+	        t._models[l] = dataModel;
+	        t._views[l] = [];
+	        t._actions[l] = [];
 	        return t;
 	    };
 	    SomeSQLInstance.prototype.views = function (viewArray) {
-	        return this._views.set(this._selectedTable, viewArray), this;
+	        return this._views[this._selectedTable] = viewArray, this;
 	    };
 	    SomeSQLInstance.prototype.getView = function (viewName, viewArgs) {
 	        if (viewArgs === void 0) { viewArgs = {}; }
 	        var t = this;
 	        var l = t._selectedTable;
 	        var selView;
-	        t._views.get(l).forEach(function (view) {
+	        t._views[l].forEach(function (view) {
 	            if (view.name === viewName) {
 	                selView = view;
 	            }
@@ -158,7 +158,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!selView)
 	            throw Error("View does not exist");
 	        t._activeActionOrView = viewName;
-	        return selView.call.apply(t, [t._cleanArgs(selView.args, viewArgs), t]);
+	        return selView.call.apply(t, [t._cleanArgs(selView.args ? selView.args : [], viewArgs), t]);
 	    };
 	    SomeSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
 	        var t = this;
@@ -189,14 +189,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    };
 	    SomeSQLInstance.prototype.actions = function (actionArray) {
-	        return this._actions.set(this._selectedTable, actionArray), this;
+	        return this._actions[this._selectedTable] = actionArray, this;
 	    };
 	    SomeSQLInstance.prototype.doAction = function (actionName, actionArgs) {
 	        if (actionArgs === void 0) { actionArgs = {}; }
 	        var t = this;
 	        var l = t._selectedTable;
 	        var selAction;
-	        t._actions.get(l).forEach(function (action) {
+	        t._actions[l].forEach(function (action) {
 	            if (action.name === actionName) {
 	                selAction = action;
 	            }
@@ -204,10 +204,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!selAction)
 	            throw Error("Action does not exist");
 	        t._activeActionOrView = actionName;
-	        return selAction.call.apply(t, [t._cleanArgs(selAction.args, actionArgs), t]);
+	        return selAction.call.apply(t, [t._cleanArgs(selAction.args ? selAction.args : [], actionArgs), t]);
 	    };
 	    SomeSQLInstance.prototype.addFilter = function (filterName, filterFunction) {
-	        return this._filters.set(filterName, filterFunction), this;
+	        return this._filters[filterName] = filterFunction, this;
 	    };
 	    SomeSQLInstance.prototype.query = function (action, args) {
 	        this._query = [];
@@ -252,9 +252,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }).reduce(function (a, b) { return a.concat(b); });
 	        var triggerEvents = function (eventData) {
 	            t._triggerEvents.forEach(function (e) {
-	                t._callbacks.get(_t).get(e).concat(t._callbacks.get(_t).get("*")).forEach(function (cb) {
-	                    eventData["name"] = e;
-	                    eventData["actionOrView"] = t._activeActionOrView;
+	                t._callbacks[_t][e].concat(t._callbacks[_t]["*"]).forEach(function (cb) {
+	                    eventData.name = e;
+	                    eventData.actionOrView = t._activeActionOrView || "";
 	                    cb.apply(t, [eventData, t]);
 	                });
 	            });
@@ -264,10 +264,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var _tEvent = function (data, callBack, isError) {
 	                if (t._permanentFilters.length && isError !== true) {
 	                    data = t._permanentFilters.reduce(function (prev, cur, i) {
-	                        return t._filters.get(t._permanentFilters[i]).apply(t, [data]);
+	                        return t._filters[t._permanentFilters[i]].apply(t, [data]);
 	                    }, data);
 	                }
 	                triggerEvents({
+	                    name: "error",
+	                    actionOrView: "",
 	                    table: _t,
 	                    query: t._query,
 	                    time: new Date().getTime(),
@@ -275,11 +277,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                });
 	                callBack(data, t);
 	            };
-	            t._backend.exec(_t, t._query, t._activeActionOrView, function (rows) {
+	            t._backend.exec(_t, t._query, t._activeActionOrView || "", function (rows) {
 	                _tEvent(rows, res, false);
 	            }, function (err) {
 	                t._triggerEvents = ["error"];
-	                _tEvent(err, rej, true);
+	                if (rej)
+	                    _tEvent(err, rej, true);
 	            });
 	        });
 	    };
@@ -319,14 +322,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                    else {
 	                        var record_1 = {};
-	                        var row_1 = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(function (str) { return str.replace(/^"(.+(?="$))"$/, "$1"); });
+	                        var row_1 = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+	                        row_1 = row_1.map(function (str) { return str.replace(/^"(.+(?="$))"$/, "$1"); });
 	                        fields.forEach(function (f, i) {
 	                            if (row_1[i].indexOf("{") === 0 || row_1[i].indexOf("[") === 0) {
 	                                row_1[i] = JSON.parse(row_1[i].replace(/'/g, ""));
 	                            }
 	                            record_1[f] = row_1[i];
 	                        });
-	                        t.table(t._selectedTable).query("upsert", row_1).exec().then(function () {
+	                        t.table(t._selectedTable).query("upsert", record_1).exec().then(function () {
 	                            resolve();
 	                        });
 	                    }
@@ -344,8 +348,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    return q.type === "select";
 	                }).map(function (q) {
 	                    return q.args ? q.args.map(function (m) {
-	                        return t._models.get(t._selectedTable).filter(function (f) { return f["key"] === m; })[0];
-	                    }) : t._models.get(t._selectedTable);
+	                        return t._models[t._selectedTable].filter(function (f) { return f["key"] === m; })[0];
+	                    }) : t._models[t._selectedTable];
 	                })[0];
 	                if (headers) {
 	                    json.unshift(header.map(function (h) {
@@ -402,55 +406,46 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 3 */
-/***/ function(module, exports) {
-
-	module.exports = __WEBPACK_EXTERNAL_MODULE_3__;
-
-/***/ },
-/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	var index_1 = __webpack_require__(1);
-	var typescript_promise_1 = __webpack_require__(3);
-	var typescript_map_1 = __webpack_require__(2);
+	var typescript_promise_1 = __webpack_require__(2);
 	var SomeSQLMemDB = (function () {
 	    function SomeSQLMemDB() {
 	        var t = this;
-	        t._filters = new typescript_map_1.TSMap();
-	        t._tables = new typescript_map_1.TSMap();
-	        t._cacheIndex = new typescript_map_1.TSMap();
-	        t._cache = new typescript_map_1.TSMap();
-	        t._cacheQueryIndex = new typescript_map_1.TSMap();
+	        t._filters = {};
+	        t._tables = {};
+	        t._cacheIndex = {};
+	        t._cache = {};
+	        t._cacheQueryIndex = {};
 	        t._pendingQuerys = [];
 	        t._initFilters();
 	    }
 	    SomeSQLMemDB.prototype.connect = function (models, actions, views, filters, preCustom, callback) {
 	        var t = this;
-	        models.forEach(function (model, table) {
-	            t._newModel(table, model);
-	        });
-	        filters.forEach(function (func, name) {
-	            t._filters.set(name, func);
-	        });
+	        for (var tableName in models) {
+	            t._newModel(tableName, models[tableName]);
+	        }
+	        t._filters = filters;
 	        callback();
 	    };
-	    SomeSQLMemDB.prototype._newModel = function (table, args) {
-	        this._cache.set(table, new typescript_map_1.TSMap());
-	        this._cacheIndex.set(table, new typescript_map_1.TSMap());
-	        this._tables.set(table, new _memDB_Table(args));
+	    SomeSQLMemDB.prototype._newModel = function (table, dataModel) {
+	        this._cache[table] = {};
+	        this._cacheIndex[table] = {};
+	        this._tables[table] = new _memDB_Table(dataModel);
 	    };
 	    SomeSQLMemDB.prototype.exec = function (table, query, viewOrAction, onSuccess, onFail) {
 	        var t = this;
-	        if (t._act != null) {
+	        if (t._act !== undefined) {
 	            t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
 	            return;
 	        }
 	        t._selectedTable = table;
 	        t._mod = [];
-	        t._act = null;
+	        t._act = undefined;
 	        t._cacheKey = index_1.SomeSQLInstance.hash(JSON.stringify(query));
-	        t._cacheQueryIndex.set(t._cacheKey, query);
+	        t._cacheQueryIndex[t._cacheKey] = query;
 	        typescript_promise_1.TSPromise.all(query.map(function (q) {
 	            return new typescript_promise_1.TSPromise(function (resolve, reject) {
 	                t._query(q, resolve);
@@ -458,7 +453,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        })).then(function () {
 	            t._exec(function (args) {
 	                onSuccess(args);
-	                t._act = null;
+	                t._act = undefined;
 	                if (t._pendingQuerys.length) {
 	                    t.exec.apply(t, t._pendingQuerys.pop());
 	                }
@@ -477,30 +472,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	    SomeSQLMemDB.prototype._initFilters = function () {
 	        var t = this;
 	        var f = t._filters;
-	        f.set("sum", function (rows) {
-	            return [{ "sum": rows.map(function (r) { return r[t._act.args[0]]; }).reduce(function (a, b) { return a + b; }, 0) }];
-	        });
-	        f.set("first", function (rows) {
+	        f["sum"] = function (rows) {
+	            return [{ "sum": rows.map(function (r) {
+	                        return t._act ? r[t._act.args[0]] : 0;
+	                    }).reduce(function (a, b) { return a + b; }, 0) }];
+	        };
+	        f["first"] = function (rows) {
 	            return [rows[0]];
-	        });
-	        f.set("last", function (rows) {
+	        };
+	        f["last"] = function (rows) {
 	            return [rows.pop()];
-	        });
-	        f.set("min", function (rows) {
-	            return [{ "min": rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a < b ? -1 : 1; })[0] }];
-	        });
-	        f.set("max", function (rows) {
-	            return [{ "max": rows.map(function (r) { return r[t._act.args[0]]; }).sort(function (a, b) { return a > b ? -1 : 1; })[0] }];
-	        });
-	        f.set("average", function (rows) {
+	        };
+	        f["min"] = function (rows) {
+	            return [{ "min": rows.map(function (r) {
+	                        return t._act ? r[t._act.args[0]] : 0;
+	                    }).sort(function (a, b) { return a < b ? -1 : 1; })[0] }];
+	        };
+	        f["max"] = function (rows) {
+	            return [{ "max": rows.map(function (r) {
+	                        return t._act ? r[t._act.args[0]] : 0;
+	                    }).sort(function (a, b) { return a > b ? -1 : 1; })[0] }];
+	        };
+	        f["average"] = function (rows) {
 	            return [{ "average": t._doFilter("sum", rows)[0].sum / rows.length }];
-	        });
-	        f.set("count", function (rows) {
+	        };
+	        f["count"] = function (rows) {
 	            return [{ "length": rows.length }];
-	        });
+	        };
 	    };
 	    SomeSQLMemDB.prototype._doFilter = function (filterName, rows, filterArgs) {
-	        return this._filters.get(filterName).apply(this, [rows, filterArgs]);
+	        return this._filters[filterName].apply(this, [rows, filterArgs]);
 	    };
 	    SomeSQLMemDB.prototype._runFilters = function (dbRows) {
 	        var t = this;
@@ -511,8 +512,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    SomeSQLMemDB.prototype._removeCacheFromKeys = function (affectedKeys) {
 	        var t = this;
-	        t._cache.set(t._selectedTable, new typescript_map_1.TSMap());
-	        t._cacheIndex.set(t._selectedTable, new typescript_map_1.TSMap());
+	        t._cache[t._selectedTable] = {};
+	        t._cacheIndex[t._selectedTable] = {};
 	    };
 	    SomeSQLMemDB.prototype._exec = function (callBack) {
 	        var t = this;
@@ -520,8 +521,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return v.type === "where";
 	        });
 	        var _whereStatement = _hasWhere.length ? _hasWhere[0].args : undefined;
+	        if (!t._act)
+	            throw Error("No action specified!");
 	        var qArgs = t._act.args;
-	        var ta = t._tables.get(t._selectedTable);
+	        var ta = t._tables[t._selectedTable];
 	        var msg = 0;
 	        var whereTable;
 	        switch (t._act.type) {
@@ -531,7 +534,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    var affectedKeys_1 = [];
 	                    whereTable._index.forEach(function (idx) {
 	                        for (var key in qArgs) {
-	                            ta._rows.get(idx)[key] = qArgs[key];
+	                            ta._rows[idx][key] = qArgs[key];
 	                        }
 	                        affectedKeys_1.push(idx);
 	                        msg++;
@@ -541,14 +544,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	                else {
 	                    ta._add(qArgs);
 	                    msg++;
-	                    t._cache.set(t._selectedTable, new typescript_map_1.TSMap());
-	                    t._cacheIndex.set(t._selectedTable, new typescript_map_1.TSMap());
+	                    t._cache[t._selectedTable] = {};
+	                    t._cacheIndex[t._selectedTable] = {};
 	                }
 	                callBack([{ result: msg + " row(s) upserted" }]);
 	                break;
 	            case "select":
-	                if (t._cache.get(t._selectedTable).has(t._cacheKey)) {
-	                    callBack(t._cache.get(t._selectedTable).get(t._cacheKey));
+	                if (t._cache[t._selectedTable][t._cacheKey]) {
+	                    callBack(t._cache[t._selectedTable][t._cacheKey]);
 	                    return;
 	                }
 	                if (_whereStatement) {
@@ -564,31 +567,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	                var result = mods_1.reduce(function (prev, cur, i) {
 	                    switch (mods_1[i]) {
 	                        case "ordr":
-	                            if (getMod_1("orderby")) {
-	                                var orderBy_1 = new typescript_map_1.TSMap();
-	                                orderBy_1.fromJSON(getMod_1("orderby").args);
+	                            var orderMod = getMod_1("orderby");
+	                            if (orderMod) {
+	                                var orderArgs_1 = orderMod.args;
 	                                return prev.sort(function (a, b) {
-	                                    return orderBy_1.keys().reduce(function (prev, cur, i) {
-	                                        var column = orderBy_1.keys()[i];
+	                                    var keys = [];
+	                                    for (var _i = 0, orderArgs_2 = orderArgs_1; _i < orderArgs_2.length; _i++) {
+	                                        var key = orderArgs_2[_i];
+	                                        keys.push(key);
+	                                    }
+	                                    return keys.reduce(function (prev, cur, i) {
+	                                        var column = keys[i];
 	                                        if (a[column] === b[column]) {
 	                                            return 0 + prev;
 	                                        }
 	                                        else {
-	                                            return ((a[column] > b[column] ? 1 : -1) * (orderBy_1.get(column) === "asc" ? 1 : -1)) + prev;
+	                                            return ((a[column] > b[column] ? 1 : -1) * (orderArgs_1[column] === "asc" ? 1 : -1)) + prev;
 	                                        }
 	                                    }, 0);
 	                                });
 	                            }
 	                        case "ofs":
-	                            if (getMod_1("offset")) {
-	                                var offset_1 = getMod_1("offset").args;
+	                            var offsetMod = getMod_1("offset");
+	                            if (offsetMod) {
+	                                var offset_1 = offsetMod.args;
 	                                return prev.filter(function (row, index) {
 	                                    return index >= offset_1;
 	                                });
 	                            }
 	                        case "lmt":
-	                            if (getMod_1("limit")) {
-	                                var limit_1 = getMod_1("limit").args;
+	                            var limitMod = getMod_1("limit");
+	                            if (limitMod) {
+	                                var limit_1 = limitMod.args;
 	                                return prev.filter(function (row, index) {
 	                                    return index < limit_1;
 	                                });
@@ -609,10 +619,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }, whereTable._table());
 	                var filterEffect = t._runFilters(result);
-	                t._cache.get(t._selectedTable).set(t._cacheKey, filterEffect);
-	                t._cacheIndex.get(t._selectedTable).set(t._cacheKey, result.map(function (row) {
+	                t._cache[t._selectedTable][t._cacheKey] = filterEffect;
+	                t._cacheIndex[t._selectedTable][t._cacheKey] = result.map(function (row) {
 	                    return row[whereTable._primaryKey];
-	                }));
+	                });
 	                callBack(filterEffect);
 	                break;
 	            case "delete":
@@ -627,12 +637,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    callBack([{ result: whereTable_1.length + " row(s) deleted" }]);
 	                }
 	                else {
-	                    t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
+	                    t._newModel(t._selectedTable, t._tables[t._selectedTable]._model);
 	                    callBack([{ result: "Table Dropped" }]);
 	                }
 	                break;
 	            case "drop":
-	                t._newModel(t._selectedTable, t._tables.get(t._selectedTable)._model);
+	                t._newModel(t._selectedTable, t._tables[t._selectedTable]._model);
 	                callBack([{ result: "Table Dropped" }]);
 	                break;
 	        }
@@ -645,7 +655,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	            else {
 	                var ptr_1 = 0;
-	                var compare_1 = null;
+	                var compare_1;
 	                return whereStatement.map(function (statement) {
 	                    return t._singleWhereResolve(table._clone(), statement);
 	                }).reduce(function (prev, cur, i) {
@@ -661,6 +671,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            default: return prev;
 	                        }
 	                    }
+	                    return prev;
 	                });
 	            }
 	        }
@@ -674,7 +685,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var operator = whereStatement[1];
 	        var right = whereStatement[2];
 	        table._index = table._index.filter(function (v) {
-	            return t._compare(right, operator, table._rows.get(v)[whereStatement[0]]) === 0 ? true : false;
+	            return t._compare(right, operator, table._rows[v][whereStatement[0]]) === 0 ? true : false;
 	        });
 	        return table;
 	    };
@@ -700,11 +711,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        t._model = model;
 	        t._index = index || [];
-	        t._rows = new typescript_map_1.TSMap();
+	        t._rows = {};
 	        t._incriment = 1;
 	        t.length = 0;
 	        t._primaryKey = t._model.reduce(function (prev, cur) {
-	            if (cur["props"] && cur["props"].indexOf("pk") !== -1) {
+	            if (cur.props && cur.props.indexOf("pk") !== -1) {
 	                t._pkType = cur["type"];
 	                return cur["key"];
 	            }
@@ -714,14 +725,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }, "");
 	        if (table) {
 	            table.forEach(function (row) {
-	                t._rows.set(row[t._primaryKey], row);
+	                t._rows[row[t._primaryKey]] = row;
 	            });
 	        }
 	    }
 	    _memDB_Table.prototype._table = function () {
 	        var t = this;
 	        return t._index.map(function (i) {
-	            return t._rows.get(i);
+	            return t._rows[i];
 	        });
 	    };
 	    _memDB_Table._detach = function (input) {
@@ -744,11 +755,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    break;
 	            }
 	            t._index.push(data[t._primaryKey]);
-	            t._rows.set(data[t._primaryKey], data);
+	            t._rows[data[t._primaryKey]] = data;
 	            t.length = t._index.length;
 	        }
 	        else {
-	            t._rows.set(data[t._primaryKey], data);
+	            t._rows[data[t._primaryKey]] = data;
 	        }
 	    };
 	    _memDB_Table.prototype._remove = function (index) {
@@ -773,8 +784,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var found;
 	            tables[1]._index.forEach(function (idx2) {
 	                if (found === undefined) {
-	                    if (tables[0]._rows.get(idx)[joinKs[0]] === tables[1]._rows.get(idx)[joinKs[1]])
-	                        found = tables[1]._rows.get(idx);
+	                    if (tables[0]._rows[idx][joinKs[0]] === tables[1]._rows[idx][joinKs[1]])
+	                        found = tables[1]._rows[idx];
 	                }
 	            });
 	            if (found === undefined) {
@@ -782,6 +793,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    case "inner":
 	                        tables[0]._remove(idx);
 	                        break;
+	                }
+	            }
+	            else {
+	                switch (type) {
 	                    case "outer":
 	                        tables[1]._add(found);
 	                        break;

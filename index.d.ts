@@ -1,5 +1,14 @@
-import { TSMap } from "typescript-map";
 import { TSPromise } from "typescript-promise";
+/**
+ * Standard object placeholder with string key.
+ *
+ * @export
+ * @interface StdObject
+ * @template T
+ */
+export interface StdObject<T> {
+    [key: string]: T;
+}
 /**
  * This is the format used for actions and views
  *
@@ -50,6 +59,22 @@ export interface DatabaseEvent {
  * @class SomeSQLInstance
  */
 export declare class SomeSQLInstance {
+    /**
+     * The callbacks for events
+     *
+     * @private
+     * @type {StdObject<StdObject<Array<Function>>>}
+     * @memberOf SomeSQLInstance
+     */
+    private _callbacks;
+    /**
+     * Holds a map of the current views for this database.
+     *
+     * @private
+     * @type {StdObject<Array<ActionOrView>>}
+     * @memberOf SomeSQLInstance
+     */
+    private _views;
     constructor();
     /**
      * Changes the table pointer to a new table.
@@ -485,17 +510,17 @@ export interface SomeSQLBackend {
      *
      * The "preCustom" var contains an array of calls made to the "custom" method before connect() was called.  All subsequent custom() calls will pass directly to the database "custom()" method.
      *
-     * @param {TSMap<string, Array<Object>>} models
-     * @param {TSMap<string, Array<ActionOrView>>} actions
-     * @param {TSMap<string, Array<ActionOrView>>} views
-     * @param {TSMap<string, Function>} filters
+     * @param {StdObject<Array<Object>>} models
+     * @param {StdObject<Array<ActionOrView>>} actions
+     * @param {StdObject<Array<ActionOrView>>} views
+     * @param {StdObject<Function>} filters
      * @param {Array<any>} extendCalls
      * @param {Function} onSuccess
      * @param {Function} [onFail]
      *
      * @memberOf SomeSQLBackend
      */
-    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, extendCalls: Array<any>, onSuccess: Function, onFail?: Function): void;
+    connect(models: StdObject<Array<Object>>, actions: StdObject<Array<ActionOrView>>, views: StdObject<Array<ActionOrView>>, filters: StdObject<Function>, extendCalls: Array<any>, onSuccess: Function, onFail?: Function): void;
     /**
      * Executes a specific query on the database with a specific table
      *

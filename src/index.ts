@@ -1,6 +1,16 @@
-import { TSMap } from "typescript-map";
 import { TSPromise } from "typescript-promise";
 import { SomeSQLMemDB } from "./memory-db";
+
+/**
+ * Standard object placeholder with string key.
+ * 
+ * @export
+ * @interface StdObject
+ * @template T
+ */
+export interface StdObject<T> {
+    [key: string]: T;
+}
 
 /**
  * This is the format used for actions and views
@@ -87,15 +97,14 @@ export class SomeSQLInstance {
      */
     private _backend: SomeSQLBackend;
 
-
     /**
      * The callbacks for events
      * 
-     * @internal
-     * @type {TSMap<string, TSMap<string, Array<Function>>>}
+     * @private
+     * @type {StdObject<StdObject<Array<Function>>>}
      * @memberOf SomeSQLInstance
      */
-    private _callbacks: TSMap<string, TSMap<string, Array<Function>>>;
+    private _callbacks: StdObject<StdObject<Array<Function>>>;
 
 
     /**
@@ -110,40 +119,40 @@ export class SomeSQLInstance {
     /**
      * Holds a map of the current views for this database.
      * 
-     * @internal
-     * @type {TSMap<string, Array<ActionOrView>>}
+     * @private
+     * @type {StdObject<Array<ActionOrView>>}
      * @memberOf SomeSQLInstance
      */
-    private _views: TSMap<string, Array<ActionOrView>>;
+    private _views: StdObject<Array<ActionOrView>>;
 
     /**
      * Holds a map of the current actions for this database.
      * 
      * @internal
-     * @type {TSMap<string, Array<ActionOrView>>}
+     * @type {StdObject<Array<ActionOrView>>}
      * @memberOf SomeSQLInstance
      */
-    private _actions: TSMap<string, Array<ActionOrView>>;
+    private _actions: StdObject<Array<ActionOrView>>;
 
 
     /**
      * A map containing the models
      * 
      * @internal
-     * @type {TSMap<string, Array<DataModel>>}
+     * @type {StdObject<Array<DataModel>>}
      * @memberOf SomeSQLInstance
      */
-    private _models: TSMap<string, Array<DataModel>>;
+    private _models: StdObject<Array<DataModel>>;
 
 
     /**
      * An array containing a temporary list of events to trigger
      * 
      * @internal
-     * @type {Array<string>}
+     * @type {Array<"change"|"delete"|"upsert"|"drop"|"select"|"error">}
      * @memberOf SomeSQLInstance
      */
-    private _triggerEvents: Array<string>;
+    private _triggerEvents: Array<"change"|"delete"|"upsert"|"drop"|"select"|"error">;
 
 
     /**
@@ -153,17 +162,17 @@ export class SomeSQLInstance {
      * @type {string}
      * @memberOf SomeSQLInstance
      */
-    private _activeActionOrView: string;
+    private _activeActionOrView: string|undefined;
 
 
     /**
      * Holds custom filters implimented by the user
      * 
      * @internal
-     * @type {TSMap<string, Function>}
+     * @type {StdObject<Function>}
      * @memberOf SomeSQLInstance
      */
-    private _filters: TSMap<string, Function>;
+    private _filters: StdObject<Function>;
 
 
 
@@ -188,20 +197,20 @@ export class SomeSQLInstance {
     constructor() {
         let t = this;
 
-        t._actions = new TSMap<string, Array<any>>();
-        t._views = new TSMap<string, Array<any>>();
-        t._models = new TSMap<string, Array<DataModel>>();
+        t._actions = {};
+        t._views = {};
+        t._models = {};
         t._query = [];
         t._preConnectExtend = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 
-        t._callbacks = new TSMap<string, TSMap<string, Array<Function>>>();
-        t._callbacks.set("*", new TSMap<string, Array<Function>>());
+        t._callbacks = {};
+        t._callbacks["*"] = {};
         t._events.forEach((e) => {
-            t._callbacks.get("*").set(e, []);
+            t._callbacks["*"][e] = [];
         });
 
-        t._filters = new TSMap<string, Function>();
+        t._filters = {};
         t._permanentFilters = [];
     }
 
@@ -231,10 +240,10 @@ export class SomeSQLInstance {
         let t = this;
         t._backend = backend || new SomeSQLMemDB();
         return new TSPromise((res, rej) => {
-            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, (result) => {
+            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, (result: any) => {
                 res(result, t);
-            }, (rejected) => {
-                rej(rejected, t);
+            }, (rejected: any) => {
+                if (rej) rej(rejected, t);
             });
         });
     }
@@ -253,15 +262,15 @@ export class SomeSQLInstance {
         let t = this;
         let l = t._selectedTable;
 
-        if (!t._callbacks.get(l)) {
+        if (!t._callbacks[l]) {
             t._events.forEach((v) => {
-                t._callbacks.get(l).set(v, []);
+                t._callbacks[l][v] = [];
             });
         }
 
         actions.split(" ").forEach((a) => {
             if (t._events.indexOf(a) !== -1) {
-                t._callbacks.get(l).get(a).push(callBack);
+                t._callbacks[l][a].push(callBack);
             }
         });
         return t;
@@ -276,14 +285,13 @@ export class SomeSQLInstance {
 	 * @memberOf SomeSQLInstance
 	 */
     public off(callBack: Function): SomeSQLInstance {
-        this._callbacks.forEach((tables) => {
-            tables.forEach((actions) => {
-                actions.filter((cBs) => {
+        for (let key in this._callbacks) {
+            for (let key2 in this._callbacks[key]) {
+                this._callbacks[key][key2].filter((cBs) => {
                     return cBs !== callBack;
                 });
-            });
-        });
-
+            }
+        }
         return this;
     }
 
@@ -324,14 +332,14 @@ export class SomeSQLInstance {
     public model(dataModel: Array<DataModel>): SomeSQLInstance {
         let t = this;
         let l = t._selectedTable;
-        t._callbacks.set(l, new TSMap<string, Array<Function>>());
-        t._callbacks.get(l).set("*", []);
+        t._callbacks[l] = {};
+        t._callbacks[l]["*"] = [];
         t._events.forEach((e) => {
-            t._callbacks.get(l).set(e, []);
+            t._callbacks[l][e] = [];
         });
-        t._models.set(l, dataModel);
-        t._views.set(l, []);
-        t._actions.set(l, []);
+        t._models[l] = dataModel;
+        t._views[l] = [];
+        t._actions[l] = [];
         return t;
     }
 
@@ -390,7 +398,7 @@ export class SomeSQLInstance {
 	 * @memberOf SomeSQLInstance
 	 */
     public views(viewArray: Array<ActionOrView>): SomeSQLInstance {
-        return this._views.set(this._selectedTable, viewArray), this;
+        return this._views[this._selectedTable] = viewArray, this;
     }
 
 
@@ -413,15 +421,15 @@ export class SomeSQLInstance {
     public getView(viewName: string, viewArgs: any = {}): TSPromise<Array<Object>> {
         let t = this;
         let l = t._selectedTable;
-        let selView;
-        t._views.get(l).forEach((view) => {
+        let selView: ActionOrView | undefined;
+        t._views[l].forEach((view) => {
             if (view.name === viewName) {
                 selView = view;
             }
         });
         if (!selView) throw Error("View does not exist");
         t._activeActionOrView = viewName;
-        return selView.call.apply(t, [t._cleanArgs(selView.args, viewArgs), t]);
+        return selView.call.apply(t, [t._cleanArgs(selView.args ? selView.args : [], viewArgs), t]);
     }
 
 
@@ -435,13 +443,13 @@ export class SomeSQLInstance {
      * 
      * @memberOf SomeSQLInstance
      */
-    private _cleanArgs(argDeclarations: Array<string>, args: Object): Object {
+    private _cleanArgs(argDeclarations: Array<string>, args: StdObject<any>): StdObject<any> {
         let t = this;
         let l = t._selectedTable;
-        let a = {};
+        let a: StdObject<any> = {};
         if (argDeclarations) {
             argDeclarations.forEach((k) => {
-                let k2 = k.split(":");
+                let k2: Array<string> = k.split(":");
                 if (k2.length > 1) {
                     a[k2[0]] = t._cast(k2[1], args[k2[0]] || null);
                 } else {
@@ -526,7 +534,7 @@ export class SomeSQLInstance {
 	 * @memberOf SomeSQLInstance
 	 */
     public actions(actionArray: Array<ActionOrView>): SomeSQLInstance {
-        return this._actions.set(this._selectedTable, actionArray), this;
+        return this._actions[this._selectedTable] = actionArray, this;
     }
 
 
@@ -549,15 +557,15 @@ export class SomeSQLInstance {
     public doAction(actionName: string, actionArgs: any = {}): TSPromise<Array<Object>> {
         let t = this;
         let l = t._selectedTable;
-        let selAction;
-        t._actions.get(l).forEach((action) => {
+        let selAction: ActionOrView | undefined;
+        t._actions[l].forEach((action) => {
             if (action.name === actionName) {
                 selAction = action;
             }
         });
         if (!selAction) throw Error("Action does not exist");
         t._activeActionOrView = actionName;
-        return selAction.call.apply(t, [t._cleanArgs(selAction.args, actionArgs), t]);
+        return selAction.call.apply(t, [t._cleanArgs(selAction.args ? selAction.args : [], actionArgs), t]);
     }
 
     /**
@@ -582,7 +590,7 @@ export class SomeSQLInstance {
      * @memberOf SomeSQLInstance
      */
     public addFilter(filterName: string, filterFunction: (rows: Array<Object>) => Array<Object>): SomeSQLInstance {
-        return this._filters.set(filterName, filterFunction), this;
+        return this._filters[filterName] = filterFunction, this;
     }
 
 
@@ -779,11 +787,11 @@ export class SomeSQLInstance {
             }
         }).reduce((a, b) => a.concat(b));
 
-        let triggerEvents = (eventData: Object): void => {
+        let triggerEvents = (eventData: DatabaseEvent): void => {
             t._triggerEvents.forEach((e) => {
-                t._callbacks.get(_t).get(e).concat(t._callbacks.get(_t).get("*")).forEach((cb) => {
-                    eventData["name"] = e;
-                    eventData["actionOrView"] = t._activeActionOrView;
+                t._callbacks[_t][e].concat(t._callbacks[_t]["*"]).forEach((cb) => {
+                    eventData.name = e;
+                    eventData.actionOrView = t._activeActionOrView || "";
                     cb.apply(t, [eventData, t]);
                 });
             });
@@ -792,14 +800,16 @@ export class SomeSQLInstance {
 
         return new TSPromise((res, rej) => {
 
-            let _tEvent = function (data, callBack, isError) {
+            let _tEvent = (data: Array<Object>, callBack: Function, isError: Boolean) => {
                 if (t._permanentFilters.length && isError !== true) {
                     data = t._permanentFilters.reduce((prev, cur, i) => {
-                        return t._filters.get(t._permanentFilters[i]).apply(t, [data]);
+                        return t._filters[t._permanentFilters[i]].apply(t, [data]);
                     }, data);
                 }
 
                 triggerEvents({
+                    name: "error",
+                    actionOrView: "",
                     table: _t,
                     query: t._query,
                     time: new Date().getTime(),
@@ -808,11 +818,11 @@ export class SomeSQLInstance {
                 callBack(data, t);
             };
 
-            t._backend.exec(_t, t._query, t._activeActionOrView, (rows) => {
+            t._backend.exec(_t, t._query, t._activeActionOrView || "", (rows) => {
                 _tEvent(rows, res, false);
-            }, (err) => {
+            }, (err: any) => {
                 t._triggerEvents = ["error"];
-                _tEvent(err, rej, true);
+                if (rej) _tEvent(err, rej, true);
             });
         });
     }
@@ -876,7 +886,7 @@ export class SomeSQLInstance {
      */
     public loadCSV(csv: string): TSPromise<Array<Object>> {
         let t = this;
-        let fields = [];
+        let fields: Array<string> = [];
 
         return new TSPromise((res, rej) => {
             TSPromise.all(csv.split("\n").map((v, k) => {
@@ -885,15 +895,16 @@ export class SomeSQLInstance {
                         fields = v.split(",");
                         resolve();
                     } else {
-                        let record = {};
-                        let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g).map(str => str.replace(/^"(.+(?="$))"$/, "$1"));
+                        let record: StdObject<any> = {};
+                        let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                        row = row.map(str => str.replace(/^"(.+(?="$))"$/, "$1"));
                         fields.forEach((f, i) => {
                             if (row[i].indexOf("{") === 0 || row[i].indexOf("[") === 0) {
                                 row[i] = JSON.parse(row[i].replace(/'/g, ""));
                             }
                             record[f] = row[i];
                         });
-                        t.table(t._selectedTable).query("upsert", row).exec().then(() => {
+                        t.table(t._selectedTable).query("upsert", record).exec().then(() => {
                             resolve();
                         });
                     }
@@ -923,8 +934,8 @@ export class SomeSQLInstance {
                     return q.type === "select";
                 }).map((q) => {
                     return q.args ? (<Array<any>>q.args).map((m) => {
-                        return t._models.get(t._selectedTable).filter((f) => f["key"] === m)[0];
-                    }) : t._models.get(t._selectedTable);
+                        return t._models[t._selectedTable].filter((f) => f["key"] === m)[0];
+                    }) : t._models[t._selectedTable];
                 })[0];
 
                 if (headers) {
@@ -933,7 +944,7 @@ export class SomeSQLInstance {
                     }));
                 }
 
-                res(json.map((row, i) => {
+                res(json.map((row: StdObject<any>, i) => {
                     if (headers && i === 0) return row;
                     return header.filter((column) => {
                         return row[column["key"]] ? true : false;
@@ -1005,17 +1016,17 @@ export interface SomeSQLBackend {
      * 
      * The "preCustom" var contains an array of calls made to the "custom" method before connect() was called.  All subsequent custom() calls will pass directly to the database "custom()" method.
      * 
-     * @param {TSMap<string, Array<Object>>} models
-     * @param {TSMap<string, Array<ActionOrView>>} actions
-     * @param {TSMap<string, Array<ActionOrView>>} views
-     * @param {TSMap<string, Function>} filters
+     * @param {StdObject<Array<Object>>} models
+     * @param {StdObject<Array<ActionOrView>>} actions
+     * @param {StdObject<Array<ActionOrView>>} views
+     * @param {StdObject<Function>} filters
      * @param {Array<any>} extendCalls
      * @param {Function} onSuccess
      * @param {Function} [onFail]
      * 
      * @memberOf SomeSQLBackend
      */
-    connect(models: TSMap<string, Array<Object>>, actions: TSMap<string, Array<ActionOrView>>, views: TSMap<string, Array<ActionOrView>>, filters: TSMap<string, Function>, extendCalls: Array<any>, onSuccess: Function, onFail?: Function): void;
+    connect(models: StdObject<Array<Object>>, actions: StdObject<Array<ActionOrView>>, views: StdObject<Array<ActionOrView>>, filters: StdObject<Function>, extendCalls: Array<any>, onSuccess: Function, onFail?: Function): void;
 
 
 
