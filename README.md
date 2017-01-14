@@ -139,10 +139,10 @@ SomeSQL('users').query('select',['name','id']).exec();
 SomeSQL('users').query('select').where(['name','=','scott']).exec() 
 
 // Compound where statement with AND
-SomeSQL('users).query('select').where([['name','=','billy'],'and',['balance','>',20]]).exec();
+SomeSQL('users').query('select').where([['name','=','billy'],'and',['balance','>',20]]).exec();
 
 // Compund where statement with OR
-SomeSQL('users).query('select').where([['name','=','billy'],'or',['balance','>',20]]).exec();
+SomeSQL('users').query('select').where([['name','=','billy'],'or',['balance','>',20]]).exec();
 
 // Order the results by name ascending, then age descending.
 SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() 

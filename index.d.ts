@@ -9,6 +9,7 @@ import { TSPromise } from "typescript-promise";
 export interface ActionOrView {
     name: string;
     args?: Array<string>;
+    extend?: any;
     call: (args?: Object, db?: SomeSQLInstance) => TSPromise<any>;
 }
 /**

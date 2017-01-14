@@ -38,6 +38,18 @@
                 pass:'password',
                 db:'dbname';
             });
+
+            //Mysql Index View
+            {
+                name: 'get_user_by_name',
+                args: ['name:string'],
+                extend: {
+                    mysql-index:['name:asc','age']
+                },
+                call: function(args, db) {
+                    return db.query('select').where(['name','=',args.name]).exec();
+                }
+            },
             
             //Declare models, actions, and views
 

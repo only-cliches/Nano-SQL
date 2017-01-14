@@ -11,6 +11,7 @@ import { SomeSQLMemDB } from "./memory-db";
 export interface ActionOrView {
     name: string;
     args?: Array<string>;
+    extend?: any;
     call: (args?: Object, db?: SomeSQLInstance) => TSPromise<any>;
 }
 
@@ -106,8 +107,6 @@ export class SomeSQLInstance {
      */
     private _events: Array<string>;
 
-
-
     /**
      * Holds a map of the current views for this database.
      * 
@@ -116,8 +115,6 @@ export class SomeSQLInstance {
      * @memberOf SomeSQLInstance
      */
     private _views: TSMap<string, Array<ActionOrView>>;
-
-
 
     /**
      * Holds a map of the current actions for this database.
@@ -234,7 +231,11 @@ export class SomeSQLInstance {
         let t = this;
         t._backend = backend || new SomeSQLMemDB();
         return new TSPromise((res, rej) => {
-            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, res, rej);
+            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, (result) => {
+                res(result, t);
+            }, (rejected) => {
+                rej(rejected, t);
+            });
         });
     }
 

@@ -174,34 +174,34 @@ SomeSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">
 				<p>For example a query to get all rows from the users table looks like this:
 				<code>SomeSQL(&#39;users&#39;).query(&#39;select&#39;).exec()</code></p>
 				<p>Here are some more examples:</p>
-				<pre><code class="lang-typescript">// Get all records but only return the name and id columns
-SomeSQL('users').query('select',['name','id']).exec(); 
+				<pre><code class="lang-typescript"><span class="hljs-comment">// Get all records but only return the name and id columns</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'name'</span>,<span class="hljs-string">'id'</span>]).exec(); 
 
-// only show rows where the name == "scott"
-SomeSQL('users').query('select').where(['name','=','scott']).exec() 
+<span class="hljs-comment">// only show rows where the name == "scott"</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).where([<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'scott'</span>]).exec() 
 
-// Compound where statement with AND
-SomeSQL('users).query('select').where([['name','=','billy'],'and',['balance','&gt;',20]]).exec();
+<span class="hljs-comment">// Compound where statement with AND</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).where([[<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>],<span class="hljs-string">'and'</span>,[<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">20</span>]]).exec();
 
-// Compund where statement with OR
-SomeSQL('users).query('select').where([['name','=','billy'],'or',['balance','&gt;',20]]).exec();
+<span class="hljs-comment">// Compund where statement with OR</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).where([[<span class="hljs-string">'name'</span>,<span class="hljs-string">'='</span>,<span class="hljs-string">'billy'</span>],<span class="hljs-string">'or'</span>,[<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">20</span>]]).exec();
 
-// Order the results by name ascending, then age descending.
-SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() 
+<span class="hljs-comment">// Order the results by name ascending, then age descending.</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).orderBy({name:<span class="hljs-string">'asc'</span>,age:<span class="hljs-string">'desc'</span>}).exec() 
 
-// Limit and Offset
-SomeSQL('users').query('select').limit(20).offset(10).exec();
+<span class="hljs-comment">// Limit and Offset</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>).limit(<span class="hljs-number">20</span>).offset(<span class="hljs-number">10</span>).exec();
 
-// Filters (Must be supported by the database driver)
-SomeSQL('users').query('select',['age']).filter('average').exec();
+<span class="hljs-comment">// Filters (Must be supported by the database driver)</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'age'</span>]).filter(<span class="hljs-string">'average'</span>).exec();
 
-// The Memory DB supports sum, first, last, min, max, average, and count
+<span class="hljs-comment">// The Memory DB supports sum, first, last, min, max, average, and count</span>
 
-// combine any patterns as you'd like.
-SomeSQL('users').query('select',['name']).where(['age','&gt;',20]).orderBy({age:'desc'}).exec() 
+<span class="hljs-comment">// combine any patterns as you'd like.</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'select'</span>,[<span class="hljs-string">'name'</span>]).where([<span class="hljs-string">'age'</span>,<span class="hljs-string">'&gt;'</span>,<span class="hljs-number">20</span>]).orderBy({age:<span class="hljs-string">'desc'</span>}).exec() 
 
-// Where statements work on upserts as well.
-SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','&lt;',0]).exec()
+<span class="hljs-comment">// Where statements work on upserts as well.</span>
+SomeSQL(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">'upsert'</span>,{name:<span class="hljs-string">"Account Closed"</span>}).where([<span class="hljs-string">'balance'</span>,<span class="hljs-string">'&lt;'</span>,<span class="hljs-number">0</span>]).exec()
 </code></pre>
 				<p>Possible query commands are <code>select</code>, <code>drop</code>, <code>upsert</code>, and <code>delete</code>.</p>
 				<p>All calls to the <code>exec()</code> return a promise, with the result of the promise being the response from the database.</p>

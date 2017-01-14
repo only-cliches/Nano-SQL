@@ -1,10 +1,15 @@
 # Change Log
 
+## [0.1.8] 1-7-2017
+- Cleaned up README.
+- Added "db" var to connect promise.
+- Added extend capability to views and actions.
+
 ## [0.1.7] 1-3-2017
 - Cleaned up typings on React Todo example.
 - Removed some unneeded abstractions in the Memory DB
 - Updated to new promise implementation.
-- Upddated README to reflect API changes.
+- Updated README to reflect API changes.
 
 ## [0.1.6] 1-1-2017
 - Added more typings data.

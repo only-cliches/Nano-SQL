@@ -91,7 +91,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var t = this;
 	        t._backend = backend || new memory_db_1.SomeSQLMemDB();
 	        return new typescript_promise_1.TSPromise(function (res, rej) {
-	            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, res, rej);
+	            t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, function (result) {
+	                res(result, t);
+	            }, function (rejected) {
+	                rej(rejected, t);
+	            });
 	        });
 	    };
 	    SomeSQLInstance.prototype.on = function (actions, callBack) {

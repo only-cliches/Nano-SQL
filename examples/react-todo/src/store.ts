@@ -5,8 +5,8 @@ export function initStore() {
     SomeSQL("todos")
     .model([
         {key: "id" ,type: "uuid", props: ["pk"]},
-        {key: "done", type: "bool"},
-        {key: "title", type: "string"}
+        {key: "done", type: "bool", default: false},
+        {key: "title", type: "string", default: ""}
     ])
     .actions([
         {
@@ -14,7 +14,7 @@ export function initStore() {
             args: ["title:string"],
             call: (args, db) => {
                 return db.query("upsert",{
-                    title: args["title"],
+                    title: args.title,
                     done: false,
                 }).exec();
             }
@@ -23,7 +23,7 @@ export function initStore() {
             name: "mark_todo_done",
             args: ["id:string"],
             call: (args, db) => {
-                return db.query("upsert", {done: true}).where(["id", "=", args["id"]]).exec();
+                return db.query("upsert", {done: true}).where(["id", "=", args.id]).exec();
             }
         }
     ])
