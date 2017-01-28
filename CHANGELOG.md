@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.0] 1-28-2017
+- Some size & speed optimizations.
+- Fixed orderby bug.
+
 ## [0.1.9] 1-14-2017
 - Added `strictNullChecks`, `noImplicitAny`, `noImplicitReturns`, and `noImplicitThis` to tsconfig.
 - Made changes to code to remove errors introduced by stricter coding standards.

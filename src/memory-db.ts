@@ -8,13 +8,14 @@ import { TSPromise } from "typescript-promise";
  * @class SomeSQLMemDB
  * @implements {SomeSQLBackend}
  */
-export class SomeSQLMemDB implements SomeSQLBackend {
+// tslint:disable-next-line
+export class _SomeSQLMemDB implements SomeSQLBackend {
 
 
     /**
      * Holds the actual table data.
      * 
-     * @private
+     * @internal
      * @type {StdObject<_memDB_Table>}
      * @memberOf SomeSQLMemDB
      */
@@ -227,33 +228,34 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      */
     private _initFilters() {
         let t = this;
-        let f = t._filters;
-        f["sum"] = (rows: Array<StdObject<any>>) => {
-            return [{"sum": rows.map((r: StdObject<any>) => {
-                    return t._act ? r[t._act.args[0]] : 0;
-                }).reduce((a, b) => a + b, 0)}];
-        };
-        f["first"] = (rows: Array<StdObject<any>>) => {
-            return [rows[0]];
-        };
-        f["last"] = (rows: Array<StdObject<any>>) => {
-            return [rows.pop()];
-        };
-        f["min"] = (rows: Array<StdObject<any>>) => {
-            return [{"min": rows.map((r: StdObject<any>) => {
-                    return t._act ? r[t._act.args[0]] : 0;
-                }).sort((a, b) => a < b ? -1 : 1)[0]}];
-        };
-        f["max"] = (rows: Array<StdObject<any>>) => {
-            return [{"max": rows.map((r: StdObject<any>) => {
-                    return t._act ? r[t._act.args[0]] : 0;
-                }).sort((a, b) => a > b ? -1 : 1)[0]}];
-        };
-        f["average"] = (rows: Array<StdObject<any>>) => {
-            return [{"average": t._doFilter("sum", rows)[0].sum / rows.length}];
-        };
-        f["count"] = (rows: Array<StdObject<any>>) => {
-            return [{"length": rows.length}];
+        t._filters = {
+            "sum": (rows: Array<StdObject<any>>) => {
+                return [{"sum": rows.map((r: StdObject<any>) => {
+                        return t._act ? r[t._act.args[0]] : 0;
+                    }).reduce((a, b) => a + b, 0)}];
+            },
+            "first": (rows: Array<StdObject<any>>) => {
+                return [rows[0]];
+            },
+            "last": (rows: Array<StdObject<any>>) => {
+                return [rows.pop()];
+            },
+            "min": (rows: Array<StdObject<any>>) => {
+                return [{"min": rows.map((r: StdObject<any>) => {
+                        return t._act ? r[t._act.args[0]] : 0;
+                    }).sort((a, b) => a < b ? -1 : 1)[0]}];
+            },
+            "max": (rows: Array<StdObject<any>>) => {
+                return [{"max": rows.map((r: StdObject<any>) => {
+                        return t._act ? r[t._act.args[0]] : 0;
+                    }).sort((a, b) => a > b ? -1 : 1)[0]}];
+            },
+            "average": (rows: Array<StdObject<any>>) => {
+                return [{"average": t._doFilter("sum", rows)[0].sum / rows.length}];
+            },
+            "count": (rows: Array<StdObject<any>>) => {
+                return [{"length": rows.length}];
+            }
         };
     }
 
@@ -384,7 +386,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                     whereTable = ta._clone();
                 }
 
-                let mods: Array<any> = ["ordr", "ofs", "lmt", "clms"];
+                let mods: Array<any> = ["or", "of", "lm", "cl"];
 
                 let getMod = (name: string): QueryLine|undefined => {
                     return t._mod.filter((v) => v.type === name).pop();
@@ -392,13 +394,13 @@ export class SomeSQLMemDB implements SomeSQLBackend {
 
                 let result = mods.reduce((prev, cur, i) => {
                     switch (mods[i]) {
-                        case "ordr":
+                        case "or":
                             let orderMod = getMod("orderby");
                             if (orderMod) {
                                 let orderArgs = orderMod.args;
                                 return prev.sort((a: StdObject<any>, b: StdObject<any>) => {
                                     let keys: Array<any> = [];
-                                    for (let key of orderArgs) {
+                                    for (let key in orderArgs) {
                                         keys.push(key);
                                     }
 
@@ -412,7 +414,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                                     }, 0);
                                 });
                             }
-                        case "ofs":
+                        case "of":
                             let offsetMod = getMod("offset");
                             if (offsetMod) {
                                 let offset = offsetMod.args;
@@ -420,7 +422,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                                     return index >= offset;
                                 });
                             }
-                        case "lmt":
+                        case "lm":
                             let limitMod = getMod("limit");
                             if (limitMod) {
                                 let limit = limitMod.args;
@@ -428,10 +430,10 @@ export class SomeSQLMemDB implements SomeSQLBackend {
                                     return index < limit;
                                 });
                             }
-                        case "clms":
+                        case "cl":
                             if (qArgs) {
                                 let columns = ta._model.map((model) => {
-                                    return model["key"];
+                                    return model.key;
                                 }).filter((col) => {
                                     return qArgs.indexOf(col) === -1;
                                 });
@@ -559,6 +561,20 @@ export class SomeSQLMemDB implements SomeSQLBackend {
      * @memberOf SomeSQLMemDB
      */
     private _compare(val1: any, compare: string, val2: any): number {
+        let like = val1.indexOf(val2) === -1 ? 0 : 1;
+        let states: StdObject<number> = {
+            "=": (val2 === val1 ? 0 : 1),
+            ">": (val2 > val1 ? 0 : 1),
+            "<": (val2 < val1 ? 0 : 1),
+            "<=": (val2 <= val1 ? 0 : 1),
+            ">=": (val2 >= val1 ? 0 : 1),
+            "IN": (val1.indexOf(val2) === -1 ? 1 : 0),
+            "NOT IN": (val1.indexOf(val2) === -1 ? 0 : 1),
+            "REGEX": like,
+            "LIKE": like,
+        };
+        return states[compare];
+        /*
         switch (compare) {
             case "=": return val2 === val1 ? 0 : 1;
             case ">": return val2 > val1 ? 0 : 1;
@@ -570,7 +586,7 @@ export class SomeSQLMemDB implements SomeSQLBackend {
             case "REGEX":
             case "LIKE": return val2.search(val1) === -1 ? 1 : 0;
             default: return 0;
-        }
+        }*/
     }
 }
 

@@ -1,5 +1,5 @@
 import { TSPromise } from "typescript-promise";
-import { SomeSQLMemDB } from "./memory-db";
+import { _SomeSQLMemDB } from "./memory-db";
 
 /**
  * Standard object placeholder with string key.
@@ -50,6 +50,13 @@ export interface QueryLine {
     args?: any;
 }
 
+
+/**
+ * Returned by the event listener when it's called.
+ * 
+ * @export
+ * @interface DatabaseEvent
+ */
 export interface DatabaseEvent {
     table: string;
     query: Array<QueryLine>;
@@ -100,7 +107,7 @@ export class SomeSQLInstance {
     /**
      * The callbacks for events
      * 
-     * @private
+     * @internal
      * @type {StdObject<StdObject<Array<Function>>>}
      * @memberOf SomeSQLInstance
      */
@@ -119,7 +126,7 @@ export class SomeSQLInstance {
     /**
      * Holds a map of the current views for this database.
      * 
-     * @private
+     * @internal
      * @type {StdObject<Array<ActionOrView>>}
      * @memberOf SomeSQLInstance
      */
@@ -238,7 +245,7 @@ export class SomeSQLInstance {
      */
     public connect(backend?: SomeSQLBackend): TSPromise<Object | string> {
         let t = this;
-        t._backend = backend || new SomeSQLMemDB();
+        t._backend = backend || new _SomeSQLMemDB();
         return new TSPromise((res, rej) => {
             t._backend.connect(t._models, t._actions, t._views, t._filters, t._preConnectExtend, (result: any) => {
                 res(result, t);
@@ -472,7 +479,17 @@ export class SomeSQLInstance {
      * @memberOf SomeSQLInstance
      */
     private _cast(type: string, val: any): any {
-        switch (["string", "int", "float", "array", "map", "bool"].indexOf(type)) {
+        let obj = JSON.parse(JSON.stringify(val));
+        let types: StdObject<any> = {
+            "string": String(val),
+            "int": parseInt(val),
+            "float": parseFloat(val),
+            "array": obj,
+            "map": obj,
+            "bool": val === true
+        };
+        return types[type];
+        /*switch (["string", "int", "float", "array", "map", "bool"].indexOf(type)) {
             case 0: return String(val);
             case 1: return parseInt(val);
             case 2: return parseFloat(val);
@@ -480,7 +497,7 @@ export class SomeSQLInstance {
             case 4: return JSON.parse(JSON.stringify(val));
             case 5: return val === true;
             default: return "";
-        }
+        }*/
     }
 
 	/**
@@ -1073,7 +1090,7 @@ export interface SomeSQLBackend {
 }
 
 /**
- * @private
+ * @internal
  */
 let _someSQLStatic = new SomeSQLInstance();
 

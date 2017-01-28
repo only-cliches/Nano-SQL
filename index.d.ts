@@ -43,6 +43,12 @@ export interface QueryLine {
     type: string;
     args?: any;
 }
+/**
+ * Returned by the event listener when it's called.
+ *
+ * @export
+ * @interface DatabaseEvent
+ */
 export interface DatabaseEvent {
     table: string;
     query: Array<QueryLine>;
@@ -59,22 +65,6 @@ export interface DatabaseEvent {
  * @class SomeSQLInstance
  */
 export declare class SomeSQLInstance {
-    /**
-     * The callbacks for events
-     *
-     * @private
-     * @type {StdObject<StdObject<Array<Function>>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _callbacks;
-    /**
-     * Holds a map of the current views for this database.
-     *
-     * @private
-     * @type {StdObject<Array<ActionOrView>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _views;
     constructor();
     /**
      * Changes the table pointer to a new table.

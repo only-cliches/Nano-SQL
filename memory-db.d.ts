@@ -6,15 +6,7 @@ import { SomeSQLBackend, ActionOrView, QueryLine, DataModel, StdObject } from ".
  * @class SomeSQLMemDB
  * @implements {SomeSQLBackend}
  */
-export declare class SomeSQLMemDB implements SomeSQLBackend {
-    /**
-     * Holds the actual table data.
-     *
-     * @private
-     * @type {StdObject<_memDB_Table>}
-     * @memberOf SomeSQLMemDB
-     */
-    private _tables;
+export declare class _SomeSQLMemDB implements SomeSQLBackend {
     constructor();
     /**
      * Creates all the tables and prepares the database for use.

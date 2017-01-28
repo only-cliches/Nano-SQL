@@ -175,14 +175,14 @@
             .then(function(result, db) {
                 console.log(result);
                 //return this.query('select').orderBy({name:'desc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
-                return db.query('select',['name','age']).orderBy({name:'asc',age:'asc'}).toCSV();
+                return db.query('select',['name']).orderBy({name:'asc'}).exec();
             })
             .then(function(result, db) {
-                db.query('select').toCSV().then(function(result2) {
+                db.query('select',['name']).orderBy({name:'asc'}).exec().then(function(result2) {
                     console.log('immuTest: ' + (result === result2));
                 });
                 console.log(result);
-                return db.query('select').toCSV();
+                return db.query('select').toCSV(true);
             })  
             .then(function(result, db) {
                 console.log(result);
