@@ -19,7 +19,9 @@ export interface ActionOrView {
     name: string;
     args?: Array<string>;
     extend?: any;
-    call: (args?: Object, db?: SomeSQLInstance) => TSPromise<any>;
+    call: (args?: {
+        [key: string]: any;
+    }, db?: SomeSQLInstance) => TSPromise<any>;
 }
 /**
  * You need an array of these to declare a data model.
@@ -29,7 +31,7 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid";
+    type: "string" | "int" | "float" | "array" | "map" | "bool" | string;
     default?: any;
     props?: Array<any>;
 }
@@ -58,6 +60,24 @@ export interface DatabaseEvent {
     actionOrView: string;
 }
 /**
+ * The arguments used for the join command.
+ *
+ * Type: join type to use
+ * Query: A select query to use for the right side of the join
+ * Where: Conditions to use to merge the data
+ *
+ * @export
+ * @interface JoinArgs
+ */
+export interface JoinArgs {
+    type: "left" | "inner" | "right" | "cross";
+    table: string;
+    where: Array<string>;
+}
+export interface DBRow {
+    [key: string]: any;
+}
+/**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
  *
@@ -65,6 +85,29 @@ export interface DatabaseEvent {
  * @class SomeSQLInstance
  */
 export declare class SomeSQLInstance {
+    /**
+     * Most recent selected table.
+     *
+     * @type {string}
+     * @memberOf SomeSQLInstance
+     */
+    activeTable: string;
+    /**
+     * The backend currently being used
+     *
+     * @public
+     * @type {SomeSQLBackend}
+     * @memberOf SomeSQLInstance
+     */
+    backend: SomeSQLBackend;
+    /**
+     * Holds custom filters implimented by the user
+     *
+     * @private
+     *
+     * @memberOf SomeSQLInstance
+     */
+    private _filters;
     constructor();
     /**
      * Changes the table pointer to a new table.
@@ -117,7 +160,7 @@ export declare class SomeSQLInstance {
      *
      * Please reference the DataModel interface for how to impliment this, a quick example:
      *
-     * ```typescript
+     * ```ts
      * .model([
      *  {key:"id",type:"int",props:["ai","pk"]} //auto incriment and primary key
      *  {key:"name",type:"string"}
@@ -135,7 +178,7 @@ export declare class SomeSQLInstance {
      *
      * Views are created like this:
      *
-     * ```typescript
+     * ```ts
      * .views([
      *  {
      *      name:"view-name",
@@ -157,7 +200,7 @@ export declare class SomeSQLInstance {
      *
      * Then later in your app..
      *
-     * ```typescript
+     * ```ts
      * SomeSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
@@ -165,7 +208,7 @@ export declare class SomeSQLInstance {
      *
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
      *
-     * ```typescript
+     * ```ts
      * .views[{
      *      name:...
      *      args:["name:string","balance:float","active:bool"]
@@ -187,7 +230,7 @@ export declare class SomeSQLInstance {
      * Execute a specific view.  Refernece the "views" function for more description.
      *
      * Example:
-     * ```typescript
+     * ```ts
      * SomeSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
      *  console.log(result) <== view result.
      * })
@@ -204,7 +247,7 @@ export declare class SomeSQLInstance {
      * Declare the actions for the current selected table.  Must be called before connect()
      *
      * Actions are created like this:
-     * ```typescript
+     * ```ts
      * .actions([
      *  {
      *      name:"action-name",
@@ -226,14 +269,14 @@ export declare class SomeSQLInstance {
      *
      * Then later in your app..
      *
-     * ```typescript
+     * ```ts
      * SomeSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
      *
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
-     * ```typescript
+     * ```ts
      * .actions[{
      *      name:...
      *      args:["name:string","balance:float","active:bool"]
@@ -255,7 +298,7 @@ export declare class SomeSQLInstance {
      * Init an action for the current selected table. Reference the "actions" method for more info.
      *
      * Example:
-     * ```typescript
+     * ```ts
      * SomeSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
      *      console.log(result) <== result of your action
      * });
@@ -272,14 +315,14 @@ export declare class SomeSQLInstance {
      * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
      * Example:
      *
-     * ```typescript
+     * ```ts
      * SomeSQL().addFilter('addBalance',function(rows) {
      *      return rows.map((row) => row.balance + 1);
      * })
      * ```
      *
      * Then to use it in a query:
-     * ```typescript
+     * ```ts
      * SomeSQL("users").query("select").filter('addOne').exec();
      * ```
      *
@@ -298,7 +341,7 @@ export declare class SomeSQLInstance {
      * When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.
      *
      * Select examples:
-     * ```typescript
+     * ```ts
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
@@ -308,7 +351,7 @@ export declare class SomeSQLInstance {
      * The second argument of the query with upserts is always an Object of the data to upsert.
      *
      * Upsert Examples:
-     * ```typescript
+     * ```ts
      * .query("upsert",{id:1,username:"Scott"}) //Set username to "Scott" where the row ID is 1.
      * .query("upsert",{username:"Scott"}) //Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.
      * ```
@@ -317,13 +360,13 @@ export declare class SomeSQLInstance {
      * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
      *
      * Delete Examples:
-     * ```typescript
+     * ```ts
      * .query("delete",['balance']) //Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
      * ```
      * Drop is used to completely clear the contents of a database.  There are no arguments.
      *
      * Drop Examples:
-     * ```typescript
+     * ```ts
      * .query("drop")
      * ```
      *
@@ -341,7 +384,7 @@ export declare class SomeSQLInstance {
      *
      * Where Examples:
      *
-     * ```typescript
+     * ```ts
      * .where(['username','=','billy'])
      * .where(['balance','>',20])
      * .where(['catgory','IN',['jeans','shirts']])
@@ -360,7 +403,7 @@ export declare class SomeSQLInstance {
      *
      * Examples:
      *
-     * ```typescript
+     * ```ts
      * .orderBy({username:"asc"}) // order by username column, ascending
      * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
      * ```
@@ -370,11 +413,39 @@ export declare class SomeSQLInstance {
      *
      * @memberOf SomeSQLInstance
      */
-    orderBy(args: Object): SomeSQLInstance;
+    orderBy(args: {
+        [key: string]: "asc" | "desc";
+    }): SomeSQLInstance;
+    /**
+     * Join command.
+     *
+     * Example:
+     *
+     * ```ts
+     *  SomeSQL("orders").query("select",["orders.id","orders.title","users.name"]).join({
+     *      type:"inner",
+     *      query:SomeSQL("users").query("select").exec(),
+     *      where:["orders.customerID","=","user.id"]
+     *  }).exec();
+     *
+     * A few notes on the join command:
+     * 1. You muse use dot notation and both tables in all "where" and "select" arguments
+     * 2. The initial "select" command lets you set what columns will appear in the final query.
+     * 3. The "query" argument lets you determine the data on the right side of the join.
+     * 4. The "where" argument lets you set what conditions the tables are joined on.
+     *
+     * ```
+     *
+     * @param {JoinArgs} args
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    join(args: JoinArgs): SomeSQLInstance;
     /**
      * Limits the result to a specific amount.  Example:
      *
-     * ```typescript
+     * ```ts
      * .limit(20) // Limit to the first 20 results
      * ```
      *
@@ -387,7 +458,7 @@ export declare class SomeSQLInstance {
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
      *
-     * ```typescript
+     * ```ts
      * .offset(10) //Skip the first 10 results.
      * ```
      *
@@ -399,10 +470,10 @@ export declare class SomeSQLInstance {
     offset(args: number): SomeSQLInstance;
     /**
      * Adds a custom filter to the query.  The filter you use MUST be supported by the database driver OR a custom filter you provided before the connect method was called.
-     * The memory DB supports sum, first, last, min, max, average, and count
+     * The built in memory DB supports sum, min, max, average, and count
      *
      * Example:
-     * ```typescript
+     * ```ts
      * //get number of results
      * SomeSQL("users").query("select").filter('count').exec();
      * ```
@@ -415,6 +486,14 @@ export declare class SomeSQLInstance {
      */
     filter(name: string, args?: any): SomeSQLInstance;
     /**
+     * Trigger a database event
+     *
+     * @param {DatabaseEvent} eventData
+     *
+     * @memberOf SomeSQLInstance
+     */
+    triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;
+    /**
      * Executes the current pending query to the db engine.
      *
      * @returns {(TSPromise<Array<Object>>)}
@@ -422,6 +501,15 @@ export declare class SomeSQLInstance {
      * @memberOf SomeSQLInstance
      */
     exec(): TSPromise<Array<Object>>;
+    /**
+     * Configure the database driver, must be called before the connect() method.
+     *
+     * @param {any} args
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    config(args: any): SomeSQLInstance;
     /**
      * Perform a custom action supported by the database driver.
      *
@@ -434,7 +522,7 @@ export declare class SomeSQLInstance {
     /**
      * Load JSON directly into the DB.
      * JSON must be an array of maps, like this:
-     * ```typescript
+     * ```ts
      * [
      *  {"name":"billy","age":20},
      *  {"name":"johnny":"age":30}
@@ -467,28 +555,37 @@ export declare class SomeSQLInstance {
      * @memberOf SomeSQLInstance
      */
     toCSV(headers?: boolean): TSPromise<string>;
-    /**
-     * Generate a Psudo Random UUID
-     * Stolen shamelessly from http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
-     *
-     * @static
-     * @param {string} [inputUUID]
-     * @returns {string}
-     *
-     * @memberOf SomeSQLInstance
-     */
-    static uuid(inputUUID?: string): string;
-    /**
-     * Generate a unique hash from a given string.  The same string will always return the same hash.
-     * Stolen shamelessly from http://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript-jquery
-     *
-     * @static
-     * @param {string} str
-     * @returns {string}
-     *
-     * @memberOf SomeSQLInstance
-     */
-    static hash(str: string): string;
+}
+/**
+ * This object is passed into a the database connect function to activate it.
+ *
+ * @export
+ * @interface DBConnect
+ */
+export interface DBConnect {
+    _models: StdObject<Array<DataModel>>;
+    _actions: StdObject<Array<ActionOrView>>;
+    _views: StdObject<Array<ActionOrView>>;
+    _filters: {
+        [key: string]: (rows: Array<DBRow>) => Array<DBRow>;
+    };
+    _extendCalls: Array<any>;
+    _parent: SomeSQLInstance;
+    _onSuccess: Function;
+    _onFail?: Function;
+}
+/**
+ * These variables are passed into the database execution function.
+ *
+ * @export
+ * @interface DBExec
+ */
+export interface DBExec {
+    _table: string;
+    _query: Array<QueryLine>;
+    _viewOrAction: string;
+    _onSuccess: (rows: Array<Object>) => void;
+    _onFail: (rows: Array<Object>) => void;
 }
 export interface SomeSQLBackend {
     /**
@@ -500,54 +597,45 @@ export interface SomeSQLBackend {
      *
      * The "preCustom" var contains an array of calls made to the "custom" method before connect() was called.  All subsequent custom() calls will pass directly to the database "custom()" method.
      *
-     * @param {StdObject<Array<Object>>} models
-     * @param {StdObject<Array<ActionOrView>>} actions
-     * @param {StdObject<Array<ActionOrView>>} views
-     * @param {StdObject<Function>} filters
-     * @param {Array<any>} extendCalls
-     * @param {Function} onSuccess
-     * @param {Function} [onFail]
+     * @param {DBConnect} connectArgs
      *
      * @memberOf SomeSQLBackend
      */
-    connect(models: StdObject<Array<Object>>, actions: StdObject<Array<ActionOrView>>, views: StdObject<Array<ActionOrView>>, filters: StdObject<Function>, extendCalls: Array<any>, onSuccess: Function, onFail?: Function): void;
+    _connect(connectArgs: DBConnect): void;
     /**
      * Executes a specific query on the database with a specific table
      *
      * This is called on "exec()" and all the query parameters are passed in as an array of Objects containing the query parameters.
      *
      * The syntax is pretty straightforward, for example a query like this: SomeSQL("users").query("select").exec() will turn into this:
-     * ```typescript
+     * ```ts
      * [{type:'select',args:undefined}]
      * ```
      *
      * Let's say the person using the system gets crazy and does SomeSQL("users").query("select",['username']).orderBy({name:'desc'}).exec();
      * Then you get this:
-     * ```typescript
+     * ```ts
      * [{type:'select',args:['username']},{type:"orderBy",args:{name:'desc}}]
      * ```
      *
      * With that information and the table name you can create the query as needed, then return it through the onSuccess function.
      *
-     * @param {string} table
-     * @param {Array<QueryLine>} query
-     * @param {string} viewOrAction
-     * @param {(rows: Array<Object>) => void} onSuccess
-     * @param {(rows: Array<Object>) => void} onFail
+     * @param {DBExec} execArgs
      *
      * @memberOf SomeSQLBackend
      */
-    exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: (rows: Array<Object>) => void, onFail: (rows: Array<Object>) => void): void;
+    _exec(execArgs: DBExec): void;
     /**
      * Optional extension for the database.
      * The extend method for SomeSQL is just a passthrough to this method.
      * An entirely different and new API can be built around this.
      *
+     * @param {SomeSQLInstance} instance
      * @param {...Array<any>} args
      * @returns {*}
      *
      * @memberOf SomeSQLBackend
      */
-    extend?(...args: Array<any>): any;
+    _extend?(instance: SomeSQLInstance, ...args: Array<any>): any;
 }
 export declare function SomeSQL(setTablePointer?: string): SomeSQLInstance;

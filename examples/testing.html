@@ -58,7 +58,7 @@
             })
 */
 
- 
+
             SomeSQL('users')//Table/Store Name
             .model([ //Data Model
                 {key:'id',type:'int',props:['pk','ai']},
@@ -99,25 +99,27 @@
                         return db.query('select',['id']).where([['username','=',args.username],'and',['password','=',args.password]]).exec();
                     }
                 }
+            ])
+            SomeSQL("orders").model([
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'title',type:'string'},
+                {key:'userID',type:'int'}
             ]).connect();
+
+
+            SomeSQL("orders").loadJS([
+                {id:1,title:"Test",userID:1},
+                {id:2,title:"Test",userID:1},
+                {id:3,title:"Test",userID:3}
+            ]);
+        
 
             SomeSQL('*').on('change',function(e) {
                 //console.log(e);
             });
 
-            SomeSQL('users')
-            .doAction('add_new_user',{user:{
-                id:null,
-                name:'jim',
-                age:30,
-                balance:25.02,
-                postIDs:[0,20,5],
-                meta:{
-                    favorteColor:'blue'
-                }
-            }})
-            .then(function(result, db) {
-               return db.query('upsert',{
+            SomeSQL('users').loadJS([
+                {
                     id:null,
                     name:'bob',
                     age:20,
@@ -126,11 +128,8 @@
                     meta:{
                         favorteColor:'blue'
                     }
-                }).exec();
-            })
-            .then(function(result, db) {
-               console.log("2",db);
-               return db.query('upsert',{
+                },
+                {
                     id:null,
                     name:'jeb',
                     age:25,
@@ -139,10 +138,8 @@
                     meta:{
                         favorteColor:'blue'
                     }
-                }).exec();
-            })
-            .then(function(result, db) {
-               return db.query('upsert',{
+                },
+                {
                     id:null,
                     name:'kevin',
                     age:50,
@@ -151,10 +148,8 @@
                     meta:{
                         favorteColor:'blue'
                     }
-                }).exec();
-            })
-            .then(function(result, db) {
-               return db.query('upsert',{
+                },
+                {
                     id:null,
                     name:'scott',
                     age:21,
@@ -163,31 +158,40 @@
                     meta:{
                         favorteColor:'blue'
                     }
-                }).exec();
-            })
-            .then(function(result, db) {
-                console.log(result);
-               return db.query('upsert',{balance:50}).where(['name','=','jeb']).exec();
-            })   
-            /*.then(function(result) {
-               return this.query('delete').where(['age','>=',25]).exec();
-            })*/         
-            .then(function(result, db) {
-                console.log(result);
-                //return this.query('select').orderBy({name:'desc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
-                return db.query('select',['name']).orderBy({name:'asc'}).exec();
-            })
-            .then(function(result, db) {
-                db.query('select',['name']).orderBy({name:'asc'}).exec().then(function(result2) {
-                    console.log('immuTest: ' + (result === result2));
+                }
+            ]).then(function() {
+   
+                SomeSQL('users').query("select").exec()
+                .then(function(result, db) {
+                    return db.query('upsert',{balance:50}).where(['name','=','jeb']).exec();
+                })         
+                .then(function(result, db) {
+                    console.log(result);
+                    //return this.query('select').orderBy({name:'desc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
+                    return db.query('select',['name']).orderBy({name:'asc'}).exec();
+                })
+                .then(function(result, db) {
+                    db.query('select',['name']).orderBy({name:'asc'}).exec().then(function(result2) {
+                        console.log('immuTest: ' + (result === result2));
+                    });
+                    console.log(result);
+                    return db.query('select').toCSV(true);
+                })  
+                .then(function(result, db) {
+                    console.log(result);
+                    // return db.query('drop').exec();
+                })
+
+                SomeSQL("orders").query("select").join({
+                    type: "inner",
+                    table: "users",
+                    where: ["orders.userID","=","users.id"]      
+                }).exec().then(function(rows) {
+                    console.log("JOIN", rows);
                 });
-                console.log(result);
-                return db.query('select').toCSV(true);
-            })  
-            .then(function(result, db) {
-                console.log(result);
-                return db.query('drop').exec();
-            })
+            });
+
+
 
             /*
             //Possible ORM Api  
@@ -205,23 +209,13 @@
             SomeSQL("users")
             .model([
                 {key:'id',type:'int,props:['pk','ai']},
-                {key:'posts',type:'array',props:['many::posts']}
-                {key:'dog',type:'int',props:['one::dog']}
+                {key:'posts',type:'relation',props:['many::posts']}
+                {key:'dog',type:'relation',props:['one::dog']}
             ])
             .connect()
-            
-            
+           
 
             */
-/*
-            //Possible Join API
-            SomeSQL('orders').query('select',['orders.id','orders.title','users.name']).join({
-                type:'inner',//left, inner, right
-                query:SomeSQL('users').query('select'),
-                where:[['orders.customerID','=','user.id'],'and',['something','<','somethingElse'],'or',['yourface','=','yourface']]
-            }).exec().then(function(result) {
-
-            });*/
         </script>
     </body>
 </html> 

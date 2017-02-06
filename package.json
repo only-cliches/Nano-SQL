@@ -1,21 +1,24 @@
 {
   "name": "some-sql",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "",
-  "main": "index.js",
+  "main": "node/index.js",
   "scripts": {
     "serve": "bash bin/serve.sh",
-    "build": "bash bin/build.sh"
+    "build": "bash bin/build.sh",
+    "test": "ts-node bin/test.ts"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/ClickSimply/Some-SQL.git"
   },
   "typescript": {
-    "definition": "index.d.ts"
+    "definition": "node/index.d.ts"
   },
   "devDependencies": {
     "ts-loader": "^0.8.2",
+    "ts-node": "^2.0.0",
+    "tslib": "^1.4.0",
     "tslint": "^4.2.0",
     "tslint-loader": "^3.3.0",
     "typedoc": "^0.5.3",
@@ -47,7 +50,6 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "tslib": "^1.4.0",
     "typescript-promise": "^0.2.4"
   }
 }

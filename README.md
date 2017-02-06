@@ -1,34 +1,50 @@
 # SomeSQL
-Small and efficient database abstraction layer.
+Small and efficient database abstraction layer with built in memory store.
 
 I looked everywhere for a data store with these features and couldn't find it:
 
 1. Backend agnostic & can be extended to use any possible backend (like Knex).
-2. Can store data in memory and run in nodeJS (like TaffyDB).
-3. Used a strong data model to force data consistency (like Lovefield DB).
-4. Had RDBMS capability out of the box (also like Lovefield DB).
-5. Allowed you to declare actions and views in a simple way (like Redux).
-6. Returned immutable data sets to improve React performance (like ImmutableJS).
-7. Isn't ten million kilobytes in size (like TaffyDB).
+2. Stores data in memory and compiles to a very small size. (like TaffyDB).
+3. Used the consistency and flexibility of RDBMS dbs. (like Lovefield DB).
+4. Allowed you to declare actions and views in a simple way (like Redux).
+5. Returned immutable data sets to improve React performance (like ImmutableJS).
 
 
 SomeSQL was born to bring all this together.  It's an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.
 
 ## Features
-* Includes a fast built in memory only DB.
-* Handles sorting, filtering, etc.
-* Uses explicit model declarations.
-* Returns immutable objects.
-* Flux like usage pattern.
-* Written in Typescript.
-* Extensible.
-* Under 5KB Gzipped.
+SomeSQL comes to you in two parts minified into a single file.
+
+### General Features
+* Written in TypeScript with 100% type coverage.
+* Works in NodeJS and the Browser.
+* Uses Promises like no one's business.
+
+### 1. Database Abstraction Layer
+* Extensible API to simplify SQL like commands.
+* Built to plug into any database backend.
+* Flux like usage pattern with Actions and Views.
+* Declarative data models.
+* Optional strong typing at run time.
+* Easily handles Joins, Selects, Upserts, Sorting, etc.
+* Import and export CSV and JSON with any database.
+* Uses the built in memory database by default.
+* Listen for change or other events on any or all tables.
+
+### 2. Built In Memory Database Driver
+* Fast and efficient selects and inserts.
+* Only shallow data copies, very memory efficient.
+* Returns immutable sets, optimized for use with ReactJS & Angular 2.
+* Built in, super simple undo/redo.
+
+Oh yeah, and it's all under 6 Kb gzipped. :)
+
 
 ## Simple Usage
 
 1 minute minimal quick start:
 
-```typescript
+```ts
 SomeSQL('users') //  "users" is our table name.
 .model([ // Declare data model
     {key:'id',type:'int',props:['pk','ai']},
@@ -51,12 +67,35 @@ SomeSQL('users') //  "users" is our table name.
 
 ```
 
+## Installation
+
+`npm i some-sql --save`
+
+Using in typescript project:
+
+```ts
+import { SomeSQL } from "some-sql";
+
+SomeSQL("users")...
+```
+
+Using in node:
+
+```js
+var SomeSQL = require("some-sql").SomeSQL;
+
+SomeSQL("users")...
+```
+
+To use directly in the browser, just include the script file found inside the `dist` folder onto your page.
+
+
 ## Detailed Usage
 First you declare your models, connect the db, then you execute queries.
 
 ### Declare DB model
 
-```typescript
+```ts
 SomeSQL('users')// Table/Store Name, required to declare model and attach it to this store.
 .model([ // Data Model, required
     {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
@@ -96,7 +135,7 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
 
 ### Connect the DB and execute queries
 
-```typescript
+```ts
 // Initializes the db.
 SomeSQL().connect().then(function(result, db) {
     // DB ready to use.
@@ -131,7 +170,7 @@ For example a query to get all rows from the users table looks like this:
 
 Here are some more examples:
 
-```typescript
+```ts
 // Get all records but only return the name and id columns
 SomeSQL('users').query('select',['name','id']).exec(); 
 
@@ -150,10 +189,10 @@ SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec()
 // Limit and Offset
 SomeSQL('users').query('select').limit(20).offset(10).exec();
 
-// Filters (Must be supported by the database driver)
+// Filters (Must be supported by the database driver or supplied by the user)
 SomeSQL('users').query('select',['age']).filter('average').exec();
 
-// The Memory DB supports sum, first, last, min, max, average, and count
+// The Memory DB supports sum, min, max, average, and count
 
 // combine any patterns as you'd like.
 SomeSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() 
@@ -161,15 +200,22 @@ SomeSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'de
 // Where statements work on upserts as well.
 SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() 
 
+// Simple join
+SomeSQL("users").query("select",["users.name","orders.title"]).where(["users.name","=","Jimmy"]).join({
+    type:'inner',
+    table:"orders",
+    where:['orders.customerID',"=",'user.id']
+}).orderBy({"users.name":"asc"}).exec();
+
 ```
 
 Possible query commands are `select`, `drop`, `upsert`, and `delete`.
 
-All calls to the `exec()` return a promise, with the result of the promise being the response from the database.
+All calls to the `exec()` return a promise, with the first argument of the promise being the response from the database.
 
-The second argument is always the SomeSQL var, making chaining commands easy.
+The second argument is always the SomeSQL var, making chaining commands easy...
 
-```typescript
+```ts
 SomeSQL('users').query('select').exec().then(function(result, db) {
     return db.query('upsert',{name:"Bill"}).where(['name','=','billy']).exec();
 }).then(function(result, db) {
@@ -183,7 +229,7 @@ SomeSQL('users').query('select').exec().then(function(result, db) {
 
 You can listen to any number of database events on any table or all tables.
 
-```typescript
+```ts
 SomeSQL("users").on('select',function(eventData) {}) // Listen to "select" commands from the users table
 SomeSQL("*").on('change',function(eventData) {}) // Listen for any changes to any table in the database.
 
@@ -196,7 +242,7 @@ Possible events are `change`, `delete`, `upsert`, `drop`, `select` and `error`.
 
 You can create a new table by selecting it and creating a new data model:
 
-```typescript
+```ts
 SomeSQL('newTable').model([
     {key:'name',type:'string'}
 ])
@@ -209,7 +255,7 @@ Keep in mind you MUST declare all your models and tables BEFORE calling the `con
 
 If you need more than one data store with a collection of separate tables, you can declare a completely new SomeSQL db at any point.
 
-```typescript
+```ts
 var myDB = new SomeSQL_Instance().table;
 
 // And now use it just like you use the SomeSQL var.
@@ -268,10 +314,12 @@ Each modifier can take up to two arguments and normally can only be used once.  
 |------------|--------------------------------------------------------------|----------|
 | .where()   | Adds a search component to the current query.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#where) |
 | .orderBy() | Adds a order by component to the current query.              | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#orderby) |
+| .join()    | Combine multiple queries into one using a where statement.   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#join) |
 | .offset()  | Offset the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#offset) |
 | .limit()   | Limits the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#limit) |
 | .filter()  | Applies a custom filter to the current query                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter) |
 | .extend()  | Use a extend query modifier provided by the database driver. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#extend) |
+
 
 ### Query Execution
 
@@ -295,3 +343,51 @@ These can be used in replacement of the query..exec pattern to execute a given v
 
 [View Complete Official Docs](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html)
 
+## Memory Database API
+Documentation here is specific to the built in memory database driver.
+
+### Caching
+All select queries are cached in an immutable store, the caches are split up by table.  When you perform an update or delete on a table, it will invalidate all the caches attached to that table.
+
+Also, using JOIN commands will cause multiple table caches to be invalidated so expect degraded performance with joins.
+
+Caching happens automatically and there are no configuration options.
+
+### Undo & Redo
+The driver has built in "undo" and "redo" functionality that lets you progress changes to the database forward and backward in time.
+
+Each Undo/Redo action represents a single Upsert, Delete, or Drop query on a single table.
+
+Queries that did not affect any rows do not get added to the history.
+
+Usage:
+* Undo: `SomeSQL().extend("<")`
+* Redo: `SomeSQL().extend(">")`
+
+These commands will automatically cascade `change` events where they are needed.
+
+Optionally, you can attach `then` to the end of either undo or redo to discover if a redo/undo action was performed.
+
+```ts
+SomeSQL().extend(">").then(function(response) {
+    console.log(resopnse) //<= If this is true, a redo action was done.  If false, nothing was done.
+});
+```
+
+You can also request the state of the undo/redo system like this:
+
+```ts
+SomeSQL().extend("?").then(function(response) {
+    console.log(response) // <= [0,0]
+});
+```
+
+The query returns an array with two numbers.  The first is the length of change history, the second is the current pointer of the change history.
+
+This lets you determine if an undo/redo action will do anything:
+
+1. If the history length is zero, undo and redo will both do nothing.
+2. If the pointer is zero, undo will do nothing.
+3. If the pointer is equal to history length redo will do nothing.
+
+Finally, performing changes to the database anywhere in history is completely allowed and automatically handled. You can play with the Todo example to see how this works.

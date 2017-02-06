@@ -28,7 +28,7 @@ const TodoTable = (props: {todos: Array<any>, markDone: (todoID: string) => void
                 {props.todos.map(todo => {
                         return <tr>
                             <td  style={todo.done ? Done : {}} >{ todo.title }</td>
-                            <td><input type="checkbox" disabled={todo.done} value={todo.done} onChange={() => todo.done ? null : props.markDone.apply(this,[todo.id])} /></td>
+                            <td><input type="checkbox" checked={todo.done ? true : false} disabled={todo.done} value={todo.done} onChange={() => todo.done ? null : props.markDone.apply(this,[todo.id])} /></td>
                         </tr>;
                     })
                 }
@@ -67,6 +67,10 @@ class TodoForm extends Component<Nothing, FormState> {
         });
     };
 
+    public shouldComponentUpdate(nextProps, nextState): boolean {
+        return this.state.value !== nextState.value;
+    }
+
     public render(): JSX.Element {
         return (
             <form onSubmit={this.onSubmit}>
@@ -85,6 +89,7 @@ class TodoForm extends Component<Nothing, FormState> {
 
 interface TodoAppState {
     todos?: Array<any>;
+    redos: Array<any>;
 }
 
 class TodoApp extends Component<Nothing, TodoAppState> {
@@ -92,21 +97,37 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     constructor() {
         super();
         this.state = {
-            todos:[]
+            todos: [],
+            redos: [0, 0]
         };
         this.updateComponent = this.updateComponent.bind(this);
         this.markDone = this.markDone.bind(this);
+        this.undo = this.undo.bind(this);
+        this.redo = this.redo.bind(this);
     }
 
     public markDone(todoID: string): void {
         SomeSQL("todos").doAction("mark_todo_done", {id: todoID});
     }
 
+    public undo(): void {
+        SomeSQL().extend("<");
+    }
+
+    public redo(): void {
+        SomeSQL().extend(">");
+    }
+
     // Event handler for the db
     public updateComponent(e: DatabaseEvent, db: SomeSQLInstance): void {
+        let t = this;
+        let oldRedo = this.state.redos;
         db.getView("list_all_todos").then((rows, db) => {
-            this.setState({
-                todos: rows
+            SomeSQL().extend("?").then((historyArray) => {
+                t.setState({
+                    todos: rows,
+                    redos: historyArray
+                });
             });
         });
     }
@@ -122,16 +143,27 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     }
 
     // Ahhh, that feels nice.
-    public shouldComponentUpdate(nextProps, nextState): Boolean {
+    public shouldComponentUpdate(nextProps, nextState): boolean {
         return this.state.todos !== nextState.todos;
     }
 
     public render(): JSX.Element {
         return (
             <div className="container">
-                <h1>Todo Items</h1>
-                <TodoTable markDone={this.markDone} todos={this.state.todos} />
+                <br/><br/>
+                <div className="row">
+                    <div className="column column-50">
+                        <h2>Todo Items</h2>
+                    </div>
+                    <div className="column column-25">
+                        <button disabled={this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1]} onClick={this.undo} className="noselect button" >Undo</button>
+                    </div>
+                    <div className="column column-25">
+                        <button disabled={this.state.redos[1] === 0} onClick={this.redo} className="noselect button">Redo</button>
+                    </div>
+                </div>
                 <TodoForm />
+                <TodoTable markDone={this.markDone} todos={this.state.todos} />
             </div>
         )
     }

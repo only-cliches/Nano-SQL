@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.2.1] 2-6-2017
+- Added Join API.
+- Adjusted the node build.
+- Started adding tests.
+- Completely rewrote the Memory DB with significant performance and memory improvements.
+- Memory DB now uses hash maps and indexes; no more deep copying.
+- Memory DB now only returns immutable structures.
+- Added history API to memory DB for stupid simple version control.
+- Removed UUID function.
+- Only marginal increase in lib size.
+
 ## [0.2.0] 1-28-2017
 - Some size & speed optimizations.
 - Fixed orderby bug.

@@ -1,4 +1,4 @@
-import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine, DataModel, StdObject } from "./index";
+import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine, DataModel, StdObject, DBConnect, DBExec } from "./index";
 import { TSPromise } from "typescript-promise";
 
 /**
@@ -10,7 +10,6 @@ import { TSPromise } from "typescript-promise";
  */
 // tslint:disable-next-line
 export class _SomeSQLMemDB implements SomeSQLBackend {
-
 
     /**
      * Holds the actual table data.
@@ -48,7 +47,6 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      */
     private _mod: Array<QueryLine>;
 
-
     /**
      * Holds all possible filters
      * 
@@ -58,16 +56,14 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      */
     private _filters: StdObject<Function>;
 
-
     /**
      * Temporary home for the current query cache key.
      * 
      * @internal
-     * @type {string}
+     * @type {number}
      * @memberOf SomeSQLMemDB
      */
-    private _cacheKey: string;
-
+    private _cacheKey: number;
 
     /**
      * An index of the contents of the immutable cache
@@ -78,7 +74,6 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      */
     private _cacheIndex: StdObject<StdObject<Array<string | number>>>;
 
-
     /**
      * An index of the immutable cache queries
      * 
@@ -87,7 +82,6 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      * @memberOf SomeSQLMemDB
      */
     private _cacheQueryIndex: StdObject<Array<Object>>;
-
 
     /**
      * The actual immutable cache is stored here.
@@ -98,15 +92,14 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      */
     private _cache: StdObject<StdObject<_memDB_Table>>;
 
-
     /**
      * Push quries into this array if theres already a query running
      * 
      * @internal
-     * @type {Array<Array<any>>}
+     * @type {Array<DBExec>}
      * @memberOf SomeSQLMemDB
      */
-    private _pendingQuerys: Array<Array<any>>;
+    private _pendingQuerys: Array<DBExec>;
 
     constructor() {
         let t = this;
@@ -119,28 +112,22 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
         t._initFilters();
     }
 
-
     /**
      * Creates all the tables and prepares the database for use.
      * 
-     * @param {StdObject<Array<DataModel>>} models
-     * @param {StdObject<Array<ActionOrView>>} actions
-     * @param {StdObject<Array<ActionOrView>>} views
-     * @param {StdObject<Function>} filters
-     * @param {Array<any>} preCustom
-     * @param {Function} callback
+     * @param {DBConnect} connectArgs
      * 
-     * @memberOf SomeSQLMemDB
+     * @memberOf _SomeSQLMemDB
      */
-    public connect(models: StdObject<Array<DataModel>>, actions: StdObject<Array<ActionOrView>>, views: StdObject<Array<ActionOrView>>, filters: StdObject<Function>, preCustom: Array<any>, callback: Function): void {
+    public _connect(connectArgs: DBConnect): void {
         let t = this;
-        for (let tableName in models) {
-            t._newModel(tableName, models[tableName]);
+        for (let tableName in connectArgs._models) {
+            t._newModel(tableName, connectArgs._models[tableName]);
         }
 
-        t._filters = filters;
+        t._filters = connectArgs._filters;
 
-        callback();
+        connectArgs._onSuccess();
     }
 
     /**
@@ -158,44 +145,40 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
         this._tables[table] = new _memDB_Table(dataModel);
     }
 
-
     /**
      * Public exec option.  Organizes the query then sends it to the internal execution function.
      * 
-     * @param {string} table
-     * @param {Array<QueryLine>} query
-     * @param {string} viewOrAction
-     * @param {(rows: Array<Object>) => void} onSuccess
-     * @param {(rows: Array<Object>) => void} [onFail]
+     * @param {DBExec} execArgs
      * @returns {void}
      * 
-     * @memberOf SomeSQLMemDB
+     * @memberOf _SomeSQLMemDB
      */
-    public exec(table: string, query: Array<QueryLine>, viewOrAction: string, onSuccess: (rows: Array<Object>) => void, onFail?: (rows: Array<Object>) => void): void {
+    public _exec(execArgs: DBExec): void {
+
         let t = this;
 
         if (t._act !== undefined) {
-            t._pendingQuerys.push([table, query, viewOrAction, onSuccess, onFail]);
+            t._pendingQuerys.push(execArgs);
             return;
         }
 
-        t._selectedTable = table;
+        t._selectedTable = execArgs._table;
         t._mod = [];
         t._act = undefined;
 
-        t._cacheKey = SomeSQLInstance.hash(JSON.stringify(query));
-        t._cacheQueryIndex[t._cacheKey] = query; // working on smarter cache invalidation
+        t._cacheKey = _SomeSQLMemDB._hash(JSON.stringify(execArgs._query));
+        t._cacheQueryIndex[t._cacheKey] = execArgs._query; // working on smarter cache invalidation
 
-        TSPromise.all(query.map((q) => {
+        TSPromise.all(execArgs._query.map((q) => {
             return new TSPromise(function (resolve, reject) {
                 t._query(q, resolve);
             });
         })).then(() => {
-            t._exec((args: Array<Object>) => {
-                onSuccess(args);
+            t._execQuery((args: Array<Object>) => {
+                execArgs._onSuccess(args);
                 t._act = undefined;
                 if (t._pendingQuerys.length) {
-                    t.exec.apply(t, t._pendingQuerys.pop());
+                    t._exec.apply(t, [t._pendingQuerys.pop()]);
                 }
             });
         });
@@ -226,35 +209,35 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @memberOf SomeSQLMemDB
      */
-    private _initFilters() {
+    private _initFilters(): void {
         let t = this;
         t._filters = {
-            "sum": (rows: Array<StdObject<any>>) => {
+            sum: (rows: Array<StdObject<any>>) => {
                 return [{"sum": rows.map((r: StdObject<any>) => {
                         return t._act ? r[t._act.args[0]] : 0;
                     }).reduce((a, b) => a + b, 0)}];
             },
-            "first": (rows: Array<StdObject<any>>) => {
+            first: (rows: Array<StdObject<any>>) => {
                 return [rows[0]];
             },
-            "last": (rows: Array<StdObject<any>>) => {
+            last: (rows: Array<StdObject<any>>) => {
                 return [rows.pop()];
             },
-            "min": (rows: Array<StdObject<any>>) => {
-                return [{"min": rows.map((r: StdObject<any>) => {
+            min: (rows: Array<StdObject<any>>) => {
+                return [{min: rows.map((r: StdObject<any>) => {
                         return t._act ? r[t._act.args[0]] : 0;
                     }).sort((a, b) => a < b ? -1 : 1)[0]}];
             },
-            "max": (rows: Array<StdObject<any>>) => {
-                return [{"max": rows.map((r: StdObject<any>) => {
+            max: (rows: Array<StdObject<any>>) => {
+                return [{max: rows.map((r: StdObject<any>) => {
                         return t._act ? r[t._act.args[0]] : 0;
                     }).sort((a, b) => a > b ? -1 : 1)[0]}];
             },
-            "average": (rows: Array<StdObject<any>>) => {
-                return [{"average": t._doFilter("sum", rows)[0].sum / rows.length}];
+            average: (rows: Array<StdObject<any>>) => {
+                return [{average: t._doFilter("sum", rows)[0].sum / rows.length}];
             },
-            "count": (rows: Array<StdObject<any>>) => {
-                return [{"length": rows.length}];
+            count: (rows: Array<StdObject<any>>) => {
+                return [{count: rows.length}];
             }
         };
     }
@@ -303,17 +286,6 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
         let t = this;
         t._cache[t._selectedTable] = {};
         t._cacheIndex[t._selectedTable] = {};
-
-        /*
-        affectedKeys.forEach((key) => {
-            t._cacheIndex.get(t._selectedTable).forEach((queryIndex, key) => {
-                if (queryIndex.indexOf(key) !== -1) {
-                    t._cacheIndex.get(t._selectedTable).delete(key);
-                    t._cache.get(t._selectedTable).delete(key);
-                }
-            });
-        });
-        */
     }
 
     /**
@@ -324,7 +296,7 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      * 
      * @memberOf SomeSQLMemDB
      */
-    private _exec(callBack: Function): void {
+    private _execQuery(callBack: Function): void {
         let t = this;
 
         let _hasWhere = t._mod.filter((v) => {
@@ -486,6 +458,29 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
     }
 
     /**
+     * Handle history implemintation
+     * 
+     * @param {SomeSQLInstance} db
+     * @param {("back"|"forward")} command
+     * @returns
+     * 
+     * @memberOf _SomeSQLMemDB
+     */
+    public extend(db: SomeSQLInstance, command: "back"|"forward") {
+
+        switch (command) {
+            case "back":
+
+            break;
+            case "forward":
+
+            break;
+        }
+
+        return db;
+    }
+
+    /**
      * Handle where statements
      * 
      * @internal
@@ -549,6 +544,12 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
         return table;
     }
 
+    private static _hash(key: string): number {
+        return Math.abs(key.split("").reduce(function (prev, next, i) {
+            return (((prev << 5) + prev) + key.charCodeAt(i));
+        }, 0));
+    }
+
     /**
      * Accepts two values and something to comapre them against, returns a boolean that can be used in an array FILTER function.
      * 
@@ -561,20 +562,6 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
      * @memberOf SomeSQLMemDB
      */
     private _compare(val1: any, compare: string, val2: any): number {
-        let like = val1.indexOf(val2) === -1 ? 0 : 1;
-        let states: StdObject<number> = {
-            "=": (val2 === val1 ? 0 : 1),
-            ">": (val2 > val1 ? 0 : 1),
-            "<": (val2 < val1 ? 0 : 1),
-            "<=": (val2 <= val1 ? 0 : 1),
-            ">=": (val2 >= val1 ? 0 : 1),
-            "IN": (val1.indexOf(val2) === -1 ? 1 : 0),
-            "NOT IN": (val1.indexOf(val2) === -1 ? 0 : 1),
-            "REGEX": like,
-            "LIKE": like,
-        };
-        return states[compare];
-        /*
         switch (compare) {
             case "=": return val2 === val1 ? 0 : 1;
             case ">": return val2 > val1 ? 0 : 1;
@@ -586,7 +573,7 @@ export class _SomeSQLMemDB implements SomeSQLBackend {
             case "REGEX":
             case "LIKE": return val2.search(val1) === -1 ? 1 : 0;
             default: return 0;
-        }*/
+        }
     }
 }
 
@@ -650,8 +637,8 @@ class _memDB_Table {
             switch (t._pkType) {
                 case "int": data[t._primaryKey] = t._incriment; t._incriment++;
                     break;
-                case "uuid": data[t._primaryKey] = SomeSQLInstance.uuid();
-                    break;
+                /*case "uuid": data[t._primaryKey] = SomeSQLInstance.uuid();
+                    break;*/
             }
             t._index.push(data[t._primaryKey]);
             t._rows[data[t._primaryKey]] = data;
@@ -661,7 +648,7 @@ class _memDB_Table {
         }
     }
 
-    public _remove(index: string|number) {
+    public _remove(index: string|number): void {
         this._index.splice(this._index.indexOf(index), 1);
     }
 

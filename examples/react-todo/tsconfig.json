@@ -5,7 +5,6 @@
     "moduleResolution": "node",
     "stripInternal":true,
     "removeComments":true,
-    "importHelpers":false,
     "jsx":"react",
     "outFile":"index.js"
   },

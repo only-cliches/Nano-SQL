@@ -1,315 +1,94 @@
-import { TSPromise } from "typescript-promise";
-import { _SomeSQLImmuDB } from "./immutable-store";
-// import { _SomeSQLMemDB } from "./old-memory-db";
-
-/**
- * Standard object placeholder with string key.
- * 
- * @export
- * @interface StdObject
- * @template T
- */
-export interface StdObject<T> {
-    [key: string]: T;
-}
-
-/**
- * This is the format used for actions and views
- * 
- * @export
- * @interface ActionOrView
- */
-export interface ActionOrView {
-    name: string;
-    args?: Array<string>;
-    extend?: any;
-    call: (args?: {[key: string]: any}, db?: SomeSQLInstance) => TSPromise<any>;
-}
-
-/**
- * You need an array of these to declare a data model.
- * 
- * @export
- * @interface DataModel
- */
-export interface DataModel {
-    key: string;
-    type: "string"|"int"|"float"|"array"|"map"|"bool"|string;
-    default?: any;
-    props?: Array<any>;
-}
-
-
-/**
- * Used to represent a single query command.
- * 
- * @export
- * @interface QueryLine
- */
-export interface QueryLine {
-    type: string;
-    args?: any;
-}
-
-/**
- * Returned by the event listener when it's called.
- * 
- * @export
- * @interface DatabaseEvent
- */
-export interface DatabaseEvent {
-    table: string;
-    query: Array<QueryLine>;
-    time: number;
-    result: Array<any>;
-    name: "change"|"delete"|"upsert"|"drop"|"select"|"error";
-    actionOrView: string;
-}
-
-/**
- * The arguments used for the join command.
- * 
- * Type: join type to use
- * Query: A select query to use for the right side of the join
- * Where: Conditions to use to merge the data
- * 
- * @export
- * @interface JoinArgs
- */
-export interface JoinArgs {
-    type: "left"|"inner"|"right"|"cross";
-    table: string;
-    where: Array<string>;
-}
-
-export interface DBRow {
-    [key: string]: any;
-}
-
-
+"use strict";
+var typescript_promise_1 = require("typescript-promise");
+var immutable_store_1 = require("./immutable-store");
 /**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
- * 
+ *
  * @export
  * @class SomeSQLInstance
  */
-export class SomeSQLInstance {
-
-
-    /**
-     * Holds the current selected table
-     * 
-     * @internal
-     * @type {string}
-     * @memberOf SomeSQLInstance
-     */
-    private _selectedTable: string;
-
-    /**
-     * Most recent selected table.
-     * 
-     * @type {string}
-     * @memberOf SomeSQLInstance
-     */
-    public activeTable: string;
-
-    /**
-     * Holds an array of the query arguments
-     * 
-     * @internal
-     * @type {Array<QueryLine>}
-     * @memberOf SomeSQLInstance
-     */
-    private _query: Array<QueryLine>;
-
-    /**
-     * The backend currently being used
-     * 
-     * @public
-     * @type {SomeSQLBackend}
-     * @memberOf SomeSQLInstance
-     */
-    public backend: SomeSQLBackend;
-
-    /**
-     * The callbacks for events
-     * 
-     * @internal
-     * @type {StdObject<StdObject<Array<Function>>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _callbacks: StdObject<StdObject<Array<Function>>>;
-
-    /**
-     * An array of possible events
-     * 
-     * @internal
-     * @type {Array<string>}
-     * @memberOf SomeSQLInstance
-     */
-    private _events: Array<string>;
-
-    /**
-     * Holds a map of the current views for this database.
-     * 
-     * @internal
-     * @type {StdObject<Array<ActionOrView>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _views: StdObject<Array<ActionOrView>>;
-
-    /**
-     * Holds a map of the current actions for this database.
-     * 
-     * @internal
-     * @type {StdObject<Array<ActionOrView>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _actions: StdObject<Array<ActionOrView>>;
-
-
-    /**
-     * A map containing the models
-     * 
-     * @internal
-     * @type {StdObject<Array<DataModel>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _models: StdObject<Array<DataModel>>;
-
-    /**
-     * An array containing a temporary list of events to trigger
-     * 
-     * @internal
-     * @type {Array<"change"|"delete"|"upsert"|"drop"|"select"|"error">}
-     * @memberOf SomeSQLInstance
-     */
-    private _triggerEvents: Array<"change"|"delete"|"upsert"|"drop"|"select"|"error">;
-
-    /**
-     * The current action or view being triggered.
-     * 
-     * @internal
-     * @type {string}
-     * @memberOf SomeSQLInstance
-     */
-    private _activeActionOrView: string|undefined;
-
-    /**
-     * Holds custom filters implimented by the user
-     * 
-     * @private
-     * 
-     * @memberOf SomeSQLInstance
-     */
-    private _filters: {
-        [key: string]:  (rows: Array<DBRow>) => Array<DBRow>
-    };
-
-    /**
-     * Holds an array of custom commands, this is used if the custom() is used before we connect to the db.
-     * 
-     * @internal
-     * @type {Array<Array<any>>}
-     * @memberOf SomeSQLInstance
-     */
-    private _preConnectExtend: Array<Array<any>>;
-
-    /**
-     * Holds an array of filters to apply to EVERY query.
-     * 
-     * @internal
-     * @type {Array<string>}
-     * @memberOf SomeSQLInstance
-     */
-    private _permanentFilters: Array<string>;
-
-    constructor() {
-        let t = this;
-
+var SomeSQLInstance = (function () {
+    function SomeSQLInstance() {
+        var t = this;
         t._actions = {};
         t._views = {};
         t._models = {};
         t._query = [];
         t._preConnectExtend = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
-
         t._callbacks = {};
         t._callbacks["*"] = {};
-        let i = t._events.length;
+        var i = t._events.length;
         while (i--) {
             t._callbacks["*"][t._events[i]] = [];
         }
-
         t._filters = {};
         t._permanentFilters = [];
     }
-
-
     /**
      * Changes the table pointer to a new table.
-     * 
+     *
      * @param {string} [table]
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public table(table?: string): SomeSQLInstance {
-        if (table) this._selectedTable = table, this.activeTable = table;
+    SomeSQLInstance.prototype.table = function (table) {
+        if (table)
+            this._selectedTable = table, this.activeTable = table;
         return this;
-    }
-
+    };
     /**
      * Inits the backend database for use.
-     * 
+     *
      * @param {SomeSQLBackend} [backend]
      * @returns {(TSPromise<Object | string>)}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public connect(backend?: SomeSQLBackend): TSPromise<Object | string> {
-        let t = this;
-        t.backend = backend || new _SomeSQLImmuDB();
-        return new TSPromise((res, rej) => {
+    SomeSQLInstance.prototype.connect = function (backend) {
+        var _this = this;
+        var t = this;
+        t.backend = backend || new immutable_store_1._SomeSQLImmuDB();
+        return new typescript_promise_1.TSPromise(function (res, rej) {
             t.backend._connect({
                 _models: t._models,
                 _actions: t._actions,
                 _views: t._views,
                 _filters: t._filters,
                 _extendCalls: t._preConnectExtend,
-                _parent: this,
-                _onSuccess: (result: any) => {
+                _parent: _this,
+                _onSuccess: function (result) {
                     res(result, t);
                 },
-                _onFail: (rejected: any) => {
-                    if (rej) rej(rejected, t);
+                _onFail: function (rejected) {
+                    if (rej)
+                        rej(rejected, t);
                 }
             });
         });
-    }
-
+    };
     /**
      * Adds an event listener to the selected database table.
-     * 
+     *
      * @param {("change"|"delete"|"upsert"|"drop"|"select"|"error")} actions
      * @param {Function} callBack
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public on(actions: "change"|"delete"|"upsert"|"drop"|"select"|"error", callBack: (event: DatabaseEvent, database: SomeSQLInstance) => void): SomeSQLInstance {
-        let t = this;
-        let l = t._selectedTable;
-        let i = 0;
-
+    SomeSQLInstance.prototype.on = function (actions, callBack) {
+        var t = this;
+        var l = t._selectedTable;
+        var i = 0;
         if (!t._callbacks[l]) {
             i = t._events.length;
             while (i--) {
                 t._callbacks[l][t._events[i]] = [];
             }
         }
-        let a = actions.split(" ");
+        var a = actions.split(" ");
         i = a.length;
         while (i--) {
             if (t._events.indexOf(a[i]) !== -1) {
@@ -317,66 +96,63 @@ export class SomeSQLInstance {
             }
         }
         return t;
-    }
-
-	/**
-	 * Remove a specific event handler from being triggered anymore.
-	 * 
-	 * @param {Function} callBack
-	 * @returns {SomeSQLInstance}
-	 * 
-	 * @memberOf SomeSQLInstance
-	 */
-    public off(callBack: Function): SomeSQLInstance {
-        let t = this;
-        for (let key in t._callbacks) {
-            for (let key2 in t._callbacks[key]) {
-                t._callbacks[key][key2].filter((cBs) => {
+    };
+    /**
+     * Remove a specific event handler from being triggered anymore.
+     *
+     * @param {Function} callBack
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.prototype.off = function (callBack) {
+        var t = this;
+        for (var key in t._callbacks) {
+            for (var key2 in t._callbacks[key]) {
+                t._callbacks[key][key2].filter(function (cBs) {
                     return cBs !== callBack;
                 });
             }
         }
         return t;
-    }
-
-	/**
-	 * Set a filter to always be applied, on every single query.
-	 * 
-	 * @param {string} filterName
-	 * @returns {SomeSQLInstance}
-	 * 
-	 * @memberOf SomeSQLInstance
-	 */
-    public alwaysApplyFilter(filterName: string): SomeSQLInstance {
+    };
+    /**
+     * Set a filter to always be applied, on every single query.
+     *
+     * @param {string} filterName
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.prototype.alwaysApplyFilter = function (filterName) {
         if (this._permanentFilters.indexOf(filterName) === -1) {
             this._permanentFilters.push(filterName);
         }
         return this;
-    }
-
-	/**
-	 * Declare the data model for the current selected table.
-     * 
+    };
+    /**
+     * Declare the data model for the current selected table.
+     *
      * Please reference the DataModel interface for how to impliment this, a quick example:
-     * 
+     *
      * ```ts
      * .model([
      *  {key:"id",type:"int",props:["ai","pk"]} //auto incriment and primary key
      *  {key:"name",type:"string"}
      * ])
      * ```
-	 * 
-	 * @param {Array<DataModel>} dataModel
-	 * @returns {SomeSQLInstance}
-	 * 
-	 * @memberOf SomeSQLInstance
-	 */
-    public model(dataModel: Array<DataModel>): SomeSQLInstance {
-        let t = this;
-        let l = t._selectedTable;
+     *
+     * @param {Array<DataModel>} dataModel
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.prototype.model = function (dataModel) {
+        var t = this;
+        var l = t._selectedTable;
         t._callbacks[l] = {};
         t._callbacks[l]["*"] = [];
-        let i = t._events.length;
+        var i = t._events.length;
         while (i--) {
             t._callbacks[l][t._events[i]] = [];
         }
@@ -384,13 +160,12 @@ export class SomeSQLInstance {
         t._views[l] = [];
         t._actions[l] = [];
         return t;
-    }
-
-	/**
-	 * Declare the views for the current selected table.  Must be called before connect()
-     * 
+    };
+    /**
+     * Declare the views for the current selected table.  Must be called before connect()
+     *
      * Views are created like this:
-     * 
+     *
      * ```ts
      * .views([
      *  {
@@ -410,17 +185,17 @@ export class SomeSQLInstance {
      *  }
      * ])
      * ```
-     * 
+     *
      * Then later in your app..
-     * 
+     *
      * ```ts
      * SomeSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
-     * 
+     *
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
-     * 
+     *
      * ```ts
      * .views[{
      *      name:...
@@ -428,93 +203,92 @@ export class SomeSQLInstance {
      *      call:...
      * }]
      * ```
-     * 
+     *
      * SomeSQL will force the arguments passed into the function to those types.
-     * 
+     *
      * Possible types are string, bool, float, int, map, array and bool.
-	 * 
-	 * @param {Array<ActionOrView>} viewArray
-	 * @returns {SomeSQLInstance}
-	 * 
-	 * @memberOf SomeSQLInstance
-	 */
-    public views(viewArray: Array<ActionOrView>): SomeSQLInstance {
+     *
+     * @param {Array<ActionOrView>} viewArray
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.prototype.views = function (viewArray) {
         return this._views[this._selectedTable] = viewArray, this;
-    }
-
+    };
     /**
      * Execute a specific view.  Refernece the "views" function for more description.
-     * 
+     *
      * Example:
      * ```ts
      * SomeSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
      *  console.log(result) <== view result.
      * })
      * ```
-     * 
+     *
      * @param {string} viewName
      * @param {any} viewArgs
      * @returns {(TSPromise<Array<Object>>)}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public getView(viewName: string, viewArgs: any = {}): TSPromise<Array<Object>> {
-        let t = this;
-        let l = t._selectedTable;
-        let selView: ActionOrView | undefined;
-        let i = t._views[l].length;
+    SomeSQLInstance.prototype.getView = function (viewName, viewArgs) {
+        if (viewArgs === void 0) { viewArgs = {}; }
+        var t = this;
+        var l = t._selectedTable;
+        var selView;
+        var i = t._views[l].length;
         while (i--) {
             if (t._views[l][i].name === viewName) {
                 selView = t._views[l][i];
             }
         }
-        if (!selView) throw Error;
+        if (!selView)
+            throw Error;
         t._activeActionOrView = viewName;
         return selView.call.apply(t, [t._cleanArgs(selView.args ? selView.args : [], viewArgs), t]);
-    }
-
+    };
     /**
      * Take an action or view and it's args, then make sure the args comform to the types declared in the model.
-     * 
+     *
      * @internal
      * @param {Array<string>} argDeclarations
      * @param {Object} args
      * @returns {Object}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    private _cleanArgs(argDeclarations: Array<string>, args: StdObject<any>): StdObject<any> {
-        let t = this;
-        let l = t._selectedTable;
-        let a: StdObject<any> = {};
-        let i = argDeclarations.length ? argDeclarations.length : -1;
+    SomeSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
+        var t = this;
+        var l = t._selectedTable;
+        var a = {};
+        var i = argDeclarations.length ? argDeclarations.length : -1;
         if (i > 0) {
             while (i--) {
-                let k2: Array<string> = argDeclarations[i].split(":");
+                var k2 = argDeclarations[i].split(":");
                 if (k2.length > 1) {
                     a[k2[0]] = t._cast(k2[1], args[k2[0]] || null);
-                } else {
+                }
+                else {
                     a[k2[0]] = args[k2[0]] || null;
                 }
             }
         }
-
         return a;
-    }
-
+    };
     /**
      * Cast variables to a specific type.
-     * 
+     *
      * @internal
      * @param {string} type
      * @param {*} val
      * @returns {*}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    private _cast(type: string, val: any): any {
-        let obj = JSON.parse(JSON.stringify(val));
-        let types: StdObject<any> = {
+    SomeSQLInstance.prototype._cast = function (type, val) {
+        var obj = JSON.parse(JSON.stringify(val));
+        var types = {
             "string": String(val),
             "int": parseInt(val),
             "float": parseFloat(val),
@@ -523,11 +297,10 @@ export class SomeSQLInstance {
             "bool": val === true
         };
         return types[type] || val;
-    }
-
-	/**
-	 * Declare the actions for the current selected table.  Must be called before connect()
-     * 
+    };
+    /**
+     * Declare the actions for the current selected table.  Must be called before connect()
+     *
      * Actions are created like this:
      * ```ts
      * .actions([
@@ -548,15 +321,15 @@ export class SomeSQLInstance {
      *  }
      * ])
      * ```
-     * 
+     *
      * Then later in your app..
-     * 
+     *
      * ```ts
      * SomeSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
-     * 
+     *
      * Optionally you can type cast the arguments at run time typescript style, just add the types after the arguments in the array.  Like this:
      * ```ts
      * .actions[{
@@ -565,137 +338,136 @@ export class SomeSQLInstance {
      *      call:...
      * }]
      * ```
-     * 
+     *
      * SomeSQL will force the arguments passed into the function to those types.
-     * 
+     *
      * Possible types are string, bool, float, int, map, array and bool.
-	 * 
-	 * @param {Array<ActionOrView>} actionArray
-	 * @returns {SomeSQLInstance}
-	 * 
-	 * @memberOf SomeSQLInstance
-	 */
-    public actions(actionArray: Array<ActionOrView>): SomeSQLInstance {
+     *
+     * @param {Array<ActionOrView>} actionArray
+     * @returns {SomeSQLInstance}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.prototype.actions = function (actionArray) {
         return this._actions[this._selectedTable] = actionArray, this;
-    }
-
+    };
     /**
      * Init an action for the current selected table. Reference the "actions" method for more info.
-     * 
+     *
      * Example:
      * ```ts
      * SomeSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
      *      console.log(result) <== result of your action
      * });
      * ```
-     * 
+     *
      * @param {string} actionName
      * @param {any} actionArgs
      * @returns {(TSPromise<Array<Object>>)}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public doAction(actionName: string, actionArgs: any = {}): TSPromise<Array<Object>> {
-        let t = this;
-        let l = t._selectedTable;
-        let selAction: ActionOrView | undefined;
-        let i = t._actions[l].length;
+    SomeSQLInstance.prototype.doAction = function (actionName, actionArgs) {
+        if (actionArgs === void 0) { actionArgs = {}; }
+        var t = this;
+        var l = t._selectedTable;
+        var selAction;
+        var i = t._actions[l].length;
         while (i--) {
             if (t._actions[l][i].name === actionName) {
                 selAction = t._actions[l][i];
             }
         }
-        if (!selAction) throw Error;
+        if (!selAction)
+            throw Error;
         t._activeActionOrView = actionName;
         return selAction.call.apply(t, [t._cleanArgs(selAction.args ? selAction.args : [], actionArgs), t]);
-    }
-
+    };
     /**
-	 * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
+     * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
      * Example:
-     * 
+     *
      * ```ts
      * SomeSQL().addFilter('addBalance',function(rows) {
      *      return rows.map((row) => row.balance + 1);
      * })
      * ```
-     * 
-     * Then to use it in a query: 
+     *
+     * Then to use it in a query:
      * ```ts
      * SomeSQL("users").query("select").filter('addOne').exec();
-	 * ```
-     * 
+     * ```
+     *
      * @param {string} filterName
      * @param {(rows: Array<Object>) => Array<Object>} filterFunction
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public addFilter(filterName: string, filterFunction: (rows: Array<Object>) => Array<Object>): SomeSQLInstance {
+    SomeSQLInstance.prototype.addFilter = function (filterName, filterFunction) {
         return this._filters[filterName] = filterFunction, this;
-    }
-
+    };
     /**
      * Start a query into the current selected table.
      * Possibl querys are "select", "upsert", "delete", and "drop";
-     * 
-     * Select is used to pull a set of rows or other data from the table.  
+     *
+     * Select is used to pull a set of rows or other data from the table.
      * When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.
-     * 
+     *
      * Select examples:
      * ```ts
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
      * ```
-     * Upsert is used to add data into the database.  
+     * Upsert is used to add data into the database.
      * If the primary key rows are null or undefined, the data will always be added. Otherwise, you might be updating existing rows.
      * The second argument of the query with upserts is always an Object of the data to upsert.
-     * 
+     *
      * Upsert Examples:
      * ```ts
      * .query("upsert",{id:1,username:"Scott"}) //Set username to "Scott" where the row ID is 1.
      * .query("upsert",{username:"Scott"}) //Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.
      * ```
-     * 
+     *
      * Delete is used to remove data from the database.
      * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
-     * 
+     *
      * Delete Examples:
      * ```ts
      * .query("delete",['balance']) //Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
      * ```
      * Drop is used to completely clear the contents of a database.  There are no arguments.
-     * 
+     *
      * Drop Examples:
      * ```ts
      * .query("drop")
      * ```
-     * 
+     *
      * @param {("select"|"upsert"|"delete"|"drop")} action
      * @param {Object} [args]
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public query(action: "select"|"upsert"|"delete"|"drop", args?: Object): SomeSQLInstance {
+    SomeSQLInstance.prototype.query = function (action, args) {
         this._query = [];
-        let a = action.toLowerCase();
+        var a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-            this._query.push({type: a, args: args});
-        } else {
+            this._query.push({ type: a, args: args });
+        }
+        else {
             throw Error;
         }
         return this;
-    }
-
+    };
     /**
      * Used to select specific rows based on a set of conditions.
      * You can pass in a single array with a conditional statement or an array of arrays seperated by "and", "or" for compound selects.
      * A single where statement has the column name on the left, an operator in the middle, then a comparison on the right.
-     * 
+     *
      * Where Examples:
-     * 
+     *
      * ```ts
      * .where(['username','=','billy'])
      * .where(['balance','>',20])
@@ -703,143 +475,136 @@ export class SomeSQLInstance {
      * .where([['name','=','scott'],'and',['balance','>',200]])
      * .where([['id','>',50],'or',['postIDs','IN',[12,20,30]],'and',['name','LIKE','Billy']])
      * ```
-     * 
+     *
      * @param {(Array<any|Array<any>>)} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public where(args: Array<any|Array<any>>): SomeSQLInstance {
+    SomeSQLInstance.prototype.where = function (args) {
         return this._addCmd("where", args);
-    }
-
+    };
     /**
      * Order the results by a given column or columns.
-     * 
+     *
      * Examples:
-     * 
+     *
      * ```ts
      * .orderBy({username:"asc"}) // order by username column, ascending
      * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
      * ```
-     * 
+     *
      * @param {Object} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public orderBy(args: {[key: string]: "asc"|"desc"}): SomeSQLInstance {
+    SomeSQLInstance.prototype.orderBy = function (args) {
         return this._addCmd("orderby", args);
-    }
-
+    };
     /**
      * Join command.
-     * 
+     *
      * Example:
-     * 
+     *
      * ```ts
      *  SomeSQL("orders").query("select",["orders.id","orders.title","users.name"]).join({
      *      type:"inner",
      *      query:SomeSQL("users").query("select").exec(),
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
-     * 
+     *
      * A few notes on the join command:
      * 1. You muse use dot notation and both tables in all "where" and "select" arguments
      * 2. The initial "select" command lets you set what columns will appear in the final query.
      * 3. The "query" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
-     * 
+     *
      * ```
-     * 
+     *
      * @param {JoinArgs} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public join(args: JoinArgs): SomeSQLInstance {
+    SomeSQLInstance.prototype.join = function (args) {
         return this._addCmd("join", args);
-    }
-
+    };
     /**
      * Limits the result to a specific amount.  Example:
-     * 
+     *
      * ```ts
      * .limit(20) // Limit to the first 20 results
      * ```
-     * 
+     *
      * @param {number} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public limit(args: number): SomeSQLInstance {
+    SomeSQLInstance.prototype.limit = function (args) {
         return this._addCmd("limit", args);
-    }
-
+    };
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
-     * 
+     *
      * ```ts
      * .offset(10) //Skip the first 10 results.
      * ```
-     * 
+     *
      * @param {number} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public offset(args: number): SomeSQLInstance {
+    SomeSQLInstance.prototype.offset = function (args) {
         return this._addCmd("offset", args);
-    }
-
+    };
     /**
      * Adds a custom filter to the query.  The filter you use MUST be supported by the database driver OR a custom filter you provided before the connect method was called.
      * The built in memory DB supports sum, min, max, average, and count
-     * 
+     *
      * Example:
      * ```ts
      * //get number of results
      * SomeSQL("users").query("select").filter('count').exec();
      * ```
-     * 
+     *
      * @param {string} name
      * @param {*} [args]
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public filter(name: string, args?: any): SomeSQLInstance {
+    SomeSQLInstance.prototype.filter = function (name, args) {
         return this._addCmd("filter-" + name, args);
-    }
-
+    };
     /**
      * Used to add a command to the query
-     * 
+     *
      * @internal
      * @param {string} type
      * @param {(any)} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    private _addCmd(type: string, args: any): SomeSQLInstance {
-        return this._query.push({type: type, args: args}), this;
-    }
-
+    SomeSQLInstance.prototype._addCmd = function (type, args) {
+        return this._query.push({ type: type, args: args }), this;
+    };
     /**
      * Trigger a database event
-     * 
+     *
      * @param {DatabaseEvent} eventData
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void {
-        let t = this;
-        let i = triggerEvents.length;
-        let j = 0;
-        let e: any;
-        let c: Array<Function>;
+    SomeSQLInstance.prototype.triggerEvent = function (eventData, triggerEvents) {
+        var t = this;
+        var i = triggerEvents.length;
+        var j = 0;
+        var e;
+        var c;
         while (i--) {
             e = triggerEvents[i];
             c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
@@ -851,21 +616,18 @@ export class SomeSQLInstance {
             }
         }
         t._activeActionOrView = undefined;
-    }
-
+    };
     /**
      * Executes the current pending query to the db engine.
-     * 
+     *
      * @returns {(TSPromise<Array<Object>>)}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public exec(): TSPromise<Array<Object>> {
-
-        let t = this;
-        let _t = t._selectedTable;
-
-        t._triggerEvents = <any>t._query.map((q) => {
+    SomeSQLInstance.prototype.exec = function () {
+        var t = this;
+        var _t = t._selectedTable;
+        t._triggerEvents = t._query.map(function (q) {
             switch (q.type) {
                 case "select": return [q.type];
                 case "delete":
@@ -873,17 +635,14 @@ export class SomeSQLInstance {
                 case "drop": return [q.type, "change"];
                 default: return [];
             }
-        }).reduce((a, b) => a.concat(b));
-
-        return new TSPromise((res, rej) => {
-
-            let _tEvent = (data: Array<Object>, callBack: Function, isError: Boolean) => {
+        }).reduce(function (a, b) { return a.concat(b); });
+        return new typescript_promise_1.TSPromise(function (res, rej) {
+            var _tEvent = function (data, callBack, isError) {
                 if (t._permanentFilters.length && isError !== true) {
-                    data = t._permanentFilters.reduce((prev, cur, i) => {
+                    data = t._permanentFilters.reduce(function (prev, cur, i) {
                         return t._filters[t._permanentFilters[i]].apply(t, [data]);
                     }, data);
                 }
-
                 t.triggerEvent({
                     name: "error",
                     actionOrView: "",
@@ -894,58 +653,59 @@ export class SomeSQLInstance {
                 }, t._triggerEvents);
                 callBack(data, t);
             };
-
             t.backend._exec({
                 _table: _t,
                 _query: t._query,
                 _viewOrAction: t._activeActionOrView || "",
-                _onSuccess: (rows) => {
+                _onSuccess: function (rows) {
                     _tEvent(rows, res, false);
                 },
-                _onFail: (err: any) => {
+                _onFail: function (err) {
                     t._triggerEvents = ["error"];
-                    if (rej) _tEvent(err, rej, true);
+                    if (rej)
+                        _tEvent(err, rej, true);
                 }
             });
         });
-    }
-
-
+    };
     /**
      * Configure the database driver, must be called before the connect() method.
-     * 
+     *
      * @param {any} args
      * @returns {SomeSQLInstance}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public config(args: any): SomeSQLInstance {
-        let t = this;
-        if (!t.backend) t._preConnectExtend.push(args);
+    SomeSQLInstance.prototype.config = function (args) {
+        var t = this;
+        if (!t.backend)
+            t._preConnectExtend.push(args);
         return t;
-    }
-
+    };
     /**
      * Perform a custom action supported by the database driver.
-     * 
+     *
      * @param {...Array<any>} args
      * @returns {*}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public extend(...args: Array<any>): any|SomeSQLInstance {
-        let t = this;
-
-        if (t.backend) { // Query Mode
+    SomeSQLInstance.prototype.extend = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        var t = this;
+        if (t.backend) {
             if (t.backend._extend) {
                 args.unshift(t);
                 return t.backend._extend.apply(t.backend, args);
-            } else {
+            }
+            else {
                 return undefined;
             }
         }
-    }
-
+    };
     /**
      * Load JSON directly into the DB.
      * JSON must be an array of maps, like this:
@@ -955,55 +715,54 @@ export class SomeSQLInstance {
      *  {"name":"johnny":"age":30}
      * ]
      * ```
-     * 
+     *
      * @param {Array<Object>} rows
      * @returns {(TSPromise<Array<Object>>)}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public loadJS(rows: Array<Object>): TSPromise<Array<Object>> {
-        let t = this;
-        return new TSPromise((res, rej) => {
-            TSPromise.all(rows.map((row) => {
+    SomeSQLInstance.prototype.loadJS = function (rows) {
+        var t = this;
+        return new typescript_promise_1.TSPromise(function (res, rej) {
+            typescript_promise_1.TSPromise.all(rows.map(function (row) {
                 return t.table(t._selectedTable).query("upsert", row).exec();
-            })).then((rowData) => {
+            })).then(function (rowData) {
                 res(rowData, t);
             });
         });
-    }
-
+    };
     /**
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
-     * 
+     *
      * This function performs a bunch of upserts, so expect appropriate behavior based on the primary key.
-     * 
+     *
      * @param {string} csv
      * @returns {(TSPromise<Array<Object>>)}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public loadCSV(csv: string): TSPromise<Array<Object>> {
-        let t = this;
-        let fields: Array<string> = [];
-
-        return new TSPromise((res, rej) => {
-            TSPromise.all(csv.split("\n").map((v, k) => {
-                return new TSPromise((resolve, reject) => {
+    SomeSQLInstance.prototype.loadCSV = function (csv) {
+        var t = this;
+        var fields = [];
+        return new typescript_promise_1.TSPromise(function (res, rej) {
+            typescript_promise_1.TSPromise.all(csv.split("\n").map(function (v, k) {
+                return new typescript_promise_1.TSPromise(function (resolve, reject) {
                     if (k === 0) {
                         fields = v.split(",");
                         resolve();
-                    } else {
-                        let record: StdObject<any> = {};
-                        let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                        row = row.map(str => str.replace(/^"(.+(?="$))"$/, "$1"));
-                        let i = fields.length;
+                    }
+                    else {
+                        var record = {};
+                        var row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                        row = row.map(function (str) { return str.replace(/^"(.+(?="$))"$/, "$1"); });
+                        var i = fields.length;
                         while (i--) {
                             if (row[i].indexOf("{") === 0 || row[i].indexOf("[") === 0) {
                                 row[i] = JSON.parse(row[i].replace(/'/g, ""));
                             }
                             record[fields[i]] = row[i];
                         }
-                        t.table(t._selectedTable).query("upsert", record).exec().then(() => {
+                        t.table(t._selectedTable).query("upsert", record).exec().then(function () {
                             resolve();
                         });
                     }
@@ -1012,41 +771,37 @@ export class SomeSQLInstance {
                 res([], t);
             });
         });
-    }
-
+    };
     /**
      * Export the current query to a CSV file.
-     * 
+     *
      * @param {boolean} [headers]
      * @returns {TSPromise<string>}
-     * 
+     *
      * @memberOf SomeSQLInstance
      */
-    public toCSV(headers?: boolean): TSPromise<string> {
-        let t = this;
-        return new TSPromise((res, rej) => {
-
-            t.exec().then((json: Array<Object>) => {
-
-                let header = t._query.filter((q) => {
+    SomeSQLInstance.prototype.toCSV = function (headers) {
+        var t = this;
+        return new typescript_promise_1.TSPromise(function (res, rej) {
+            t.exec().then(function (json) {
+                var header = t._query.filter(function (q) {
                     return q.type === "select";
-                }).map((q) => {
-                    return q.args ? (<Array<any>>q.args).map((m) => {
-                        return t._models[t._selectedTable].filter((f) => f["key"] === m)[0];
+                }).map(function (q) {
+                    return q.args ? q.args.map(function (m) {
+                        return t._models[t._selectedTable].filter(function (f) { return f["key"] === m; })[0];
                     }) : t._models[t._selectedTable];
                 })[0];
-
                 if (headers) {
-                    json.unshift(header.map((h) => {
+                    json.unshift(header.map(function (h) {
                         return h["key"];
                     }));
                 }
-
-                res(json.map((row: StdObject<any>, i) => {
-                    if (headers && i === 0) return row;
-                    return header.filter((column) => {
+                res(json.map(function (row, i) {
+                    if (headers && i === 0)
+                        return row;
+                    return header.filter(function (column) {
                         return row[column["key"]] ? true : false;
-                    }).map((column) => {
+                    }).map(function (column) {
                         switch (column["type"]) {
                             case "map":
                             // tslint:disable-next-line
@@ -1057,102 +812,15 @@ export class SomeSQLInstance {
                 }).join("\n"), t);
             });
         });
-    }
-}
-
-/**
- * This object is passed into a the database connect function to activate it.
- * 
- * @export
- * @interface DBConnect
- */
-export interface DBConnect {
-    _models: StdObject<Array<DataModel>>;
-    _actions: StdObject<Array<ActionOrView>>;
-    _views: StdObject<Array<ActionOrView>>;
-    _filters: {
-        [key: string]:  (rows: Array<DBRow>) => Array<DBRow>
     };
-    _extendCalls: Array<any>;
-    _parent: SomeSQLInstance;
-    _onSuccess: Function;
-    _onFail?: Function;
-}
-
-/**
- * These variables are passed into the database execution function.
- * 
- * @export
- * @interface DBExec
- */
-export interface DBExec {
-    _table: string;
-    _query: Array<QueryLine>;
-    _viewOrAction: string;
-    _onSuccess: (rows: Array<Object>) => void;
-    _onFail: (rows: Array<Object>) => void;
-}
-
-export interface SomeSQLBackend {
-
-    /**
-     * Inilitize the database for use, async so you can connect to remote stuff as needed.
-     * 
-     * This is called by SomeSQL once to the DB driver once the developer calls "connect()".
-     *
-     * Models, Views, Actions, and added Filters are all sent in at once.  Once the "onSuccess" function is called the database should be ready to use.
-     * 
-     * The "preCustom" var contains an array of calls made to the "custom" method before connect() was called.  All subsequent custom() calls will pass directly to the database "custom()" method.
-     * 
-     * @param {DBConnect} connectArgs
-     * 
-     * @memberOf SomeSQLBackend
-     */
-    _connect(connectArgs: DBConnect): void;
-
-    /**
-     * Executes a specific query on the database with a specific table
-     * 
-     * This is called on "exec()" and all the query parameters are passed in as an array of Objects containing the query parameters.
-     * 
-     * The syntax is pretty straightforward, for example a query like this: SomeSQL("users").query("select").exec() will turn into this:
-     * ```ts
-     * [{type:'select',args:undefined}]
-     * ```
-     * 
-     * Let's say the person using the system gets crazy and does SomeSQL("users").query("select",['username']).orderBy({name:'desc'}).exec();
-     * Then you get this:
-     * ```ts
-     * [{type:'select',args:['username']},{type:"orderBy",args:{name:'desc}}]
-     * ```
-     * 
-     * With that information and the table name you can create the query as needed, then return it through the onSuccess function.
-     * 
-     * @param {DBExec} execArgs
-     * 
-     * @memberOf SomeSQLBackend
-     */
-    _exec(execArgs: DBExec): void;
-
-    /**
-     * Optional extension for the database.
-     * The extend method for SomeSQL is just a passthrough to this method.
-     * An entirely different and new API can be built around this.
-     * 
-     * @param {SomeSQLInstance} instance
-     * @param {...Array<any>} args
-     * @returns {*}
-     * 
-     * @memberOf SomeSQLBackend
-     */
-    _extend?(instance: SomeSQLInstance, ...args: Array<any>): any;
-}
-
+    return SomeSQLInstance;
+}());
+exports.SomeSQLInstance = SomeSQLInstance;
 /**
  * @internal
  */
-let _someSQLStatic = new SomeSQLInstance();
-
-export function SomeSQL(setTablePointer?: string) {
+var _someSQLStatic = new SomeSQLInstance();
+function SomeSQL(setTablePointer) {
     return _someSQLStatic.table(setTablePointer);
 }
+exports.SomeSQL = SomeSQL;

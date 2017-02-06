@@ -9,10 +9,14 @@
     "strictNullChecks":true,
     "noImplicitAny":true,
     "noImplicitReturns":true,
-    "noImplicitThis":true
+    "noImplicitThis":true,
+    "noImplicitUseStrict":true
   },
+  "include":[
+    "src/**/*"
+  ],
   "exclude":[
-    "examples",
-    "node_modules"
+    "src/old-memory-db.ts",
+    "src/immutable-db.ts"
   ]
 }

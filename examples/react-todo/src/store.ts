@@ -4,7 +4,7 @@ export function initStore() {
 
     SomeSQL("todos")
     .model([
-        {key: "id" ,type: "uuid", props: ["pk"]},
+        {key: "id" ,type: "int", props: ["pk"]},
         {key: "done", type: "bool", default: false},
         {key: "title", type: "string", default: ""}
     ])
@@ -21,7 +21,7 @@ export function initStore() {
         },
         {
             name: "mark_todo_done",
-            args: ["id:string"],
+            args: ["id:int"],
             call: (args, db) => {
                 return db.query("upsert", {done: true}).where(["id", "=", args.id]).exec();
             }

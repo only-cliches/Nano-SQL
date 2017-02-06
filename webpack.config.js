@@ -37,12 +37,12 @@ var options = {
 
 switch(process.env.NODE_ENV) {
     case "development":
-        options['watch'] = true;
+        /*options['watch'] = true;
         options['plugins'].push(new WriteFilePlugin());
         options['devServer'] = {
             contentBase: "./",
             outputPath: path.join(__dirname, './dist')
-        };
+        };*/
     break;  
     case "build": //for nodejs index.js
         options['externals'] = ['typescript-map','typescript-promise'];
@@ -53,7 +53,7 @@ switch(process.env.NODE_ENV) {
                 warnings: false
             },
             mangle:{
-                props:{regex:new RegExp(/^_/)}
+                props:{regex:new RegExp(/^_|TSPromise/)}
             }
         }));
     break;

@@ -8,9 +8,9 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
     function initStore() {
         some_sql_1.SomeSQL("todos")
             .model([
-            { key: "id", type: "uuid", props: ["pk"] },
-            { key: "done", type: "bool" },
-            { key: "title", type: "string" }
+            { key: "id", type: "int", props: ["pk"] },
+            { key: "done", type: "bool", default: false },
+            { key: "title", type: "string", default: "" }
         ])
             .actions([
             {
@@ -18,16 +18,16 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
                 args: ["title:string"],
                 call: function (args, db) {
                     return db.query("upsert", {
-                        title: args["title"],
+                        title: args.title,
                         done: false,
                     }).exec();
                 }
             },
             {
                 name: "mark_todo_done",
-                args: ["id:string"],
+                args: ["id:int"],
                 call: function (args, db) {
-                    return db.query("upsert", { done: true }).where(["id", "=", args["id"]]).exec();
+                    return db.query("upsert", { done: true }).where(["id", "=", args.id]).exec();
                 }
             }
         ])
@@ -54,26 +54,27 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
     };
     ;
     var TodoTable = function (props) {
-        return (React.createElement("table", null,
-            React.createElement("thead", null,
-                React.createElement("tr", null,
-                    React.createElement("th", { style: TitleStyle }, "Title"),
-                    React.createElement("th", null, "Done"))),
+        return (React.createElement("table", null, 
+            React.createElement("thead", null, 
+                React.createElement("tr", null, 
+                    React.createElement("th", {style: TitleStyle}, "Title"), 
+                    React.createElement("th", null, "Done"))
+            ), 
             React.createElement("tbody", null, props.todos.map(function (todo) {
-                return React.createElement("tr", null,
-                    React.createElement("td", { style: todo.done ? Done : {} }, todo.title),
-                    React.createElement("td", null,
-                        React.createElement("input", { type: "checkbox", disabled: todo.done, value: todo.done, onChange: function () { return todo.done ? null : props.markDone.apply(_this, [todo.id]); } })));
+                return React.createElement("tr", null, 
+                    React.createElement("td", {style: todo.done ? Done : {}}, todo.title), 
+                    React.createElement("td", null, 
+                        React.createElement("input", {type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, value: todo.done, onChange: function () { return todo.done ? null : props.markDone.apply(_this, [todo.id]); }})
+                    ));
             }))));
     };
     var TodoForm = (function (_super) {
         __extends(TodoForm, _super);
         function TodoForm() {
-            var _this = _super.call(this) || this;
-            _this.state = { value: "" };
-            _this.onSubmit = _this.onSubmit.bind(_this);
-            _this.updateTitle = _this.updateTitle.bind(_this);
-            return _this;
+            _super.call(this);
+            this.state = { value: "" };
+            this.onSubmit = this.onSubmit.bind(this);
+            this.updateTitle = this.updateTitle.bind(this);
         }
         TodoForm.prototype.onSubmit = function (event) {
             var _this = this;
@@ -92,35 +93,53 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             });
         };
         ;
+        TodoForm.prototype.shouldComponentUpdate = function (nextProps, nextState) {
+            return this.state.value !== nextState.value;
+        };
         TodoForm.prototype.render = function () {
-            return (React.createElement("form", { onSubmit: this.onSubmit },
-                React.createElement("div", { className: "row" },
-                    React.createElement("div", { className: "column column-75" },
-                        React.createElement("input", { placeholder: "New Todo Title", type: "text", value: this.state.value, onChange: this.updateTitle })),
-                    React.createElement("div", { className: "column column-25" },
-                        React.createElement("input", { className: "button button-outline", type: "submit", value: "+" })))));
+            return (React.createElement("form", {onSubmit: this.onSubmit}, 
+                React.createElement("div", {className: "row"}, 
+                    React.createElement("div", {className: "column column-75"}, 
+                        React.createElement("input", {placeholder: "New Todo Title", type: "text", value: this.state.value, onChange: this.updateTitle})
+                    ), 
+                    React.createElement("div", {className: "column column-25"}, 
+                        React.createElement("input", {className: "button button-outline", type: "submit", value: "+"})
+                    ))
+            ));
         };
         return TodoForm;
     }(react_1.Component));
     var TodoApp = (function (_super) {
         __extends(TodoApp, _super);
         function TodoApp() {
-            var _this = _super.call(this) || this;
-            _this.state = {
-                todos: []
+            _super.call(this);
+            this.state = {
+                todos: [],
+                redos: [0, 0]
             };
-            _this.updateComponent = _this.updateComponent.bind(_this);
-            _this.markDone = _this.markDone.bind(_this);
-            return _this;
+            this.updateComponent = this.updateComponent.bind(this);
+            this.markDone = this.markDone.bind(this);
+            this.undo = this.undo.bind(this);
+            this.redo = this.redo.bind(this);
         }
         TodoApp.prototype.markDone = function (todoID) {
             some_sql_2.SomeSQL("todos").doAction("mark_todo_done", { id: todoID });
         };
+        TodoApp.prototype.undo = function () {
+            some_sql_2.SomeSQL().extend("<");
+        };
+        TodoApp.prototype.redo = function () {
+            some_sql_2.SomeSQL().extend(">");
+        };
         TodoApp.prototype.updateComponent = function (e, db) {
-            var _this = this;
+            var t = this;
+            var oldRedo = this.state.redos;
             db.getView("list_all_todos").then(function (rows, db) {
-                _this.setState({
-                    todos: rows
+                some_sql_2.SomeSQL().extend("?").then(function (historyArray) {
+                    t.setState({
+                        todos: rows,
+                        redos: historyArray
+                    });
                 });
             });
         };
@@ -134,10 +153,21 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             return this.state.todos !== nextState.todos;
         };
         TodoApp.prototype.render = function () {
-            return (React.createElement("div", { className: "container" },
-                React.createElement("h1", null, "Todo Items"),
-                React.createElement(TodoTable, { markDone: this.markDone, todos: this.state.todos }),
-                React.createElement(TodoForm, null)));
+            return (React.createElement("div", {className: "container"}, 
+                React.createElement("br", null), 
+                React.createElement("br", null), 
+                React.createElement("div", {className: "row"}, 
+                    React.createElement("div", {className: "column column-50"}, 
+                        React.createElement("h2", null, "Todo Items")
+                    ), 
+                    React.createElement("div", {className: "column column-25"}, 
+                        React.createElement("button", {disabled: this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1], onClick: this.undo, className: "noselect button"}, "Undo")
+                    ), 
+                    React.createElement("div", {className: "column column-25"}, 
+                        React.createElement("button", {disabled: this.state.redos[1] === 0, onClick: this.redo, className: "noselect button"}, "Redo")
+                    )), 
+                React.createElement(TodoForm, null), 
+                React.createElement(TodoTable, {markDone: this.markDone, todos: this.state.todos})));
         };
         return TodoApp;
     }(react_1.Component));
