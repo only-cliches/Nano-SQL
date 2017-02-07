@@ -1,6 +1,9 @@
 # Change Log
 
 ## [0.2.1] 2-6-2017
+- Fixed typings reference.
+
+## [0.2.1] 2-6-2017
 - Added Join API.
 - Adjusted the node build.
 - Started adding tests.

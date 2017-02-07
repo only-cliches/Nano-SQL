@@ -12,7 +12,7 @@
   "dependencies": {
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
-    "some-sql": "git+https://github.com/ClickSimply/Some-SQL.git"
+    "some-sql": "^0.2.1"
   },
   "devDependencies": {
     "@types/react": "^0.14.55",

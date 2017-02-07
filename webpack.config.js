@@ -23,7 +23,7 @@ var options = {
     plugins: [],
     module: {
         loaders: [{
-            test: /\.ts$/,
+            test: /\.ts$z/,
             loader: 'ts-loader'
         }],
         preLoaders: [

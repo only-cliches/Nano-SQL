@@ -740,15 +740,14 @@ export class SomeSQLInstance {
      * ```ts
      *  SomeSQL("orders").query("select",["orders.id","orders.title","users.name"]).join({
      *      type:"inner",
-     *      query:SomeSQL("users").query("select").exec(),
+     *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
      * 
      * A few notes on the join command:
-     * 1. You muse use dot notation and both tables in all "where" and "select" arguments
-     * 2. The initial "select" command lets you set what columns will appear in the final query.
-     * 3. The "query" argument lets you determine the data on the right side of the join.
-     * 4. The "where" argument lets you set what conditions the tables are joined on.
+     * 1. You muse use dot notation and both tables in all "where", "select", and "orderby" arguments
+     * 2. The "table" argument lets you determine the data on the right side of the join.
+     * 3. The "where" argument lets you set what conditions the tables are joined on.
      * 
      * ```
      * 

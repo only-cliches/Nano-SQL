@@ -757,8 +757,6 @@ class _SomeSQLQuery {
                         });
                     } else {
 
-
-                        // let mv = t._db._materialViewsIndex[t._viewHash][t._queryHash]._index;
                         rows.forEach((row) => {
                             if (qArgs.length) { // Likely the largest suck of performance, an actual shallow copy of each row must be made.
 
@@ -811,9 +809,6 @@ class _SomeSQLQuery {
 
                         scribe = "modified";
                     } else { // Just delete the entire row
-                        // let pkIndex = t._db._tableInfo[t._db._selectedTable]._pkIndex;
-                        // delete pkIndex[t._getRow(delRows[i])[pk]]; // Remove from primary key index
-                        // ta.splice(ta.indexOf(delRows[i]), 1); // Remove from table row index.
                         t._db._rows[delRows[i]].unshift(null); // Add "null" to history to show removal.
                     }
                 }

@@ -7,11 +7,11 @@ import { SomeSQL, DatabaseEvent, SomeSQLInstance } from "some-sql";
 
 const TitleStyle = {
     width: "75%"
-}
+};
 
 const Done = {
     textDecoration: "line-through"
-}
+};
 
 interface Nothing {};
 
@@ -35,7 +35,7 @@ const TodoTable = (props: {todos: Array<any>, markDone: (todoID: string) => void
             </tbody>
         </table>
     );
-}
+};
 
 interface FormState {
     value: string;
@@ -165,13 +165,10 @@ class TodoApp extends Component<Nothing, TodoAppState> {
                 <TodoForm />
                 <TodoTable markDone={this.markDone} todos={this.state.todos} />
             </div>
-        )
+        );
     }
 }
-
-
 
 initStore().then(() => {
     ReactDOM.render(<TodoApp />, document.body);
 });
-
