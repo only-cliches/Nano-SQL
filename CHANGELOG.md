@@ -1,6 +1,10 @@
 # Change Log
 
-## [0.2.1] 2-6-2017
+
+## [0.2.3] 2-6-2017
+- Fixed typo in package.json
+
+## [0.2.2] 2-6-2017
 - Fixed typings reference.
 
 ## [0.2.1] 2-6-2017

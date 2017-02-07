@@ -1,6 +1,6 @@
 {
   "name": "some-sql",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "",
   "main": "node/index.js",
   "scripts": {
@@ -12,7 +12,7 @@
     "type": "git",
     "url": "https://github.com/ClickSimply/Some-SQL.git"
   },
-  "typings":"node/inded.d.ts",
+  "typings":"node/index.d.ts",
   "devDependencies": {
     "@types/react-dom": "^0.14.22",
     "ts-loader": "^0.8.2",
