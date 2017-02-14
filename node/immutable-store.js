@@ -1,4 +1,13 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+var index_1 = require("./index");
 var typescript_promise_1 = require("typescript-promise");
 var _filters = {
     sum: function (rows) {
@@ -32,6 +41,8 @@ var _filters = {
 /**
  * The main class for the immutable database, holds the indexes, data and primary methods.
  *
+ * A majority of data moving around for select statements and the like is indexes, not the actual data.
+ *
  * @export
  * @class _SomeSQLImmuDB
  * @implements {SomeSQLBackend}
@@ -53,6 +64,30 @@ var _SomeSQLImmuDB = (function () {
         t._joinedRelations = [];
     }
     /**
+     * Get a row object from the store based on the current history markers.
+     *
+     * @public
+     * @param {number} rowID
+     * @returns {(DBRow|null)}
+     *
+     * @memberOf _SomeSQLQuery
+     */
+    _SomeSQLImmuDB.prototype._getRow = function (rowID) {
+        return this._rows[rowID][this._historyIDs(rowID)];
+    };
+    /**
+     * Get the IDs of the current history pointers for a given rowID.
+     *
+     * @public
+     * @param {number} rowID
+     * @returns
+     *
+     * @memberOf _SomeSQLQuery
+     */
+    _SomeSQLImmuDB.prototype._historyIDs = function (rowID) {
+        return this._historyPointers[rowID];
+    };
+    /**
      * Called once to init the database, prep all the needed variables and data models
      *
      * @param {DBConnect} connectArgs
@@ -63,9 +98,13 @@ var _SomeSQLImmuDB = (function () {
         var t = this;
         var i = 0;
         var p;
+        var tables = [];
+        var upgrading = false;
         t._parent = connectArgs._parent;
+        t._persistent = connectArgs._config.length ? connectArgs._config[0].persistent || false : false;
         for (var tableName in connectArgs._models) {
-            var ta = _SomeSQLImmuDB._hash(tableName);
+            var ta = index_1.SomeSQLInstance._hash(tableName);
+            tables.push(tableName);
             t._models[ta] = connectArgs._models[tableName];
             t._queryCache[ta] = {};
             t._tableInfo[ta] = {
@@ -84,13 +123,73 @@ var _SomeSQLImmuDB = (function () {
                 }
             }
         }
-        t._databaseID = _SomeSQLImmuDB._hash(JSON.stringify(connectArgs._models));
+        t._databaseID = index_1.SomeSQLInstance._hash(JSON.stringify(connectArgs._models));
         if (connectArgs._filters) {
             for (var f in connectArgs._filters) {
                 _filters[f] = connectArgs._filters[f];
             }
         }
-        connectArgs._onSuccess();
+        var index = 0;
+        if (t._persistent && window && window.indexedDB) {
+            var idb = window.indexedDB.open(String(t._databaseID), 1);
+            // Called only when there is no existing DB, creates the tables and data store.
+            idb.onupgradeneeded = function (event) {
+                upgrading = true;
+                var db = event.target.result;
+                var next = function () {
+                    if (index < tables.length) {
+                        var ta = index_1.SomeSQLInstance._hash(tables[index]);
+                        var config = t._tableInfo[ta]._pk ? { keyPath: t._tableInfo[ta]._pk } : {};
+                        db.createObjectStore(tables[index], config);
+                        index++;
+                        next();
+                    }
+                    else {
+                        connectArgs._onSuccess();
+                    }
+                };
+                next();
+            };
+            // Called once the database is connected and working
+            idb.onsuccess = function (event) {
+                t._indexedDB = event.target.result;
+                // Called to import existing indexed DB data into the store.
+                if (!upgrading) {
+                    t.isImporting = true;
+                    var next_1 = function () {
+                        if (index < tables.length) {
+                            var ta = index_1.SomeSQLInstance._hash(tables[index]);
+                            var transaction = t._indexedDB.transaction(tables[index], IDBTransaction.READ_ONLY);
+                            var store = transaction.objectStore(tables[index]);
+                            var cursorRequest = store.openCursor();
+                            var items_1 = [];
+                            transaction.oncomplete = function () {
+                                t._parent.table(tables[index]).loadJS(items_1).then(function () {
+                                    index++;
+                                    next_1();
+                                });
+                            };
+                            cursorRequest.onsuccess = function (evt) {
+                                var cursor = evt.target.result;
+                                if (cursor) {
+                                    items_1.push(cursor.value);
+                                    cursor.continue();
+                                }
+                            };
+                        }
+                        else {
+                            t.isImporting = false;
+                            connectArgs._onSuccess();
+                        }
+                    };
+                    next_1();
+                }
+                ;
+            };
+        }
+        else {
+            connectArgs._onSuccess();
+        }
     };
     /**
      * Called by SomeSQL to execute queries on this database.
@@ -105,7 +204,7 @@ var _SomeSQLImmuDB = (function () {
             t._pendingQuerys.push(execArgs);
         }
         else {
-            t._selectedTable = _SomeSQLImmuDB._hash(execArgs._table);
+            t._selectedTable = index_1.SomeSQLInstance._hash(execArgs._table);
             new _SomeSQLQuery(t)._doQuery(execArgs).then(function (query) {
                 if (t._pendingQuerys.length) {
                     t._exec(t._pendingQuerys.pop());
@@ -147,7 +246,7 @@ var _SomeSQLImmuDB = (function () {
     /**
      * Utility function to remove duplicates from an array.
      *
-     * @interal
+     * @internal
      * @param {Array<any>} sortedArray
      * @returns {Array<any>}
      *
@@ -159,9 +258,27 @@ var _SomeSQLImmuDB = (function () {
         });
     };
     /**
-     * Undo & Redo logic
+     * Undo & Redo logic.
      *
-     * @internal
+     * ### Undo
+     * Reverse the state of the database by one step into the past.
+     * Usage: `SomeSQL().extend("<")`;
+     *
+     * ### Redo
+     * Step the database state forward by one.
+     * Usage: `SomeSQL().extend(">")`;
+     *
+     * ### Query
+     * Discover the state of the history system
+     * ```ts
+     * SomeSQL().extend("?").then(function(state) {
+     *  console.log(state[0]) // <= length of history records
+     *  console.log(state[1]) // <= current history pointer position
+     * });
+     * ```
+     *
+     * The history point is zero by default, perforing undo shifts the pointer backward while redo shifts it forward.
+     *
      * @param {SomeSQLInstance} db
      * @param {("<"|">"|"?")} command
      * @returns {TSPromise<any>}
@@ -172,12 +289,28 @@ var _SomeSQLImmuDB = (function () {
         var t = this;
         var i;
         var h;
+        var rowID;
+        var rowData;
+        var rowKey;
+        var store = t._indexedDB.transaction(t._tableInfo[t._selectedTable]._name, "readwrite").objectStore(t._tableInfo[t._selectedTable]._name);
         var shiftRowIDs = function (direction) {
             i = t._historyRecords[t._historyPoint].length;
             while (i--) {
-                t._historyPointers[t._historyRecords[t._historyPoint][i]] += direction;
-                if (t._historyPointers[t._historyRecords[t._historyPoint][i]] < 0)
-                    t._historyPointers[t._historyRecords[t._historyPoint][i]] = 0;
+                rowID = t._historyRecords[t._historyPoint][i];
+                rowData = t._getRow(rowID) || {};
+                rowKey = rowData[t._tableInfo[t._selectedTable]._pk];
+                t._historyPointers[rowID] += direction;
+                rowData = t._getRow(rowID);
+                if (t._indexedDB) {
+                    if (rowData) {
+                        store.put(rowData);
+                    }
+                    else {
+                        store.delete(rowKey);
+                    }
+                }
+                if (t._historyPointers[rowID] < 0)
+                    t._historyPointers[rowID] = 0;
             }
         };
         return new typescript_promise_1.TSPromise(function (res, rej) {
@@ -218,20 +351,6 @@ var _SomeSQLImmuDB = (function () {
             }
         });
     };
-    /**
-     * Utility function for generating numerical hashes from strings.
-     *
-     * @internal
-     * @param {string} key
-     * @returns {number}
-     *
-     * @memberOf _SomeSQLImmuDB
-     */
-    _SomeSQLImmuDB._hash = function (key) {
-        return Math.abs(key.split("").reduce(function (prev, next, i) {
-            return (((prev << 5) + prev) + key.charCodeAt(i));
-        }, 0));
-    };
     return _SomeSQLImmuDB;
 }());
 exports._SomeSQLImmuDB = _SomeSQLImmuDB;
@@ -261,9 +380,9 @@ var _SomeSQLQuery = (function () {
             t._mod = [];
             t._act = undefined;
             // t._actionOrView = query._viewOrAction || "";
-            t._db._selectedTable = _SomeSQLImmuDB._hash(query._table);
-            // t._viewHash = _SomeSQLImmuDB._hash(query._table + t._actionOrView);
-            t._queryHash = _SomeSQLImmuDB._hash(JSON.stringify(query._query));
+            t._db._selectedTable = index_1.SomeSQLInstance._hash(query._table);
+            // t._viewHash = SomeSQLInstance._hash(query._table + t._actionOrView);
+            t._queryHash = index_1.SomeSQLInstance._hash(JSON.stringify(query._query));
             typescript_promise_1.TSPromise.all(query._query.map(function (q) {
                 return new typescript_promise_1.TSPromise(function (resolve, reject) {
                     if (["upsert", "select", "delete", "drop"].indexOf(q.type) !== -1) {
@@ -319,7 +438,7 @@ var _SomeSQLQuery = (function () {
         var k;
         var whereRows = [];
         var changedRowIDs = [];
-        var ta = t._db._tableInfo[t._db._selectedTable]._index.slice();
+        var ta = t._db._tableInfo[t._db._selectedTable]._index.slice(); // Copy the table index.
         var rowID;
         var m;
         var mod;
@@ -347,8 +466,8 @@ var _SomeSQLQuery = (function () {
                         if (index < t._db._historyPoint) {
                             k = val.length;
                             while (k--) {
-                                t._db._historyPointers[val[k]] = 0;
-                                t._db._rows[val[k]].shift();
+                                t._db._historyPointers[val[k]] = 0; // Set this row history pointer to 0;
+                                t._db._rows[val[k]].shift(); // Shift off the most recent update
                             }
                             return false;
                         }
@@ -356,7 +475,14 @@ var _SomeSQLQuery = (function () {
                     });
                     t._db._historyPoint = 0;
                 }
-                t._db._historyRecords.unshift(changedRowIDs);
+                if (t._db.isImporting) {
+                    if (!t._db._historyRecords[0])
+                        t._db._historyRecords[0] = [];
+                    t._db._historyRecords[0] = t._db._historyRecords[0].concat(changedRowIDs);
+                }
+                else {
+                    t._db._historyRecords.unshift(changedRowIDs);
+                }
                 t._db._invalidateCache(false);
                 callBack([{ msg: updateLength + " row(s) " + describe }]);
             }
@@ -366,11 +492,16 @@ var _SomeSQLQuery = (function () {
         };
         var updateRow = function (rowID, cb) {
             changedRowIDs.push(rowID);
-            var newRow = JSON.parse(JSON.stringify(t._getRow(rowID) || {}));
+            var newRow = __assign({}, t._db._getRow(rowID) || {});
+            // let newRow = JSON.parse(JSON.stringify(t._getRow(rowID) || {}));
             for (var key in qArgs) {
                 newRow[key] = cb(key, newRow[key]);
             }
             t._db._rows[rowID].unshift(Object.freeze(newRow));
+            if (t._db._indexedDB) {
+                var tableName = t._db._tableInfo[t._db._selectedTable]._name;
+                t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).put(newRow);
+            }
         };
         // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
         if (t._act.type !== "drop") {
@@ -385,6 +516,9 @@ var _SomeSQLQuery = (function () {
             case "upsert":
                 scribe = "updated";
                 i = whereRows.length;
+                if (hasWhere.length && qArgs[pk]) {
+                    throw new Error("Can't use a where statement if you have a non null primary key value!");
+                }
                 if (hasWhere.length) {
                     msg = i;
                     scribe = "modified";
@@ -402,16 +536,25 @@ var _SomeSQLQuery = (function () {
                         }
                         else {
                             rowID = t._newRow();
-                            t._db._tableInfo[t._db._selectedTable]._incriment = Math.max(qArgs[pk], t._db._tableInfo[t._db._selectedTable]._incriment);
+                            scribe = "inserted";
+                            t._db._tableInfo[t._db._selectedTable]._incriment = Math.max(qArgs[pk] + 1, t._db._tableInfo[t._db._selectedTable]._incriment);
                             t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]] = rowID;
                         }
                     }
                     else {
+                        scribe = "inserted";
                         m = t._db._models[t._db._selectedTable].length;
                         while (m--) {
                             mod = t._db._models[t._db._selectedTable][m];
-                            if (mod.props && mod.props.indexOf("pk") !== -1 && mod.type === "int") {
-                                qArgs[pk] = t._db._tableInfo[t._db._selectedTable]._incriment++;
+                            if (mod.props && mod.props.indexOf("pk") !== -1) {
+                                switch (mod.type) {
+                                    case "int":
+                                        qArgs[pk] = t._db._tableInfo[t._db._selectedTable]._incriment++;
+                                        break;
+                                    case "uuid":
+                                        qArgs[pk] = index_1.SomeSQLInstance.uuid();
+                                        break;
+                                }
                                 rowID = t._newRow();
                                 t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]] = rowID;
                             }
@@ -421,7 +564,6 @@ var _SomeSQLQuery = (function () {
                         return qArgs[key] || oldData;
                     });
                     msg = 1;
-                    scribe = "inserted";
                 }
                 tableChanged(msg, scribe);
                 break;
@@ -443,7 +585,7 @@ var _SomeSQLQuery = (function () {
                                         return;
                                     w = curMod.args.where.map(function (tableAndColumn, index1) {
                                         return tableAndColumn.split(".").map(function (e, index) {
-                                            return index1 !== 1 ? (index === 0 ? _SomeSQLImmuDB._hash(e) : e) : e;
+                                            return index1 !== 1 ? (index === 0 ? index_1.SomeSQLInstance._hash(e) : e) : e;
                                         });
                                     });
                                     var rightTable = t._db._tableInfo[w[2][0]];
@@ -468,8 +610,8 @@ var _SomeSQLQuery = (function () {
                                         if (!curMod)
                                             return;
                                         column = keys[i];
-                                        rowA = t._getRow(a) || {};
-                                        rowB = t._getRow(b) || {};
+                                        rowA = t._db._getRow(a) || {};
+                                        rowB = t._db._getRow(b) || {};
                                         return ((rowA[column] > rowB[column] ? 1 : -1) * (curMod.args[column] === "asc" ? 1 : -1)) + prev;
                                     }, 0);
                                 }));
@@ -496,11 +638,10 @@ var _SomeSQLQuery = (function () {
                         });
                     }
                     else {
-                        // let mv = t._db._materialViewsIndex[t._viewHash][t._queryHash]._index;
                         rows.forEach(function (row) {
                             if (qArgs.length) {
                                 k = qArgs.length;
-                                rowData = t._getRow(row);
+                                rowData = t._db._getRow(row);
                                 if (rowData) {
                                     obj = {};
                                     while (k-- && obj && rowData) {
@@ -513,7 +654,7 @@ var _SomeSQLQuery = (function () {
                                 }
                             }
                             else {
-                                obj = t._getRow(row);
+                                obj = t._db._getRow(row);
                             }
                             ;
                             if (obj)
@@ -537,6 +678,7 @@ var _SomeSQLQuery = (function () {
                 }
                 scribe = "deleted";
                 i = delRows.length;
+                var tableName = t._db._tableInfo[t._db._selectedTable]._name;
                 while (i--) {
                     if (qArgs.length) {
                         updateRow(delRows[i], function (key, oldData) {
@@ -545,39 +687,17 @@ var _SomeSQLQuery = (function () {
                         scribe = "modified";
                     }
                     else {
-                        // let pkIndex = t._db._tableInfo[t._db._selectedTable]._pkIndex;
-                        // delete pkIndex[t._getRow(delRows[i])[pk]]; // Remove from primary key index
-                        // ta.splice(ta.indexOf(delRows[i]), 1); // Remove from table row index.
+                        var rowKey = (t._db._getRow(delRows[i]) || {})[t._db._tableInfo[t._db._selectedTable]._pk];
+                        if (t._db._indexedDB && rowKey) {
+                            t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowKey);
+                        }
                         t._db._rows[delRows[i]].unshift(null); // Add "null" to history to show removal.
+                        changedRowIDs.push(delRows[i]);
                     }
                 }
                 tableChanged(i, scribe);
                 break;
         }
-    };
-    /**
-     * Get a row object from the store based on the current history markers.
-     *
-     * @internal
-     * @param {number} rowID
-     * @returns {(DBRow|null)}
-     *
-     * @memberOf _SomeSQLQuery
-     */
-    _SomeSQLQuery.prototype._getRow = function (rowID) {
-        return this._db._rows[rowID][this._historyIDs(rowID)];
-    };
-    /**
-     * Get the IDs of the current history pointers for a given rowID.
-     *
-     * @internal
-     * @param {number} rowID
-     * @returns
-     *
-     * @memberOf _SomeSQLQuery
-     */
-    _SomeSQLQuery.prototype._historyIDs = function (rowID) {
-        return this._db._historyPointers[rowID];
     };
     /**
      * Filter rows based on a where statement and inex of rows.
@@ -593,7 +713,7 @@ var _SomeSQLQuery = (function () {
         var t = this;
         var r;
         return index.filter(function (v) {
-            r = t._getRow(v);
+            r = t._db._getRow(v);
             return !r ? false : t._compare(singleWhereStatement[2], singleWhereStatement[1], r[singleWhereStatement[0]]) === 0 ? true : false;
         });
     };
@@ -679,7 +799,7 @@ var _SomeSQLQuery = (function () {
             joinKey = rowIDs.join("+");
             isNewRow = false;
             k = rowIDs.map(function (r) {
-                return t._historyIDs(r);
+                return t._db._historyIDs(r);
             });
             // Check if brand new join row
             if (!t._db._joinIndex[joinKey]) {
@@ -690,7 +810,7 @@ var _SomeSQLQuery = (function () {
                 };
             }
             // Basically, we check to see if either row this join was pulled from has changed since the last join command.
-            // If it's changed we create a new point in the joined row history with the updated information. 
+            // If it's changed we create a new point in the joined row history with the updated information.
             // Otherwise we leave it alone and don't perform the expensive join action.
             if (isNewRow || k.join("+") !== t._db._joinIndex[joinKey]._joinedHistoryIndex.join("+")) {
                 newRow = {};
@@ -710,10 +830,10 @@ var _SomeSQLQuery = (function () {
         i = index1.length;
         while (i--) {
             j = index2.length;
-            rows[0] = t._getRow(index1[i]) || {};
+            rows[0] = t._db._getRow(index1[i]) || {};
             matches = [];
             while (j--) {
-                rows[1] = t._getRow(index2[j]) || {};
+                rows[1] = t._db._getRow(index2[j]) || {};
                 if (!t._compare(rows[0][joinConditions[0][1]], joinConditions[1][0], rows[1][joinConditions[2][1]]) || type === "cross") {
                     matches.push([index2[j], rows[1]]); // [rowID, rowData]
                     rightIDs.push(index2[j]);
@@ -735,7 +855,7 @@ var _SomeSQLQuery = (function () {
             i = index2.length;
             while (i--) {
                 if (rightIDs.indexOf(index2[i]) === -1) {
-                    joinedIndex.push(doJoin([-1, index2[i]], [false, t._getRow(index2[i]) || {}]));
+                    joinedIndex.push(doJoin([-1, index2[i]], [false, t._db._getRow(index2[i]) || {}]));
                 }
             }
         }

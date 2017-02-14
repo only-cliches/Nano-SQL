@@ -1,4 +1,12 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var typescript_promise_1 = require("typescript-promise");
 var immutable_store_1 = require("./immutable-store");
 /**
@@ -42,6 +50,8 @@ var SomeSQLInstance = (function () {
     /**
      * Inits the backend database for use.
      *
+     * Optionally include a custom database driver, otherwise the built in memory driver will be used.
+     *
      * @param {SomeSQLBackend} [backend]
      * @returns {(TSPromise<Object | string>)}
      *
@@ -57,7 +67,7 @@ var SomeSQLInstance = (function () {
                 _actions: t._actions,
                 _views: t._views,
                 _filters: t._filters,
-                _extendCalls: t._preConnectExtend,
+                _config: t._preConnectExtend,
                 _parent: _this,
                 _onSuccess: function (result) {
                     res(result, t);
@@ -83,7 +93,8 @@ var SomeSQLInstance = (function () {
         var l = t._selectedTable;
         var i = 0;
         if (!t._callbacks[l]) {
-            i = t._events.length;
+            t._callbacks[l] = {};
+            t._callbacks[l]["*"] = [];
             while (i--) {
                 t._callbacks[l][t._events[i]] = [];
             }
@@ -150,11 +161,13 @@ var SomeSQLInstance = (function () {
     SomeSQLInstance.prototype.model = function (dataModel) {
         var t = this;
         var l = t._selectedTable;
-        t._callbacks[l] = {};
-        t._callbacks[l]["*"] = [];
         var i = t._events.length;
-        while (i--) {
-            t._callbacks[l][t._events[i]] = [];
+        if (!t._callbacks[l]) {
+            t._callbacks[l] = {};
+            t._callbacks[l]["*"] = [];
+            while (i--) {
+                t._callbacks[l][t._events[i]] = [];
+            }
         }
         t._models[l] = dataModel;
         t._views[l] = [];
@@ -287,13 +300,12 @@ var SomeSQLInstance = (function () {
      * @memberOf SomeSQLInstance
      */
     SomeSQLInstance.prototype._cast = function (type, val) {
-        var obj = JSON.parse(JSON.stringify(val));
         var types = {
             "string": String(val),
             "int": parseInt(val),
             "float": parseFloat(val),
-            "array": obj,
-            "map": obj,
+            "array": __assign({}, val),
+            "map": __assign({}, val),
             "bool": val === true
         };
         return types[type] || val;
@@ -411,32 +423,45 @@ var SomeSQLInstance = (function () {
      * Start a query into the current selected table.
      * Possibl querys are "select", "upsert", "delete", and "drop";
      *
+     * ### Select
+     *
      * Select is used to pull a set of rows or other data from the table.
      * When you use select the optional second argument of the query is an array of strings that allow you to show only specific columns.
      *
-     * Select examples:
+     * Examples:
      * ```ts
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
      * ```
-     * Upsert is used to add data into the database.
-     * If the primary key rows are null or undefined, the data will always be added. Otherwise, you might be updating existing rows.
+     *
+     * ### Upsert
+     *
+     * Upsert is used to add or modify data in the database.
+     * If the primary key rows are null or undefined, the data will always be added in a new row. Otherwise, you might be updating existing rows.
      * The second argument of the query with upserts is always an Object of the data to upsert.
      *
-     * Upsert Examples:
+     * Examples:
      * ```ts
-     * .query("upsert",{id:1,username:"Scott"}) //Set username to "Scott" where the row ID is 1.
-     * .query("upsert",{username:"Scott"}) //Add a new row to the db with this username in the row.  Optionally, if you use a WHERE statement this data will be applied to the rows found with the where statement.
+     * .query("upsert",{id:1, username:"Scott"}) //If row ID 1 exists, set the username to scott, otherwise create a new row with this data.
+     * .query("upsert",{username:"Scott"}) //Add a new row to the db with this username in the row.
+     * .query("upsert",{balance:-35}).where(["balance","<",0]) // If you use a WHERE statement this data will be applied to the rows found with the where statement.
      * ```
+     *
+     * ### Delete
      *
      * Delete is used to remove data from the database.
      * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
      *
-     * Delete Examples:
+     * Examples:
      * ```ts
-     * .query("delete",['balance']) //Clear the contents of the balance column.  If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
+     * .query("delete",['balance']) //Clear the contents of the balance column on ALL rows.
+     * .query("delete",['comments']).where(["accountType","=","spammer"]) // If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
+     * .query("delete") // same as drop statement
      * ```
+     *
+     * ### Drop
+     *
      * Drop is used to completely clear the contents of a database.  There are no arguments.
      *
      * Drop Examples:
@@ -445,7 +470,7 @@ var SomeSQLInstance = (function () {
      * ```
      *
      * @param {("select"|"upsert"|"delete"|"drop")} action
-     * @param {Object} [args]
+     * @param {any} [args]
      * @returns {SomeSQLInstance}
      *
      * @memberOf SomeSQLInstance
@@ -510,15 +535,14 @@ var SomeSQLInstance = (function () {
      * ```ts
      *  SomeSQL("orders").query("select",["orders.id","orders.title","users.name"]).join({
      *      type:"inner",
-     *      query:SomeSQL("users").query("select").exec(),
+     *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
      *
      * A few notes on the join command:
-     * 1. You muse use dot notation and both tables in all "where" and "select" arguments
-     * 2. The initial "select" command lets you set what columns will appear in the final query.
-     * 3. The "query" argument lets you determine the data on the right side of the join.
-     * 4. The "where" argument lets you set what conditions the tables are joined on.
+     * 1. You muse use dot notation and both tables in all "where", "select", and "orderby" arguments
+     * 2. The "table" argument lets you determine the data on the right side of the join.
+     * 3. The "where" argument lets you set what conditions the tables are joined on.
      *
      * ```
      *
@@ -549,7 +573,7 @@ var SomeSQLInstance = (function () {
      * Offsets the results by a specific amount from the beginning.  Example:
      *
      * ```ts
-     * .offset(10) //Skip the first 10 results.
+     * .offset(10) // Skip the first 10 results.
      * ```
      *
      * @param {number} args
@@ -566,8 +590,10 @@ var SomeSQLInstance = (function () {
      *
      * Example:
      * ```ts
-     * //get number of results
-     * SomeSQL("users").query("select").filter('count').exec();
+     * //get number of rows
+     * SomeSQL("users").query("select").filter("count"").exec().then(function(rows) {
+     *  console.log(rows) // <= [{count:300}]
+     * });
      * ```
      *
      * @param {string} name
@@ -618,7 +644,16 @@ var SomeSQLInstance = (function () {
         t._activeActionOrView = undefined;
     };
     /**
-     * Executes the current pending query to the db engine.
+     * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
+     * The second argument of the promise is always the SomeSQL variable, allowing you to chain commands.
+     *
+     * Example:
+     * SomeSQL("users").query("select").exec().then(function(rows, db) {
+     *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
+     *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
+     * }).then(function(rows, db) {
+     *  ...
+     * })...
      *
      * @returns {(TSPromise<Array<Object>>)}
      *
@@ -716,6 +751,8 @@ var SomeSQLInstance = (function () {
      * ]
      * ```
      *
+     * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
+     *
      * @param {Array<Object>} rows
      * @returns {(TSPromise<Array<Object>>)}
      *
@@ -724,7 +761,7 @@ var SomeSQLInstance = (function () {
     SomeSQLInstance.prototype.loadJS = function (rows) {
         var t = this;
         return new typescript_promise_1.TSPromise(function (res, rej) {
-            typescript_promise_1.TSPromise.all(rows.map(function (row) {
+            typescript_promise_1.TSPromise.chain(rows.map(function (row) {
                 return t.table(t._selectedTable).query("upsert", row).exec();
             })).then(function (rowData) {
                 res(rowData, t);
@@ -735,6 +772,8 @@ var SomeSQLInstance = (function () {
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
      *
      * This function performs a bunch of upserts, so expect appropriate behavior based on the primary key.
+     *
+     * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {string} csv
      * @returns {(TSPromise<Array<Object>>)}
@@ -773,7 +812,60 @@ var SomeSQLInstance = (function () {
         });
     };
     /**
-     * Export the current query to a CSV file.
+     * RFC4122 compliant UUID v4, 9 randomly generated 16 bit numbers.
+     *
+     * @static
+     * @returns {string}
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.uuid = function () {
+        var r, s, buf;
+        var random16Bits = function () {
+            if (window && window.crypto.getRandomValues) {
+                buf = new Uint16Array(1);
+                window.crypto.getRandomValues(buf);
+                return buf[0];
+            }
+            else {
+                return Math.round(Math.random() * Math.pow(2, 16)); // Oh god, please no.
+            }
+        }, b = "";
+        return [b, b, b, b, b, b, b, b, b].reduce(function (prev, cur, i) {
+            r = random16Bits();
+            s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
+            r = r.toString(16);
+            while (r.length < 4)
+                r = "0" + r;
+            return prev + ([3, 4, 5, 6].indexOf(i) >= 0 ? "-" : b) + (s + r).slice(0, 4);
+        }, b);
+    };
+    ;
+    /**
+     * Utility function for generating numerical hashes from strings.
+     *
+     * @internal
+     * @param {string} key
+     * @returns {number}
+     *
+     * @memberOf _SomeSQLImmuDB
+     */
+    SomeSQLInstance._hash = function (key) {
+        return Math.abs(key.split("").reduce(function (prev, next, i) {
+            return (((prev << 5) + prev) + key.charCodeAt(i));
+        }, 0));
+    };
+    /**
+     * Export the current query to a CSV file, use in place of "exec()";
+     *
+     * Example:
+     * SomeSQL("users").query("select").toCSV(true).then(function(csv, db) {
+     *   console.log(csv);
+     *   // Returns something like:
+     *   id,name,pass,postIDs
+     *   1,"scott","1234","[1,2,3,4]"
+     *   2,"jeb","5678","[5,6,7,8]"
+     * });
      *
      * @param {boolean} [headers]
      * @returns {TSPromise<string>}

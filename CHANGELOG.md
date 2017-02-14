@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.2.4] 2-13-2017
+- Updated & cleaned up documentation a bit.
+- Changed the few JSON.parse(JSON.stringify()) statements to Object.assign.
+- Added Indexed DB functionality to memory db.
+- Upgraded to Webpack 2.
+- Restored UUID functionality.
+- Added IndexedDB functionality.
 
 ## [0.2.3] 2-6-2017
 - Fixed typo in package.json

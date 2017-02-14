@@ -1,5 +1,14 @@
 # SomeSQL
-Small and efficient database abstraction layer with built in memory store.
+Small Immutable App Store with Undo & Redo.
+
+[![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/Some-SQL/blob/master/LICENSE)
+![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
+
+## Browsers support <sub><sup><sub><sub>made by <a href="https://godban.github.io">godban</a></sub></sub></sup></sub>
+
+| [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/edge.png" alt="IE / Edge" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>IE / Edge | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/firefox.png" alt="Firefox" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Firefox | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/chrome.png" alt="Chrome" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/safari.png" alt="Safari" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Safari | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/safari-ios.png" alt="iOS Safari" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>iOS Safari | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/opera-mini.png" alt="Opera Mini" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Opera Mini | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/chrome-android.png" alt="Chrome for Android" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome for Android |
+| --------- | --------- | --------- | --------- | --------- | --------- | --------- |
+| IE9, IE10, IE11, Edge| last 2 versions| last 2 versions| last 2 versions| last 2 versions| last 2 versions| last 2 versions
 
 I looked everywhere for a data store with these features and couldn't find it:
 
@@ -17,7 +26,7 @@ SomeSQL comes to you in two parts minified into a single file.
 
 ### General Features
 * Written in TypeScript with 100% type coverage.
-* Works in NodeJS and the Browser.
+* Works in NodeJS and the browser.
 * Uses Promises like no one's business.
 
 ### 1. Database Abstraction Layer
@@ -32,12 +41,13 @@ SomeSQL comes to you in two parts minified into a single file.
 * Listen for change or other events on any or all tables.
 
 ### 2. Built In Memory Database Driver
-* Fast and efficient selects and inserts.
-* Only shallow data copies, very memory efficient.
+* Fast and efficient in memory store for your applications.
 * Returns immutable sets, optimized for use with ReactJS & Angular 2.
+* Query cache and shallow copying optimizations.
 * Built in, super simple undo/redo.
+* Optionally persiset to IndexedDB.
 
-Oh yeah, and it's all under 6 Kb gzipped. :)
+Oh yeah, and it's all just 6 Kb gzipped. :)
 
 
 ## Simple Usage
@@ -288,6 +298,7 @@ Events can be called before or after setup mode, at any time.
 | .model()     | Declare database model, required.                                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#model) |
 | .views()     | Declare views to use.                                                       | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#views) |
 | .actions()   | Declare actions to use.                                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#actions) |
+| .config()    | Pass custom configuration options to the database driver.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#config) |
 | .addFilter() | Add a filter that can be used on queries.                                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#addfilter) |
 | .connect()   | Complete setup mode and optionally connect to a specific backend, required. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#connect) |
 
@@ -315,9 +326,9 @@ Each modifier can take up to two arguments and normally can only be used once.  
 | .where()   | Adds a search component to the current query.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#where) |
 | .orderBy() | Adds a order by component to the current query.              | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#orderby) |
 | .join()    | Combine multiple queries into one using a where statement.   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#join) |
-| .offset()  | Offset the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#offset) |
-| .limit()   | Limits the current query by a given value                    | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#limit) |
-| .filter()  | Applies a custom filter to the current query                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter) |
+| .offset()  | Offset the current query by a given value.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#offset) |
+| .limit()   | Limits the current query by a given value.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#limit) |
+| .filter()  | Applies a custom filter to the current query.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter) |
 | .extend()  | Use a extend query modifier provided by the database driver. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#extend) |
 
 
@@ -325,10 +336,19 @@ Each modifier can take up to two arguments and normally can only be used once.  
 
 These come at the end of a query to execute it on the database.
 
+| Command    | Definition                                                                     |          |
+|------------|--------------------------------------------------------------------------------|----------|
+| .exec()    | Executes a pending query andn returns an array of objects, returns a promise.  | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#exec) |
+| .toCSV()   | Executes the pending query and returns a CSV of it, returns a promise.         | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#tocsv) |
+
+
+### Mass Import Data
+
 | Command    | Definition                                                             |          |
 |------------|------------------------------------------------------------------------|----------|
-| .exec()    | Executes a pending query, returns a promise.                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#exec) |
-| .toCSV()   | Executes the pending query and returns a CSV of it, returns a promise. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#tocsv) |
+| .loadJS()  | Loads json directly into the database.                                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#loadjs) |
+| .loadCSV() | Loads CSV files directly into the database.                            | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#loadcsv) |
+
 
 
 ### Actions & Views
@@ -346,17 +366,63 @@ These can be used in replacement of the query..exec pattern to execute a given v
 ## Memory Database API
 Documentation here is specific to the built in memory database driver.
 
-### Caching
-All select queries are cached in an immutable store, the caches are split up by table.  When you perform an update or delete on a table, it will invalidate all the caches attached to that table.
+### IndexedDB Persistence
+To use this feature just call `config()` on SomeSQL before `connect()` with `{persistence:true}`.
 
-Also, using JOIN commands will cause multiple table caches to be invalidated so expect degraded performance with joins.
+Example:
+
+```ts
+SomeSQL("table")
+.models([...])
+.actions([...])
+.views([...])
+.config({
+    persistence:true
+})
+.connect();
+```
+
+Some usage notes:
+- Enabling this will degrade write performance as the indexedDB has to be succesfully updated before a write is complete.
+- Indexed DB stores are attached to the data model.  If you change the data model a new IndexedDB store will be generated.
+- This will automatically persist all database rows, tables and history to the IndexedDB in the client browser.
+- When `connect()` is called, all existing IndexedDB data will be loaded into the memory store.
+- Queries will still and always use the in memory store, this only copies the in memory store to IndexedDB.
+
+### Caching
+The cacheing system is write optimized and saves the results of every select query.
+
+With this setup, as long as a table is not modified identical select statements will only require a single actual select on that table.  Every subsequent select query after the first will draw from the cache, pointing to the same object allowing strict comparison checking ("==="). 
+
+Once you modify a table, all caches for that table are cleared, however the rows themselves are still immutable so once the query itself is recreated unchanged rows will still pass "===" checks.
+
+Finally, using JOIN commands will cause multiple table caches to be invalidated on single table updates so expect degraded performance with joins.
 
 Caching happens automatically and there are no configuration options.
 
-### Undo & Redo
-The driver has built in "undo" and "redo" functionality that lets you progress changes to the database forward and backward in time.
+### IndexedDB
 
-Each Undo/Redo action represents a single Upsert, Delete, or Drop query on a single table.
+The memory database can optionally persist all of it's changes to the browser's indexed DB. Some features:
+* All changes automatically update to indexedDB.
+* Data is pulled from the Indexed DB on connection, allowing you to resume the previous state.
+* Undo and redo are not saved.
+* Each Indexed DB is attached to a specific data model.  If you change your data model a new IndexedDB will be used.
+
+Enableing is easy, just call `config` before `connect` with `{persistent:true}` passed in, like this:
+
+```ts
+SomeSQL().config({persistent:true}).connect().then....
+
+```
+
+You can declare models, views, actions and filters before calling config, but it must be called BEFORE `connect()`.
+
+### Undo & Redo
+The driver has built in "undo" and "redo" functionality that lets you progress changes to the database forward and backward in time.  
+
+There is no need to enable anything, the history is enabled automatically and requires no configuration.
+
+Each Undo/Redo action represents a single Upsert, Delete, or Drop query.
 
 Queries that did not affect any rows do not get added to the history.
 
@@ -364,13 +430,13 @@ Usage:
 * Undo: `SomeSQL().extend("<")`
 * Redo: `SomeSQL().extend(">")`
 
-These commands will automatically cascade `change` events where they are needed.
+These commands will cascade `change` events to the affected tables.
 
 Optionally, you can attach `then` to the end of either undo or redo to discover if a redo/undo action was performed.
 
 ```ts
 SomeSQL().extend(">").then(function(response) {
-    console.log(resopnse) //<= If this is true, a redo action was done.  If false, nothing was done.
+    console.log(response) //<= If this is true, a redo action was done.  If false, nothing was done.
 });
 ```
 
@@ -382,7 +448,7 @@ SomeSQL().extend("?").then(function(response) {
 });
 ```
 
-The query returns an array with two numbers.  The first is the length of change history, the second is the current pointer of the change history.
+The query returns an immutable array with two numbers.  The first is the length of change history, the second is the current pointer of the change history.
 
 This lets you determine if an undo/redo action will do anything:
 
@@ -390,4 +456,8 @@ This lets you determine if an undo/redo action will do anything:
 2. If the pointer is zero, undo will do nothing.
 3. If the pointer is equal to history length redo will do nothing.
 
+Since the history state is immutable you can perform strict "===" checks against it to see if the history state has changed.  This is useful for deciding to adjust the rendering of undo/redo buttons.
+
 Finally, performing changes to the database anywhere in history is completely allowed and automatically handled. You can play with the Todo example to see how this works.
+
+[View Complete Official Docs](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html)

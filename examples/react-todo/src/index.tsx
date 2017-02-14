@@ -1,7 +1,7 @@
 import { EventHandler, FormEvent, Component } from "react";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { initStore } from "./store";
+import { initStore, ItodoItem } from "./store";
 import { SomeSQL, DatabaseEvent, SomeSQLInstance } from "some-sql";
 
 
@@ -15,7 +15,7 @@ const Done = {
 
 interface Nothing {};
 
-const TodoTable = (props: {todos: Array<any>, markDone: (todoID: string) => void}): JSX.Element => {
+const TodoTable = (props: {todos: Array<ItodoItem>, markDone: (todoID: number) => void}): JSX.Element => {
     return(
         <table>
             <thead>
@@ -28,7 +28,7 @@ const TodoTable = (props: {todos: Array<any>, markDone: (todoID: string) => void
                 {props.todos.map(todo => {
                         return <tr>
                             <td  style={todo.done ? Done : {}} >{ todo.title }</td>
-                            <td><input type="checkbox" checked={todo.done ? true : false} disabled={todo.done} value={todo.done} onChange={() => todo.done ? null : props.markDone.apply(this,[todo.id])} /></td>
+                            <td><input type="checkbox" checked={todo.done ? true : false} disabled={todo.done} onChange={() => todo.done ? null : props.markDone(todo.id)} /></td>
                         </tr>;
                     })
                 }
@@ -88,7 +88,7 @@ class TodoForm extends Component<Nothing, FormState> {
 }
 
 interface TodoAppState {
-    todos?: Array<any>;
+    todos: Array<ItodoItem>;
     redos: Array<any>;
 }
 
@@ -106,7 +106,7 @@ class TodoApp extends Component<Nothing, TodoAppState> {
         this.redo = this.redo.bind(this);
     }
 
-    public markDone(todoID: string): void {
+    public markDone(todoID: number): void {
         SomeSQL("todos").doAction("mark_todo_done", {id: todoID});
     }
 
@@ -119,10 +119,10 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     }
 
     // Event handler for the db
-    public updateComponent(e: DatabaseEvent, db: SomeSQLInstance): void {
+    public updateComponent(e?: DatabaseEvent, db?: SomeSQLInstance): void {
         let t = this;
         let oldRedo = this.state.redos;
-        db.getView("list_all_todos").then((rows, db) => {
+        SomeSQL("todos").getView("list_all_todos").then((rows: Array<ItodoItem>, db: SomeSQLInstance) => {
             SomeSQL().extend("?").then((historyArray) => {
                 t.setState({
                     todos: rows,
@@ -135,6 +135,7 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     // Update this component when the table gets updated.
     public componentWillMount(): void {
         SomeSQL("todos").on("change", this.updateComponent);
+        this.updateComponent();
     }
 
     // Clear the event handler, otherwise it's a memory leak!

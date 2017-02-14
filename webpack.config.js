@@ -18,20 +18,14 @@ var options = {
         umdNamedDefine: true
     },
     resolve: {
-        extensions: ['','.ts', '.tsx', '.js']
+        extensions: ['.ts', '.tsx']
     },
     plugins: [],
     module: {
         loaders: [{
-            test: /\.ts$z/,
+            test: /\.ts$/,
             loader: 'ts-loader'
-        }],
-        preLoaders: [
-            {
-                test: /\.ts$/,
-                loader: 'tslint-loader'
-            }
-        ]
+        }]
     }
 };
 

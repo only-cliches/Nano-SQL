@@ -35,7 +35,9 @@ let _filters: {
 
 /**
  * The main class for the immutable database, holds the indexes, data and primary methods.
- * 
+ *
+ * A majority of data moving around for select statements and the like is indexes, not the actual data.
+ *
  * @export
  * @class _SomeSQLImmuDB
  * @implements {SomeSQLBackend}
@@ -45,7 +47,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * Unique database hash ID based on the data model.
-     * 
+     *
      * @internal
      * @type {number}
      * @memberOf _SomeSQLImmuDB
@@ -54,7 +56,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * An array holding any queries that should be executed after the current one.
-     * 
+     *
      * @internal
      * @type {Array<DBExec>}
      * @memberOf _SomeSQLImmuDB
@@ -63,7 +65,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * Stores a row index for each table.
-     * 
+     *
      * @internal
      * @type {{
      *         [tableHash: number]: Array<DataModel>;
@@ -76,7 +78,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * The SomeSQL instance this database is attached to.
-     * 
+     *
      * @internal
      * @type {SomeSQLInstance}
      * @memberOf _SomeSQLImmuDB
@@ -85,7 +87,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * A hash of the current table name.
-     * 
+     *
      * @internal
      * @type {number}
      * @memberOf _SomeSQLImmuDB
@@ -94,7 +96,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * Utility data for each table, including holding the primary key, name, incriment number and primary keys
-     * 
+     *
      * @internal
      * @type {{
      *         [tableHash: number]: {
@@ -122,10 +124,10 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
     };
 
     /**
-     * Stores all the source data of every table. 
+     * Stores all the source data of every table.
      * Each rowID contains an array, the first entry of every array is "null", every following entry is an immutable object
      * representing that row's data in time.  Changes to the row add an entry to the rowID array.
-     * 
+     *
      * @internal
      * @type {(Array<Array<DBRow|null>>)}
      * @memberOf _SomeSQLImmuDB
@@ -134,7 +136,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * A query hash split up by tables.
-     * 
+     *
      * @internal
      * @type {{
      *         [tableID: number]: {
@@ -151,7 +153,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * An index/cache of joins that let us speed up join commands.
-     * 
+     *
      * @internal
      * @type {{
      *         [CombinedRowIDs: string]: {
@@ -170,7 +172,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * A record of join relationships between tables
-     * 
+     *
      * @internal
      * @type {Array<Array<number>>}
      * @memberOf _SomeSQLImmuDB
@@ -180,7 +182,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
     /**
      * Contains an array of affected rows for each history point.
      * This lets clearing away history and performing updates as least expensive as possible.
-     * 
+     *
      * @internal
      * @type {Array<Array<number>>}
      * @memberOf _SomeSQLImmuDB
@@ -189,7 +191,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * Contains a pointer for each row that indicates which history point in the row to use.
-     * 
+     *
      * @internal
      * @type {{
      *         [rowID: number]: number;
@@ -202,7 +204,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * The pointer that indiciates where in history to pull from.
-     * 
+     *
      * @internal
      * @type {number}
      * @memberOf _SomeSQLImmuDB
@@ -211,12 +213,30 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * A variable to hold the state of the history pointer and history length
-     * 
+     *
      * @internal
      * @type {Array<number>}
      * @memberOf _SomeSQLImmuDB
      */
     public _historyArray: Array<number>;
+
+
+
+    /**
+     * Holds references to the indexed DB object.
+     *
+     * @type {IDBDatabase}
+     * @memberOf _SomeSQLImmuDB
+     */
+    public _indexedDB: IDBDatabase;
+
+    /**
+     * Flag to keep track of when importing IndexeDB.
+     *
+     * @type {boolean}
+     * @memberOf _SomeSQLImmuDB
+     */
+    public isImporting: boolean;
 
     constructor() {
         let t = this;
@@ -234,21 +254,61 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
     }
 
     /**
+     * Wether to store data to indexed DB or not.
+     *
+     * @type {boolean}
+     * @memberOf _SomeSQLImmuDB
+     */
+    public _persistent: boolean;
+
+    /**
+     * Get a row object from the store based on the current history markers.
+     *
+     * @public
+     * @param {number} rowID
+     * @returns {(DBRow|null)}
+     *
+     * @memberOf _SomeSQLQuery
+     */
+    public _getRow(rowID: number): DBRow|null {
+        return this._rows[rowID][this._historyIDs(rowID)];
+    }
+
+    /**
+     * Get the IDs of the current history pointers for a given rowID.
+     *
+     * @public
+     * @param {number} rowID
+     * @returns
+     *
+     * @memberOf _SomeSQLQuery
+     */
+    public _historyIDs(rowID: number) {
+        return this._historyPointers[rowID];
+    }
+
+    /**
      * Called once to init the database, prep all the needed variables and data models
-     * 
+     *
      * @param {DBConnect} connectArgs
-     * 
+     *
      * @memberOf _SomeSQLImmuDB
      */
     public _connect(connectArgs: DBConnect): void {
         let t = this;
         let i: number = 0;
         let p;
+        let tables: string[] = [];
+        let upgrading = false;
 
         t._parent = connectArgs._parent;
 
+        t._persistent = connectArgs._config.length ? connectArgs._config[0].persistent || false : false;
+
         for (let tableName in connectArgs._models) {
-            let ta = _SomeSQLImmuDB._hash(tableName);
+            let ta = SomeSQLInstance._hash(tableName);
+
+            tables.push(tableName);
 
             t._models[ta] = connectArgs._models[tableName];
             t._queryCache[ta] = {};
@@ -270,7 +330,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             }
         }
 
-        t._databaseID = _SomeSQLImmuDB._hash(JSON.stringify(connectArgs._models));
+        t._databaseID = SomeSQLInstance._hash(JSON.stringify(connectArgs._models));
 
         if (connectArgs._filters) {
             for (let f in connectArgs._filters) {
@@ -278,14 +338,82 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             }
         }
 
-        connectArgs._onSuccess();
+        let index = 0;
+
+        if (t._persistent && window && window.indexedDB) {
+
+            let idb = window.indexedDB.open(String(t._databaseID), 1);
+
+            // Called only when there is no existing DB, creates the tables and data store.
+            idb.onupgradeneeded = (event) => {
+                upgrading = true;
+                let db: IDBDatabase = event.target.result;
+                let next = () => {
+                    if (index < tables.length) {
+                        let ta = SomeSQLInstance._hash(tables[index]);
+                        let config = t._tableInfo[ta]._pk ? { keyPath: t._tableInfo[ta]._pk } : {};
+                        db.createObjectStore(tables[index], config);
+                        index++;
+                        next();
+                    } else {
+                        connectArgs._onSuccess();
+                    }
+                };
+
+                next();
+            };
+
+            // Called once the database is connected and working
+            idb.onsuccess = (event) => {
+                t._indexedDB = event.target.result;
+
+                // Called to import existing indexed DB data into the store.
+                if (!upgrading) {
+                    t.isImporting = true;
+                    let next = () => {
+                        if (index < tables.length) {
+                            let ta = SomeSQLInstance._hash(tables[index]);
+                            let transaction = t._indexedDB.transaction(tables[index], IDBTransaction.READ_ONLY);
+                            let store = transaction.objectStore(tables[index]);
+                            let cursorRequest = store.openCursor();
+                            let items: any[] = [];
+                            transaction.oncomplete = () => {
+
+                                t._parent.table(tables[index]).loadJS(items).then(() => {
+                                    index++;
+                                    next();
+                                });
+                            };
+
+                            cursorRequest.onsuccess = function(evt) {
+                                let cursor = evt.target.result;
+                                if (cursor) {
+                                    items.push(cursor.value);
+                                    cursor.continue();
+                                }
+                            };
+
+                        } else {
+                            t.isImporting = false;
+                            connectArgs._onSuccess();
+                        }
+                    };
+
+
+                    next();
+                };
+            };
+        } else {
+            connectArgs._onSuccess();
+        }
+
     }
 
     /**
      * Called by SomeSQL to execute queries on this database.
-     * 
+     *
      * @param {DBExec} execArgs
-     * 
+     *
      * @memberOf _SomeSQLImmuDB
      */
     public _exec(execArgs: DBExec): void {
@@ -294,7 +422,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
         if (t._pendingQuerys.length) {
             t._pendingQuerys.push(execArgs);
         } else {
-            t._selectedTable = _SomeSQLImmuDB._hash(execArgs._table);
+            t._selectedTable = SomeSQLInstance._hash(execArgs._table);
             new _SomeSQLQuery(t)._doQuery(execArgs).then((query) => {
                 if (t._pendingQuerys.length) {
                     t._exec(<any> t._pendingQuerys.pop());
@@ -305,10 +433,10 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * Invalidate the query cache cased on the rows being affected
-     * 
+     *
      * @internal
      * @param {boolean} triggerChange
-     * 
+     *
      * @memberOf _SomeSQLImmuDB
      */
     public _invalidateCache(triggerChange: boolean): void {
@@ -338,11 +466,11 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
     /**
      * Utility function to remove duplicates from an array.
-     * 
-     * @interal
+     *
+     * @internal
      * @param {Array<any>} sortedArray
      * @returns {Array<any>}
-     * 
+     *
      * @memberOf _SomeSQLImmuDB
      */
     public _removeDupes(sortedArray: Array<any>): Array<any> {
@@ -352,24 +480,57 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
     }
 
     /**
-     * Undo & Redo logic
-     * 
-     * @internal
+     * Undo & Redo logic.
+     *
+     * ### Undo
+     * Reverse the state of the database by one step into the past.
+     * Usage: `SomeSQL().extend("<")`;
+     *
+     * ### Redo
+     * Step the database state forward by one.
+     * Usage: `SomeSQL().extend(">")`;
+     *
+     * ### Query
+     * Discover the state of the history system
+     * ```ts
+     * SomeSQL().extend("?").then(function(state) {
+     *  console.log(state[0]) // <= length of history records
+     *  console.log(state[1]) // <= current history pointer position
+     * });
+     * ```
+     *
+     * The history point is zero by default, perforing undo shifts the pointer backward while redo shifts it forward.
+     *
      * @param {SomeSQLInstance} db
      * @param {("<"|">"|"?")} command
      * @returns {TSPromise<any>}
-     * 
+     *
      * @memberOf _SomeSQLImmuDB
      */
     public _extend(db: SomeSQLInstance, command: "<"|">"|"?"): TSPromise<any> {
         let t = this;
         let i;
         let h;
+        let rowID;
+        let rowData;
+        let rowKey;
+        let store = t._indexedDB.transaction(t._tableInfo[t._selectedTable]._name, "readwrite").objectStore(t._tableInfo[t._selectedTable]._name);
         let shiftRowIDs = (direction: number) => {
             i = t._historyRecords[t._historyPoint].length;
             while (i--) {
-                t._historyPointers[t._historyRecords[t._historyPoint][i]] += direction;
-                if (t._historyPointers[t._historyRecords[t._historyPoint][i]] < 0) t._historyPointers[t._historyRecords[t._historyPoint][i]] = 0;
+                rowID = t._historyRecords[t._historyPoint][i];
+                rowData = t._getRow(rowID) || {};
+                rowKey = rowData[t._tableInfo[t._selectedTable]._pk];
+                t._historyPointers[rowID] += direction;
+                rowData = t._getRow(rowID);
+                if (t._indexedDB) {
+                    if (rowData) {
+                        store.put(rowData);
+                    } else {
+                        store.delete(rowKey);
+                    }
+                }
+                if (t._historyPointers[rowID] < 0) t._historyPointers[rowID] = 0;
             }
         };
 
@@ -410,27 +571,12 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             }
         });
     }
-
-    /**
-     * Utility function for generating numerical hashes from strings.
-     * 
-     * @internal
-     * @param {string} key
-     * @returns {number}
-     * 
-     * @memberOf _SomeSQLImmuDB
-     */
-    public static _hash(key: string): number {
-        return Math.abs(key.split("").reduce(function (prev, next, i) {
-            return (((prev << 5) + prev) + key.charCodeAt(i));
-        }, 0));
-    }
 }
 
 
 /**
  * Query module called for each database execution to get the desired result on the data.
- * 
+ *
  * @internal
  * @class _SomeSQLQuery
  */
@@ -439,7 +585,7 @@ class _SomeSQLQuery {
 
     /**
      * The current action being called by the query. Select, Upsert, etc.
-     * 
+     *
      * @internal
      * @type {(QueryLine|undefined)}
      * @memberOf _SomeSQLQuery
@@ -448,7 +594,7 @@ class _SomeSQLQuery {
 
     /**
      * Query modifiers like where, orderby, etc.
-     * 
+     *
      * @internal
      * @type {Array<QueryLine>}
      * @memberOf _SomeSQLQuery
@@ -457,7 +603,7 @@ class _SomeSQLQuery {
 
     /**
      * A hash of the current query arguments.
-     * 
+     *
      * @internal
      * @type {number}
      * @memberOf _SomeSQLQuery
@@ -466,7 +612,7 @@ class _SomeSQLQuery {
 
     /**
      * A reference to the parent immutable storage object.
-     * 
+     *
      * @internal
      * @type {_SomeSQLImmuDB}
      * @memberOf _SomeSQLQuery
@@ -479,11 +625,11 @@ class _SomeSQLQuery {
 
     /**
      * Setup the query then call the execution command.
-     * 
+     *
      * @internal
      * @param {DBExec} query
      * @returns {TSPromise<any>}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     public _doQuery(query: DBExec): TSPromise<any> {
@@ -494,9 +640,9 @@ class _SomeSQLQuery {
             t._mod = [];
             t._act = undefined;
             // t._actionOrView = query._viewOrAction || "";
-            t._db._selectedTable = _SomeSQLImmuDB._hash(query._table);
-            // t._viewHash = _SomeSQLImmuDB._hash(query._table + t._actionOrView);
-            t._queryHash = _SomeSQLImmuDB._hash(JSON.stringify(query._query));
+            t._db._selectedTable = SomeSQLInstance._hash(query._table);
+            // t._viewHash = SomeSQLInstance._hash(query._table + t._actionOrView);
+            t._queryHash = SomeSQLInstance._hash(JSON.stringify(query._query));
 
             TSPromise.all(query._query.map((q) => {
                 return new TSPromise((resolve, reject) => {
@@ -518,10 +664,10 @@ class _SomeSQLQuery {
 
     /**
      * Create a new row and setup the histtory objects for it.
-     * 
+     *
      * @internal
      * @returns {number}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _newRow(): number {
@@ -535,11 +681,11 @@ class _SomeSQLQuery {
 
     /**
      * Execute queries an immutable storage object.
-     * 
+     *
      * @internal
      * @param {Function} callBack
      * @returns {void}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _execQuery(callBack: Function): void {
@@ -559,7 +705,7 @@ class _SomeSQLQuery {
 
         let changedRowIDs: Array<any> = [];
 
-        let ta = t._db._tableInfo[t._db._selectedTable]._index.slice();
+        let ta = t._db._tableInfo[t._db._selectedTable]._index.slice(); // Copy the table index.
 
         let rowID;
         let m;
@@ -593,8 +739,8 @@ class _SomeSQLQuery {
                         if (index < t._db._historyPoint) {
                             k = val.length;
                             while (k--) {
-                                t._db._historyPointers[val[k]] = 0;
-                                t._db._rows[val[k]].shift();
+                                t._db._historyPointers[val[k]] = 0; // Set this row history pointer to 0;
+                                t._db._rows[val[k]].shift(); // Shift off the most recent update
                             }
                             return false;
                         }
@@ -603,24 +749,36 @@ class _SomeSQLQuery {
                     t._db._historyPoint = 0;
                 }
 
-                t._db._historyRecords.unshift(changedRowIDs);
+                if (t._db.isImporting) {
+                    if(!t._db._historyRecords[0]) t._db._historyRecords[0] = [];
+                    t._db._historyRecords[0] = t._db._historyRecords[0].concat(changedRowIDs);
+                } else { 
+                    t._db._historyRecords.unshift(changedRowIDs);
+                }
 
                 t._db._invalidateCache(false);
 
                 callBack([{msg: updateLength + " row(s) " + describe}]);
 
             } else {
+
                 callBack([{msg: "0 rows " + describe}]);
             }
         };
 
         let updateRow = (rowID: number, cb: Function): void => {
             changedRowIDs.push(rowID);
-            let newRow = JSON.parse(JSON.stringify(t._getRow(rowID) || {}));
+            let newRow = {...t._db._getRow(rowID) || {}};
+            // let newRow = JSON.parse(JSON.stringify(t._getRow(rowID) || {}));
             for (let key in qArgs) {
                 newRow[key] = cb(key, newRow[key]);
             }
             t._db._rows[rowID].unshift(Object.freeze(newRow));
+
+            if (t._db._indexedDB) {
+                let tableName = t._db._tableInfo[t._db._selectedTable]._name;
+                t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).put(newRow);
+            }
         };
 
         // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
@@ -638,6 +796,10 @@ class _SomeSQLQuery {
                 scribe = "updated";
                 i = whereRows.length;
 
+                if (hasWhere.length && qArgs[pk]) {
+                    throw new Error("Can't use a where statement if you have a non null primary key value!");
+                }
+
                 if (hasWhere.length) { // Where statement exists, we're inserting data into existing rows
                     msg = i;
                     scribe = "modified";
@@ -646,24 +808,32 @@ class _SomeSQLQuery {
                             return key !== pk ? qArgs[key] : oldData;
                         });
                     }
-                } else { // Insert/modify one row
+                } else { // Insert row
                     rowID = 0;
 
-                    if (qArgs[pk]) { // Update existing row
-                        if (t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]]) {
+                    if (qArgs[pk]) { // Primary key is set in arguments, attempt to update existing row
+                        if (t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]]) { // Does this primary key already exist?
                             rowID = t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]];
-                        } else {
+                        } else { // Turns out this primary key isn't in the database yet, make a new row.
                             rowID = t._newRow();
-                            t._db._tableInfo[t._db._selectedTable]._incriment = Math.max(qArgs[pk], t._db._tableInfo[t._db._selectedTable]._incriment);
+                            scribe = "inserted";
+                            t._db._tableInfo[t._db._selectedTable]._incriment = Math.max(qArgs[pk] + 1, t._db._tableInfo[t._db._selectedTable]._incriment);
                             t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]] = rowID;
                         }
-                    } else { // Add brand new row
-
+                    } else { // Add new row
+                        scribe = "inserted";
                         m = t._db._models[t._db._selectedTable].length;
                         while (m--) {
                             mod = t._db._models[t._db._selectedTable][m];
-                            if (mod.props && mod.props.indexOf("pk") !== -1 && mod.type === "int") {
-                                qArgs[pk] = t._db._tableInfo[t._db._selectedTable]._incriment++;
+                            if (mod.props && mod.props.indexOf("pk") !== -1) {
+                                switch (mod.type) {
+                                    case "int":
+                                        qArgs[pk] = t._db._tableInfo[t._db._selectedTable]._incriment++;
+                                    break;
+                                    case "uuid":
+                                        qArgs[pk] = SomeSQLInstance.uuid();
+                                    break;
+                                }
                                 rowID = t._newRow();
                                 t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]] = rowID;
                             }
@@ -675,7 +845,6 @@ class _SomeSQLQuery {
                     });
 
                     msg = 1;
-                    scribe = "inserted";
                 }
 
                 tableChanged(msg, scribe);
@@ -702,7 +871,7 @@ class _SomeSQLQuery {
 
                                     w = curMod.args.where.map((tableAndColumn: string, index1: number) => {
                                         return tableAndColumn.split(".").map((e: string, index: number) => {
-                                            return index1 !== 1 ? (index === 0 ? _SomeSQLImmuDB._hash(e) : e) : e;
+                                            return index1 !== 1 ? (index === 0 ? SomeSQLInstance._hash(e) : e) : e;
                                         });
                                     });
 
@@ -727,8 +896,8 @@ class _SomeSQLQuery {
                                     return keys.reduce((prev, cur, i) => {
                                         if (!curMod) return;
                                         column = keys[i];
-                                        rowA = t._getRow(a) || {};
-                                        rowB = t._getRow(b) || {};
+                                        rowA = t._db._getRow(a) || {};
+                                        rowB = t._db._getRow(b) || {};
                                         return ((rowA[column] > rowB[column] ? 1 : -1) * (curMod.args[column] === "asc" ? 1 : -1)) + prev;
                                     }, 0);
                                 }));
@@ -761,7 +930,7 @@ class _SomeSQLQuery {
                             if (qArgs.length) { // Likely the largest suck of performance, an actual shallow copy of each row must be made.
 
                                 k = qArgs.length;
-                                rowData = t._getRow(row);
+                                rowData = t._db._getRow(row);
                                 if (rowData) {
                                     obj = {};
                                     while (k-- && obj && rowData) {
@@ -771,7 +940,7 @@ class _SomeSQLQuery {
                                     obj = null;
                                 }
                             } else {
-                                obj = t._getRow(row);
+                                obj = t._db._getRow(row);
                             };
 
                             if (obj) results.push(obj);
@@ -800,6 +969,8 @@ class _SomeSQLQuery {
 
                 i = delRows.length;
 
+                let tableName = t._db._tableInfo[t._db._selectedTable]._name;
+
                 while (i--) {
                     if (qArgs.length) { // Modify existing row, make a copy and modify the copy.
 
@@ -809,7 +980,14 @@ class _SomeSQLQuery {
 
                         scribe = "modified";
                     } else { // Just delete the entire row
+
+                        let rowKey = (t._db._getRow(delRows[i]) || {})[t._db._tableInfo[t._db._selectedTable]._pk];
+                        if (t._db._indexedDB && rowKey) {
+                            t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowKey);
+                        }
+
                         t._db._rows[delRows[i]].unshift(null); // Add "null" to history to show removal.
+                        changedRowIDs.push(delRows[i]);
                     }
                 }
 
@@ -818,59 +996,35 @@ class _SomeSQLQuery {
         }
     }
 
-    /**
-     * Get a row object from the store based on the current history markers.
-     * 
-     * @internal
-     * @param {number} rowID
-     * @returns {(DBRow|null)}
-     * 
-     * @memberOf _SomeSQLQuery
-     */
-    private _getRow(rowID: number): DBRow|null {
-        return this._db._rows[rowID][this._historyIDs(rowID)];
-    }
 
-    /**
-     * Get the IDs of the current history pointers for a given rowID.
-     * 
-     * @internal
-     * @param {number} rowID
-     * @returns
-     * 
-     * @memberOf _SomeSQLQuery
-     */
-    private _historyIDs(rowID: number) {
-        return this._db._historyPointers[rowID];
-    }
 
     /**
      * Filter rows based on a where statement and inex of rows.
-     * 
+     *
      * @internal
      * @param {Array<number>} index
      * @param {Array<any>} singleWhereStatement
      * @returns {Array<number>}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _filterRows(index: Array<number>, singleWhereStatement: Array<any>): Array<number> {
         let t = this;
         let r;
         return index.filter((v) => {
-            r = t._getRow(v);
+            r = t._db._getRow(v);
             return !r ? false : t._compare(singleWhereStatement[2], singleWhereStatement[1], r[singleWhereStatement[0]]) === 0 ? true : false;
         });
     };
 
     /**
      * Filter down an index of rows based on a where statement from the query.
-     * 
+     *
      * @internal
      * @param {Array<number>} index
      * @param {Array<any>} combinedWhereStatement
      * @returns {Array<number>}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _where(index: Array<number>, combinedWhereStatement: Array<any>): Array<number> {
@@ -904,14 +1058,14 @@ class _SomeSQLQuery {
 
     /**
      * Join two tables together given specific conditions.
-     * 
+     *
      * @internal
      * @param {("left"|"inner"|"right"|"cross")} type
      * @param {Array<number>} index1
      * @param {Array<number>} index2
      * @param {Array<any>} joinConditions
      * @returns {Array<number>}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _join(type: "left"|"inner"|"right"|"cross", index1: Array<number>, index2: Array<number>, joinConditions: Array<any>): Array<number> {
@@ -949,7 +1103,7 @@ class _SomeSQLQuery {
             joinKey = rowIDs.join("+");
             isNewRow = false;
             k = rowIDs.map((r) => {
-                return t._historyIDs(r);
+                return t._db._historyIDs(r);
             });
 
 
@@ -963,7 +1117,7 @@ class _SomeSQLQuery {
             }
 
             // Basically, we check to see if either row this join was pulled from has changed since the last join command.
-            // If it's changed we create a new point in the joined row history with the updated information. 
+            // If it's changed we create a new point in the joined row history with the updated information.
             // Otherwise we leave it alone and don't perform the expensive join action.
             if (isNewRow || k.join("+") !== t._db._joinIndex[joinKey]._joinedHistoryIndex.join("+")) {
                 newRow = {};
@@ -987,11 +1141,11 @@ class _SomeSQLQuery {
 
         while (i--) {
             j = index2.length;
-            rows[0] = t._getRow(index1[i]) || {};
+            rows[0] = t._db._getRow(index1[i]) || {};
             matches = [];
             while (j--) {
 
-                rows[1] = t._getRow(index2[j]) || {};
+                rows[1] = t._db._getRow(index2[j]) || {};
                 if (!t._compare(rows[0][joinConditions[0][1]], joinConditions[1][0], rows[1][joinConditions[2][1]]) || type === "cross") {
                     matches.push([index2[j], rows[1]]); // [rowID, rowData]
                     rightIDs.push(index2[j]);
@@ -1012,7 +1166,7 @@ class _SomeSQLQuery {
             i = index2.length;
             while (i--) {
                 if (rightIDs.indexOf(index2[i]) === -1) {
-                    joinedIndex.push(doJoin([-1, index2[i]], [false, t._getRow(index2[i]) || {}]));
+                    joinedIndex.push(doJoin([-1, index2[i]], [false, t._db._getRow(index2[i]) || {}]));
                 }
             }
         }
@@ -1023,13 +1177,13 @@ class _SomeSQLQuery {
 
     /**
      * Compare two values together given a comparison value
-     * 
+     *
      * @internal
      * @param {*} val1
      * @param {string} compare
      * @param {*} val2
      * @returns {number}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _compare(val1: any, compare: string, val2: any): number {
@@ -1049,11 +1203,11 @@ class _SomeSQLQuery {
 
     /**
      * Exexcute active filters on a given set of database rows.
-     * 
+     *
      * @internal
      * @param {Array<Object>} dbRows
      * @returns {*}
-     * 
+     *
      * @memberOf _SomeSQLQuery
      */
     private _runFilters(dbRows: Array<Object>): any {

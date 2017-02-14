@@ -55,7 +55,13 @@
 
             SomeSQL().connect(mySQL).then(function() {
                 //database ready
-            })
+            })            
+            
+            for(let i = 0; i < 10; i++) {
+                console.log(SomeSQLInstance.uuid().replace(/-/g,"").match(/.{1,4}/g).map((v) => {
+                    return parseInt(v,16);
+                }));
+            }
 */
 
 
@@ -104,92 +110,96 @@
                 {key:'id',type:'int',props:['pk','ai']},
                 {key:'title',type:'string'},
                 {key:'userID',type:'int'}
-            ]).connect();
+            ])
+            .config({persistent: true})
+            .connect().then(() => {
 
+                SomeSQL("orders").loadJS([
+                    {id:1,title:"Test",userID:1},
+                    {id:2,title:"Test",userID:1},
+                    {id:3,title:"Test",userID:3}
+                ]);
+            
 
-            SomeSQL("orders").loadJS([
-                {id:1,title:"Test",userID:1},
-                {id:2,title:"Test",userID:1},
-                {id:3,title:"Test",userID:3}
-            ]);
-        
+                SomeSQL('*').on('change',function(e) {
+                    //console.log(e);
+                });
 
-            SomeSQL('*').on('change',function(e) {
-                //console.log(e);
-            });
+                SomeSQL('users').loadJS([
+                    {
+                        id:null,
+                        name:'bob',
+                        age:20,
+                        balance:25.02,
+                        postIDs:[0,20,5],
+                        meta:{
+                            favorteColor:'blue'
+                        }
+                    },
+                    {
+                        id:null,
+                        name:'jeb',
+                        age:25,
+                        balance:25.02,
+                        postIDs:[0,20,5],
+                        meta:{
+                            favorteColor:'blue'
+                        }
+                    },
+                    {
+                        id:null,
+                        name:'kevin',
+                        age:50,
+                        balance:22.02,
+                        postIDs:[0,20,5],
+                        meta:{
+                            favorteColor:'blue'
+                        }
+                    },
+                    {
+                        id:null,
+                        name:'scott',
+                        age:21,
+                        balance:25.02,
+                        postIDs:[0,20,5],
+                        meta:{
+                            favorteColor:'blue'
+                        }
+                    }
+                ]).then(function() {
+    
+                    SomeSQL('users').query("select").exec()
+                    .then(function(result, db) {
+                        return db.query('upsert',{balance:50}).where(['name','=','jeb']).exec();
+                    })         
+                    .then(function(result, db) {
+                        console.log(result);
+                        //return this.query('select').orderBy({name:'desc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
+                        return db.query('select',['name']).orderBy({name:'asc'}).exec();
+                    })
+                    .then(function(result, db) {
+                        db.query('select',['name']).orderBy({name:'asc'}).exec().then(function(result2) {
+                            console.log('immuTest: ' + (result === result2));
+                        });
+                        console.log(result);
+            
+                        return db.query('select').toCSV(true);
+                    })  
+                    .then(function(result, db) {
+                        console.log(result);
+                        // return db.query('drop').exec();
+                    })
 
-            SomeSQL('users').loadJS([
-                {
-                    id:null,
-                    name:'bob',
-                    age:20,
-                    balance:25.02,
-                    postIDs:[0,20,5],
-                    meta:{
-                        favorteColor:'blue'
-                    }
-                },
-                {
-                    id:null,
-                    name:'jeb',
-                    age:25,
-                    balance:25.02,
-                    postIDs:[0,20,5],
-                    meta:{
-                        favorteColor:'blue'
-                    }
-                },
-                {
-                    id:null,
-                    name:'kevin',
-                    age:50,
-                    balance:22.02,
-                    postIDs:[0,20,5],
-                    meta:{
-                        favorteColor:'blue'
-                    }
-                },
-                {
-                    id:null,
-                    name:'scott',
-                    age:21,
-                    balance:25.02,
-                    postIDs:[0,20,5],
-                    meta:{
-                        favorteColor:'blue'
-                    }
-                }
-            ]).then(function() {
-   
-                SomeSQL('users').query("select").exec()
-                .then(function(result, db) {
-                    return db.query('upsert',{balance:50}).where(['name','=','jeb']).exec();
-                })         
-                .then(function(result, db) {
-                    console.log(result);
-                    //return this.query('select').orderBy({name:'desc'}).where([['age','>',25],'and',['id','>',2]]).toCSV();
-                    return db.query('select',['name']).orderBy({name:'asc'}).exec();
-                })
-                .then(function(result, db) {
-                    db.query('select',['name']).orderBy({name:'asc'}).exec().then(function(result2) {
-                        console.log('immuTest: ' + (result === result2));
+                    SomeSQL("orders").query("select").join({
+                        type: "inner",
+                        table: "users",
+                        where: ["orders.userID","=","users.id"]      
+                    }).exec().then(function(rows) {
+                        console.log("JOIN", rows);
                     });
-                    console.log(result);
-                    return db.query('select').toCSV(true);
-                })  
-                .then(function(result, db) {
-                    console.log(result);
-                    // return db.query('drop').exec();
-                })
-
-                SomeSQL("orders").query("select").join({
-                    type: "inner",
-                    table: "users",
-                    where: ["orders.userID","=","users.id"]      
-                }).exec().then(function(rows) {
-                    console.log("JOIN", rows);
                 });
             });
+
 
 
 
@@ -214,6 +224,10 @@
             ])
             .connect()
            
+
+            possible new select syntax:
+
+            .query("select",["max(col1) as hello","col2"]).groupBy(["hello"])
 
             */
         </script>

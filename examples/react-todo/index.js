@@ -39,13 +39,12 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
                 }
             }
         ]);
-        return some_sql_1.SomeSQL().connect();
+        return some_sql_1.SomeSQL().config({ persistent: true }).connect();
     }
     exports.initStore = initStore;
 });
 define("index", ["require", "exports", "react", "react", "react-dom", "store", "some-sql"], function (require, exports, react_1, React, ReactDOM, store_1, some_sql_2) {
     "use strict";
-    var _this = this;
     var TitleStyle = {
         width: "75%"
     };
@@ -64,7 +63,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                 return React.createElement("tr", null, 
                     React.createElement("td", {style: todo.done ? Done : {}}, todo.title), 
                     React.createElement("td", null, 
-                        React.createElement("input", {type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, value: todo.done, onChange: function () { return todo.done ? null : props.markDone.apply(_this, [todo.id]); }})
+                        React.createElement("input", {type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, onChange: function () { return todo.done ? null : props.markDone(todo.id); }})
                     ));
             }))));
     };
@@ -134,7 +133,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         TodoApp.prototype.updateComponent = function (e, db) {
             var t = this;
             var oldRedo = this.state.redos;
-            db.getView("list_all_todos").then(function (rows, db) {
+            some_sql_2.SomeSQL("todos").getView("list_all_todos").then(function (rows, db) {
                 some_sql_2.SomeSQL().extend("?").then(function (historyArray) {
                     t.setState({
                         todos: rows,
@@ -145,6 +144,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         TodoApp.prototype.componentWillMount = function () {
             some_sql_2.SomeSQL("todos").on("change", this.updateComponent);
+            this.updateComponent();
         };
         TodoApp.prototype.componentWillUnmount = function () {
             some_sql_2.SomeSQL("todos").off(this.updateComponent);

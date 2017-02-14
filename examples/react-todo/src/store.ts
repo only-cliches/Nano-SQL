@@ -1,5 +1,11 @@
 import { SomeSQL } from "some-sql";
 
+export interface ItodoItem {
+    id: number;
+    done: boolean;
+    title: string;
+}
+
 export function initStore() {
 
     SomeSQL("todos")
@@ -36,6 +42,6 @@ export function initStore() {
         }
     ])
 
-    return SomeSQL().connect();
+    return SomeSQL().config({persistent: true}).connect();
 
 }

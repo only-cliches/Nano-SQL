@@ -12,19 +12,18 @@
     "type": "git",
     "url": "https://github.com/ClickSimply/Some-SQL.git"
   },
-  "typings":"node/index.d.ts",
+  "typings": "node/index.d.ts",
   "devDependencies": {
     "@types/react-dom": "^0.14.22",
-    "ts-loader": "^0.8.2",
+    "ts-loader": "^2.0.0",
     "ts-node": "^2.0.0",
     "tslib": "^1.4.0",
     "tslint": "^4.2.0",
-    "tslint-loader": "^3.3.0",
     "typedoc": "^0.5.3",
     "typescript": "^2.1.4",
-    "webpack": "^1.13.2",
-    "webpack-dev-server": "^1.16.1",
-    "write-file-webpack-plugin": "^3.3.0"
+    "webpack": "^2.2.1",
+    "webpack-dev-server": "^2.3.0",
+    "write-file-webpack-plugin": "^3.4.2"
   },
   "keywords": [
     "database",
@@ -44,7 +43,16 @@
     "DOM-storage",
     "SQLite",
     "JSON",
-    "CSV"
+    "CSV",
+    "iteration", 
+    "sequence", 
+    "stateless", 
+    "functional", 
+    "datastructure", 
+    "data", 
+    "lazy", 
+    "persistent", 
+    "immutable" 
   ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
