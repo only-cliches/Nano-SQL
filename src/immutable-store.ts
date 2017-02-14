@@ -345,7 +345,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             let idb = window.indexedDB.open(String(t._databaseID), 1);
 
             // Called only when there is no existing DB, creates the tables and data store.
-            idb.onupgradeneeded = (event) => {
+            idb.onupgradeneeded = (event: any) => {
                 upgrading = true;
                 let db: IDBDatabase = event.target.result;
                 let next = () => {
@@ -364,7 +364,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             };
 
             // Called once the database is connected and working
-            idb.onsuccess = (event) => {
+            idb.onsuccess = (event: any) => {
                 t._indexedDB = event.target.result;
 
                 // Called to import existing indexed DB data into the store.
@@ -385,7 +385,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                                 });
                             };
 
-                            cursorRequest.onsuccess = function(evt) {
+                            cursorRequest.onsuccess = (evt: any) => {
                                 let cursor = evt.target.result;
                                 if (cursor) {
                                     items.push(cursor.value);

@@ -5,6 +5,7 @@ rm -rf dist/*.*
 rm -rf *.d.ts
 rm -rf docs
 rm -rf node
+mkdir docs
 
 echo "Clean Completed..."
 
