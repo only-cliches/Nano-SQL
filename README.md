@@ -1,5 +1,5 @@
 # SomeSQL
-Small Immutable App Store with Undo & Redo.
+Small Immutable App Store with Undo, Redo & IndexedDB support.
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/Some-SQL/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
@@ -45,7 +45,7 @@ SomeSQL comes to you in two parts minified into a single file.
 * Returns immutable sets, optimized for use with ReactJS & Angular 2.
 * Query cache and shallow copying optimizations.
 * Built in, super simple undo/redo.
-* Optionally persiset to IndexedDB.
+* Optionally persist to IndexedDB.
 
 Oh yeah, and it's all just 6 Kb gzipped. :)
 
@@ -416,6 +416,14 @@ SomeSQL().config({persistent:true}).connect().then....
 ```
 
 You can declare models, views, actions and filters before calling config, but it must be called BEFORE `connect()`.
+
+Finally, you can remove the current indexedDB completely by calling this:
+
+```ts
+SomeSQL().extend("clear_db");
+```
+
+This will cause ALL databases to be removed from Indexed DB, but they will remain in memory until the page is refreshed.
 
 ### Undo & Redo
 The driver has built in "undo" and "redo" functionality that lets you progress changes to the database forward and backward in time.  

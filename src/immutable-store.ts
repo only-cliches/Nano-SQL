@@ -507,7 +507,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @memberOf _SomeSQLImmuDB
      */
-    public _extend(db: SomeSQLInstance, command: "<"|">"|"?"): TSPromise<any> {
+    public _extend(db: SomeSQLInstance, command: "<"|">"|"?"|"clear_db"): TSPromise<any> {
         let t = this;
         let i;
         let h;
@@ -567,6 +567,11 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                         t._historyArray = h;
                     }
                     res(t._historyArray);
+                break;
+                case "clear_db":
+                    if (t._indexedDB) {
+                        window.indexedDB.deleteDatabase(String(t._databaseID));
+                    }
                 break;
             }
         });

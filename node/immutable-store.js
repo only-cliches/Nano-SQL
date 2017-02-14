@@ -348,6 +348,11 @@ var _SomeSQLImmuDB = (function () {
                     }
                     res(t._historyArray);
                     break;
+                case "clear_db":
+                    if (t._indexedDB) {
+                        window.indexedDB.deleteDatabase(String(t._databaseID));
+                    }
+                    break;
             }
         });
     };

@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.2.5] 2-14-2017
+- Fixed some readme typos
+- Added "clear" ability to indexedDB.
+
 ## [0.2.4] 2-13-2017
 - Updated & cleaned up documentation a bit.
 - Changed the few JSON.parse(JSON.stringify()) statements to Object.assign.
