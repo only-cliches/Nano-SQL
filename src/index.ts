@@ -335,7 +335,7 @@ export class SomeSQLInstance {
         let t = this;
         for (let key in t._callbacks) {
             for (let key2 in t._callbacks[key]) {
-                t._callbacks[key][key2].filter((cBs) => {
+                t._callbacks[key][key2] = t._callbacks[key][key2].filter((cBs) => {
                     return cBs !== callBack;
                 });
             }
@@ -855,21 +855,23 @@ export class SomeSQLInstance {
      */
     public triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void {
         let t = this;
-        let i = triggerEvents.length;
-        let j = 0;
-        let e: any;
-        let c: Array<Function>;
-        while (i--) {
-            e = triggerEvents[i];
-            c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
-            j = c.length;
-            while (j--) {
-                eventData.name = e;
-                eventData.actionOrView = t._activeActionOrView || "";
-                c[j].apply(t, [eventData, t]);
+        setTimeout(() => {
+            let i = triggerEvents.length;
+            let j = 0;
+            let e: any;
+            let c: Array<Function>;
+            while (i--) {
+                e = triggerEvents[i];
+                c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
+                j = c.length;
+                while (j--) {
+                    eventData.name = e;
+                    eventData.actionOrView = t._activeActionOrView || "";
+                    c[j](eventData, t);
+                }
             }
-        }
-        t._activeActionOrView = undefined;
+            t._activeActionOrView = undefined;
+        }, 0);
     }
 
     /**

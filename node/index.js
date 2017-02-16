@@ -120,7 +120,7 @@ var SomeSQLInstance = (function () {
         var t = this;
         for (var key in t._callbacks) {
             for (var key2 in t._callbacks[key]) {
-                t._callbacks[key][key2].filter(function (cBs) {
+                t._callbacks[key][key2] = t._callbacks[key][key2].filter(function (cBs) {
                     return cBs !== callBack;
                 });
             }
@@ -627,21 +627,23 @@ var SomeSQLInstance = (function () {
      */
     SomeSQLInstance.prototype.triggerEvent = function (eventData, triggerEvents) {
         var t = this;
-        var i = triggerEvents.length;
-        var j = 0;
-        var e;
-        var c;
-        while (i--) {
-            e = triggerEvents[i];
-            c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
-            j = c.length;
-            while (j--) {
-                eventData.name = e;
-                eventData.actionOrView = t._activeActionOrView || "";
-                c[j].apply(t, [eventData, t]);
+        setTimeout(function () {
+            var i = triggerEvents.length;
+            var j = 0;
+            var e;
+            var c;
+            while (i--) {
+                e = triggerEvents[i];
+                c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
+                j = c.length;
+                while (j--) {
+                    eventData.name = e;
+                    eventData.actionOrView = t._activeActionOrView || "";
+                    c[j](eventData, t);
+                }
             }
-        }
-        t._activeActionOrView = undefined;
+            t._activeActionOrView = undefined;
+        }, 0);
     };
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.

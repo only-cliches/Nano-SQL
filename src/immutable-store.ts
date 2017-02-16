@@ -996,7 +996,7 @@ class _SomeSQLQuery {
                     }
                 }
 
-                tableChanged(i, scribe);
+                tableChanged(delRows.length, scribe);
                 break;
         }
     }

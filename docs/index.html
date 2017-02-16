@@ -63,7 +63,7 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<h1 id="somesql">SomeSQL</h1>
-				<p>Small Immutable App Store with Undo &amp; Redo.</p>
+				<p>Small Immutable App Store with Undo, Redo &amp; IndexedDB support.</p>
 				<p><a href="https://github.com/ClickSimply/Some-SQL/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 				<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint"></p>
 				<h2 id="browsers-support-sub-sup-sub-sub-made-by-a-href-https-godban-github-io-godban-a-sub-sub-sup-sub-">Browsers support <sub><sup><sub><sub>made by <a href="https://godban.github.io">godban</a></sub></sub></sup></sub></h2>
@@ -126,7 +126,7 @@
 					<li>Returns immutable sets, optimized for use with ReactJS &amp; Angular 2.</li>
 					<li>Query cache and shallow copying optimizations.</li>
 					<li>Built in, super simple undo/redo.</li>
-					<li>Optionally persiset to IndexedDB.</li>
+					<li>Optionally persist to IndexedDB.</li>
 				</ul>
 				<p>Oh yeah, and it&#39;s all just 6 Kb gzipped. :)</p>
 				<h2 id="simple-usage">Simple Usage</h2>
@@ -139,6 +139,7 @@
 ])
 .connect() <span class="hljs-comment">// Init the data store for usage.</span>
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
+    <span class="hljs-comment">// "db" holds the current SomeSQL var with the previous table still selected.</span>
     <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
         name:<span class="hljs-string">"Billy"</span>,
         age:<span class="hljs-number">50</span>
@@ -147,8 +148,8 @@
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
     <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'select'</span>).exec(); <span class="hljs-comment">// select all rows from the current active table</span>
 })
-.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{
-    <span class="hljs-built_in">console</span>.log(rows) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
+.then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
+    <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
 })
 </code></pre>
 				<h2 id="installation">Installation</h2>
@@ -505,26 +506,6 @@ myDB(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">"
 				<p><a href="https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html">View Complete Official Docs</a></p>
 				<h2 id="memory-database-api">Memory Database API</h2>
 				<p>Documentation here is specific to the built in memory database driver.</p>
-				<h3 id="indexeddb-persistence">IndexedDB Persistence</h3>
-				<p>To use this feature just call <code>config()</code> on SomeSQL before <code>connect()</code> with <code>{persistence:true}</code>.</p>
-				<p>Example:</p>
-				<pre><code class="lang-ts">SomeSQL(<span class="hljs-string">"table"</span>)
-.models([...])
-.actions([...])
-.views([...])
-.config({
-    persistence:<span class="hljs-literal">true</span>
-})
-.connect();
-</code></pre>
-				<p>Some usage notes:</p>
-				<ul>
-					<li>Enabling this will degrade write performance as the indexedDB has to be succesfully updated before a write is complete.</li>
-					<li>Indexed DB stores are attached to the data model.  If you change the data model a new IndexedDB store will be generated.</li>
-					<li>This will automatically persist all database rows, tables and history to the IndexedDB in the client browser.</li>
-					<li>When <code>connect()</code> is called, all existing IndexedDB data will be loaded into the memory store.</li>
-					<li>Queries will still and always use the in memory store, this only copies the in memory store to IndexedDB.</li>
-				</ul>
 				<h3 id="caching">Caching</h3>
 				<p>The cacheing system is write optimized and saves the results of every select query.</p>
 				<p>With this setup, as long as a table is not modified identical select statements will only require a single actual select on that table.  Every subsequent select query after the first will draw from the cache, pointing to the same object allowing strict comparison checking (&quot;===&quot;). </p>
@@ -535,14 +516,18 @@ myDB(<span class="hljs-string">'users'</span>).query(<span class="hljs-string">"
 				<p>The memory database can optionally persist all of it&#39;s changes to the browser&#39;s indexed DB. Some features:</p>
 				<ul>
 					<li>All changes automatically update to indexedDB.</li>
-					<li>Data is pulled from the Indexed DB on connection, allowing you to resume the previous state.</li>
-					<li>Undo and redo are not saved.</li>
-					<li>Each Indexed DB is attached to a specific data model.  If you change your data model a new IndexedDB will be used.</li>
+					<li>The memory database is populated from the Indexed DB on connection, allowing you to resume the previous state with no effort.</li>
+					<li>Undo and redo states are not saved.</li>
+					<li>Each Indexed DB is attached to a specific data model.  If you change your data model a new, blank IndexedDB will be used.</li>
 				</ul>
-				<p>Enableing is easy, just call <code>config</code> before <code>connect</code> with <code>{persistent:true}</code> passed in, like this:</p>
+				<p>Enableing it is easy, just call <code>config</code> before <code>connect</code> with <code>{persistent:true}</code> passed in, like this:</p>
 				<pre><code class="lang-ts">SomeSQL().config({persistent:<span class="hljs-literal">true</span>}).connect().then....
 </code></pre>
 				<p>You can declare models, views, actions and filters before calling config, but it must be called BEFORE <code>connect()</code>.</p>
+				<p>Finally, you can remove the current indexedDB completely by calling this:</p>
+				<pre><code class="lang-ts">SomeSQL().extend(<span class="hljs-string">"clear_db"</span>);
+</code></pre>
+				<p>This will cause ALL active databases and tables to be removed from Indexed DB, but they will remain in memory until the page is refreshed.</p>
 				<h3 id="undo-redo">Undo &amp; Redo</h3>
 				<p>The driver has built in &quot;undo&quot; and &quot;redo&quot; functionality that lets you progress changes to the database forward and backward in time.  </p>
 				<p>There is no need to enable anything, the history is enabled automatically and requires no configuration.</p>

@@ -700,7 +700,7 @@ var _SomeSQLQuery = (function () {
                         changedRowIDs.push(delRows[i]);
                     }
                 }
-                tableChanged(i, scribe);
+                tableChanged(delRows.length, scribe);
                 break;
         }
     };

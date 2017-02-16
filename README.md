@@ -63,6 +63,7 @@ SomeSQL('users') //  "users" is our table name.
 ])
 .connect() // Init the data store for usage.
 .then(function(result, db) {
+    // "db" holds the current SomeSQL var with the previous table still selected.
     return db.query('upsert',{ // Add a record
         name:"Billy",
         age:50
@@ -71,8 +72,8 @@ SomeSQL('users') //  "users" is our table name.
 .then(function(result, db) {
     return db.query('select').exec(); // select all rows from the current active table
 })
-.then(function(rows, db) {
-    console.log(rows) // <= [{id:1,name:"Billy",age:50}]
+.then(function(result, db) {
+    console.log(result) // <= [{id:1,name:"Billy",age:50}]
 })
 
 ```
@@ -366,29 +367,6 @@ These can be used in replacement of the query..exec pattern to execute a given v
 ## Memory Database API
 Documentation here is specific to the built in memory database driver.
 
-### IndexedDB Persistence
-To use this feature just call `config()` on SomeSQL before `connect()` with `{persistence:true}`.
-
-Example:
-
-```ts
-SomeSQL("table")
-.models([...])
-.actions([...])
-.views([...])
-.config({
-    persistence:true
-})
-.connect();
-```
-
-Some usage notes:
-- Enabling this will degrade write performance as the indexedDB has to be succesfully updated before a write is complete.
-- Indexed DB stores are attached to the data model.  If you change the data model a new IndexedDB store will be generated.
-- This will automatically persist all database rows, tables and history to the IndexedDB in the client browser.
-- When `connect()` is called, all existing IndexedDB data will be loaded into the memory store.
-- Queries will still and always use the in memory store, this only copies the in memory store to IndexedDB.
-
 ### Caching
 The cacheing system is write optimized and saves the results of every select query.
 
@@ -404,11 +382,11 @@ Caching happens automatically and there are no configuration options.
 
 The memory database can optionally persist all of it's changes to the browser's indexed DB. Some features:
 * All changes automatically update to indexedDB.
-* Data is pulled from the Indexed DB on connection, allowing you to resume the previous state.
-* Undo and redo are not saved.
-* Each Indexed DB is attached to a specific data model.  If you change your data model a new IndexedDB will be used.
+* The memory database is populated from the Indexed DB on connection, allowing you to resume the previous state with no effort.
+* Undo and redo states are not saved.
+* Each Indexed DB is attached to a specific data model.  If you change your data model a new, blank IndexedDB will be used.
 
-Enableing is easy, just call `config` before `connect` with `{persistent:true}` passed in, like this:
+Enableing it is easy, just call `config` before `connect` with `{persistent:true}` passed in, like this:
 
 ```ts
 SomeSQL().config({persistent:true}).connect().then....
@@ -423,7 +401,7 @@ Finally, you can remove the current indexedDB completely by calling this:
 SomeSQL().extend("clear_db");
 ```
 
-This will cause ALL databases to be removed from Indexed DB, but they will remain in memory until the page is refreshed.
+This will cause ALL active databases and tables to be removed from Indexed DB, but they will remain in memory until the page is refreshed.
 
 ### Undo & Redo
 The driver has built in "undo" and "redo" functionality that lets you progress changes to the database forward and backward in time.  

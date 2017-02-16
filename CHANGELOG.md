@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.2.6] 2-15-2017
+- Fixed delete bug in Memory DB.
+- Fixed event trigger issue with ReactJS.
+- Cleaned up Readme a bit.
+
 ## [0.2.5] 2-14-2017
 - Fixed some readme typos
 - Added "clear" ability to indexedDB.
