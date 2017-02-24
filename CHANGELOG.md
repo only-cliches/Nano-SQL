@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.2.7] 2-24-2017
+- Fixed iOS bug with indexedDB.
+
 ## [0.2.6] 2-15-2017
 - Fixed delete bug in Memory DB.
 - Fixed event trigger issue with ReactJS.

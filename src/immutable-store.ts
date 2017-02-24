@@ -373,7 +373,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                     let next = () => {
                         if (index < tables.length) {
                             let ta = SomeSQLInstance._hash(tables[index]);
-                            let transaction = t._indexedDB.transaction(tables[index], IDBTransaction.READ_ONLY);
+                            let transaction = t._indexedDB.transaction(tables[index], "readonly");
                             let store = transaction.objectStore(tables[index]);
                             let cursorRequest = store.openCursor();
                             let items: any[] = [];

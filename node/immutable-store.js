@@ -159,7 +159,7 @@ var _SomeSQLImmuDB = (function () {
                     var next_1 = function () {
                         if (index < tables.length) {
                             var ta = index_1.SomeSQLInstance._hash(tables[index]);
-                            var transaction = t._indexedDB.transaction(tables[index], IDBTransaction.READ_ONLY);
+                            var transaction = t._indexedDB.transaction(tables[index], "readonly");
                             var store = transaction.objectStore(tables[index]);
                             var cursorRequest = store.openCursor();
                             var items_1 = [];
