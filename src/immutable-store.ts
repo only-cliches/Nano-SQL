@@ -771,17 +771,33 @@ class _SomeSQLQuery {
             }
         };
 
-        let updateRow = (rowID: number, cb: Function): void => {
+        const freezeObj = (obj: any): any => {
+            for (let key in obj) {
+                if (obj.hasOwnProperty(key) && obj[key] instanceof Object) {
+                    obj[key] = freezeObj(obj[key]);
+                }
+            }
+            return Object.freeze(obj);
+        };
+
+        const updateRow = (rowID: number, cb: Function): void => {
             changedRowIDs.push(rowID);
-            let newRow = {...t._db._getRow(rowID) || {}};
-            // let newRow = JSON.parse(JSON.stringify(t._getRow(rowID) || {}));
+            let newRow = JSON.parse(JSON.stringify(t._db._getRow(rowID) || {}));
             for (let key in qArgs) {
                 newRow[key] = cb(key, newRow[key]);
             }
-            t._db._rows[rowID].unshift(Object.freeze(newRow));
+
+            // Add default values if the value is null;
+            t._db._models[t._db._selectedTable].forEach((model) => {
+                if (model.default && !newRow[model.key]) {
+                    newRow[model.key] = model.default;
+                }
+            });
+
+            t._db._rows[rowID].unshift(freezeObj(newRow));
 
             if (t._db._indexedDB) {
-                let tableName = t._db._tableInfo[t._db._selectedTable]._name;
+                const tableName = t._db._tableInfo[t._db._selectedTable]._name;
                 t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).put(newRow);
             }
         };

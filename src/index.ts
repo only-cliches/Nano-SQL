@@ -2,6 +2,8 @@ import { TSPromise } from "typescript-promise";
 import { _SomeSQLImmuDB } from "./immutable-store";
 // import { _SomeSQLMemDB } from "./old-memory-db";
 
+declare var crypto: any;
+
 /**
  * Standard object placeholder with string key.
  *
@@ -225,7 +227,7 @@ export class SomeSQLInstance {
      */
     private _rowFilters: {
         [key: string]: (row: any) => void;
-    }
+    };
 
     /**
      * Holds an array of filters to apply to EVERY query.
@@ -255,6 +257,7 @@ export class SomeSQLInstance {
 
         t._filters = {};
         t._permanentFilters = [];
+        t._rowFilters = {};
     }
 
 
@@ -534,8 +537,8 @@ export class SomeSQLInstance {
             "string": String(val),
             "int": parseInt(val),
             "float": parseFloat(val),
-            "array": {...val},
-            "map": {...val},
+            "array": JSON.parse(JSON.stringify(val || [])),
+            "map": JSON.parse(JSON.stringify(val || {})),
             "bool": val === true
         };
         return types[type] || val;
@@ -715,14 +718,14 @@ export class SomeSQLInstance {
             let newArgs = args || {};
 
             if (action === "upsert") {
-                newArgs = JSON.parse(JSON.stringify(args)); // Need to recursively break references, faster than looping through the whole thing recursively.
+                // Need to recursively break references, faster than looping through the whole thing recursively.
+                let inputArgs = JSON.parse(JSON.stringify(args || {}));
+                newArgs = {};
 
-                // Apply default values & cast the rows
+                // Apply default values, cast row types and remove rows that don't exist in the data model
                 this._models[this._selectedTable].forEach((model) => {
-                    if (model.default && !newArgs[model.key]) {
-                        newArgs[model.key] = model.default;
-                    } else { // Type cast if we're not setting the default value
-                        newArgs[model.key] = this._cast(model.type, newArgs[model.key]);
+                    if (inputArgs[model.key]) {
+                        newArgs[model.key] = this._cast(model.type, inputArgs[model.key]);
                     }
                 });
 
@@ -1108,10 +1111,12 @@ export class SomeSQLInstance {
     public static uuid(): string {
         let r, s, buf;
         const random16Bits = (): number => {
-            if (window && window.crypto.getRandomValues) { // Browser crypto
+            if (crypto.getRandomValues) { // Browser crypto
                 buf = new Uint16Array(1);
                 window.crypto.getRandomValues(buf);
                 return buf[0];
+            } else if (crypto.randomBytes) { // NodeJS Crypto
+                return crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
             } else {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Oh god, please no.
             }

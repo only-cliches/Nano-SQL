@@ -1,12 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 var typescript_promise_1 = require("typescript-promise");
 var immutable_store_1 = require("./immutable-store");
 /**
@@ -33,6 +25,7 @@ var SomeSQLInstance = (function () {
         }
         t._filters = {};
         t._permanentFilters = [];
+        t._rowFilters = {};
     }
     /**
      * Changes the table pointer to a new table.
@@ -304,8 +297,8 @@ var SomeSQLInstance = (function () {
             "string": String(val),
             "int": parseInt(val),
             "float": parseFloat(val),
-            "array": __assign({}, val),
-            "map": __assign({}, val),
+            "array": JSON.parse(JSON.stringify(val || [])),
+            "map": JSON.parse(JSON.stringify(val || {})),
             "bool": val === true
         };
         return types[type] || val;
@@ -482,14 +475,13 @@ var SomeSQLInstance = (function () {
         if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
             var newArgs_1 = args || {};
             if (action === "upsert") {
-                newArgs_1 = JSON.parse(JSON.stringify(args)); // Need to recursively break references, faster than looping through the whole thing recursively.
-                // Apply default values & cast the rows
+                // Need to recursively break references, faster than looping through the whole thing recursively.
+                var inputArgs_1 = JSON.parse(JSON.stringify(args || {}));
+                newArgs_1 = {};
+                // Apply default values, cast row types and remove rows that don't exist in the data model
                 this._models[this._selectedTable].forEach(function (model) {
-                    if (model.default && !newArgs_1[model.key]) {
-                        newArgs_1[model.key] = model.default;
-                    }
-                    else {
-                        newArgs_1[model.key] = _this._cast(model.type, newArgs_1[model.key]);
+                    if (inputArgs_1[model.key]) {
+                        newArgs_1[model.key] = _this._cast(model.type, inputArgs_1[model.key]);
                     }
                 });
                 // Apply insert filters
@@ -857,10 +849,13 @@ var SomeSQLInstance = (function () {
     SomeSQLInstance.uuid = function () {
         var r, s, buf;
         var random16Bits = function () {
-            if (window && window.crypto.getRandomValues) {
+            if (crypto.getRandomValues) {
                 buf = new Uint16Array(1);
                 window.crypto.getRandomValues(buf);
                 return buf[0];
+            }
+            else if (crypto.randomBytes) {
+                return crypto.randomBytes(2).reduce(function (prev, cur) { return cur * prev; });
             }
             else {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Oh god, please no.

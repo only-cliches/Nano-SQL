@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.2.9] 2-28-2017
+- Restored JSON.parse(JSON.stringify()) in some places where recursive deep cloning is needed.
+- Fixed a few small bugs.
+- Added NodeJS Crypto to the UUID function.
+
 ## [0.2.8] 2-28-2017
 - Added "default" behavior to data models.
 - Added insert filters option to data models.
