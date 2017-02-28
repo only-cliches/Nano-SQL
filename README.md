@@ -104,18 +104,24 @@ To use directly in the browser, just include the script file found inside the `d
 ## Detailed Usage
 First you declare your models, connect the db, then you execute queries.
 
-### Declare DB model
+### 1. Declare Model & Setup
 
 ```ts
 SomeSQL('users')// Table/Store Name, required to declare model and attach it to this store.
 .model([ // Data Model, required
     {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
-    {key:'name',type:'string'},
+    {key:'name',type:'string', default:"None"}, // This will cause inserts to always use "None" if no value is provided.
     {key:'age',type:'int'},
-    {key:'balance',type:'float'},
+    {key:'balance',type:'float', default: 0},
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
+.rowFilter(function(row) { // Optional, lets you control the row data going into the database.
+    if(row.age > 99) row.age = 99;
+    if(row.age < 12) row.age = 12;
+    if(row.balance < 0) callOverDraftFunction();
+    return row;
+})
 .actions([ // Optional
     {
         name:'add_new_user',
@@ -144,7 +150,7 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
 
 ```
 
-### Connect the DB and execute queries
+### 2. Connect the DB and execute queries
 
 ```ts
 // Initializes the db.
@@ -283,32 +289,24 @@ The other group is used after you connect to the database, and it's used to quer
 
 All commands can be chained or return a promise unless otherwise noted.
 
-## Events
-
-Events can be called before or after setup mode, at any time.
-
-| Command      | Definition                                                                  |          |
-|--------------|-----------------------------------------------------------------------------|----------|
-| .on()        | Listen to specific database events with a callback function.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#on) |
-| .off()       | Remove a listening function from being triggered by events.                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#off) |
-
 ## Group 1: Setup Mode
 
-| Command      | Definition                                                                  |          |
-|--------------|-----------------------------------------------------------------------------|----------|
-| .model()     | Declare database model, required.                                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#model) |
-| .views()     | Declare views to use.                                                       | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#views) |
-| .actions()   | Declare actions to use.                                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#actions) |
-| .config()    | Pass custom configuration options to the database driver.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#config) |
-| .addFilter() | Add a filter that can be used on queries.                                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#addfilter) |
-| .connect()   | Complete setup mode and optionally connect to a specific backend, required. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#connect) |
+| Command         | Definition                                                                  |          |
+|-----------------|-----------------------------------------------------------------------------|----------|
+| .model()        | Declare database model, required.                                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#model) |
+| .views()        | Declare views to use.                                                       | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#views) |
+| .actions()      | Declare actions to use.                                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#actions) |
+| .config()       | Pass custom configuration options to the database driver.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#config) |
+| .addFilter()    | Add a filter that can be used on queries.                                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#addfilter) |
+| .rowFilter()    | Add a filter function to be applied to every row being inserted.            | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#rowFilter) |
+| .connect()      | Complete setup mode and optionally connect to a specific backend, required. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#connect) |
 
 ## Group 2: Query Mode 
 
 Every database query looks like this:
 `SomeSQL(#Table Name#).query(#Query Type#, #Query Args#)...Optional Query Modifiers...exec()`
 
-This gives each query three distinct sections, the query section, the query modifier section, and the execute section.
+This gives each query three distinct sections, the query init section, the query modifier section, and the execute section.
 
 ### Query Init
 
@@ -339,9 +337,20 @@ These come at the end of a query to execute it on the database.
 
 | Command    | Definition                                                                     |          |
 |------------|--------------------------------------------------------------------------------|----------|
-| .exec()    | Executes a pending query andn returns an array of objects, returns a promise.  | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#exec) |
-| .toCSV()   | Executes the pending query and returns a CSV of it, returns a promise.         | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#tocsv) |
+| .exec()    | Executes a pending query and returns a promise containing an array of objects. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#exec) |
+| .toCSV()   | Executes the pending query and returns a promise containg a string CSV.        | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#tocsv) |
 
+
+## Misc Commands
+
+## Events
+
+Events can be called before or after setup mode, at any time.
+
+| Command      | Definition                                                                  |          |
+|--------------|-----------------------------------------------------------------------------|----------|
+| .on()        | Listen to specific database events with a callback function.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#on) |
+| .off()       | Remove a listening function from being triggered by events.                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#off) |
 
 ### Mass Import Data
 
@@ -349,7 +358,6 @@ These come at the end of a query to execute it on the database.
 |------------|------------------------------------------------------------------------|----------|
 | .loadJS()  | Loads json directly into the database.                                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#loadjs) |
 | .loadCSV() | Loads CSV files directly into the database.                            | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#loadcsv) |
-
 
 
 ### Actions & Views
@@ -367,16 +375,15 @@ These can be used in replacement of the query..exec pattern to execute a given v
 ## Memory Database API
 Documentation here is specific to the built in memory database driver.
 
-### Caching
-The cacheing system is write optimized and saves the results of every select query.
+### Memoization
 
-With this setup, as long as a table is not modified identical select statements will only require a single actual select on that table.  Every subsequent select query after the first will draw from the cache, pointing to the same object allowing strict comparison checking ("==="). 
+SomeSQL will memoize all select queries automatically with no configuration needed.
 
-Once you modify a table, all caches for that table are cleared, however the rows themselves are still immutable so once the query itself is recreated unchanged rows will still pass "===" checks.
+Identical select statements will only require a single actual select on that table.  Every subsequent select query after the first will draw from the cache, pointing to the same object allowing strict comparison checking ("==="). 
+
+Once you modify a table, all memoized selects for that table are cleared, however the rows themselves are still immutable so once the query itself is recreated unchanged rows will still pass "===" checks.
 
 Finally, using JOIN commands will cause multiple table caches to be invalidated on single table updates so expect degraded performance with joins.
-
-Caching happens automatically and there are no configuration options.
 
 ### IndexedDB
 
@@ -395,10 +402,10 @@ SomeSQL().config({persistent:true}).connect().then....
 
 You can declare models, views, actions and filters before calling config, but it must be called BEFORE `connect()`.
 
-Finally, you can remove the current indexedDB completely by calling this:
+Finally, you can clear the current indexedDB completely by calling this:
 
 ```ts
-SomeSQL().extend("clear_db");
+SomeSQL().extend("flush_db");
 ```
 
 This will cause ALL active databases and tables to be removed from Indexed DB, but they will remain in memory until the page is refreshed.
@@ -409,6 +416,8 @@ The driver has built in "undo" and "redo" functionality that lets you progress c
 There is no need to enable anything, the history is enabled automatically and requires no configuration.
 
 Each Undo/Redo action represents a single Upsert, Delete, or Drop query.
+
+The history is applied across all database tables, calling a specific table on an undo/redo command will have no affect.
 
 Queries that did not affect any rows do not get added to the history.
 

@@ -507,7 +507,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @memberOf _SomeSQLImmuDB
      */
-    public _extend(db: SomeSQLInstance, command: "<"|">"|"?"|"clear_db"): TSPromise<any> {
+    public _extend(db: SomeSQLInstance, command: "<"|">"|"?"|"flush_db"): TSPromise<any> {
         let t = this;
         let i;
         let h;
@@ -568,7 +568,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                     }
                     res(t._historyArray);
                 break;
-                case "clear_db":
+                case "flush_db":
                     if (t._indexedDB) {
                         window.indexedDB.deleteDatabase(String(t._databaseID));
                     }
@@ -755,9 +755,9 @@ class _SomeSQLQuery {
                 }
 
                 if (t._db.isImporting) {
-                    if(!t._db._historyRecords[0]) t._db._historyRecords[0] = [];
+                    if (!t._db._historyRecords[0]) t._db._historyRecords[0] = [];
                     t._db._historyRecords[0] = t._db._historyRecords[0].concat(changedRowIDs);
-                } else { 
+                } else {
                     t._db._historyRecords.unshift(changedRowIDs);
                 }
 

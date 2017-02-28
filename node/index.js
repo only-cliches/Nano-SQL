@@ -476,10 +476,28 @@ var SomeSQLInstance = (function () {
      * @memberOf SomeSQLInstance
      */
     SomeSQLInstance.prototype.query = function (action, args) {
+        var _this = this;
         this._query = [];
         var a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-            this._query.push({ type: a, args: args });
+            var newArgs_1 = args || {};
+            if (action === "upsert") {
+                newArgs_1 = JSON.parse(JSON.stringify(args)); // Need to recursively break references, faster than looping through the whole thing recursively.
+                // Apply default values & cast the rows
+                this._models[this._selectedTable].forEach(function (model) {
+                    if (model.default && !newArgs_1[model.key]) {
+                        newArgs_1[model.key] = model.default;
+                    }
+                    else {
+                        newArgs_1[model.key] = _this._cast(model.type, newArgs_1[model.key]);
+                    }
+                });
+                // Apply insert filters
+                if (this._rowFilters[this._selectedTable]) {
+                    newArgs_1 = this._rowFilters[this._selectedTable](newArgs_1);
+                }
+            }
+            this._query.push({ type: a, args: newArgs_1 });
         }
         else {
             throw Error;
@@ -540,9 +558,10 @@ var SomeSQLInstance = (function () {
      *  }).exec();
      *
      * A few notes on the join command:
-     * 1. You muse use dot notation and both tables in all "where", "select", and "orderby" arguments
-     * 2. The "table" argument lets you determine the data on the right side of the join.
-     * 3. The "where" argument lets you set what conditions the tables are joined on.
+     * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
+     * 2. Possible join types are `inner`, `left`, and `right`.
+     * 3. The "table" argument lets you determine the data on the right side of the join.
+     * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
      * ```
      *
@@ -769,6 +788,20 @@ var SomeSQLInstance = (function () {
                 res(rowData, t);
             });
         });
+    };
+    /**
+     * Adds a filter to rows going into the database, allows you to control the range and type of inputs.
+     *
+     * This function will be called on every upsert and you'll recieve the upsert data as it's being passed in.
+     *
+     * SomeSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
+     *
+     * @param {(row: object) => object} callBack
+     *
+     * @memberOf SomeSQLInstance
+     */
+    SomeSQLInstance.prototype.rowFilter = function (callBack) {
+        return this._rowFilters[this._selectedTable] = callBack, this;
     };
     /**
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.

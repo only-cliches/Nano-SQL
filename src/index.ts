@@ -217,6 +217,17 @@ export class SomeSQLInstance {
     private _preConnectExtend: Array<Array<any>>;
 
     /**
+     * Holds an object containing the insert filters.
+     *
+     * @internal
+     *
+     * @memberOf SomeSQLInstance
+     */
+    private _rowFilters: {
+        [key: string]: (row: any) => void;
+    }
+
+    /**
      * Holds an array of filters to apply to EVERY query.
      *
      * @internal
@@ -700,7 +711,29 @@ export class SomeSQLInstance {
         this._query = [];
         let a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-            this._query.push({type: a, args: args});
+
+            let newArgs = args || {};
+
+            if (action === "upsert") {
+                newArgs = JSON.parse(JSON.stringify(args)); // Need to recursively break references, faster than looping through the whole thing recursively.
+
+                // Apply default values & cast the rows
+                this._models[this._selectedTable].forEach((model) => {
+                    if (model.default && !newArgs[model.key]) {
+                        newArgs[model.key] = model.default;
+                    } else { // Type cast if we're not setting the default value
+                        newArgs[model.key] = this._cast(model.type, newArgs[model.key]);
+                    }
+                });
+
+                // Apply insert filters
+                if (this._rowFilters[this._selectedTable]) {
+                    newArgs = this._rowFilters[this._selectedTable](newArgs);
+                }
+            }
+
+
+            this._query.push({type: a, args: newArgs});
         } else {
             throw Error;
         }
@@ -763,9 +796,10 @@ export class SomeSQLInstance {
      *  }).exec();
      *
      * A few notes on the join command:
-     * 1. You muse use dot notation and both tables in all "where", "select", and "orderby" arguments
-     * 2. The "table" argument lets you determine the data on the right side of the join.
-     * 3. The "where" argument lets you set what conditions the tables are joined on.
+     * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
+     * 2. Possible join types are `inner`, `left`, and `right`.
+     * 3. The "table" argument lets you determine the data on the right side of the join.
+     * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
      * ```
      *
@@ -1002,6 +1036,21 @@ export class SomeSQLInstance {
                 res(rowData, t);
             });
         });
+    }
+
+    /**
+     * Adds a filter to rows going into the database, allows you to control the range and type of inputs.
+     *
+     * This function will be called on every upsert and you'll recieve the upsert data as it's being passed in.
+     *
+     * SomeSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
+     *
+     * @param {(row: object) => object} callBack
+     *
+     * @memberOf SomeSQLInstance
+     */
+    public rowFilter(callBack: (row: object) => object) {
+        return this._rowFilters[this._selectedTable] = callBack, this;
     }
 
     /**

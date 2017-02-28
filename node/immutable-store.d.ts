@@ -96,5 +96,5 @@ export declare class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @memberOf _SomeSQLImmuDB
      */
-    _extend(db: SomeSQLInstance, command: "<" | ">" | "?" | "clear_db"): TSPromise<any>;
+    _extend(db: SomeSQLInstance, command: "<" | ">" | "?" | "flush_db"): TSPromise<any>;
 }

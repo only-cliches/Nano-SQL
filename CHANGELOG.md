@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.2.8] 2-28-2017
+- Added "default" behavior to data models.
+- Added insert filters option to data models.
+- All upserts are type casted now, regardless of their source.
+- Upgraded to Typescript 2.2
+
 ## [0.2.7] 2-24-2017
 - Fixed iOS bug with indexedDB.
 
