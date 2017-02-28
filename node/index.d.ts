@@ -572,7 +572,7 @@ export declare class SomeSQLInstance {
      *
      * @memberOf SomeSQLInstance
      */
-    rowFilter(callBack: (row: object) => object): this;
+    rowFilter(callBack: (row: any) => any): this;
     /**
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
      *

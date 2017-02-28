@@ -1049,7 +1049,7 @@ export class SomeSQLInstance {
      *
      * @memberOf SomeSQLInstance
      */
-    public rowFilter(callBack: (row: object) => object) {
+    public rowFilter(callBack: (row: any) => any) {
         return this._rowFilters[this._selectedTable] = callBack, this;
     }
 

@@ -10,13 +10,10 @@
     "noImplicitAny":true,
     "noImplicitReturns":true,
     "noImplicitThis":true,
-    "noImplicitUseStrict":true
+    "noImplicitUseStrict":true,
+    "lib": ["dom", "es2015.promise", "es5"]
   },
   "include":[
     "src/**/*"
-  ],
-  "exclude":[
-    "src/old-memory-db.ts",
-    "src/immutable-db.ts"
   ]
 }
