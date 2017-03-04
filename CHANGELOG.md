@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.3.0] 3-3-2017
+- Fixed nodejs behavior if you have indexed db enabled.
+- Fixed nodejs behavior with UUID crypto.
+- Some performance and stability improvements.
+- Switched to a better promise implementation.
+
 ## [0.2.9] 2-28-2017
 - Restored JSON.parse(JSON.stringify()) in some places where recursive deep cloning is needed.
 - Fixed a few small bugs.

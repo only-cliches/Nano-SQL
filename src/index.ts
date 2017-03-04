@@ -1,4 +1,4 @@
-import { TSPromise } from "typescript-promise";
+import { Promise } from "es6-promise";
 import { _SomeSQLImmuDB } from "./immutable-store";
 // import { _SomeSQLMemDB } from "./old-memory-db";
 
@@ -25,7 +25,7 @@ export interface ActionOrView {
     name: string;
     args?: Array<string>;
     extend?: any;
-    call: (args?: any, db?: SomeSQLInstance) => TSPromise<any>;
+    call: (args?: any, db?: SomeSQLInstance) => Promise<any>;
 }
 
 /**
@@ -280,14 +280,14 @@ export class SomeSQLInstance {
      * Optionally include a custom database driver, otherwise the built in memory driver will be used.
      *
      * @param {SomeSQLBackend} [backend]
-     * @returns {(TSPromise<Object | string>)}
+     * @returns {(Promise<Object | string>)}
      *
      * @memberOf SomeSQLInstance
      */
-    public connect(backend?: SomeSQLBackend): TSPromise<Object | string> {
+    public connect(backend?: SomeSQLBackend): Promise<Object | string> {
         let t = this;
         t.backend = backend || new _SomeSQLImmuDB();
-        return new TSPromise((res, rej) => {
+        return new Promise((res, rej) => {
             t.backend._connect({
                 _models: t._models,
                 _actions: t._actions,
@@ -299,7 +299,7 @@ export class SomeSQLInstance {
                     res(result, t);
                 },
                 _onFail: (rejected: any) => {
-                    if (rej) rej(rejected, t);
+                    if (rej) rej(rejected);
                 }
             });
         });
@@ -474,11 +474,11 @@ export class SomeSQLInstance {
      *
      * @param {string} viewName
      * @param {any} viewArgs
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    public getView(viewName: string, viewArgs: any = {}): TSPromise<Array<Object>> {
+    public getView(viewName: string, viewArgs: any = {}): Promise<Array<Object>> {
         let t = this;
         let l = t._selectedTable;
         let selView: ActionOrView | undefined;
@@ -610,11 +610,11 @@ export class SomeSQLInstance {
      *
      * @param {string} actionName
      * @param {any} actionArgs
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    public doAction(actionName: string, actionArgs: any = {}): TSPromise<Array<Object>> {
+    public doAction(actionName: string, actionArgs: any = {}): Promise<Array<Object>> {
         let t = this;
         let l = t._selectedTable;
         let selAction: ActionOrView | undefined;
@@ -711,6 +711,7 @@ export class SomeSQLInstance {
      * @memberOf SomeSQLInstance
      */
     public query(action: "select"|"upsert"|"delete"|"drop", args?: any): SomeSQLInstance {
+
         this._query = [];
         let a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
@@ -722,7 +723,7 @@ export class SomeSQLInstance {
                 let inputArgs = JSON.parse(JSON.stringify(args || {}));
                 newArgs = {};
 
-                // Apply default values, cast row types and remove rows that don't exist in the data model
+                // Apply default values, cast row types and remove columns that don't exist in the data model
                 this._models[this._selectedTable].forEach((model) => {
                     if (inputArgs[model.key]) {
                         newArgs[model.key] = this._cast(model.type, inputArgs[model.key]);
@@ -797,14 +798,14 @@ export class SomeSQLInstance {
      *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
-     *
+     *```
      * A few notes on the join command:
      * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
      * 2. Possible join types are `inner`, `left`, and `right`.
      * 3. The "table" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
-     * ```
+     * 
      *
      * @param {JoinArgs} args
      * @returns {SomeSQLInstance}
@@ -923,11 +924,11 @@ export class SomeSQLInstance {
      *  ...
      * })...
      *
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    public exec(): TSPromise<Array<Object>> {
+    public exec(): Promise<Array<Object|SomeSQLInstance>> {
 
         let t = this;
         let _t = t._selectedTable;
@@ -942,7 +943,7 @@ export class SomeSQLInstance {
             }
         }).reduce((a, b) => a.concat(b));
 
-        return new TSPromise((res, rej) => {
+        return new Promise((res, rej) => {
 
             let _tEvent = (data: Array<Object>, callBack: Function, isError: Boolean) => {
                 if (t._permanentFilters.length && isError !== true) {
@@ -1026,14 +1027,14 @@ export class SomeSQLInstance {
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {Array<Object>} rows
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    public loadJS(rows: Array<Object>): TSPromise<Array<Object>> {
+    public loadJS(rows: Array<Object>): Promise<Array<Object>> {
         let t = this;
-        return new TSPromise((res, rej) => {
-            TSPromise.chain(rows.map((row) => {
+        return new Promise((res, rej) => {
+            Promise.all(rows.map((row) => {
                 return t.table(t._selectedTable).query("upsert", row).exec();
             })).then((rowData) => {
                 res(rowData, t);
@@ -1064,17 +1065,17 @@ export class SomeSQLInstance {
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {string} csv
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    public loadCSV(csv: string): TSPromise<Array<Object>> {
+    public loadCSV(csv: string): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
 
-        return new TSPromise((res, rej) => {
-            TSPromise.all(csv.split("\n").map((v, k) => {
-                return new TSPromise((resolve, reject) => {
+        return new Promise((res, rej) => {
+            Promise.all(csv.split("\n").map((v, k) => {
+                return new Promise((resolve, reject) => {
                     if (k === 0) {
                         fields = v.split(",");
                         resolve();
@@ -1111,14 +1112,18 @@ export class SomeSQLInstance {
     public static uuid(): string {
         let r, s, buf;
         const random16Bits = (): number => {
-            if (crypto.getRandomValues) { // Browser crypto
-                buf = new Uint16Array(1);
-                window.crypto.getRandomValues(buf);
-                return buf[0];
-            } else if (crypto.randomBytes) { // NodeJS Crypto
-                return crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
+            if (typeof crypto === "undefined") {
+                return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             } else {
-                return Math.round(Math.random() * Math.pow(2, 16)); // Oh god, please no.
+                if (crypto.getRandomValues) { // Browser crypto
+                    buf = new Uint16Array(1);
+                    window.crypto.getRandomValues(buf);
+                    return buf[0];
+                } else if (crypto.randomBytes) { // NodeJS crypto
+                    return crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
+                } else {
+                    return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
+                }
             }
         }, b = "";
 
@@ -1142,7 +1147,7 @@ export class SomeSQLInstance {
      */
     public static _hash(key: string): number {
         return Math.abs(key.split("").reduce(function (prev, next, i) {
-            return (((prev << 5) + prev) + key.charCodeAt(i));
+            return ((prev << 5) + prev) + key.charCodeAt(i);
         }, 0));
     }
 
@@ -1159,13 +1164,13 @@ export class SomeSQLInstance {
      * });
      *
      * @param {boolean} [headers]
-     * @returns {TSPromise<string>}
+     * @returns {Promise<string>}
      *
      * @memberOf SomeSQLInstance
      */
-    public toCSV(headers?: boolean): TSPromise<string> {
+    public toCSV(headers?: boolean): Promise<string> {
         let t = this;
-        return new TSPromise((res, rej) => {
+        return new Promise((res, rej) => {
 
             t.exec().then((json: Array<Object>) => {
 

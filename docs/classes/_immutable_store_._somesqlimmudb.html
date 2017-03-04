@@ -112,6 +112,7 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_disablehistory" class="tsd-kind-icon">_disable<wbr>History</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_historypoint" class="tsd-kind-icon">_history<wbr>Point</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_historypointers" class="tsd-kind-icon">_history<wbr>Pointers</a></li>
@@ -126,7 +127,6 @@
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_rows" class="tsd-kind-icon">_rows</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_selectedtable" class="tsd-kind-icon">_selected<wbr>Table</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#_tableinfo" class="tsd-kind-icon">_table<wbr>Info</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._somesqlimmudb.html#isimporting" class="tsd-kind-icon">is<wbr>Importing</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
@@ -156,7 +156,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in immutable-store.ts:239</li>
+									<li>Defined in immutable-store.ts:240</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="_immutable_store_._somesqlimmudb.html" class="tsd-signature-type">_SomeSQLImmuDB</a></h4>
@@ -167,12 +167,35 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="_disablehistory" class="tsd-anchor"></a>
+					<h3>_disable<wbr>History</h3>
+					<div class="tsd-signature tsd-kind-icon">_disable<wbr>History<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in immutable-store.ts:240</li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Flag to keep track of when importing IndexeDB.</p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>type</dt>
+							<dd><p>{boolean}</p>
+							</dd>
+							<dt>memberof</dt>
+							<dd><p>_SomeSQLImmuDB</p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="_historyarray" class="tsd-anchor"></a>
 					<h3>_history<wbr>Array</h3>
 					<div class="tsd-signature tsd-kind-icon">_history<wbr>Array<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:221</li>
+							<li>Defined in immutable-store.ts:224</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -197,7 +220,7 @@
 					<div class="tsd-signature tsd-kind-icon">_history<wbr>Point<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:212</li>
+							<li>Defined in immutable-store.ts:215</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -222,7 +245,7 @@
 					<div class="tsd-signature tsd-kind-icon">_history<wbr>Pointers<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:201</li>
+							<li>Defined in immutable-store.ts:204</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -257,7 +280,7 @@
 					<div class="tsd-signature tsd-kind-icon">_history<wbr>Records<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:190</li>
+							<li>Defined in immutable-store.ts:193</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -283,7 +306,7 @@
 					<div class="tsd-signature tsd-kind-icon">_indexedDB<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">IDBDatabase</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:231</li>
+							<li>Defined in immutable-store.ts:232</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -306,7 +329,7 @@
 					<div class="tsd-signature tsd-kind-icon">_join<wbr>Index<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:166</li>
+							<li>Defined in immutable-store.ts:169</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -352,7 +375,7 @@
 					<div class="tsd-signature tsd-kind-icon">_joined<wbr>Relations<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:180</li>
+							<li>Defined in immutable-store.ts:183</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -377,7 +400,7 @@
 					<div class="tsd-signature tsd-kind-icon">_models<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:75</li>
+							<li>Defined in immutable-store.ts:78</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -412,7 +435,7 @@
 					<div class="tsd-signature tsd-kind-icon">_parent<span class="tsd-signature-symbol">:</span> <a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:86</li>
+							<li>Defined in immutable-store.ts:89</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -437,7 +460,7 @@
 					<div class="tsd-signature tsd-kind-icon">_persistent<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:262</li>
+							<li>Defined in immutable-store.ts:264</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -460,7 +483,7 @@
 					<div class="tsd-signature tsd-kind-icon">_query<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:148</li>
+							<li>Defined in immutable-store.ts:151</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -502,7 +525,7 @@
 					<div class="tsd-signature tsd-kind-icon">_rows<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:135</li>
+							<li>Defined in immutable-store.ts:138</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -529,7 +552,7 @@
 					<div class="tsd-signature tsd-kind-icon">_selected<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:95</li>
+							<li>Defined in immutable-store.ts:98</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -554,7 +577,7 @@
 					<div class="tsd-signature tsd-kind-icon">_table<wbr>Info<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:114</li>
+							<li>Defined in immutable-store.ts:117</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -613,29 +636,6 @@
 						</ul>
 					</div>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="isimporting" class="tsd-anchor"></a>
-					<h3>is<wbr>Importing</h3>
-					<div class="tsd-signature tsd-kind-icon">is<wbr>Importing<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in immutable-store.ts:239</li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>Flag to keep track of when importing IndexeDB.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>type</dt>
-							<dd><p>{boolean}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_SomeSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Methods</h2>
@@ -650,7 +650,7 @@
 							<aside class="tsd-sources">
 								<p>Implementation of <a href="../interfaces/_index_.somesqlbackend.html">SomeSQLBackend</a>.<a href="../interfaces/_index_.somesqlbackend.html#_connect">_connect</a></p>
 								<ul>
-									<li>Defined in immutable-store.ts:297</li>
+									<li>Defined in immutable-store.ts:299</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -686,7 +686,7 @@
 							<aside class="tsd-sources">
 								<p>Implementation of <a href="../interfaces/_index_.somesqlbackend.html">SomeSQLBackend</a>.<a href="../interfaces/_index_.somesqlbackend.html#_exec">_exec</a></p>
 								<ul>
-									<li>Defined in immutable-store.ts:419</li>
+									<li>Defined in immutable-store.ts:421</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -715,13 +715,13 @@
 					<a name="_extend" class="tsd-anchor"></a>
 					<h3>_extend</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_extend<span class="tsd-signature-symbol">(</span>db<span class="tsd-signature-symbol">: </span><a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a>, command<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"&lt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"&gt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"?"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"flush_db"</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">_extend<span class="tsd-signature-symbol">(</span>db<span class="tsd-signature-symbol">: </span><a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a>, command<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"&lt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"&gt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"?"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"flush_db"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"disable"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"enable"</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in immutable-store.ts:510</li>
+									<li>Defined in immutable-store.ts:511</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -754,10 +754,10 @@
 									<h5>db: <a href="_index_.somesqlinstance.html" class="tsd-signature-type">SomeSQLInstance</a></h5>
 								</li>
 								<li>
-									<h5>command: <span class="tsd-signature-type">"&lt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"&gt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"?"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"flush_db"</span></h5>
+									<h5>command: <span class="tsd-signature-type">"&lt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"&gt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"?"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"flush_db"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"disable"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"enable"</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">TSPromise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -771,7 +771,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in immutable-store.ts:273</li>
+									<li>Defined in immutable-store.ts:275</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -807,7 +807,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in immutable-store.ts:286</li>
+									<li>Defined in immutable-store.ts:288</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -840,12 +840,12 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in immutable-store.ts:442</li>
+									<li>Defined in immutable-store.ts:443</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Invalidate the query cache cased on the rows being affected</p>
+									<p>Invalidate the query cache based on the rows being affected</p>
 								</div>
 								<dl class="tsd-comment-tags">
 									<dt>internal</dt>
@@ -877,7 +877,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in immutable-store.ts:476</li>
+									<li>Defined in immutable-store.ts:477</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -929,6 +929,9 @@
 								<a href="_immutable_store_._somesqlimmudb.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_immutable_store_._somesqlimmudb.html#_disablehistory" class="tsd-kind-icon">_disable<wbr>History</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_immutable_store_._somesqlimmudb.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
@@ -969,9 +972,6 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_immutable_store_._somesqlimmudb.html#_tableinfo" class="tsd-kind-icon">_table<wbr>Info</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._somesqlimmudb.html#isimporting" class="tsd-kind-icon">is<wbr>Importing</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_immutable_store_._somesqlimmudb.html#_connect" class="tsd-kind-icon">_connect</a>

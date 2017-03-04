@@ -1,4 +1,4 @@
-import { TSPromise } from "typescript-promise";
+import { Promise } from "es6-promise";
 /**
  * Standard object placeholder with string key.
  *
@@ -19,7 +19,7 @@ export interface ActionOrView {
     name: string;
     args?: Array<string>;
     extend?: any;
-    call: (args?: any, db?: SomeSQLInstance) => TSPromise<any>;
+    call: (args?: any, db?: SomeSQLInstance) => Promise<any>;
 }
 /**
  * You need an array of these to declare a data model.
@@ -122,11 +122,11 @@ export declare class SomeSQLInstance {
      * Optionally include a custom database driver, otherwise the built in memory driver will be used.
      *
      * @param {SomeSQLBackend} [backend]
-     * @returns {(TSPromise<Object | string>)}
+     * @returns {(Promise<Object | string>)}
      *
      * @memberOf SomeSQLInstance
      */
-    connect(backend?: SomeSQLBackend): TSPromise<Object | string>;
+    connect(backend?: SomeSQLBackend): Promise<Object | string>;
     /**
      * Adds an event listener to the selected database table.
      *
@@ -238,11 +238,11 @@ export declare class SomeSQLInstance {
      *
      * @param {string} viewName
      * @param {any} viewArgs
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    getView(viewName: string, viewArgs?: any): TSPromise<Array<Object>>;
+    getView(viewName: string, viewArgs?: any): Promise<Array<Object>>;
     /**
      * Declare the actions for the current selected table.  Must be called before connect()
      *
@@ -306,11 +306,11 @@ export declare class SomeSQLInstance {
      *
      * @param {string} actionName
      * @param {any} actionArgs
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    doAction(actionName: string, actionArgs?: any): TSPromise<Array<Object>>;
+    doAction(actionName: string, actionArgs?: any): Promise<Array<Object>>;
     /**
      * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
      * Example:
@@ -440,14 +440,14 @@ export declare class SomeSQLInstance {
      *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
-     *
+     *```
      * A few notes on the join command:
      * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
      * 2. Possible join types are `inner`, `left`, and `right`.
      * 3. The "table" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
-     * ```
+     *
      *
      * @param {JoinArgs} args
      * @returns {SomeSQLInstance}
@@ -520,11 +520,11 @@ export declare class SomeSQLInstance {
      *  ...
      * })...
      *
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    exec(): TSPromise<Array<Object>>;
+    exec(): Promise<Array<Object | SomeSQLInstance>>;
     /**
      * Configure the database driver, must be called before the connect() method.
      *
@@ -556,11 +556,11 @@ export declare class SomeSQLInstance {
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {Array<Object>} rows
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    loadJS(rows: Array<Object>): TSPromise<Array<Object>>;
+    loadJS(rows: Array<Object>): Promise<Array<Object>>;
     /**
      * Adds a filter to rows going into the database, allows you to control the range and type of inputs.
      *
@@ -581,11 +581,11 @@ export declare class SomeSQLInstance {
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {string} csv
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
-    loadCSV(csv: string): TSPromise<Array<Object>>;
+    loadCSV(csv: string): Promise<Array<Object>>;
     /**
      * RFC4122 compliant UUID v4, 9 randomly generated 16 bit numbers.
      *
@@ -608,11 +608,11 @@ export declare class SomeSQLInstance {
      * });
      *
      * @param {boolean} [headers]
-     * @returns {TSPromise<string>}
+     * @returns {Promise<string>}
      *
      * @memberOf SomeSQLInstance
      */
-    toCSV(headers?: boolean): TSPromise<string>;
+    toCSV(headers?: boolean): Promise<string>;
 }
 /**
  * This object is passed into a the database connect function to activate it.

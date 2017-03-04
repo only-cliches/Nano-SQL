@@ -7,7 +7,7 @@
     "removeComments":true,
     "importHelpers":false,
     "strictNullChecks":true,
-    "noImplicitAny":true,
+    "noImplicitAny":false,
     "noImplicitReturns":true,
     "noImplicitThis":true,
     "noImplicitUseStrict":true,

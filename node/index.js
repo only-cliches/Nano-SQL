@@ -1,5 +1,5 @@
 "use strict";
-var typescript_promise_1 = require("typescript-promise");
+var es6_promise_1 = require("es6-promise");
 var immutable_store_1 = require("./immutable-store");
 /**
  * The primary abstraction class, there is no database implimintation code here.
@@ -46,7 +46,7 @@ var SomeSQLInstance = (function () {
      * Optionally include a custom database driver, otherwise the built in memory driver will be used.
      *
      * @param {SomeSQLBackend} [backend]
-     * @returns {(TSPromise<Object | string>)}
+     * @returns {(Promise<Object | string>)}
      *
      * @memberOf SomeSQLInstance
      */
@@ -54,7 +54,7 @@ var SomeSQLInstance = (function () {
         var _this = this;
         var t = this;
         t.backend = backend || new immutable_store_1._SomeSQLImmuDB();
-        return new typescript_promise_1.TSPromise(function (res, rej) {
+        return new es6_promise_1.Promise(function (res, rej) {
             t.backend._connect({
                 _models: t._models,
                 _actions: t._actions,
@@ -67,7 +67,7 @@ var SomeSQLInstance = (function () {
                 },
                 _onFail: function (rejected) {
                     if (rej)
-                        rej(rejected, t);
+                        rej(rejected);
                 }
             });
         });
@@ -234,7 +234,7 @@ var SomeSQLInstance = (function () {
      *
      * @param {string} viewName
      * @param {any} viewArgs
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
@@ -368,7 +368,7 @@ var SomeSQLInstance = (function () {
      *
      * @param {string} actionName
      * @param {any} actionArgs
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
@@ -478,7 +478,7 @@ var SomeSQLInstance = (function () {
                 // Need to recursively break references, faster than looping through the whole thing recursively.
                 var inputArgs_1 = JSON.parse(JSON.stringify(args || {}));
                 newArgs_1 = {};
-                // Apply default values, cast row types and remove rows that don't exist in the data model
+                // Apply default values, cast row types and remove columns that don't exist in the data model
                 this._models[this._selectedTable].forEach(function (model) {
                     if (inputArgs_1[model.key]) {
                         newArgs_1[model.key] = _this._cast(model.type, inputArgs_1[model.key]);
@@ -548,14 +548,14 @@ var SomeSQLInstance = (function () {
      *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
-     *
+     *```
      * A few notes on the join command:
      * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
      * 2. Possible join types are `inner`, `left`, and `right`.
      * 3. The "table" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
-     * ```
+     *
      *
      * @param {JoinArgs} args
      * @returns {SomeSQLInstance}
@@ -668,7 +668,7 @@ var SomeSQLInstance = (function () {
      *  ...
      * })...
      *
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
@@ -684,7 +684,7 @@ var SomeSQLInstance = (function () {
                 default: return [];
             }
         }).reduce(function (a, b) { return a.concat(b); });
-        return new typescript_promise_1.TSPromise(function (res, rej) {
+        return new es6_promise_1.Promise(function (res, rej) {
             var _tEvent = function (data, callBack, isError) {
                 if (t._permanentFilters.length && isError !== true) {
                     data = t._permanentFilters.reduce(function (prev, cur, i) {
@@ -767,14 +767,14 @@ var SomeSQLInstance = (function () {
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {Array<Object>} rows
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
     SomeSQLInstance.prototype.loadJS = function (rows) {
         var t = this;
-        return new typescript_promise_1.TSPromise(function (res, rej) {
-            typescript_promise_1.TSPromise.chain(rows.map(function (row) {
+        return new es6_promise_1.Promise(function (res, rej) {
+            es6_promise_1.Promise.all(rows.map(function (row) {
                 return t.table(t._selectedTable).query("upsert", row).exec();
             })).then(function (rowData) {
                 res(rowData, t);
@@ -803,16 +803,16 @@ var SomeSQLInstance = (function () {
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
      * @param {string} csv
-     * @returns {(TSPromise<Array<Object>>)}
+     * @returns {(Promise<Array<Object>>)}
      *
      * @memberOf SomeSQLInstance
      */
     SomeSQLInstance.prototype.loadCSV = function (csv) {
         var t = this;
         var fields = [];
-        return new typescript_promise_1.TSPromise(function (res, rej) {
-            typescript_promise_1.TSPromise.all(csv.split("\n").map(function (v, k) {
-                return new typescript_promise_1.TSPromise(function (resolve, reject) {
+        return new es6_promise_1.Promise(function (res, rej) {
+            es6_promise_1.Promise.all(csv.split("\n").map(function (v, k) {
+                return new es6_promise_1.Promise(function (resolve, reject) {
                     if (k === 0) {
                         fields = v.split(",");
                         resolve();
@@ -849,16 +849,21 @@ var SomeSQLInstance = (function () {
     SomeSQLInstance.uuid = function () {
         var r, s, buf;
         var random16Bits = function () {
-            if (crypto.getRandomValues) {
-                buf = new Uint16Array(1);
-                window.crypto.getRandomValues(buf);
-                return buf[0];
-            }
-            else if (crypto.randomBytes) {
-                return crypto.randomBytes(2).reduce(function (prev, cur) { return cur * prev; });
+            if (typeof crypto === "undefined") {
+                return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             }
             else {
-                return Math.round(Math.random() * Math.pow(2, 16)); // Oh god, please no.
+                if (crypto.getRandomValues) {
+                    buf = new Uint16Array(1);
+                    window.crypto.getRandomValues(buf);
+                    return buf[0];
+                }
+                else if (crypto.randomBytes) {
+                    return crypto.randomBytes(2).reduce(function (prev, cur) { return cur * prev; });
+                }
+                else {
+                    return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
+                }
             }
         }, b = "";
         return [b, b, b, b, b, b, b, b, b].reduce(function (prev, cur, i) {
@@ -882,7 +887,7 @@ var SomeSQLInstance = (function () {
      */
     SomeSQLInstance._hash = function (key) {
         return Math.abs(key.split("").reduce(function (prev, next, i) {
-            return (((prev << 5) + prev) + key.charCodeAt(i));
+            return ((prev << 5) + prev) + key.charCodeAt(i);
         }, 0));
     };
     /**
@@ -898,13 +903,13 @@ var SomeSQLInstance = (function () {
      * });
      *
      * @param {boolean} [headers]
-     * @returns {TSPromise<string>}
+     * @returns {Promise<string>}
      *
      * @memberOf SomeSQLInstance
      */
     SomeSQLInstance.prototype.toCSV = function (headers) {
         var t = this;
-        return new typescript_promise_1.TSPromise(function (res, rej) {
+        return new es6_promise_1.Promise(function (res, rej) {
             t.exec().then(function (json) {
                 var header = t._query.filter(function (q) {
                     return q.type === "select";

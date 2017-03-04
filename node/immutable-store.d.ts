@@ -1,5 +1,5 @@
 import { SomeSQLInstance, SomeSQLBackend, DBRow, DBConnect, DBExec } from "./index";
-import { TSPromise } from "typescript-promise";
+import { Promise } from "es6-promise";
 /**
  * The main class for the immutable database, holds the indexes, data and primary methods.
  *
@@ -23,7 +23,7 @@ export declare class _SomeSQLImmuDB implements SomeSQLBackend {
      * @type {boolean}
      * @memberOf _SomeSQLImmuDB
      */
-    isImporting: boolean;
+    _disableHistory: boolean;
     constructor();
     /**
      * Wether to store data to indexed DB or not.
@@ -92,9 +92,9 @@ export declare class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @param {SomeSQLInstance} db
      * @param {("<"|">"|"?")} command
-     * @returns {TSPromise<any>}
+     * @returns {Promise<any>}
      *
      * @memberOf _SomeSQLImmuDB
      */
-    _extend(db: SomeSQLInstance, command: "<" | ">" | "?" | "flush_db"): TSPromise<any>;
+    _extend(db: SomeSQLInstance, command: "<" | ">" | "?" | "flush_db" | "disable" | "enable"): Promise<any>;
 }

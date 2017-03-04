@@ -56,6 +56,6 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "typescript-promise": "^0.2.4"
+    "es6-promise": "git+https://github.com/ClickSimply/es6-promise.git"
   }
 }

@@ -47,7 +47,7 @@ SomeSQL comes to you in two parts minified into a single file.
 * Built in, super simple undo/redo.
 * Optionally persist to IndexedDB.
 
-Oh yeah, and it's all just 6 Kb gzipped. :)
+Oh yeah, and it's all under 9 Kb gzipped. :)
 
 
 ## Simple Usage
