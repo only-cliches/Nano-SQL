@@ -29,7 +29,7 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid" | string;
+    type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid" | "blob" | string;
     default?: any;
     props?: Array<any>;
 }

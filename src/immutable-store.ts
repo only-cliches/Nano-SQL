@@ -777,9 +777,9 @@ class _SomeSQLQuery {
         };
 
         const freezeObj = (obj: any): any => {
-            Object.getOwnPropertyNames(obj).forEach(function(name) {
-                let prop = obj[name];
-                if (typeof prop === "object" && prop !== null) {
+            t._db._models[t._db._selectedTable].forEach(function(model) {
+                let prop = obj[model.key];
+                if (typeof prop === "object" && prop !== null && model.type !== "blob") {
                     prop = freezeObj(prop);
                 }
             });
@@ -794,7 +794,7 @@ class _SomeSQLQuery {
             let newRow: DBRow = {};
             let oldRow = t._db._getRow(rowID) || {};
             t._db._models[t._db._selectedTable].forEach((model) => {
-                if (typeof oldRow[model.key] === "object") {
+                if (typeof oldRow[model.key] === "object" && model.type !== "blob") {
                     newRow[model.key] = JSON.parse(JSON.stringify(oldRow[model.key]));
                 } else {
                     newRow[model.key] = oldRow[model.key] || model.default || null;

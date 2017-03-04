@@ -1,9 +1,38 @@
 <html>
     <head>
         <script src="some-sql.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.3.7/alasql.min.js"></script>
     </head>
     <body>
         <script>
+            let blank = () => {
+                return {
+                    title: "Hello, world!",
+                    name: Math.round(Math.random()*100000).toString(16)
+                }
+            }
+
+            SomeSQL("test").model([
+                {key:"id",type:"int",props:["ai","pk"]},
+                {key: "title", type: "string"},
+                {key: "name", type: "string"}
+            ]).connect().then(() => {
+                //SomeSQL().extend("disable");
+                console.time("DB");
+                let i = 0
+                let upsert = () => {
+                    SomeSQL("test").query("upsert",blank()).exec().then((rows, db) => {
+                        i++;
+                        if(i < 1000) {
+                            upsert();
+                        } else {
+                            console.timeEnd("DB");
+                        }
+                    });
+                }
+
+                upsert();
+            });
         /* This file used to run tests and play with the lib */
   
 /*
@@ -63,7 +92,7 @@
                 }));
             }
 */
-
+/*
 
             SomeSQL('users')//Table/Store Name
             .model([ //Data Model

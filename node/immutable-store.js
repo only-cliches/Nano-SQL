@@ -495,9 +495,9 @@ var _SomeSQLQuery = (function () {
             }
         };
         var freezeObj = function (obj) {
-            Object.getOwnPropertyNames(obj).forEach(function (name) {
-                var prop = obj[name];
-                if (typeof prop === "object" && prop !== null) {
+            t._db._models[t._db._selectedTable].forEach(function (model) {
+                var prop = obj[model.key];
+                if (typeof prop === "object" && prop !== null && model.type !== "blob") {
                     prop = freezeObj(prop);
                 }
             });
@@ -510,7 +510,7 @@ var _SomeSQLQuery = (function () {
             var newRow = {};
             var oldRow = t._db._getRow(rowID) || {};
             t._db._models[t._db._selectedTable].forEach(function (model) {
-                if (typeof oldRow[model.key] === "object") {
+                if (typeof oldRow[model.key] === "object" && model.type !== "blob") {
                     newRow[model.key] = JSON.parse(JSON.stringify(oldRow[model.key]));
                 }
                 else {

@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.3.1] 3-4-2017
+- Added a new "blob" row type that bypasses the JSON parsing and freeze functions.
+
 ## [0.3.0] 3-3-2017
 - Fixed nodejs behavior if you have indexed db enabled.
 - Fixed nodejs behavior with UUID crypto.

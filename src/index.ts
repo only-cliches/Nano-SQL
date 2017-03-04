@@ -1,6 +1,5 @@
 import { Promise } from "es6-promise";
 import { _SomeSQLImmuDB } from "./immutable-store";
-// import { _SomeSQLMemDB } from "./old-memory-db";
 
 declare var crypto: any;
 
@@ -36,7 +35,7 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string"|"int"|"float"|"array"|"map"|"bool"|"uuid"|string;
+    type: "string"|"int"|"float"|"array"|"map"|"bool"|"uuid"|"blob"|string;
     default?: any;
     props?: Array<any>;
 }
