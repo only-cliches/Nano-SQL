@@ -285,6 +285,14 @@ export class SomeSQLInstance {
      */
     public connect(backend?: SomeSQLBackend): Promise<Object | string> {
         let t = this;
+
+        if(t.backend) {
+            let err = "You can only call connect() once for each database!";
+            return new Promise((res, rej) => {
+                rej(err);
+                throw Error(err);
+            });
+        }
         t.backend = backend || new _SomeSQLImmuDB();
         return new Promise((res, rej) => {
             t.backend._connect({
@@ -943,6 +951,12 @@ export class SomeSQLInstance {
         }).reduce((a, b) => a.concat(b));
 
         return new Promise((res, rej) => {
+
+            if(!t.backend) {
+                let err = "You must connect() before calling any queries!";
+                rej(err);
+                throw Error(err);
+            }
 
             let _tEvent = (data: Array<Object>, callBack: Function, isError: Boolean) => {
                 if (t._permanentFilters.length && isError !== true) {

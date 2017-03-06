@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.3.2] 3-5-2017
+- Finished react draw example.
+- Added error handling for improper connect() usage.
+
 ## [0.3.1] 3-4-2017
 - Added a new "blob" row type that bypasses the JSON parsing and freeze functions.
 

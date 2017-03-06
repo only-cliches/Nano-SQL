@@ -8,7 +8,7 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
     function initStore() {
         some_sql_1.SomeSQL("todos")
             .model([
-            { key: "id", type: "int", props: ["pk"] },
+            { key: "id", type: "uuid", props: ["pk"] },
             { key: "done", type: "bool", default: false },
             { key: "title", type: "string", default: "" }
         ])
@@ -25,7 +25,7 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
             },
             {
                 name: "mark_todo_done",
-                args: ["id:int"],
+                args: ["id:string"],
                 call: function (args, db) {
                     return db.query("upsert", { done: true }).where(["id", "=", args.id]).exec();
                 }

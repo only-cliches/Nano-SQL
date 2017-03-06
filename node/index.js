@@ -53,6 +53,13 @@ var SomeSQLInstance = (function () {
     SomeSQLInstance.prototype.connect = function (backend) {
         var _this = this;
         var t = this;
+        if (t.backend) {
+            var err_1 = "You can only call connect() once for each database!";
+            return new es6_promise_1.Promise(function (res, rej) {
+                rej(err_1);
+                throw Error(err_1);
+            });
+        }
         t.backend = backend || new immutable_store_1._SomeSQLImmuDB();
         return new es6_promise_1.Promise(function (res, rej) {
             t.backend._connect({
@@ -685,6 +692,11 @@ var SomeSQLInstance = (function () {
             }
         }).reduce(function (a, b) { return a.concat(b); });
         return new es6_promise_1.Promise(function (res, rej) {
+            if (!t.backend) {
+                var err = "You must connect() before calling any queries!";
+                rej(err);
+                throw Error(err);
+            }
             var _tEvent = function (data, callBack, isError) {
                 if (t._permanentFilters.length && isError !== true) {
                     data = t._permanentFilters.reduce(function (prev, cur, i) {

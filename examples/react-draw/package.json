@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/jquery": "^2.0.40",
+    "query": "^0.2.0",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
     "some-sql": "^0.2.1"
@@ -17,6 +19,7 @@
   "devDependencies": {
     "@types/react": "^0.14.55",
     "@types/react-dom": "^0.14.19",
-    "typescript": "^2.1.4"
+    "@types/tinycolor2": "^1.1.0",
+    "typescript": "^2.2.0"
   }
 }

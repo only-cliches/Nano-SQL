@@ -12,4 +12,5 @@ You can now get to the examples in your browser by going to `http://127.0.0.1:80
 
 If you used the method above or your server is running at localhost on port 8080, the links below will take you to the respective examples.
 
-* [React Todo](http://127.0.0.1:8080/react-todo/)
+* [Todo App](http://127.0.0.1:8080/react-todo/)
+* [Draw App](http://127.0.0.1:8080/react-draw/)

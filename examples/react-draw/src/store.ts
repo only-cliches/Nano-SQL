@@ -1,33 +1,26 @@
 import { SomeSQL } from "some-sql";
-import { TSPromise } from "typescript-promise";
 
-export interface ImageRow {
+export interface Path {
     id: number;
     color: string;
+    size: number;
+    path: {
+        x: number,
+        y: number,
+        prevX: number,
+        prevY: number
+    }[]
 }
 
-export interface ImageSizeRow {
-    id: number;
-    width: number;
-    height: number;
-}
 
-export class DrawStore {
+export const DrawStore = (): Promise<any> => {
+    SomeSQL("paths")
+    .model([
+        {key: "id", type: "int", props: ["pk"]},
+        {key: "color", type: "string"},
+        {key: "size", type: "int"},
+        {key: "path", type: "array"}
+    ])
 
-    public static init(): TSPromise<any> {
-        SomeSQL("image")
-        .model([
-            {key: "id", type: "int", props: ["pk"]},
-            {key: "color", type: "string"}
-        ])
-
-        SomeSQL("ImageSize")
-        .model([
-            {key: "id",type: "int", props:["pk"]},
-            {key: "width", type: "int"},
-            {key: "height", type: "int"}
-        ])
-
-        return SomeSQL().connect();
-    }
+    return SomeSQL().config({persistent:true}).connect();
 }
