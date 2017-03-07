@@ -52,6 +52,7 @@ var _SomeSQLImmuDB = (function () {
         t._historyRecords = [[]];
         t._historyPoint = 0;
         t._historyPointers = {};
+        t._historyTypes = [];
         t._historyArray = [0, 0];
         t._joinIndex = {};
         t._rows = [];
@@ -216,7 +217,7 @@ var _SomeSQLImmuDB = (function () {
      *
      * @memberOf _SomeSQLImmuDB
      */
-    _SomeSQLImmuDB.prototype._invalidateCache = function (triggerChange) {
+    _SomeSQLImmuDB.prototype._invalidateCache = function (changedRows, type) {
         var t = this;
         var c = [t._selectedTable];
         var i = t._joinedRelations.length;
@@ -227,14 +228,16 @@ var _SomeSQLImmuDB = (function () {
         }
         t._removeDupes(c.sort()).forEach(function (table) {
             t._queryCache[table] = {};
-            if (triggerChange) {
+            if (changedRows.length) {
                 t._parent.triggerEvent({
                     name: "change",
                     actionOrView: "",
                     table: t._tableInfo[table]._name,
                     query: [],
                     time: new Date().getTime(),
-                    result: []
+                    result: [],
+                    changedRows: changedRows,
+                    changeType: type
                 }, ["change"]);
             }
         });
@@ -294,9 +297,11 @@ var _SomeSQLImmuDB = (function () {
         }
         var shiftRowIDs = function (direction) {
             i = t._historyRecords[t._historyPoint].length;
+            var rows = [];
             while (i--) {
                 rowID = t._historyRecords[t._historyPoint][i];
                 rowData = t._getRow(rowID) || {};
+                rows.push(rowData);
                 rowKey = rowData[t._tableInfo[t._selectedTable]._pk];
                 t._historyPointers[rowID] += direction;
                 rowData = t._getRow(rowID);
@@ -311,6 +316,7 @@ var _SomeSQLImmuDB = (function () {
                 if (t._historyPointers[rowID] < 0)
                     t._historyPointers[rowID] = 0;
             }
+            return rows;
         };
         return new es6_promise_1.Promise(function (res, rej) {
             if (!t._historyRecords.length && (["<", ">"].indexOf(command) !== -1)) {
@@ -323,9 +329,18 @@ var _SomeSQLImmuDB = (function () {
                         res(false);
                     }
                     else {
-                        shiftRowIDs(1);
+                        var rows = shiftRowIDs(1);
                         t._historyPoint++;
-                        t._invalidateCache(true);
+                        var description = t._historyTypes[t._historyPoint - 1];
+                        switch (description) {
+                            case "inserted":
+                                description = "deleted";
+                                break;
+                            case "deleted":
+                                description = "inserted";
+                                break;
+                        }
+                        t._invalidateCache(rows, description);
                         res(true);
                     }
                     break;
@@ -335,8 +350,8 @@ var _SomeSQLImmuDB = (function () {
                     }
                     else {
                         t._historyPoint--;
-                        shiftRowIDs(-1);
-                        t._invalidateCache(true);
+                        var rows = shiftRowIDs(-1);
+                        t._invalidateCache(rows, t._historyTypes[t._historyPoint]);
                         res(true);
                     }
                     break;
@@ -400,8 +415,8 @@ var _SomeSQLQuery = (function () {
                 t._mod.push(q); // Query Modifiers
             }
         });
-        t._execQuery(function (result) {
-            query._onSuccess(result);
+        t._execQuery(function (result, changeType, affectedRows) {
+            query._onSuccess(result, changeType, affectedRows);
             callBack(t);
         });
     };
@@ -478,20 +493,26 @@ var _SomeSQLQuery = (function () {
                         return true;
                     });
                     t._db._historyPoint = 0;
+                    var diff = t._db._historyTypes.length - t._db._historyRecords.length;
+                    while (diff--) {
+                        t._db._historyTypes.shift();
+                    }
                 }
                 if (t._db._disableHistory) {
                     if (!t._db._historyRecords[0])
                         t._db._historyRecords[0] = [];
                     t._db._historyRecords[0] = t._db._historyRecords[0].concat(changedRowIDs);
+                    t._db._historyTypes[0] = describe;
                 }
                 else {
                     t._db._historyRecords.unshift(changedRowIDs);
+                    t._db._historyTypes.unshift(describe);
                 }
-                t._db._invalidateCache(false);
-                callBack([{ msg: updateLength + " row(s) " + describe }]);
+                t._db._invalidateCache([], "");
+                callBack([{ msg: updateLength + " row(s) " + describe }], describe, changedRowIDs.map(function (r) { return t._db._getRow(r) || {}; }));
             }
             else {
-                callBack([{ msg: "0 rows " + describe }]);
+                callBack([{ msg: "0 rows " + describe }], describe, []);
             }
         };
         var freezeObj = function (obj) {
@@ -595,7 +616,7 @@ var _SomeSQLQuery = (function () {
                 break;
             case "select":
                 if (t._db._queryCache[t._db._selectedTable][t._queryHash]) {
-                    callBack(t._db._queryCache[t._db._selectedTable][t._queryHash]);
+                    callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
                     break;
                 }
                 mods = ["join", "orderby", "offset", "limit"];
@@ -680,7 +701,7 @@ var _SomeSQLQuery = (function () {
                         }).filter(function (r) { return r; });
                         results = t._runFilters(results);
                         t._db._queryCache[t._db._selectedTable][t._queryHash] = results;
-                        callBack(t._db._queryCache[t._db._selectedTable][t._queryHash]);
+                        callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
                     }
                 };
                 stepQuery_1(whereRows);

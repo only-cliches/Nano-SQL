@@ -121,7 +121,6 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     // Event handler for the db
     public updateComponent(e?: DatabaseEvent, db?: SomeSQLInstance): void {
         let t = this;
-        let oldRedo = this.state.redos;
         SomeSQL("todos").getView("list_all_todos").then((rows: Array<ItodoItem>, db: SomeSQLInstance) => {
             SomeSQL().extend("?").then((historyArray) => {
                 t.setState({

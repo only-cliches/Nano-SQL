@@ -96,6 +96,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         DrawingApp.prototype.updateComponent = function (e, db) {
             var t = this;
+            console.log(e);
             some_sql_2.SomeSQL().extend("?").then(function (historyArray) {
                 t.setState(__assign({}, t.state, { redos: historyArray }));
             });
@@ -108,11 +109,15 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
             var lastAction = "draw";
             some_sql_2.SomeSQL("paths").query("select").exec().then(function (rows) {
+                var prevPath = { x: 0, y: 0 };
                 rows.forEach(function (row, i) {
                     if (row.size !== -1) {
                         lastAction = "draw";
                         row.path.forEach(function (p, k) {
-                            t.draw(row.color, row.size, p.prevY, p.prevX, p.y, p.x);
+                            if (k > 0)
+                                prevPath = row.path[k - 1];
+                            if (k > 0)
+                                t.draw(row.color, row.size, prevPath.y, prevPath.x, p.y, p.x);
                         });
                     }
                     else {
@@ -127,7 +132,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         DrawingApp.prototype.draw = function (color, size, prevY, prevX, currY, currX) {
             var t = this;
             if (t.currentPath)
-                t.currentPath.path.push({ x: currX, y: currY, prevX: prevX, prevY: prevY });
+                t.currentPath.path.push({ x: currX, y: currY });
             t.ctx.beginPath();
             t.ctx.moveTo(prevX, prevY);
             t.ctx.lineTo(currX, currY);
@@ -138,18 +143,21 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             t.ctx.stroke();
         };
         DrawingApp.prototype.componentDidMount = function () {
-            var t = this;
             var canvas = document.getElementById('DrawingContainer');
-            t.ctx = canvas.getContext("2d");
-            t.drawFromStore();
-            var w = canvas.width;
-            var h = canvas.height;
+            this.ctx = canvas.getContext("2d");
+            this.drawFromStore();
+            this.activateDrawingSurface(canvas);
+        };
+        DrawingApp.prototype.activateDrawingSurface = function (cnvs) {
+            var t = this;
+            var w = cnvs.width;
+            var h = cnvs.height;
             var flag = false, prevX = 0, currX = 0, prevY = 0, currY = 0, dot_flag = false;
             var offset = $("#DrawingContainer").offset();
             $(window).on('resize', function () {
                 offset = $("#DrawingContainer").offset();
             });
-            function findxy(res, e) {
+            var findxy = function (res, e) {
                 if (res == 'down') {
                     prevX = currX;
                     prevY = currY;
@@ -157,10 +165,10 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                     currY = e.clientY - offset.top;
                     flag = true;
                     t.currentPath = {
-                        id: 0,
+                        id: null,
                         color: t.state.color,
                         size: t.state.size,
-                        path: []
+                        path: [{ x: currX, y: currY }]
                     };
                 }
                 if (res == 'up' || res == "out") {
@@ -181,7 +189,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                         t.draw(t.state.color, t.state.size, prevY, prevX, currY, currX);
                     }
                 }
-            }
+            };
             var renderCursor = function (type, e) {
                 if (type == "out") {
                     $(".cursor").css("opacity", 0);
@@ -190,25 +198,24 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                     $(".cursor").css("left", e.screenX - offset.left).css("top", e.screenY - offset.top - 30).css("opacity", 1);
                 }
             };
-            canvas.addEventListener("mousemove", function (e) {
+            cnvs.addEventListener("mousemove", function (e) {
                 findxy('move', e);
                 renderCursor("move", e);
             }, false);
-            canvas.addEventListener("mousedown", function (e) {
+            cnvs.addEventListener("mousedown", function (e) {
                 findxy('down', e);
             }, false);
-            canvas.addEventListener("mouseup", function (e) {
+            cnvs.addEventListener("mouseup", function (e) {
                 findxy('up', e);
             }, false);
-            canvas.addEventListener("mouseout", function (e) {
+            cnvs.addEventListener("mouseout", function (e) {
                 findxy('out', e);
                 renderCursor("out", e);
             }, false);
         };
-        DrawingApp.prototype.queryCursor = function (type, e) {
-        };
         DrawingApp.prototype.componentWillMount = function () {
             some_sql_2.SomeSQL("paths").on("change", this.updateComponent);
+            some_sql_2.SomeSQL("paths").on("select", this.updateComponent);
         };
         DrawingApp.prototype.componentWillUnmount = function () {
             some_sql_2.SomeSQL("paths").off(this.updateComponent);

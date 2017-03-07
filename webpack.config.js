@@ -30,17 +30,6 @@ var options = {
 };
 
 switch(process.env.NODE_ENV) {
-    case "development":
-        /*options['watch'] = true;
-        options['plugins'].push(new WriteFilePlugin());
-        options['devServer'] = {
-            contentBase: "./",
-            outputPath: path.join(__dirname, './dist')
-        };*/
-    break;  
-    case "build": //for nodejs index.js
-        options['externals'] = ['typescript-map','typescript-promise'];
-    break;
     case "production":
         options['plugins'].push(new webpack.optimize.UglifyJsPlugin({
             compress: {

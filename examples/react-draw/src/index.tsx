@@ -88,6 +88,7 @@ class DrawingApp extends Component<any, {
     // Event handler for the db
     public updateComponent(e?: DatabaseEvent, db?: SomeSQLInstance): void {
         let t = this;
+        console.log(e);
         SomeSQL().extend("?").then((historyArray) => {
             t.setState({
                 ...t.state,
@@ -102,22 +103,32 @@ class DrawingApp extends Component<any, {
             ...this.state,
             rendering: true
         });
+
         console.time("Redraw");
+
         t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
+
         let lastAction = "draw";
+
         SomeSQL("paths").query("select").exec().then((rows: Path[]) => {
+
+            let prevPath = {x:0,y:0};
+
             rows.forEach((row, i) => {
                 if(row.size !== -1) {
                     lastAction = "draw";
                     row.path.forEach((p, k) => {
-                        t.draw(row.color, row.size, p.prevY, p.prevX, p.y, p.x);
+                        if(k > 0) prevPath = row.path[k-1];
+                        if(k > 0) t.draw(row.color, row.size, prevPath.y, prevPath.x, p.y, p.x);
                     });
                 } else {
                     lastAction = "erase";
                     t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
                 }
             });
+
             console.timeEnd("Redraw");
+
             this.setState({
                 ...this.state,
                 rendering: false,
@@ -128,7 +139,7 @@ class DrawingApp extends Component<any, {
 
     public draw(color: string, size: number, prevY: number, prevX: number, currY: number, currX: number):void {
         let t = this;
-        if(t.currentPath) t.currentPath.path.push({x:currX,y:currY,prevX:prevX,prevY:prevY});
+        if(t.currentPath) t.currentPath.path.push({x:currX,y:currY});
         t.ctx.beginPath();
         t.ctx.moveTo(prevX, prevY);
         t.ctx.lineTo(currX, currY);
@@ -140,14 +151,17 @@ class DrawingApp extends Component<any, {
     }
 
     public componentDidMount(): void {
-        let t = this;
         
         let canvas = document.getElementById('DrawingContainer') as HTMLCanvasElement;
-        t.ctx = canvas.getContext("2d");
-        t.drawFromStore();
-        
-        let w = canvas.width;
-        let h = canvas.height;
+        this.ctx = canvas.getContext("2d");
+        this.drawFromStore();
+        this.activateDrawingSurface(canvas);
+    }
+
+    public activateDrawingSurface(cnvs: HTMLCanvasElement): void {
+        let t = this;
+        let w = cnvs.width;
+        let h = cnvs.height;
         let flag = false,
         prevX = 0,
         currX = 0,
@@ -160,7 +174,7 @@ class DrawingApp extends Component<any, {
             offset = $("#DrawingContainer").offset();
         });
 
-        function findxy(res, e) {
+        const findxy = (res, e) => {
             if (res == 'down') {
                 prevX = currX;
                 prevY = currY;
@@ -168,10 +182,10 @@ class DrawingApp extends Component<any, {
                 currY = e.clientY - offset.top;
                 flag = true;
                 t.currentPath = {
-                    id: 0,
+                    id: null,
                     color: t.state.color,
                     size: t.state.size,
-                    path: []
+                    path: [{x:currX,y:currY}]
                 };
             }
             if (res == 'up' || res == "out") {
@@ -205,30 +219,26 @@ class DrawingApp extends Component<any, {
             }
         }
 
-        
-        canvas.addEventListener("mousemove", function (e) {
+        cnvs.addEventListener("mousemove", function (e) {
             findxy('move', e);
             renderCursor("move", e);
         }, false);
-        canvas.addEventListener("mousedown", function (e) {
+        cnvs.addEventListener("mousedown", function (e) {
             findxy('down', e)
         }, false);
-        canvas.addEventListener("mouseup", function (e) {
+        cnvs.addEventListener("mouseup", function (e) {
             findxy('up', e)
         }, false);
-        canvas.addEventListener("mouseout", function (e) {
+        cnvs.addEventListener("mouseout", function (e) {
             findxy('out', e)
             renderCursor("out", e);
         }, false);
     }
 
-    public queryCursor(type:string, e:MouseEvent) {
-        
-    }
-
     // Update this component when the table gets updated.
     public componentWillMount(): void {
         SomeSQL("paths").on("change", this.updateComponent);
+        SomeSQL("paths").on("select", this.updateComponent);
     }
 
     // Clear the event handler, otherwise it's a memory leak!

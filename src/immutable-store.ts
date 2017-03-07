@@ -223,6 +223,15 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      */
     public _historyArray: Array<number>;
 
+
+    /**
+     * Store an array af updated/change types.
+     * 
+     * @type {string[]}
+     * @memberOf _SomeSQLImmuDB
+     */
+    public _historyTypes: string[];
+
     /**
      * Holds references to the indexed DB object.
      *
@@ -247,6 +256,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
         t._historyRecords = [[]];
         t._historyPoint = 0;
         t._historyPointers = {};
+        t._historyTypes = [];
         t._historyArray = [0, 0];
         t._joinIndex = {};
         t._rows = [];
@@ -440,7 +450,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @memberOf _SomeSQLImmuDB
      */
-    public _invalidateCache(triggerChange: boolean): void {
+    public _invalidateCache(changedRows: DBRow[], type: string): void {
         let t = this;
         let c = [t._selectedTable];
         let i = t._joinedRelations.length;
@@ -452,14 +462,16 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
         t._removeDupes(c.sort()).forEach((table) => {
             t._queryCache[table] = {};
-            if (triggerChange) {
+            if (changedRows.length) {
                 t._parent.triggerEvent({
                     name: "change",
                     actionOrView: "",
                     table: t._tableInfo[table]._name,
                     query: [],
                     time: new Date().getTime(),
-                    result: []
+                    result: [],
+                    changedRows: changedRows,
+                    changeType: type
                 }, ["change"]);
             }
         });
@@ -521,11 +533,13 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             store = t._indexedDB.transaction(t._tableInfo[t._selectedTable]._name, "readwrite").objectStore(t._tableInfo[t._selectedTable]._name);
         }
 
-        const shiftRowIDs = (direction: number) => {
+        const shiftRowIDs = (direction: number): DBRow[] => {
             i = t._historyRecords[t._historyPoint].length;
+            let rows:DBRow[] = [];
             while (i--) {
                 rowID = t._historyRecords[t._historyPoint][i];
                 rowData = t._getRow(rowID) || {};
+                rows.push(rowData);
                 rowKey = rowData[t._tableInfo[t._selectedTable]._pk];
                 t._historyPointers[rowID] += direction;
                 rowData = t._getRow(rowID);
@@ -538,6 +552,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                 }
                 if (t._historyPointers[rowID] < 0) t._historyPointers[rowID] = 0;
             }
+            return rows;
         };
 
         return new Promise((res, rej) => {
@@ -551,9 +566,18 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                     if (t._historyPoint === t._historyRecords.length - 1) { // end of history
                         res(false);
                     } else {
-                        shiftRowIDs(1);
+                        let rows = shiftRowIDs(1);
                         t._historyPoint++;
-                        t._invalidateCache(true);
+                        let description = t._historyTypes[t._historyPoint-1];
+                        switch(description) {
+                            case "inserted":
+                                description = "deleted";
+                                break;
+                            case "deleted":
+                                description = "inserted";
+                                break;
+                        }
+                        t._invalidateCache(rows, description);
                         res(true);
                     }
                 break;
@@ -562,8 +586,8 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                         res(false);
                     } else {
                         t._historyPoint--;
-                        shiftRowIDs(-1);
-                        t._invalidateCache(true);
+                        let rows = shiftRowIDs(-1);
+                        t._invalidateCache(rows, t._historyTypes[t._historyPoint]);
                         res(true);
                     }
                 break;
@@ -668,8 +692,8 @@ class _SomeSQLQuery {
             }
         });
 
-        t._execQuery((result: Array<Object>) => {
-            query._onSuccess(result);
+        t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[]) => {
+            query._onSuccess(result, changeType, affectedRows);
             callBack(t);
         });
 
@@ -701,7 +725,7 @@ class _SomeSQLQuery {
      *
      * @memberOf _SomeSQLQuery
      */
-    private _execQuery(callBack: Function): void {
+    private _execQuery(callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
 
         let t = this;
 
@@ -757,22 +781,29 @@ class _SomeSQLQuery {
                         return true;
                     });
                     t._db._historyPoint = 0;
+
+                    let diff = t._db._historyTypes.length - t._db._historyRecords.length;
+                    while(diff--) {
+                        t._db._historyTypes.shift();
+                    }
                 }
+
+  
 
                 if (t._db._disableHistory) { // We don't add history points for IDB imports
                     if (!t._db._historyRecords[0]) t._db._historyRecords[0] = [];
                     t._db._historyRecords[0] = t._db._historyRecords[0].concat(changedRowIDs);
+                    t._db._historyTypes[0] = describe;
                 } else {
                     t._db._historyRecords.unshift(changedRowIDs);
+                    t._db._historyTypes.unshift(describe);
                 }
 
-                t._db._invalidateCache(false);
+                t._db._invalidateCache([], "");
 
-                callBack([{msg: updateLength + " row(s) " + describe}]);
-
+                callBack([{msg: updateLength + " row(s) " + describe}], describe, changedRowIDs.map((r) => t._db._getRow(r) || {}));
             } else {
-
-                callBack([{msg: "0 rows " + describe}]);
+                callBack([{msg: "0 rows " + describe}], describe, []);
             }
         };
 
@@ -886,7 +917,7 @@ class _SomeSQLQuery {
             case "select":
 
                 if (t._db._queryCache[t._db._selectedTable][t._queryHash]) { // Memoization
-                    callBack(t._db._queryCache[t._db._selectedTable][t._queryHash]);
+                    callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
                     break;
                 }
 
@@ -981,7 +1012,7 @@ class _SomeSQLQuery {
 
                         t._db._queryCache[t._db._selectedTable][t._queryHash] = results;
 
-                        callBack(t._db._queryCache[t._db._selectedTable][t._queryHash]);
+                        callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
                     }
                 };
 

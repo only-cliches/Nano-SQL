@@ -697,7 +697,7 @@ var SomeSQLInstance = (function () {
                 rej(err);
                 throw Error(err);
             }
-            var _tEvent = function (data, callBack, isError) {
+            var _tEvent = function (data, callBack, type, changedRows, isError) {
                 if (t._permanentFilters.length && isError !== true) {
                     data = t._permanentFilters.reduce(function (prev, cur, i) {
                         return t._filters[t._permanentFilters[i]].apply(t, [data]);
@@ -709,7 +709,9 @@ var SomeSQLInstance = (function () {
                     table: _t,
                     query: t._query,
                     time: new Date().getTime(),
-                    result: data
+                    result: data,
+                    changeType: type,
+                    changedRows: changedRows
                 }, t._triggerEvents);
                 callBack(data, t);
             };
@@ -717,13 +719,13 @@ var SomeSQLInstance = (function () {
                 _table: _t,
                 _query: t._query,
                 _viewOrAction: t._activeActionOrView || "",
-                _onSuccess: function (rows) {
-                    _tEvent(rows, res, false);
+                _onSuccess: function (rows, type, affectedRows) {
+                    _tEvent(rows, res, type, affectedRows, false);
                 },
                 _onFail: function (err) {
                     t._triggerEvents = ["error"];
                     if (rej)
-                        _tEvent(err, rej, true);
+                        _tEvent(err, rej, "error", [], true);
                 }
             });
         });

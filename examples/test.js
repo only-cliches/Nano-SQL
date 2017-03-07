@@ -1,6 +1,6 @@
 // Working on performance testing between alasql and some-sql
 
-const SomeSQL = require("./node/index.js").SomeSQL;
+const SomeSQL = require("../node/index.js").SomeSQL;
 const alasql = require("alasql");
 
 let blank = () => {

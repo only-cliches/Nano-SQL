@@ -11,6 +11,13 @@ import { Promise } from "es6-promise";
  */
 export declare class _SomeSQLImmuDB implements SomeSQLBackend {
     /**
+     * Store an array af updated/change types.
+     *
+     * @type {string[]}
+     * @memberOf _SomeSQLImmuDB
+     */
+    _historyTypes: string[];
+    /**
      * Holds references to the indexed DB object.
      *
      * @type {IDBDatabase}

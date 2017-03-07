@@ -6,9 +6,7 @@ export interface Path {
     size: number;
     path: {
         x: number,
-        y: number,
-        prevX: number,
-        prevY: number
+        y: number
     }[]
 }
 

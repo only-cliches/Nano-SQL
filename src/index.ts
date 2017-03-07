@@ -65,6 +65,8 @@ export interface DatabaseEvent {
     result: Array<any>;
     name: "change"|"delete"|"upsert"|"drop"|"select"|"error";
     actionOrView: string;
+    changeType: string;
+    changedRows: DBRow[];
 }
 
 /**
@@ -958,7 +960,7 @@ export class SomeSQLInstance {
                 throw Error(err);
             }
 
-            let _tEvent = (data: Array<Object>, callBack: Function, isError: Boolean) => {
+            let _tEvent = (data: Array<Object>, callBack: Function, type: string, changedRows: DBRow[], isError: Boolean) => {
                 if (t._permanentFilters.length && isError !== true) {
                     data = t._permanentFilters.reduce((prev, cur, i) => {
                         return t._filters[t._permanentFilters[i]].apply(t, [data]);
@@ -971,7 +973,9 @@ export class SomeSQLInstance {
                     table: _t,
                     query: t._query,
                     time: new Date().getTime(),
-                    result: data
+                    result: data,
+                    changeType: type,
+                    changedRows:changedRows
                 }, t._triggerEvents);
                 callBack(data, t);
             };
@@ -980,12 +984,12 @@ export class SomeSQLInstance {
                 _table: _t,
                 _query: t._query,
                 _viewOrAction: t._activeActionOrView || "",
-                _onSuccess: (rows) => {
-                    _tEvent(rows, res, false);
+                _onSuccess: (rows, type, affectedRows) => {
+                    _tEvent(rows, res, type, affectedRows, false);
                 },
                 _onFail: (err: any) => {
                     t._triggerEvents = ["error"];
-                    if (rej) _tEvent(err, rej, true);
+                    if (rej) _tEvent(err, rej, "error", [], true);
                 }
             });
         });
@@ -1248,7 +1252,7 @@ export interface DBExec {
     _table: string;
     _query: Array<QueryLine>;
     _viewOrAction: string;
-    _onSuccess: (rows: Array<Object>) => void;
+    _onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
     _onFail: (rows: Array<Object>) => void;
 }
 

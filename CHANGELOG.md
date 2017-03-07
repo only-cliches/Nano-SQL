@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.3.3] 3-6-2017
+- Changed the event handling.
+- Adjusted examples a bit.
+
 ## [0.3.2] 3-5-2017
 - Finished react draw example.
 - Added error handling for improper connect() usage.

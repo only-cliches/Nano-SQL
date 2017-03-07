@@ -56,6 +56,8 @@ export interface DatabaseEvent {
     result: Array<any>;
     name: "change" | "delete" | "upsert" | "drop" | "select" | "error";
     actionOrView: string;
+    changeType: string;
+    changedRows: DBRow[];
 }
 /**
  * The arguments used for the join command.
@@ -642,7 +644,7 @@ export interface DBExec {
     _table: string;
     _query: Array<QueryLine>;
     _viewOrAction: string;
-    _onSuccess: (rows: Array<Object>) => void;
+    _onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
     _onFail: (rows: Array<Object>) => void;
 }
 export interface SomeSQLBackend {

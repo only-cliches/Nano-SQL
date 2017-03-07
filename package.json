@@ -1,12 +1,12 @@
 {
   "name": "some-sql",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "",
   "main": "node/index.js",
   "scripts": {
     "serve": "bash bin/serve.sh",
     "build": "bash bin/build.sh",
-    "test": "mocha -r ts-node/register src/tests/*.ts"
+    "test": "mocha -r ts-node/register tests/*.ts"
   },
   "repository": {
     "type": "git",
@@ -55,7 +55,11 @@
     "data",
     "lazy",
     "persistent",
-    "immutable"
+    "immutable",
+    "undo",
+    "redo",
+    "immutablejs",
+    "redux"
   ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
