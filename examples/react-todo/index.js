@@ -1,14 +1,19 @@
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 define("store", ["require", "exports", "some-sql"], function (require, exports, some_sql_1) {
     "use strict";
     function initStore() {
         some_sql_1.SomeSQL("todos")
             .model([
-            { key: "id", type: "uuid", props: ["pk"] },
+            { key: "id", type: "int", props: ["pk"] },
             { key: "done", type: "bool", default: false },
             { key: "title", type: "string", default: "" }
         ])
@@ -25,7 +30,7 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
             },
             {
                 name: "mark_todo_done",
-                args: ["id:string"],
+                args: ["id:int"],
                 call: function (args, db) {
                     return db.query("upsert", { done: true }).where(["id", "=", args.id]).exec();
                 }
@@ -53,27 +58,26 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
     };
     ;
     var TodoTable = function (props) {
-        return (React.createElement("table", null, 
-            React.createElement("thead", null, 
-                React.createElement("tr", null, 
-                    React.createElement("th", {style: TitleStyle}, "Title"), 
-                    React.createElement("th", null, "Done"))
-            ), 
+        return (React.createElement("table", null,
+            React.createElement("thead", null,
+                React.createElement("tr", null,
+                    React.createElement("th", { style: TitleStyle }, "Title"),
+                    React.createElement("th", null, "Done"))),
             React.createElement("tbody", null, props.todos.map(function (todo) {
-                return React.createElement("tr", null, 
-                    React.createElement("td", {style: todo.done ? Done : {}}, todo.title), 
-                    React.createElement("td", null, 
-                        React.createElement("input", {type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, onChange: function () { return todo.done ? null : props.markDone(todo.id); }})
-                    ));
+                return React.createElement("tr", null,
+                    React.createElement("td", { style: todo.done ? Done : {} }, todo.title),
+                    React.createElement("td", null,
+                        React.createElement("input", { type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, onChange: function () { return todo.done ? null : props.markDone(todo.id); } })));
             }))));
     };
     var TodoForm = (function (_super) {
         __extends(TodoForm, _super);
         function TodoForm() {
-            _super.call(this);
-            this.state = { value: "" };
-            this.onSubmit = this.onSubmit.bind(this);
-            this.updateTitle = this.updateTitle.bind(this);
+            var _this = _super.call(this) || this;
+            _this.state = { value: "" };
+            _this.onSubmit = _this.onSubmit.bind(_this);
+            _this.updateTitle = _this.updateTitle.bind(_this);
+            return _this;
         }
         TodoForm.prototype.onSubmit = function (event) {
             var _this = this;
@@ -96,30 +100,28 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             return this.state.value !== nextState.value;
         };
         TodoForm.prototype.render = function () {
-            return (React.createElement("form", {onSubmit: this.onSubmit}, 
-                React.createElement("div", {className: "row"}, 
-                    React.createElement("div", {className: "column column-75"}, 
-                        React.createElement("input", {placeholder: "New Todo Title", type: "text", value: this.state.value, onChange: this.updateTitle})
-                    ), 
-                    React.createElement("div", {className: "column column-25"}, 
-                        React.createElement("input", {className: "button button-outline", type: "submit", value: "+"})
-                    ))
-            ));
+            return (React.createElement("form", { onSubmit: this.onSubmit },
+                React.createElement("div", { className: "row" },
+                    React.createElement("div", { className: "column column-75" },
+                        React.createElement("input", { placeholder: "New Todo Title", type: "text", value: this.state.value, onChange: this.updateTitle })),
+                    React.createElement("div", { className: "column column-25" },
+                        React.createElement("input", { className: "button button-outline", type: "submit", value: "+" })))));
         };
         return TodoForm;
     }(react_1.Component));
     var TodoApp = (function (_super) {
         __extends(TodoApp, _super);
         function TodoApp() {
-            _super.call(this);
-            this.state = {
+            var _this = _super.call(this) || this;
+            _this.state = {
                 todos: [],
                 redos: [0, 0]
             };
-            this.updateComponent = this.updateComponent.bind(this);
-            this.markDone = this.markDone.bind(this);
-            this.undo = this.undo.bind(this);
-            this.redo = this.redo.bind(this);
+            _this.updateComponent = _this.updateComponent.bind(_this);
+            _this.markDone = _this.markDone.bind(_this);
+            _this.undo = _this.undo.bind(_this);
+            _this.redo = _this.redo.bind(_this);
+            return _this;
         }
         TodoApp.prototype.markDone = function (todoID) {
             some_sql_2.SomeSQL("todos").doAction("mark_todo_done", { id: todoID });
@@ -132,7 +134,6 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         TodoApp.prototype.updateComponent = function (e, db) {
             var t = this;
-            var oldRedo = this.state.redos;
             some_sql_2.SomeSQL("todos").getView("list_all_todos").then(function (rows, db) {
                 some_sql_2.SomeSQL().extend("?").then(function (historyArray) {
                     t.setState({
@@ -153,21 +154,19 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             return this.state.todos !== nextState.todos;
         };
         TodoApp.prototype.render = function () {
-            return (React.createElement("div", {className: "container"}, 
-                React.createElement("br", null), 
-                React.createElement("br", null), 
-                React.createElement("div", {className: "row"}, 
-                    React.createElement("div", {className: "column column-50"}, 
-                        React.createElement("h2", null, "Todo Items")
-                    ), 
-                    React.createElement("div", {className: "column column-25"}, 
-                        React.createElement("button", {disabled: this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1], onClick: this.undo, className: "noselect button"}, "Undo")
-                    ), 
-                    React.createElement("div", {className: "column column-25"}, 
-                        React.createElement("button", {disabled: this.state.redos[1] === 0, onClick: this.redo, className: "noselect button"}, "Redo")
-                    )), 
-                React.createElement(TodoForm, null), 
-                React.createElement(TodoTable, {markDone: this.markDone, todos: this.state.todos})));
+            return (React.createElement("div", { className: "container" },
+                React.createElement("br", null),
+                React.createElement("br", null),
+                React.createElement("a", { href: "https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-todo", target: "_blank" }, "View Source"),
+                React.createElement("div", { className: "row" },
+                    React.createElement("div", { className: "column column-50" },
+                        React.createElement("h2", null, "Todo Items")),
+                    React.createElement("div", { className: "column column-25" },
+                        React.createElement("button", { disabled: this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1], onClick: this.undo, className: "noselect button" }, "Undo")),
+                    React.createElement("div", { className: "column column-25" },
+                        React.createElement("button", { disabled: this.state.redos[1] === 0, onClick: this.redo, className: "noselect button" }, "Redo"))),
+                React.createElement(TodoForm, null),
+                React.createElement(TodoTable, { markDone: this.markDone, todos: this.state.todos })));
         };
         return TodoApp;
     }(react_1.Component));

@@ -63,86 +63,43 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<h1 id="somesql">SomeSQL</h1>
-				<p>Small Immutable App Store with Undo, Redo &amp; IndexedDB support.</p>
+				<p>RDBMS Immutable App Store with Undo, Redo &amp; IndexedDB support.</p>
 				<p><a href="https://github.com/ClickSimply/Some-SQL/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 				<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint"></p>
-				<h2 id="browsers-support-sub-sup-sub-sub-made-by-a-href-https-godban-github-io-godban-a-sub-sub-sup-sub-">Browsers support <sub><sup><sub><sub>made by <a href="https://godban.github.io">godban</a></sub></sub></sup></sub></h2>
-				<table>
-					<thead>
-						<tr>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/edge.png" alt="IE / Edge" width="16px" height="16px" /></a></br>IE / Edge</th>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/firefox.png" alt="Firefox" width="16px" height="16px" /></a></br>Firefox</th>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/chrome.png" alt="Chrome" width="16px" height="16px" /></a></br>Chrome</th>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/safari.png" alt="Safari" width="16px" height="16px" /></a></br>Safari</th>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/safari-ios.png" alt="iOS Safari" width="16px" height="16px" /></a></br>iOS Safari</th>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/opera-mini.png" alt="Opera Mini" width="16px" height="16px" /></a></br>Opera Mini</th>
-							<th><a href="http://godban.github.io/browsers-support-badges/"><img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/chrome-android.png" alt="Chrome for Android" width="16px" height="16px" /></a></br>Chrome for Android</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>IE9, IE10, IE11, Edge</td>
-							<td>last 2 versions</td>
-							<td>last 2 versions</td>
-							<td>last 2 versions</td>
-							<td>last 2 versions</td>
-							<td>last 2 versions</td>
-							<td>last 2 versions</td>
-						</tr>
-					</tbody>
-				</table>
-				<p>I looked everywhere for a data store with these features and couldn&#39;t find it:</p>
-				<ol>
-					<li>Backend agnostic &amp; can be extended to use any possible backend (like Knex).</li>
-					<li>Stores data in memory and compiles to a very small size. (like TaffyDB).</li>
-					<li>Used the consistency and flexibility of RDBMS dbs. (like Lovefield DB).</li>
-					<li>Allowed you to declare actions and views in a simple way (like Redux).</li>
-					<li>Returned immutable data sets to improve React performance (like ImmutableJS).</li>
-				</ol>
-				<p>SomeSQL was born to bring all this together.  It&#39;s an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.</p>
+				<p>I was tired of doing all the work for my data store library (Redux) or letting my data store eat through half my production bundle (Lovefield and others).  SomeSQL is small, fast and built specifically to work with modern frameworks like Angular2 and React while keeping RDBMS nicities around.  As a bonus, you also get the performance perks of ImmutableJS in a lib half it&#39;s size.</p>
 				<h2 id="features">Features</h2>
-				<p>SomeSQL comes to you in two parts minified into a single file.</p>
-				<h3 id="general-features">General Features</h3>
 				<ul>
-					<li>Written in TypeScript with 100% type coverage.</li>
-					<li>Works in NodeJS and the browser.</li>
-					<li>Uses Promises like no one&#39;s business.</li>
+					<li>Run in Node, IE8+ &amp; modern browsers.</li>
+					<li>Supports all common RDBMS actions.</li>
+					<li>All queries return immutable rows.</li>
+					<li>Super easy IndexedDB support.</li>
+					<li>Simple &amp; elegant undo/redo.</li>
+					<li>Full Typescript support.</li>
+					<li>Runtime type casting.</li>
+					<li>Full events system.</li>
+					<li>Under 10Kb Gzipped.</li>
 				</ul>
-				<h3 id="1-database-abstraction-layer">1. Database Abstraction Layer</h3>
-				<ul>
-					<li>Extensible API to simplify SQL like commands.</li>
-					<li>Built to plug into any database backend.</li>
-					<li>Flux like usage pattern with Actions and Views.</li>
-					<li>Declarative data models.</li>
-					<li>Optional strong typing at run time.</li>
-					<li>Easily handles Joins, Selects, Upserts, Sorting, etc.</li>
-					<li>Import and export CSV and JSON with any database.</li>
-					<li>Uses the built in memory database by default.</li>
-					<li>Listen for change or other events on any or all tables.</li>
-				</ul>
-				<h3 id="2-built-in-memory-database-driver">2. Built In Memory Database Driver</h3>
-				<ul>
-					<li>Fast and efficient in memory store for your applications.</li>
-					<li>Returns immutable sets, optimized for use with ReactJS &amp; Angular 2.</li>
-					<li>Query cache and shallow copying optimizations.</li>
-					<li>Built in, super simple undo/redo.</li>
-					<li>Optionally persist to IndexedDB.</li>
-				</ul>
-				<p>Oh yeah, and it&#39;s all under 9 Kb gzipped. :)</p>
+				<h2 id="installation">Installation</h2>
+				<p><code>npm i some-sql --save</code></p>
+				<p>Using in typescript project:</p>
+				<pre><code class="lang-ts"><span class="hljs-keyword">import</span> { SomeSQL } from <span class="hljs-string">"some-sql"</span>;
+</code></pre>
+				<p>Using in node:</p>
+				<pre><code class="lang-js"><span class="hljs-keyword">var</span> SomeSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"some-sql"</span>).SomeSQL;
+</code></pre>
+				<p>To use directly in the browser, just include the script file found inside the <code>dist</code> folder onto your page.</p>
 				<h2 id="simple-usage">Simple Usage</h2>
 				<p>1 minute minimal quick start:</p>
 				<pre><code class="lang-ts">SomeSQL(<span class="hljs-string">'users'</span>) <span class="hljs-comment">//  "users" is our table name.</span>
 .model([ <span class="hljs-comment">// Declare data model</span>
-    {key:<span class="hljs-string">'id'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>,props:[<span class="hljs-string">'pk'</span>,<span class="hljs-string">'ai'</span>]},
-    {key:<span class="hljs-string">'name'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'string'</span>},
-    {key:<span class="hljs-string">'age'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>}, 
+    {key:<span class="hljs-string">'id'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'int'</span>,props:[<span class="hljs-string">'pk'</span>,<span class="hljs-string">'ai'</span>]}, <span class="hljs-comment">// pk == primary key, ai == auto incriment</span>
+    {key:<span class="hljs-string">'name'</span>,<span class="hljs-keyword">type</span>:<span class="hljs-string">'string'</span>}
 ])
 .connect() <span class="hljs-comment">// Init the data store for usage.</span>
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
     <span class="hljs-comment">// "db" holds the current SomeSQL var with the previous table still selected.</span>
     <span class="hljs-keyword">return</span> db.query(<span class="hljs-string">'upsert'</span>,{ <span class="hljs-comment">// Add a record</span>
         name:<span class="hljs-string">"Billy"</span>,
-        age:<span class="hljs-number">50</span>
     }).exec();
 })
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result, db</span>) </span>{
@@ -152,19 +109,6 @@
     <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">// &lt;= [{id:1,name:"Billy",age:50}]</span>
 })
 </code></pre>
-				<h2 id="installation">Installation</h2>
-				<p><code>npm i some-sql --save</code></p>
-				<p>Using in typescript project:</p>
-				<pre><code class="lang-ts"><span class="hljs-keyword">import</span> { SomeSQL } from <span class="hljs-string">"some-sql"</span>;
-
-SomeSQL(<span class="hljs-string">"users"</span>)...
-</code></pre>
-				<p>Using in node:</p>
-				<pre><code class="lang-js"><span class="hljs-keyword">var</span> SomeSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"some-sql"</span>).SomeSQL;
-
-SomeSQL(<span class="hljs-string">"users"</span>)...
-</code></pre>
-				<p>To use directly in the browser, just include the script file found inside the <code>dist</code> folder onto your page.</p>
 				<h2 id="detailed-usage">Detailed Usage</h2>
 				<p>First you declare your models, connect the db, then you execute queries.</p>
 				<h3 id="1-declare-model-setup">1. Declare Model &amp; Setup</h3>

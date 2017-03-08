@@ -539,10 +539,11 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
             while (i--) {
                 rowID = t._historyRecords[t._historyPoint][i];
                 rowData = t._getRow(rowID) || {};
-                rows.push(rowData);
+                if(direction === 1) rows.push(rowData);
                 rowKey = rowData[t._tableInfo[t._selectedTable]._pk];
                 t._historyPointers[rowID] += direction;
                 rowData = t._getRow(rowID);
+                if(direction === -1) rows.push(rowData);
                 if (store) {
                     if (rowData) {
                         store.put(rowData);

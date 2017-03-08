@@ -1,82 +1,27 @@
 # SomeSQL
-Small Immutable App Store with Undo, Redo & IndexedDB support.
+RDBMS Immutable App Store with Undo, Redo & IndexedDB support.
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/Some-SQL/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 
-## Browsers support <sub><sup><sub><sub>made by <a href="https://godban.github.io">godban</a></sub></sub></sup></sub>
+![SomeSQL Logo](https://some-sql.com/logo.png)
 
-| [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/edge.png" alt="IE / Edge" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>IE / Edge | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/firefox.png" alt="Firefox" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Firefox | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/chrome.png" alt="Chrome" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/safari.png" alt="Safari" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Safari | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/safari-ios.png" alt="iOS Safari" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>iOS Safari | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/opera-mini.png" alt="Opera Mini" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Opera Mini | [<img src="https://raw.githubusercontent.com/godban/browsers-support-badges/master/src/images/chrome-android.png" alt="Chrome for Android" width="16px" height="16px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome for Android |
-| --------- | --------- | --------- | --------- | --------- | --------- | --------- |
-| IE9, IE10, IE11, Edge| last 2 versions| last 2 versions| last 2 versions| last 2 versions| last 2 versions| last 2 versions
+I was tired of doing all the work for my data store library (Redux) or letting my data store eat through half my production bundle (Lovefield and others).  SomeSQL is small, fast and built specifically to work with modern frameworks like Angular2 and React while keeping RDBMS nicities around.  As a bonus, you also get the performance perks of ImmutableJS in a lib half it's size.
 
-I looked everywhere for a data store with these features and couldn't find it:
-
-1. Backend agnostic & can be extended to use any possible backend (like Knex).
-2. Stores data in memory and compiles to a very small size. (like TaffyDB).
-3. Used the consistency and flexibility of RDBMS dbs. (like Lovefield DB).
-4. Allowed you to declare actions and views in a simple way (like Redux).
-5. Returned immutable data sets to improve React performance (like ImmutableJS).
-
-
-SomeSQL was born to bring all this together.  It's an extensible database abstraction layer first, then includes an in memory store to make immediate use easy.
+* [Todo Example](https://some-sql.com/react-todo/)
+* [Draw Example](https://some-sql.com/react-draw/)
 
 ## Features
-SomeSQL comes to you in two parts minified into a single file.
 
-### General Features
-* Written in TypeScript with 100% type coverage.
-* Works in NodeJS and the browser.
-* Uses Promises like no one's business.
-
-### 1. Database Abstraction Layer
-* Extensible API to simplify SQL like commands.
-* Built to plug into any database backend.
-* Flux like usage pattern with Actions and Views.
-* Declarative data models.
-* Optional strong typing at run time.
-* Easily handles Joins, Selects, Upserts, Sorting, etc.
-* Import and export CSV and JSON with any database.
-* Uses the built in memory database by default.
-* Listen for change or other events on any or all tables.
-
-### 2. Built In Memory Database Driver
-* Fast and efficient in memory store for your applications.
-* Returns immutable sets, optimized for use with ReactJS & Angular 2.
-* Query cache and shallow copying optimizations.
-* Built in, super simple undo/redo.
-* Optionally persist to IndexedDB.
-
-Oh yeah, and it's all under 9 Kb gzipped. :)
-
-
-## Simple Usage
-
-1 minute minimal quick start:
-
-```ts
-SomeSQL('users') //  "users" is our table name.
-.model([ // Declare data model
-    {key:'id',type:'int',props:['pk','ai']},
-    {key:'name',type:'string'},
-    {key:'age',type:'int'}, 
-])
-.connect() // Init the data store for usage.
-.then(function(result, db) {
-    // "db" holds the current SomeSQL var with the previous table still selected.
-    return db.query('upsert',{ // Add a record
-        name:"Billy",
-        age:50
-    }).exec();
-})
-.then(function(result, db) {
-    return db.query('select').exec(); // select all rows from the current active table
-})
-.then(function(result, db) {
-    console.log(result) // <= [{id:1,name:"Billy",age:50}]
-})
-
-```
+- Run in Node, IE8+ & modern browsers.
+- Supports all common RDBMS actions.
+- All queries return immutable rows.
+- Super easy IndexedDB support.
+- Simple & elegant undo/redo.
+- Full Typescript support.
+- Runtime type casting.
+- Full events system.
+- Under 10Kb Gzipped.
 
 ## Installation
 
@@ -87,7 +32,6 @@ Using in typescript project:
 ```ts
 import { SomeSQL } from "some-sql";
 
-SomeSQL("users")...
 ```
 
 Using in node:
@@ -95,10 +39,35 @@ Using in node:
 ```js
 var SomeSQL = require("some-sql").SomeSQL;
 
-SomeSQL("users")...
 ```
 
 To use directly in the browser, just include the script file found inside the `dist` folder onto your page.
+
+## Simple Usage
+
+1 minute minimal quick start:
+
+```ts
+SomeSQL('users') //  "users" is our table name.
+.model([ // Declare data model
+    {key:'id',type:'int',props:['pk','ai']}, // pk == primary key, ai == auto incriment
+    {key:'name',type:'string'}
+])
+.connect() // Init the data store for usage.
+.then(function(result, db) {
+    // "db" holds the current SomeSQL var with the previous table still selected.
+    return db.query('upsert',{ // Add a record
+        name:"Billy",
+    }).exec();
+})
+.then(function(result, db) {
+    return db.query('select').exec(); // select all rows from the current active table
+})
+.then(function(result, db) {
+    console.log(result) // <= [{id:1,name:"Billy",age:50}]
+})
+
+```
 
 
 ## Detailed Usage

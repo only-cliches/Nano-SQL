@@ -301,6 +301,7 @@ class DrawingApp extends Component<any, {
                     <canvas className={this.state.rendering ? "loading" : ""} id="DrawingContainer" width="838" height="600"></canvas>
                 </div> 
                 <div className="cursor"><span className="typcn typcn-pen"></span></div>
+                <a href="https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-draw" target="_blank">View Source</a>
             </div>
                 );
     }

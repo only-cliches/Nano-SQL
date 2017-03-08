@@ -18,7 +18,7 @@ var options = {
         umdNamedDefine: true
     },
     resolve: {
-        extensions: ['.ts', '.tsx']
+        extensions: ['.ts', '.tsx','.js']
     },
     plugins: [],
     module: {

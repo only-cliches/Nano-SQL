@@ -151,6 +151,7 @@ class TodoApp extends Component<Nothing, TodoAppState> {
         return (
             <div className="container">
                 <br/><br/>
+                <a href="https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-todo" target="_blank">View Source</a>
                 <div className="row">
                     <div className="column column-50">
                         <h2>Todo Items</h2>

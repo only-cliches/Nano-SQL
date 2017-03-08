@@ -259,7 +259,8 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                 React.createElement("div", null,
                     React.createElement("canvas", { className: this.state.rendering ? "loading" : "", id: "DrawingContainer", width: "838", height: "600" })),
                 React.createElement("div", { className: "cursor" },
-                    React.createElement("span", { className: "typcn typcn-pen" }))));
+                    React.createElement("span", { className: "typcn typcn-pen" })),
+                React.createElement("a", { href: "https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-draw", target: "_blank" }, "View Source")));
         };
         return DrawingApp;
     }(react_1.Component));

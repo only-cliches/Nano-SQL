@@ -1,6 +1,6 @@
 {
   "name": "some-sql",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "",
   "main": "node/index.js",
   "scripts": {
@@ -64,6 +64,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "es6-promise": "git+https://github.com/ClickSimply/es6-promise.git"
+    "es6-promise": "git+https://github.com/ClickSimply/es6-promise.git",
+    "immediate": "^3.2.3"
   }
 }

@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.3.4] 3-7-2017
+- ReadMe changes
+- Fixed event handling bug.
+
 ## [0.3.3] 3-6-2017
 - Changed the event handling.
 - Adjusted examples a bit.

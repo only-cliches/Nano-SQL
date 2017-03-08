@@ -10,8 +10,8 @@
     "noImplicitAny":false,
     "noImplicitReturns":true,
     "noImplicitThis":true,
-    "noImplicitUseStrict":true,
-    "lib": ["dom", "es2015.promise", "es5"]
+    "noImplicitUseStrict":true
+    // "lib": ["dom", "es2015.promise", "es5"]
   },
   "include":[
     "src/**/*"
