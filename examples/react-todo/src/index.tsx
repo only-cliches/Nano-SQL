@@ -2,7 +2,7 @@ import { EventHandler, FormEvent, Component } from "react";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { initStore, ItodoItem } from "./store";
-import { SomeSQL, DatabaseEvent, SomeSQLInstance } from "some-sql";
+import { nSQL, DatabaseEvent, NanoSQLInstance } from "nano-sql";
 
 
 const TitleStyle = {
@@ -53,7 +53,7 @@ class TodoForm extends Component<Nothing, FormState> {
     public onSubmit(event: FormEvent<HTMLFormElement>): void {
         event.preventDefault();
         if (!this.state.value.length) return;
-        SomeSQL("todos").doAction("add_todo", {title: this.state.value}).then(() => {
+        nSQL("todos").doAction("add_todo", {title: this.state.value}).then(() => {
             this.setState({
                 value: ""
             });
@@ -107,22 +107,23 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     }
 
     public markDone(todoID: number): void {
-        SomeSQL("todos").doAction("mark_todo_done", {id: todoID});
+        nSQL("todos").doAction("mark_todo_done", {id: todoID});
     }
 
     public undo(): void {
-        SomeSQL().extend("<");
+        nSQL().extend("<");
     }
 
     public redo(): void {
-        SomeSQL().extend(">");
+        nSQL().extend(">");
     }
 
     // Event handler for the db
-    public updateComponent(e?: DatabaseEvent, db?: SomeSQLInstance): void {
+    public updateComponent(e?: DatabaseEvent, db?: NanoSQLInstance): void {
         let t = this;
-        SomeSQL("todos").getView("list_all_todos").then((rows: Array<ItodoItem>, db: SomeSQLInstance) => {
-            SomeSQL().extend("?").then((historyArray) => {
+
+        nSQL("todos").getView("list_all_todos").then((rows: Array<ItodoItem>, db: NanoSQLInstance) => {
+            nSQL().extend("?").then((historyArray) => {
                 t.setState({
                     todos: rows,
                     redos: historyArray
@@ -133,13 +134,13 @@ class TodoApp extends Component<Nothing, TodoAppState> {
 
     // Update this component when the table gets updated.
     public componentWillMount(): void {
-        SomeSQL("todos").on("change", this.updateComponent);
+        nSQL("todos").on("change", this.updateComponent);
         this.updateComponent();
     }
 
     // Clear the event handler, otherwise it's a memory leak!
     public componentWillUnmount(): void {
-        SomeSQL("todos").off(this.updateComponent);
+        nSQL("todos").off(this.updateComponent);
     }
 
     // Ahhh, that feels nice.
@@ -157,10 +158,10 @@ class TodoApp extends Component<Nothing, TodoAppState> {
                         <h2>Todo Items</h2>
                     </div>
                     <div className="column column-25">
-                        <button disabled={this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1]} onClick={this.undo} className="noselect button" >Undo</button>
+                        <button disabled={this.state.redos[1] === 0} onClick={this.undo} className="noselect button" >Undo</button>
                     </div>
                     <div className="column column-25">
-                        <button disabled={this.state.redos[1] === 0} onClick={this.redo} className="noselect button">Redo</button>
+                        <button disabled={this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1]} onClick={this.redo} className="noselect button">Redo</button>
                     </div>
                 </div>
                 <TodoForm />

@@ -1,4 +1,4 @@
-import { Promise } from "es6-promise";
+import { Promise } from "./lie";
 /**
  * Standard object placeholder with string key.
  *
@@ -8,6 +8,10 @@ import { Promise } from "es6-promise";
  */
 export interface StdObject<T> {
     [key: string]: T;
+}
+export interface DBFunction {
+    call: (rows: Array<DBRow>, args: string[], useKeys: string) => DBRow[];
+    type: "aggregate" | "simple";
 }
 /**
  * This is the format used for actions and views
@@ -19,7 +23,7 @@ export interface ActionOrView {
     name: string;
     args?: Array<string>;
     extend?: any;
-    call: (args?: any, db?: SomeSQLInstance) => Promise<any>;
+    call: (args?: any, db?: NanoSQLInstance) => Promise<any>;
 }
 /**
  * You need an array of these to declare a data model.
@@ -70,93 +74,100 @@ export interface DatabaseEvent {
  * @interface JoinArgs
  */
 export interface JoinArgs {
-    type: "left" | "inner" | "right" | "cross";
+    type: "left" | "inner" | "right" | "cross" | "outer";
     table: string;
-    where: Array<string>;
+    where?: Array<string>;
 }
+/**
+ *  A single database row.
+ *
+ * @export
+ * @interface DBRow
+ */
 export interface DBRow {
     [key: string]: any;
 }
+export declare const _assign: (obj: any) => any;
 /**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
  *
  * @export
- * @class SomeSQLInstance
+ * @class NanoSQLInstance
  */
-export declare class SomeSQLInstance {
+export declare class NanoSQLInstance {
     /**
      * Most recent selected table.
      *
      * @type {string}
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     activeTable: string;
     /**
      * The backend currently being used
      *
      * @public
-     * @type {SomeSQLBackend}
-     * @memberOf SomeSQLInstance
+     * @type {NanoSQLBackend}
+     * @memberOf NanoSQLInstance
      */
-    backend: SomeSQLBackend;
+    backend: NanoSQLBackend;
+    /**
+     * Stores wether each table has events attached to it or not.
+     *
+     * @private
+     * @type {StdObject<boolean>}
+     * @memberOf NanoSQLInstance
+     */
+    private _hasEvents;
     /**
      * Holds custom filters implimented by the user
      *
      * @private
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    private _filters;
+    private _functions;
     constructor();
     /**
      * Changes the table pointer to a new table.
      *
      * @param {string} [table]
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    table(table?: string): SomeSQLInstance;
+    table(table?: string): NanoSQLInstance;
     /**
      * Inits the backend database for use.
      *
      * Optionally include a custom database driver, otherwise the built in memory driver will be used.
      *
-     * @param {SomeSQLBackend} [backend]
+     * @param {NanoSQLBackend} [backend]
      * @returns {(Promise<Object | string>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    connect(backend?: SomeSQLBackend): Promise<Object | string>;
+    connect(backend?: NanoSQLBackend): Promise<Object | string>;
     /**
      * Adds an event listener to the selected database table.
      *
      * @param {("change"|"delete"|"upsert"|"drop"|"select"|"error")} actions
      * @param {Function} callBack
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    on(actions: "change" | "delete" | "upsert" | "drop" | "select" | "error", callBack: (event: DatabaseEvent, database: SomeSQLInstance) => void): SomeSQLInstance;
+    on(actions: "change" | "delete" | "upsert" | "drop" | "select" | "error", callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;
     /**
      * Remove a specific event handler from being triggered anymore.
      *
      * @param {Function} callBack
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    off(callBack: Function): SomeSQLInstance;
-    /**
-     * Set a filter to always be applied, on every single query.
-     *
-     * @param {string} filterName
-     * @returns {SomeSQLInstance}
-     *
-     * @memberOf SomeSQLInstance
-     */
-    alwaysApplyFilter(filterName: string): SomeSQLInstance;
+    off(callBack: Function): NanoSQLInstance;
+    private _refreshEventChecker();
     /**
      * Declare the data model for the current selected table.
      *
@@ -170,11 +181,11 @@ export declare class SomeSQLInstance {
      * ```
      *
      * @param {Array<DataModel>} dataModel
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    model(dataModel: Array<DataModel>): SomeSQLInstance;
+    model(dataModel: Array<DataModel>): NanoSQLInstance;
     /**
      * Declare the views for the current selected table.  Must be called before connect()
      *
@@ -187,7 +198,7 @@ export declare class SomeSQLInstance {
      *      args: ["array","of","arguments"],
      *      call: function(args) {
      *          // Because of our "args" array the args input of this function will look like this:
-     *          // SomeSQL will not let any other arguments into this function.
+     *          // NanoSQL will not let any other arguments into this function.
      *          args:{
      *              array:'',
      *              of:'',
@@ -203,7 +214,7 @@ export declare class SomeSQLInstance {
      * Then later in your app..
      *
      * ```ts
-     * SomeSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
+     * NanoSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
@@ -218,22 +229,22 @@ export declare class SomeSQLInstance {
      * }]
      * ```
      *
-     * SomeSQL will force the arguments passed into the function to those types.
+     * NanoSQL will force the arguments passed into the function to those types.
      *
      * Possible types are string, bool, float, int, map, array and bool.
      *
      * @param {Array<ActionOrView>} viewArray
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    views(viewArray: Array<ActionOrView>): SomeSQLInstance;
+    views(viewArray: Array<ActionOrView>): NanoSQLInstance;
     /**
      * Execute a specific view.  Refernece the "views" function for more description.
      *
      * Example:
      * ```ts
-     * SomeSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
+     * NanoSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
      *  console.log(result) <== view result.
      * })
      * ```
@@ -242,7 +253,7 @@ export declare class SomeSQLInstance {
      * @param {any} viewArgs
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     getView(viewName: string, viewArgs?: any): Promise<Array<Object>>;
     /**
@@ -256,7 +267,7 @@ export declare class SomeSQLInstance {
      *      args: ["array","of","arguments"],
      *      call: function(args) {
      *          // Because of our "args" array the args input of this function will look like this:
-     *          // SomeSQL will not let any other arguments into this function.
+     *          // NanoSQL will not let any other arguments into this function.
      *          args:{
      *              array:'',
      *              of:'',
@@ -272,7 +283,7 @@ export declare class SomeSQLInstance {
      * Then later in your app..
      *
      * ```ts
-     * SomeSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
+     * NanoSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
@@ -286,22 +297,22 @@ export declare class SomeSQLInstance {
      * }]
      * ```
      *
-     * SomeSQL will force the arguments passed into the function to those types.
+     * NanoSQL will force the arguments passed into the function to those types.
      *
      * Possible types are string, bool, float, int, map, array and bool.
      *
      * @param {Array<ActionOrView>} actionArray
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    actions(actionArray: Array<ActionOrView>): SomeSQLInstance;
+    actions(actionArray: Array<ActionOrView>): NanoSQLInstance;
     /**
      * Init an action for the current selected table. Reference the "actions" method for more info.
      *
      * Example:
      * ```ts
-     * SomeSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
+     * NanoSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
      *      console.log(result) <== result of your action
      * });
      * ```
@@ -310,31 +321,43 @@ export declare class SomeSQLInstance {
      * @param {any} actionArgs
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     doAction(actionName: string, actionArgs?: any): Promise<Array<Object>>;
     /**
      * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
+     *
+     * Functions can be used with any database on the attached store.
+     *
+     * You must tell the database driver if the
+     *
      * Example:
      *
      * ```ts
-     * SomeSQL().addFilter('addBalance',function(rows) {
-     *      return rows.map((row) => row.balance + 1);
+     * NanoSQL().newFunction('ADD',function(rows, args, useKey) {
+     *      // arguments are passed in as an array in the args argument.
+     *      return rows.map(function(row) {
+     *         let newRow = JSON.parse(JSON.stringify(row)); // Break immutabiilty
+     *         newRow[useKey] = parseInt(row[args[0]]) + parseInt(args[1]);
+     *         return newRow;
+     *      });
      * })
      * ```
      *
      * Then to use it in a query:
      * ```ts
-     * SomeSQL("users").query("select").filter('addOne').exec();
+     * NanoSQL("users").query("select",["name","add(balance, 2)"]).exec();
      * ```
+     *
+     * Make sure the calculated value is add to the row(s) with the `usKey` argument, otherwise `as` arguments won't work.
      *
      * @param {string} filterName
      * @param {(rows: Array<Object>) => Array<Object>} filterFunction
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    addFilter(filterName: string, filterFunction: (rows: Array<Object>) => Array<Object>): SomeSQLInstance;
+    newFunction(functionName: string, functionType: "aggregate" | "simple", filterFunction: (rows: Array<Object>, args: string[], useKey: string) => DBRow[]): NanoSQLInstance;
     /**
      * Start a query into the current selected table.
      * Possibl querys are "select", "upsert", "delete", and "drop";
@@ -349,6 +372,7 @@ export declare class SomeSQLInstance {
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
+     * .query("select",["count(*)"]) //Get the length of records in the database
      * ```
      *
      * ### Upsert
@@ -387,11 +411,11 @@ export declare class SomeSQLInstance {
      *
      * @param {("select"|"upsert"|"delete"|"drop")} action
      * @param {any} [args]
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    query(action: "select" | "upsert" | "delete" | "drop", args?: any): SomeSQLInstance;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): NanoSQLInstance;
     /**
      * Used to select specific rows based on a set of conditions.
      * You can pass in a single array with a conditional statement or an array of arrays seperated by "and", "or" for compound selects.
@@ -408,11 +432,11 @@ export declare class SomeSQLInstance {
      * ```
      *
      * @param {(Array<any|Array<any>>)} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    where(args: Array<any | Array<any>>): SomeSQLInstance;
+    where(args: Array<any | Array<any>>): NanoSQLInstance;
     /**
      * Order the results by a given column or columns.
      *
@@ -424,39 +448,70 @@ export declare class SomeSQLInstance {
      * ```
      *
      * @param {Object} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     orderBy(args: {
         [key: string]: "asc" | "desc";
-    }): SomeSQLInstance;
+    }): NanoSQLInstance;
+    /**
+     * Group By command, typically used with an aggregate function.
+     *
+     * Example:
+     *
+     * ```ts
+     * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
+     * ```
+     *
+     * This will provide a list of all favorite colors and how many each of them are in the db.
+     *
+     * @param {({[key: string]:"asc"|"desc"})} columns
+     * @returns {NanoSQLInstance}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    groupBy(columns: {
+        [key: string]: "asc" | "desc";
+    }): NanoSQLInstance;
+    /**
+     * Having statement, used to filter Group BY statements. Syntax is identical to where statements.
+     *
+     * @returns {NanoSQLInstance}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    having(args: Array<any | Array<any>>): NanoSQLInstance;
     /**
      * Join command.
      *
      * Example:
      *
      * ```ts
-     *  SomeSQL("orders").query("select",["orders.id","orders.title","users.name"]).join({
+     *  NanoSQL("orders")
+     *  .query("select", ["orders.id","orders.title","users.name"])
+     *  .where(["orders.status","=","complete"])
+     *  .orderBy({"orders.date":"asc"})
+     *  .join({
      *      type:"inner",
      *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
      *```
      * A few notes on the join command:
-     * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
-     * 2. Possible join types are `inner`, `left`, and `right`.
+     * 1. You muse use dot notation with the table names in all "where", "select", "orderby", and "groupby" arguments.
+     * 2. Possible join types are `inner`, `left`, `right`, and `outer`.
      * 3. The "table" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
      *
      *
      * @param {JoinArgs} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    join(args: JoinArgs): SomeSQLInstance;
+    join(args: JoinArgs): NanoSQLInstance;
     /**
      * Limits the result to a specific amount.  Example:
      *
@@ -465,11 +520,11 @@ export declare class SomeSQLInstance {
      * ```
      *
      * @param {number} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    limit(args: number): SomeSQLInstance;
+    limit(args: number): NanoSQLInstance;
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
      *
@@ -478,44 +533,50 @@ export declare class SomeSQLInstance {
      * ```
      *
      * @param {number} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    offset(args: number): SomeSQLInstance;
-    /**
-     * Adds a custom filter to the query.  The filter you use MUST be supported by the database driver OR a custom filter you provided before the connect method was called.
-     * The built in memory DB supports sum, min, max, average, and count
-     *
-     * Example:
-     * ```ts
-     * //get number of rows
-     * SomeSQL("users").query("select").filter("count"").exec().then(function(rows) {
-     *  console.log(rows) // <= [{count:300}]
-     * });
-     * ```
-     *
-     * @param {string} name
-     * @param {*} [args]
-     * @returns {SomeSQLInstance}
-     *
-     * @memberOf SomeSQLInstance
-     */
-    filter(name: string, args?: any): SomeSQLInstance;
+    offset(args: number): NanoSQLInstance;
     /**
      * Trigger a database event
      *
      * @param {DatabaseEvent} eventData
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;
     /**
+     * Returns a default object for the current table's data model, useful for forms.
+     *
+     * The optional argument lets you pass in an object to over write the data model's defaults as desired.
+     *
+     * Examples:
+     *
+     * ```ts
+     * console.log(NanoSQL("users").default()) <= {username:"none", id:undefined, age: 0}
+     * console.log(NanoSQL("users").default({username:"defalt"})) <= {username:"default", id:undefined, age: 0}
+     * ```
+     *
+     * DO NOT use this inside upsert commands like `.query("upsert",NanoSQL("users").defalt({userObj}))..`.
+     * The database defaults are already applied through the upsert path, you'll be doing double work.
+     *
+     * Only use this to pull default values into a form in your UI or similar situation.
+     *
+     * @param {*} [replaceObj]
+     * @returns {{[key: string]: any}}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    default(replaceObj?: any): {
+        [key: string]: any;
+    };
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
-     * The second argument of the promise is always the SomeSQL variable, allowing you to chain commands.
+     * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
      * Example:
-     * SomeSQL("users").query("select").exec().then(function(rows, db) {
+     * NanoSQL("users").query("select").exec().then(function(rows, db) {
      *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
      *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
      * }).then(function(rows, db) {
@@ -524,27 +585,27 @@ export declare class SomeSQLInstance {
      *
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    exec(): Promise<Array<Object | SomeSQLInstance>>;
+    exec(): Promise<Array<Object | NanoSQLInstance>>;
     /**
      * Configure the database driver, must be called before the connect() method.
      *
      * @param {any} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    config(args: any): SomeSQLInstance;
+    config(args: any): NanoSQLInstance;
     /**
      * Perform a custom action supported by the database driver.
      *
      * @param {...Array<any>} args
      * @returns {*}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    extend(...args: Array<any>): any | SomeSQLInstance;
+    extend(...args: Array<any>): any | NanoSQLInstance;
     /**
      * Load JSON directly into the DB.
      * JSON must be an array of maps, like this:
@@ -560,7 +621,7 @@ export declare class SomeSQLInstance {
      * @param {Array<Object>} rows
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     loadJS(rows: Array<Object>): Promise<Array<Object>>;
     /**
@@ -568,11 +629,11 @@ export declare class SomeSQLInstance {
      *
      * This function will be called on every upsert and you'll recieve the upsert data as it's being passed in.
      *
-     * SomeSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
+     * NanoSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
      *
      * @param {(row: object) => object} callBack
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     rowFilter(callBack: (row: any) => any): this;
     /**
@@ -585,7 +646,7 @@ export declare class SomeSQLInstance {
      * @param {string} csv
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     loadCSV(csv: string): Promise<Array<Object>>;
     /**
@@ -594,14 +655,14 @@ export declare class SomeSQLInstance {
      * @static
      * @returns {string}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     static uuid(): string;
     /**
      * Export the current query to a CSV file, use in place of "exec()";
      *
      * Example:
-     * SomeSQL("users").query("select").toCSV(true).then(function(csv, db) {
+     * NanoSQL("users").query("select").toCSV(true).then(function(csv, db) {
      *   console.log(csv);
      *   // Returns something like:
      *   id,name,pass,postIDs
@@ -612,7 +673,7 @@ export declare class SomeSQLInstance {
      * @param {boolean} [headers]
      * @returns {Promise<string>}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
     toCSV(headers?: boolean): Promise<string>;
 }
@@ -626,11 +687,11 @@ export interface DBConnect {
     _models: StdObject<Array<DataModel>>;
     _actions: StdObject<Array<ActionOrView>>;
     _views: StdObject<Array<ActionOrView>>;
-    _filters: {
-        [key: string]: (rows: Array<DBRow>) => Array<DBRow>;
+    _functions: {
+        [key: string]: DBFunction;
     };
     _config: Array<any>;
-    _parent: SomeSQLInstance;
+    _parent: NanoSQLInstance;
     _onSuccess: Function;
     _onFail?: Function;
 }
@@ -647,11 +708,11 @@ export interface DBExec {
     _onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
     _onFail: (rows: Array<Object>) => void;
 }
-export interface SomeSQLBackend {
+export interface NanoSQLBackend {
     /**
      * Inilitize the database for use, async so you can connect to remote stuff as needed.
      *
-     * This is called by SomeSQL once to the DB driver once the developer calls "connect()".
+     * This is called by NanoSQL once to the DB driver once the developer calls "connect()".
      *
      * Models, Views, Actions, and added Filters are all sent in at once.  Once the "onSuccess" function is called the database should be ready to use.
      *
@@ -659,7 +720,7 @@ export interface SomeSQLBackend {
      *
      * @param {DBConnect} connectArgs
      *
-     * @memberOf SomeSQLBackend
+     * @memberOf NanoSQLBackend
      */
     _connect(connectArgs: DBConnect): void;
     /**
@@ -667,12 +728,12 @@ export interface SomeSQLBackend {
      *
      * This is called on "exec()" and all the query parameters are passed in as an array of Objects containing the query parameters.
      *
-     * The syntax is pretty straightforward, for example a query like this: SomeSQL("users").query("select").exec() will turn into this:
+     * The syntax is pretty straightforward, for example a query like this: NanoSQL("users").query("select").exec() will turn into this:
      * ```ts
      * [{type:'select',args:undefined}]
      * ```
      *
-     * Let's say the person using the system gets crazy and does SomeSQL("users").query("select",['username']).orderBy({name:'desc'}).exec();
+     * Let's say the person using the system gets crazy and does NanoSQL("users").query("select",['username']).orderBy({name:'desc'}).exec();
      * Then you get this:
      * ```ts
      * [{type:'select',args:['username']},{type:"orderBy",args:{name:'desc}}]
@@ -682,20 +743,20 @@ export interface SomeSQLBackend {
      *
      * @param {DBExec} execArgs
      *
-     * @memberOf SomeSQLBackend
+     * @memberOf NanoSQLBackend
      */
     _exec(execArgs: DBExec): void;
     /**
      * Optional extension for the database.
-     * The extend method for SomeSQL is just a passthrough to this method.
+     * The extend method for NanoSQL is just a passthrough to this method.
      * An entirely different and new API can be built around this.
      *
-     * @param {SomeSQLInstance} instance
+     * @param {NanoSQLInstance} instance
      * @param {...Array<any>} args
      * @returns {*}
      *
-     * @memberOf SomeSQLBackend
+     * @memberOf NanoSQLBackend
      */
-    _extend?(instance: SomeSQLInstance, ...args: Array<any>): any;
+    _extend?(instance: NanoSQLInstance, ...args: Array<any>): any;
 }
-export declare function SomeSQL(setTablePointer?: string): SomeSQLInstance;
+export declare const nSQL: (setTablePointer?: string) => NanoSQLInstance;

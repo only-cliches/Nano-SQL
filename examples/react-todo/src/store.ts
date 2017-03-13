@@ -1,4 +1,4 @@
-import { SomeSQL } from "some-sql";
+import { nSQL } from "nano-sql";
 
 export interface ItodoItem {
     id: number;
@@ -8,9 +8,9 @@ export interface ItodoItem {
 
 export function initStore() {
 
-    SomeSQL("todos")
+    nSQL("todos")
     .model([
-        {key: "id" ,type: "int", props: ["pk"]},
+        {key: "id" ,type: "int", props: ["pk","ai"]},
         {key: "done", type: "bool", default: false},
         {key: "title", type: "string", default: ""}
     ])
@@ -42,6 +42,6 @@ export function initStore() {
         }
     ])
 
-    return SomeSQL().config({persistent: true}).connect();
+    return nSQL().config({persistent: true}).connect();
 
 }

@@ -2,57 +2,128 @@
 
 const SomeSQL = require("../node/index.js").SomeSQL;
 const alasql = require("alasql");
+const Promise = require("es6-promise").Promise;
 
 let blank = () => {
-    return {
-        title: "Hello, world!",
-        name: Math.round(Math.random()*100000).toString(16)
+        return {
+            title: "Hello, world!",
+            name: Math.round(Math.random() * 100000).toString(16)
+        }
     }
-}
+    /*
+    // AlaSQL: 11ms
+    let k = 0;
+    let results = [];
+    const runTest = () => {
+        let start = new Date().getTime();
+        new Promise((res, rej) => {
+            let i = 0;
+            let insert = () => {
+                alasql.promise("INSERT INTO test VALUES ?", [blank()]).then(() => {
+                    i++;
+                    if (i < 1000) {
+                        insert();
+                    } else {
+                        res(new Date().getTime() - start);
+                    }
+                });
+            };
+            insert();
+        }).then((res) => {
+            results.push(res);
+            k++;
+            if (k < 100) {
+                runTest();
+            } else {
+                console.log(results.reduce((a, b) => a + b) / results.length);
+            }
+        })
+    }
+
+    alasql.promise("CREATE TABLE test (id int PRIMARY KEY AUTOINCREMENT, title string, name string)").then(() => {
+        runTest();
+    });
+    */
+
 
 /*
-// 34ms
-alasql("CREATE TABLE test (id int PRIMARY KEY AUTOINCREMENT, title string, name string)");
-console.time("DB");
-let i = 0;
-let insert = () => {
-    alasql.promise("INSERT INTO test VALUES ?",[blank()]).then(() => {
-        i++;
-        if(i < 1000) {
-            insert();
+// Vanilla JS Object: 3ms
+let k = 0;
+let results = [];
+let obj = {};
+const runTest = () => {
+    let start = new Date().getTime();
+    new Promise((res, rej) => {
+        let i = 0;
+        const upsert = () => {
+            new Promise((res, rej) => {
+                obj[i] = blank();
+                res();
+            }).then(() => {
+                i++;
+                if (i < 1000) {
+                    upsert();
+                } else {
+                    res(new Date().getTime() - start);
+                }
+            });
+        };
+        upsert();
+    }).then((res) => {
+        results.push(res);
+        k++;
+        if (k < 100) {
+            runTest();
         } else {
-            console.timeEnd("DB");
-            process.exit();
+            console.log(results.reduce((a, b) => a + b) / results.length);
         }
-    });
-};
+    })
+}
 
-insert();
-
-
-// 106ms
-SomeSQL("test").model([
-    {key:"id",type:"int",props:["ai","pk"]},
-    {key: "title", type: "string"},
-    {key: "name", type: "string"}
-]).connect().then(() => {
-    console.time("DB");
-    let i = 0
-    let upsert = () => {
-        SomeSQL("test").query("upsert",blank()).exec().then((rows, db) => {
-            i++;
-            if(i < 1000) {
-                upsert();
-            } else {
-                console.timeEnd("DB");
-                process.exit();
-            }
-        });
-    }
-
-    upsert();
-});
+runTest();
 */
+
+// SomeSQL: 20ms
+let k = 0;
+let results = [];
+const runTest = () => {
+    let start = new Date().getTime();
+    new Promise((res, rej) => {
+        let i = 0;
+        const upsert = () => {
+            SomeSQL("test").query("upsert", blank()).exec().then((rows, db) => {
+                i++;
+                if (i < 1000) {
+                    upsert();
+                } else {
+                    res(new Date().getTime() - start);
+                }
+            });
+        }
+        upsert();
+    }).then((res) => {
+        results.push(res);
+        k++;
+        if (k < 100) {
+            runTest();
+        } else {
+            console.log(results.reduce((a, b) => a + b) / results.length);
+        }
+    })
+}
+
+SomeSQL("test").model([
+    { key: "id", type: "int", props: ["ai", "pk"] },
+    { key: "title", type: "string" },
+    { key: "name", type: "string" }
+]).connect().then(() => {
+    SomeSQL().extend("before_import");
+    runTest();
+});
+
+
+
+
 
 /*const crypto = require("crypto");
 

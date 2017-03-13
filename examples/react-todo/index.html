@@ -1,30 +1,33 @@
 <html>
-    <head>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.2.4/milligram.min.css" />
-        <script data-main="/react-todo/index.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.2/require.min.js"></script>
-        <script>
 
-            require.config({
-                paths: {
-                    "react": "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.1/react.min",
-                    "react-dom":"https://cdnjs.cloudflare.com/ajax/libs/react/15.4.1/react-dom.min",
-                    "some-sql":"../some-sql.min"
-                }                
-            })
-
-            require(["index","react","react-dom","some-sql"],function(app) {})
-        </script>
-        <style>
-            body .container {
-                max-width: 60rem;
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.2.4/milligram.min.css" />
+    <script data-main="/react-todo/index.js" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.2/require.min.js"></script>
+    <script>
+        require.config({
+            paths: {
+                "react": "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.1/react.min",
+                "react-dom": "https://cdnjs.cloudflare.com/ajax/libs/react/15.4.1/react-dom.min",
+                "nano-sql": "../nano-sql.min"
             }
-            .noselect {
-                user-select: none;
-                -webkit-user-select: none;
-            }
-        </style>
-    </head>
-    <body>
+        })
 
-    </body>
+        require(["index", "react", "react-dom", "nano-sql"], function(app) {})
+    </script>
+    <style>
+        body .container {
+            max-width: 60rem;
+        }
+        
+        .noselect {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+
+</body>
+
 </html>

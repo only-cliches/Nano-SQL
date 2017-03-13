@@ -16,21 +16,21 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
-define("store", ["require", "exports", "some-sql"], function (require, exports, some_sql_1) {
+define("store", ["require", "exports", "nano-sql"], function (require, exports, nano_sql_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DrawStore = function () {
-        some_sql_1.SomeSQL("paths")
+        nano_sql_1.nSQL("paths")
             .model([
             { key: "id", type: "int", props: ["pk"] },
             { key: "color", type: "string" },
             { key: "size", type: "int" },
             { key: "path", type: "array" }
         ]);
-        return some_sql_1.SomeSQL().config({ persistent: true }).connect();
+        return nano_sql_1.nSQL().config({ persistent: true }).connect();
     };
 });
-define("index", ["require", "exports", "react", "react", "react-dom", "store", "some-sql", "jquery"], function (require, exports, react_1, React, ReactDOM, store_1, some_sql_2, $) {
+define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql", "jquery"], function (require, exports, react_1, React, ReactDOM, store_1, nano_sql_2, $) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var DrawingApp = (function (_super) {
@@ -67,7 +67,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             if (!this.state.canErase)
                 return;
             t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
-            some_sql_2.SomeSQL("paths").query("upsert", {
+            nano_sql_2.nSQL("paths").query("upsert", {
                 color: "",
                 size: -1,
                 path: []
@@ -76,14 +76,14 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         DrawingApp.prototype.undo = function () {
             var _this = this;
-            some_sql_2.SomeSQL().extend("<").then(function (result) {
+            nano_sql_2.nSQL().extend("<").then(function (result) {
                 if (result)
                     _this.drawFromStore();
             });
         };
         DrawingApp.prototype.redo = function () {
             var _this = this;
-            some_sql_2.SomeSQL().extend(">").then(function (result) {
+            nano_sql_2.nSQL().extend(">").then(function (result) {
                 if (result)
                     _this.drawFromStore();
             });
@@ -97,7 +97,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         DrawingApp.prototype.updateComponent = function (e, db) {
             var t = this;
             console.log(e);
-            some_sql_2.SomeSQL().extend("?").then(function (historyArray) {
+            nano_sql_2.nSQL().extend("?").then(function (historyArray) {
                 t.setState(__assign({}, t.state, { redos: historyArray }));
             });
         };
@@ -108,7 +108,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             console.time("Redraw");
             t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
             var lastAction = "draw";
-            some_sql_2.SomeSQL("paths").query("select").exec().then(function (rows) {
+            nano_sql_2.nSQL("paths").query("select").exec().then(function (rows) {
                 var prevPath = { x: 0, y: 0 };
                 rows.forEach(function (row, i) {
                     if (row.size !== -1) {
@@ -173,7 +173,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                 }
                 if (res == 'up' || res == "out") {
                     if (flag === true && t.currentPath.path.length) {
-                        some_sql_2.SomeSQL("paths").query("upsert", t.currentPath).exec();
+                        nano_sql_2.nSQL("paths").query("upsert", t.currentPath).exec();
                         if (t.state.canErase === false) {
                             t.setState(__assign({}, t.state, { canErase: true }));
                         }
@@ -214,11 +214,11 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             }, false);
         };
         DrawingApp.prototype.componentWillMount = function () {
-            some_sql_2.SomeSQL("paths").on("change", this.updateComponent);
-            some_sql_2.SomeSQL("paths").on("select", this.updateComponent);
+            nano_sql_2.nSQL("paths").on("change", this.updateComponent);
+            nano_sql_2.nSQL("paths").on("select", this.updateComponent);
         };
         DrawingApp.prototype.componentWillUnmount = function () {
-            some_sql_2.SomeSQL("paths").off(this.updateComponent);
+            nano_sql_2.nSQL("paths").off(this.updateComponent);
         };
         DrawingApp.prototype.canDo = function (type) {
             if (this.state.redos[0] === 0) {
@@ -226,8 +226,8 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             }
             else {
                 switch (type) {
-                    case "<": return this.state.redos[1] < this.state.redos[0] ? "" : "is-disabled";
-                    case ">": return this.state.redos[1] > 0 ? "" : "is-disabled";
+                    case ">": return this.state.redos[1] < this.state.redos[0] ? "" : "is-disabled";
+                    case "<": return this.state.redos[1] > 0 ? "" : "is-disabled";
                 }
             }
         };

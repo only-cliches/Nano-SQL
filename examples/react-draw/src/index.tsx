@@ -2,7 +2,7 @@ import { EventHandler, FormEvent, Component } from "react";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { DrawStore, Path } from "./store";
-import { SomeSQL, DatabaseEvent, SomeSQLInstance } from "some-sql";
+import { nSQL, DatabaseEvent, NanoSQLInstance } from "nano-sql";
 import * as $ from "jquery";
 
 class DrawingApp extends Component<any, {
@@ -48,7 +48,7 @@ class DrawingApp extends Component<any, {
         let t = this;
         if(!this.state.canErase) return;
         t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
-        SomeSQL("paths").query("upsert",{
+        nSQL("paths").query("upsert",{
             color: "",
             size: -1,
             path: []
@@ -60,13 +60,13 @@ class DrawingApp extends Component<any, {
     }
 
     public undo(): void {
-        SomeSQL().extend("<").then((result) => {
+        nSQL().extend("<").then((result) => {
             if(result) this.drawFromStore();
         });
     }
 
     public redo(): void {
-        SomeSQL().extend(">").then((result) => {
+        nSQL().extend(">").then((result) => {
             if(result) this.drawFromStore();
         });
     }
@@ -86,10 +86,10 @@ class DrawingApp extends Component<any, {
     }
 
     // Event handler for the db
-    public updateComponent(e?: DatabaseEvent, db?: SomeSQLInstance): void {
+    public updateComponent(e?: DatabaseEvent, db?: NanoSQLInstance): void {
         let t = this;
         console.log(e);
-        SomeSQL().extend("?").then((historyArray) => {
+        nSQL().extend("?").then((historyArray) => {
             t.setState({
                 ...t.state,
                 redos: historyArray
@@ -110,7 +110,7 @@ class DrawingApp extends Component<any, {
 
         let lastAction = "draw";
 
-        SomeSQL("paths").query("select").exec().then((rows: Path[]) => {
+        nSQL("paths").query("select").exec().then((rows: Path[]) => {
 
             let prevPath = {x:0,y:0};
 
@@ -190,7 +190,7 @@ class DrawingApp extends Component<any, {
             }
             if (res == 'up' || res == "out") {
                 if(flag === true && t.currentPath.path.length) {
-                    SomeSQL("paths").query("upsert",t.currentPath).exec();
+                    nSQL("paths").query("upsert",t.currentPath).exec();
                     if(t.state.canErase === false) {
                         t.setState({
                             ...t.state,
@@ -237,13 +237,13 @@ class DrawingApp extends Component<any, {
 
     // Update this component when the table gets updated.
     public componentWillMount(): void {
-        SomeSQL("paths").on("change", this.updateComponent);
-        SomeSQL("paths").on("select", this.updateComponent);
+        nSQL("paths").on("change", this.updateComponent);
+        nSQL("paths").on("select", this.updateComponent);
     }
 
     // Clear the event handler, otherwise it's a memory leak!
     public componentWillUnmount(): void {
-        SomeSQL("paths").off(this.updateComponent);
+        nSQL("paths").off(this.updateComponent);
     }
 
     public canDo(type:string ): string {
@@ -251,8 +251,8 @@ class DrawingApp extends Component<any, {
             return "is-disabled"
         } else {
             switch(type) {
-                case "<": return this.state.redos[1] < this.state.redos[0] ? "" : "is-disabled";
-                case ">": return this.state.redos[1] > 0 ? "" : "is-disabled";
+                case ">": return this.state.redos[1] < this.state.redos[0] ? "" : "is-disabled";
+                case "<": return this.state.redos[1] > 0 ? "" : "is-disabled";
             }
         }
     }

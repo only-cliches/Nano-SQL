@@ -1,4 +1,4 @@
-import { SomeSQL } from "some-sql";
+import { nSQL } from "nano-sql";
 
 export interface Path {
     id: number;
@@ -12,7 +12,7 @@ export interface Path {
 
 
 export const DrawStore = (): Promise<any> => {
-    SomeSQL("paths")
+    nSQL("paths")
     .model([
         {key: "id", type: "int", props: ["pk"]},
         {key: "color", type: "string"},
@@ -20,5 +20,5 @@ export const DrawStore = (): Promise<any> => {
         {key: "path", type: "array"}
     ])
 
-    return SomeSQL().config({persistent:true}).connect();
+    return nSQL().config({persistent:true}).connect();
 }

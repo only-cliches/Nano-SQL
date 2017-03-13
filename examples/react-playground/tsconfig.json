@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "amd",
+        "moduleResolution": "node",
+        "stripInternal": true,
+        "removeComments": true,
+        "jsx": "react"
+    }
+}

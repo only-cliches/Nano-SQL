@@ -1,15 +1,18 @@
 "use strict";
-var es6_promise_1 = require("es6-promise");
+var lie_1 = require("./lie");
 var immutable_store_1 = require("./immutable-store");
+exports._assign = function (obj) {
+    return JSON.parse(JSON.stringify(obj));
+};
 /**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
  *
  * @export
- * @class SomeSQLInstance
+ * @class NanoSQLInstance
  */
-var SomeSQLInstance = (function () {
-    function SomeSQLInstance() {
+var NanoSQLInstance = (function () {
+    function NanoSQLInstance() {
         var t = this;
         t._actions = {};
         t._views = {};
@@ -18,24 +21,24 @@ var SomeSQLInstance = (function () {
         t._preConnectExtend = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
         t._callbacks = {};
+        t._hasEvents = {};
         t._callbacks["*"] = {};
         var i = t._events.length;
         while (i--) {
             t._callbacks["*"][t._events[i]] = [];
         }
-        t._filters = {};
-        t._permanentFilters = [];
+        t._functions = {};
         t._rowFilters = {};
     }
     /**
      * Changes the table pointer to a new table.
      *
      * @param {string} [table]
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.table = function (table) {
+    NanoSQLInstance.prototype.table = function (table) {
         if (table)
             this._selectedTable = table, this.activeTable = table;
         return this;
@@ -45,28 +48,27 @@ var SomeSQLInstance = (function () {
      *
      * Optionally include a custom database driver, otherwise the built in memory driver will be used.
      *
-     * @param {SomeSQLBackend} [backend]
+     * @param {NanoSQLBackend} [backend]
      * @returns {(Promise<Object | string>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.connect = function (backend) {
+    NanoSQLInstance.prototype.connect = function (backend) {
         var _this = this;
         var t = this;
         if (t.backend) {
-            var err_1 = "You can only call connect() once for each database!";
-            return new es6_promise_1.Promise(function (res, rej) {
-                rej(err_1);
-                throw Error(err_1);
+            return new lie_1.Promise(function (res, rej) {
+                rej();
+                throw Error();
             });
         }
-        t.backend = backend || new immutable_store_1._SomeSQLImmuDB();
-        return new es6_promise_1.Promise(function (res, rej) {
+        t.backend = backend || new immutable_store_1._NanoSQLImmuDB();
+        return new lie_1.Promise(function (res, rej) {
             t.backend._connect({
                 _models: t._models,
                 _actions: t._actions,
                 _views: t._views,
-                _filters: t._filters,
+                _functions: t._functions,
                 _config: t._preConnectExtend,
                 _parent: _this,
                 _onSuccess: function (result) {
@@ -74,7 +76,7 @@ var SomeSQLInstance = (function () {
                 },
                 _onFail: function (rejected) {
                     if (rej)
-                        rej(rejected);
+                        rej(rejected, t);
                 }
             });
         });
@@ -84,14 +86,15 @@ var SomeSQLInstance = (function () {
      *
      * @param {("change"|"delete"|"upsert"|"drop"|"select"|"error")} actions
      * @param {Function} callBack
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.on = function (actions, callBack) {
+    NanoSQLInstance.prototype.on = function (actions, callBack) {
         var t = this;
         var l = t._selectedTable;
         var i = 0;
+        var a = actions.split(" ");
         if (!t._callbacks[l]) {
             t._callbacks[l] = {};
             t._callbacks[l]["*"] = [];
@@ -99,24 +102,24 @@ var SomeSQLInstance = (function () {
                 t._callbacks[l][t._events[i]] = [];
             }
         }
-        var a = actions.split(" ");
         i = a.length;
         while (i--) {
             if (t._events.indexOf(a[i]) !== -1) {
                 t._callbacks[l][a[i]].push(callBack);
             }
         }
+        t._refreshEventChecker();
         return t;
     };
     /**
      * Remove a specific event handler from being triggered anymore.
      *
      * @param {Function} callBack
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.off = function (callBack) {
+    NanoSQLInstance.prototype.off = function (callBack) {
         var t = this;
         for (var key in t._callbacks) {
             for (var key2 in t._callbacks[key]) {
@@ -125,21 +128,17 @@ var SomeSQLInstance = (function () {
                 });
             }
         }
+        t._refreshEventChecker();
         return t;
     };
-    /**
-     * Set a filter to always be applied, on every single query.
-     *
-     * @param {string} filterName
-     * @returns {SomeSQLInstance}
-     *
-     * @memberOf SomeSQLInstance
-     */
-    SomeSQLInstance.prototype.alwaysApplyFilter = function (filterName) {
-        if (this._permanentFilters.indexOf(filterName) === -1) {
-            this._permanentFilters.push(filterName);
-        }
-        return this;
+    NanoSQLInstance.prototype._refreshEventChecker = function () {
+        var _this = this;
+        this._hasEvents = {};
+        Object.keys(this._models).concat(["*"]).forEach(function (table) {
+            _this._hasEvents[table] = _this._events.reduce(function (prev, cur) {
+                return prev + _this._callbacks[table][cur].length;
+            }, 0) > 0;
+        });
     };
     /**
      * Declare the data model for the current selected table.
@@ -154,11 +153,11 @@ var SomeSQLInstance = (function () {
      * ```
      *
      * @param {Array<DataModel>} dataModel
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.model = function (dataModel) {
+    NanoSQLInstance.prototype.model = function (dataModel) {
         var t = this;
         var l = t._selectedTable;
         var i = t._events.length;
@@ -186,7 +185,7 @@ var SomeSQLInstance = (function () {
      *      args: ["array","of","arguments"],
      *      call: function(args) {
      *          // Because of our "args" array the args input of this function will look like this:
-     *          // SomeSQL will not let any other arguments into this function.
+     *          // NanoSQL will not let any other arguments into this function.
      *          args:{
      *              array:'',
      *              of:'',
@@ -202,7 +201,7 @@ var SomeSQLInstance = (function () {
      * Then later in your app..
      *
      * ```ts
-     * SomeSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
+     * NanoSQL("users").getView("view-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
@@ -217,16 +216,16 @@ var SomeSQLInstance = (function () {
      * }]
      * ```
      *
-     * SomeSQL will force the arguments passed into the function to those types.
+     * NanoSQL will force the arguments passed into the function to those types.
      *
      * Possible types are string, bool, float, int, map, array and bool.
      *
      * @param {Array<ActionOrView>} viewArray
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.views = function (viewArray) {
+    NanoSQLInstance.prototype.views = function (viewArray) {
         return this._views[this._selectedTable] = viewArray, this;
     };
     /**
@@ -234,7 +233,7 @@ var SomeSQLInstance = (function () {
      *
      * Example:
      * ```ts
-     * SomeSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
+     * NanoSQL("users").getView('view-name',{foo:"bar"}).then(function(result) {
      *  console.log(result) <== view result.
      * })
      * ```
@@ -243,9 +242,9 @@ var SomeSQLInstance = (function () {
      * @param {any} viewArgs
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.getView = function (viewName, viewArgs) {
+    NanoSQLInstance.prototype.getView = function (viewName, viewArgs) {
         if (viewArgs === void 0) { viewArgs = {}; }
         var t = this;
         var l = t._selectedTable;
@@ -269,9 +268,9 @@ var SomeSQLInstance = (function () {
      * @param {Object} args
      * @returns {Object}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
+    NanoSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
         var t = this;
         var l = t._selectedTable;
         var a = {};
@@ -297,15 +296,16 @@ var SomeSQLInstance = (function () {
      * @param {*} val
      * @returns {*}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype._cast = function (type, val) {
+    NanoSQLInstance.prototype._cast = function (type, val) {
+        var t = typeof val;
         var types = {
-            "string": String(val),
-            "int": parseInt(val),
-            "float": parseFloat(val),
-            "array": JSON.parse(JSON.stringify(val || [])),
-            "map": JSON.parse(JSON.stringify(val || {})),
+            "string": t !== "string" ? String(val || "") : val,
+            "int": t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
+            "float": t !== "number" ? parseFloat(val || 0) : val,
+            "array": Array.isArray(val) ? exports._assign(val || []) : [],
+            "map": t === 'object' ? exports._assign(val || {}) : {},
             "bool": val === true
         };
         return types[type] || val;
@@ -321,7 +321,7 @@ var SomeSQLInstance = (function () {
      *      args: ["array","of","arguments"],
      *      call: function(args) {
      *          // Because of our "args" array the args input of this function will look like this:
-     *          // SomeSQL will not let any other arguments into this function.
+     *          // NanoSQL will not let any other arguments into this function.
      *          args:{
      *              array:'',
      *              of:'',
@@ -337,7 +337,7 @@ var SomeSQLInstance = (function () {
      * Then later in your app..
      *
      * ```ts
-     * SomeSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
+     * NanoSQL("users").doAction("action-name",{array:'',of:"",arguments:""}).then(function(result) {
      *  console.log(result) <=== result of your view will be there.
      * })
      * ```
@@ -351,16 +351,16 @@ var SomeSQLInstance = (function () {
      * }]
      * ```
      *
-     * SomeSQL will force the arguments passed into the function to those types.
+     * NanoSQL will force the arguments passed into the function to those types.
      *
      * Possible types are string, bool, float, int, map, array and bool.
      *
      * @param {Array<ActionOrView>} actionArray
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.actions = function (actionArray) {
+    NanoSQLInstance.prototype.actions = function (actionArray) {
         return this._actions[this._selectedTable] = actionArray, this;
     };
     /**
@@ -368,7 +368,7 @@ var SomeSQLInstance = (function () {
      *
      * Example:
      * ```ts
-     * SomeSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
+     * NanoSQL("users").doAction('action-name',{foo:"bar"}).then(function(result) {
      *      console.log(result) <== result of your action
      * });
      * ```
@@ -377,9 +377,9 @@ var SomeSQLInstance = (function () {
      * @param {any} actionArgs
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.doAction = function (actionName, actionArgs) {
+    NanoSQLInstance.prototype.doAction = function (actionName, actionArgs) {
         if (actionArgs === void 0) { actionArgs = {}; }
         var t = this;
         var l = t._selectedTable;
@@ -397,27 +397,39 @@ var SomeSQLInstance = (function () {
     };
     /**
      * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
+     *
+     * Functions can be used with any database on the attached store.
+     *
+     * You must tell the database driver if the
+     *
      * Example:
      *
      * ```ts
-     * SomeSQL().addFilter('addBalance',function(rows) {
-     *      return rows.map((row) => row.balance + 1);
+     * NanoSQL().newFunction('ADD',function(rows, args, useKey) {
+     *      // arguments are passed in as an array in the args argument.
+     *      return rows.map(function(row) {
+     *         let newRow = JSON.parse(JSON.stringify(row)); // Break immutabiilty
+     *         newRow[useKey] = parseInt(row[args[0]]) + parseInt(args[1]);
+     *         return newRow;
+     *      });
      * })
      * ```
      *
      * Then to use it in a query:
      * ```ts
-     * SomeSQL("users").query("select").filter('addOne').exec();
+     * NanoSQL("users").query("select",["name","add(balance, 2)"]).exec();
      * ```
+     *
+     * Make sure the calculated value is add to the row(s) with the `usKey` argument, otherwise `as` arguments won't work.
      *
      * @param {string} filterName
      * @param {(rows: Array<Object>) => Array<Object>} filterFunction
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.addFilter = function (filterName, filterFunction) {
-        return this._filters[filterName] = filterFunction, this;
+    NanoSQLInstance.prototype.newFunction = function (functionName, functionType, filterFunction) {
+        return this._functions[functionName] = { type: functionType, call: filterFunction }, this;
     };
     /**
      * Start a query into the current selected table.
@@ -433,6 +445,7 @@ var SomeSQLInstance = (function () {
      * .query("select") // No arguments, select all columns
      * .query("select",['username']) // only get the username column
      * .query("select",["username","balance"]) //Get two columns, username and balance.
+     * .query("select",["count(*)"]) //Get the length of records in the database
      * ```
      *
      * ### Upsert
@@ -471,30 +484,29 @@ var SomeSQLInstance = (function () {
      *
      * @param {("select"|"upsert"|"delete"|"drop")} action
      * @param {any} [args]
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.query = function (action, args) {
+    NanoSQLInstance.prototype.query = function (action, args) {
         var _this = this;
         this._query = [];
         var a = action.toLowerCase();
-        if (["select", "upsert", "delete", "drop"].indexOf(a) !== -1) {
-            var newArgs_1 = args || {};
+        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
+            var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
             if (action === "upsert") {
-                // Need to recursively break references, faster than looping through the whole thing recursively.
-                var inputArgs_1 = JSON.parse(JSON.stringify(args || {}));
-                newArgs_1 = {};
-                // Apply default values, cast row types and remove columns that don't exist in the data model
+                // Cast row types and remove columns that don't exist in the data model
+                var inputArgs_1 = {};
                 this._models[this._selectedTable].forEach(function (model) {
-                    if (inputArgs_1[model.key]) {
-                        newArgs_1[model.key] = _this._cast(model.type, inputArgs_1[model.key]);
+                    if (newArgs_1[model.key]) {
+                        inputArgs_1[model.key] = _this._cast(model.type, newArgs_1[model.key]);
                     }
                 });
                 // Apply insert filters
                 if (this._rowFilters[this._selectedTable]) {
-                    newArgs_1 = this._rowFilters[this._selectedTable](newArgs_1);
+                    inputArgs_1 = this._rowFilters[this._selectedTable](inputArgs_1);
                 }
+                newArgs_1 = inputArgs_1;
             }
             this._query.push({ type: a, args: newArgs_1 });
         }
@@ -519,11 +531,11 @@ var SomeSQLInstance = (function () {
      * ```
      *
      * @param {(Array<any|Array<any>>)} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.where = function (args) {
+    NanoSQLInstance.prototype.where = function (args) {
         return this._addCmd("where", args);
     };
     /**
@@ -537,12 +549,41 @@ var SomeSQLInstance = (function () {
      * ```
      *
      * @param {Object} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.orderBy = function (args) {
+    NanoSQLInstance.prototype.orderBy = function (args) {
         return this._addCmd("orderby", args);
+    };
+    /**
+     * Group By command, typically used with an aggregate function.
+     *
+     * Example:
+     *
+     * ```ts
+     * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
+     * ```
+     *
+     * This will provide a list of all favorite colors and how many each of them are in the db.
+     *
+     * @param {({[key: string]:"asc"|"desc"})} columns
+     * @returns {NanoSQLInstance}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    NanoSQLInstance.prototype.groupBy = function (columns) {
+        return this._addCmd("groupby", columns);
+    };
+    /**
+     * Having statement, used to filter Group BY statements. Syntax is identical to where statements.
+     *
+     * @returns {NanoSQLInstance}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    NanoSQLInstance.prototype.having = function (args) {
+        return this._addCmd("having", args);
     };
     /**
      * Join command.
@@ -550,26 +591,30 @@ var SomeSQLInstance = (function () {
      * Example:
      *
      * ```ts
-     *  SomeSQL("orders").query("select",["orders.id","orders.title","users.name"]).join({
+     *  NanoSQL("orders")
+     *  .query("select", ["orders.id","orders.title","users.name"])
+     *  .where(["orders.status","=","complete"])
+     *  .orderBy({"orders.date":"asc"})
+     *  .join({
      *      type:"inner",
      *      table:"users",
      *      where:["orders.customerID","=","user.id"]
      *  }).exec();
      *```
      * A few notes on the join command:
-     * 1. You muse use dot notation with the table names in all "where", "select", and "orderby" arguments.
-     * 2. Possible join types are `inner`, `left`, and `right`.
+     * 1. You muse use dot notation with the table names in all "where", "select", "orderby", and "groupby" arguments.
+     * 2. Possible join types are `inner`, `left`, `right`, and `outer`.
      * 3. The "table" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
      *
      *
      * @param {JoinArgs} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.join = function (args) {
+    NanoSQLInstance.prototype.join = function (args) {
         return this._addCmd("join", args);
     };
     /**
@@ -580,11 +625,11 @@ var SomeSQLInstance = (function () {
      * ```
      *
      * @param {number} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.limit = function (args) {
+    NanoSQLInstance.prototype.limit = function (args) {
         return this._addCmd("limit", args);
     };
     /**
@@ -595,33 +640,12 @@ var SomeSQLInstance = (function () {
      * ```
      *
      * @param {number} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.offset = function (args) {
+    NanoSQLInstance.prototype.offset = function (args) {
         return this._addCmd("offset", args);
-    };
-    /**
-     * Adds a custom filter to the query.  The filter you use MUST be supported by the database driver OR a custom filter you provided before the connect method was called.
-     * The built in memory DB supports sum, min, max, average, and count
-     *
-     * Example:
-     * ```ts
-     * //get number of rows
-     * SomeSQL("users").query("select").filter("count"").exec().then(function(rows) {
-     *  console.log(rows) // <= [{count:300}]
-     * });
-     * ```
-     *
-     * @param {string} name
-     * @param {*} [args]
-     * @returns {SomeSQLInstance}
-     *
-     * @memberOf SomeSQLInstance
-     */
-    SomeSQLInstance.prototype.filter = function (name, args) {
-        return this._addCmd("filter-" + name, args);
     };
     /**
      * Used to add a command to the query
@@ -629,11 +653,11 @@ var SomeSQLInstance = (function () {
      * @internal
      * @param {string} type
      * @param {(any)} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype._addCmd = function (type, args) {
+    NanoSQLInstance.prototype._addCmd = function (type, args) {
         return this._query.push({ type: type, args: args }), this;
     };
     /**
@@ -641,9 +665,9 @@ var SomeSQLInstance = (function () {
      *
      * @param {DatabaseEvent} eventData
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.triggerEvent = function (eventData, triggerEvents) {
+    NanoSQLInstance.prototype.triggerEvent = function (eventData, triggerEvents) {
         var t = this;
         setTimeout(function () {
             var i = triggerEvents.length;
@@ -664,11 +688,44 @@ var SomeSQLInstance = (function () {
         }, 0);
     };
     /**
+     * Returns a default object for the current table's data model, useful for forms.
+     *
+     * The optional argument lets you pass in an object to over write the data model's defaults as desired.
+     *
+     * Examples:
+     *
+     * ```ts
+     * console.log(NanoSQL("users").default()) <= {username:"none", id:undefined, age: 0}
+     * console.log(NanoSQL("users").default({username:"defalt"})) <= {username:"default", id:undefined, age: 0}
+     * ```
+     *
+     * DO NOT use this inside upsert commands like `.query("upsert",NanoSQL("users").defalt({userObj}))..`.
+     * The database defaults are already applied through the upsert path, you'll be doing double work.
+     *
+     * Only use this to pull default values into a form in your UI or similar situation.
+     *
+     * @param {*} [replaceObj]
+     * @returns {{[key: string]: any}}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    NanoSQLInstance.prototype.default = function (replaceObj) {
+        var newObj = {};
+        var t = this;
+        t._models[t._selectedTable].forEach(function (m) {
+            newObj[m.key] = (replaceObj && replaceObj[m.key]) ? replaceObj[m.key] : m.default;
+            if (!newObj[m.key]) {
+                newObj[m.key] = t._cast(m.type, null); // Generate default value from type, eg int == 0
+            }
+        });
+        return newObj;
+    };
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
-     * The second argument of the promise is always the SomeSQL variable, allowing you to chain commands.
+     * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
      * Example:
-     * SomeSQL("users").query("select").exec().then(function(rows, db) {
+     * NanoSQL("users").query("select").exec().then(function(rows, db) {
      *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
      *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
      * }).then(function(rows, db) {
@@ -677,42 +734,40 @@ var SomeSQLInstance = (function () {
      *
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.exec = function () {
+    NanoSQLInstance.prototype.exec = function () {
         var t = this;
         var _t = t._selectedTable;
-        t._triggerEvents = t._query.map(function (q) {
-            switch (q.type) {
-                case "select": return [q.type];
-                case "delete":
-                case "upsert":
-                case "drop": return [q.type, "change"];
-                default: return [];
-            }
-        }).reduce(function (a, b) { return a.concat(b); });
-        return new es6_promise_1.Promise(function (res, rej) {
+        if (t._hasEvents[_t]) {
+            t._triggerEvents = t._query.map(function (q) {
+                switch (q.type) {
+                    case "select": return [q.type];
+                    case "delete":
+                    case "upsert":
+                    case "drop": return [q.type, "change"];
+                    default: return [];
+                }
+            }).reduce(function (a, b) { return a.concat(b); });
+        }
+        return new lie_1.Promise(function (res, rej) {
             if (!t.backend) {
-                var err = "You must connect() before calling any queries!";
-                rej(err);
-                throw Error(err);
+                rej();
+                throw Error;
             }
             var _tEvent = function (data, callBack, type, changedRows, isError) {
-                if (t._permanentFilters.length && isError !== true) {
-                    data = t._permanentFilters.reduce(function (prev, cur, i) {
-                        return t._filters[t._permanentFilters[i]].apply(t, [data]);
-                    }, data);
+                if (t._hasEvents[_t]) {
+                    t.triggerEvent({
+                        name: "error",
+                        actionOrView: "",
+                        table: _t,
+                        query: t._query,
+                        time: new Date().getTime(),
+                        result: data,
+                        changeType: type,
+                        changedRows: changedRows
+                    }, t._triggerEvents);
                 }
-                t.triggerEvent({
-                    name: "error",
-                    actionOrView: "",
-                    table: _t,
-                    query: t._query,
-                    time: new Date().getTime(),
-                    result: data,
-                    changeType: type,
-                    changedRows: changedRows
-                }, t._triggerEvents);
                 callBack(data, t);
             };
             t.backend._exec({
@@ -734,11 +789,11 @@ var SomeSQLInstance = (function () {
      * Configure the database driver, must be called before the connect() method.
      *
      * @param {any} args
-     * @returns {SomeSQLInstance}
+     * @returns {NanoSQLInstance}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.config = function (args) {
+    NanoSQLInstance.prototype.config = function (args) {
         var t = this;
         if (!t.backend)
             t._preConnectExtend.push(args);
@@ -750,9 +805,9 @@ var SomeSQLInstance = (function () {
      * @param {...Array<any>} args
      * @returns {*}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.extend = function () {
+    NanoSQLInstance.prototype.extend = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
@@ -783,14 +838,16 @@ var SomeSQLInstance = (function () {
      * @param {Array<Object>} rows
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.loadJS = function (rows) {
+    NanoSQLInstance.prototype.loadJS = function (rows) {
         var t = this;
-        return new es6_promise_1.Promise(function (res, rej) {
-            es6_promise_1.Promise.all(rows.map(function (row) {
+        t.extend("before_import");
+        return new lie_1.Promise(function (res, rej) {
+            lie_1.Promise.all(rows.map(function (row) {
                 return t.table(t._selectedTable).query("upsert", row).exec();
             })).then(function (rowData) {
+                t.extend("after_import");
                 res(rowData, t);
             });
         });
@@ -800,13 +857,13 @@ var SomeSQLInstance = (function () {
      *
      * This function will be called on every upsert and you'll recieve the upsert data as it's being passed in.
      *
-     * SomeSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
+     * NanoSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
      *
      * @param {(row: object) => object} callBack
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.rowFilter = function (callBack) {
+    NanoSQLInstance.prototype.rowFilter = function (callBack) {
         return this._rowFilters[this._selectedTable] = callBack, this;
     };
     /**
@@ -819,14 +876,15 @@ var SomeSQLInstance = (function () {
      * @param {string} csv
      * @returns {(Promise<Array<Object>>)}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.loadCSV = function (csv) {
+    NanoSQLInstance.prototype.loadCSV = function (csv) {
         var t = this;
         var fields = [];
-        return new es6_promise_1.Promise(function (res, rej) {
-            es6_promise_1.Promise.all(csv.split("\n").map(function (v, k) {
-                return new es6_promise_1.Promise(function (resolve, reject) {
+        t.extend("before_import");
+        return new lie_1.Promise(function (res, rej) {
+            lie_1.Promise.all(csv.split("\n").map(function (v, k) {
+                return new lie_1.Promise(function (resolve, reject) {
                     if (k === 0) {
                         fields = v.split(",");
                         resolve();
@@ -848,6 +906,7 @@ var SomeSQLInstance = (function () {
                     }
                 });
             })).then(function () {
+                t.extend("after_import");
                 res([], t);
             });
         });
@@ -858,16 +917,16 @@ var SomeSQLInstance = (function () {
      * @static
      * @returns {string}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.uuid = function () {
+    NanoSQLInstance.uuid = function () {
         var r, s, buf;
         var random16Bits = function () {
             if (typeof crypto === "undefined") {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             }
             else {
-                if (crypto.getRandomValues) {
+                if (window.crypto.getRandomValues) {
                     buf = new Uint16Array(1);
                     window.crypto.getRandomValues(buf);
                     return buf[0];
@@ -897,9 +956,9 @@ var SomeSQLInstance = (function () {
      * @param {string} key
      * @returns {number}
      *
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
-    SomeSQLInstance._hash = function (key) {
+    NanoSQLInstance._hash = function (key) {
         return Math.abs(key.split("").reduce(function (prev, next, i) {
             return ((prev << 5) + prev) + key.charCodeAt(i);
         }, 0));
@@ -908,7 +967,7 @@ var SomeSQLInstance = (function () {
      * Export the current query to a CSV file, use in place of "exec()";
      *
      * Example:
-     * SomeSQL("users").query("select").toCSV(true).then(function(csv, db) {
+     * NanoSQL("users").query("select").toCSV(true).then(function(csv, db) {
      *   console.log(csv);
      *   // Returns something like:
      *   id,name,pass,postIDs
@@ -919,16 +978,16 @@ var SomeSQLInstance = (function () {
      * @param {boolean} [headers]
      * @returns {Promise<string>}
      *
-     * @memberOf SomeSQLInstance
+     * @memberOf NanoSQLInstance
      */
-    SomeSQLInstance.prototype.toCSV = function (headers) {
+    NanoSQLInstance.prototype.toCSV = function (headers) {
         var t = this;
-        return new es6_promise_1.Promise(function (res, rej) {
+        return new lie_1.Promise(function (res, rej) {
             t.exec().then(function (json) {
                 var header = t._query.filter(function (q) {
                     return q.type === "select";
                 }).map(function (q) {
-                    return q.args ? q.args.map(function (m) {
+                    return q.args.length ? q.args.map(function (m) {
                         return t._models[t._selectedTable].filter(function (f) { return f["key"] === m; })[0];
                     }) : t._models[t._selectedTable];
                 })[0];
@@ -947,21 +1006,20 @@ var SomeSQLInstance = (function () {
                             case "map":
                             // tslint:disable-next-line
                             case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
-                            default: return JSON.stringify(row[column["key"]]);
+                            default: return row[column["key"]];
                         }
                     }).join(",");
                 }).join("\n"), t);
             });
         });
     };
-    return SomeSQLInstance;
+    return NanoSQLInstance;
 }());
-exports.SomeSQLInstance = SomeSQLInstance;
+exports.NanoSQLInstance = NanoSQLInstance;
 /**
  * @internal
  */
-var _someSQLStatic = new SomeSQLInstance();
-function SomeSQL(setTablePointer) {
-    return _someSQLStatic.table(setTablePointer);
-}
-exports.SomeSQL = SomeSQL;
+var _NanoSQLStatic = new NanoSQLInstance();
+exports.nSQL = function (setTablePointer) {
+    return _NanoSQLStatic.table(setTablePointer);
+};

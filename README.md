@@ -1,43 +1,58 @@
-# SomeSQL
+# NanoSQL
 RDBMS Immutable App Store with Undo, Redo & IndexedDB support.
 
-[![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/Some-SQL/blob/master/LICENSE)
+[![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 
-![SomeSQL Logo](https://some-sql.com/logo.png)
+NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 8Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a lib half the size.
 
-I was tired of doing all the work for my data store library (Redux) or letting my data store eat through half my production bundle (Lovefield and others).  SomeSQL is small, fast and built specifically to work with modern frameworks like Angular2 and React while keeping RDBMS nicities around.  As a bonus, you also get the performance perks of ImmutableJS in a lib half it's size.
-
-* [Todo Example](https://some-sql.com/react-todo/)
-* [Draw Example](https://some-sql.com/react-draw/)
+* [Todo Example](https://nano-sql.com/react-todo/)
+* [Draw Example](https://nano-sql.com/react-draw/)
 
 ## Features
 
 - Run in Node, IE8+ & modern browsers.
-- Supports all common RDBMS actions.
-- All queries return immutable rows.
+- Supports all common RDBMS queries.
+- Queries return immutable rows.
 - Super easy IndexedDB support.
+- Import and Export CSV/JSON.
 - Simple & elegant undo/redo.
 - Full Typescript support.
 - Runtime type casting.
 - Full events system.
-- Under 10Kb Gzipped.
+- Just 8Kb Gzipped.
+
+### Oh Look, Another Data Store
+
+I spent a long time looking for an existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
+
+| Database                                                 | Events | TypeScript | Undo/Redo | Immutable | RDBMS | IndexedDB | NodeJS | Strong Data Model | Extend Backend | Size (KB) |
+|----------------------------------------------------------|:------:|:----------:|:---------:|:---------:|:-----:|:---------:|:------:|:-----------------:|:--------------:|:----------:|
+| NanoSQL                                                  | ✓      | ✓         | ✓         | ✓         | ✓     | ✓         | ✓      | ✓               | ✓             | 8         |
+| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓         | ✕         | ✕        | ✕     | ✕         | ✓      | ✕               | ✕              | 2         |
+| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕         | ✕        | ✕         | ✓     | ✕         | ✓      | ✕               | ✕              | 5        |
+| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓         | ✕        | ✓         | ✕     | ✕         | ✓      | ✕               | ✕              | 16        |
+| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✕         | ✕        | ✕         | ✓     | ✓         | ✓      | ✕               | ✓              | 19        |
+| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓         | ✕        | ✕         | ✓     | ✓         | ✕      | ✓               | ✕              | 40        |
+| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕         | ✕        | ✕         | ✓     | ✓         | ✓      | ✓               | ✓              | 88        |
+| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✕         | ✕        | ✕         | ✓     | ✕         | ✓      | ✓               | ✕              | 500       |
+
+I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and it needs to work with TypeScript.  NanoSQL is that.  
 
 ## Installation
 
-`npm i some-sql --save`
+`npm i nano-sql --save`
 
 Using in typescript project:
 
 ```ts
-import { SomeSQL } from "some-sql";
-
+import { nSQL } from "nano-sql";
 ```
 
 Using in node:
 
 ```js
-var SomeSQL = require("some-sql").SomeSQL;
+var nSQL = require("nano-sql").nSQL;
 
 ```
 
@@ -48,14 +63,14 @@ To use directly in the browser, just include the script file found inside the `d
 1 minute minimal quick start:
 
 ```ts
-SomeSQL('users') //  "users" is our table name.
+nSQL('users') //  "users" is our table name.
 .model([ // Declare data model
     {key:'id',type:'int',props:['pk','ai']}, // pk == primary key, ai == auto incriment
     {key:'name',type:'string'}
 ])
 .connect() // Init the data store for usage.
 .then(function(result, db) {
-    // "db" holds the current SomeSQL var with the previous table still selected.
+    // "db" holds the current NanoSQL var with the previous table still selected.
     return db.query('upsert',{ // Add a record
         name:"Billy",
     }).exec();
@@ -64,7 +79,7 @@ SomeSQL('users') //  "users" is our table name.
     return db.query('select').exec(); // select all rows from the current active table
 })
 .then(function(result, db) {
-    console.log(result) // <= [{id:1,name:"Billy",age:50}]
+    console.log(result) // <= [{id:1,name:"Billy"}]
 })
 
 ```
@@ -76,7 +91,7 @@ First you declare your models, connect the db, then you execute queries.
 ### 1. Declare Model & Setup
 
 ```ts
-SomeSQL('users')// Table/Store Name, required to declare model and attach it to this store.
+nSQL('users')// Table/Store Name, required to declare model and attach it to this store.
 .model([ // Data Model, required
     {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
     {key:'name',type:'string', default:"None"}, // This will cause inserts to always use "None" if no value is provided.
@@ -123,7 +138,7 @@ SomeSQL('users')// Table/Store Name, required to declare model and attach it to 
 
 ```ts
 // Initializes the db.
-SomeSQL().connect().then(function(result, db) {
+nSQL().connect().then(function(result, db) {
     // DB ready to use.
     db.doAction('add_new_user',{user:{
         id:null,
@@ -143,285 +158,4 @@ SomeSQL().connect().then(function(result, db) {
 });
 
 ```
-
-### Arbitrary Commands
-
-You can execute a db command at any point from the `SomeSQL` object after the DB is connected.
-
-Every query follows the same pattern:
-`SomeSQL(#TABLE_NAME#).query(#ACTION#,#ARGS#)....optional filtering, sorting, etc...exec()`
-
-For example a query to get all rows from the users table looks like this:
-`SomeSQL('users').query('select').exec()`
-
-Here are some more examples:
-
-```ts
-// Get all records but only return the name and id columns
-SomeSQL('users').query('select',['name','id']).exec(); 
-
-// only show rows where the name == "scott"
-SomeSQL('users').query('select').where(['name','=','scott']).exec() 
-
-// Compound where statement with AND
-SomeSQL('users').query('select').where([['name','=','billy'],'and',['balance','>',20]]).exec();
-
-// Compund where statement with OR
-SomeSQL('users').query('select').where([['name','=','billy'],'or',['balance','>',20]]).exec();
-
-// Order the results by name ascending, then age descending.
-SomeSQL('users').query('select').orderBy({name:'asc',age:'desc'}).exec() 
-
-// Limit and Offset
-SomeSQL('users').query('select').limit(20).offset(10).exec();
-
-// Filters (Must be supported by the database driver or supplied by the user)
-SomeSQL('users').query('select',['age']).filter('average').exec();
-
-// The Memory DB supports sum, min, max, average, and count
-
-// combine any patterns as you'd like.
-SomeSQL('users').query('select',['name']).where(['age','>',20]).orderBy({age:'desc'}).exec() 
-
-// Where statements work on upserts as well.
-SomeSQL('users').query('upsert',{name:"Account Closed"}).where(['balance','<',0]).exec() 
-
-// Simple join
-SomeSQL("users").query("select",["users.name","orders.title"]).where(["users.name","=","Jimmy"]).join({
-    type:'inner',
-    table:"orders",
-    where:['orders.customerID',"=",'user.id']
-}).orderBy({"users.name":"asc"}).exec();
-
-```
-
-Possible query commands are `select`, `drop`, `upsert`, and `delete`.
-
-All calls to the `exec()` return a promise, with the first argument of the promise being the response from the database.
-
-The second argument is always the SomeSQL var, making chaining commands easy...
-
-```ts
-SomeSQL('users').query('select').exec().then(function(result, db) {
-    return db.query('upsert',{name:"Bill"}).where(['name','=','billy']).exec();
-}).then(function(result, db) {
-    return db.query('drop').exec();
-})
-
-```
-
-
-### Events
-
-You can listen to any number of database events on any table or all tables.
-
-```ts
-SomeSQL("users").on('select',function(eventData) {}) // Listen to "select" commands from the users table
-SomeSQL("*").on('change',function(eventData) {}) // Listen for any changes to any table in the database.
-
-```
-
-Possible events are `change`, `delete`, `upsert`, `drop`, `select` and `error`.
-
-
-### Multiple Tables
-
-You can create a new table by selecting it and creating a new data model:
-
-```ts
-SomeSQL('newTable').model([
-    {key:'name',type:'string'}
-])
-
-```
-
-Keep in mind you MUST declare all your models and tables BEFORE calling the `connect()` command.
-
-### Multiple Data Stores
-
-If you need more than one data store with a collection of separate tables, you can declare a completely new SomeSQL db at any point.
-
-```ts
-var myDB = new SomeSQL_Instance().table;
-
-// And now use it just like you use the SomeSQL var.
-myDB('users').query("select").exec()...
-
-```
-
-Keep in mind that the tables and models are completely separate for each instance; there is no shared data, events or anything else.
-
-# API Index
-
-Possible commands are split into three groups, one group is used before you connect to the database.  
-The other group is used after you connect to the database, and it's used to query the database data.
-
-All commands can be chained or return a promise unless otherwise noted.
-
-## Group 1: Setup Mode
-
-| Command         | Definition                                                                  |          |
-|-----------------|-----------------------------------------------------------------------------|----------|
-| .model()        | Declare database model, required.                                           | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#model) |
-| .views()        | Declare views to use.                                                       | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#views) |
-| .actions()      | Declare actions to use.                                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#actions) |
-| .config()       | Pass custom configuration options to the database driver.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#config) |
-| .addFilter()    | Add a filter that can be used on queries.                                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#addfilter) |
-| .rowFilter()    | Add a filter function to be applied to every row being inserted.            | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#rowFilter) |
-| .connect()      | Complete setup mode and optionally connect to a specific backend, required. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#connect) |
-
-## Group 2: Query Mode 
-
-Every database query looks like this:
-`SomeSQL(#Table Name#).query(#Query Type#, #Query Args#)...Optional Query Modifiers...exec()`
-
-This gives each query three distinct sections, the query init section, the query modifier section, and the execute section.
-
-### Query Init
-
-There is only one possible function to start a query, and it has several different possible arguments.  Check out the examples to see those.
-
-| Command    | Definition                                                   |          |
-|------------|--------------------------------------------------------------|----------|
-| .query()   | Starts a database query.                                     | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#query) |
-
-### Query Modifiers
-
-Each modifier can take up to two arguments and normally can only be used once.  Check each example for usage.
-
-| Command    | Definition                                                   |          |
-|------------|--------------------------------------------------------------|----------|
-| .where()   | Adds a search component to the current query.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#where) |
-| .orderBy() | Adds a order by component to the current query.              | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#orderby) |
-| .join()    | Combine multiple queries into one using a where statement.   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#join) |
-| .offset()  | Offset the current query by a given value.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#offset) |
-| .limit()   | Limits the current query by a given value.                   | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#limit) |
-| .filter()  | Applies a custom filter to the current query.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#filter) |
-| .extend()  | Use a extend query modifier provided by the database driver. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#extend) |
-
-
-### Query Execution
-
-These come at the end of a query to execute it on the database.
-
-| Command    | Definition                                                                     |          |
-|------------|--------------------------------------------------------------------------------|----------|
-| .exec()    | Executes a pending query and returns a promise containing an array of objects. | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#exec) |
-| .toCSV()   | Executes the pending query and returns a promise containg a string CSV.        | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#tocsv) |
-
-
-## Misc Commands
-
-## Events
-
-Events can be called before or after setup mode, at any time.
-
-| Command      | Definition                                                                  |          |
-|--------------|-----------------------------------------------------------------------------|----------|
-| .on()        | Listen to specific database events with a callback function.                | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#on) |
-| .off()       | Remove a listening function from being triggered by events.                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#off) |
-
-### Mass Import Data
-
-| Command    | Definition                                                             |          |
-|------------|------------------------------------------------------------------------|----------|
-| .loadJS()  | Loads json directly into the database.                                 | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#loadjs) |
-| .loadCSV() | Loads CSV files directly into the database.                            | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#loadcsv) |
-
-
-### Actions & Views
-
-These can be used in replacement of the query..exec pattern to execute a given view or action.
-
-| Command     | Definition                                                             |          |
-|-------------|------------------------------------------------------------------------|----------|
-| .getView()  | Gets a specific view, returns a promise.                               | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#getview) |
-| .doAction() | Does a specific action, returns a promise.                             | [Examples](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html#doaction) |
-
-
-[View Complete Official Docs](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html)
-
-## Memory Database API
-Documentation here is specific to the built in memory database driver.
-
-### Memoization
-
-SomeSQL will memoize all select queries automatically with no configuration needed.
-
-Identical select statements will only require a single actual select on that table.  Every subsequent select query after the first will draw from the cache, pointing to the same object allowing strict comparison checking ("==="). 
-
-Once you modify a table, all memoized selects for that table are cleared, however the rows themselves are still immutable so once the query itself is recreated unchanged rows will still pass "===" checks.
-
-Finally, using JOIN commands will cause multiple table caches to be invalidated on single table updates so expect degraded performance with joins.
-
-### IndexedDB
-
-The memory database can optionally persist all of it's changes to the browser's indexed DB. Some features:
-* All changes automatically update to indexedDB.
-* The memory database is populated from the Indexed DB on connection, allowing you to resume the previous state with no effort.
-* Undo and redo states are not saved.
-* Each Indexed DB is attached to a specific data model.  If you change your data model a new, blank IndexedDB will be used.
-
-Enableing it is easy, just call `config` before `connect` with `{persistent:true}` passed in, like this:
-
-```ts
-SomeSQL().config({persistent:true}).connect().then....
-
-```
-
-You can declare models, views, actions and filters before calling config, but it must be called BEFORE `connect()`.
-
-Finally, you can clear the current indexedDB completely by calling this:
-
-```ts
-SomeSQL().extend("flush_db");
-```
-
-This will cause ALL active databases and tables to be removed from Indexed DB, but they will remain in memory until the page is refreshed.
-
-### Undo & Redo
-The driver has built in "undo" and "redo" functionality that lets you progress changes to the database forward and backward in time.  
-
-There is no need to enable anything, the history is enabled automatically and requires no configuration.
-
-Each Undo/Redo action represents a single Upsert, Delete, or Drop query.
-
-The history is applied across all database tables, calling a specific table on an undo/redo command will have no affect.
-
-Queries that did not affect any rows do not get added to the history.
-
-Usage:
-* Undo: `SomeSQL().extend("<")`
-* Redo: `SomeSQL().extend(">")`
-
-These commands will cascade `change` events to the affected tables.
-
-Optionally, you can attach `then` to the end of either undo or redo to discover if a redo/undo action was performed.
-
-```ts
-SomeSQL().extend(">").then(function(response) {
-    console.log(response) //<= If this is true, a redo action was done.  If false, nothing was done.
-});
-```
-
-You can also request the state of the undo/redo system like this:
-
-```ts
-SomeSQL().extend("?").then(function(response) {
-    console.log(response) // <= [0,0]
-});
-```
-
-The query returns an immutable array with two numbers.  The first is the length of change history, the second is the current pointer of the change history.
-
-This lets you determine if an undo/redo action will do anything:
-
-1. If the history length is zero, undo and redo will both do nothing.
-2. If the pointer is zero, undo will do nothing.
-3. If the pointer is equal to history length redo will do nothing.
-
-Since the history state is immutable you can perform strict "===" checks against it to see if the history state has changed.  This is useful for deciding to adjust the rendering of undo/redo buttons.
-
-Finally, performing changes to the database anywhere in history is completely allowed and automatically handled. You can play with the Todo example to see how this works.
-
-[View Complete Official Docs](https://clicksimply.github.io/Some-SQL/classes/_index_.somesqlinstance.html)
+More detailed documentation coming soon...

@@ -8,12 +8,12 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define("store", ["require", "exports", "some-sql"], function (require, exports, some_sql_1) {
+define("store", ["require", "exports", "nano-sql"], function (require, exports, nano_sql_1) {
     "use strict";
     function initStore() {
-        some_sql_1.SomeSQL("todos")
+        nano_sql_1.nSQL("todos")
             .model([
-            { key: "id", type: "int", props: ["pk"] },
+            { key: "id", type: "int", props: ["pk", "ai"] },
             { key: "done", type: "bool", default: false },
             { key: "title", type: "string", default: "" }
         ])
@@ -44,11 +44,11 @@ define("store", ["require", "exports", "some-sql"], function (require, exports, 
                 }
             }
         ]);
-        return some_sql_1.SomeSQL().config({ persistent: true }).connect();
+        return nano_sql_1.nSQL().config({ persistent: true }).connect();
     }
     exports.initStore = initStore;
 });
-define("index", ["require", "exports", "react", "react", "react-dom", "store", "some-sql"], function (require, exports, react_1, React, ReactDOM, store_1, some_sql_2) {
+define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql"], function (require, exports, react_1, React, ReactDOM, store_1, nano_sql_2) {
     "use strict";
     var TitleStyle = {
         width: "75%"
@@ -84,7 +84,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             event.preventDefault();
             if (!this.state.value.length)
                 return;
-            some_sql_2.SomeSQL("todos").doAction("add_todo", { title: this.state.value }).then(function () {
+            nano_sql_2.nSQL("todos").doAction("add_todo", { title: this.state.value }).then(function () {
                 _this.setState({
                     value: ""
                 });
@@ -124,18 +124,18 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             return _this;
         }
         TodoApp.prototype.markDone = function (todoID) {
-            some_sql_2.SomeSQL("todos").doAction("mark_todo_done", { id: todoID });
+            nano_sql_2.nSQL("todos").doAction("mark_todo_done", { id: todoID });
         };
         TodoApp.prototype.undo = function () {
-            some_sql_2.SomeSQL().extend("<");
+            nano_sql_2.nSQL().extend("<");
         };
         TodoApp.prototype.redo = function () {
-            some_sql_2.SomeSQL().extend(">");
+            nano_sql_2.nSQL().extend(">");
         };
         TodoApp.prototype.updateComponent = function (e, db) {
             var t = this;
-            some_sql_2.SomeSQL("todos").getView("list_all_todos").then(function (rows, db) {
-                some_sql_2.SomeSQL().extend("?").then(function (historyArray) {
+            nano_sql_2.nSQL("todos").getView("list_all_todos").then(function (rows, db) {
+                nano_sql_2.nSQL().extend("?").then(function (historyArray) {
                     t.setState({
                         todos: rows,
                         redos: historyArray
@@ -144,11 +144,11 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             });
         };
         TodoApp.prototype.componentWillMount = function () {
-            some_sql_2.SomeSQL("todos").on("change", this.updateComponent);
+            nano_sql_2.nSQL("todos").on("change", this.updateComponent);
             this.updateComponent();
         };
         TodoApp.prototype.componentWillUnmount = function () {
-            some_sql_2.SomeSQL("todos").off(this.updateComponent);
+            nano_sql_2.nSQL("todos").off(this.updateComponent);
         };
         TodoApp.prototype.shouldComponentUpdate = function (nextProps, nextState) {
             return this.state.todos !== nextState.todos;
@@ -162,9 +162,9 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                     React.createElement("div", { className: "column column-50" },
                         React.createElement("h2", null, "Todo Items")),
                     React.createElement("div", { className: "column column-25" },
-                        React.createElement("button", { disabled: this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1], onClick: this.undo, className: "noselect button" }, "Undo")),
+                        React.createElement("button", { disabled: this.state.redos[1] === 0, onClick: this.undo, className: "noselect button" }, "Undo")),
                     React.createElement("div", { className: "column column-25" },
-                        React.createElement("button", { disabled: this.state.redos[1] === 0, onClick: this.redo, className: "noselect button" }, "Redo"))),
+                        React.createElement("button", { disabled: this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1], onClick: this.redo, className: "noselect button" }, "Redo"))),
                 React.createElement(TodoForm, null),
                 React.createElement(TodoTable, { markDone: this.markDone, todos: this.state.todos })));
         };

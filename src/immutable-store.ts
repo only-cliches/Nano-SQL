@@ -1,38 +1,110 @@
-import { SomeSQLInstance, SomeSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs } from "./index";
-import { Promise } from "es6-promise";
+import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
+import { Promise } from "./lie";
 
 /**
  * @internal
  */
-let _filters: {
-    [key: string]: (rows: Array<DBRow>, Options?: any) => Array<DBRow>
+const _getKey = (args: any[], rows: DBRow[]):string => {
+    if(rows.length) {
+        let key = args[0] !== "*" ? args[0] : null;
+        if(!key) key =  Object.keys(rows[0]).shift() || "";
+        return key;
+    }
+    return "";
+};
+
+/**
+ * @internal
+ */
+let _functions: {
+    [key: string]: DBFunction
 } = {
-    sum: (rows: Array<StdObject<any>>) => {
-        return [{"sum": rows.map((r: StdObject<any>) => {
-                for (let k in r) {
-                    return r[k];
+    SUM: {
+        type:"aggregate",
+        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
+            let total = 0;
+            let row = {};
+            let key = _getKey(args, rows);
+            if(key.length) {
+                rows.forEach((row) => {
+                    total += parseInt(row[key]);
+                });
+            }
+            row[useKey] = total;
+            return [row];
+        }
+    },
+    MIN: {
+        type:"aggregate",
+        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
+            let min = Number.MAX_VALUE;
+            let useIndex = 0;
+            let row = {};
+            let key = _getKey(args, rows);
+            if(key.length) {
+                rows.forEach((row, i) => {
+                    let minVal = parseInt(row[key]);
+                    if(minVal < min) {
+                        useIndex = i;
+                        min = minVal;
+                    }
+                });
+            }
+            row = _assign(rows[useIndex]);
+            row[useKey] = min;
+            return [row];
+        }
+    },
+    MAX: {
+        type:"aggregate",
+        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
+            let max = Number.MIN_VALUE;
+            let useIndex = 0;
+            let row = {};
+            let key = _getKey(args, rows);
+            if(key.length) {
+                rows.forEach((row, i) => {
+                    let maxVal = parseInt(row[key]);
+                    if(maxVal > max) {
+                        useIndex = i;
+                        max = maxVal;
+                    }
+                });
+            }
+            row = _assign(rows[useIndex]);
+            row[useKey] = max;
+            return [row];
+        }
+    },
+    AVG: {
+        type:"aggregate",
+            call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
+            let average = 0;
+            let row = {};
+            if(rows.length) {
+                average = _functions["SUM"].call(rows, args, useKey)[0][useKey] / rows.length;
+                row = _assign(rows[0]);
+            }
+            row[useKey] = average;
+            return [row];
+        }
+    },
+    COUNT: {
+        type:"aggregate",
+        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
+            let count = 0;
+            let row = {};
+            if(rows.length) {
+                if(args[0] === "*") {
+                    count = rows.length;
+                } else {
+                    count = rows.filter(r => r[args[0]]).length;
                 }
-            }).reduce((a, b) => a + b, 0)}];
-    },
-    min: (rows: Array<StdObject<any>>) => {
-        return [{min: rows.map((r: StdObject<any>) => {
-                for (let k in r) {
-                    return r[k];
-                }
-            }).sort((a, b) => a < b ? -1 : 1)[0]}];
-    },
-    max: (rows: Array<StdObject<any>>) => {
-        return [{max: rows.map((r: StdObject<any>) => {
-                for (let k in r) {
-                    return r[k];
-                }
-            }).sort((a, b) => a > b ? -1 : 1)[0]}];
-    },
-    average: (rows: Array<StdObject<any>>) => {
-        return [{average: _filters["sum"](rows)[0]["sum"] / rows.length}];
-    },
-    count: (rows: Array<StdObject<any>>) => {
-        return [{count: rows.length}];
+                row = _assign(rows[0]);
+                row[useKey] = count;
+            }
+            return [row];
+        }
     }
 };
 
@@ -42,18 +114,18 @@ let _filters: {
  * A majority of data moving around for select statements and the like is indexes, not the actual data.
  *
  * @export
- * @class _SomeSQLImmuDB
- * @implements {SomeSQLBackend}
+ * @class _NanoSQLImmuDB
+ * @implements {NanoSQLBackend}
  */
 // tslint:disable-next-line
-export class _SomeSQLImmuDB implements SomeSQLBackend {
+export class _NanoSQLImmuDB implements NanoSQLBackend {
 
     /**
      * Unique database hash ID based on the data model.
      *
      * @internal
      * @type {number}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     private _databaseID: number;
 
@@ -62,7 +134,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @internal
      * @type {Array<DBExec>}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     private _pendingQuerys: Array<DBExec>;
 
@@ -73,27 +145,27 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      * @type {{
      *         [tableHash: number]: Array<DataModel>;
      *     }}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _models: {
         [tableHash: number]: Array<DataModel>;
     };
 
     /**
-     * The SomeSQL instance this database is attached to.
+     * The NanoSQL instance this database is attached to.
      *
      * @internal
-     * @type {SomeSQLInstance}
-     * @memberOf _SomeSQLImmuDB
+     * @type {NanoSQLInstance}
+     * @memberOf _NanoSQLImmuDB
      */
-    public _parent: SomeSQLInstance;
+    public _parent: NanoSQLInstance;
 
     /**
      * A hash of the current table name.
      *
      * @internal
      * @type {number}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _selectedTable: number;
 
@@ -112,30 +184,25 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *             _index: Array<number>; // The table index of row IDs in this table
      *         }
      *     }}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
-    public _tableInfo: {
+    public _tables: {
         [tableHash: number]: {
             _pk: string
+            _pkType: string;
             _name: string
             _incriment: number;
-            _pkIndex: {
-                [pk: number]: number;
-            };
-            _index: Array<number>;
+            _index: string[];
+            _keys: string[];
+            _defaults: any[];
+            _rows: {
+                [key: string]: (DBRow|null)[]
+            },
+            _historyPointers: {
+                [key: string]: number;
+            }
         }
     };
-
-    /**
-     * Stores all the source data of every table.
-     * Each rowID contains an array, the first entry of every array is "null", every following entry is an immutable object
-     * representing that row's data in time.  Changes to the row add an entry to the rowID array.
-     *
-     * @internal
-     * @type {(Array<Array<DBRow|null>>)}
-     * @memberOf _SomeSQLImmuDB
-     */
-    public _rows: Array<Array<DBRow|null>>;
 
     /**
      * A query hash split up by tables.
@@ -146,7 +213,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *             [queryHash: number]: Array<DBRow>
      *         }
      *     }}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _queryCache: {
         [tableID: number]: {
@@ -155,62 +222,25 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
     };
 
     /**
-     * An index/cache of joins that let us speed up join commands.
-     *
-     * @internal
-     * @type {{
-     *         [CombinedRowIDs: string]: {
-     *             _joinedHistoryIndex: Array<number>;
-     *             _rowID: number;
-     *         }
-     *     }}
-     * @memberOf _SomeSQLImmuDB
-     */
-    public _joinIndex: {
-        [CombinedRowIDs: string]: {
-            _joinedHistoryIndex: Array<number>;
-            _rowID: number;
-        }
-    };
-
-    /**
-     * A record of join relationships between tables
-     *
-     * @internal
-     * @type {Array<Array<number>>}
-     * @memberOf _SomeSQLImmuDB
-     */
-    public _joinedRelations: Array<Array<number>>;
-
-    /**
      * Contains an array of affected rows for each history point.
      * This lets clearing away history and performing updates as least expensive as possible.
      *
      * @internal
      * @type {Array<Array<number>>}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
-    public _historyRecords: Array<Array<number>>;
-
-    /**
-     * Contains a pointer for each row that indicates which history point in the row to use.
-     *
-     * @internal
-     * @type {{
-     *         [rowID: number]: number;
-     *     }}
-     * @memberOf _SomeSQLImmuDB
-     */
-    public _historyPointers: {
-        [rowID: number]: number;
-    };
+    public _historyRecords: Array<{
+        _tableID: number;
+        _rowKeys: string[];
+        _type: string;
+    }>;
 
     /**
      * The pointer that indiciates where in history to pull from.
      *
      * @internal
      * @type {number}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _historyPoint: number;
 
@@ -219,59 +249,46 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @internal
      * @type {Array<number>}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _historyArray: Array<number>;
 
 
     /**
-     * Store an array af updated/change types.
-     * 
-     * @type {string[]}
-     * @memberOf _SomeSQLImmuDB
-     */
-    public _historyTypes: string[];
-
-    /**
      * Holds references to the indexed DB object.
      *
      * @type {IDBDatabase}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _indexedDB: IDBDatabase;
 
     /**
-     * Flag to keep track of when importing IndexeDB.
+     * Flag to disable history and caching to incrase performance for lage imports
      *
      * @type {boolean}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
-    public _disableHistory: boolean;
-
-    constructor() {
-        let t = this;
-        t._models = {};
-        t._tableInfo = {};
-        t._pendingQuerys = [];
-        t._historyRecords = [[]];
-        t._historyPoint = 0;
-        t._historyPointers = {};
-        t._historyTypes = [];
-        t._historyArray = [0, 0];
-        t._joinIndex = {};
-        t._rows = [];
-        t._queryCache = {};
-        t._joinedRelations = [];
-        t._disableHistory = false;
-    }
+    public _disableHistoryAndCache: boolean;
 
     /**
      * Wether to store data to indexed DB or not.
      *
      * @type {boolean}
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _persistent: boolean;
+
+    constructor() {
+        let t = this;
+        t._models = {};
+        t._tables = {};
+        t._pendingQuerys = [];
+        t._historyRecords = [];
+        t._historyPoint = 0;
+        t._historyArray = [0, 0];
+        t._queryCache = {};
+        t._disableHistoryAndCache = false;
+    }
 
     /**
      * Get a row object from the store based on the current history markers.
@@ -280,23 +297,50 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      * @param {number} rowID
      * @returns {(DBRow|null)}
      *
-     * @memberOf _SomeSQLQuery
+     * @memberOf _NanoSQLQuery
      */
-    public _getRow(rowID: number): DBRow|null {
-        return this._rows[rowID][this._historyIDs(rowID)];
+    public _getRow(tableID: number, primaryKey: string): DBRow|null {
+        return this._tables[tableID]._rows[primaryKey][this._tables[tableID]._historyPointers[primaryKey]];
     }
 
-    /**
-     * Get the IDs of the current history pointers for a given rowID.
-     *
-     * @public
-     * @param {number} rowID
-     * @returns
-     *
-     * @memberOf _SomeSQLQuery
-     */
-    public _historyIDs(rowID: number) {
-        return this._historyPointers[rowID];
+    public _getTable() {
+        return this._tables[this._selectedTable];
+    }
+
+    public _newTable(tableName: string, dataModels:DataModel[]): string {
+        let t = this;
+        let ta = NanoSQLInstance._hash(tableName);
+
+        t._models[ta] = dataModels;
+        t._queryCache[ta] = {};
+
+        t._tables[ta] = {
+            _pk: "",
+            _pkType: "",
+            _keys:[],
+            _defaults: [],
+            _name: tableName,
+            _incriment: 1,
+            _index: [],
+            _historyPointers:{},
+            _rows:{}
+        };
+
+        // Discover primary keys for each table
+        let i = t._models[ta].length;
+        let keys: string[] = [];
+        let defaults: any[] = [];
+        while (i--) {
+            const p = t._models[ta][i];
+            t._tables[ta]._keys.unshift(p.key);
+            t._tables[ta]._defaults[i] = p.default;
+            if (p.props && p.props.indexOf("pk") >= 0) {
+                t._tables[ta]._pk = p.key;
+                t._tables[ta]._pkType = p.type;
+            }
+        }
+
+        return tableName;
     }
 
     /**
@@ -304,7 +348,7 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * @param {DBConnect} connectArgs
      *
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _connect(connectArgs: DBConnect): void {
         let t = this;
@@ -312,58 +356,34 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
         let p;
         let tables: string[] = [];
         let upgrading = false;
+        let index = 0;
 
         t._parent = connectArgs._parent;
 
         t._persistent = connectArgs._config.length ? connectArgs._config[0].persistent || false : false;
 
-        for (let tableName in connectArgs._models) {
-            let ta = SomeSQLInstance._hash(tableName);
+        Object.keys(connectArgs._models).forEach((tableName) => {
+            tables.push(t._newTable(tableName, connectArgs._models[tableName]));
+        });
+        
+        t._databaseID = NanoSQLInstance._hash(JSON.stringify(connectArgs._models));
 
-            tables.push(tableName);
-
-            t._models[ta] = connectArgs._models[tableName];
-            t._queryCache[ta] = {};
-            t._tableInfo[ta] = {
-                _pk: "",
-                _name: tableName,
-                _incriment: 1,
-                _index: [],
-                _pkIndex: {}
-            };
-
-            // Discover primary keys for each table
-            i = t._models[ta].length;
-            while (i--) {
-                p = t._models[ta][i];
-                if (p.props && p.props.indexOf("pk") !== -1) {
-                    t._tableInfo[ta]._pk = p.key;
-                }
-            }
-        }
-
-        t._databaseID = SomeSQLInstance._hash(JSON.stringify(connectArgs._models));
-
-        if (connectArgs._filters) {
-            for (let f in connectArgs._filters) {
-                _filters[f] = connectArgs._filters[f];
-            }
-        }
-
-        let index = 0;
+        Object.keys(connectArgs._functions || []).forEach((f) => {
+            _functions[f] = connectArgs._functions[f];
+        });
 
         if (t._persistent && typeof indexedDB !== "undefined") {
 
-            let idb = window.indexedDB.open(String(t._databaseID), 1);
+            let idb = indexedDB.open(String(t._databaseID), 1);
 
             // Called only when there is no existing DB, creates the tables and data store.
             idb.onupgradeneeded = (event: any) => {
                 upgrading = true;
                 let db: IDBDatabase = event.target.result;
-                let next = () => {
+                const next = () => {
                     if (index < tables.length) {
-                        let ta = SomeSQLInstance._hash(tables[index]);
-                        let config = t._tableInfo[ta]._pk ? { keyPath: t._tableInfo[ta]._pk } : {};
+                        let ta = NanoSQLInstance._hash(tables[index]);
+                        let config = t._tables[ta]._pk ? { keyPath: t._tables[ta]._pk } : {};
                         db.createObjectStore(tables[index], config);
                         index++;
                         next();
@@ -381,16 +401,14 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
 
                 // Called to import existing indexed DB data into the store.
                 if (!upgrading) {
-                    t._disableHistory = true;
                     let next = () => {
                         if (index < tables.length) {
-                            let ta = SomeSQLInstance._hash(tables[index]);
+                            let ta = NanoSQLInstance._hash(tables[index]);
                             let transaction = t._indexedDB.transaction(tables[index], "readonly");
                             let store = transaction.objectStore(tables[index]);
                             let cursorRequest = store.openCursor();
                             let items: any[] = [];
                             transaction.oncomplete = () => {
-
                                 t._parent.table(tables[index]).loadJS(items).then(() => {
                                     index++;
                                     next();
@@ -406,7 +424,6 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                             };
 
                         } else {
-                            t._disableHistory = false;
                             connectArgs._onSuccess();
                         }
                     };
@@ -422,19 +439,19 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
     }
 
     /**
-     * Called by SomeSQL to execute queries on this database.
+     * Called by NanoSQL to execute queries on this database.
      *
      * @param {DBExec} execArgs
      *
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
     public _exec(execArgs: DBExec): void {
         let t = this;
         if (t._pendingQuerys.length) {
             t._pendingQuerys.push(execArgs);
         } else {
-            t._selectedTable = SomeSQLInstance._hash(execArgs._table);
-            new _SomeSQLQuery(t)._doQuery(execArgs, (query) => {
+            t._selectedTable = NanoSQLInstance._hash(execArgs._table);
+            new _NanoSQLQuery(t)._doQuery(execArgs, (query) => {
                 if (t._pendingQuerys.length) {
                     t._exec(<any> t._pendingQuerys.pop());
                 }
@@ -448,48 +465,25 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      * @internal
      * @param {boolean} triggerChange
      *
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
-    public _invalidateCache(changedRows: DBRow[], type: string): void {
+    public _invalidateCache(changedRows: DBRow[], type: string, action?: string): void {
         let t = this;
-        let c = [t._selectedTable];
-        let i = t._joinedRelations.length;
-        while (i--) {
-            if (t._joinedRelations[i].indexOf(t._selectedTable) !== -1) {
-                c.concat(t._joinedRelations[i]);
-            }
+
+        t._queryCache[t._selectedTable] = {};
+
+        if (changedRows.length && action) {    
+            t._parent.triggerEvent({
+                name: "change",
+                actionOrView: "",
+                table: t._getTable()._name,
+                query: [],
+                time: new Date().getTime(),
+                result: [{msg:action + " was performed.",type:action}],
+                changedRows: changedRows,
+                changeType: type
+            }, ["change"]);
         }
-
-        t._removeDupes(c.sort()).forEach((table) => {
-            t._queryCache[table] = {};
-            if (changedRows.length) {
-                t._parent.triggerEvent({
-                    name: "change",
-                    actionOrView: "",
-                    table: t._tableInfo[table]._name,
-                    query: [],
-                    time: new Date().getTime(),
-                    result: [],
-                    changedRows: changedRows,
-                    changeType: type
-                }, ["change"]);
-            }
-        });
-    }
-
-    /**
-     * Utility function to remove duplicates from an array.
-     *
-     * @internal
-     * @param {Array<any>} sortedArray
-     * @returns {Array<any>}
-     *
-     * @memberOf _SomeSQLImmuDB
-     */
-    public _removeDupes(sortedArray: Array<any>): Array<any> {
-        return sortedArray.filter((item, pos,  ary) => {
-            return !pos || (item !== ary[pos - 1]); // Remove all duplicates.
-        });
     }
 
     /**
@@ -497,16 +491,16 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * ### Undo
      * Reverse the state of the database by one step into the past.
-     * Usage: `SomeSQL().extend("<")`;
+     * Usage: `NanoSQL().extend("<")`;
      *
      * ### Redo
      * Step the database state forward by one.
-     * Usage: `SomeSQL().extend(">")`;
+     * Usage: `NanoSQL().extend(">")`;
      *
      * ### Query
      * Discover the state of the history system
      * ```ts
-     * SomeSQL().extend("?").then(function(state) {
+     * NanoSQL().extend("?").then(function(state) {
      *  console.log(state[0]) // <= length of history records
      *  console.log(state[1]) // <= current history pointer position
      * });
@@ -514,13 +508,13 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
      *
      * The history point is zero by default, perforing undo shifts the pointer backward while redo shifts it forward.
      *
-     * @param {SomeSQLInstance} db
+     * @param {NanoSQLInstance} db
      * @param {("<"|">"|"?")} command
      * @returns {Promise<any>}
      *
-     * @memberOf _SomeSQLImmuDB
+     * @memberOf _NanoSQLImmuDB
      */
-    public _extend(db: SomeSQLInstance, command: "<"|">"|"?"|"flush_db"|"disable"|"enable"): Promise<any> {
+    public _extend(db: NanoSQLInstance, command: "<"|">"|"?"|"flush_db"|"disable"|"before_import"|"after_import"): Promise<any> {
         let t = this;
         let i;
         let h;
@@ -529,47 +523,44 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
         let rowKey;
         let store: IDBObjectStore;
 
-        if (t._indexedDB) {
-            store = t._indexedDB.transaction(t._tableInfo[t._selectedTable]._name, "readwrite").objectStore(t._tableInfo[t._selectedTable]._name);
+        if (t._indexedDB && t._getTable()) {
+            store = t._indexedDB.transaction(t._getTable()._name, "readwrite").objectStore(t._getTable()._name);
         }
 
         const shiftRowIDs = (direction: number): DBRow[] => {
-            i = t._historyRecords[t._historyPoint].length;
+            let tableID: number = t._historyRecords[t._historyPoint]._tableID;
+            i = t._historyRecords[t._historyPoint]._rowKeys.length;
             let rows:DBRow[] = [];
             while (i--) {
-                rowID = t._historyRecords[t._historyPoint][i];
-                rowData = t._getRow(rowID) || {};
-                if(direction === 1) rows.push(rowData);
-                rowKey = rowData[t._tableInfo[t._selectedTable]._pk];
-                t._historyPointers[rowID] += direction;
-                rowData = t._getRow(rowID);
-                if(direction === -1) rows.push(rowData);
+                rowID = t._historyRecords[t._historyPoint]._rowKeys[i];
+                if(t._tables[tableID]._pkType === "int") rowID = parseInt(rowID);
+                rowData = t._getRow(tableID, rowID) || {};
+                if(direction > 0) rows.push(rowData);
+                t._tables[tableID]._historyPointers[rowID] += direction;
+                rowData = t._getRow(tableID, rowID);
+                if(direction < 0) rows.push(t._getRow(tableID, rowID) as DBRow);
                 if (store) {
                     if (rowData) {
                         store.put(rowData);
                     } else {
-                        store.delete(rowKey);
+                        store.delete(rowID);
                     }
                 }
-                if (t._historyPointers[rowID] < 0) t._historyPointers[rowID] = 0;
+                if (t._tables[tableID]._historyPointers[rowID] < 0) t._tables[tableID]._historyPointers[rowID] = 0;
             }
             return rows;
         };
 
         return new Promise((res, rej) => {
-            if (!t._historyRecords.length && (["<", ">"].indexOf(command) !== -1)) {
-                res(false);
-                return;
-            }
 
             switch (command) {
                 case "<":
-                    if (t._historyPoint === t._historyRecords.length - 1) { // end of history
+                    if (!t._historyRecords.length || t._historyPoint === t._historyRecords.length) { // end of history
                         res(false);
                     } else {
                         let rows = shiftRowIDs(1);
+                        let description = t._historyRecords[t._historyPoint]._type;
                         t._historyPoint++;
-                        let description = t._historyTypes[t._historyPoint-1];
                         switch(description) {
                             case "inserted":
                                 description = "deleted";
@@ -578,22 +569,22 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                                 description = "inserted";
                                 break;
                         }
-                        t._invalidateCache(rows, description);
+                        t._invalidateCache(rows, description, "undo");
                         res(true);
                     }
                 break;
                 case ">":
-                    if (t._historyPoint < 1) { // beginning of history
+                    if (!t._historyRecords.length || t._historyPoint < 1) { // beginning of history
                         res(false);
                     } else {
                         t._historyPoint--;
                         let rows = shiftRowIDs(-1);
-                        t._invalidateCache(rows, t._historyTypes[t._historyPoint]);
+                        t._invalidateCache(rows, t._historyRecords[t._historyPoint]._type, "redo");
                         res(true);
                     }
                 break;
                 case "?":
-                    h = [t._historyRecords.length - 1, t._historyPoint];
+                    h = [t._historyRecords.length, t._historyRecords.length - t._historyPoint];
                     if (t._historyArray.join("+") !== h.join("+")) {
                         t._historyArray = h;
                     }
@@ -601,14 +592,16 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
                 break;
                 case "flush_db":
                     if (t._indexedDB) {
-                        window.indexedDB.deleteDatabase(String(t._databaseID));
+                        indexedDB.deleteDatabase(String(t._databaseID));
                     }
                 break;
-                case "disable":
-                    t._disableHistory = true;
+                case "before_import":
+                    t._disableHistoryAndCache = true;
+                    res(!!t._disableHistoryAndCache);
                 break;
-                case "enable":
-                    t._disableHistory = false;
+                case "after_import":
+                    t._disableHistoryAndCache = false;
+                    res(!!t._disableHistoryAndCache);
                 break;
             }
         });
@@ -620,17 +613,17 @@ export class _SomeSQLImmuDB implements SomeSQLBackend {
  * Query module called for each database execution to get the desired result on the data.
  *
  * @internal
- * @class _SomeSQLQuery
+ * @class _NanoSQLQuery
  */
 // tslint:disable-next-line
-class _SomeSQLQuery {
+class _NanoSQLQuery {
 
     /**
      * The current action being called by the query. Select, Upsert, etc.
      *
      * @internal
      * @type {(QueryLine|undefined)}
-     * @memberOf _SomeSQLQuery
+     * @memberOf _NanoSQLQuery
      */
     private _act: QueryLine|undefined;
 
@@ -639,7 +632,7 @@ class _SomeSQLQuery {
      *
      * @internal
      * @type {Array<QueryLine>}
-     * @memberOf _SomeSQLQuery
+     * @memberOf _NanoSQLQuery
      */
     private _mod: Array<QueryLine>;
 
@@ -648,7 +641,7 @@ class _SomeSQLQuery {
      *
      * @internal
      * @type {number}
-     * @memberOf _SomeSQLQuery
+     * @memberOf _NanoSQLQuery
      */
     private _queryHash: number;
 
@@ -656,12 +649,21 @@ class _SomeSQLQuery {
      * A reference to the parent immutable storage object.
      *
      * @internal
-     * @type {_SomeSQLImmuDB}
-     * @memberOf _SomeSQLQuery
+     * @type {_NanoSQLImmuDB}
+     * @memberOf _NanoSQLQuery
      */
-    private _db: _SomeSQLImmuDB;
+    private _db: _NanoSQLImmuDB;
 
-    constructor(database: _SomeSQLImmuDB) {
+    /**
+     * Holds a pointer to the joined table for join queries
+     * 
+     * @internal
+     * @type {number}
+     * @memberOf _NanoSQLQuery
+     */
+    private _joinTable: number;
+
+    constructor(database: _NanoSQLImmuDB) {
         this._db = database;
     }
 
@@ -672,444 +674,631 @@ class _SomeSQLQuery {
      * @param {DBExec} query
      * @returns {Promise<any>}
      *
-     * @memberOf _SomeSQLQuery
+     * @memberOf _NanoSQLQuery
      */
     public _doQuery(query: DBExec, callBack: Function): void {
         let t = this;
 
         t._mod = [];
         t._act = undefined;
-        // t._actionOrView = query._viewOrAction || "";
-        t._db._selectedTable = SomeSQLInstance._hash(query._table);
-        // t._viewHash = SomeSQLInstance._hash(query._table + t._actionOrView);
 
-        t._queryHash = SomeSQLInstance._hash(JSON.stringify(query._query));
-
+        let simpleQuery: QueryLine[] = [];
+        
         query._query.forEach((q) => {
-            if (["upsert", "select", "delete", "drop"].indexOf(<string>q.type) !== -1) {
+            if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
                 t._act = q; // Query Action
+                if(q.type === "select") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query._query));
+            } else if (["show tables", "describe"].indexOf(q.type) >= 0) {
+                simpleQuery.push(q);
             } else {
                 t._mod.push(q); // Query Modifiers
             }
         });
 
-        t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[]) => {
-            query._onSuccess(result, changeType, affectedRows);
-            callBack(t);
-        });
+        if(simpleQuery.length) {
+            switch(simpleQuery[0].type) {
+                case "show tables":
+                    callBack();
+                    query._onSuccess([{tables:Object.keys(this._db._tables).map((ta) => this._db._tables[ta]._name)}], "info", []);
+                break;
+                case "describe":
+                    let getTable;
+                    let tableName = this._db._selectedTable
+                    let rows = {};
+                    Object.keys(this._db._tables).forEach((ta) => {
+                        if(parseInt(ta) === this._db._selectedTable) {
+                            getTable = _assign(this._db._models[ta]);
+                            tableName = this._db._tables[ta]._name;
+                        }
+                    });
 
+                    rows[tableName] = getTable;
+                    
+                    callBack();
+                    query._onSuccess([rows], "info", []);
+                break;
+            }
+        } else {
+            t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[]) => {
+                query._onSuccess(result, changeType, affectedRows);
+                callBack(t);
+            });
+        }
     }
 
     /**
-     * Create a new row and setup the histtory objects for it.
-     *
+     * Recursively freezes a js object, used to prevent the rows from being edited once they're added.
+     * 
      * @internal
-     * @returns {number}
-     *
-     * @memberOf _SomeSQLQuery
+     * @param {*} obj 
+     * @returns {*} 
+     * 
+     * @memberOf _NanoSQLQuery
      */
-    private _newRow(): number {
-        let t = this;
-        let rowID = t._db._rows.length;
-        t._db._rows.push([null]);
-        t._db._tableInfo[t._db._selectedTable]._index.push(rowID);
-        t._db._historyPointers[rowID] = 0;
-        return rowID;
+    private _deepFreeze(obj: any): any {
+        this._db._models[this._db._selectedTable].forEach((model) => {
+            let prop = obj[model.key];
+            if (["map","array"].indexOf(typeof prop) >= 0) {
+                obj[model.key] = this._deepFreeze(prop);
+            }
+        });
+        return Object.freeze(obj);
     }
 
     /**
-     * Execute queries an immutable storage object.
-     *
+     * Get a query modifier (where/orderby/etc...)
+     * 
      * @internal
-     * @param {Function} callBack
-     * @returns {void}
-     *
-     * @memberOf _SomeSQLQuery
+     * @param {string} name 
+     * @returns {(QueryLine|undefined)} 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    private _getMod(name: string): QueryLine|undefined {
+        return this._mod.filter((v) => v.type === name).pop();
+    };
+
+    /**
+     * Starting query method, sets up initial environment for the query and sets it off.
+     * 
+     * @internal
+     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack 
+     * @returns {void} 
+     * 
+     * @memberOf _NanoSQLQuery
      */
     private _execQuery(callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
-
-        let t = this;
-
+        const t = this;
         if (!t._act) return;
 
-        let pk = t._db._tableInfo[t._db._selectedTable]._pk;
-        let qArgs: any = t._act.args || [];
-        let tableIndex = t._db._tableInfo[t._db._selectedTable]._index.slice(); // Copy the table index.
+        let queryIndex: string[] = [];
 
-        let msg: number = 0;
-        let scribe;
-        let i: number;
-        let k: number;
-        let m;
-        let w;
-        let whereRows: Array<any> = [];
-        let changedRowIDs: Array<any> = [];
-        let rowID;
-        let mod;
-        let mods: Array<any>;
-        let curMod: any|undefined;
-        let keys: Array<any>;
-        let column;
-        let rowA;
-        let rowB;
-        let results: Array<DBRow> = [];
-        let rowData: DBRow|null;
-        let obj: DBRow|null;
-
-        const hasWhere = t._mod.filter((v) => {
-            return v.type === "where";
-        });
-
-        const getMod = (name: string): QueryLine|undefined => {
-            return t._mod.filter((v) => v.type === name).pop();
-        };
-
-        const tableChanged = (updateLength: number, describe: string): void => {
-
-            if (updateLength > 0) {
-
-                // Remove history points ahead of the current one if the database has changed
-                if (t._db._historyPoint > 0 && t._db._disableHistory !== true) {
-                    t._db._historyRecords = t._db._historyRecords.filter((val, index) => {
-                        if (index < t._db._historyPoint) {
-                            k = val.length;
-                            while (k--) {
-                                t._db._historyPointers[val[k]] = 0; // Set this row history pointer to 0;
-                                t._db._rows[val[k]].shift(); // Shift off the most recent update
-                            }
-                            return false;
-                        }
-                        return true;
-                    });
-                    t._db._historyPoint = 0;
-
-                    let diff = t._db._historyTypes.length - t._db._historyRecords.length;
-                    while(diff--) {
-                        t._db._historyTypes.shift();
-                    }
-                }
-
-  
-
-                if (t._db._disableHistory) { // We don't add history points for IDB imports
-                    if (!t._db._historyRecords[0]) t._db._historyRecords[0] = [];
-                    t._db._historyRecords[0] = t._db._historyRecords[0].concat(changedRowIDs);
-                    t._db._historyTypes[0] = describe;
-                } else {
-                    t._db._historyRecords.unshift(changedRowIDs);
-                    t._db._historyTypes.unshift(describe);
-                }
-
-                t._db._invalidateCache([], "");
-
-                callBack([{msg: updateLength + " row(s) " + describe}], describe, changedRowIDs.map((r) => t._db._getRow(r) || {}));
+        if(!t._getMod("join") && t._act.type !== "drop") {
+            if(t._getMod("where")) {
+                // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
+                queryIndex = t._where(t._db._selectedTable, t._db._getTable()._index.slice(), (t._getMod("where") as QueryLine).args);
             } else {
-                callBack([{msg: "0 rows " + describe}], describe, []);
-            }
-        };
-
-        const freezeObj = (obj: any): any => {
-            t._db._models[t._db._selectedTable].forEach(function(model) {
-                let prop = obj[model.key];
-                if (typeof prop === "object" && prop !== null && model.type !== "blob") {
-                    prop = freezeObj(prop);
-                }
-            });
-            return Object.freeze(obj);
-        };
-
-        const updateRow = (rowID: number, cb: Function): void => {
-            changedRowIDs.push(rowID);
-
-            // Perform a deep copy of the existing row so we can modify it.
-            // let newRow = JSON.parse(JSON.stringify(t._db._getRow(rowID) || {}));
-            let newRow: DBRow = {};
-            let oldRow = t._db._getRow(rowID) || {};
-            t._db._models[t._db._selectedTable].forEach((model) => {
-                if (typeof oldRow[model.key] === "object" && model.type !== "blob") {
-                    newRow[model.key] = JSON.parse(JSON.stringify(oldRow[model.key]));
-                } else {
-                    newRow[model.key] = oldRow[model.key] || model.default || null;
-                }
-            });
-
-            // Apply new values to the row
-            Object.getOwnPropertyNames(qArgs || {}).forEach((key) => {
-                newRow[key] = cb(key, newRow[key]);
-            });
-
-            // Add the row to the history
-            t._db._rows[rowID].unshift(freezeObj(newRow));
-
-            // Apply changes to the indexed DB.
-            if (t._db._indexedDB) {
-                const tableName = t._db._tableInfo[t._db._selectedTable]._name;
-                t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).put(newRow);
-            }
-        };
-
-        // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
-        if (t._act.type !== "drop") {
-            if (hasWhere.length && !getMod("join")) {
-                whereRows = t._where(tableIndex, hasWhere[0].args);
-            } else {
-                whereRows = tableIndex;
+                queryIndex = t._act.type !== "upsert" ? t._db._getTable()._index.slice() : [];
             }
         }
 
         switch (t._act.type) {
             case "upsert":
-                scribe = "updated";
-                i = whereRows.length;
-
-                if (hasWhere.length && qArgs[pk]) {
-                    throw new Error("Can't use a where statement if you have a non null primary key value!");
-                }
-
-                if (hasWhere.length) { // Where statement exists, we're inserting data into existing rows
-                    msg = i;
-                    scribe = "modified";
-                    while (i--) {
-                        updateRow(whereRows[i], (key: string, oldData: any) => {
-                            return key !== pk ? qArgs[key] : oldData;
-                        });
-                    }
-                } else { // Insert or update single row
-                    rowID = 0;
-
-                    if (qArgs[pk]) { // Primary key is set in arguments, attempt to update existing row
-                        if (t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]]) { // Does this primary key already exist?
-                            rowID = t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]];
-                        } else { // Turns out this primary key isn't in the database yet, make a new row.
-                            rowID = t._newRow();
-                            scribe = "inserted";
-                            t._db._tableInfo[t._db._selectedTable]._incriment = Math.max(qArgs[pk] + 1, t._db._tableInfo[t._db._selectedTable]._incriment);
-                            t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]] = rowID;
-                        }
-                    } else { // Add new row
-                        scribe = "inserted";
-                        m = t._db._models[t._db._selectedTable].length;
-                        while (m--) {
-                            mod = t._db._models[t._db._selectedTable][m];
-                            if (mod.props && mod.props.indexOf("pk") !== -1) {
-                                switch (mod.type) {
-                                    case "int":
-                                        qArgs[pk] = t._db._tableInfo[t._db._selectedTable]._incriment++;
-                                    break;
-                                    case "uuid":
-                                        qArgs[pk] = SomeSQLInstance.uuid();
-                                    break;
-                                }
-                                rowID = t._newRow();
-                                t._db._tableInfo[t._db._selectedTable]._pkIndex[qArgs[pk]] = rowID;
-                            }
-                        }
-                    }
-
-                    updateRow(rowID, (key: string, oldData: any) => {
-                        return qArgs[key] || oldData;
-                    });
-
-                    msg = 1;
-                }
-
-                tableChanged(msg, scribe);
-                break;
+                this._upsert(queryIndex, callBack);
+            break;
             case "select":
-
-                if (t._db._queryCache[t._db._selectedTable][t._queryHash]) { // Memoization
-                    callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
-                    break;
-                }
-
-                mods = ["join", "orderby", "offset", "limit"];
-
-                const modifyQuery = (rows: Array<number>, modIndex: number, callBack: Function): void => {
-
-                    curMod = getMod(mods[modIndex]);
-                    if (!curMod) return callBack(rows);
-
-                    switch (modIndex) {
-                        case 0: // Join
-
-                            t._db._parent.table(curMod.args.table).query("select").exec().then((rightRows: Array<any>, db: SomeSQLInstance) => {
-
-                                w = curMod.args.where.map((tableAndColumn: string, index1: number) => {
-                                    return tableAndColumn.split(".").map((e: string, index: number) => {
-                                        return index1 !== 1 ? (index === 0 ? SomeSQLInstance._hash(e) : e) : e;
-                                    });
-                                });
-
-                                let rightTable = t._db._tableInfo[w[2][0]];
-                                rightRows = rightRows.map((obj) => {
-                                    return rightTable._pkIndex[obj[rightTable._pk]];
-                                }).filter((r) => r);
-
-                                rows = t._join(curMod.args.type, rows, rightRows, w);
-                                if (hasWhere.length) rows = t._where(rows, hasWhere[0].args);
-                                callBack(rows);
-                            });
-                            break;
-                        case 1: // Order By
-                            callBack(rows.sort((a: number, b: number) => {
-
-                                keys = [];
-                                for (let key in curMod.args) {
-                                    keys.push(key);
-                                }
-
-                                return keys.reduce((prev, cur, i) => {
-                                    column = keys[i];
-                                    rowA = t._db._getRow(a) || {};
-                                    rowB = t._db._getRow(b) || {};
-                                    return ((rowA[column] > rowB[column] ? 1 : -1) * (curMod.args[column] === "asc" ? 1 : -1)) + prev;
-                                }, 0);
-                            }));
-                            break;
-                        case 2: // Offset
-                            callBack(rows.filter((row: number, index: number) => {
-                                return curMod ? index >= curMod.args : true;
-                            }));
-                            break;
-                        case 3: // Limit
-                            callBack(rows.filter((row: number, index: number) => {
-                                return curMod ?  index < curMod.args : true;
-                            }));
-                            break;
-                    }
-                };
-
-                i = mods.length;
-
-                let stepQuery = (rows: Array<number>) => {
-                    if (i > -1) {
-                        i--;
-                        modifyQuery(rows, i, (resultRows: Array<any>) => {
-                            stepQuery(resultRows);
-                        });
-                    } else {
-
-                        // Converts RowID indexed used into actual row data
-                        results = rows.map((rowID) => {
-                            k = qArgs.length || 0;
-
-                            if (k) { // Select specific columns
-                                obj = {};
-                                rowData = t._db._getRow(rowID);
-                                if (rowData) {
-                                    while (k--) {
-                                        obj[qArgs[k]] = rowData[qArgs[k]];
-                                    };
-                                } else {
-                                    obj = null;
-                                }
-                                return obj;
-                            } else { // select the whole row
-                                return t._db._getRow(rowID);
-                            };
-                        }).filter(r => r) as DBRow[];
-
-                        results = t._runFilters(results);
-
-                        t._db._queryCache[t._db._selectedTable][t._queryHash] = results;
-
-                        callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
-                    }
-                };
-
-                stepQuery(whereRows);
-
-                break;
+                this._select(queryIndex, callBack);
+            break;
             case "drop":
             case "delete":
-                let delRows: any[] = [];
-                if (whereRows.length && t._act.type === "delete") {
-                    delRows = whereRows;
+                this._remove(queryIndex, callBack);
+            break;
+        }
+
+    }
+
+    /**
+     * Updates a given row with a specific value, also updates the history for that row as needed.
+     * 
+     * @internal
+     * @param {string} rowPK 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    private _updateRow(rowPK: string): void {
+
+        const t = this;
+        let newRow;
+        const oldRow = t._db._getRow(t._db._selectedTable, rowPK);
+        const qArgs = (t._act as QueryLine).args;
+        const updateType = ((): string => {
+            if(t._act) {
+                if(t._act.type === "delete" && !qArgs.length) {
+                    return "drop";
+                }
+            }
+            return t._act ? t._act.type : "";
+        })();
+
+        
+        
+        switch(updateType) {
+            case "upsert":
+                if(!t._db._disableHistoryAndCache) {
+                    newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
                 } else {
-                    delRows = tableIndex;
+                    newRow = oldRow || {};
                 }
-                scribe = "deleted";
+                
+                Object.keys(qArgs).forEach((k) => {
+                    newRow[k] = qArgs[k];
+                });
 
-                i = delRows.length;
+                // Add default values
+                t._db._getTable()._keys.forEach((k, i) => {
+                    let def = t._db._getTable()._defaults[i];
+                    if(!newRow[k] && def) newRow[k] = def;
+                });
+            break;
+            case "delete":
+                newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
+                qArgs.forEach((column) => {
+                    newRow[column] = null;
+                });
+            break;
+        }
 
-                let tableName = t._db._tableInfo[t._db._selectedTable]._name;
+        // Add the row to the history
+        if(!t._db._disableHistoryAndCache) {
+            t._db._getTable()._rows[rowPK].unshift(newRow ? t._deepFreeze(newRow) : null);
+        } else {
+            t._db._getTable()._rows[rowPK][t._db._getTable()._historyPointers[rowPK]] = t._deepFreeze(newRow);
+        }
 
-                while (i--) {
-                    if (qArgs.length) { // Modify existing row, make a copy and modify the copy.
-
-                        updateRow(delRows[i], (key: string, oldData: any) => {
-                            return qArgs.indexOf(key) !== -1 ? null : oldData;
-                        });
-
-                        scribe = "modified";
-                    } else { // Just delete the entire row
-
-                        let rowKey = (t._db._getRow(delRows[i]) || {})[t._db._tableInfo[t._db._selectedTable]._pk];
-                        if (t._db._indexedDB && rowKey) {
-                            t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowKey);
-                        }
-
-                        t._db._rows[delRows[i]].unshift(null); // Add "null" to history to show removal.
-                        changedRowIDs.push(delRows[i]);
-                    }
-                }
-
-                tableChanged(delRows.length, scribe);
-                break;
+        // Apply changes to the indexed DB.
+        if (t._db._indexedDB) {
+            const tableName = t._db._getTable()._name;
+            const transaction = t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName);
+            if(updateType === "upsert") {
+                transaction.put(newRow);
+            } else {
+                transaction.delete(rowPK);
+            }
+            
         }
     }
 
-
-
     /**
-     * Filter rows based on a where statement and inex of rows.
-     *
+     * Called to finish drop/delete/upsert queries to affect the history and memoization as needed.
+     * 
      * @internal
-     * @param {Array<number>} index
-     * @param {Array<any>} singleWhereStatement
-     * @returns {Array<number>}
-     *
-     * @memberOf _SomeSQLQuery
+     * @param {string[]} updatedRowPKs 
+     * @param {string} describe 
+     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack 
+     * 
+     * @memberOf _NanoSQLQuery
      */
-    private _filterRows(index: Array<number>, singleWhereStatement: Array<any>): Array<number> {
-        let t = this;
-        let r;
-        return index.filter((v) => {
-            r = t._db._getRow(v);
-            return !r ? false : t._compare(singleWhereStatement[2], singleWhereStatement[1], r[singleWhereStatement[0]]) === 0 ? true : false;
-        });
+    private _tableChanged(updatedRowPKs: string[], describe: string, callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
+        let t = this, k;
+
+        if (updatedRowPKs.length > 0) {
+
+            // Remove history points ahead of the current one if the database has changed
+            if (t._db._historyPoint > 0 && t._db._disableHistoryAndCache !== true) {
+                t._db._historyRecords = t._db._historyRecords.filter((val, index) => {
+                    if (index < t._db._historyPoint) {
+                        k = val._rowKeys.length;
+                        while(k--) {
+                            t._db._tables[val._tableID]._historyPointers[val._rowKeys[k]] = 0; // Set this row history pointer to 0;
+                            t._db._tables[val._tableID]._rows[val._rowKeys[k]].shift(); // Shift off the most recent update
+                        }
+                        return false;
+                    }
+                    return true;
+                });
+                t._db._historyPoint = 0;
+            }
+
+            // Add history records
+            if (!t._db._disableHistoryAndCache) { // We don't want to add history points for imports
+                t._db._historyRecords.unshift({
+                    _tableID: t._db._selectedTable,
+                    _rowKeys: updatedRowPKs,
+                    _type: describe
+                });
+            }
+
+            t._db._invalidateCache([], "");
+
+            callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, updatedRowPKs.map((r) => this._db._getRow(this._db._selectedTable, r) || {}));
+        } else {
+            callBack([{msg: "0 rows " + describe}], describe, []);
+        }
     };
 
     /**
-     * Filter down an index of rows based on a where statement from the query.
-     *
+     * Add/modify records to a specific table based on query parameters.
+     * 
      * @internal
-     * @param {Array<number>} index
-     * @param {Array<any>} combinedWhereStatement
-     * @returns {Array<number>}
-     *
-     * @memberOf _SomeSQLQuery
+     * @param {string[]} queryIndex 
+     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack 
+     * 
+     * @memberOf _NanoSQLQuery
      */
-    private _where(index: Array<number>, combinedWhereStatement: Array<any>): Array<number> {
+    private _upsert(queryIndex: string[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
+
+        let scribe = "", i, changedPKs:string[] = []
+
+        const qArgs = (this._act as QueryLine).args  || {},
+        table = this._db._getTable(),
+        pk = table._pk,
+        whereMod = this._getMod("where")
+        
+        if (whereMod) { // Where statement exists or there's no PK, we're inserting data into existing rows
+            scribe = "modified";
+            changedPKs = queryIndex;
+            i = queryIndex.length;
+            while (i--) {
+                this._updateRow(queryIndex[i]);
+            }
+        } else { // No where statment, perform upsert
+            scribe = "inserted";
+            
+            if(!qArgs[pk]) {
+                if(table._pkType === "int") {
+                    qArgs[pk] = table._incriment++; 
+                } else if(table._pkType === "uint") {
+                    qArgs[pk] = NanoSQLInstance.uuid();
+                }
+            } else {
+                if(table._pkType === "int") {
+                    table._incriment = Math.max(qArgs[pk]+1, table._incriment);
+                }
+            }
+
+            const objPK = qArgs[pk] ? String(qArgs[pk]) : String(table._index.length);
+            changedPKs = [objPK];
+
+            // Entirely new row, make a new index spot for it in the table.
+            if(!table._rows[objPK]) {
+                table._rows[objPK] = [null];
+                table._historyPointers[objPK] = 0;
+                table._index.push(objPK);
+            }
+
+            this._updateRow(objPK);
+        }
+
+        this._tableChanged(changedPKs, scribe, callBack);
+    }
+
+    /**
+     * Get the table ID for query commands, used to intelligently switch between joined tables and the regular ones.
+     * 
+     * @internal
+     * @returns 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    private _getTableID() {
+        return this._joinTable ? this._joinTable : this._db._selectedTable;
+    }
+
+    /**
+     * Selects rows from a given table using the query parameters.
+     * 
+     * @internal
+     * @param {string[]} queryIndex 
+     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack 
+     * @returns 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    private _select(queryIndex: string[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
+        
         let t = this;
-        let commands = ["and", "or"];
+        // Memoization
+        if (t._db._queryCache[t._db._selectedTable][t._queryHash]) {
+            callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
+            return;
+        }
+
+        const mods = ["join", "groupby", "having", "orderby", "offset", "limit"];
+        let curMod, column, i, k, rows, obj, rowData, groups = {};
+        const sortObj = (objA:DBRow, objB:DBRow, columns: {[key: string]: string}) => {
+            return Object.keys(columns).reduce((prev, cur) => {
+                if(!prev) {
+                    if(objA[cur] == objB[cur]) return 0;
+                    return (objA[cur] > objB[cur] ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
+                } else {
+                    return prev;
+                }
+            }, 0);
+        };
+
+        const modifyQuery = (tableIndex: any[], modIndex: number, next: (tableIndex: any[]) => void): void => {
+
+            curMod = t._getMod(mods[modIndex]);
+
+            // After JOIN command convert index to row data
+            if(modIndex === 1) {
+                tableIndex = tableIndex.map((index) => {
+                    return t._db._getRow(t._getTableID(), index);
+                }).filter(r => r);
+            }
+
+            // After GROUP BY command apply functions and AS statements
+            if(modIndex === 2) {
+                let functions:{call: string, args: string[], as: string, type: string}[] = [];
+                if(qArgs.length) { // Select statement arguments
+                    let funcs = Object.keys(_functions).map((f) => f + "(");
+                    let keepColumns:any[] = [];
+                    let hasBroken = false;
+                    functions = qArgs.filter((q) => {
+                        let hasFunc = funcs.reduce((prev, cur) => {
+                            return (q.indexOf(cur) < 0 ? 0 : 1) + prev; 
+                        }, 0) || 0;
+                        if(hasFunc > 0) {
+                            return true;
+                        } else {
+                            keepColumns.push(q);
+                            return false;
+                        }
+                    }).map((selectString) => {
+                        let regex = selectString.match(/(.*)\((.*)\)/);
+                        let funcName = regex[1].trim();
+                        let columnName = (selectString.match(/\sAS\s(.*)/) || []).pop() || funcName;
+                        let args = regex[2].split(",").map(s => s.trim());
+
+                        if(_functions[funcName].type === "simple" && columnName === funcName) {
+                            columnName = args[0];
+                        }
+
+                        keepColumns.push(columnName);
+                        return {
+                            call: funcName,
+                            args: args,
+                            as: columnName.trim(),
+                            type: _functions[funcName].type
+                        };
+                    });
+
+                    let rows: DBRow[] = [];
+
+                    if(functions.length) {
+
+                        const doFunctions = (rows: DBRow[]): DBRow[] => {
+                            return functions.sort((a, b) => {
+                                return a.type > b.type ? 1 : -1;
+                            }).reduce((prev, curr) => {
+                                let newRows = [];
+                                if(curr.type === "aggregate") {
+                                    newRows = _functions[curr.call].call.apply(null, [rows.slice(), curr.args, curr.as]);
+                                } else {
+                                    newRows = _functions[curr.call].call.apply(null, [prev, curr.args, curr.as]);
+                                }
+                            
+                                if(prev.length && curr.type === "aggregate") {
+                                    prev = prev.filter((p, i) => i < 1);
+                                    prev[0] = _assign(prev[0]);
+                                    prev[0][curr.as] = newRows[0][curr.as];
+                                    return prev;
+                                } else {
+                                    return newRows;
+                                }
+                            }, rows.slice());
+                        }
+
+                        let groupKeys:any = Object.keys(groups);
+                        if(groupKeys.length) { // Groups Exist
+                            rows = groupKeys
+                            .map((k) => doFunctions(groups[k])) // Apply each function to each group (N^2)
+                            .reduce((prev, curr) => { // Combine the results into a single table
+                                return prev = prev.concat(curr), prev;
+                            },[]);
+                        } else { // No Groups, apply all functions to the rows
+                            rows = doFunctions(tableIndex);
+                        }
+                    } else {
+                        rows = tableIndex;
+                    }
+
+                    let convertKeys = keepColumns.map((n) => {
+                        return n.match(/(.*)\sAS\s(.*)/) || n;
+                    }).filter(n => n) || [];
+        
+                    if(convertKeys.length) {
+                        rows = rows.map((r) => {
+                            if(!hasBroken) r = _assign(r);
+                            let newRow = {};
+                            convertKeys.forEach((key) => {
+                                if(typeof key === "string") {
+                                    newRow[key] = r[key];
+                                } else {
+                                    newRow[key[2]] = r[key[1]];
+                                }
+                            });
+                            return newRow;
+                        });
+                    }
+
+                    tableIndex = rows;
+                }   
+            }
+
+            if (!curMod) return next(tableIndex);
+
+            switch (modIndex) {
+                case 0: // Join
+                    let joinConditions;
+                    if(curMod.args.type !== "cross") {
+                        joinConditions = {
+                            _left: curMod.args.where[0].split(".").pop(),
+                            _check: curMod.args.where[1],
+                            _right: curMod.args.where[2].split(".").pop()
+                        };
+                    }
+
+                    let leftTableID = t._db._selectedTable;
+                    
+                    let rightTableID = NanoSQLInstance._hash(curMod.args.table);
+
+                    let joinedIndex = t._join(curMod.args.type, leftTableID, t._db._tables[leftTableID]._index.slice(), rightTableID, t._db._tables[rightTableID]._index.slice(), joinConditions );
+
+                    let where = t._getMod("where");
+                    if(where) {
+                        joinedIndex = t._where(t._getTableID(), joinedIndex, where.args as any[]);
+                    }
+
+                    next(joinedIndex);
+                    break;
+                case 1: // Group By
+                    let columns = curMod.args as {[key: string]:"asc"|"desc"};
+                    let sortGroups = {};
+                    if(columns) {
+                        groups = tableIndex.reduce((prev, curr: DBRow) => {
+                            let key = Object.keys(columns).reduce((p, c) => p + "." + String(curr[c]), "").slice(1);
+                            (prev[key] = prev[key] || []).push(curr);
+                            sortGroups[key] = Object.keys(columns).reduce((pr, cu) => {
+                                pr[cu] = curr[cu];
+                                return pr;
+                            },{});
+                            return prev;
+                        },{});
+                    
+                        next(Object.keys(groups).sort((a, b) => {
+                            return sortObj(sortGroups[a], sortGroups[b], columns);
+                        }).reduce((prev, curr) => {
+                            return prev.concat(groups[curr]);
+                        }, []));
+                    } else {
+                        next(tableIndex);
+                    }
+                    break;
+                case 2: // Having
+                    // Put the records in a table
+                    t._db._tables[t._queryHash] = {
+                        _defaults:[],
+                        _historyPointers:{},
+                        _incriment:0,
+                        _index:[],
+                        _keys:[],
+                        _name:t._queryHash.toString(),
+                        _pk:"",
+                        _pkType:"",
+                        _rows: {}
+                    };
+                    t._joinTable = t._queryHash;
+                    tableIndex.forEach((row: DBRow, i) => {
+                        t._db._tables[t._queryHash]._historyPointers[i] = 0;
+                        t._db._tables[t._queryHash]._rows[i] = [row];
+                        t._db._tables[t._queryHash]._index.push(i.toString());
+                    });
+
+                    next(t._where(t._queryHash, t._db._tables[t._queryHash]._index, (t._getMod("having") as QueryLine).args).map((i) => {
+                        return t._db._getRow(t._queryHash, i);
+                    }).filter(r => r));
+                    break;
+                case 3: // Order By
+                    next(tableIndex.sort((a:DBRow, b:DBRow) => {
+                        return sortObj(a, b, curMod.args);
+                    }));
+                    break;
+                case 4: // Offset
+                    next(tableIndex.filter((row: DBRow, index: number) => {
+                        return curMod ? index >= curMod.args : true;
+                    }));
+                    break;
+                case 5: // Limit
+                    next(tableIndex.filter((row: DBRow, index: number) => {
+                        return curMod ?  index < curMod.args : true;
+                    }));
+                    break;
+            }
+        };
+
+        i = -1;
+
+        const qArgs = (t._act as QueryLine).args  || [];
+        const stepQuery = (rowPKs: any[]) => {
+            if (i < mods.length) {
+                i++;
+                modifyQuery(rowPKs, i, (resultRows: any[]) => {
+                    stepQuery(resultRows);
+                });
+            } else {
+                if(!t._getMod("join")) { // Join commands are not memoized.
+                    t._db._queryCache[t._db._selectedTable][t._queryHash] = rowPKs;
+                }   
+                callBack(rowPKs, "none", []);
+            }
+        };
+
+        stepQuery(queryIndex);
+
+    }
+
+    /**
+     * Removes elements from the currently selected table based on query conditions.
+     * 
+     * @internal
+     * @param {string[]} queryIndex 
+     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    private _remove(queryIndex: string[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
+        let scribe = "deleted", i;
+        let t = this;
+        const qArgs = (t._act as QueryLine).args  || [];
+
+        i = queryIndex.length;
+        while(i--) t._updateRow(queryIndex[i]);
+        if(qArgs.length) scribe = "modified";
+
+        t._tableChanged(queryIndex, scribe, callBack);
+    }
+
+    /**
+     * Performs "where" filtering on a given table provided where conditions.
+     * 
+     * @internal
+     * @param {number} tableID 
+     * @param {string[]} searchIndex 
+     * @param {any[]} conditions 
+     * @returns {string[]} 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    private _where(tableID: number, searchIndex: string[], conditions: any[]):string[] {
+        let t = this;
+        let commands = ["AND", "OR"];
         let doJoin: string;
 
-        let whereJoin = (indexes: Array<Array<number>>, type: string): Array<number> => {
-            return t._db._removeDupes(indexes[0].concat(indexes[1]).sort().filter((item, pos, ary) => {
-                return type === "and" ? (pos !== ary.lastIndexOf(item)) : true; // if AND, then filter out items that aren't duplicate.
+        const whereJoin = (indexes: Array<Array<number>>, type: string): Array<number> => {
+            return (indexes[0].concat(indexes[1]).sort().filter((item, pos, ary) => {
+                const last = ary.lastIndexOf(item);
+                return type === "OR" ? true : (pos !== last); // if AND, then filter out items that aren't duplicate.
             }));
         };
 
-        if (typeof (combinedWhereStatement[0]) === "string") {
+        const filterRows = (index: Array<string>, singleWhereStatement: Array<any>): Array<string> => {
+            let r;
+            return index.filter((v) => {
+                r = t._db._getRow(tableID, v);
+                return !r ? false : t._compare(singleWhereStatement[2], singleWhereStatement[1], r[singleWhereStatement[0]]) === 0 ? true : false;
+            });
+        };
+
+        if (typeof conditions[0] === "string") {
             // Single where statement like ['name','=','billy']
-            return t._filterRows(index, <any>combinedWhereStatement);
+            return filterRows(searchIndex, <any>conditions);
         } else {
             // nested where statement like [['name','=','billy'],'or',['name','=','bill']]
-            return combinedWhereStatement.map((value) => {
-                return commands.indexOf(value) !== -1 ? value : t._filterRows(index, <any>value);
+            return conditions.map((value) => {
+                return commands.indexOf(value) >= 0 ? value : filterRows(searchIndex.slice(), <any>value);
             }).reduce((prev, cur, k) => {
-                if (commands.indexOf(cur) === -1) {
+                if (commands.indexOf(cur) < 0) {
                     return k === 0 ? cur : whereJoin([prev, cur], doJoin);
                 } else {
                     doJoin = cur;
@@ -1120,123 +1309,104 @@ class _SomeSQLQuery {
     }
 
     /**
-     * Join two tables together given specific conditions.
-     *
+     * Perform a join between two tables.  Generates a new table with the joined records.
+     * 
+     * Joined tables are not memoized or cached in any way, they are generated from scrach on every query.  
+     * 
      * @internal
-     * @param {("left"|"inner"|"right"|"cross")} type
-     * @param {Array<number>} index1
-     * @param {Array<number>} index2
-     * @param {Array<any>} joinConditions
-     * @returns {Array<number>}
-     *
-     * @memberOf _SomeSQLQuery
+     * @param {("left"|"inner"|"right"|"cross"|"outer")} type 
+     * @param {number} leftTableID 
+     * @param {Array<string>} leftIndex 
+     * @param {number} rightTableID 
+     * @param {Array<string>} rightIndex 
+     * @param {{left:string, check: string, right:string}} joinConditions 
+     * @returns {Array<string>} 
+     * 
+     * @memberOf _NanoSQLQuery
      */
-    private _join(type: "left"|"inner"|"right"|"cross", index1: Array<number>, index2: Array<number>, joinConditions: Array<any>): Array<number> {
+    private _join(type: "left"|"inner"|"right"|"cross"|"outer", leftTableID: number, leftIndex: Array<string>, rightTableID: number, rightIndex: Array<string>, joinConditions: null|{_left:string, _check: string, _right:string}): Array<string> {
+        const newTableName = JSON.stringify(joinConditions);
+        const L = "left";
+        const R = "right";
+        const O = "outer";
+        let dataModel:DataModel[] = [];
+        let incriment = 0;
+        let joinHelper:{[tableID: number]:{_keys: string[],_name: string}} = {};
         let t = this;
 
-        let rows: Array<DBRow> = [];
-        let joinedIndex: Array<number> = [];
-        let tables: Array<number> = [joinConditions[0][0], joinConditions[2][0]];
-        let tableNames = [t._db._tableInfo[joinConditions[0][0]]._name, t._db._tableInfo[joinConditions[2][0]]._name];
-        let models = [t._db._models[joinConditions[0][0]], t._db._models[joinConditions[2][0]]];
+        // Keep track of what right side rows have been added
+        let rightIndexUsed = ([R,O].indexOf(type) >= 0) ? rightIndex.slice() : [];
 
-        // [t._selectedTable, pk, "=", t._selectedTable, pk] join conditions
-
-        let newRow: DBRow = {};
-        let joinKey: string;
-        let isNewRow: boolean;
-        let doNull: boolean;
-        let matches: Array<any> = [];
-        let rightIDs: Array<number> = [];
-        let i = index1.length;
-        let j;
-        let l;
-        let k;
-
-        // This is a relationship cache to keep track of joins between tables
-        i = t._db._joinedRelations.length;
-        j = 0;
-        while (i-- && !j) {
-            if (t._db._joinedRelations[i].indexOf(tables[0]) !== -1 && t._db._joinedRelations[i].indexOf(tables[1]) !== -1) j = 1;
-        }
-        if (!j) t._db._joinedRelations.push(tables);
-
-        let doJoin = (rowIDs: Array<number>, mergeRows: Array<DBRow|boolean> ): number => {
-
-            joinKey = rowIDs.join("+");
-            isNewRow = false;
-            k = rowIDs.map((r) => {
-                return t._db._historyIDs(r);
+        // Setup the join table model
+        [leftTableID, rightTableID].forEach((id) => {
+            let keys: string[] = [];
+            t._db._models[id].forEach((m) => {
+                keys.push(m.key);
+                dataModel.push({
+                    key: t._db._tables[id]._name + "." + m.key,
+                    type:m.type,
+                    default:m.default || null
+                });
             });
 
+            joinHelper[id] = {
+                _keys: keys,
+                _name: t._db._tables[id]._name
+            };
+        });
 
-            // Check if brand new join row
-            if (!t._db._joinIndex[joinKey]) {
-                isNewRow = true;
-                t._db._joinIndex[joinKey] = {
-                    _rowID: 0,
-                    _joinedHistoryIndex: k
-                };
-            }
+        // Make a new table for this join
+        t._db._newTable(newTableName, dataModel);
+        t._joinTable = NanoSQLInstance._hash(newTableName);
+        
+        // Performs a fast insert in the new table bypassing most of the typical checks
+        const joinInsert = (leftRow: DBRow|null, rightRow: DBRow|null) => {
+            let idx = String(incriment++);
+            let newRow = {};
+            let oldRows = [leftRow, rightRow];
 
-            // Basically, we check to see if either row this join was pulled from has changed since the last join command.
-            // If it's changed we create a new point in the joined row history with the updated information.
-            // Otherwise we leave it alone and don't perform the expensive join action.
-            if (isNewRow || k.join("+") !== t._db._joinIndex[joinKey]._joinedHistoryIndex.join("+")) {
-                newRow = {};
-                models.forEach((table, ti) => {
-                    doNull = rowIDs[ti] === -1 || mergeRows[ti] === false;
-                    table.forEach((dm) => {
-                        newRow[tableNames[ti] + "." + dm.key] = doNull ? null : (<DBRow> mergeRows[ti])[dm.key];
-                    });
-                });
+            [leftTableID, rightTableID].forEach((id, tableIndex) => {
+                let row = oldRows[tableIndex];
+                joinHelper[id]._keys.forEach((key) => {
+                    newRow[joinHelper[id]._name + "." + key] = row ? row[key] : null;
+                });     
+            });
 
-                if (isNewRow) {
-                    t._db._joinIndex[joinKey]._rowID = t._newRow();
-                }
-                t._db._rows[t._db._joinIndex[joinKey]._rowID].unshift(newRow);
-            }
-
-            return t._db._joinIndex[joinKey]._rowID;
-        };
-
-        i = index1.length;
-
-        while (i--) {
-            j = index2.length;
-            rows[0] = t._db._getRow(index1[i]) || {};
-            matches = [];
-            while (j--) {
-
-                rows[1] = t._db._getRow(index2[j]) || {};
-                if (!t._compare(rows[0][joinConditions[0][1]], joinConditions[1][0], rows[1][joinConditions[2][1]]) || type === "cross") {
-                    matches.push([index2[j], rows[1]]); // [rowID, rowData]
-                    rightIDs.push(index2[j]);
-                }
-            }
-            l = matches.length;
-            if (l) { // Inner && Cross
-                while (l--) {
-                    joinedIndex.push(doJoin([index1[i], matches[l][0]], [rows[0], matches[l][1]]));
-                };
-            } else if (type === "left") { // Left Outer
-                joinedIndex.push(doJoin([index1[i], -1], [rows[0], false]));
-            }
+            t._db._tables[t._joinTable]._index.push(idx);
+            t._db._tables[t._joinTable]._historyPointers[idx] = 0;
+            t._db._tables[t._joinTable]._rows[idx] = [newRow];
         }
 
-        // Take care of right outer joins
-        if (type === "right") {
-            i = index2.length;
-            while (i--) {
-                if (rightIDs.indexOf(index2[i]) === -1) {
-                    joinedIndex.push(doJoin([-1, index2[i]], [false, t._db._getRow(index2[i]) || {}]));
+        // Inserts multiple right side rows into the joined table
+        const rightInserts = (leftRow: DBRow|null, idxs: string[]) => {
+            idxs.forEach(i => {
+                if(rightIndexUsed.length) {
+                    let pos = rightIndexUsed.indexOf(i);
+                    if(pos > 0) rightIndexUsed.splice(pos, 1);
                 }
-            }
+                joinInsert(leftRow, t._db._getRow(rightTableID, i));
+            });
         }
 
-        return joinedIndex.reverse();
+        // Perform the N ^ 2 join on both tables, WEE!
+        leftIndex.forEach((leftI, leftCounter) => {
+            let leftRow = t._db._getRow(leftTableID, leftI) || {};
+            let whereIndex = !joinConditions ? rightIndex.slice() : t._where(rightTableID, rightIndex.slice(), [joinConditions._right,joinConditions._check, leftRow[joinConditions._left]]);
+ 
+            if(whereIndex.length) { // All joins bring together rows that succesfully compare.
+                rightInserts(leftRow, whereIndex);
+            } else if([L,O].indexOf(type) >= 0) { // If no comparison, left and outer joins should add an entry with a null right side.
+                joinInsert(leftRow, null);
+            } 
+        });
+
+        // If this is a RIGHT or OUTER join we're going to add the right side rows that haven't been used.
+        if(rightIndexUsed.length) {
+            rightInserts(null, rightIndexUsed.slice());
+        }
+
+        return t._db._tables[t._joinTable]._index.slice();
     }
-
 
     /**
      * Compare two values together given a comparison value
@@ -1247,7 +1417,7 @@ class _SomeSQLQuery {
      * @param {*} val2
      * @returns {number}
      *
-     * @memberOf _SomeSQLQuery
+     * @memberOf _NanoSQLQuery
      */
     private _compare(val1: any, compare: string, val2: any): number {
         switch (compare) {
@@ -1256,28 +1426,11 @@ class _SomeSQLQuery {
             case "<": return val2 < val1 ? 0 : 1;
             case "<=": return val2 <= val1 ? 0 : 1;
             case ">=": return val2 >= val1 ? 0 : 1;
-            case "IN": return val1.indexOf(val2) === -1 ? 1 : 0;
-            case "NOT IN": return val1.indexOf(val2) === -1 ? 0 : 1;
+            case "IN": return val1.indexOf(val2) < 0 ? 1 : 0;
+            case "NOT IN": return val1.indexOf(val2) < 0 ? 0 : 1;
             case "REGEX":
-            case "LIKE": return val2.search(val1) === -1 ? 1 : 0;
+            case "LIKE": return val2.search(val1) < 0 ? 1 : 0;
             default: return 0;
         }
-    }
-
-    /**
-     * Exexcute active filters on a given set of database rows.
-     *
-     * @internal
-     * @param {Array<Object>} dbRows
-     * @returns {*}
-     *
-     * @memberOf _SomeSQLQuery
-     */
-    private _runFilters(dbRows: Array<Object>): any {
-        let t = this;
-        let filters = t._mod.filter((m) => (<string>m.type).indexOf("filter-") === 0);
-        return filters.length ? filters.reduce((prev, cur, i) => {
-            return _filters[filters[i].type.replace("filter-", "")].apply(t, [prev, filters[i].args]);
-        }, dbRows) : dbRows;
     }
 }

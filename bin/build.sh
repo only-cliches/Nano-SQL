@@ -26,7 +26,7 @@ touch docs/.nojekyll
 echo "Docs Completed..."
 
 #examples
-yes | cp -rf dist/some-sql.min.js examples/some-sql.min.js
+yes | cp -rf dist/nano-sql.min.js examples/nano-sql.min.js
 
 echo "Cleaning up..."
 
@@ -36,7 +36,7 @@ echo "Build Completed. Size Info:"
 echo " "
 
 function size {
-    echo $(cat dist/some-sql.min.js) | gzip -9f | wc -c;
+    echo $(cat dist/nano-sql.min.js) | gzip -9f | wc -c;
 }
 echo $(size) Kb;
 #echo $(size) Kb, $(($(size) / 50))%;

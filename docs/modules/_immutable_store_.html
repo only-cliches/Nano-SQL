@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;immutable-store&quot; | some-sql</title>
+	<title>&quot;immutable-store&quot; | nano-sql</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">some-sql</a>
+					<a href="../index.html" class="title">nano-sql</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -71,28 +71,63 @@
 						<section class="tsd-index-section ">
 							<h3>Classes</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-class tsd-parent-kind-external-module"><a href="../classes/_immutable_store_._somesqlimmudb.html" class="tsd-kind-icon">_<wbr>SomeSQLImmuDB</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_immutable_store_._somesqlquery.html" class="tsd-kind-icon">_<wbr>SomeSQLQuery</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-external-module"><a href="../classes/_immutable_store_._nanosqlimmudb.html" class="tsd-kind-icon">_<wbr>NanoSQLImmuDB</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_immutable_store_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section tsd-is-not-exported">
+							<h3>Functions</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_immutable_store_.html#_getkey" class="tsd-kind-icon">_get<wbr>Key</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Object literals</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported"><a href="_immutable_store_.html#_filters" class="tsd-kind-icon">_filters</a></li>
+								<li class="tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported"><a href="_immutable_store_.html#_functions" class="tsd-kind-icon">_functions</a></li>
 							</ul>
 						</section>
 					</div>
 				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
+				<h2>Functions</h2>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="_getkey" class="tsd-anchor"></a>
+					<h3>_get<wbr>Key</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+						<li class="tsd-signature tsd-kind-icon">_get<wbr>Key<span class="tsd-signature-symbol">(</span>args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, rows<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in immutable-store.ts:7</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>args: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>rows: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Object literals</h2>
 				<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="_filters" class="tsd-anchor"></a>
-					<h3>_filters</h3>
-					<div class="tsd-signature tsd-kind-icon">_filters<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<a name="_functions" class="tsd-anchor"></a>
+					<h3>_functions</h3>
+					<div class="tsd-signature tsd-kind-icon">_functions<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in immutable-store.ts:7</li>
+							<li>Defined in immutable-store.ts:19</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -101,120 +136,250 @@
 							<dd></dd>
 						</dl>
 					</div>
-					<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-						<a name="_filters.average" class="tsd-anchor"></a>
-						<h3>average</h3>
-						<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-							<li class="tsd-signature tsd-kind-icon">average<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
-						</ul>
-						<ul class="tsd-descriptions">
-							<li class="tsd-description">
-								<aside class="tsd-sources">
-									<ul>
-										<li>Defined in immutable-store.ts:31</li>
-									</ul>
-								</aside>
-								<h4 class="tsd-parameters-title">Parameters</h4>
-								<ul class="tsd-parameters">
-									<li>
-										<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
-									</li>
+					<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-object-literal tsd-is-not-exported">
+						<a name="_functions.avg" class="tsd-anchor"></a>
+						<h3>AVG</h3>
+						<div class="tsd-signature tsd-kind-icon">AVG<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+						<aside class="tsd-sources">
+							<ul>
+								<li>Defined in immutable-store.ts:79</li>
+							</ul>
+						</aside>
+						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.avg.type" class="tsd-anchor"></a>
+							<h3>type</h3>
+							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in immutable-store.ts:80</li>
 								</ul>
-								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
-							</li>
-						</ul>
+							</aside>
+						</section>
+						<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.avg.call" class="tsd-anchor"></a>
+							<h3>call</h3>
+							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+							</ul>
+							<ul class="tsd-descriptions">
+								<li class="tsd-description">
+									<aside class="tsd-sources">
+										<ul>
+											<li>Defined in immutable-store.ts:81</li>
+										</ul>
+									</aside>
+									<h4 class="tsd-parameters-title">Parameters</h4>
+									<ul class="tsd-parameters">
+										<li>
+											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+										<li>
+											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+										</li>
+									</ul>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+						</section>
 					</section>
-					<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-						<a name="_filters.count" class="tsd-anchor"></a>
-						<h3>count</h3>
-						<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-							<li class="tsd-signature tsd-kind-icon">count<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
-						</ul>
-						<ul class="tsd-descriptions">
-							<li class="tsd-description">
-								<aside class="tsd-sources">
-									<ul>
-										<li>Defined in immutable-store.ts:34</li>
-									</ul>
-								</aside>
-								<h4 class="tsd-parameters-title">Parameters</h4>
-								<ul class="tsd-parameters">
-									<li>
-										<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
-									</li>
+					<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-object-literal tsd-is-not-exported">
+						<a name="_functions.count" class="tsd-anchor"></a>
+						<h3>COUNT</h3>
+						<div class="tsd-signature tsd-kind-icon">COUNT<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+						<aside class="tsd-sources">
+							<ul>
+								<li>Defined in immutable-store.ts:92</li>
+							</ul>
+						</aside>
+						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.count.type-1" class="tsd-anchor"></a>
+							<h3>type</h3>
+							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in immutable-store.ts:93</li>
 								</ul>
-								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
-							</li>
-						</ul>
+							</aside>
+						</section>
+						<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.count.call-1" class="tsd-anchor"></a>
+							<h3>call</h3>
+							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+							</ul>
+							<ul class="tsd-descriptions">
+								<li class="tsd-description">
+									<aside class="tsd-sources">
+										<ul>
+											<li>Defined in immutable-store.ts:94</li>
+										</ul>
+									</aside>
+									<h4 class="tsd-parameters-title">Parameters</h4>
+									<ul class="tsd-parameters">
+										<li>
+											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+										<li>
+											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+										</li>
+									</ul>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+						</section>
 					</section>
-					<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-						<a name="_filters.max" class="tsd-anchor"></a>
-						<h3>max</h3>
-						<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-							<li class="tsd-signature tsd-kind-icon">max<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
-						</ul>
-						<ul class="tsd-descriptions">
-							<li class="tsd-description">
-								<aside class="tsd-sources">
-									<ul>
-										<li>Defined in immutable-store.ts:24</li>
-									</ul>
-								</aside>
-								<h4 class="tsd-parameters-title">Parameters</h4>
-								<ul class="tsd-parameters">
-									<li>
-										<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
-									</li>
+					<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-object-literal tsd-is-not-exported">
+						<a name="_functions.max" class="tsd-anchor"></a>
+						<h3>MAX</h3>
+						<div class="tsd-signature tsd-kind-icon">MAX<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+						<aside class="tsd-sources">
+							<ul>
+								<li>Defined in immutable-store.ts:58</li>
+							</ul>
+						</aside>
+						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.max.type-2" class="tsd-anchor"></a>
+							<h3>type</h3>
+							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in immutable-store.ts:59</li>
 								</ul>
-								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
-							</li>
-						</ul>
+							</aside>
+						</section>
+						<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.max.call-2" class="tsd-anchor"></a>
+							<h3>call</h3>
+							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+							</ul>
+							<ul class="tsd-descriptions">
+								<li class="tsd-description">
+									<aside class="tsd-sources">
+										<ul>
+											<li>Defined in immutable-store.ts:60</li>
+										</ul>
+									</aside>
+									<h4 class="tsd-parameters-title">Parameters</h4>
+									<ul class="tsd-parameters">
+										<li>
+											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+										<li>
+											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+										</li>
+									</ul>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+						</section>
 					</section>
-					<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-						<a name="_filters.min" class="tsd-anchor"></a>
-						<h3>min</h3>
-						<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-							<li class="tsd-signature tsd-kind-icon">min<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
-						</ul>
-						<ul class="tsd-descriptions">
-							<li class="tsd-description">
-								<aside class="tsd-sources">
-									<ul>
-										<li>Defined in immutable-store.ts:17</li>
-									</ul>
-								</aside>
-								<h4 class="tsd-parameters-title">Parameters</h4>
-								<ul class="tsd-parameters">
-									<li>
-										<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
-									</li>
+					<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-object-literal tsd-is-not-exported">
+						<a name="_functions.min" class="tsd-anchor"></a>
+						<h3>MIN</h3>
+						<div class="tsd-signature tsd-kind-icon">MIN<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+						<aside class="tsd-sources">
+							<ul>
+								<li>Defined in immutable-store.ts:37</li>
+							</ul>
+						</aside>
+						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.min.type-3" class="tsd-anchor"></a>
+							<h3>type</h3>
+							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in immutable-store.ts:38</li>
 								</ul>
-								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
-							</li>
-						</ul>
+							</aside>
+						</section>
+						<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.min.call-3" class="tsd-anchor"></a>
+							<h3>call</h3>
+							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+							</ul>
+							<ul class="tsd-descriptions">
+								<li class="tsd-description">
+									<aside class="tsd-sources">
+										<ul>
+											<li>Defined in immutable-store.ts:39</li>
+										</ul>
+									</aside>
+									<h4 class="tsd-parameters-title">Parameters</h4>
+									<ul class="tsd-parameters">
+										<li>
+											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+										<li>
+											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+										</li>
+									</ul>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+						</section>
 					</section>
-					<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-						<a name="_filters.sum" class="tsd-anchor"></a>
-						<h3>sum</h3>
-						<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-							<li class="tsd-signature tsd-kind-icon">sum<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
-						</ul>
-						<ul class="tsd-descriptions">
-							<li class="tsd-description">
-								<aside class="tsd-sources">
-									<ul>
-										<li>Defined in immutable-store.ts:10</li>
-									</ul>
-								</aside>
-								<h4 class="tsd-parameters-title">Parameters</h4>
-								<ul class="tsd-parameters">
-									<li>
-										<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
-									</li>
+					<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-object-literal tsd-is-not-exported">
+						<a name="_functions.sum" class="tsd-anchor"></a>
+						<h3>SUM</h3>
+						<div class="tsd-signature tsd-kind-icon">SUM<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+						<aside class="tsd-sources">
+							<ul>
+								<li>Defined in immutable-store.ts:22</li>
+							</ul>
+						</aside>
+						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.sum.type-4" class="tsd-anchor"></a>
+							<h3>type</h3>
+							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in immutable-store.ts:23</li>
 								</ul>
-								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
-							</li>
-						</ul>
+							</aside>
+						</section>
+						<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+							<a name="_functions.sum.call-4" class="tsd-anchor"></a>
+							<h3>call</h3>
+							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+							</ul>
+							<ul class="tsd-descriptions">
+								<li class="tsd-description">
+									<aside class="tsd-sources">
+										<ul>
+											<li>Defined in immutable-store.ts:24</li>
+										</ul>
+									</aside>
+									<h4 class="tsd-parameters-title">Parameters</h4>
+									<ul class="tsd-parameters">
+										<li>
+											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+										</li>
+										<li>
+											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+										</li>
+									</ul>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+								</li>
+							</ul>
+						</section>
 					</section>
 				</section>
 			</section>
@@ -231,18 +396,27 @@
 					<li class=" tsd-kind-external-module">
 						<a href="_index_.html">"index"</a>
 					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="_lie_.html">"lie"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="_null_store_.html">"null-<wbr>store"</a>
+					</li>
 				</ul>
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="../classes/_immutable_store_._somesqlimmudb.html" class="tsd-kind-icon">_<wbr>SomeSQLImmuDB</a>
+						<a href="../classes/_immutable_store_._nanosqlimmudb.html" class="tsd-kind-icon">_<wbr>NanoSQLImmuDB</a>
 					</li>
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../classes/_immutable_store_._somesqlquery.html" class="tsd-kind-icon">_<wbr>SomeSQLQuery</a>
+						<a href="../classes/_immutable_store_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_immutable_store_.html#_getkey" class="tsd-kind-icon">_get<wbr>Key</a>
 					</li>
 					<li class=" tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_immutable_store_.html#_filters" class="tsd-kind-icon">_filters</a>
+						<a href="_immutable_store_.html#_functions" class="tsd-kind-icon">_functions</a>
 					</li>
 				</ul>
 			</nav>

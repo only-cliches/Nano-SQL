@@ -8,7 +8,7 @@ const WriteFilePlugin = require("write-file-webpack-plugin");
 
 var options = {
     entry: {
-        'some-sql': [path.join(__dirname, 'src', 'index.ts')]
+        'nano-sql': [path.join(__dirname, 'src', 'index.ts')]
     },
     watch: false,
     output: {
@@ -18,8 +18,9 @@ var options = {
         umdNamedDefine: true
     },
     resolve: {
-        extensions: ['.ts', '.tsx','.js']
+        extensions: ['.ts', '.tsx', '.js']
     },
+    externals: [],
     plugins: [],
     module: {
         loaders: [{
@@ -29,17 +30,18 @@ var options = {
     }
 };
 
-switch(process.env.NODE_ENV) {
+switch (process.env.NODE_ENV) {
     case "production":
         options['plugins'].push(new webpack.optimize.UglifyJsPlugin({
             compress: {
-                warnings: false
+                warnings: false,
+                passes: 5
             },
-            mangle:{
-                props:{regex:new RegExp(/^_|TSPromise/)}
+            mangle: {
+                props: { regex: new RegExp(/^_|Promise/) }
             }
         }));
-    break;
+        break;
 }
 
 module.exports = options;

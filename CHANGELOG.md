@@ -1,5 +1,20 @@
 # Change Log
 
+## [0.4.0]
+- Switched (again) to another promise lib, ported from lie.js
+- Changing lib name to "NanoSQL". Way cooler.
+- Refactored data store: selects, upserts & joins are now twice as fast.
+- Now supports tables without primary keys.
+- Much better conformance to SQL standards.
+- Added outer joins.
+- Added more documentation.
+- Added GroupBy statement.
+- Added Having statement.
+- Added `AS` handling in the select queries.
+- Removed filter statement, changed filter/function handling.
+- BREAKING CHANGE: The history pointer is now reversed from it's previous behavior. 
+- BREAKING CHANGE: Filters are now Functions and no longer work like they did before, check the API docs. 
+
 ## [0.3.4] 3-7-2017
 - ReadMe changes
 - Fixed event handling bug.
