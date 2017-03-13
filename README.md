@@ -100,12 +100,6 @@ nSQL('users')// Table/Store Name, required to declare model and attach it to thi
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
-.rowFilter(function(row) { // Optional, lets you control the row data going into the database.
-    if(row.age > 99) row.age = 99;
-    if(row.age < 12) row.age = 12;
-    if(row.balance < 0) callOverDraftFunction();
-    return row;
-})
 .actions([ // Optional
     {
         name:'add_new_user',
