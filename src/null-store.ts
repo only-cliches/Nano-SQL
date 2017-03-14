@@ -1,5 +1,4 @@
 import { NanoSQLInstance, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs } from "./index";
-import { Promise } from "es6-promise";
 
 /**
  * Only for testing purposes, to test the speed of the NanoSQL abstraction layer by itself.

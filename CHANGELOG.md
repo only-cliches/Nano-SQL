@@ -1,6 +1,9 @@
 # Change Log
 
-## [0.4.0]
+## [0.4.1] 3-13-2017
+- Readme changes.
+
+## [0.4.0] 3-13-2017
 - Switched (again) to another promise lib, ported from lie.js
 - Changing lib name to "NanoSQL". Way cooler.
 - Refactored data store: selects, upserts & joins are now twice as fast.

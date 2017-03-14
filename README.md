@@ -10,6 +10,8 @@ NanoSQL is the smallest and quickest way to get SQL power into your app, built s
 * [Todo Example](https://nano-sql.com/react-todo/)
 * [Draw Example](https://nano-sql.com/react-draw/)
 
+[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+
 ## Features
 
 - Run in Node, IE8+ & modern browsers.
@@ -85,6 +87,7 @@ nSQL('users') //  "users" is our table name.
 
 ```
 
+[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
 
 ## Detailed Usage
 First you declare your models, connect the db, then you execute queries.
@@ -101,6 +104,7 @@ nSQL('users')// Table/Store Name, required to declare model and attach it to thi
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
+.config({persistent:true}) // The long and difficult process of enabling indexed DB support, optional.
 .actions([ // Optional
     {
         name:'add_new_user',
@@ -153,4 +157,86 @@ nSQL().connect().then(function(result, db) {
 });
 
 ```
-More detailed documentation coming soon...
+
+[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+
+Some examples of queries you can do.
+
+```ts
+// Roll the entire database back one delete/drop/upsert query
+nSQL().extend("<") 
+// Yep, that's it.
+
+// Listen for changes on the users table
+nSQL("users").on("change", function(dbEvent) { ... });
+
+// Listen for changes on any table
+nSQL("*").on("change", function(dbEvent) { ... });
+
+// Get all rows, only provide the "name" column.
+nSQL("users").query("select",["name"]).exec().then(function(rows, db) {...});
+
+// Select all users with the name "John".
+nSQL("users").query("select").where(["name","=","John"]).exec().then(function(rows, db) {...});
+
+// Compound where statements, supports AND & OR
+nSQL("users").query("select").where([["name","=","John"],"AND",["age",">",25]]).exec().then(function(rows, db) {...});
+
+// Order results by name ascending, then age descending.
+nSQL("users").query("select").orderBy({name:"asc",age:"desc"}).exec().then(function(rows, db) {...});
+
+// Limit and offset are easy to use as well
+nSQL("users").query("select").limit(10).offset(100).exec().then(function(rows, db) {...});
+
+// AS and aggregate functions also work.
+nSQL("users").query("select",["COUNT(*) AS totalUsers"]).exec().then(function(rows, db) {...});
+
+// Mix and match as you like
+nSQL("users")
+.query("select",["id", "name AS username", "age"])
+.where([["name","=","John"],"AND",["age",">",25]]) // Where statements can't use AS aliases
+.orderBy({username:"desc",age:"asc"}) // But order by does!
+.exec().then(function(rows, db) {})
+
+```
+
+And here are some more advanced query examples.
+
+```ts
+
+// Relatively simple join
+nSQL("users")
+.query("select",["orders.id", "users.name","orders.total"])
+.where(["users.balance",">",500])
+.join({
+    type:"left", // Supported join types are left, inner, right, cross and outer.
+    table: "orders",
+    where: ["orders.userID","=","users.id"] // Compound WHERE statements with AND/OR don't work, just single ones do.
+}).exec().then(function(rows, db) {...})
+
+// Group By also works
+nSQL("users")
+.query("select",["favoriteColor", "eyeColor", "COUNT(*) AS users"])
+.groupBy({favoriteColor:"asc", eyeColor:"desc"}) // Multiple group bys aren't a problem!
+.having(["users" ,">", 2]) // Having uses the same syntax as WHERE, but runs after the GROUP BY command.
+.orderBy({users:"desc"})
+.exec().then(function(rows, db) {...})
+
+// Look mah, I used every feature!
+nSQL("users")
+.query("select",["orders.userID AS ID", "users.name AS Customer", "COUNT(*) AS Orders", "SUM(orders.total) AS Total"])
+.join({
+    type:"left", 
+    table: "orders",
+    where: ["orders.userID","=","users.id"] 
+})
+.where([["users.balance", ">", 100], "OR",["users.age", ">", 45]])
+.groupBy({"orders.userID":"asc"})
+.having(["Total", ">", 100])
+.orderBy({Total:"desc"})
+.limit(20)
+.exec().then(function(rows, db) {...})
+
+```
+
+[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)

@@ -94,13 +94,13 @@
                 }
             ])
             .views([ //Cached views to show specific data
-                {
-                    name: 'get_user_by_name',
-                    args: ['name:string'],
-                    call: function(args, db) {
-                        return db.query('select').where(['name', '=', args.name]).exec();
-                    }
-                }, {
+    {
+        name: 'get_user_by_name',
+        args: ['name:string'],
+        call: function(args, db) {
+            return db.query('select').where(['name', '=', args.name]).exec();
+        }
+    }, {
                     name: 'list_all_users',
                     args: ['page:int'],
                     call: function(args, db) {

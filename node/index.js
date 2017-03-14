@@ -405,14 +405,17 @@ var NanoSQLInstance = (function () {
      * Example:
      *
      * ```ts
-     * NanoSQL().newFunction('ADD',function(rows, args, useKey) {
+     * NanoSQL().newFunction('ADD',{
+     *  type:"aggregate", // "aggregate" or "simple"
+     *  call:function(rows, args, useKey) {
      *      // arguments are passed in as an array in the args argument.
      *      return rows.map(function(row) {
      *         let newRow = JSON.parse(JSON.stringify(row)); // Break immutabiilty
      *         newRow[useKey] = parseInt(row[args[0]]) + parseInt(args[1]);
      *         return newRow;
      *      });
-     * })
+     *  }
+     * });
      * ```
      *
      * Then to use it in a query:
@@ -420,7 +423,7 @@ var NanoSQLInstance = (function () {
      * NanoSQL("users").query("select",["name","add(balance, 2)"]).exec();
      * ```
      *
-     * Make sure the calculated value is add to the row(s) with the `usKey` argument, otherwise `as` arguments won't work.
+     * Make sure the calculated value is add to the row(s) with the `useKey` argument, otherwise `AS` arguments won't work.
      *
      * @param {string} filterName
      * @param {(rows: Array<Object>) => Array<Object>} filterFunction
