@@ -7,8 +7,8 @@ RDBMS Immutable App Store with Undo, Redo & IndexedDB support.
 
 NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 8Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a lib half the size.
 
-* [Todo Example](https://nano-sql.com/react-todo/)
-* [Draw Example](https://nano-sql.com/react-draw/)
+* [Todo Example](https://some-sql.com/react-todo/)
+* [Draw Example](https://some-sql.com/react-draw/)
 
 [Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
 

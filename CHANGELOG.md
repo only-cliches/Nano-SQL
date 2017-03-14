@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.4.4]
+- Added `BETWEEN` condition.
+- Fixed demo links.
+
 ## [0.4.3] 3-13-2017
 - Changed Readme code sections to js to work with NPM better.
 

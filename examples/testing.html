@@ -94,13 +94,13 @@
                 }
             ])
             .views([ //Cached views to show specific data
-    {
-        name: 'get_user_by_name',
-        args: ['name:string'],
-        call: function(args, db) {
-            return db.query('select').where(['name', '=', args.name]).exec();
-        }
-    }, {
+                {
+                    name: 'get_user_by_name',
+                    args: ['name:string'],
+                    call: function(args, db) {
+                        return db.query('select').where(['name', '=', args.name]).exec();
+                    }
+                }, {
                     name: 'list_all_users',
                     args: ['page:int'],
                     call: function(args, db) {
@@ -194,11 +194,7 @@
                         }
                     }]).then(function() {
 
-                        nSQL("users").query("select", ["name", "age", "COUNT(*) AS totalUsers"]).groupBy({
-                                name: "asc"
-                            }).orderBy({
-                                totalUsers: "desc"
-                            }).exec()
+                        nSQL("users").query("select").where(["age", "BETWEEN", [19, 24]]).exec()
                             .then(function(result, db) {
                                 console.log("GROUP", result);
                                 return db.query('upsert', {

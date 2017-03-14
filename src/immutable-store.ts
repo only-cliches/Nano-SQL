@@ -1430,6 +1430,7 @@ class _NanoSQLQuery {
             case "NOT IN": return val1.indexOf(val2) < 0 ? 0 : 1;
             case "REGEX":
             case "LIKE": return val2.search(val1) < 0 ? 1 : 0;
+            case "BETWEEN": return val1[0] < val2 && val1[1] > val2 ? 0 : 1;
             default: return 0;
         }
     }
