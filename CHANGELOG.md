@@ -1,6 +1,6 @@
 # Change Log
 
-## [0.4.4]
+## [0.4.4] 3-13-2017
 - Added `BETWEEN` condition.
 - Fixed demo links.
 
