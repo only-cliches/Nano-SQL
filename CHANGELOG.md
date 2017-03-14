@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.4.2] 3-13-2017
+- Readme changes again.
+
 ## [0.4.1] 3-13-2017
 - Readme changes.
 

@@ -29,16 +29,16 @@ NanoSQL is the smallest and quickest way to get SQL power into your app, built s
 
 I spent a long time looking for an existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
 
-| Database                                                 | Events | TS | Undo & Redo | Immutable | RDBMS | IndexedDB | NodeJS | Extend Backend | Size (KB) |
-|----------------------------------------------------------|:------:|:--:|:---------:|:---------:|:-----:|:---------:|:--------:|:--------------:|:----------:|
-| NanoSQL                                                  | ✓      | ✓   | ✓         | ✓         | ✓     | ✓         | ✓     | ✓             | 8         |
-| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕         | ✕        | ✕     | ✕         | ✓      | ✕              | 2         |
-| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕        | ✕         | ✓     | ✕         | ✓      | ✕              | 5        |
-| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕        | ✓         | ✕     | ✕         | ✓      | ✕              | 16        |
-| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✕   | ✕        | ✕         | ✓     | ✓         | ✓      | ✓              | 19        |
-| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕        | ✕         | ✓     | ✓         | ✕      | ✕              | 40        |
-| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕        | ✕         | ✓     | ✓         | ✓      | ✓              | 88        |
-| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✕   | ✕        | ✕         | ✓     | ✕         | ✓      | ✕              | 500       |
+| Database                                                 | Events | TS  | Undo  | Immutable | RDBMS | IndexedDB | NodeJS | Any Backend | Size |
+|----------------------------------------------------------|:------:|:---:|:-----:|:---------:|:-----:|:---------:|:--------:|:--------------:|:----------:|
+| NanoSQL                                                  | ✓      | ✓   | ✓    | ✓         | ✓     | ✓         | ✓       | ✓             | 8         |
+| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕    | ✕         | ✕     | ✕         | ✓      | ✕              | 2         |
+| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 5        |
+| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕    | ✓         | ✕     | ✕         | ✓      | ✕              | 16        |
+| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✕   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 19        |
+| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕    | ✕         | ✓     | ✓         | ✕      | ✕              | 40        |
+| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 88        |
+| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✕   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 500       |
 
 I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and it needs to work with TypeScript.  NanoSQL is that.  
 
