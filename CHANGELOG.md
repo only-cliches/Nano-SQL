@@ -1,5 +1,8 @@
 # Change Log
 
+## [0.4.3] 3-13-2017
+- Changed Readme code sections to js to work with NPM better.
+
 ## [0.4.2] 3-13-2017
 - Readme changes again.
 

@@ -48,7 +48,7 @@ I needed something small, efficient, strongly typed at runtime, optionally persi
 
 Using in typescript project:
 
-```ts
+```js
 import { nSQL } from "nano-sql";
 ```
 
@@ -65,7 +65,7 @@ To use directly in the browser, just include the script file found inside the `d
 
 1 minute minimal quick start:
 
-```ts
+```js
 nSQL('users') //  "users" is our table name.
 .model([ // Declare data model
     {key:'id',type:'int',props:['pk','ai']}, // pk == primary key, ai == auto incriment
@@ -94,7 +94,7 @@ First you declare your models, connect the db, then you execute queries.
 
 ### 1. Declare Model & Setup
 
-```ts
+```js
 nSQL('users')// Table/Store Name, required to declare model and attach it to this store.
 .model([ // Data Model, required
     {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
@@ -135,7 +135,7 @@ nSQL('users')// Table/Store Name, required to declare model and attach it to thi
 
 ### 2. Connect the DB and execute queries
 
-```ts
+```js
 // Initializes the db.
 nSQL().connect().then(function(result, db) {
     // DB ready to use.
@@ -162,7 +162,7 @@ nSQL().connect().then(function(result, db) {
 
 Some examples of queries you can do.
 
-```ts
+```js
 // Roll the entire database back one delete/drop/upsert query
 nSQL().extend("<") 
 // Yep, that's it.
@@ -202,7 +202,7 @@ nSQL("users")
 
 And here are some more advanced query examples.
 
-```ts
+```js
 
 // Relatively simple join
 nSQL("users")
