@@ -194,7 +194,7 @@
                         }
                     }]).then(function() {
 
-                        nSQL("users").query("select").where(["age", "BETWEEN", [19, 24]]).exec()
+                        nSQL("users").query("select", ["COUNT(*) AS totalUsers"]).exec()
                             .then(function(result, db) {
                                 console.log("GROUP", result);
                                 return db.query('upsert', {
@@ -222,13 +222,16 @@
 
                                 return db.query('select').toCSV(true);
                             })
-                            .then(function() {
+                            .then(function(result) {
                                 nSQL("orders")
-                                    .query("select")
+                                    .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
                                     .join({
-                                        type: "cross",
+                                        type: "left",
                                         table: "users",
                                         where: ["orders.userID", "=", "users.id"]
+                                    })
+                                    .groupBy({
+                                        "orders.userID": "asc"
                                     })
                                     .orderBy({
                                         "orders.id": "asc",

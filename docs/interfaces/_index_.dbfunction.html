@@ -67,6 +67,20 @@
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-comment">
+				<div class="tsd-comment tsd-typography">
+					<div class="lead">
+						<p>Custom functinos for the database.</p>
+					</div>
+					<dl class="tsd-comment-tags">
+						<dt>export</dt>
+						<dd></dd>
+						<dt>interface</dt>
+						<dd><p>DBFunction</p>
+						</dd>
+					</dl>
+				</div>
+			</section>
 			<section class="tsd-panel tsd-hierarchy">
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
@@ -97,7 +111,7 @@
 					<div class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/index.ts#L18">index.ts:18</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L24">index.ts:24</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -105,20 +119,23 @@
 						<ul class="tsd-parameters">
 							<li class="tsd-parameter-siganture">
 								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKeys<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></li>
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
 									<li class="tsd-description">
 										<h4 class="tsd-parameters-title">Parameters</h4>
 										<ul class="tsd-parameters">
 											<li>
-												<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">&gt;</span></h5>
+												<h5>row: <a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
 											</li>
 											<li>
 												<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
 											</li>
 											<li>
-												<h5>useKeys: <span class="tsd-signature-type">string</span></h5>
+												<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+											</li>
+											<li>
+												<h5><span class="tsd-flag ts-flagOptional">Optional</span> prev: <span class="tsd-signature-type">any</span></h5>
 											</li>
 										</ul>
 										<h4 class="tsd-returns-title">Returns <a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></h4>
@@ -134,7 +151,7 @@
 					<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">"aggregate"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"simple"</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/index.ts#L19">index.ts:19</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L25">index.ts:25</a></li>
 						</ul>
 					</aside>
 				</section>

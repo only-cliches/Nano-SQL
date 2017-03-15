@@ -78,7 +78,7 @@
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_immutable_store_.html#_getkey" class="tsd-kind-icon">_get<wbr>Key</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_immutable_store_.html#minmax" class="tsd-kind-icon">min<wbr>Max</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
@@ -93,28 +93,42 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Functions</h2>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="_getkey" class="tsd-anchor"></a>
-					<h3>_get<wbr>Key</h3>
+					<a name="minmax" class="tsd-anchor"></a>
+					<h3>min<wbr>Max</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-						<li class="tsd-signature tsd-kind-icon">_get<wbr>Key<span class="tsd-signature-symbol">(</span>args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, rows<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
+						<li class="tsd-signature tsd-kind-icon">min<wbr>Max<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, row<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L7">immutable-store.ts:7</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L16">immutable-store.ts:16</a></li>
 								</ul>
 							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Min/Max function for database</p>
+								</div>
+							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>args: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+									<h5>type: <span class="tsd-signature-type">number</span></h5>
 								</li>
 								<li>
-									<h5>rows: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></h5>
+									<h5>row: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
+								</li>
+								<li>
+									<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>prev: <span class="tsd-signature-type">any</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -127,7 +141,7 @@
 					<div class="tsd-signature tsd-kind-icon">_functions<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L19">immutable-store.ts:19</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L37">immutable-store.ts:37</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -142,7 +156,7 @@
 						<div class="tsd-signature tsd-kind-icon">AVG<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L79">immutable-store.ts:79</a></li>
+								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L67">immutable-store.ts:67</a></li>
 							</ul>
 						</aside>
 						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -151,7 +165,7 @@
 							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L80">immutable-store.ts:80</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L68">immutable-store.ts:68</a></li>
 								</ul>
 							</aside>
 						</section>
@@ -159,28 +173,31 @@
 							<a name="_functions.avg.call" class="tsd-anchor"></a>
 							<h3>call</h3>
 							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 							</ul>
 							<ul class="tsd-descriptions">
 								<li class="tsd-description">
 									<aside class="tsd-sources">
 										<ul>
-											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L81">immutable-store.ts:81</a></li>
+											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L69">immutable-store.ts:69</a></li>
 										</ul>
 									</aside>
 									<h4 class="tsd-parameters-title">Parameters</h4>
 									<ul class="tsd-parameters">
 										<li>
-											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+											<h5>row: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
 										</li>
 										<li>
 											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
 										</li>
 										<li>
-											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+											<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>prev: <span class="tsd-signature-type">number</span></h5>
 										</li>
 									</ul>
-									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 								</li>
 							</ul>
 						</section>
@@ -191,7 +208,7 @@
 						<div class="tsd-signature tsd-kind-icon">COUNT<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L92">immutable-store.ts:92</a></li>
+								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L81">immutable-store.ts:81</a></li>
 							</ul>
 						</aside>
 						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -200,7 +217,7 @@
 							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L93">immutable-store.ts:93</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L82">immutable-store.ts:82</a></li>
 								</ul>
 							</aside>
 						</section>
@@ -208,28 +225,31 @@
 							<a name="_functions.count.call-1" class="tsd-anchor"></a>
 							<h3>call</h3>
 							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 							</ul>
 							<ul class="tsd-descriptions">
 								<li class="tsd-description">
 									<aside class="tsd-sources">
 										<ul>
-											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L94">immutable-store.ts:94</a></li>
+											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L83">immutable-store.ts:83</a></li>
 										</ul>
 									</aside>
 									<h4 class="tsd-parameters-title">Parameters</h4>
 									<ul class="tsd-parameters">
 										<li>
-											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+											<h5>row: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
 										</li>
 										<li>
 											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
 										</li>
 										<li>
-											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+											<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>prev: <span class="tsd-signature-type">number</span></h5>
 										</li>
 									</ul>
-									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 								</li>
 							</ul>
 						</section>
@@ -240,7 +260,7 @@
 						<div class="tsd-signature tsd-kind-icon">MAX<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L58">immutable-store.ts:58</a></li>
+								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L61">immutable-store.ts:61</a></li>
 							</ul>
 						</aside>
 						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -249,7 +269,7 @@
 							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L59">immutable-store.ts:59</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L62">immutable-store.ts:62</a></li>
 								</ul>
 							</aside>
 						</section>
@@ -257,28 +277,31 @@
 							<a name="_functions.max.call-2" class="tsd-anchor"></a>
 							<h3>call</h3>
 							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 							</ul>
 							<ul class="tsd-descriptions">
 								<li class="tsd-description">
 									<aside class="tsd-sources">
 										<ul>
-											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L60">immutable-store.ts:60</a></li>
+											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L63">immutable-store.ts:63</a></li>
 										</ul>
 									</aside>
 									<h4 class="tsd-parameters-title">Parameters</h4>
 									<ul class="tsd-parameters">
 										<li>
-											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+											<h5>row: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
 										</li>
 										<li>
 											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
 										</li>
 										<li>
-											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+											<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>prev: <span class="tsd-signature-type">any</span></h5>
 										</li>
 									</ul>
-									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 								</li>
 							</ul>
 						</section>
@@ -289,7 +312,7 @@
 						<div class="tsd-signature tsd-kind-icon">MIN<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L37">immutable-store.ts:37</a></li>
+								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L55">immutable-store.ts:55</a></li>
 							</ul>
 						</aside>
 						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -298,7 +321,7 @@
 							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L38">immutable-store.ts:38</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L56">immutable-store.ts:56</a></li>
 								</ul>
 							</aside>
 						</section>
@@ -306,28 +329,31 @@
 							<a name="_functions.min.call-3" class="tsd-anchor"></a>
 							<h3>call</h3>
 							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 							</ul>
 							<ul class="tsd-descriptions">
 								<li class="tsd-description">
 									<aside class="tsd-sources">
 										<ul>
-											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L39">immutable-store.ts:39</a></li>
+											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L57">immutable-store.ts:57</a></li>
 										</ul>
 									</aside>
 									<h4 class="tsd-parameters-title">Parameters</h4>
 									<ul class="tsd-parameters">
 										<li>
-											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+											<h5>row: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
 										</li>
 										<li>
 											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
 										</li>
 										<li>
-											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+											<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>prev: <span class="tsd-signature-type">any</span></h5>
 										</li>
 									</ul>
-									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 								</li>
 							</ul>
 						</section>
@@ -338,7 +364,7 @@
 						<div class="tsd-signature tsd-kind-icon">SUM<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L22">immutable-store.ts:22</a></li>
+								<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L40">immutable-store.ts:40</a></li>
 							</ul>
 						</aside>
 						<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -347,7 +373,7 @@
 							<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;aggregate&quot;</span></div>
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L23">immutable-store.ts:23</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L41">immutable-store.ts:41</a></li>
 								</ul>
 							</aside>
 						</section>
@@ -355,28 +381,31 @@
 							<a name="_functions.sum.call-4" class="tsd-anchor"></a>
 							<h3>call</h3>
 							<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-object-literal tsd-is-not-exported">
-								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, useKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+								<li class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, ptr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span>, prev<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 							</ul>
 							<ul class="tsd-descriptions">
 								<li class="tsd-description">
 									<aside class="tsd-sources">
 										<ul>
-											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/5f9b0ef/src/immutable-store.ts#L24">immutable-store.ts:24</a></li>
+											<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/immutable-store.ts#L42">immutable-store.ts:42</a></li>
 										</ul>
 									</aside>
 									<h4 class="tsd-parameters-title">Parameters</h4>
 									<ul class="tsd-parameters">
 										<li>
-											<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.stdobject.html" class="tsd-signature-type">StdObject</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h5>
+											<h5>row: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
 										</li>
 										<li>
 											<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
 										</li>
 										<li>
-											<h5>useKey: <span class="tsd-signature-type">string</span></h5>
+											<h5>ptr: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5>
+										</li>
+										<li>
+											<h5>prev: <span class="tsd-signature-type">number</span></h5>
 										</li>
 									</ul>
-									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+									<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 								</li>
 							</ul>
 						</section>
@@ -413,7 +442,7 @@
 						<a href="../classes/_immutable_store_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_immutable_store_.html#_getkey" class="tsd-kind-icon">_get<wbr>Key</a>
+						<a href="_immutable_store_.html#minmax" class="tsd-kind-icon">min<wbr>Max</a>
 					</li>
 					<li class=" tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_immutable_store_.html#_functions" class="tsd-kind-icon">_functions</a>

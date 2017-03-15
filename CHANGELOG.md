@@ -1,5 +1,9 @@
 # Change Log
 
+## [0.4.5] 3-14-2017
+- BREAKING CHANGE: Did more research on how functions typically work in a SQL envrionment, changed the function implemintation again.
+- Fixed a bug related to cross joins.
+
 ## [0.4.4] 3-13-2017
 - Added `BETWEEN` condition.
 - Fixed demo links.

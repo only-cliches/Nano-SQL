@@ -396,31 +396,30 @@ var NanoSQLInstance = (function () {
         return selAction.call.apply(t, [t._cleanArgs(selAction.args ? selAction.args : [], actionArgs), t]);
     };
     /**
-     * Add a filter to the usable list of filters for this database.  Must be called BEFORE connect().
+     * Add a function to the usable list of functions for this database.  Must be called BEFORE connect().
      *
      * Functions can be used with any database on the attached store.
-     *
-     * You must tell the database driver if the
      *
      * Example:
      *
      * ```ts
-     * NanoSQL().newFunction('ADD',{
-     *  type:"aggregate", // "aggregate" or "simple"
-     *  call:function(rows, args, useKey) {
+     * NanoSQL().newFunction('ADD',{ // Function is called "ADD"
+     *  type:"simple", // "aggregate" or "simple"
+     *  call:function(row:DBRow, args: string[], ptr: number[], prev: any) {
      *      // arguments are passed in as an array in the args argument.
-     *      return rows.map(function(row) {
-     *         let newRow = JSON.parse(JSON.stringify(row)); // Break immutabiilty
-     *         newRow[useKey] = parseInt(row[args[0]]) + parseInt(args[1]);
-     *         return newRow;
-     *      });
+     *      // ptr is an array that lets you know the length and position of the current query.
+     *      // ptr[0] is the current index, ptr[1] is the max index/length
+     *      // prev is only used for aggregate functions, lets  you pass an argument into the next function call.
+     *      let r = JSON.parse(JSON.stringify(row));
+     *      r.ADD = args.reduce((a, b) => parseFloat(a) + parseFloat(b));
+     *      return r;
      *  }
      * });
      * ```
      *
      * Then to use it in a query:
      * ```ts
-     * NanoSQL("users").query("select",["name","add(balance, 2)"]).exec();
+     * NanoSQL("users").query("select",["name","ADD(balance, 2)"]).exec();
      * ```
      *
      * Make sure the calculated value is add to the row(s) with the `useKey` argument, otherwise `AS` arguments won't work.

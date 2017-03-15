@@ -35,10 +35,10 @@ I spent a long time looking for an existing solution that would do everything I 
 | [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕    | ✕         | ✕     | ✕         | ✓      | ✕              | 2         |
 | [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 5        |
 | [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕    | ✓         | ✕     | ✕         | ✓      | ✕              | 16        |
-| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✕   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 19        |
+| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 19        |
 | [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕    | ✕         | ✓     | ✓         | ✕      | ✕              | 40        |
 | [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 88        |
-| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✕   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 500       |
+| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 500       |
 
 I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and it needs to work with TypeScript.  NanoSQL is that.  
 

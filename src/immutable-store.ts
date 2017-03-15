@@ -1,17 +1,35 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
 import { Promise } from "./lie";
 
+
 /**
+ * Min/Max function for database
+ * 
  * @internal
+ * @param {number} type 
+ * @param {DBRow} row 
+ * @param {string[]} args 
+ * @param {number[]} ptr 
+ * @param {*} prev 
+ * @returns 
  */
-const _getKey = (args: any[], rows: DBRow[]):string => {
-    if(rows.length) {
-        let key = args[0] !== "*" ? args[0] : null;
-        if(!key) key =  Object.keys(rows[0]).shift() || "";
-        return key;
+const minMax = (type:number, row:DBRow, args: string[], ptr: number[], prev: any) => {
+    const key = args[0];
+    if(ptr[0] == 0) prev[key] = type == -1 ? Number.MAX_VALUE : Number.MIN_VALUE;
+    let nextRow = {};
+    if(type == -1 ? parseFloat(row[key]) < parseFloat(prev[key]) : parseFloat(row[key]) > parseFloat(prev[key])) {
+        nextRow = row;
+    } else {
+        nextRow = prev;
     }
-    return "";
-};
+    if(ptr[0] === ptr[1]) { // last row
+        let r = JSON.parse(JSON.stringify(nextRow));
+        r[type == -1 ? "MIN" : "MAX"] = nextRow[key];
+        return r;
+    } else {
+        return nextRow
+    }
+}
 
 /**
  * @internal
@@ -21,89 +39,63 @@ let _functions: {
 } = {
     SUM: {
         type:"aggregate",
-        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
-            let total = 0;
-            let row = {};
-            let key = _getKey(args, rows);
-            if(key.length) {
-                rows.forEach((row) => {
-                    total += parseInt(row[key]);
-                });
+        call: (row:DBRow, args: string[], ptr: number[], prev: number) => {
+            if(ptr[0] == 0) prev = 0;
+            prev += parseInt(row[args[0]]);
+            console.log(ptr);
+            if(ptr[0] === ptr[1]) {
+                let r = JSON.parse(JSON.stringify(row));
+                r.SUM = prev;
+                return r;
+            } else {
+                return prev;
             }
-            row[useKey] = total;
-            return [row];
         }
     },
     MIN: {
         type:"aggregate",
-        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
-            let min = Number.MAX_VALUE;
-            let useIndex = 0;
-            let row = {};
-            let key = _getKey(args, rows);
-            if(key.length) {
-                rows.forEach((row, i) => {
-                    let minVal = parseInt(row[key]);
-                    if(minVal < min) {
-                        useIndex = i;
-                        min = minVal;
-                    }
-                });
-            }
-            row = _assign(rows[useIndex]);
-            row[useKey] = min;
-            return [row];
+        call: (row:DBRow, args: string[], ptr: number[], prev: any) => {
+            return minMax(-1, row, args, ptr, prev);
         }
     },
     MAX: {
         type:"aggregate",
-        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
-            let max = Number.MIN_VALUE;
-            let useIndex = 0;
-            let row = {};
-            let key = _getKey(args, rows);
-            if(key.length) {
-                rows.forEach((row, i) => {
-                    let maxVal = parseInt(row[key]);
-                    if(maxVal > max) {
-                        useIndex = i;
-                        max = maxVal;
-                    }
-                });
-            }
-            row = _assign(rows[useIndex]);
-            row[useKey] = max;
-            return [row];
+        call: (row:DBRow, args: string[], ptr: number[], prev: any) => {
+            return minMax(1, row, args, ptr, prev);
         }
     },
     AVG: {
         type:"aggregate",
-            call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
-            let average = 0;
-            let row = {};
-            if(rows.length) {
-                average = _functions["SUM"].call(rows, args, useKey)[0][useKey] / rows.length;
-                row = _assign(rows[0]);
+        call: (row:DBRow, args: string[], ptr: number[], prev: number) => {
+            if(ptr[0] == 0) prev = 0;
+            prev += parseInt(row[args[0]]);
+            if(ptr[0] === ptr[1]) {
+                let r = JSON.parse(JSON.stringify(row));
+                r.AVG = (prev / (ptr[1]+1)) || prev;
+                return r;
+            } else {
+                return prev;
             }
-            row[useKey] = average;
-            return [row];
         }
     },
     COUNT: {
         type:"aggregate",
-        call: (rows: Array<StdObject<any>>, args: string[], useKey: string) => {
-            let count = 0;
-            let row = {};
-            if(rows.length) {
-                if(args[0] === "*") {
-                    count = rows.length;
-                } else {
-                    count = rows.filter(r => r[args[0]]).length;
-                }
-                row = _assign(rows[0]);
-                row[useKey] = count;
+        call: (row:DBRow, args: string[], ptr: number[], prev: number) => {
+            if(ptr[0] == 0) prev = 0;
+
+            if(args[0] === "*") {
+                prev++;
+            } else {
+                prev += row[args[0]] ? 1 : 0;
             }
-            return [row];
+
+            if(ptr[0] === ptr[1]) {
+                let r = JSON.parse(JSON.stringify(row));
+                r.COUNT = prev;
+                return r;
+            } else {
+                return prev;
+            }
         }
     }
 };
@@ -1029,11 +1021,10 @@ class _NanoSQLQuery {
 
             // After GROUP BY command apply functions and AS statements
             if(modIndex === 2) {
-                let functions:{call: string, args: string[], as: string, type: string}[] = [];
+                let functions:{name: string, args: string[], as: string, type: string}[] = [];
                 if(qArgs.length) { // Select statement arguments
                     let funcs = Object.keys(_functions).map((f) => f + "(");
                     let keepColumns:any[] = [];
-                    let hasBroken = false;
                     functions = qArgs.filter((q) => {
                         let hasFunc = funcs.reduce((prev, cur) => {
                             return (q.indexOf(cur) < 0 ? 0 : 1) + prev; 
@@ -1056,7 +1047,7 @@ class _NanoSQLQuery {
 
                         keepColumns.push(columnName);
                         return {
-                            call: funcName,
+                            name: funcName,
                             args: args,
                             as: columnName.trim(),
                             type: _functions[funcName].type
@@ -1067,25 +1058,38 @@ class _NanoSQLQuery {
 
                     if(functions.length) {
 
+                        let prevFunc;
                         const doFunctions = (rows: DBRow[]): DBRow[] => {
                             return functions.sort((a, b) => {
                                 return a.type > b.type ? 1 : -1;
                             }).reduce((prev, curr) => {
-                                let newRows = [];
+                                let len = prev.length - 1;
+
                                 if(curr.type === "aggregate") {
-                                    newRows = _functions[curr.call].call.apply(null, [rows.slice(), curr.args, curr.as]);
+                                    let newRows = rows.slice();
+                                    len = newRows.length - 1;
+                                    newRows = [newRows.reduce((p, v, i) => {
+                                        return _functions[curr.name].call(v, curr.args, [i, len], p);
+                                    },{})];
+   
+                                    if(prevFunc) {
+                                        newRows[0][prevFunc] = prev[0][prevFunc];
+                                    }
+                                    prev = newRows;
+                                    prevFunc = curr.name;
                                 } else {
-                                    newRows = _functions[curr.call].call.apply(null, [prev, curr.args, curr.as]);
+                                    prev = prev.map((v, i) => {
+                                        return _functions[curr.name].call(v, curr.args, [i, len]);
+                                    });
                                 }
-                            
-                                if(prev.length && curr.type === "aggregate") {
-                                    prev = prev.filter((p, i) => i < 1);
-                                    prev[0] = _assign(prev[0]);
-                                    prev[0][curr.as] = newRows[0][curr.as];
-                                    return prev;
+
+                                if(curr.name !== curr.as) {
+                                    keepColumns.push(curr.name + " AS " + curr.as);
                                 } else {
-                                    return newRows;
+                                    keepColumns.push(curr.name);
                                 }
+                                
+                                return prev
                             }, rows.slice());
                         }
 
@@ -1093,7 +1097,7 @@ class _NanoSQLQuery {
                         if(groupKeys.length) { // Groups Exist
                             rows = groupKeys
                             .map((k) => doFunctions(groups[k])) // Apply each function to each group (N^2)
-                            .reduce((prev, curr) => { // Combine the results into a single table
+                            .reduce((prev, curr) => { // Combine the results into a single array
                                 return prev = prev.concat(curr), prev;
                             },[]);
                         } else { // No Groups, apply all functions to the rows
@@ -1109,7 +1113,7 @@ class _NanoSQLQuery {
         
                     if(convertKeys.length) {
                         rows = rows.map((r) => {
-                            if(!hasBroken) r = _assign(r);
+                            r = _assign(r);
                             let newRow = {};
                             convertKeys.forEach((key) => {
                                 if(typeof key === "string") {
@@ -1325,7 +1329,7 @@ class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     private _join(type: "left"|"inner"|"right"|"cross"|"outer", leftTableID: number, leftIndex: Array<string>, rightTableID: number, rightIndex: Array<string>, joinConditions: null|{_left:string, _check: string, _right:string}): Array<string> {
-        const newTableName = JSON.stringify(joinConditions);
+        const newTableName = JSON.stringify(joinConditions) || String(leftTableID) + String(rightTableID);
         const L = "left";
         const R = "right";
         const O = "outer";

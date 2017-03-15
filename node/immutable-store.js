@@ -2,16 +2,35 @@
 var index_1 = require("./index");
 var lie_1 = require("./lie");
 /**
+ * Min/Max function for database
+ *
  * @internal
+ * @param {number} type
+ * @param {DBRow} row
+ * @param {string[]} args
+ * @param {number[]} ptr
+ * @param {*} prev
+ * @returns
  */
-var _getKey = function (args, rows) {
-    if (rows.length) {
-        var key = args[0] !== "*" ? args[0] : null;
-        if (!key)
-            key = Object.keys(rows[0]).shift() || "";
-        return key;
+var minMax = function (type, row, args, ptr, prev) {
+    var key = args[0];
+    if (ptr[0] == 0)
+        prev[key] = type == -1 ? Number.MAX_VALUE : Number.MIN_VALUE;
+    var nextRow = {};
+    if (type == -1 ? parseFloat(row[key]) < parseFloat(prev[key]) : parseFloat(row[key]) > parseFloat(prev[key])) {
+        nextRow = row;
     }
-    return "";
+    else {
+        nextRow = prev;
+    }
+    if (ptr[0] === ptr[1]) {
+        var r = JSON.parse(JSON.stringify(nextRow));
+        r[type == -1 ? "MIN" : "MAX"] = nextRow[key];
+        return r;
+    }
+    else {
+        return nextRow;
+    }
 };
 /**
  * @internal
@@ -19,90 +38,68 @@ var _getKey = function (args, rows) {
 var _functions = {
     SUM: {
         type: "aggregate",
-        call: function (rows, args, useKey) {
-            var total = 0;
-            var row = {};
-            var key = _getKey(args, rows);
-            if (key.length) {
-                rows.forEach(function (row) {
-                    total += parseInt(row[key]);
-                });
+        call: function (row, args, ptr, prev) {
+            if (ptr[0] == 0)
+                prev = 0;
+            prev += parseInt(row[args[0]]);
+            console.log(ptr);
+            if (ptr[0] === ptr[1]) {
+                var r = JSON.parse(JSON.stringify(row));
+                r.SUM = prev;
+                return r;
             }
-            row[useKey] = total;
-            return [row];
+            else {
+                return prev;
+            }
         }
     },
     MIN: {
         type: "aggregate",
-        call: function (rows, args, useKey) {
-            var min = Number.MAX_VALUE;
-            var useIndex = 0;
-            var row = {};
-            var key = _getKey(args, rows);
-            if (key.length) {
-                rows.forEach(function (row, i) {
-                    var minVal = parseInt(row[key]);
-                    if (minVal < min) {
-                        useIndex = i;
-                        min = minVal;
-                    }
-                });
-            }
-            row = index_1._assign(rows[useIndex]);
-            row[useKey] = min;
-            return [row];
+        call: function (row, args, ptr, prev) {
+            return minMax(-1, row, args, ptr, prev);
         }
     },
     MAX: {
         type: "aggregate",
-        call: function (rows, args, useKey) {
-            var max = Number.MIN_VALUE;
-            var useIndex = 0;
-            var row = {};
-            var key = _getKey(args, rows);
-            if (key.length) {
-                rows.forEach(function (row, i) {
-                    var maxVal = parseInt(row[key]);
-                    if (maxVal > max) {
-                        useIndex = i;
-                        max = maxVal;
-                    }
-                });
-            }
-            row = index_1._assign(rows[useIndex]);
-            row[useKey] = max;
-            return [row];
+        call: function (row, args, ptr, prev) {
+            return minMax(1, row, args, ptr, prev);
         }
     },
     AVG: {
         type: "aggregate",
-        call: function (rows, args, useKey) {
-            var average = 0;
-            var row = {};
-            if (rows.length) {
-                average = _functions["SUM"].call(rows, args, useKey)[0][useKey] / rows.length;
-                row = index_1._assign(rows[0]);
+        call: function (row, args, ptr, prev) {
+            if (ptr[0] == 0)
+                prev = 0;
+            prev += parseInt(row[args[0]]);
+            if (ptr[0] === ptr[1]) {
+                var r = JSON.parse(JSON.stringify(row));
+                r.AVG = (prev / (ptr[1] + 1)) || prev;
+                return r;
             }
-            row[useKey] = average;
-            return [row];
+            else {
+                return prev;
+            }
         }
     },
     COUNT: {
         type: "aggregate",
-        call: function (rows, args, useKey) {
-            var count = 0;
-            var row = {};
-            if (rows.length) {
-                if (args[0] === "*") {
-                    count = rows.length;
-                }
-                else {
-                    count = rows.filter(function (r) { return r[args[0]]; }).length;
-                }
-                row = index_1._assign(rows[0]);
-                row[useKey] = count;
+        call: function (row, args, ptr, prev) {
+            if (ptr[0] == 0)
+                prev = 0;
+            if (args[0] === "*") {
+                prev++;
             }
-            return [row];
+            else {
+                prev += row[args[0]] ? 1 : 0;
+            }
+            if (ptr[0] === ptr[1]) {
+                var r = JSON.parse(JSON.stringify(row));
+                r.COUNT = prev;
+                return r;
+            }
+            else {
+                return prev;
+            }
         }
     }
 };
@@ -776,7 +773,6 @@ var _NanoSQLQuery = (function () {
                 if (qArgs.length) {
                     var funcs_1 = Object.keys(_functions).map(function (f) { return f + "("; });
                     var keepColumns_1 = [];
-                    var hasBroken_1 = false;
                     functions_1 = qArgs.filter(function (q) {
                         var hasFunc = funcs_1.reduce(function (prev, cur) {
                             return (q.indexOf(cur) < 0 ? 0 : 1) + prev;
@@ -798,7 +794,7 @@ var _NanoSQLQuery = (function () {
                         }
                         keepColumns_1.push(columnName);
                         return {
-                            call: funcName,
+                            name: funcName,
                             args: args,
                             as: columnName.trim(),
                             type: _functions[funcName].type
@@ -806,26 +802,36 @@ var _NanoSQLQuery = (function () {
                     });
                     var rows_1 = [];
                     if (functions_1.length) {
+                        var prevFunc_1;
                         var doFunctions_1 = function (rows) {
                             return functions_1.sort(function (a, b) {
                                 return a.type > b.type ? 1 : -1;
                             }).reduce(function (prev, curr) {
-                                var newRows = [];
+                                var len = prev.length - 1;
                                 if (curr.type === "aggregate") {
-                                    newRows = _functions[curr.call].call.apply(null, [rows.slice(), curr.args, curr.as]);
+                                    var newRows = rows.slice();
+                                    len = newRows.length - 1;
+                                    newRows = [newRows.reduce(function (p, v, i) {
+                                            return _functions[curr.name].call(v, curr.args, [i, len], p);
+                                        }, {})];
+                                    if (prevFunc_1) {
+                                        newRows[0][prevFunc_1] = prev[0][prevFunc_1];
+                                    }
+                                    prev = newRows;
+                                    prevFunc_1 = curr.name;
                                 }
                                 else {
-                                    newRows = _functions[curr.call].call.apply(null, [prev, curr.args, curr.as]);
+                                    prev = prev.map(function (v, i) {
+                                        return _functions[curr.name].call(v, curr.args, [i, len]);
+                                    });
                                 }
-                                if (prev.length && curr.type === "aggregate") {
-                                    prev = prev.filter(function (p, i) { return i < 1; });
-                                    prev[0] = index_1._assign(prev[0]);
-                                    prev[0][curr.as] = newRows[0][curr.as];
-                                    return prev;
+                                if (curr.name !== curr.as) {
+                                    keepColumns_1.push(curr.name + " AS " + curr.as);
                                 }
                                 else {
-                                    return newRows;
+                                    keepColumns_1.push(curr.name);
                                 }
+                                return prev;
                             }, rows.slice());
                         };
                         var groupKeys = Object.keys(groups);
@@ -848,8 +854,7 @@ var _NanoSQLQuery = (function () {
                     }).filter(function (n) { return n; }) || [];
                     if (convertKeys_1.length) {
                         rows_1 = rows_1.map(function (r) {
-                            if (!hasBroken_1)
-                                r = index_1._assign(r);
+                            r = index_1._assign(r);
                             var newRow = {};
                             convertKeys_1.forEach(function (key) {
                                 if (typeof key === "string") {
@@ -1051,7 +1056,7 @@ var _NanoSQLQuery = (function () {
      * @memberOf _NanoSQLQuery
      */
     _NanoSQLQuery.prototype._join = function (type, leftTableID, leftIndex, rightTableID, rightIndex, joinConditions) {
-        var newTableName = JSON.stringify(joinConditions);
+        var newTableName = JSON.stringify(joinConditions) || String(leftTableID) + String(rightTableID);
         var L = "left";
         var R = "right";
         var O = "outer";
