@@ -1,9 +1,14 @@
-var __extends = (this && this.__extends) || (function () {
+var __extends = (this && this.__extends) || (function() {
     var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
+        ({ __proto__: [] }
+            instanceof Array && function(d, b) { d.__proto__ = b; }) ||
+        function(d, b) {
+            for (var p in b)
+                if (b.hasOwnProperty(p)) d[p] = b[p];
+        };
+    return function(d, b) {
         extendStatics(d, b);
+
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
@@ -11,30 +16,32 @@ var __extends = (this && this.__extends) || (function () {
 var __assign = (this && this.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
+        for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
     }
     return t;
 };
-define("store", ["require", "exports", "nano-sql"], function (require, exports, nano_sql_1) {
+define("store", ["require", "exports", "nano-sql"], function(require, exports, nano_sql_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.DrawStore = function () {
+    exports.DrawStore = function() {
         nano_sql_1.nSQL("paths")
             .model([
-            { key: "id", type: "int", props: ["pk"] },
-            { key: "color", type: "string" },
-            { key: "size", type: "int" },
-            { key: "path", type: "array" }
-        ]);
+                { key: "id", type: "int", props: ["pk"] },
+                { key: "color", type: "string" },
+                { key: "size", type: "int" },
+                { key: "path", type: "array" }
+            ]);
         return nano_sql_1.nSQL().config({ persistent: true }).connect();
     };
 });
-define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql", "jquery"], function (require, exports, react_1, React, ReactDOM, store_1, nano_sql_2, $) {
+define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql", "jquery"], function(require, exports, react_1, React, ReactDOM, store_1, nano_sql_2, $) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var DrawingApp = (function (_super) {
+    var DrawingApp = (function(_super) {
         __extends(DrawingApp, _super);
+
         function DrawingApp() {
             var _this = _super.call(this) || this;
             _this.state = {
@@ -62,7 +69,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             _this.erase = _this.erase.bind(_this);
             return _this;
         }
-        DrawingApp.prototype.erase = function () {
+        DrawingApp.prototype.erase = function() {
             var t = this;
             if (!this.state.canErase)
                 return;
@@ -74,53 +81,53 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             }).exec();
             this.setState(__assign({}, this.state, { canErase: false }));
         };
-        DrawingApp.prototype.undo = function () {
+        DrawingApp.prototype.undo = function() {
             var _this = this;
-            nano_sql_2.nSQL().extend("<").then(function (result) {
+            nano_sql_2.nSQL().extend("<").then(function(result) {
                 if (result)
                     _this.drawFromStore();
             });
         };
-        DrawingApp.prototype.redo = function () {
+        DrawingApp.prototype.redo = function() {
             var _this = this;
-            nano_sql_2.nSQL().extend(">").then(function (result) {
+            nano_sql_2.nSQL().extend(">").then(function(result) {
                 if (result)
                     _this.drawFromStore();
             });
         };
-        DrawingApp.prototype.setSize = function (size) {
+        DrawingApp.prototype.setSize = function(size) {
             this.setState(__assign({}, this.state, { size: size }));
         };
-        DrawingApp.prototype.setColor = function (color) {
+        DrawingApp.prototype.setColor = function(color) {
             this.setState(__assign({}, this.state, { color: color }));
         };
-        DrawingApp.prototype.updateComponent = function (e, db) {
+        DrawingApp.prototype.updateComponent = function(e, db) {
             var t = this;
             console.log(e);
-            nano_sql_2.nSQL().extend("?").then(function (historyArray) {
+            nano_sql_2.nSQL().extend("?").then(function(historyArray) {
                 t.setState(__assign({}, t.state, { redos: historyArray }));
+                console.log(historyArray);
             });
         };
-        DrawingApp.prototype.drawFromStore = function () {
+        DrawingApp.prototype.drawFromStore = function() {
             var _this = this;
             var t = this;
             this.setState(__assign({}, this.state, { rendering: true }));
             console.time("Redraw");
             t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
             var lastAction = "draw";
-            nano_sql_2.nSQL("paths").query("select").exec().then(function (rows) {
+            nano_sql_2.nSQL("paths").query("select").exec().then(function(rows) {
                 var prevPath = { x: 0, y: 0 };
-                rows.forEach(function (row, i) {
+                rows.forEach(function(row, i) {
                     if (row.size !== -1) {
                         lastAction = "draw";
-                        row.path.forEach(function (p, k) {
+                        row.path.forEach(function(p, k) {
                             if (k > 0)
                                 prevPath = row.path[k - 1];
                             if (k > 0)
                                 t.draw(row.color, row.size, prevPath.y, prevPath.x, p.y, p.x);
                         });
-                    }
-                    else {
+                    } else {
                         lastAction = "erase";
                         t.ctx.clearRect(0, 0, t.ctx.canvas.width, t.ctx.canvas.height);
                     }
@@ -129,7 +136,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                 _this.setState(__assign({}, _this.state, { rendering: false, canErase: rows.length > 0 && lastAction !== "erase" }));
             });
         };
-        DrawingApp.prototype.draw = function (color, size, prevY, prevX, currY, currX) {
+        DrawingApp.prototype.draw = function(color, size, prevY, prevX, currY, currX) {
             var t = this;
             if (t.currentPath)
                 t.currentPath.path.push({ x: currX, y: currY });
@@ -142,22 +149,27 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             t.ctx.closePath();
             t.ctx.stroke();
         };
-        DrawingApp.prototype.componentDidMount = function () {
+        DrawingApp.prototype.componentDidMount = function() {
             var canvas = document.getElementById('DrawingContainer');
             this.ctx = canvas.getContext("2d");
             this.drawFromStore();
             this.activateDrawingSurface(canvas);
         };
-        DrawingApp.prototype.activateDrawingSurface = function (cnvs) {
+        DrawingApp.prototype.activateDrawingSurface = function(cnvs) {
             var t = this;
             var w = cnvs.width;
             var h = cnvs.height;
-            var flag = false, prevX = 0, currX = 0, prevY = 0, currY = 0, dot_flag = false;
+            var flag = false,
+                prevX = 0,
+                currX = 0,
+                prevY = 0,
+                currY = 0,
+                dot_flag = false;
             var offset = $("#DrawingContainer").offset();
-            $(window).on('resize', function () {
+            $(window).on('resize', function() {
                 offset = $("#DrawingContainer").offset();
             });
-            var findxy = function (res, e) {
+            var findxy = function(res, e) {
                 if (res == 'down') {
                     prevX = currX;
                     prevY = currY;
@@ -190,64 +202,75 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                     }
                 }
             };
-            var renderCursor = function (type, e) {
+            var renderCursor = function(type, e) {
                 if (type == "out") {
                     $(".cursor").css("opacity", 0);
-                }
-                else {
+                } else {
                     $(".cursor").css("left", e.screenX - offset.left).css("top", e.screenY - offset.top - 30).css("opacity", 1);
                 }
             };
-            cnvs.addEventListener("mousemove", function (e) {
+            cnvs.addEventListener("mousemove", function(e) {
                 findxy('move', e);
                 renderCursor("move", e);
             }, false);
-            cnvs.addEventListener("mousedown", function (e) {
+            cnvs.addEventListener("mousedown", function(e) {
                 findxy('down', e);
             }, false);
-            cnvs.addEventListener("mouseup", function (e) {
+            cnvs.addEventListener("mouseup", function(e) {
                 findxy('up', e);
             }, false);
-            cnvs.addEventListener("mouseout", function (e) {
+            cnvs.addEventListener("mouseout", function(e) {
                 findxy('out', e);
                 renderCursor("out", e);
             }, false);
         };
-        DrawingApp.prototype.componentWillMount = function () {
+        DrawingApp.prototype.componentWillMount = function() {
             nano_sql_2.nSQL("paths").on("change", this.updateComponent);
             nano_sql_2.nSQL("paths").on("select", this.updateComponent);
         };
-        DrawingApp.prototype.componentWillUnmount = function () {
+        DrawingApp.prototype.componentWillUnmount = function() {
             nano_sql_2.nSQL("paths").off(this.updateComponent);
         };
-        DrawingApp.prototype.canDo = function (type) {
+        DrawingApp.prototype.canDo = function(type) {
             if (this.state.redos[0] === 0) {
                 return "is-disabled";
-            }
-            else {
+            } else {
                 switch (type) {
-                    case ">": return this.state.redos[1] < this.state.redos[0] ? "" : "is-disabled";
-                    case "<": return this.state.redos[1] > 0 ? "" : "is-disabled";
+                    case ">":
+                        return this.state.redos[1] < this.state.redos[0] ? "" : "is-disabled";
+                    case "<":
+                        return this.state.redos[1] > 0 ? "" : "is-disabled";
                 }
             }
         };
-        DrawingApp.prototype.render = function () {
+        DrawingApp.prototype.render = function() {
             var _this = this;
             return (React.createElement("div", { className: "container" },
                 React.createElement("nav", { className: "level", style: { padding: "1.25rem 0", marginBottom: "0px" } },
                     React.createElement("div", { className: "level-left" },
                         React.createElement("div", { className: "level-item" }, "Color"),
                         React.createElement("div", { className: "level-item" },
-                            React.createElement("div", { className: "colorPicker" }, this.colors.map(function (c) {
-                                return React.createElement("span", { onClick: function () {
+                            React.createElement("div", { className: "colorPicker" }, this.colors.map(function(c) {
+                                return React.createElement("span", {
+                                    onClick: function() {
                                         _this.setColor(c);
-                                    }, style: { background: c }, className: _this.state.color === c ? "picked" : "" });
+                                    },
+                                    style: { background: c },
+                                    className: _this.state.color === c ? "picked" : ""
+                                });
                             }))),
                         React.createElement("div", { className: "level-item" }, "Size"),
                         React.createElement("div", { className: "level-item" },
-                            React.createElement("input", { value: this.state.size, onChange: function (e) {
+                            React.createElement("input", {
+                                value: this.state.size,
+                                onChange: function(e) {
                                     _this.setSize(parseInt(e.target.value));
-                                }, style: { width: "60px" }, className: "input", type: "number", min: "2" })),
+                                },
+                                style: { width: "60px" },
+                                className: "input",
+                                type: "number",
+                                min: "2"
+                            })),
                         React.createElement("div", { className: "level-item" },
                             React.createElement("a", { title: "Clear", onClick: this.erase, className: "button is-danger " + (this.state.canErase ? "" : "is-disabled") },
                                 React.createElement("span", { className: "typcn typcn-times" })))),
@@ -264,7 +287,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         return DrawingApp;
     }(react_1.Component));
-    store_1.DrawStore().then(function () {
+    store_1.DrawStore().then(function() {
         ReactDOM.render(React.createElement(DrawingApp, null), document.body);
     });
 });

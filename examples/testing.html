@@ -208,9 +208,7 @@
                                 }).where([
                                     ['age', '>', 25], 'or', ['id', '>', 2]
                                 ]).toCSV(true);*/
-                                return db.query('select').orderBy({
-                                    name: 'asc'
-                                }).exec();
+                                return db.query('delete').where(["age", ">", 21]).exec();
                             })
                             .then(function(result, db) {
                                 db.query('select').orderBy({
@@ -223,6 +221,7 @@
                                 return db.query('select').toCSV(true);
                             })
                             .then(function(result) {
+                                console.log(result);
                                 nSQL("orders")
                                     .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
                                     .join({

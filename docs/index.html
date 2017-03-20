@@ -82,9 +82,36 @@
 					<li>Simple &amp; elegant undo/redo.</li>
 					<li>Full Typescript support.</li>
 					<li>Runtime type casting.</li>
+					<li>Transactions support.</li>
 					<li>Full events system.</li>
 					<li>Just 8Kb Gzipped.</li>
 				</ul>
+				<h2 id="drivers">Drivers</h2>
+				<p><a href="https://github.com/ClickSimply/Nano-SQL/wiki#drivers">What is a driver?</a></p>
+				<table>
+					<thead>
+						<tr>
+							<th>Type</th>
+							<th>Description</th>
+							<th>Node</th>
+							<th>Browser</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Immutable</td>
+							<td>Runs anywhere, can persist to IndexedDB in the browser, used by default.</td>
+							<td>✓</td>
+							<td>✓</td>
+						</tr>
+						<tr>
+							<td><a href="https://github.com/ClickSimply/Nano-SQL/wiki/5.-SQLite">SQLite 3</a></td>
+							<td>Useful for nodeJS applications, supports full NanoSQL API.</td>
+							<td>✓</td>
+							<td>✕</td>
+						</tr>
+					</tbody>
+				</table>
 				<h3 id="oh-look-another-data-store">Oh Look, Another Data Store</h3>
 				<p>I spent a long time looking for an existing solution that would do everything I needed and couldn&#39;t find one, here&#39;s some of the other data stores I looked into and why I didn&#39;t end up using them:</p>
 				<table>
@@ -379,9 +406,6 @@ nSQL(<span class="hljs-string">"users"</span>)
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_index_.html">"index"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="modules/_lie_.html">"lie"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_null_store_.html">"null-<wbr>store"</a>

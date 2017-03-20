@@ -65,5 +65,8 @@
     ],
     "author": "Scott Lott <Scott@ClickSimply.com>",
     "license": "MIT",
-    "dependencies": {}
+    "dependencies": {
+        "level": "^1.6.0",
+        "lie-ts": "^3.1.2"
+    }
 }

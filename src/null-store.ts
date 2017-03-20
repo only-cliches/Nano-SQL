@@ -4,7 +4,7 @@ import { NanoSQLInstance, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataMo
  * Only for testing purposes, to test the speed of the NanoSQL abstraction layer by itself.
  * This file is not bundled with the library.
  * 
- * This also kind of shows the barebones data store, these 3 functions are all that's needed to conform to spec.
+ * This also kind of shows the barebones data store, these functions are all that's needed to conform to spec.
  * 
  * 
  * @export

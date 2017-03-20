@@ -1,6 +1,5 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
-import { Promise } from "./lie";
-
+import { Promise } from "lie-ts";
 
 /**
  * Min/Max function for database
@@ -23,7 +22,7 @@ const minMax = (type:number, row:DBRow, args: string[], ptr: number[], prev: any
         nextRow = prev;
     }
     if(ptr[0] === ptr[1]) { // last row
-        let r = JSON.parse(JSON.stringify(nextRow));
+        let r = _assign(nextRow);
         r[type == -1 ? "MIN" : "MAX"] = nextRow[key];
         return r;
     } else {
@@ -42,9 +41,8 @@ let _functions: {
         call: (row:DBRow, args: string[], ptr: number[], prev: number) => {
             if(ptr[0] == 0) prev = 0;
             prev += parseInt(row[args[0]]);
-            console.log(ptr);
             if(ptr[0] === ptr[1]) {
-                let r = JSON.parse(JSON.stringify(row));
+                let r = _assign(row);
                 r.SUM = prev;
                 return r;
             } else {
@@ -70,7 +68,7 @@ let _functions: {
             if(ptr[0] == 0) prev = 0;
             prev += parseInt(row[args[0]]);
             if(ptr[0] === ptr[1]) {
-                let r = JSON.parse(JSON.stringify(row));
+                let r = _assign(row);
                 r.AVG = (prev / (ptr[1]+1)) || prev;
                 return r;
             } else {
@@ -90,7 +88,7 @@ let _functions: {
             }
 
             if(ptr[0] === ptr[1]) {
-                let r = JSON.parse(JSON.stringify(row));
+                let r = _assign(row);
                 r.COUNT = prev;
                 return r;
             } else {
@@ -255,15 +253,23 @@ export class _NanoSQLImmuDB implements NanoSQLBackend {
     public _indexedDB: IDBDatabase;
 
     /**
-     * Flag to disable history and caching to incrase performance for lage imports
+     * Holds reference to level up database object.
+     * 
+     * @type {LevelUp}
+     * @memberOf _NanoSQLImmuDB
+     */
+    // public _levelDB: LevelUp;
+
+    /**
+     * Flag to indicate the state of transactions
      *
      * @type {boolean}
      * @memberOf _NanoSQLImmuDB
      */
-    public _disableHistoryAndCache: boolean;
+    public _doingTransaction: boolean;
 
     /**
-     * Wether to store data to indexed DB or not.
+     * Wether to store data to indexed DB / Level DB or not.
      *
      * @type {boolean}
      * @memberOf _NanoSQLImmuDB
@@ -279,7 +285,7 @@ export class _NanoSQLImmuDB implements NanoSQLBackend {
         t._historyPoint = 0;
         t._historyArray = [0, 0];
         t._queryCache = {};
-        t._disableHistoryAndCache = false;
+        t._doingTransaction = false;
     }
 
     /**
@@ -364,66 +370,75 @@ export class _NanoSQLImmuDB implements NanoSQLBackend {
             _functions[f] = connectArgs._functions[f];
         });
 
-        if (t._persistent && typeof indexedDB !== "undefined") {
+        if (t._persistent) {
 
-            let idb = indexedDB.open(String(t._databaseID), 1);
+            if(typeof indexedDB !== "undefined") { // Browser persistence
+                let idb = indexedDB.open(String(t._databaseID), 1);
 
-            // Called only when there is no existing DB, creates the tables and data store.
-            idb.onupgradeneeded = (event: any) => {
-                upgrading = true;
-                let db: IDBDatabase = event.target.result;
-                const next = () => {
-                    if (index < tables.length) {
-                        let ta = NanoSQLInstance._hash(tables[index]);
-                        let config = t._tables[ta]._pk ? { keyPath: t._tables[ta]._pk } : {};
-                        db.createObjectStore(tables[index], config);
-                        index++;
-                        next();
-                    } else {
-                        connectArgs._onSuccess();
-                    }
-                };
-
-                next();
-            };
-
-            // Called once the database is connected and working
-            idb.onsuccess = (event: any) => {
-                t._indexedDB = event.target.result;
-
-                // Called to import existing indexed DB data into the store.
-                if (!upgrading) {
-                    let next = () => {
+                // Called only when there is no existing DB, creates the tables and data store.
+                idb.onupgradeneeded = (event: any) => {
+                    upgrading = true;
+                    let db: IDBDatabase = event.target.result;
+                    const next = () => {
                         if (index < tables.length) {
                             let ta = NanoSQLInstance._hash(tables[index]);
-                            let transaction = t._indexedDB.transaction(tables[index], "readonly");
-                            let store = transaction.objectStore(tables[index]);
-                            let cursorRequest = store.openCursor();
-                            let items: any[] = [];
-                            transaction.oncomplete = () => {
-                                t._parent.table(tables[index]).loadJS(items).then(() => {
-                                    index++;
-                                    next();
-                                });
-                            };
-
-                            cursorRequest.onsuccess = (evt: any) => {
-                                let cursor = evt.target.result;
-                                if (cursor) {
-                                    items.push(cursor.value);
-                                    cursor.continue();
-                                }
-                            };
-
+                            let config = t._tables[ta]._pk ? { keyPath: t._tables[ta]._pk } : {};
+                            db.createObjectStore(tables[index], config);
+                            index++;
+                            next();
                         } else {
                             connectArgs._onSuccess();
                         }
                     };
 
-
                     next();
                 };
-            };
+
+                // Called once the database is connected and working
+                idb.onsuccess = (event: any) => {
+                    t._indexedDB = event.target.result;
+
+                    // Called to import existing indexed DB data into the store.
+                    if (!upgrading) {
+                        let next = () => {
+                            if (index < tables.length) {
+                                let ta = NanoSQLInstance._hash(tables[index]);
+                                let transaction = t._indexedDB.transaction(tables[index], "readonly");
+                                let store = transaction.objectStore(tables[index]);
+                                let cursorRequest = store.openCursor();
+                                let items: any[] = [];
+                                transaction.oncomplete = () => {
+                                    t._parent.from(tables[index]).loadJS(items).then(() => {
+                                        index++;
+                                        next();
+                                    });
+                                };
+
+                                cursorRequest.onsuccess = (evt: any) => {
+                                    let cursor = evt.target.result;
+                                    if (cursor) {
+                                        items.push(cursor.value);
+                                        cursor.continue();
+                                    }
+                                };
+
+                            } else {
+                                connectArgs._onSuccess();
+                            }
+                        };
+
+
+                        next();
+                    };
+                };
+            }
+
+         /*   if(typeof levelup !== "undefined") { // NodeJS persistence
+                this._levelDB = levelup(String(t._databaseID));
+                this._levelDB.createKeyStream().on("data",(key) => {
+
+                });
+            }*/   
         } else {
             connectArgs._onSuccess();
         }
@@ -588,12 +603,12 @@ export class _NanoSQLImmuDB implements NanoSQLBackend {
                     }
                 break;
                 case "before_import":
-                    t._disableHistoryAndCache = true;
-                    res(!!t._disableHistoryAndCache);
+                    t._doingTransaction = true;
+                    res(!!t._doingTransaction);
                 break;
                 case "after_import":
-                    t._disableHistoryAndCache = false;
-                    res(!!t._disableHistoryAndCache);
+                    t._doingTransaction = false;
+                    res(!!t._doingTransaction);
                 break;
             }
         });
@@ -750,6 +765,18 @@ class _NanoSQLQuery {
         return this._mod.filter((v) => v.type === name).pop();
     };
 
+
+    /**
+     * Handle transactions
+     * 
+     * @param {string} type 
+     * 
+     * @memberOf _NanoSQLQuery
+     */
+    public _transaction(type: string) {
+
+    }
+
     /**
      * Starting query method, sets up initial environment for the query and sets it off.
      * 
@@ -816,7 +843,7 @@ class _NanoSQLQuery {
         
         switch(updateType) {
             case "upsert":
-                if(!t._db._disableHistoryAndCache) {
+                if(!t._db._doingTransaction) {
                     newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
                 } else {
                     newRow = oldRow || {};
@@ -834,14 +861,18 @@ class _NanoSQLQuery {
             break;
             case "delete":
                 newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
-                qArgs.forEach((column) => {
-                    newRow[column] = null;
-                });
+                if(qArgs && qArgs.length) {
+                    qArgs.forEach((column) => {
+                        newRow[column] = null;
+                    });
+                } else {
+                    newRow = null;
+                }
             break;
         }
 
         // Add the row to the history
-        if(!t._db._disableHistoryAndCache) {
+        if(!t._db._doingTransaction) {
             t._db._getTable()._rows[rowPK].unshift(newRow ? t._deepFreeze(newRow) : null);
         } else {
             t._db._getTable()._rows[rowPK][t._db._getTable()._historyPointers[rowPK]] = t._deepFreeze(newRow);
@@ -876,7 +907,7 @@ class _NanoSQLQuery {
         if (updatedRowPKs.length > 0) {
 
             // Remove history points ahead of the current one if the database has changed
-            if (t._db._historyPoint > 0 && t._db._disableHistoryAndCache !== true) {
+            if (t._db._historyPoint > 0 && t._db._doingTransaction !== true) {
                 t._db._historyRecords = t._db._historyRecords.filter((val, index) => {
                     if (index < t._db._historyPoint) {
                         k = val._rowKeys.length;
@@ -892,7 +923,7 @@ class _NanoSQLQuery {
             }
 
             // Add history records
-            if (!t._db._disableHistoryAndCache) { // We don't want to add history points for imports
+            if (!t._db._doingTransaction) { // We don't want to add history points for imports
                 t._db._historyRecords.unshift({
                     _tableID: t._db._selectedTable,
                     _rowKeys: updatedRowPKs,

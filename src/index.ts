@@ -1,5 +1,5 @@
-import { Promise } from "./lie";
 import { _NanoSQLImmuDB } from "./immutable-store";
+import { Promise } from "lie-ts";
 
 declare var crypto: any;
 
@@ -291,7 +291,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public table(table?: string): NanoSQLInstance {
+    public from(table?: string): NanoSQLInstance {
         if (table) this._selectedTable = table, this.activeTable = table;
         return this;
     }
@@ -727,13 +727,15 @@ export class NanoSQLInstance {
      * ### Delete
      *
      * Delete is used to remove data from the database.
-     * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
+     * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the entire row is deleted.
+     * If no where argument is passed, the entire table is dropped
      *
      * Examples:
      * ```ts
      * .query("delete",['balance']) //Clear the contents of the balance column on ALL rows.
      * .query("delete",['comments']).where(["accountType","=","spammer"]) // If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
-     * .query("delete") // same as drop statement
+     * .query("delete").where(["balance","<",0]) // remove all rows with a balance less than zero
+     * .query("delete") // Same as drop statement
      * ```
      *
      * ### Drop
@@ -998,6 +1000,26 @@ export class NanoSQLInstance {
     }
 
     /**
+     * Start a database transaction, useful for importing large amounts of data.
+     * 
+     * 
+     * @memberOf NanoSQLInstance
+     */
+    public beginTransaction() {
+        if(this.backend._transaction) return this.backend._transaction("start");
+    }
+
+    /**
+     * End a database transaction.
+     * 
+     * 
+     * @memberOf NanoSQLInstance
+     */
+    public endTransaction() {
+        if(this.backend._transaction) return this.backend._transaction("end");
+    }
+
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
@@ -1125,12 +1147,12 @@ export class NanoSQLInstance {
      */
     public loadJS(rows: Array<Object>): Promise<Array<Object>> {
         let t = this;
-        t.extend("before_import");
+        t.beginTransaction();
         return new Promise((res, rej) => {
             Promise.all(rows.map((row) => {
-                return t.table(t._selectedTable).query("upsert", row).exec();
+                return t.from(t._selectedTable).query("upsert", row).exec();
             })).then((rowData) => {
-                t.extend("after_import");
+                t.endTransaction();
                 res(rowData, t);
             });
         });
@@ -1166,7 +1188,7 @@ export class NanoSQLInstance {
     public loadCSV(csv: string): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
-        t.extend("before_import");
+        t.beginTransaction();
         return new Promise((res, rej) => {
             Promise.all(csv.split("\n").map((v, k) => {
                 return new Promise((resolve, reject) => {
@@ -1184,13 +1206,13 @@ export class NanoSQLInstance {
                             }
                             record[fields[i]] = row[i];
                         }
-                        t.table(t._selectedTable).query("upsert", record).exec().then(() => {
+                        t.from(t._selectedTable).query("upsert", record).exec().then(() => {
                             resolve();
                         });
                     }
                 });
             })).then(function () {
-                t.extend("after_import");
+                t.endTransaction();
                 res([], t);
             });
         });
@@ -1386,6 +1408,15 @@ export interface NanoSQLBackend {
      * @memberOf NanoSQLBackend
      */
     _extend?(instance: NanoSQLInstance, ...args: Array<any>): any;
+
+    /**
+     * Let the database driver know it needs to start or end a transaction
+     * 
+     * @param {("start"|"end")} type 
+     * 
+     * @memberOf NanoSQLBackend
+     */
+    _transaction?(type:"start"|"end"):void;
 }
 
 /**
@@ -1394,5 +1425,5 @@ export interface NanoSQLBackend {
 let _NanoSQLStatic = new NanoSQLInstance();
 
 export const nSQL = (setTablePointer?: string) => {
-    return _NanoSQLStatic.table(setTablePointer);
+    return _NanoSQLStatic.from(setTablePointer);
 }

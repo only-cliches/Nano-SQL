@@ -1,6 +1,6 @@
 "use strict";
-var lie_1 = require("./lie");
 var immutable_store_1 = require("./immutable-store");
+var lie_ts_1 = require("lie-ts");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };
@@ -57,13 +57,13 @@ var NanoSQLInstance = (function () {
         var _this = this;
         var t = this;
         if (t.backend) {
-            return new lie_1.Promise(function (res, rej) {
+            return new lie_ts_1.Promise(function (res, rej) {
                 rej();
                 throw Error();
             });
         }
         t.backend = backend || new immutable_store_1._NanoSQLImmuDB();
-        return new lie_1.Promise(function (res, rej) {
+        return new lie_ts_1.Promise(function (res, rej) {
             t.backend._connect({
                 _models: t._models,
                 _actions: t._actions,
@@ -723,6 +723,26 @@ var NanoSQLInstance = (function () {
         return newObj;
     };
     /**
+     * Start a database transaction, useful for importing large amounts of data.
+     *
+     *
+     * @memberOf NanoSQLInstance
+     */
+    NanoSQLInstance.prototype.beginTransaction = function () {
+        if (this.backend._transaction)
+            return this.backend._transaction("start");
+    };
+    /**
+     * End a database transaction.
+     *
+     *
+     * @memberOf NanoSQLInstance
+     */
+    NanoSQLInstance.prototype.endTransaction = function () {
+        if (this.backend._transaction)
+            return this.backend._transaction("end");
+    };
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
@@ -752,7 +772,7 @@ var NanoSQLInstance = (function () {
                 }
             }).reduce(function (a, b) { return a.concat(b); });
         }
-        return new lie_1.Promise(function (res, rej) {
+        return new lie_ts_1.Promise(function (res, rej) {
             if (!t.backend) {
                 rej();
                 throw Error;
@@ -845,8 +865,8 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.loadJS = function (rows) {
         var t = this;
         t.extend("before_import");
-        return new lie_1.Promise(function (res, rej) {
-            lie_1.Promise.all(rows.map(function (row) {
+        return new lie_ts_1.Promise(function (res, rej) {
+            lie_ts_1.Promise.all(rows.map(function (row) {
                 return t.table(t._selectedTable).query("upsert", row).exec();
             })).then(function (rowData) {
                 t.extend("after_import");
@@ -884,9 +904,9 @@ var NanoSQLInstance = (function () {
         var t = this;
         var fields = [];
         t.extend("before_import");
-        return new lie_1.Promise(function (res, rej) {
-            lie_1.Promise.all(csv.split("\n").map(function (v, k) {
-                return new lie_1.Promise(function (resolve, reject) {
+        return new lie_ts_1.Promise(function (res, rej) {
+            lie_ts_1.Promise.all(csv.split("\n").map(function (v, k) {
+                return new lie_ts_1.Promise(function (resolve, reject) {
                     if (k === 0) {
                         fields = v.split(",");
                         resolve();
@@ -984,7 +1004,7 @@ var NanoSQLInstance = (function () {
      */
     NanoSQLInstance.prototype.toCSV = function (headers) {
         var t = this;
-        return new lie_1.Promise(function (res, rej) {
+        return new lie_ts_1.Promise(function (res, rej) {
             t.exec().then(function (json) {
                 var header = t._query.filter(function (q) {
                     return q.type === "select";

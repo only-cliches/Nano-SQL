@@ -1,6 +1,6 @@
 "use strict";
 var index_1 = require("./index");
-var lie_1 = require("./lie");
+var lie_ts_1 = require("lie-ts");
 /**
  * Min/Max function for database
  *
@@ -24,7 +24,7 @@ var minMax = function (type, row, args, ptr, prev) {
         nextRow = prev;
     }
     if (ptr[0] === ptr[1]) {
-        var r = JSON.parse(JSON.stringify(nextRow));
+        var r = index_1._assign(nextRow);
         r[type == -1 ? "MIN" : "MAX"] = nextRow[key];
         return r;
     }
@@ -42,9 +42,8 @@ var _functions = {
             if (ptr[0] == 0)
                 prev = 0;
             prev += parseInt(row[args[0]]);
-            console.log(ptr);
             if (ptr[0] === ptr[1]) {
-                var r = JSON.parse(JSON.stringify(row));
+                var r = index_1._assign(row);
                 r.SUM = prev;
                 return r;
             }
@@ -72,7 +71,7 @@ var _functions = {
                 prev = 0;
             prev += parseInt(row[args[0]]);
             if (ptr[0] === ptr[1]) {
-                var r = JSON.parse(JSON.stringify(row));
+                var r = index_1._assign(row);
                 r.AVG = (prev / (ptr[1] + 1)) || prev;
                 return r;
             }
@@ -93,7 +92,7 @@ var _functions = {
                 prev += row[args[0]] ? 1 : 0;
             }
             if (ptr[0] === ptr[1]) {
-                var r = JSON.parse(JSON.stringify(row));
+                var r = index_1._assign(row);
                 r.COUNT = prev;
                 return r;
             }
@@ -365,7 +364,7 @@ var _NanoSQLImmuDB = (function () {
             }
             return rows;
         };
-        return new lie_1.Promise(function (res, rej) {
+        return new lie_ts_1.Promise(function (res, rej) {
             switch (command) {
                 case "<":
                     if (!t._historyRecords.length || t._historyPoint === t._historyRecords.length) {
@@ -524,6 +523,15 @@ var _NanoSQLQuery = (function () {
         return this._mod.filter(function (v) { return v.type === name; }).pop();
     };
     ;
+    /**
+     * Handle transactions
+     *
+     * @param {string} type
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype._transaction = function (type) {
+    };
     /**
      * Starting query method, sets up initial environment for the query and sets it off.
      *

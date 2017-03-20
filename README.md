@@ -22,8 +22,18 @@ NanoSQL is the smallest and quickest way to get SQL power into your app, built s
 - Simple & elegant undo/redo.
 - Full Typescript support.
 - Runtime type casting.
+- Transactions support.
 - Full events system.
 - Just 8Kb Gzipped.
+
+## Drivers
+
+[What is a driver?](https://github.com/ClickSimply/Nano-SQL/wiki#drivers)
+
+| Type      | Description                                                              | Node | Browser |
+|-----------|--------------------------------------------------------------------------|------|---------|
+| Immutable | Runs anywhere, can persist to IndexedDB in the browser, used by default. | ✓    | ✓       |
+| [SQLite 3](https://github.com/ClickSimply/Nano-SQL/wiki/5.-SQLite)  | Useful for nodeJS applications, supports full NanoSQL API.               | ✓    | ✕       |
 
 ### Oh Look, Another Data Store
 

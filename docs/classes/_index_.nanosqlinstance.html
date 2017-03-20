@@ -111,10 +111,12 @@
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#actions" class="tsd-kind-icon">actions</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#begintransaction" class="tsd-kind-icon">begin<wbr>Transaction</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#config" class="tsd-kind-icon">config</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#connect" class="tsd-kind-icon">connect</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#default" class="tsd-kind-icon">default</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#doaction" class="tsd-kind-icon">do<wbr>Action</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#endtransaction" class="tsd-kind-icon">end<wbr>Transaction</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#exec" class="tsd-kind-icon">exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#extend" class="tsd-kind-icon">extend</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#getview" class="tsd-kind-icon">get<wbr>View</a></li>
@@ -156,7 +158,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L260">index.ts:260</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L260">index.ts:260</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></h4>
@@ -172,7 +174,7 @@
 					<div class="tsd-signature tsd-kind-icon">active<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L138">index.ts:138</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L138">index.ts:138</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -195,7 +197,7 @@
 					<div class="tsd-signature tsd-kind-icon">backend<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_index_.nanosqlbackend.html" class="tsd-signature-type">NanoSQLBackend</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L156">index.ts:156</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L156">index.ts:156</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -225,7 +227,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L623">index.ts:623</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L623">index.ts:623</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -282,6 +284,33 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="begintransaction" class="tsd-anchor"></a>
+					<h3>begin<wbr>Transaction</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">begin<wbr>Transaction<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1006">index.ts:1006</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Start a database transaction, useful for importing large amounts of data.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>NanoSQLInstance</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="config" class="tsd-anchor"></a>
 					<h3>config</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -291,7 +320,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1082">index.ts:1082</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1102">index.ts:1102</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -318,13 +347,13 @@
 					<a name="connect" class="tsd-anchor"></a>
 					<h3>connect</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">connect<span class="tsd-signature-symbol">(</span>backend<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_index_.nanosqlbackend.html" class="tsd-signature-type">NanoSQLBackend</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">connect<span class="tsd-signature-symbol">(</span>backend<span class="tsd-signature-symbol">?: </span><a href="../interfaces/_index_.nanosqlbackend.html" class="tsd-signature-type">NanoSQLBackend</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L309">index.ts:309</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L309">index.ts:309</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -344,7 +373,7 @@
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> backend: <a href="../interfaces/_index_.nanosqlbackend.html" class="tsd-signature-type">NanoSQLBackend</a></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -358,7 +387,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L988">index.ts:988</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L988">index.ts:988</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -398,13 +427,13 @@
 					<a name="doaction" class="tsd-anchor"></a>
 					<h3>do<wbr>Action</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">do<wbr>Action<span class="tsd-signature-symbol">(</span>actionName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, actionArgs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">do<wbr>Action<span class="tsd-signature-symbol">(</span>actionName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, actionArgs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L643">index.ts:643</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L643">index.ts:643</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -431,7 +460,34 @@
 									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> actionArgs: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> =&nbsp;{}</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="endtransaction" class="tsd-anchor"></a>
+					<h3>end<wbr>Transaction</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">end<wbr>Transaction<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1016">index.ts:1016</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>End a database transaction.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>NanoSQLInstance</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -439,13 +495,13 @@
 					<a name="exec" class="tsd-anchor"></a>
 					<h3>exec</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">exec<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">exec<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1016">index.ts:1016</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1036">index.ts:1036</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -466,7 +522,7 @@
 									</dd>
 								</dl>
 							</div>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -480,7 +536,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1096">index.ts:1096</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1116">index.ts:1116</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -510,13 +566,13 @@
 					<a name="getview" class="tsd-anchor"></a>
 					<h3>get<wbr>View</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">get<wbr>View<span class="tsd-signature-symbol">(</span>viewName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, viewArgs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">get<wbr>View<span class="tsd-signature-symbol">(</span>viewName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, viewArgs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L506">index.ts:506</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L506">index.ts:506</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -543,7 +599,7 @@
 									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> viewArgs: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> =&nbsp;{}</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -557,7 +613,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L844">index.ts:844</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L844">index.ts:844</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -599,7 +655,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L855">index.ts:855</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L855">index.ts:855</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -632,7 +688,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L888">index.ts:888</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L888">index.ts:888</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -683,7 +739,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L904">index.ts:904</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L904">index.ts:904</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -712,13 +768,13 @@
 					<a name="loadcsv" class="tsd-anchor"></a>
 					<h3>loadCSV</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">loadCSV<span class="tsd-signature-symbol">(</span>csv<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">loadCSV<span class="tsd-signature-symbol">(</span>csv<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1166">index.ts:1166</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1186">index.ts:1186</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -739,7 +795,7 @@
 									<h5>csv: <span class="tsd-signature-type">string</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -747,13 +803,13 @@
 					<a name="loadjs" class="tsd-anchor"></a>
 					<h3>loadJS</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">loadJS<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">loadJS<span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1126">index.ts:1126</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1146">index.ts:1146</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -779,7 +835,7 @@
 									<h5>rows: <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -793,7 +849,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L417">index.ts:417</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L417">index.ts:417</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -832,7 +888,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L693">index.ts:693</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L693">index.ts:693</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -917,7 +973,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L378">index.ts:378</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L378">index.ts:378</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -950,7 +1006,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L920">index.ts:920</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L920">index.ts:920</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -985,7 +1041,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L346">index.ts:346</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L346">index.ts:346</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1042,7 +1098,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L824">index.ts:824</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L824">index.ts:824</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1084,7 +1140,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L754">index.ts:754</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L754">index.ts:754</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1152,7 +1208,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1150">index.ts:1150</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1170">index.ts:1170</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1207,7 +1263,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L294">index.ts:294</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L294">index.ts:294</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1234,13 +1290,13 @@
 					<a name="tocsv" class="tsd-anchor"></a>
 					<h3>toCSV</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">toCSV<span class="tsd-signature-symbol">(</span>headers<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">false</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">toCSV<span class="tsd-signature-symbol">(</span>headers<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">false</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1266">index.ts:1266</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1286">index.ts:1286</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1267,7 +1323,7 @@
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> headers: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">false</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_lie_.promise.html" class="tsd-signature-type">Promise</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -1281,7 +1337,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L945">index.ts:945</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L945">index.ts:945</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1319,7 +1375,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L486">index.ts:486</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L486">index.ts:486</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1385,7 +1441,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L805">index.ts:805</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L805">index.ts:805</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1427,7 +1483,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1243">index.ts:1243</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1263">index.ts:1263</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1462,7 +1518,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1207">index.ts:1207</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1227">index.ts:1227</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1496,9 +1552,6 @@
 						<a href="../modules/_index_.html">"index"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="../modules/_lie_.html">"lie"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
 						<a href="../modules/_null_store_.html">"null-<wbr>store"</a>
 					</li>
 				</ul>
@@ -1523,6 +1576,9 @@
 								<a href="_index_.nanosqlinstance.html#actions" class="tsd-kind-icon">actions</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#begintransaction" class="tsd-kind-icon">begin<wbr>Transaction</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#config" class="tsd-kind-icon">config</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
@@ -1533,6 +1589,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#doaction" class="tsd-kind-icon">do<wbr>Action</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#endtransaction" class="tsd-kind-icon">end<wbr>Transaction</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#exec" class="tsd-kind-icon">exec</a>

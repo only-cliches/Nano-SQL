@@ -1,5 +1,19 @@
 # Change Log
 
+## TODO
+- Using transactions now allow you to chain multiple table updates/changes inside the same history point.
+- Added syntax to the history system to give more control.
+- Started writing integration tests comparing default store results against the SQLite driver.
+- Default store now persists in NodeJS using [LevelDB](https://github.com/Level/levelup). 
+- Default store can now persist history states to IndexedDB.
+- Default store now falls back to localStorage if IndexedDB isn't availble.
+
+## [0.5.0] 
+- BREAKING CHANGE: `before_import` and `after_import` have now been switched to a transaction syntax. See the docs.
+- BREAKING CHANGEE: The delete syntax was not deleting entire rows when now arguments were passed as it should, now it is.
+- The `config` parameters have been changed to handle turning history and immutable functions on and off.
+
+
 ## [0.4.5] 3-14-2017
 - BREAKING CHANGE: Did more research on how functions typically work in a SQL envrionment, changed the function implemintation again.
 - Fixed a bug related to cross joins.

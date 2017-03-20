@@ -92,6 +92,7 @@
 								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.nanosqlbackend.html#_connect" class="tsd-kind-icon">_connect</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.nanosqlbackend.html#_exec" class="tsd-kind-icon">_exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.nanosqlbackend.html#_extend" class="tsd-kind-icon">_extend</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-interface"><a href="_index_.nanosqlbackend.html#_transaction" class="tsd-kind-icon">_transaction</a></li>
 							</ul>
 						</section>
 					</div>
@@ -109,7 +110,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1351">index.ts:1351</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1371">index.ts:1371</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -147,7 +148,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1375">index.ts:1375</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1395">index.ts:1395</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -191,7 +192,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/178ae8f/src/index.ts#L1388">index.ts:1388</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1408">index.ts:1408</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -219,6 +220,41 @@
 						</li>
 					</ul>
 				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-interface">
+					<a name="_transaction" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> _transaction</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-interface">
+						<li class="tsd-signature tsd-kind-icon">_transaction<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"start"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"end"</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/index.ts#L1417">index.ts:1417</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Let the database driver know it needs to start or end a transaction</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>NanoSQLBackend</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>type: <span class="tsd-signature-type">"start"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"end"</span></h5>
+									<div class="tsd-comment tsd-typography">
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
 			</section>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -232,9 +268,6 @@
 					</li>
 					<li class="current tsd-kind-external-module">
 						<a href="../modules/_index_.html">"index"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="../modules/_lie_.html">"lie"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_null_store_.html">"null-<wbr>store"</a>
@@ -283,6 +316,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-interface">
 								<a href="_index_.nanosqlbackend.html#_extend" class="tsd-kind-icon">_extend</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-interface">
+								<a href="_index_.nanosqlbackend.html#_transaction" class="tsd-kind-icon">_transaction</a>
 							</li>
 						</ul>
 					</li>

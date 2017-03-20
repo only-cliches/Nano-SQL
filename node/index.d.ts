@@ -1,4 +1,4 @@
-import { Promise } from "./lie";
+import { Promise } from "lie-ts";
 /**
  * Standard object placeholder with string key.
  *
@@ -580,6 +580,20 @@ export declare class NanoSQLInstance {
         [key: string]: any;
     };
     /**
+     * Start a database transaction, useful for importing large amounts of data.
+     *
+     *
+     * @memberOf NanoSQLInstance
+     */
+    beginTransaction(): void;
+    /**
+     * End a database transaction.
+     *
+     *
+     * @memberOf NanoSQLInstance
+     */
+    endTransaction(): void;
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
@@ -766,5 +780,13 @@ export interface NanoSQLBackend {
      * @memberOf NanoSQLBackend
      */
     _extend?(instance: NanoSQLInstance, ...args: Array<any>): any;
+    /**
+     * Let the database driver know it needs to start or end a transaction
+     *
+     * @param {("start"|"end")} type
+     *
+     * @memberOf NanoSQLBackend
+     */
+    _transaction?(type: "start" | "end"): void;
 }
 export declare const nSQL: (setTablePointer?: string) => NanoSQLInstance;

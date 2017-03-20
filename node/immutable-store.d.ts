@@ -1,5 +1,5 @@
 import { NanoSQLInstance, NanoSQLBackend, DBRow, DataModel, DBConnect, DBExec } from "./index";
-import { Promise } from "./lie";
+import { Promise } from "lie-ts";
 /**
  * The main class for the immutable database, holds the indexes, data and primary methods.
  *
