@@ -1,6 +1,6 @@
-![NanoSQL Logo](https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png)
-
 RDBMS that supports IndexedDB and LevelDB with Undo/Redo.
+
+![NanoSQL Logo](https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png)
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)

@@ -2,7 +2,7 @@
 var immutable_store_1 = require("./immutable-store");
 var lie_ts_1 = require("lie-ts");
 /* NODE-START */
-var crypto = require("crypto");
+crypto = require("crypto");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };

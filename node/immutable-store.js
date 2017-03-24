@@ -1329,6 +1329,7 @@ var _NanoSQL_Storage = (function () {
     };
     return _NanoSQL_Storage;
 }());
+exports._NanoSQL_Storage = _NanoSQL_Storage;
 /**
  * Query module called for each database execution to get the desired result on the data.
  *

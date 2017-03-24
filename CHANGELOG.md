@@ -8,6 +8,9 @@
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
+## [0.5.1]
+- Small bugfixes.
+
 ## [0.5.0] 
 - BREAKING CHANGE: `before_import` and `after_import` have now been switched to `.beginTransaction()` and `.endTransaction()` syntax. See the docs.
 - BREAKING CHANGE: The delete syntax was not deleting entire rows when no arguments were passed as it should, now it is.

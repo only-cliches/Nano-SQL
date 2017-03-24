@@ -445,7 +445,7 @@ interface IHistoryPoint {
 }
 
 // tslint:disable-next-line
-class _NanoSQL_Storage {
+export class _NanoSQL_Storage {
 
     public _mode;
 

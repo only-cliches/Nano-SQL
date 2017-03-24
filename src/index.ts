@@ -1,10 +1,11 @@
 import { _NanoSQLImmuDB } from "./immutable-store";
 import { Promise } from "lie-ts";
 
+declare var crypto: any;
 
 /* NODE-START */
 
-import crypto = require("crypto");
+crypto = require("crypto");
 
 /* NODE-END */
 
