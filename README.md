@@ -1,11 +1,13 @@
 ![NanoSQL Logo](https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png)
 
-RDBMS Immutable App Store with Undo, Redo & IndexedDB support.
+RDBMS that supports IndexedDB and LevelDB with Undo/Redo.
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 
-NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 8Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a lib half the size.
+NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 10Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.
+
+For persistence supports `Local Storage` and `Indexed DB` in the browser and `Level DB` in NodeJS with the same API.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
 * [Todo Example](https://some-sql.com/react-todo/)
 * [Draw Example](https://some-sql.com/react-draw/)
@@ -15,42 +17,35 @@ NanoSQL is the smallest and quickest way to get SQL power into your app, built s
 ## Features
 
 - Run in Node, IE8+ & modern browsers.
+- Persistence in any browser & nodejs.
 - Supports all common RDBMS queries.
 - Queries return immutable rows.
-- Super easy IndexedDB support.
 - Import and Export CSV/JSON.
 - Simple & elegant undo/redo.
 - Full Typescript support.
 - Runtime type casting.
 - Transactions support.
 - Full events system.
-- Just 8Kb Gzipped.
-
-## Drivers
-
-[What is a driver?](https://github.com/ClickSimply/Nano-SQL/wiki#drivers)
-
-| Type      | Description                                                              | Node | Browser |
-|-----------|--------------------------------------------------------------------------|------|---------|
-| Immutable | Runs anywhere, can persist to IndexedDB in the browser, used by default. | ✓    | ✓       |
-| [SQLite 3](https://github.com/ClickSimply/Nano-SQL/wiki/5.-SQLite)  | Useful for nodeJS applications, supports full NanoSQL API.               | ✓    | ✕       |
+- Just 10Kb Gzipped.
 
 ### Oh Look, Another Data Store
 
 I spent a long time looking for an existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
 
-| Database                                                 | Events | TS  | Undo  | Immutable | RDBMS | IndexedDB | NodeJS | Any Backend | Size |
-|----------------------------------------------------------|:------:|:---:|:-----:|:---------:|:-----:|:---------:|:--------:|:--------------:|:----------:|
-| NanoSQL                                                  | ✓      | ✓   | ✓    | ✓         | ✓     | ✓         | ✓       | ✓             | 8         |
-| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕    | ✕         | ✕     | ✕         | ✓      | ✕              | 2         |
-| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 5        |
-| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕    | ✓         | ✕     | ✕         | ✓      | ✕              | 16        |
-| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 19        |
-| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕    | ✕         | ✓     | ✓         | ✕      | ✕              | 40        |
-| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕    | ✕         | ✓     | ✓         | ✓      | ✓              | 88        |
-| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕    | ✕         | ✓     | ✕         | ✓      | ✕              | 500       |
+| Database                                                 | Events | TS  | Undo & Redo  | Immutable | RDBMS | IndexedDB | Node | Any Backend | Size |
+|----------------------------------------------------------|:------:|:---:|:------------:|:---------:|:-----:|:---------:|:----:|:-----------:|:----------:|
+| NanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 10         |
+| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕         | ✕    | ✕        | ✓      | ✕          | 2          |
+| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 5          |
+| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✓         | ✕    | ✕        | ✓      | ✕          | 16         |
+| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 19         |
+| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✕      | ✕          | 40         |
+| [PouchDB](https://github.com/pouchdb/pouchdb)            | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 46         |
+| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 88         |
+| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 500        |
 
-I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and it needs to work with TypeScript.  NanoSQL is that.  
+
+I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  NanoSQL is that.  
 
 ## Installation
 
@@ -114,7 +109,7 @@ nSQL('users')// Table/Store Name, required to declare model and attach it to thi
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
-.config({persistent:true}) // The long and difficult process of enabling indexed DB support, optional.
+.config({persistent:true}) // With this enabled, the best storage engine will be auttomatically selected and all changes saved to it.  Works in browser AND nodeJS automatically.
 .actions([ // Optional
     {
         name:'add_new_user',

@@ -112,29 +112,22 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_disablehistoryandcache" class="tsd-kind-icon">_disable<wbr>History<wbr>And<wbr>Cache</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_historypoint" class="tsd-kind-icon">_history<wbr>Point</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_historyrecords" class="tsd-kind-icon">_history<wbr>Records</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_indexeddb" class="tsd-kind-icon">_indexedDB</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_models" class="tsd-kind-icon">_models</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_databaseid" class="tsd-kind-icon">_databaseID</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_parent" class="tsd-kind-icon">_parent</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_persistent" class="tsd-kind-icon">_persistent</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_querycache" class="tsd-kind-icon">_query<wbr>Cache</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_selectedtable" class="tsd-kind-icon">_selected<wbr>Table</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_tables" class="tsd-kind-icon">_tables</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_store" class="tsd-kind-icon">_store</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_connect" class="tsd-kind-icon">_connect</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_deepfreeze" class="tsd-kind-icon">_deep<wbr>Freeze</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_exec" class="tsd-kind-icon">_exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_extend" class="tsd-kind-icon">_extend</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_getrow" class="tsd-kind-icon">_get<wbr>Row</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_gettable" class="tsd-kind-icon">_get<wbr>Table</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_invalidatecache" class="tsd-kind-icon">_invalidate<wbr>Cache</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_newtable" class="tsd-kind-icon">_new<wbr>Table</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_immutable_store_._nanosqlimmudb.html#_transaction" class="tsd-kind-icon">_transaction</a></li>
 							</ul>
 						</section>
 					</div>
@@ -152,7 +145,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L270">immutable-store.ts:270</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L180">immutable-store.ts:180</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="_immutable_store_._nanosqlimmudb.html" class="tsd-signature-type">_NanoSQLImmuDB</a></h4>
@@ -163,65 +156,17 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_disablehistoryandcache" class="tsd-anchor"></a>
-					<h3>_disable<wbr>History<wbr>And<wbr>Cache</h3>
-					<div class="tsd-signature tsd-kind-icon">_disable<wbr>History<wbr>And<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+					<a name="_databaseid" class="tsd-anchor"></a>
+					<h3>_databaseID</h3>
+					<div class="tsd-signature tsd-kind-icon">_databaseID<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L262">immutable-store.ts:262</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L128">immutable-store.ts:128</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Flag to disable history and caching to incrase performance for lage imports</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>type</dt>
-							<dd><p>{boolean}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_historyarray" class="tsd-anchor"></a>
-					<h3>_history<wbr>Array</h3>
-					<div class="tsd-signature tsd-kind-icon">_history<wbr>Array<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L245">immutable-store.ts:245</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>A variable to hold the state of the history pointer and history length</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>internal</dt>
-							<dd></dd>
-							<dt>type</dt>
-							<dd><p>{Array<number>}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_historypoint" class="tsd-anchor"></a>
-					<h3>_history<wbr>Point</h3>
-					<div class="tsd-signature tsd-kind-icon">_history<wbr>Point<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L236">immutable-store.ts:236</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>The pointer that indiciates where in history to pull from.</p>
+							<p>Unique database hash ID based on the data model.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>internal</dt>
@@ -236,96 +181,12 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_historyrecords" class="tsd-anchor"></a>
-					<h3>_history<wbr>Records</h3>
-					<div class="tsd-signature tsd-kind-icon">_history<wbr>Records<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L223">immutable-store.ts:223</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>Contains an array of affected rows for each history point.
-							This lets clearing away history and performing updates as least expensive as possible.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>internal</dt>
-							<dd></dd>
-							<dt>type</dt>
-							<dd><p>{Array<Array<number>&gt;}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_indexeddb" class="tsd-anchor"></a>
-					<h3>_indexedDB</h3>
-					<div class="tsd-signature tsd-kind-icon">_indexedDB<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">IDBDatabase</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L254">immutable-store.ts:254</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>Holds references to the indexed DB object.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>type</dt>
-							<dd><p>{IDBDatabase}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_models" class="tsd-anchor"></a>
-					<h3>_models</h3>
-					<div class="tsd-signature tsd-kind-icon">_models<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L141">immutable-store.ts:141</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>Stores a row index for each table.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>internal</dt>
-							<dd></dd>
-							<dt>type</dt>
-							<dd><p>{{
-									[tableHash: number]: Array<DataModel>;
-								}}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-index-signature">
-								<h5><span class="tsd-signature-symbol">[</span>tableHash: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/_index_.datamodel.html" class="tsd-signature-type">DataModel</a><span class="tsd-signature-symbol">&gt;</span></h5>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="_parent" class="tsd-anchor"></a>
 					<h3>_parent</h3>
 					<div class="tsd-signature tsd-kind-icon">_parent<span class="tsd-signature-symbol">:</span> <a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L152">immutable-store.ts:152</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L146">immutable-store.ts:146</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -345,35 +206,12 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_persistent" class="tsd-anchor"></a>
-					<h3>_persistent</h3>
-					<div class="tsd-signature tsd-kind-icon">_persistent<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L270">immutable-store.ts:270</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>Wether to store data to indexed DB or not.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>type</dt>
-							<dd><p>{boolean}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLImmuDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="_querycache" class="tsd-anchor"></a>
 					<h3>_query<wbr>Cache</h3>
 					<div class="tsd-signature tsd-kind-icon">_query<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L209">immutable-store.ts:209</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L168">immutable-store.ts:168</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -415,7 +253,7 @@
 					<div class="tsd-signature tsd-kind-icon">_selected<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L161">immutable-store.ts:161</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L155">immutable-store.ts:155</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -435,85 +273,26 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_tables" class="tsd-anchor"></a>
-					<h3>_tables</h3>
-					<div class="tsd-signature tsd-kind-icon">_tables<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<a name="_store" class="tsd-anchor"></a>
+					<h3>_store</h3>
+					<div class="tsd-signature tsd-kind-icon">_store<span class="tsd-signature-symbol">:</span> <a href="_immutable_store_._nanosql_storage.html" class="tsd-signature-type">_NanoSQL_Storage</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L180">immutable-store.ts:180</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L180">immutable-store.ts:180</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
-							<p>Utility data for each table, including holding the primary key, name, incriment number and primary keys</p>
+							<p>Holds the database data.</p>
 						</div>
 						<dl class="tsd-comment-tags">
-							<dt>internal</dt>
-							<dd></dd>
 							<dt>type</dt>
-							<dd><p>{{</p>
-								<pre><code>    [tableHash: <span class="hljs-built_in">number</span>]: {
-        _pk: <span class="hljs-built_in">string</span> <span class="hljs-comment">// Table primary key</span>
-        _name: <span class="hljs-built_in">string</span> <span class="hljs-comment">// Table name</span>
-        _incriment: <span class="hljs-built_in">number</span>; <span class="hljs-comment">// Table incriment counter</span>
-        _pkIndex: { <span class="hljs-comment">// Primary key index, points to row IDs</span>
-            [pk: <span class="hljs-built_in">number</span>]: <span class="hljs-built_in">number</span>;
-        };
-        _index: <span class="hljs-built_in">Array</span>&lt;<span class="hljs-built_in">number</span>&gt;; <span class="hljs-comment">// The table index of row IDs in this table</span>
-    }
-}}
-</code></pre></dd>
+							<dd><p>{_NanoSQL_Storage}</p>
+							</dd>
 							<dt>memberof</dt>
 							<dd><p>_NanoSQLImmuDB</p>
 							</dd>
 						</dl>
-					</div>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-index-signature">
-								<h5><span class="tsd-signature-symbol">[</span>tableHash: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">object</span></h5>
-								<ul class="tsd-parameters">
-									<li class="tsd-parameter">
-										<h5>_defaults<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_history<wbr>Pointers<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span></h5>
-										<ul class="tsd-parameters">
-											<li class="tsd-parameter-index-signature">
-												<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">number</span></h5>
-											</li>
-										</ul>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_incriment<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_index<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_keys<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_pk<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_pk<wbr>Type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>_rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span></h5>
-										<ul class="tsd-parameters">
-											<li class="tsd-parameter-index-signature">
-												<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">[]</span></h5>
-											</li>
-										</ul>
-									</li>
-								</ul>
-							</li>
-						</ul>
 					</div>
 				</section>
 			</section>
@@ -530,7 +309,7 @@
 							<aside class="tsd-sources">
 								<p>Implementation of <a href="../interfaces/_index_.nanosqlbackend.html">NanoSQLBackend</a>.<a href="../interfaces/_index_.nanosqlbackend.html#_connect">_connect</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L344">immutable-store.ts:344</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L196">immutable-store.ts:196</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -556,6 +335,41 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_deepfreeze" class="tsd-anchor"></a>
+					<h3>_deep<wbr>Freeze</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_deep<wbr>Freeze<span class="tsd-signature-symbol">(</span>obj<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L261">immutable-store.ts:261</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Recursively freezes a js object, used to prevent the rows from being edited once they&#39;re added.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>internal</dt>
+									<dd></dd>
+									<dt>memberof</dt>
+									<dd><p>_NanoSQLQuery</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>obj: <span class="tsd-signature-type">any</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="_exec" class="tsd-anchor"></a>
 					<h3>_exec</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -566,7 +380,7 @@
 							<aside class="tsd-sources">
 								<p>Implementation of <a href="../interfaces/_index_.nanosqlbackend.html">NanoSQLBackend</a>.<a href="../interfaces/_index_.nanosqlbackend.html#_exec">_exec</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L439">immutable-store.ts:439</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L210">immutable-store.ts:210</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -595,13 +409,13 @@
 					<a name="_extend" class="tsd-anchor"></a>
 					<h3>_extend</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_extend<span class="tsd-signature-symbol">(</span>db<span class="tsd-signature-symbol">: </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a>, command<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"&lt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"&gt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"?"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"flush_db"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"disable"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"before_import"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"after_import"</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">_extend<span class="tsd-signature-symbol">(</span>db<span class="tsd-signature-symbol">: </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a>, command<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L508">immutable-store.ts:508</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L307">immutable-store.ts:307</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -634,7 +448,7 @@
 									<h5>db: <a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></h5>
 								</li>
 								<li>
-									<h5>command: <span class="tsd-signature-type">"&lt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"&gt;"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"?"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"flush_db"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"disable"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"before_import"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"after_import"</span></h5>
+									<h5>command: <span class="tsd-signature-type">string</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -642,111 +456,16 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
-					<a name="_getrow" class="tsd-anchor"></a>
-					<h3>_get<wbr>Row</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_get<wbr>Row<span class="tsd-signature-symbol">(</span>tableID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, primaryKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">null</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L293">immutable-store.ts:293</a></li>
-								</ul>
-							</aside>
-							<div class="tsd-comment tsd-typography">
-								<div class="lead">
-									<p>Get a row object from the store based on the current history markers.</p>
-								</div>
-								<dl class="tsd-comment-tags">
-									<dt>memberof</dt>
-									<dd><p>_NanoSQLQuery</p>
-									</dd>
-								</dl>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>tableID: <span class="tsd-signature-type">number</span></h5>
-								</li>
-								<li>
-									<h5>primaryKey: <span class="tsd-signature-type">string</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>
-								<span class="tsd-signature-symbol"> | </span>
-								<span class="tsd-signature-type">null</span>
-							</h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
-					<a name="_gettable" class="tsd-anchor"></a>
-					<h3>_get<wbr>Table</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_get<wbr>Table<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L297">immutable-store.ts:297</a></li>
-								</ul>
-							</aside>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">object</span></h4>
-							<ul class="tsd-parameters">
-								<li class="tsd-parameter">
-									<h5>_defaults<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_history<wbr>Pointers<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span></h5>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-index-signature">
-											<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">number</span></h5>
-										</li>
-									</ul>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_incriment<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_index<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_keys<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_pk<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_pk<wbr>Type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-								</li>
-								<li class="tsd-parameter">
-									<h5>_rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span></h5>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-index-signature">
-											<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">[]</span></h5>
-										</li>
-									</ul>
-								</li>
-							</ul>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="_invalidatecache" class="tsd-anchor"></a>
 					<h3>_invalidate<wbr>Cache</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_invalidate<wbr>Cache<span class="tsd-signature-symbol">(</span>changedRows<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span>, type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, action<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">_invalidate<wbr>Cache<span class="tsd-signature-symbol">(</span>changedTableID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, changedRows<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span>, type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, action<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L461">immutable-store.ts:461</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L233">immutable-store.ts:233</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -764,6 +483,9 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
+									<h5>changedTableID: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
 									<h5>changedRows: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></h5>
 								</li>
 								<li>
@@ -778,28 +500,26 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
-					<a name="_newtable" class="tsd-anchor"></a>
-					<h3>_new<wbr>Table</h3>
+					<a name="_transaction" class="tsd-anchor"></a>
+					<h3>_transaction</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_new<wbr>Table<span class="tsd-signature-symbol">(</span>tableName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, dataModels<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.datamodel.html" class="tsd-signature-type">DataModel</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
+						<li class="tsd-signature tsd-kind-icon">_transaction<span class="tsd-signature-symbol">(</span>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"start"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"end"</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
+								<p>Implementation of <a href="../interfaces/_index_.nanosqlbackend.html">NanoSQLBackend</a>.<a href="../interfaces/_index_.nanosqlbackend.html#_transaction">_transaction</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/a290d16/src/immutable-store.ts#L301">immutable-store.ts:301</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Some-SQL/blob/1788394/src/immutable-store.ts#L273">immutable-store.ts:273</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>tableName: <span class="tsd-signature-type">string</span></h5>
-								</li>
-								<li>
-									<h5>dataModels: <a href="../interfaces/_index_.datamodel.html" class="tsd-signature-type">DataModel</a><span class="tsd-signature-symbol">[]</span></h5>
+									<h5>type: <span class="tsd-signature-type">"start"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"end"</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -833,28 +553,10 @@
 								<a href="_immutable_store_._nanosqlimmudb.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_disablehistoryandcache" class="tsd-kind-icon">_disable<wbr>History<wbr>And<wbr>Cache</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_historypoint" class="tsd-kind-icon">_history<wbr>Point</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_historyrecords" class="tsd-kind-icon">_history<wbr>Records</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_indexeddb" class="tsd-kind-icon">_indexedDB</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_models" class="tsd-kind-icon">_models</a>
+								<a href="_immutable_store_._nanosqlimmudb.html#_databaseid" class="tsd-kind-icon">_databaseID</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_immutable_store_._nanosqlimmudb.html#_parent" class="tsd-kind-icon">_parent</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_persistent" class="tsd-kind-icon">_persistent</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_immutable_store_._nanosqlimmudb.html#_querycache" class="tsd-kind-icon">_query<wbr>Cache</a>
@@ -863,10 +565,13 @@
 								<a href="_immutable_store_._nanosqlimmudb.html#_selectedtable" class="tsd-kind-icon">_selected<wbr>Table</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_tables" class="tsd-kind-icon">_tables</a>
+								<a href="_immutable_store_._nanosqlimmudb.html#_store" class="tsd-kind-icon">_store</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_immutable_store_._nanosqlimmudb.html#_connect" class="tsd-kind-icon">_connect</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_immutable_store_._nanosqlimmudb.html#_deepfreeze" class="tsd-kind-icon">_deep<wbr>Freeze</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_immutable_store_._nanosqlimmudb.html#_exec" class="tsd-kind-icon">_exec</a>
@@ -875,16 +580,10 @@
 								<a href="_immutable_store_._nanosqlimmudb.html#_extend" class="tsd-kind-icon">_extend</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_getrow" class="tsd-kind-icon">_get<wbr>Row</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_gettable" class="tsd-kind-icon">_get<wbr>Table</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_immutable_store_._nanosqlimmudb.html#_invalidatecache" class="tsd-kind-icon">_invalidate<wbr>Cache</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_immutable_store_._nanosqlimmudb.html#_newtable" class="tsd-kind-icon">_new<wbr>Table</a>
+								<a href="_immutable_store_._nanosqlimmudb.html#_transaction" class="tsd-kind-icon">_transaction</a>
 							</li>
 						</ul>
 					</li>
@@ -892,6 +591,12 @@
 				<ul class="after-current">
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_immutable_store_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_immutable_store_._nanosql_storage.html" class="tsd-kind-icon">_<wbr>NanoSQL_<wbr><wbr>Storage</a>
+					</li>
+					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="../interfaces/_immutable_store_.ihistorypoint.html" class="tsd-kind-icon">IHistory<wbr>Point</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="../modules/_immutable_store_.html#minmax" class="tsd-kind-icon">min<wbr>Max</a>

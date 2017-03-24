@@ -33,7 +33,7 @@ define("store", ["require", "exports", "nano-sql"], function(require, exports, n
                 { key: "size", type: "int" },
                 { key: "path", type: "array" }
             ]);
-        return nano_sql_1.nSQL().config({ persistent: true }).connect();
+        return nano_sql_1.nSQL().config({ persistent: true, memory: false }).connect();
     };
 });
 define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql", "jquery"], function(require, exports, react_1, React, ReactDOM, store_1, nano_sql_2, $) {

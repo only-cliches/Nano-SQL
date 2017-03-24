@@ -4,7 +4,6 @@ const PATHS = {
     app: path.join(__dirname, 'src'),
     build: path.join(__dirname, 'dist')
 };
-const WriteFilePlugin = require("write-file-webpack-plugin");
 
 var options = {
     entry: {
@@ -24,9 +23,14 @@ var options = {
     plugins: [],
     module: {
         loaders: [{
-            test: /\.ts$/,
-            loader: 'ts-loader'
-        }]
+                test: /\.ts$/,
+                loader: 'ts-loader'
+            },
+            {
+                test: /\.ts$/,
+                loader: "webpack-strip-block?start=NODE-START&end=NODE-END"
+            }
+        ]
     }
 };
 

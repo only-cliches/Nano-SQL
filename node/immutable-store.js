@@ -1,6 +1,10 @@
 "use strict";
 var index_1 = require("./index");
 var lie_ts_1 = require("lie-ts");
+/* NODE-START */
+var levelup = require("levelup");
+var fs = require("fs");
+/* NODE-END */
 /**
  * Min/Max function for database
  *
@@ -14,10 +18,10 @@ var lie_ts_1 = require("lie-ts");
  */
 var minMax = function (type, row, args, ptr, prev) {
     var key = args[0];
-    if (ptr[0] == 0)
-        prev[key] = type == -1 ? Number.MAX_VALUE : Number.MIN_VALUE;
+    if (ptr[0] === 0)
+        prev[key] = type === -1 ? Number.MAX_VALUE : Number.MIN_VALUE;
     var nextRow = {};
-    if (type == -1 ? parseFloat(row[key]) < parseFloat(prev[key]) : parseFloat(row[key]) > parseFloat(prev[key])) {
+    if (type === -1 ? parseFloat(row[key]) < parseFloat(prev[key]) : parseFloat(row[key]) > parseFloat(prev[key])) {
         nextRow = row;
     }
     else {
@@ -25,7 +29,7 @@ var minMax = function (type, row, args, ptr, prev) {
     }
     if (ptr[0] === ptr[1]) {
         var r = index_1._assign(nextRow);
-        r[type == -1 ? "MIN" : "MAX"] = nextRow[key];
+        r[type === -1 ? "MIN" : "MAX"] = nextRow[key];
         return r;
     }
     else {
@@ -39,7 +43,7 @@ var _functions = {
     SUM: {
         type: "aggregate",
         call: function (row, args, ptr, prev) {
-            if (ptr[0] == 0)
+            if (ptr[0] === 0)
                 prev = 0;
             prev += parseInt(row[args[0]]);
             if (ptr[0] === ptr[1]) {
@@ -67,7 +71,7 @@ var _functions = {
     AVG: {
         type: "aggregate",
         call: function (row, args, ptr, prev) {
-            if (ptr[0] == 0)
+            if (ptr[0] === 0)
                 prev = 0;
             prev += parseInt(row[args[0]]);
             if (ptr[0] === ptr[1]) {
@@ -83,7 +87,7 @@ var _functions = {
     COUNT: {
         type: "aggregate",
         call: function (row, args, ptr, prev) {
-            if (ptr[0] == 0)
+            if (ptr[0] === 0)
                 prev = 0;
             if (args[0] === "*") {
                 prev++;
@@ -115,61 +119,9 @@ var _functions = {
 var _NanoSQLImmuDB = (function () {
     function _NanoSQLImmuDB() {
         var t = this;
-        t._models = {};
-        t._tables = {};
         t._pendingQuerys = [];
-        t._historyRecords = [];
-        t._historyPoint = 0;
-        t._historyArray = [0, 0];
         t._queryCache = {};
-        t._disableHistoryAndCache = false;
     }
-    /**
-     * Get a row object from the store based on the current history markers.
-     *
-     * @public
-     * @param {number} rowID
-     * @returns {(DBRow|null)}
-     *
-     * @memberOf _NanoSQLQuery
-     */
-    _NanoSQLImmuDB.prototype._getRow = function (tableID, primaryKey) {
-        return this._tables[tableID]._rows[primaryKey][this._tables[tableID]._historyPointers[primaryKey]];
-    };
-    _NanoSQLImmuDB.prototype._getTable = function () {
-        return this._tables[this._selectedTable];
-    };
-    _NanoSQLImmuDB.prototype._newTable = function (tableName, dataModels) {
-        var t = this;
-        var ta = index_1.NanoSQLInstance._hash(tableName);
-        t._models[ta] = dataModels;
-        t._queryCache[ta] = {};
-        t._tables[ta] = {
-            _pk: "",
-            _pkType: "",
-            _keys: [],
-            _defaults: [],
-            _name: tableName,
-            _incriment: 1,
-            _index: [],
-            _historyPointers: {},
-            _rows: {}
-        };
-        // Discover primary keys for each table
-        var i = t._models[ta].length;
-        var keys = [];
-        var defaults = [];
-        while (i--) {
-            var p = t._models[ta][i];
-            t._tables[ta]._keys.unshift(p.key);
-            t._tables[ta]._defaults[i] = p.default;
-            if (p.props && p.props.indexOf("pk") >= 0) {
-                t._tables[ta]._pk = p.key;
-                t._tables[ta]._pkType = p.type;
-            }
-        }
-        return tableName;
-    };
     /**
      * Called once to init the database, prep all the needed variables and data models
      *
@@ -179,78 +131,9 @@ var _NanoSQLImmuDB = (function () {
      */
     _NanoSQLImmuDB.prototype._connect = function (connectArgs) {
         var t = this;
-        var i = 0;
-        var p;
-        var tables = [];
-        var upgrading = false;
-        var index = 0;
-        t._parent = connectArgs._parent;
-        t._persistent = connectArgs._config.length ? connectArgs._config[0].persistent || false : false;
-        Object.keys(connectArgs._models).forEach(function (tableName) {
-            tables.push(t._newTable(tableName, connectArgs._models[tableName]));
-        });
         t._databaseID = index_1.NanoSQLInstance._hash(JSON.stringify(connectArgs._models));
-        Object.keys(connectArgs._functions || []).forEach(function (f) {
-            _functions[f] = connectArgs._functions[f];
-        });
-        if (t._persistent && typeof indexedDB !== "undefined") {
-            var idb = indexedDB.open(String(t._databaseID), 1);
-            // Called only when there is no existing DB, creates the tables and data store.
-            idb.onupgradeneeded = function (event) {
-                upgrading = true;
-                var db = event.target.result;
-                var next = function () {
-                    if (index < tables.length) {
-                        var ta = index_1.NanoSQLInstance._hash(tables[index]);
-                        var config = t._tables[ta]._pk ? { keyPath: t._tables[ta]._pk } : {};
-                        db.createObjectStore(tables[index], config);
-                        index++;
-                        next();
-                    }
-                    else {
-                        connectArgs._onSuccess();
-                    }
-                };
-                next();
-            };
-            // Called once the database is connected and working
-            idb.onsuccess = function (event) {
-                t._indexedDB = event.target.result;
-                // Called to import existing indexed DB data into the store.
-                if (!upgrading) {
-                    var next_1 = function () {
-                        if (index < tables.length) {
-                            var ta = index_1.NanoSQLInstance._hash(tables[index]);
-                            var transaction = t._indexedDB.transaction(tables[index], "readonly");
-                            var store = transaction.objectStore(tables[index]);
-                            var cursorRequest = store.openCursor();
-                            var items_1 = [];
-                            transaction.oncomplete = function () {
-                                t._parent.table(tables[index]).loadJS(items_1).then(function () {
-                                    index++;
-                                    next_1();
-                                });
-                            };
-                            cursorRequest.onsuccess = function (evt) {
-                                var cursor = evt.target.result;
-                                if (cursor) {
-                                    items_1.push(cursor.value);
-                                    cursor.continue();
-                                }
-                            };
-                        }
-                        else {
-                            connectArgs._onSuccess();
-                        }
-                    };
-                    next_1();
-                }
-                ;
-            };
-        }
-        else {
-            connectArgs._onSuccess();
-        }
+        t._parent = connectArgs._parent;
+        t._store = new _NanoSQL_Storage(t, connectArgs);
     };
     /**
      * Called by NanoSQL to execute queries on this database.
@@ -281,14 +164,14 @@ var _NanoSQLImmuDB = (function () {
      *
      * @memberOf _NanoSQLImmuDB
      */
-    _NanoSQLImmuDB.prototype._invalidateCache = function (changedRows, type, action) {
+    _NanoSQLImmuDB.prototype._invalidateCache = function (changedTableID, changedRows, type, action) {
         var t = this;
         t._queryCache[t._selectedTable] = {};
         if (changedRows.length && action) {
             t._parent.triggerEvent({
                 name: "change",
                 actionOrView: "",
-                table: t._getTable()._name,
+                table: t._store._tables[changedTableID]._name,
                 query: [],
                 time: new Date().getTime(),
                 result: [{ msg: action + " was performed.", type: action }],
@@ -296,6 +179,34 @@ var _NanoSQLImmuDB = (function () {
                 changeType: type
             }, ["change"]);
         }
+    };
+    /**
+     * Recursively freezes a js object, used to prevent the rows from being edited once they're added.
+     *
+     * @internal
+     * @param {*} obj
+     * @returns {*}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLImmuDB.prototype._deepFreeze = function (obj) {
+        if (!obj)
+            return obj;
+        var t = this;
+        t._store._models[t._selectedTable].forEach(function (model) {
+            var prop = obj[model.key];
+            if (["map", "array"].indexOf(typeof prop) >= 0) {
+                obj[model.key] = t._deepFreeze(prop);
+            }
+        });
+        return Object.freeze(obj);
+    };
+    _NanoSQLImmuDB.prototype._transaction = function (type) {
+        if (type === "start")
+            this._store._doingTransaction = true;
+        if (type === "end")
+            this._store._doingTransaction = false;
+        return !!this._store._doingTransaction;
     };
     /**
      * Undo & Redo logic.
@@ -329,93 +240,125 @@ var _NanoSQLImmuDB = (function () {
         var t = this;
         var i;
         var h;
+        var j;
         var rowID;
         var rowData;
         var rowKey;
         var store;
-        if (t._indexedDB && t._getTable()) {
-            store = t._indexedDB.transaction(t._getTable()._name, "readwrite").objectStore(t._getTable()._name);
-        }
-        var shiftRowIDs = function (direction) {
-            var tableID = t._historyRecords[t._historyPoint]._tableID;
-            i = t._historyRecords[t._historyPoint]._rowKeys.length;
-            var rows = [];
-            while (i--) {
-                rowID = t._historyRecords[t._historyPoint]._rowKeys[i];
-                if (t._tables[tableID]._pkType === "int")
-                    rowID = parseInt(rowID);
-                rowData = t._getRow(tableID, rowID) || {};
-                if (direction > 0)
-                    rows.push(rowData);
-                t._tables[tableID]._historyPointers[rowID] += direction;
-                rowData = t._getRow(tableID, rowID);
-                if (direction < 0)
-                    rows.push(t._getRow(tableID, rowID));
-                if (store) {
-                    if (rowData) {
-                        store.put(rowData);
+        var shiftRowIDs = function (direction, callBack) {
+            var results = {};
+            var check = (t._store._historyLength - t._store._historyPoint);
+            t._store._read("_historyPoints", function (row) {
+                return row.historyPoint === check;
+            }, function (hps) {
+                j = 0;
+                var nextPoint = function () {
+                    if (j < hps.length) {
+                        i = 0;
+                        var tableID_1 = hps[j].tableID;
+                        var table_1 = t._store._tables[tableID_1];
+                        var rows_1 = [];
+                        var nextRow_1 = function () {
+                            if (i < hps[j].rowKeys.length) {
+                                rowID = hps[j].rowKeys[i];
+                                if (table_1._pkType === "int")
+                                    rowID = parseInt(rowID);
+                                t._store._read(table_1._name, rowID, function (rowData) {
+                                    if (direction > 0)
+                                        rows_1.push(rowData[0]); // Get current row data befoe shifting to a different row
+                                    // Shift the row pointer
+                                    t._store._read("_" + table_1._name + "_hist__meta", rowID, function (row) {
+                                        row = index_1._assign(row);
+                                        row[0]._pointer += direction;
+                                        var historyRowID = row[0]._historyDataRowIDs[row[0]._pointer];
+                                        t._store._upsert("_" + table_1._name + "_hist__meta", rowID, row[0], function () {
+                                            t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (row) {
+                                                var newRow = row[0] ? index_1._assign(row[0]) : null;
+                                                t._store._upsert(table_1._name, rowID, newRow, function () {
+                                                    if (direction < 0)
+                                                        rows_1.push(newRow);
+                                                    if (!results[tableID_1])
+                                                        results[tableID_1] = { type: hps[j].type, rows: [] };
+                                                    results[tableID_1].rows = results[tableID_1].rows.concat(rows_1);
+                                                    i++;
+                                                    nextRow_1();
+                                                });
+                                            });
+                                        });
+                                    });
+                                });
+                            }
+                            else {
+                                j++;
+                                nextPoint();
+                            }
+                        };
+                        nextRow_1();
                     }
                     else {
-                        store.delete(rowID);
+                        callBack(results);
                     }
-                }
-                if (t._tables[tableID]._historyPointers[rowID] < 0)
-                    t._tables[tableID]._historyPointers[rowID] = 0;
-            }
-            return rows;
+                };
+                nextPoint();
+            });
         };
         return new lie_ts_1.Promise(function (res, rej) {
             switch (command) {
                 case "<":
-                    if (!t._historyRecords.length || t._historyPoint === t._historyRecords.length) {
+                    if (!t._store._historyLength || t._store._historyPoint === t._store._historyLength) {
                         res(false);
                     }
                     else {
-                        var rows = shiftRowIDs(1);
-                        var description = t._historyRecords[t._historyPoint]._type;
-                        t._historyPoint++;
-                        switch (description) {
-                            case "inserted":
-                                description = "deleted";
-                                break;
-                            case "deleted":
-                                description = "inserted";
-                                break;
-                        }
-                        t._invalidateCache(rows, description, "undo");
-                        res(true);
+                        shiftRowIDs(1, function (affectedTables) {
+                            t._store._historyPoint++;
+                            t._store._utility("w", "historyPoint", t._store._historyPoint);
+                            Object.keys(affectedTables).forEach(function (tableID) {
+                                var description = affectedTables[tableID].type;
+                                switch (description) {
+                                    case "inserted":
+                                        description = "deleted";
+                                        break;
+                                    case "deleted":
+                                        description = "inserted";
+                                        break;
+                                }
+                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, description, "undo");
+                            });
+                            res(true);
+                        });
                     }
                     break;
                 case ">":
-                    if (!t._historyRecords.length || t._historyPoint < 1) {
+                    if (!t._store._historyLength || t._store._historyPoint < 1) {
                         res(false);
                     }
                     else {
-                        t._historyPoint--;
-                        var rows = shiftRowIDs(-1);
-                        t._invalidateCache(rows, t._historyRecords[t._historyPoint]._type, "redo");
-                        res(true);
+                        t._store._historyPoint--;
+                        t._store._utility("w", "historyPoint", t._store._historyPoint);
+                        shiftRowIDs(-1, function (affectedTables) {
+                            Object.keys(affectedTables).forEach(function (tableID) {
+                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].type, "redo");
+                            });
+                            res(true);
+                        });
                     }
                     break;
                 case "?":
-                    h = [t._historyRecords.length, t._historyRecords.length - t._historyPoint];
-                    if (t._historyArray.join("+") !== h.join("+")) {
-                        t._historyArray = h;
+                    h = [t._store._historyLength, t._store._historyLength - t._store._historyPoint];
+                    if (t._store._historyArray.join("+") !== h.join("+")) {
+                        t._store._historyArray = h;
                     }
-                    res(t._historyArray);
+                    res(t._store._historyArray);
                     break;
                 case "flush_db":
-                    if (t._indexedDB) {
-                        indexedDB.deleteDatabase(String(t._databaseID));
-                    }
+                    Object.keys(t._store._tables).forEach(function (tableID) {
+                        var rows = t._store._tables[parseInt(tableID)]._rows;
+                        t._invalidateCache(parseInt(tableID), Object.keys(rows).map(function (r) { return rows[r]; }), "remove", "clear");
+                    });
+                    t._store._clearAll(res);
                     break;
-                case "before_import":
-                    t._disableHistoryAndCache = true;
-                    res(!!t._disableHistoryAndCache);
-                    break;
-                case "after_import":
-                    t._disableHistoryAndCache = false;
-                    res(!!t._disableHistoryAndCache);
+                case "flush_history":
+                    t._store._clearHistory(res);
                     break;
             }
         });
@@ -423,6 +366,969 @@ var _NanoSQLImmuDB = (function () {
     return _NanoSQLImmuDB;
 }());
 exports._NanoSQLImmuDB = _NanoSQLImmuDB;
+// tslint:disable-next-line
+var _NanoSQL_Storage = (function () {
+    function _NanoSQL_Storage(database, args) {
+        this._savedArgs = args;
+        this.init(database, args);
+    }
+    /**
+     * Setup persistent storage engine and import any existing data into memory.
+     *
+     * @static
+     * @param {_NanoSQLImmuDB} database
+     * @param {DBConnect} args
+     * @returns {boolean}
+     *
+     * @memberOf _NanoSQL_Persistent
+     */
+    _NanoSQL_Storage.prototype.init = function (database, args) {
+        var t = this;
+        t._models = {};
+        t._tables = {};
+        t._levelDBs = {};
+        t._historyPoint = 0;
+        t._historyLength = 0;
+        t._historyArray = [0, 0];
+        t._doingTransaction = false;
+        t._doHistory = true;
+        t._storeMemory = true;
+        t._persistent = false;
+        t._utilityTable = {};
+        t._mode = 0;
+        t._parent = database;
+        var size = 5;
+        if (args._config.length) {
+            t._persistent = args._config[0].persistent !== undefined ? args._config[0].persistent : false;
+            t._doHistory = args._config[0].history !== undefined ? args._config[0].history : true;
+            t._storeMemory = args._config[0].memory !== undefined ? args._config[0].memory : true;
+            size = args._config[0].size || 5;
+            t._mode = {
+                IDB: 1,
+                LS: 2,
+                // WSQL: 3,
+                LVL: 4
+            }[args._config[0].mode] || 0;
+        }
+        var upgrading = false;
+        var index = 0;
+        var isNewStore = true;
+        Object.keys(args._models).forEach(function (t) {
+            args._models["_" + t + "_hist__data"] = index_1._assign(args._models[t]);
+            args._models["_" + t + "_hist__data"] = args._models["_" + t + "_hist__data"].map(function (m) {
+                delete m.props;
+                return m;
+            });
+            // args._models["_" + t + "_hist__data"].unshift({key: "__id", type: "int", props:["ai", "pk"]});
+            args._models["_" + t + "_hist__meta"] = [
+                { key: "id", type: "int", props: ["ai", "pk"] },
+                { key: "_pointer", type: "int" },
+                { key: "_historyDataRowIDs", type: "array" },
+            ];
+        });
+        args._models["_utility"] = [
+            { key: "key", type: "string", props: ["pk"] },
+            { key: "value", type: "blob" },
+        ];
+        args._models["_historyPoints"] = [
+            { key: "id", type: "int", props: ["ai", "pk"] },
+            { key: "tableID", type: "int" },
+            { key: "historyPoint", type: "int" },
+            { key: "rowKeys", type: "array" },
+            { key: "type", type: "string" }
+        ];
+        var tables = Object.keys(args._models);
+        var beforeHist;
+        var beforeSel = t._parent._selectedTable;
+        var beforeMode;
+        Object.keys(args._models).forEach(function (tableName) {
+            t._newTable(tableName, args._models[tableName]);
+        });
+        Object.keys(args._functions || []).forEach(function (f) {
+            _functions[f] = args._functions[f];
+        });
+        var completeSetup = function () {
+            var tables = Object.keys(args._models);
+            var i = 0;
+            t._mode = beforeMode;
+            if (beforeHist) {
+                t._read("_utility", "all", function (rows) {
+                    rows.forEach(function (d) {
+                        t._utility("w", d.key, d.value);
+                        if (d.key === "historyPoint")
+                            t._historyPoint = d.value || 0;
+                        if (d.key === "historyLength")
+                            t._historyLength = d.value || 0;
+                    });
+                });
+            }
+            if (isNewStore) {
+                var step_1 = function () {
+                    if (i < tables.length) {
+                        if (tables[i].indexOf("_hist__data") !== -1) {
+                            t._parent._selectedTable = index_1.NanoSQLInstance._hash(tables[i]);
+                            t._upsert(tables[i], 0, null, function () {
+                                i++;
+                                step_1();
+                            });
+                        }
+                        else {
+                            i++;
+                            step_1();
+                        }
+                    }
+                    else {
+                        t._doHistory = beforeHist;
+                        t._parent._selectedTable = beforeSel;
+                        args._onSuccess();
+                    }
+                };
+                step_1();
+            }
+            else {
+                t._doHistory = beforeHist;
+                t._parent._selectedTable = beforeSel;
+                args._onSuccess();
+            }
+        };
+        beforeMode = t._mode;
+        /**
+         * mode 0: no persistent storage, memory only
+         * mode 1: Indexed DB // Preferred, forward compatible browser persistence
+         * mode 2: Local Storage // Default fallback
+         * mode 3: WebSQL // Safari hates IndexedDB, use this (non standard) fallback for iOS devices and macOS running safari
+         * mode 4: Level Up // Used by NodeJS
+         */
+        if (t._persistent) {
+            if (t._mode !== 0) {
+                switch (t._mode) {
+                    case 1:
+                        if (typeof indexedDB === "undefined")
+                            t._mode = 0;
+                        break;
+                    case 2:
+                        if (typeof localStorage === "undefined")
+                            t._mode = 0;
+                        break;
+                    // case 3: if (typeof window === "undefined" || typeof window.openDatabase === "undefined") t._mode = 0;
+                    case 3:
+                        t._mode = 0;
+                        break;
+                    case 4:
+                        if (typeof window !== "undefined")
+                            t._mode = 0;
+                        break;
+                }
+            }
+            else {
+                if (typeof window !== "undefined") {
+                    if (typeof localStorage !== "undefined")
+                        t._mode = 2; // Local storage is the fail safe
+                    if (typeof indexedDB !== "undefined")
+                        t._mode = 1; // Use indexedDB instead if it's there
+                }
+                else {
+                    t._mode = 4; // Use LevelUp in NodeJS if it's there.
+                }
+            }
+        }
+        else {
+            t._mode = 0;
+            completeSetup();
+        }
+        beforeHist = t._doHistory;
+        beforeMode = t._mode;
+        t._mode = 0;
+        t._doHistory = false;
+        switch (beforeMode) {
+            case 1:
+                var idb = indexedDB.open(String(t._parent._databaseID), 1);
+                // Called only when there is no existing DB, creates the tables and data store.
+                idb.onupgradeneeded = function (event) {
+                    upgrading = true;
+                    var db = event.target.result;
+                    var transaction = event.target.transaction;
+                    t._indexedDB = db;
+                    var next = function () {
+                        if (index < tables.length) {
+                            var ta = index_1.NanoSQLInstance._hash(tables[index]);
+                            var config = t._tables[ta]._pk ? { keyPath: t._tables[ta]._pk } : {};
+                            db.createObjectStore(t._tables[ta]._name, config); // Standard Tables
+                            index++;
+                            next();
+                        }
+                        else {
+                            transaction.oncomplete = function () {
+                                completeSetup();
+                            };
+                        }
+                    };
+                    next();
+                };
+                // Called once the database is connected and working
+                idb.onsuccess = function (event) {
+                    t._indexedDB = event.target.result;
+                    // Called to import existing indexed DB data into the memory store.
+                    if (!upgrading) {
+                        isNewStore = false;
+                        var next_1 = function () {
+                            if (index >= tables.length) {
+                                completeSetup();
+                                return;
+                            }
+                            // Do not import history tables if history is disabled.
+                            if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                                index++;
+                                next_1();
+                                return;
+                            }
+                            // Load data from indexed DB into memory store
+                            if (index < tables.length) {
+                                var ta_1 = index_1.NanoSQLInstance._hash(tables[index]);
+                                var transaction = t._indexedDB.transaction(tables[index], "readonly");
+                                var store = transaction.objectStore(tables[index]);
+                                var cursorRequest = store.openCursor();
+                                var items_1 = [];
+                                transaction.oncomplete = function () {
+                                    if (t._storeMemory) {
+                                        if (tables[index].indexOf("_hist__data") !== -1) {
+                                            t._tables[ta_1]._index.push("0");
+                                            t._tables[ta_1]._rows["0"] = null;
+                                            t._tables[ta_1]._incriment++;
+                                            t._parent._parent.table(tables[index]).loadJS(items_1).then(function () {
+                                                index++;
+                                                next_1();
+                                            });
+                                        }
+                                        else {
+                                            t._parent._parent.table(tables[index]).loadJS(items_1).then(function () {
+                                                index++;
+                                                next_1();
+                                            });
+                                        }
+                                    }
+                                    else {
+                                        t._tables[ta_1]._index = items_1;
+                                        t._tables[ta_1]._incriment = items_1.reduce(function (prev, cur) {
+                                            return Math.max(parseInt(cur), prev);
+                                        }, 0) + 1;
+                                        index++;
+                                        next_1();
+                                    }
+                                };
+                                cursorRequest.onsuccess = function (evt) {
+                                    var cursor = evt.target.result;
+                                    if (cursor) {
+                                        items_1.push(t._storeMemory ? cursor.value : cursor.key);
+                                        cursor.continue();
+                                    }
+                                };
+                            }
+                        };
+                        next_1();
+                    }
+                    ;
+                };
+                break;
+            case 2:
+                if (localStorage.getItem("dbID") !== String(t._parent._databaseID)) {
+                    localStorage.clear();
+                    localStorage.setItem("dbID", String(t._parent._databaseID));
+                    tables.forEach(function (table) {
+                        var ta = index_1.NanoSQLInstance._hash(table);
+                        localStorage.setItem(table, JSON.stringify([]));
+                    });
+                    completeSetup();
+                }
+                else {
+                    isNewStore = false;
+                    // import indexes no matter what
+                    tables.forEach(function (tName) {
+                        var ta = index_1.NanoSQLInstance._hash(tName);
+                        var tableIndex = JSON.parse(localStorage.getItem(tName) || "[]");
+                        t._tables[ta]._index = tableIndex;
+                        if (!t._storeMemory) {
+                            t._tables[ta]._incriment = tableIndex.reduce(function (prev, cur) {
+                                return Math.max(parseInt(cur), prev);
+                            }, 0) + 1;
+                        }
+                    });
+                    // only import data if the memory store is enabled
+                    if (t._storeMemory) {
+                        var tIndex_1 = 0;
+                        var step_2 = function () {
+                            if (tIndex_1 < tables.length) {
+                                var items_2 = [];
+                                // Do not import history tables if history is disabled.
+                                if (!beforeHist && (tables[tIndex_1].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                                    tIndex_1++;
+                                    step_2();
+                                    return;
+                                }
+                                JSON.parse(localStorage.getItem(tables[tIndex_1]) || "[]").forEach(function (ptr) {
+                                    items_2.push(JSON.parse(localStorage.getItem(tables[tIndex_1] + "-" + ptr) || ""));
+                                });
+                                t._parent._parent.table(tables[tIndex_1]).loadJS(items_2).then(function () {
+                                    tIndex_1++;
+                                    step_2();
+                                });
+                            }
+                            else {
+                                completeSetup();
+                            }
+                        };
+                        step_2();
+                    }
+                    else {
+                        completeSetup();
+                    }
+                }
+                break;
+            /*case 3: // WebSQL
+
+                const success = (tx, rows) => {
+                    console.log(rows);
+                };
+
+                const error = (tx, error): boolean => {
+                    console.log(error);
+                    return true;
+                }
+
+                const ct = "CREATE TABLE IF NOT EXISTS ";
+                const newStore = () => {
+                    t._webSQL.transaction((tx) => {
+                        tx.executeSql(ct + "tableID (id TEXT);", [], success, error);
+                        tx.executeSql("INSERT INTO tableID (id) VALUES (?)", [t._parent._databaseID], success, error);
+                        tables.forEach((table) => {
+                            let ta = NanoSQLInstance._hash(table);
+                            tx.executeSql(ct + table + "(" + t._tables[ta]._keys.join(", ") + ");", [], success, error);
+                        });
+                        completeSetup();
+                    });
+                };
+
+                const existingTables = () => {
+                    isNewStore = false;
+                    index = 0;
+                    const next = () => {
+                        if (index >= tables.length) {
+                            completeSetup();
+                            return;
+                        }
+
+                        // Do not import history tables if history is disabled.
+                        if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                            index++;
+                            next();
+                            return;
+                        }
+
+                        // Load data from WebSQL into memory store
+                        if (index < tables.length) {
+                            let ta = NanoSQLInstance._hash(tables[index]);
+                            let pk = t._tables[ta]._pk;
+                            t._webSQL.transaction((tx) => {
+                                tx.executeSql("SELECT * FROM " + tables[index], [], (tx, result) => {
+
+                                    let items: any[] = [];
+                                    let ptr = result.rows.length;
+
+                                    while (ptr--) {
+                                        let r = result.rows.item(ptr);
+                                        items.unshift(t._storeMemory ? r : r[pk] | ptr);
+                                    }
+
+                                    if (t._storeMemory) {
+                                        if (tables[index].indexOf("_hist__data") !== -1) {
+                                            t._tables[ta]._index.push("0");
+                                            t._tables[ta]._rows["0"] = null;
+                                            t._tables[ta]._incriment++;
+                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
+                                                index++;
+                                                next();
+                                            });
+                                        } else {
+                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
+                                                index++;
+                                                next();
+                                            });
+                                        }
+                                    } else {
+                                        t._tables[ta]._index = items;
+                                        t._tables[ta]._incriment = items.reduce((prev, cur) => {
+                                            return Math.max(parseInt(cur), prev);
+                                        }, 0) + 1;
+                                        index++;
+                                        next();
+                                    }
+                                });
+                            });
+                        }
+                    };
+
+                    next();
+                };
+
+                t._webSQL = window.openDatabase(String(t._parent._databaseID), "1", String(t._parent._databaseID), size * 1024 * 1024);
+                t._webSQL.transaction((tx) => {
+                    tx.executeSql("SELECT * FROM tableID;", [], (tx, results) => {
+                        let dbID = parseInt(results.rows[0].id);
+                        if (dbID === t._parent._databaseID) {
+                            existingTables();
+                        } else {
+                            t._webSQLEmpty(newStore);
+                        }
+                    }, (tx, error): boolean => {
+                        newStore();
+                        return true;
+                    });
+                });
+            break;*/
+            /* NODE-START */
+            case 4:
+                // Called to import existing  data into the memory store.
+                var existingStore = function () {
+                    isNewStore = false;
+                    var next = function () {
+                        if (index < tables.length) {
+                            // Do not import history tables if history is disabled.
+                            if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                                index++;
+                                next();
+                                return;
+                            }
+                            // Load data from level up into memory store
+                            if (index < tables.length) {
+                                var ta_2 = index_1.NanoSQLInstance._hash(tables[index]);
+                                var items_3 = [];
+                                if (t._storeMemory) {
+                                    t._levelDBs[tables[index]].createValueStream()
+                                        .on("data", function (data) {
+                                        items_3.push(JSON.parse(data));
+                                    })
+                                        .on("end", function () {
+                                        if (tables[index].indexOf("_hist__data") !== -1) {
+                                            t._tables[ta_2]._index.push("0");
+                                            t._tables[ta_2]._rows["0"] = null;
+                                            t._tables[ta_2]._incriment++;
+                                            t._parent._parent.table(tables[index]).loadJS(items_3).then(function () {
+                                                index++;
+                                                next();
+                                            });
+                                        }
+                                        else {
+                                            t._parent._parent.table(tables[index]).loadJS(items_3).then(function () {
+                                                index++;
+                                                next();
+                                            });
+                                        }
+                                    });
+                                }
+                                else {
+                                    t._levelDBs[tables[index]].createKeyStream()
+                                        .on("data", function (data) {
+                                        items_3.push(data);
+                                    })
+                                        .on("end", function () {
+                                        t._tables[ta_2]._index = items_3;
+                                        t._tables[ta_2]._incriment = items_3.reduce(function (prev, cur) {
+                                            return Math.max(parseInt(cur), prev);
+                                        }, 0) + 1;
+                                        index++;
+                                        next();
+                                    });
+                                }
+                            }
+                        }
+                        else {
+                            completeSetup();
+                            return;
+                        }
+                    };
+                    next();
+                };
+                var dbFolder_1 = "./db_" + t._parent._databaseID;
+                var existing = true;
+                if (!fs.existsSync(dbFolder_1)) {
+                    fs.mkdirSync(dbFolder_1);
+                    existing = false;
+                }
+                tables.forEach(function (table) {
+                    t._levelDBs[table] = levelup(dbFolder_1 + "/" + table);
+                });
+                if (existing) {
+                    existingStore();
+                }
+                else {
+                    completeSetup();
+                }
+                break;
+        }
+    };
+    /*
+        public _webSQLEmpty(callBack: Function): void {
+            this._webSQL.transaction((tx) => {
+                tx.executeSql("SELECT name FROM sqlite_master WHERE type = 'table' AND name != '__WebKitDatabaseInfoTable__'", [], (tx, result) => {
+                    let i = result.rows.length;
+                    while (i--) {
+                        tx.executeSql("DROP TABLE " + result.rows.item(i).name);
+                    }
+                    callBack();
+                });
+            });
+        }
+    */
+    _NanoSQL_Storage.prototype._clearHistory = function (complete) {
+        var t = this;
+        var tables = Object.keys(t._tables);
+        var index = 0;
+        var step = function () {
+            if (index < tables.length) {
+                if (tables[index].indexOf("_hist__meta") !== -1) {
+                }
+                if (tables[index].indexOf("_hist__data") !== -1) {
+                }
+                if (tables[index] === "_historyPoints") {
+                }
+            }
+            else {
+                complete();
+            }
+        };
+        step();
+    };
+    _NanoSQL_Storage.prototype._delete = function (tableName, rowID, callBack) {
+        var t = this;
+        var editingHistory = false;
+        var ta = index_1.NanoSQLInstance._hash(tableName);
+        t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1); // Update Index
+        if (t._storeMemory) {
+            delete t._tables[ta]._rows[rowID];
+            if (t._mode === 0 && callBack)
+                return callBack(true);
+        }
+        switch (t._mode) {
+            case 1:
+                var transaction = t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName);
+                transaction.delete(rowID);
+                if (callBack)
+                    callBack(true);
+                break;
+            case 2:
+                localStorage.removeItem(tableName + "-" + String(rowID));
+                localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
+                if (callBack)
+                    callBack(true);
+                break;
+            /*case 3: // WebSQL
+                t._webSQL.transaction((tx) => {
+                    let pk = t._tables[ta]._pk;
+                    tx.executeSql("DELETE FROM " + tableName + " WHERE " + pk + " = ?", [rowID]);
+                });
+            break;*/
+            /* NODE-START */
+            case 4:
+                t._levelDBs[tableName].del(rowID, function () {
+                    if (callBack)
+                        callBack(true);
+                });
+                break;
+        }
+    };
+    _NanoSQL_Storage.prototype._upsert = function (tableName, rowID, value, callBack) {
+        var t = this;
+        var ta = index_1.NanoSQLInstance._hash(tableName);
+        if (rowID === undefined || rowID === null) {
+            t._models[ta].forEach(function (m) {
+                if (m.props && m.props.indexOf("pk") !== -1) {
+                    if (m.type === "uuid") {
+                        rowID = index_1.NanoSQLInstance.uuid();
+                    }
+                    else {
+                        rowID = t._tables[ta]._incriment++;
+                    }
+                }
+            });
+            if (!rowID)
+                rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
+        }
+        if (t._tables[ta]._pkType === "int")
+            rowID = parseInt(rowID);
+        var pk = t._tables[ta]._pk;
+        if (pk && pk.length && value && !value[pk]) {
+            value[pk] = rowID;
+        }
+        // Index update
+        if (t._tables[ta] && t._tables[ta]._index.indexOf(String(rowID)) === -1) {
+            t._tables[ta]._index.push(String(rowID));
+        }
+        // Memory Store Update
+        if (t._storeMemory && t._tables[ta]) {
+            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value);
+            if (t._mode === 0 && callBack)
+                return callBack(rowID);
+        }
+        switch (t._mode) {
+            case 1:
+                var transaction = t._indexedDB.transaction(tableName, "readwrite");
+                var store = transaction.objectStore(tableName);
+                if (pk.length && value) {
+                    store.put(value);
+                }
+                else {
+                    if (tableName.indexOf("_hist__data") !== -1) {
+                        store.put(value, rowID);
+                    }
+                    else {
+                        if (value)
+                            store.put(value);
+                        if (!value)
+                            store.delete(rowID);
+                    }
+                }
+                transaction.oncomplete = function () {
+                    if (callBack)
+                        callBack(rowID);
+                };
+                break;
+            case 2:
+                localStorage.setItem(tableName + "-" + String(rowID), value ? JSON.stringify(value) : "");
+                localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
+                if (callBack)
+                    callBack(rowID);
+                break;
+            /*case 3: // WebSQL
+                t._webSQL.transaction((tx) => {
+                    let pk = t._tables[ta]._pk;
+                    let values = t._models[ta].map((val, i) => {
+                        if (val.type === "map" || val.type === "array") {
+                            return JSON.stringify(value[val.key]);
+                        } else {
+                            return value ? value[val.key] : null;
+                        }
+                    });
+
+                    tx.executeSql("SELECT * FROM " + tableName + " WHERE " + (pk.length ? pk : "rowid") + " = ?", [rowID], (txx, result) => {
+                        if (!result.rows.length) {
+                            tx.executeSql("INSERT INTO '" + tableName + "' (" + t._tables[ta]._keys.join(", ") + ") VALUES (" + t._tables[ta]._keys.map(k => "?").join(", ") + ");", values, () => {
+                                if (callBack) callBack(rowID as string);
+                            });
+                        } else {
+                            values.push(rowID);
+                            tx.executeSql("UPDATE '" + tableName + "' SET " + t._tables[ta]._keys.map((k) => k + " = ?").join(", ")  + " WHERE " + pk + " = ?", values, () => {
+                                if (callBack) callBack(rowID as string);
+                            });
+                        }
+                    });
+
+                });
+            break;*/
+            /* NODE-START */
+            case 4:
+                if (tableName.indexOf("_hist__data") !== -1) {
+                    t._levelDBs[tableName].put(String(rowID), JSON.stringify(value), function () {
+                        if (callBack)
+                            callBack(rowID);
+                    });
+                }
+                else {
+                    if (value) {
+                        t._levelDBs[tableName].put(String(rowID), JSON.stringify(value), function () {
+                            if (callBack)
+                                callBack(rowID);
+                        });
+                    }
+                    else {
+                        t._levelDBs[tableName].del(String(rowID), function () {
+                            if (callBack)
+                                callBack(rowID);
+                        });
+                    }
+                }
+                break;
+        }
+    };
+    _NanoSQL_Storage.prototype._read = function (tableName, row, callBack) {
+        var t = this;
+        var ta = index_1.NanoSQLInstance._hash(tableName);
+        // Way faster to read directly from memory if we can.
+        if (t._storeMemory && t._tables[ta]) {
+            var rows_2 = t._tables[ta]._rows;
+            if (row === "all" || typeof row === "function") {
+                var allRows = Object.keys(rows_2).map(function (r) { return rows_2[r]; });
+                if (row === "all") {
+                    callBack(allRows.filter(function (r) { return r; }));
+                }
+                else {
+                    callBack(allRows.filter(function (r) { return row(r); }));
+                }
+            }
+            else {
+                callBack([rows_2[row]].filter(function (r) { return r; }));
+            }
+            return;
+        }
+        switch (t._mode) {
+            case 1:
+                var transaction = t._indexedDB.transaction(tableName, "readonly");
+                var store = transaction.objectStore(tableName);
+                if (row === "all" || typeof row === "function") {
+                    var cursorRequest = store.openCursor();
+                    var rows_3 = [];
+                    transaction.oncomplete = function () {
+                        callBack(rows_3);
+                    };
+                    cursorRequest.onsuccess = function (evt) {
+                        var cursor = evt.target.result;
+                        if (cursor) {
+                            if (row !== "all") {
+                                if (row(cursor.value))
+                                    rows_3.push(cursor.value);
+                            }
+                            else {
+                                rows_3.push(cursor.value);
+                            }
+                            cursor.continue();
+                        }
+                    };
+                }
+                else {
+                    var singleReq_1 = store.get(row);
+                    singleReq_1.onsuccess = function (event) {
+                        callBack([singleReq_1.result]);
+                    };
+                }
+                break;
+            case 2:
+                if (row === "all" || typeof row === "function") {
+                    var rows = t._tables[ta]._index.map(function (idx) {
+                        var item = localStorage.getItem(tableName + "-" + idx);
+                        return item && item.length ? JSON.parse(item) : null;
+                    });
+                    if (row !== "all") {
+                        callBack(rows.filter(function (r) { return row(r); }));
+                    }
+                    else {
+                        callBack(rows);
+                    }
+                }
+                else {
+                    var item = localStorage.getItem(tableName + "-" + row);
+                    callBack([item && item.length ? JSON.parse(item) : null]);
+                }
+                break;
+            /*case 3: // WebSQL
+                const serialize = (row: DBRow) => {
+                    row = _assign(row);
+                    t._models[ta].forEach((val, i): void => {
+                        if (val.type === "map" || val.type === "array") {
+                            row[val.key] = JSON.parse(row[val.key]);
+                        }
+                        if (row[val.key] === "undefined") {
+                            row[val.key] = undefined;
+                        }
+                    });
+                    return row;
+                }
+
+                t._webSQL.transaction((tx) => {
+                    if (row === "all" || typeof row === "function") {
+                        tx.executeSql("SELECT * FROM " + tableName, [], (tx, result) => {
+                            let rows: any[] = [];
+                            let ptr = result.rows.length;
+                            while (ptr--) {
+                                rows.unshift(serialize(result.rows.item(ptr)));
+                            }
+                            if (row !== "all") {
+                                callBack(rows.filter((r) => row(r)));
+                            } else {
+                                callBack(rows);
+                            }
+                        });
+                    } else {
+                        let pk = t._tables[ta]._pk;
+                        tx.executeSql("SELECT * FROM " + tableName + " WHERE " + pk + " = ?", [row], (tx, result) => {
+                            let r: any[] = [];
+                            if (result.rows.length) {
+                                r.push(serialize(result.rows.item(0)));
+                            } else {
+                                r.push(null);
+                            }
+                            callBack(r);
+                        });
+                    }
+                });
+            break;*/
+            /* NODE-START */
+            case 4:
+                if (row === "all" || typeof row === "function") {
+                    var rows_4 = [];
+                    t._levelDBs[tableName].createValueStream()
+                        .on("data", function (data) {
+                        rows_4.push(JSON.parse(data));
+                    })
+                        .on("end", function () {
+                        if (row !== "all") {
+                            callBack(rows_4.filter(function (r) { return row(r); }));
+                        }
+                        else {
+                            callBack(rows_4);
+                        }
+                    });
+                }
+                else {
+                    t._levelDBs[tableName].get(String(row), function (err, data) {
+                        if (err) {
+                            callBack([null]);
+                        }
+                        else {
+                            callBack([JSON.parse(data)]);
+                        }
+                    });
+                }
+                break;
+        }
+    };
+    _NanoSQL_Storage.prototype._clearAll = function (callBack) {
+        var t = this;
+        t._savedArgs._onSuccess = callBack;
+        t._savedArgs._onFail = function () { };
+        switch (t._mode) {
+            case 0:
+                t.init(t._parent, t._savedArgs);
+                break;
+            case 1:
+                indexedDB.deleteDatabase(String(t._parent._databaseID)).onsuccess = function () {
+                    t.init(t._parent, t._savedArgs);
+                };
+                break;
+            case 2:
+                localStorage.clear();
+                t.init(t._parent, t._savedArgs);
+                break;
+            /*case 3: // WebSQL
+                t._webSQLEmpty(() => {
+                    t.init(t._parent, t._savedArgs);
+                });
+            break;*/
+            /* NODE-START */
+            case 4:
+                break;
+        }
+        if (callBack)
+            callBack(true);
+    };
+    /**
+     * Write or access utility options.
+     *
+     * @param {("r"|"w")} type
+     * @param {string} key
+     * @param {*} [value]
+     * @returns
+     *
+     * @memberOf _NanoSQLImmuDB
+     */
+    _NanoSQL_Storage.prototype._utility = function (type, key, value) {
+        if (type === "r") {
+            if (this._utilityTable[key]) {
+                return this._utilityTable[key].value;
+            }
+            else {
+                return null;
+            }
+        }
+        else {
+            this._upsert("_utility", key, { key: key, value: value });
+            this._utility[key] = {
+                key: key,
+                value: value
+            };
+            return value;
+        }
+    };
+    /**
+     * Get the current selected table
+     *
+     * @returns
+     *
+     * @memberOf _NanoSQL_Storage
+     */
+    _NanoSQL_Storage.prototype._getTable = function () {
+        return this._tables[this._parent._selectedTable];
+    };
+    /**
+     * Setup a new table.
+     *
+     * @param {string} tableName
+     * @param {DataModel[]} dataModels
+     * @returns {string}
+     *
+     * @memberOf _NanoSQL_Storage
+     */
+    _NanoSQL_Storage.prototype._newTable = function (tableName, dataModels) {
+        var t = this;
+        var ta = index_1.NanoSQLInstance._hash(tableName);
+        t._models[ta] = dataModels;
+        t._parent._queryCache[ta] = {};
+        t._tables[ta] = {
+            _pk: "",
+            _pkType: "",
+            _keys: [],
+            _defaults: [],
+            _name: tableName,
+            _incriment: 1,
+            _index: [],
+            _rows: {}
+        };
+        // Discover primary keys for each table
+        var i = t._models[ta].length;
+        var keys = [];
+        var defaults = [];
+        while (i--) {
+            var p = t._models[ta][i];
+            t._tables[ta]._keys.unshift(p.key);
+            t._tables[ta]._defaults[i] = p.default;
+            if (p.props && p.props.indexOf("pk") >= 0) {
+                t._tables[ta]._pk = p.key;
+                t._tables[ta]._pkType = p.type;
+            }
+        }
+        return tableName;
+    };
+    /**
+     * User agent sniffing to discover if we're running in Safari
+     *
+     * @returns
+     *
+     * @memberOf _NanoSQLImmuDB
+     */
+    _NanoSQL_Storage.prototype._safari = function () {
+        return typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    };
+    /**
+     * User agent sniffing to discover if we're on an iOS device.
+     *
+     * @returns {boolean}
+     *
+     * @memberOf _NanoSQLImmuDB
+     */
+    _NanoSQL_Storage.prototype._iOS = function () {
+        var iDevices = [
+            "iPad",
+            "iPhone",
+            "iPod"
+        ];
+        if (typeof navigator !== "undefined" && !!navigator.platform) {
+            while (iDevices.length) {
+                if (navigator.platform.indexOf(iDevices.pop()) !== -1)
+                    return true;
+            }
+        }
+        return false;
+    };
+    return _NanoSQL_Storage;
+}());
 /**
  * Query module called for each database execution to get the desired result on the data.
  *
@@ -466,16 +1372,16 @@ var _NanoSQLQuery = (function () {
             switch (simpleQuery[0].type) {
                 case "show tables":
                     callBack();
-                    query._onSuccess([{ tables: Object.keys(this._db._tables).map(function (ta) { return _this._db._tables[ta]._name; }) }], "info", []);
+                    query._onSuccess([{ tables: Object.keys(this._db._store._tables).map(function (ta) { return _this._db._store._tables[ta]._name; }) }], "info", []);
                     break;
                 case "describe":
                     var getTable_1;
                     var tableName_1 = this._db._selectedTable;
                     var rows = {};
-                    Object.keys(this._db._tables).forEach(function (ta) {
+                    Object.keys(this._db._store._tables).forEach(function (ta) {
                         if (parseInt(ta) === _this._db._selectedTable) {
-                            getTable_1 = index_1._assign(_this._db._models[ta]);
-                            tableName_1 = _this._db._tables[ta]._name;
+                            getTable_1 = index_1._assign(_this._db._store._models[ta]);
+                            tableName_1 = _this._db._store._tables[ta]._name;
                         }
                     });
                     rows[tableName_1] = getTable_1;
@@ -492,25 +1398,6 @@ var _NanoSQLQuery = (function () {
         }
     };
     /**
-     * Recursively freezes a js object, used to prevent the rows from being edited once they're added.
-     *
-     * @internal
-     * @param {*} obj
-     * @returns {*}
-     *
-     * @memberOf _NanoSQLQuery
-     */
-    _NanoSQLQuery.prototype._deepFreeze = function (obj) {
-        var _this = this;
-        this._db._models[this._db._selectedTable].forEach(function (model) {
-            var prop = obj[model.key];
-            if (["map", "array"].indexOf(typeof prop) >= 0) {
-                obj[model.key] = _this._deepFreeze(prop);
-            }
-        });
-        return Object.freeze(obj);
-    };
-    /**
      * Get a query modifier (where/orderby/etc...)
      *
      * @internal
@@ -524,15 +1411,6 @@ var _NanoSQLQuery = (function () {
     };
     ;
     /**
-     * Handle transactions
-     *
-     * @param {string} type
-     *
-     * @memberOf _NanoSQLQuery
-     */
-    _NanoSQLQuery.prototype._transaction = function (type) {
-    };
-    /**
      * Starting query method, sets up initial environment for the query and sets it off.
      *
      * @internal
@@ -542,30 +1420,49 @@ var _NanoSQLQuery = (function () {
      * @memberOf _NanoSQLQuery
      */
     _NanoSQLQuery.prototype._execQuery = function (callBack) {
+        var _this = this;
         var t = this;
         if (!t._act)
             return;
-        var queryIndex = [];
+        var doQuery = function (rows) {
+            if (!t._act)
+                return;
+            switch (t._act.type) {
+                case "upsert":
+                    _this._upsert(rows, callBack);
+                    break;
+                case "select":
+                    _this._select(rows, callBack);
+                    break;
+                case "drop":
+                case "delete":
+                    _this._remove(rows, callBack);
+                    break;
+            }
+        };
+        var tableName = this._db._store._tables[t._db._selectedTable]._name;
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
                 // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
-                queryIndex = t._where(t._db._selectedTable, t._db._getTable()._index.slice(), t._getMod("where").args);
+                t._db._store._read(tableName, function (row) {
+                    return row && t._where(row, t._getMod("where").args);
+                }, function (rows) {
+                    doQuery(rows);
+                });
             }
             else {
-                queryIndex = t._act.type !== "upsert" ? t._db._getTable()._index.slice() : [];
+                if (t._act && t._act.type !== "upsert") {
+                    t._db._store._read(tableName, "all", function (rows) {
+                        doQuery(rows);
+                    });
+                }
+                else {
+                    doQuery([]);
+                }
             }
         }
-        switch (t._act.type) {
-            case "upsert":
-                this._upsert(queryIndex, callBack);
-                break;
-            case "select":
-                this._select(queryIndex, callBack);
-                break;
-            case "drop":
-            case "delete":
-                this._remove(queryIndex, callBack);
-                break;
+        else {
+            doQuery([]);
         }
     };
     /**
@@ -576,62 +1473,86 @@ var _NanoSQLQuery = (function () {
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._updateRow = function (rowPK) {
+    _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
-        var newRow;
-        var oldRow = t._db._getRow(t._db._selectedTable, rowPK);
-        var qArgs = t._act.args;
-        var updateType = (function () {
-            if (t._act) {
-                if (t._act.type === "delete" && !qArgs.length) {
-                    return "drop";
+        var tableName = t._db._store._getTable()._name;
+        t._db._store._read(tableName, rowPK, function (rows) {
+            var newRow = {};
+            var oldRow = rows[0] || {};
+            var qArgs = t._act.args;
+            var updateType = (function () {
+                if (t._act) {
+                    if (t._act.type === "delete" && !qArgs.length) {
+                        return "drop";
+                    }
                 }
-            }
-            return t._act ? t._act.type : "";
-        })();
-        switch (updateType) {
-            case "upsert":
-                if (!t._db._disableHistoryAndCache) {
+                return t._act ? t._act.type : "";
+            })();
+            var doRemove = false;
+            switch (updateType) {
+                case "upsert":
+                    newRow = oldRow ? index_1._assign(oldRow) : {};
+                    /*if(!t._db._doingTransaction) {
+                        newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
+                    } else {
+                        newRow = oldRow || {};
+                    }*/
+                    Object.keys(qArgs).forEach(function (k) {
+                        newRow[k] = qArgs[k];
+                    });
+                    // Add default values
+                    t._db._store._getTable()._keys.forEach(function (k, i) {
+                        var def = t._db._store._getTable()._defaults[i];
+                        if (!newRow[k] && def)
+                            newRow[k] = def;
+                    });
+                    break;
+                case "delete":
                     newRow = oldRow ? index_1._assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
+                    if (qArgs && qArgs.length) {
+                        qArgs.forEach(function (column) {
+                            newRow[column] = null;
+                        });
+                    }
+                    else {
+                        doRemove = true;
+                        newRow = {};
+                    }
+                    break;
+            }
+            var finishUpdate = function () {
+                if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
+                    t._db._store._read("_" + tableName + "_hist__meta", parseInt(rowPK), function (rows) {
+                        rows[0]._historyDataRowIDs.unshift(len);
+                        t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
+                    });
+                }
+                // 3. Move new row data into place on the active table
+                // Apply changes to the store
+                if (updateType === "upsert") {
+                    t._db._store._upsert(tableName, rowPK, newRow, function () {
+                        callBack();
+                    });
                 }
                 else {
-                    newRow = oldRow || {};
+                    t._db._store._delete(tableName, rowPK, function () {
+                        callBack();
+                    });
                 }
-                Object.keys(qArgs).forEach(function (k) {
-                    newRow[k] = qArgs[k];
+            };
+            // Add to history
+            var len = 0; // 0 index contains a null reference used by all rows;
+            if (!doRemove && tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
+                // 1. copy new row data into histoy data table
+                t._db._store._upsert("_" + tableName + "_hist__data", null, newRow, function (rowID) {
+                    len = parseInt(rowID);
+                    finishUpdate();
                 });
-                // Add default values
-                t._db._getTable()._keys.forEach(function (k, i) {
-                    var def = t._db._getTable()._defaults[i];
-                    if (!newRow[k] && def)
-                        newRow[k] = def;
-                });
-                break;
-            case "delete":
-                newRow = oldRow ? index_1._assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
-                qArgs.forEach(function (column) {
-                    newRow[column] = null;
-                });
-                break;
-        }
-        // Add the row to the history
-        if (!t._db._disableHistoryAndCache) {
-            t._db._getTable()._rows[rowPK].unshift(newRow ? t._deepFreeze(newRow) : null);
-        }
-        else {
-            t._db._getTable()._rows[rowPK][t._db._getTable()._historyPointers[rowPK]] = t._deepFreeze(newRow);
-        }
-        // Apply changes to the indexed DB.
-        if (t._db._indexedDB) {
-            var tableName = t._db._getTable()._name;
-            var transaction = t._db._indexedDB.transaction(tableName, "readwrite").objectStore(tableName);
-            if (updateType === "upsert") {
-                transaction.put(newRow);
             }
             else {
-                transaction.delete(rowPK);
+                finishUpdate();
             }
-        }
+        });
     };
     /**
      * Called to finish drop/delete/upsert queries to affect the history and memoization as needed.
@@ -645,33 +1566,101 @@ var _NanoSQLQuery = (function () {
      */
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
         var _this = this;
-        var t = this, k;
+        var t = this, k = 0, j = 0;
         if (updatedRowPKs.length > 0) {
-            // Remove history points ahead of the current one if the database has changed
-            if (t._db._historyPoint > 0 && t._db._disableHistoryAndCache !== true) {
-                t._db._historyRecords = t._db._historyRecords.filter(function (val, index) {
-                    if (index < t._db._historyPoint) {
-                        k = val._rowKeys.length;
-                        while (k--) {
-                            t._db._tables[val._tableID]._historyPointers[val._rowKeys[k]] = 0; // Set this row history pointer to 0;
-                            t._db._tables[val._tableID]._rows[val._rowKeys[k]].shift(); // Shift off the most recent update
-                        }
-                        return false;
+            var completeChange_1 = function () {
+                if (t._db._store._doHistory) {
+                    if (!t._db._store._doingTransaction && t._db._store._historyPoint === 0) {
+                        t._db._store._historyLength++;
                     }
-                    return true;
-                });
-                t._db._historyPoint = 0;
+                    t._db._store._utility("w", "historyLength", t._db._store._historyLength);
+                    t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
+                    // Add history records
+                    t._db._store._upsert("_historyPoints", null, {
+                        historyPoint: t._db._store._historyLength - t._db._store._historyPoint,
+                        tableID: t._db._selectedTable,
+                        rowKeys: updatedRowPKs.map(function (r) { return parseInt(r); }),
+                        type: describe
+                    }, function (rowID) {
+                        var table = t._db._store._tables[_this._db._selectedTable];
+                        t._db._invalidateCache(t._db._selectedTable, [], "");
+                        t._db._store._read(table._name, function (row) {
+                            return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
+                        }, function (rows) {
+                            callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
+                        });
+                    });
+                }
+                else {
+                    var table_2 = t._db._store._tables[_this._db._selectedTable];
+                    t._db._invalidateCache(t._db._selectedTable, [], "");
+                    t._db._store._read(table_2._name, function (row) {
+                        return row && updatedRowPKs.indexOf(row[table_2._pk]) !== -1;
+                    }, function (rows) {
+                        callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
+                    });
+                }
+            };
+            if (t._db._store._doHistory) {
+                // Remove history points ahead of the current one if the database has changed
+                if (t._db._store._historyPoint > 0 && t._db._store._doingTransaction !== true) {
+                    t._db._store._read("_historyPoints", function (hp) {
+                        if (hp.historyPoint > t._db._store._historyLength - t._db._store._historyPoint)
+                            return true;
+                        return false;
+                    }, function (historyPoints) {
+                        j = 0;
+                        var nextPoint = function () {
+                            if (j < historyPoints.length) {
+                                var tableName_2 = t._db._store._tables[historyPoints[j].tableID]._name;
+                                k = 0;
+                                var nextRow_2 = function () {
+                                    if (k < historyPoints[j].rowKeys.length) {
+                                        // Set this row history pointer to 0;
+                                        t._db._store._read("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], function (rows) {
+                                            rows[0] = index_1._assign(rows[0]);
+                                            rows[0]._pointer = 0;
+                                            var del = rows[0]._historyDataRowIDs.shift(); // Shift off the most recent update
+                                            t._db._store._upsert("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], rows[0], function () {
+                                                if (del) {
+                                                    t._db._store._delete("_" + tableName_2 + "_hist__data", del, function () {
+                                                        k++;
+                                                        nextRow_2();
+                                                    });
+                                                }
+                                                else {
+                                                    k++;
+                                                    nextRow_2();
+                                                }
+                                            });
+                                        });
+                                    }
+                                    else {
+                                        j++;
+                                        nextPoint();
+                                    }
+                                };
+                                t._db._store._delete("_historyPoints", historyPoints[j].id, function () {
+                                    nextRow_2();
+                                });
+                            }
+                            else {
+                                t._db._store._historyLength -= t._db._store._historyPoint;
+                                t._db._store._historyPoint = 0;
+                                completeChange_1();
+                                return;
+                            }
+                        };
+                        nextPoint();
+                    });
+                }
+                else {
+                    completeChange_1();
+                }
             }
-            // Add history records
-            if (!t._db._disableHistoryAndCache) {
-                t._db._historyRecords.unshift({
-                    _tableID: t._db._selectedTable,
-                    _rowKeys: updatedRowPKs,
-                    _type: describe
-                });
+            else {
+                completeChange_1();
             }
-            t._db._invalidateCache([], "");
-            callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, updatedRowPKs.map(function (r) { return _this._db._getRow(_this._db._selectedTable, r) || {}; }));
         }
         else {
             callBack([{ msg: "0 rows " + describe }], describe, []);
@@ -682,21 +1671,31 @@ var _NanoSQLQuery = (function () {
      * Add/modify records to a specific table based on query parameters.
      *
      * @internal
-     * @param {string[]} queryIndex
+     * @param {DBRow[]} queryRows
      * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._upsert = function (queryIndex, callBack) {
+    _NanoSQLQuery.prototype._upsert = function (queryRows, callBack) {
+        var t = this;
         var scribe = "", i, changedPKs = [];
-        var qArgs = this._act.args || {}, table = this._db._getTable(), pk = table._pk, whereMod = this._getMod("where");
+        var qArgs = t._act.args || {}, table = t._db._store._getTable(), pk = table._pk, whereMod = t._getMod("where");
         if (whereMod) {
             scribe = "modified";
-            changedPKs = queryIndex;
-            i = queryIndex.length;
-            while (i--) {
-                this._updateRow(queryIndex[i]);
-            }
+            changedPKs = queryRows.map(function (r) { return r[table._pk]; });
+            i = 0;
+            var update_1 = function () {
+                if (i < queryRows.length) {
+                    t._updateRow(queryRows[i][pk], function () {
+                        i++;
+                        update_1();
+                    });
+                }
+                else {
+                    t._tableChanged(changedPKs, scribe, callBack);
+                }
+            };
+            update_1();
         }
         else {
             scribe = "inserted";
@@ -715,15 +1714,24 @@ var _NanoSQLQuery = (function () {
             }
             var objPK = qArgs[pk] ? String(qArgs[pk]) : String(table._index.length);
             changedPKs = [objPK];
-            // Entirely new row, make a new index spot for it in the table.
-            if (!table._rows[objPK]) {
-                table._rows[objPK] = [null];
-                table._historyPointers[objPK] = 0;
+            // Entirely new row, setup all the needed stuff for it.
+            if (table._index.indexOf(objPK) === -1) {
+                // History
+                var tableName = this._db._store._tables[t._db._selectedTable]._name;
+                if (tableName.indexOf("_") !== 0) {
+                    var histTable = "_" + tableName + "_hist__meta";
+                    t._db._store._upsert(histTable, objPK, {
+                        _pointer: 0,
+                        _historyDataRowIDs: [0]
+                    });
+                }
+                // Index
                 table._index.push(objPK);
             }
-            this._updateRow(objPK);
+            t._updateRow(objPK, function () {
+                t._tableChanged(changedPKs, scribe, callBack);
+            });
         }
-        this._tableChanged(changedPKs, scribe, callBack);
     };
     /**
      * Get the table ID for query commands, used to intelligently switch between joined tables and the regular ones.
@@ -740,13 +1748,13 @@ var _NanoSQLQuery = (function () {
      * Selects rows from a given table using the query parameters.
      *
      * @internal
-     * @param {string[]} queryIndex
+     * @param {DBRow[]} queryRows
      * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
      * @returns
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._select = function (queryIndex, callBack) {
+    _NanoSQLQuery.prototype._select = function (queryRows, callBack) {
         var t = this;
         // Memoization
         if (t._db._queryCache[t._db._selectedTable][t._queryHash]) {
@@ -758,7 +1766,7 @@ var _NanoSQLQuery = (function () {
         var sortObj = function (objA, objB, columns) {
             return Object.keys(columns).reduce(function (prev, cur) {
                 if (!prev) {
-                    if (objA[cur] == objB[cur])
+                    if (objA[cur] === objB[cur])
                         return 0;
                     return (objA[cur] > objB[cur] ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
                 }
@@ -769,12 +1777,6 @@ var _NanoSQLQuery = (function () {
         };
         var modifyQuery = function (tableIndex, modIndex, next) {
             curMod = t._getMod(mods[modIndex]);
-            // After JOIN command convert index to row data
-            if (modIndex === 1) {
-                tableIndex = tableIndex.map(function (index) {
-                    return t._db._getRow(t._getTableID(), index);
-                }).filter(function (r) { return r; });
-            }
             // After GROUP BY command apply functions and AS statements
             if (modIndex === 2) {
                 var functions_1 = [];
@@ -808,7 +1810,7 @@ var _NanoSQLQuery = (function () {
                             type: _functions[funcName].type
                         };
                     });
-                    var rows_1 = [];
+                    var rows_5 = [];
                     if (functions_1.length) {
                         var prevFunc_1;
                         var doFunctions_1 = function (rows) {
@@ -844,24 +1846,24 @@ var _NanoSQLQuery = (function () {
                         };
                         var groupKeys = Object.keys(groups);
                         if (groupKeys.length) {
-                            rows_1 = groupKeys
+                            rows_5 = groupKeys
                                 .map(function (k) { return doFunctions_1(groups[k]); }) // Apply each function to each group (N^2)
                                 .reduce(function (prev, curr) {
                                 return prev = prev.concat(curr), prev;
                             }, []);
                         }
                         else {
-                            rows_1 = doFunctions_1(tableIndex);
+                            rows_5 = doFunctions_1(tableIndex);
                         }
                     }
                     else {
-                        rows_1 = tableIndex;
+                        rows_5 = tableIndex;
                     }
                     var convertKeys_1 = keepColumns_1.map(function (n) {
                         return n.match(/(.*)\sAS\s(.*)/) || n;
                     }).filter(function (n) { return n; }) || [];
                     if (convertKeys_1.length) {
-                        rows_1 = rows_1.map(function (r) {
+                        rows_5 = rows_5.map(function (r) {
                             r = index_1._assign(r);
                             var newRow = {};
                             convertKeys_1.forEach(function (key) {
@@ -875,7 +1877,7 @@ var _NanoSQLQuery = (function () {
                             return newRow;
                         });
                     }
-                    tableIndex = rows_1;
+                    tableIndex = rows_5;
                 }
             }
             if (!curMod)
@@ -892,12 +1894,17 @@ var _NanoSQLQuery = (function () {
                     }
                     var leftTableID = t._db._selectedTable;
                     var rightTableID = index_1.NanoSQLInstance._hash(curMod.args.table);
-                    var joinedIndex = t._join(curMod.args.type, leftTableID, t._db._tables[leftTableID]._index.slice(), rightTableID, t._db._tables[rightTableID]._index.slice(), joinConditions);
-                    var where = t._getMod("where");
-                    if (where) {
-                        joinedIndex = t._where(t._getTableID(), joinedIndex, where.args);
-                    }
-                    next(joinedIndex);
+                    var where_1 = t._getMod("where");
+                    t._join(curMod.args.type, leftTableID, rightTableID, joinConditions, function (joinedRows) {
+                        if (where_1) {
+                            next(joinedRows.filter(function (row) {
+                                return t._where(row, where_1.args);
+                            }));
+                        }
+                        else {
+                            next(joinedRows);
+                        }
+                    });
                     break;
                 case 1:
                     var columns_1 = curMod.args;
@@ -923,27 +1930,9 @@ var _NanoSQLQuery = (function () {
                     }
                     break;
                 case 2:
-                    // Put the records in a table
-                    t._db._tables[t._queryHash] = {
-                        _defaults: [],
-                        _historyPointers: {},
-                        _incriment: 0,
-                        _index: [],
-                        _keys: [],
-                        _name: t._queryHash.toString(),
-                        _pk: "",
-                        _pkType: "",
-                        _rows: {}
-                    };
-                    t._joinTable = t._queryHash;
-                    tableIndex.forEach(function (row, i) {
-                        t._db._tables[t._queryHash]._historyPointers[i] = 0;
-                        t._db._tables[t._queryHash]._rows[i] = [row];
-                        t._db._tables[t._queryHash]._index.push(i.toString());
-                    });
-                    next(t._where(t._queryHash, t._db._tables[t._queryHash]._index, t._getMod("having").args).map(function (i) {
-                        return t._db._getRow(t._queryHash, i);
-                    }).filter(function (r) { return r; }));
+                    next(tableIndex.filter(function (row) {
+                        return t._where(row, t._getMod("having").args);
+                    }));
                     break;
                 case 3:
                     next(tableIndex.sort(function (a, b) {
@@ -972,33 +1961,44 @@ var _NanoSQLQuery = (function () {
                 });
             }
             else {
+                rowPKs = rowPKs.filter(function (r) { return r; });
                 if (!t._getMod("join")) {
                     t._db._queryCache[t._db._selectedTable][t._queryHash] = rowPKs;
                 }
                 callBack(rowPKs, "none", []);
             }
         };
-        stepQuery(queryIndex);
+        stepQuery(queryRows);
     };
     /**
      * Removes elements from the currently selected table based on query conditions.
      *
      * @internal
-     * @param {string[]} queryIndex
+     * @param {DBRow[]} queryRows
      * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._remove = function (queryIndex, callBack) {
+    _NanoSQLQuery.prototype._remove = function (queryRows, callBack) {
         var scribe = "deleted", i;
         var t = this;
         var qArgs = t._act.args || [];
-        i = queryIndex.length;
-        while (i--)
-            t._updateRow(queryIndex[i]);
-        if (qArgs.length)
-            scribe = "modified";
-        t._tableChanged(queryIndex, scribe, callBack);
+        var pk = this._db._store._getTable()._pk;
+        i = 0;
+        var remove = function () {
+            if (i < queryRows.length) {
+                t._updateRow(queryRows[i][pk], function () {
+                    i++;
+                    remove();
+                });
+            }
+            else {
+                if (qArgs.length)
+                    scribe = "modified";
+                t._tableChanged(queryRows.map(function (r) { return r[pk]; }), scribe, callBack);
+            }
+        };
+        remove();
     };
     /**
      * Performs "where" filtering on a given table provided where conditions.
@@ -1011,40 +2011,31 @@ var _NanoSQLQuery = (function () {
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._where = function (tableID, searchIndex, conditions) {
+    _NanoSQLQuery.prototype._where = function (row, conditions) {
         var t = this;
         var commands = ["AND", "OR"];
-        var doJoin;
-        var whereJoin = function (indexes, type) {
-            return (indexes[0].concat(indexes[1]).sort().filter(function (item, pos, ary) {
-                var last = ary.lastIndexOf(item);
-                return type === "OR" ? true : (pos !== last); // if AND, then filter out items that aren't duplicate.
-            }));
-        };
-        var filterRows = function (index, singleWhereStatement) {
-            var r;
-            return index.filter(function (v) {
-                r = t._db._getRow(tableID, v);
-                return !r ? false : t._compare(singleWhereStatement[2], singleWhereStatement[1], r[singleWhereStatement[0]]) === 0 ? true : false;
-            });
-        };
-        if (typeof conditions[0] === "string") {
-            // Single where statement like ['name','=','billy']
-            return filterRows(searchIndex, conditions);
-        }
-        else {
-            // nested where statement like [['name','=','billy'],'or',['name','=','bill']]
-            return conditions.map(function (value) {
-                return commands.indexOf(value) >= 0 ? value : filterRows(searchIndex.slice(), value);
-            }).reduce(function (prev, cur, k) {
-                if (commands.indexOf(cur) < 0) {
-                    return k === 0 ? cur : whereJoin([prev, cur], doJoin);
-                }
-                else {
-                    doJoin = cur;
+        if (typeof conditions[0] !== "string") {
+            var prevCmd_1;
+            return conditions.reduce(function (prev, cur, i) {
+                if (commands.indexOf(cur) !== -1) {
+                    prevCmd_1 = cur;
                     return prev;
                 }
-            });
+                else {
+                    var compare = t._compare(cur[2], cur[1], row[cur[0]]) === 0 ? true : false;
+                    if (i === 0)
+                        return compare;
+                    if (prevCmd_1 === "AND") {
+                        return prev && compare;
+                    }
+                    else {
+                        return prev || compare;
+                    }
+                }
+            }, true);
+        }
+        else {
+            return t._compare(conditions[2], conditions[1], row[conditions[0]]) === 0 ? true : false;
         }
     };
     /**
@@ -1052,89 +2043,68 @@ var _NanoSQLQuery = (function () {
      *
      * Joined tables are not memoized or cached in any way, they are generated from scrach on every query.
      *
-     * @internal
+     * @private
      * @param {("left"|"inner"|"right"|"cross"|"outer")} type
+     * @param {any[]} whereArgs
      * @param {number} leftTableID
-     * @param {Array<string>} leftIndex
      * @param {number} rightTableID
-     * @param {Array<string>} rightIndex
-     * @param {{left:string, check: string, right:string}} joinConditions
-     * @returns {Array<string>}
+     * @param {(null|{_left: string, _check: string, _right: string})} joinConditions
+     * @param {(rows:DBRow[]) => void} complete
+     * @returns {void}
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._join = function (type, leftTableID, leftIndex, rightTableID, rightIndex, joinConditions) {
-        var newTableName = JSON.stringify(joinConditions) || String(leftTableID) + String(rightTableID);
+    _NanoSQLQuery.prototype._join = function (type, leftTableID, rightTableID, joinConditions, complete) {
         var L = "left";
         var R = "right";
         var O = "outer";
-        var dataModel = [];
-        var incriment = 0;
         var joinHelper = {};
         var t = this;
-        // Keep track of what right side rows have been added
-        var rightIndexUsed = ([R, O].indexOf(type) >= 0) ? rightIndex.slice() : [];
-        // Setup the join table model
-        [leftTableID, rightTableID].forEach(function (id) {
-            var keys = [];
-            t._db._models[id].forEach(function (m) {
-                keys.push(m.key);
-                dataModel.push({
-                    key: t._db._tables[id]._name + "." + m.key,
-                    type: m.type,
-                    default: m.default || null
+        var leftTableData = t._db._store._tables[leftTableID];
+        var rightTableData = t._db._store._tables[rightTableID];
+        var doJoinRows = function (leftRow, rightRow) {
+            return [leftTableData, rightTableData].reduce(function (prev, cur, i) {
+                cur._keys.forEach(function (k) {
+                    prev[cur._name + "." + k] = ((i === 0 ? leftRow : rightRow) || {})[k];
                 });
-            });
-            joinHelper[id] = {
-                _keys: keys,
-                _name: t._db._tables[id]._name
-            };
-        });
-        // Make a new table for this join
-        t._db._newTable(newTableName, dataModel);
-        t._joinTable = index_1.NanoSQLInstance._hash(newTableName);
-        // Performs a fast insert in the new table bypassing most of the typical checks
-        var joinInsert = function (leftRow, rightRow) {
-            var idx = String(incriment++);
-            var newRow = {};
-            var oldRows = [leftRow, rightRow];
-            [leftTableID, rightTableID].forEach(function (id, tableIndex) {
-                var row = oldRows[tableIndex];
-                joinHelper[id]._keys.forEach(function (key) {
-                    newRow[joinHelper[id]._name + "." + key] = row ? row[key] : null;
-                });
-            });
-            t._db._tables[t._joinTable]._index.push(idx);
-            t._db._tables[t._joinTable]._historyPointers[idx] = 0;
-            t._db._tables[t._joinTable]._rows[idx] = [newRow];
+                return prev;
+            }, {});
         };
-        // Inserts multiple right side rows into the joined table
-        var rightInserts = function (leftRow, idxs) {
-            idxs.forEach(function (i) {
-                if (rightIndexUsed.length) {
-                    var pos = rightIndexUsed.indexOf(i);
-                    if (pos > 0)
-                        rightIndexUsed.splice(pos, 1);
+        var joinTable = [];
+        var rightUsedPKs = [];
+        t._db._store._read(leftTableData._name, "all", function (leftRows) {
+            t._db._store._read(rightTableData._name, "all", function (rightRows) {
+                leftRows.forEach(function (leftRow) {
+                    var joinRows = rightRows.filter(function (rightRow) {
+                        if (!joinConditions)
+                            return true;
+                        var joinedRow = doJoinRows(leftRow, rightRow);
+                        var keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinConditions._right]);
+                        if (keep)
+                            rightUsedPKs.push(rightRow[rightTableData._pk]);
+                        return keep;
+                    });
+                    if (joinRows.length) {
+                        joinTable = joinTable.concat(joinRows);
+                    }
+                    else if ([L, O].indexOf(type) >= 0) {
+                        joinTable.push(doJoinRows(leftRow, null));
+                    }
+                });
+                rightUsedPKs = rightUsedPKs.sort().filter(function (item, pos, ary) {
+                    return !pos || item !== ary[pos - 1];
+                });
+                // If this is a RIGHT or OUTER join we're going to add the right side rows that haven't been used.
+                if ([R, O].indexOf(type) >= 0) {
+                    rightRows.filter(function (r) {
+                        return rightUsedPKs.indexOf(r[rightTableData._pk]) === -1;
+                    }).forEach(function (rightRow) {
+                        joinTable.push(doJoinRows(null, rightRow));
+                    });
                 }
-                joinInsert(leftRow, t._db._getRow(rightTableID, i));
+                complete(joinTable);
             });
-        };
-        // Perform the N ^ 2 join on both tables, WEE!
-        leftIndex.forEach(function (leftI, leftCounter) {
-            var leftRow = t._db._getRow(leftTableID, leftI) || {};
-            var whereIndex = !joinConditions ? rightIndex.slice() : t._where(rightTableID, rightIndex.slice(), [joinConditions._right, joinConditions._check, leftRow[joinConditions._left]]);
-            if (whereIndex.length) {
-                rightInserts(leftRow, whereIndex);
-            }
-            else if ([L, O].indexOf(type) >= 0) {
-                joinInsert(leftRow, null);
-            }
         });
-        // If this is a RIGHT or OUTER join we're going to add the right side rows that haven't been used.
-        if (rightIndexUsed.length) {
-            rightInserts(null, rightIndexUsed.slice());
-        }
-        return t._db._tables[t._joinTable]._index.slice();
     };
     /**
      * Compare two values together given a comparison value

@@ -1,6 +1,8 @@
 "use strict";
 var immutable_store_1 = require("./immutable-store");
 var lie_ts_1 = require("lie-ts");
+/* NODE-START */
+var crypto = require("crypto");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };
@@ -136,7 +138,7 @@ var NanoSQLInstance = (function () {
         this._hasEvents = {};
         Object.keys(this._models).concat(["*"]).forEach(function (table) {
             _this._hasEvents[table] = _this._events.reduce(function (prev, cur) {
-                return prev + _this._callbacks[table][cur].length;
+                return prev + (_this._callbacks[table] ? _this._callbacks[table][cur].length : 0);
             }, 0) > 0;
         });
     };
@@ -305,7 +307,7 @@ var NanoSQLInstance = (function () {
             "int": t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
             "float": t !== "number" ? parseFloat(val || 0) : val,
             "array": Array.isArray(val) ? exports._assign(val || []) : [],
-            "map": t === 'object' ? exports._assign(val || {}) : {},
+            "map": t === "object" ? exports._assign(val || {}) : {},
             "bool": val === true
         };
         return types[type] || val;
@@ -466,13 +468,15 @@ var NanoSQLInstance = (function () {
      * ### Delete
      *
      * Delete is used to remove data from the database.
-     * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
+     * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the entire row is deleted.
+     * If no where argument is passed, the entire table is dropped
      *
      * Examples:
      * ```ts
      * .query("delete",['balance']) //Clear the contents of the balance column on ALL rows.
      * .query("delete",['comments']).where(["accountType","=","spammer"]) // If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
-     * .query("delete") // same as drop statement
+     * .query("delete").where(["balance","<",0]) // remove all rows with a balance less than zero
+     * .query("delete") // Same as drop statement
      * ```
      *
      * ### Drop
@@ -864,14 +868,30 @@ var NanoSQLInstance = (function () {
      */
     NanoSQLInstance.prototype.loadJS = function (rows) {
         var t = this;
-        t.extend("before_import");
+        t.beginTransaction();
         return new lie_ts_1.Promise(function (res, rej) {
-            lie_ts_1.Promise.all(rows.map(function (row) {
-                return t.table(t._selectedTable).query("upsert", row).exec();
-            })).then(function (rowData) {
-                t.extend("after_import");
-                res(rowData, t);
-            });
+            var pointer = 0;
+            var rowData = [];
+            var next = function () {
+                if (pointer < rows.length) {
+                    if (rows[pointer]) {
+                        t.table(t._selectedTable).query("upsert", rows[pointer]).exec().then(function (res) {
+                            rowData.push(res);
+                            pointer++;
+                            next();
+                        });
+                    }
+                    else {
+                        pointer++;
+                        next();
+                    }
+                }
+                else {
+                    t.endTransaction();
+                    res(rowData, t);
+                }
+            };
+            next();
         });
     };
     /**
@@ -903,7 +923,7 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.loadCSV = function (csv) {
         var t = this;
         var fields = [];
-        t.extend("before_import");
+        t.beginTransaction();
         return new lie_ts_1.Promise(function (res, rej) {
             lie_ts_1.Promise.all(csv.split("\n").map(function (v, k) {
                 return new lie_ts_1.Promise(function (resolve, reject) {
@@ -928,7 +948,7 @@ var NanoSQLInstance = (function () {
                     }
                 });
             })).then(function () {
-                t.extend("after_import");
+                t.endTransaction();
                 res([], t);
             });
         });
@@ -948,9 +968,9 @@ var NanoSQLInstance = (function () {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             }
             else {
-                if (window.crypto.getRandomValues) {
+                if (crypto["getRandomValues"]) {
                     buf = new Uint16Array(1);
-                    window.crypto.getRandomValues(buf);
+                    crypto["getRandomValues"](buf);
                     return buf[0];
                 }
                 else if (crypto.randomBytes) {

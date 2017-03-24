@@ -194,7 +194,7 @@
                         }
                     }]).then(function() {
 
-                        nSQL("users").query("select", ["COUNT(*) AS totalUsers"]).exec()
+                        nSQL("users").query("select").exec()
                             .then(function(result, db) {
                                 console.log("GROUP", result);
                                 return db.query('upsert', {
@@ -211,12 +211,13 @@
                                 return db.query('delete').where(["age", ">", 21]).exec();
                             })
                             .then(function(result, db) {
+                                console.log(result);
                                 db.query('select').orderBy({
                                     name: 'asc'
                                 }).exec().then(function(result2) {
                                     console.log('immuTest: ' + (result === result2));
                                 });
-                                console.log(result);
+
 
                                 return db.query('select').toCSV(true);
                             })
@@ -241,11 +242,6 @@
                                     });
                             });
                     });
-                })
-
-
-                nSQL('*').on('change', function(e) {
-                    //console.log(e);
                 });
             });
 

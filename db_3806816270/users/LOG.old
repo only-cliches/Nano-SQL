@@ -1,0 +1,6 @@
+2017/03/24-01:48:23.423 2a7c Recovering log #18
+2017/03/24-01:48:23.423 2a7c Level-0 table #20: started
+2017/03/24-01:48:23.470 2a7c Level-0 table #20: 199 bytes OK
+2017/03/24-01:48:23.485 2a7c Delete type=0 #18
+2017/03/24-01:48:23.486 2a7c Delete type=3 #16
+2017/03/24-01:48:23.508 46c Moved #11 to level-1 199 bytes OK: files[ 3 3 0 0 0 0 0 ]

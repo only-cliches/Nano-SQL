@@ -399,13 +399,15 @@ export declare class NanoSQLInstance {
      * ### Delete
      *
      * Delete is used to remove data from the database.
-     * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the database is dropped.
+     * It works exactly like select, except it removes data instead of selecting it.  The second argument is an array of columns to clear.  If no second argument is passed, the entire row is deleted.
+     * If no where argument is passed, the entire table is dropped
      *
      * Examples:
      * ```ts
      * .query("delete",['balance']) //Clear the contents of the balance column on ALL rows.
      * .query("delete",['comments']).where(["accountType","=","spammer"]) // If a where statment is passed you'll only clear the columns of the rows selected by the where statement.
-     * .query("delete") // same as drop statement
+     * .query("delete").where(["balance","<",0]) // remove all rows with a balance less than zero
+     * .query("delete") // Same as drop statement
      * ```
      *
      * ### Drop

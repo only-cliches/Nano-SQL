@@ -1,7 +1,12 @@
 import { _NanoSQLImmuDB } from "./immutable-store";
 import { Promise } from "lie-ts";
 
-declare var crypto: any;
+
+/* NODE-START */
+
+import crypto = require("crypto");
+
+/* NODE-END */
 
 /**
  * Standard object placeholder with string key.
@@ -16,13 +21,13 @@ export interface StdObject<T> {
 
 /**
  * Custom functinos for the database.
- * 
+ *
  * @export
  * @interface DBFunction
  */
 export interface DBFunction {
-    call: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[],
-    type: "aggregate"|"simple"
+    call: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[];
+    type: "aggregate"|"simple";
 }
 
 /**
@@ -98,7 +103,7 @@ export interface JoinArgs {
 
 /**
  *  A single database row.
- * 
+ *
  * @export
  * @interface DBRow
  */
@@ -108,7 +113,7 @@ export interface DBRow {
 
 export const _assign = (obj: any) => {
     return JSON.parse(JSON.stringify(obj));
-}
+};
 
 /**
  * The primary abstraction class, there is no database implimintation code here.
@@ -212,7 +217,7 @@ export class NanoSQLInstance {
 
     /**
      * Stores wether each table has events attached to it or not.
-     * 
+     *
      * @private
      * @type {StdObject<boolean>}
      * @memberOf NanoSQLInstance
@@ -262,7 +267,6 @@ export class NanoSQLInstance {
 
     constructor() {
         let t = this;
-
         t._actions = {};
         t._views = {};
         t._models = {};
@@ -291,7 +295,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public from(table?: string): NanoSQLInstance {
+    public table(table?: string): NanoSQLInstance {
         if (table) this._selectedTable = table, this.activeTable = table;
         return this;
     }
@@ -309,7 +313,7 @@ export class NanoSQLInstance {
     public connect(backend?: NanoSQLBackend): Promise<Object | string> {
         let t = this;
 
-        if(t.backend) {
+        if (t.backend) {
             return new Promise((res, rej) => {
                 rej();
                 throw Error();
@@ -392,7 +396,7 @@ export class NanoSQLInstance {
         this._hasEvents = {};
         Object.keys(this._models).concat(["*"]).forEach((table) => {
             this._hasEvents[table] = this._events.reduce((prev, cur) => {
-                return prev + this._callbacks[table][cur].length;
+                return prev + (this._callbacks[table] ? this._callbacks[table][cur].length : 0);
             }, 0) > 0;
         });
     }
@@ -564,7 +568,7 @@ export class NanoSQLInstance {
             "int": t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
             "float": t !== "number" ? parseFloat(val || 0) : val,
             "array": Array.isArray(val) ? _assign(val || []) : [],
-            "map": t === 'object' ? _assign(val || {}) : {},
+            "map": t === "object" ? _assign(val || {}) : {},
             "bool": val === true
         };
         return types[type] || val;
@@ -657,9 +661,9 @@ export class NanoSQLInstance {
 
     /**
 	 * Add a function to the usable list of functions for this database.  Must be called BEFORE connect().
-     * 
+     *
      * Functions can be used with any database on the attached store.
-     * 
+     *
      * Example:
      *
      * ```ts
@@ -672,7 +676,7 @@ export class NanoSQLInstance {
      *      // prev is only used for aggregate functions, lets  you pass an argument into the next function call.
      *      let r = JSON.parse(JSON.stringify(row));
      *      r.ADD = args.reduce((a, b) => parseFloat(a) + parseFloat(b));
-     *      return r; 
+     *      return r;
      *  }
      * });
      * ```
@@ -681,7 +685,7 @@ export class NanoSQLInstance {
      * ```ts
      * NanoSQL("users").query("select",["name","ADD(balance, 2)"]).exec();
 	 * ```
-     * 
+     *
      * Make sure the calculated value is add to the row(s) with the `useKey` argument, otherwise `AS` arguments won't work.
      *
      * @param {string} filterName
@@ -691,7 +695,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public newFunction(functionName: string, functionType: "aggregate"|"simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance {
-        return this._functions[functionName] = {type:functionType, call:filterFunction}, this;
+        return this._functions[functionName] = {type: functionType, call: filterFunction}, this;
     }
 
     /**
@@ -829,29 +833,29 @@ export class NanoSQLInstance {
 
     /**
      * Group By command, typically used with an aggregate function.
-     * 
+     *
      * Example:
-     * 
+     *
      * ```ts
      * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
      * ```
-     * 
+     *
      * This will provide a list of all favorite colors and how many each of them are in the db.
-     * 
-     * @param {({[key: string]:"asc"|"desc"})} columns 
-     * @returns {NanoSQLInstance} 
-     * 
+     *
+     * @param {({[key: string]:"asc"|"desc"})} columns
+     * @returns {NanoSQLInstance}
+     *
      * @memberOf NanoSQLInstance
      */
-    public groupBy(columns: {[key: string]:"asc"|"desc"}): NanoSQLInstance {
+    public groupBy(columns: {[key: string]: "asc"|"desc"}): NanoSQLInstance {
         return this._addCmd("groupby", columns);
     }
 
     /**
      * Having statement, used to filter Group BY statements. Syntax is identical to where statements.
-     * 
-     * @returns {NanoSQLInstance} 
-     * 
+     *
+     * @returns {NanoSQLInstance}
+     *
      * @memberOf NanoSQLInstance
      */
     public having(args: Array<any|Array<any>>): NanoSQLInstance {
@@ -867,7 +871,7 @@ export class NanoSQLInstance {
      *  NanoSQL("orders")
      *  .query("select", ["orders.id","orders.title","users.name"])
      *  .where(["orders.status","=","complete"])
-     *  .orderBy({"orders.date":"asc"}) 
+     *  .orderBy({"orders.date":"asc"})
      *  .join({
      *      type:"inner",
      *      table:"users",
@@ -880,7 +884,7 @@ export class NanoSQLInstance {
      * 3. The "table" argument lets you determine the data on the right side of the join.
      * 4. The "where" argument lets you set what conditions the tables are joined on.
      *
-     * 
+     *
      *
      * @param {JoinArgs} args
      * @returns {NanoSQLInstance}
@@ -967,24 +971,24 @@ export class NanoSQLInstance {
 
     /**
      * Returns a default object for the current table's data model, useful for forms.
-     * 
+     *
      * The optional argument lets you pass in an object to over write the data model's defaults as desired.
-     * 
+     *
      * Examples:
-     * 
+     *
      * ```ts
      * console.log(NanoSQL("users").default()) <= {username:"none", id:undefined, age: 0}
      * console.log(NanoSQL("users").default({username:"defalt"})) <= {username:"default", id:undefined, age: 0}
      * ```
-     * 
-     * DO NOT use this inside upsert commands like `.query("upsert",NanoSQL("users").defalt({userObj}))..`.  
+     *
+     * DO NOT use this inside upsert commands like `.query("upsert",NanoSQL("users").defalt({userObj}))..`.
      * The database defaults are already applied through the upsert path, you'll be doing double work.
-     * 
+     *
      * Only use this to pull default values into a form in your UI or similar situation.
-     * 
-     * @param {*} [replaceObj] 
-     * @returns {{[key: string]: any}} 
-     * 
+     *
+     * @param {*} [replaceObj]
+     * @returns {{[key: string]: any}}
+     *
      * @memberOf NanoSQLInstance
      */
     public default(replaceObj?: any): {[key: string]: any} {
@@ -992,31 +996,31 @@ export class NanoSQLInstance {
         let t = this;
         t._models[t._selectedTable].forEach((m) => {
             newObj[m.key] = (replaceObj && replaceObj[m.key]) ? replaceObj[m.key] : m.default;
-            if(!newObj[m.key]) {
+            if (!newObj[m.key]) {
                 newObj[m.key] = t._cast(m.type, null); // Generate default value from type, eg int == 0
             }
-        })
+        });
         return newObj;
     }
 
     /**
      * Start a database transaction, useful for importing large amounts of data.
-     * 
-     * 
+     *
+     *
      * @memberOf NanoSQLInstance
      */
     public beginTransaction() {
-        if(this.backend._transaction) return this.backend._transaction("start");
+        if (this.backend._transaction) return this.backend._transaction("start");
     }
 
     /**
      * End a database transaction.
-     * 
-     * 
+     *
+     *
      * @memberOf NanoSQLInstance
      */
     public endTransaction() {
-        if(this.backend._transaction) return this.backend._transaction("end");
+        if (this.backend._transaction) return this.backend._transaction("end");
     }
 
     /**
@@ -1039,7 +1043,7 @@ export class NanoSQLInstance {
 
         let t = this;
         let _t = t._selectedTable;
-        if(t._hasEvents[_t]) {  // Only calcluate events if there are listeners
+        if (t._hasEvents[_t]) {  // Only calcluate events if there are listeners
             t._triggerEvents = <any>t._query.map((q) => {
                 switch (q.type) {
                     case "select": return [q.type];
@@ -1054,14 +1058,14 @@ export class NanoSQLInstance {
 
         return new Promise((res, rej) => {
 
-            if(!t.backend) {
+            if (!t.backend) {
                 rej();
                 throw Error;
             }
 
             const _tEvent = (data: Array<Object>, callBack: Function, type: string, changedRows: DBRow[], isError: Boolean) => {
 
-                if(t._hasEvents[_t]) { // Only trigger events if there are listeners
+                if (t._hasEvents[_t]) { // Only trigger events if there are listeners
                     t.triggerEvent({
                         name: "error",
                         actionOrView: "",
@@ -1070,7 +1074,7 @@ export class NanoSQLInstance {
                         time: new Date().getTime(),
                         result: data,
                         changeType: type,
-                        changedRows:changedRows
+                        changedRows: changedRows
                     }, t._triggerEvents);
                 }
 
@@ -1149,12 +1153,26 @@ export class NanoSQLInstance {
         let t = this;
         t.beginTransaction();
         return new Promise((res, rej) => {
-            Promise.all(rows.map((row) => {
-                return t.from(t._selectedTable).query("upsert", row).exec();
-            })).then((rowData) => {
-                t.endTransaction();
-                res(rowData, t);
-            });
+            let pointer = 0;
+            let rowData: any[] = [];
+            const next = () => {
+                if (pointer < rows.length) {
+                    if (rows[pointer]) {
+                        t.table(t._selectedTable).query("upsert", rows[pointer]).exec().then((res) => {
+                            rowData.push(res);
+                            pointer++;
+                            next();
+                        });
+                    } else {
+                        pointer++;
+                        next();
+                    }
+                } else {
+                    t.endTransaction();
+                    res(rowData, t);
+                }
+            };
+            next();
         });
     }
 
@@ -1206,7 +1224,7 @@ export class NanoSQLInstance {
                             }
                             record[fields[i]] = row[i];
                         }
-                        t.from(t._selectedTable).query("upsert", record).exec().then(() => {
+                        t.table(t._selectedTable).query("upsert", record).exec().then(() => {
                             resolve();
                         });
                     }
@@ -1232,12 +1250,12 @@ export class NanoSQLInstance {
             if (typeof crypto === "undefined") {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             } else {
-                if (window.crypto.getRandomValues) { // Browser crypto
+                if (crypto["getRandomValues"]) { // Browser crypto
                     buf = new Uint16Array(1);
-                    window.crypto.getRandomValues(buf);
+                    crypto["getRandomValues"](buf);
                     return buf[0];
                 } else if (crypto.randomBytes) { // NodeJS crypto
-                    return crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
+                    return  crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
                 } else {
                     return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
                 }
@@ -1411,12 +1429,12 @@ export interface NanoSQLBackend {
 
     /**
      * Let the database driver know it needs to start or end a transaction
-     * 
-     * @param {("start"|"end")} type 
-     * 
+     *
+     * @param {("start"|"end")} type
+     *
      * @memberOf NanoSQLBackend
      */
-    _transaction?(type:"start"|"end"):void;
+    _transaction?(type: "start"|"end"): void;
 }
 
 /**
@@ -1425,5 +1443,5 @@ export interface NanoSQLBackend {
 let _NanoSQLStatic = new NanoSQLInstance();
 
 export const nSQL = (setTablePointer?: string) => {
-    return _NanoSQLStatic.from(setTablePointer);
-}
+    return _NanoSQLStatic.table(setTablePointer);
+};

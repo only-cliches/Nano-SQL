@@ -1,18 +1,26 @@
 # Change Log
 
 ## TODO
-- Using transactions now allow you to chain multiple table updates/changes inside the same history point.
-- Added syntax to the history system to give more control.
-- Started writing integration tests comparing default store results against the SQLite driver.
-- Default store now persists in NodeJS using [LevelDB](https://github.com/Level/levelup). 
-- Default store can now persist history states to IndexedDB.
-- Default store now falls back to localStorage if IndexedDB isn't availble.
+- Test and improve performance of LevelDB on the server.
+- Transactions aren't working as consistently as I'd like with history.
+- Finish adding WebSQL support
+- Complete the SQLite driver.
+- Use the SQLite driver to write integration tests.
+- Write LevelDB Cordova plugin.
 
 ## [0.5.0] 
-- BREAKING CHANGE: `before_import` and `after_import` have now been switched to a transaction syntax. See the docs.
-- BREAKING CHANGEE: The delete syntax was not deleting entire rows when now arguments were passed as it should, now it is.
-- The `config` parameters have been changed to handle turning history and immutable functions on and off.
-
+- BREAKING CHANGE: `before_import` and `after_import` have now been switched to `.beginTransaction()` and `.endTransaction()` syntax. See the docs.
+- BREAKING CHANGE: The delete syntax was not deleting entire rows when no arguments were passed as it should, now it is.
+- `config` parameters have been added to handle history, immutable functionionality, and persistent storage type.
+- BREAKING CHANGE: `flush_db` now deletes in memory store and history as well, not just the persistent storage.
+- Default store changes:
+    - Persists history states to IndexedDB or localStorage.
+    - Falls back to localStorage if IndexedDB isn't availble.
+    - Persists in NodeJS using [LevelDB](https://github.com/Level/levelup). 
+    - Rewritten to reduce memory usage dramatically when persist is true and memory is false.
+    - Using transactions now allow you to chain multiple table updates/changes inside the same history point.
+    - Added extra functions to the history system to give more control.
+    - Join commands are twice as fast as before.
 
 ## [0.4.5] 3-14-2017
 - BREAKING CHANGE: Did more research on how functions typically work in a SQL envrionment, changed the function implemintation again.

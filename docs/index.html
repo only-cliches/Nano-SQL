@@ -66,7 +66,8 @@
 				<p>RDBMS Immutable App Store with Undo, Redo &amp; IndexedDB support.</p>
 				<p><a href="https://github.com/ClickSimply/nano-sql/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 				<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint"></p>
-				<p>NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 8Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a lib half the size.</p>
+				<p>NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 10Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.</p>
+				<p>For persistence supports <code>Local Storage</code> and <code>Indexed DB</code> in the browser and <code>Level DB</code> in NodeJS with the same API.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.</p>
 				<ul>
 					<li><a href="https://some-sql.com/react-todo/">Todo Example</a></li>
 					<li><a href="https://some-sql.com/react-draw/">Draw Example</a></li>
@@ -75,43 +76,17 @@
 				<h2 id="features">Features</h2>
 				<ul>
 					<li>Run in Node, IE8+ &amp; modern browsers.</li>
+					<li>Persistence in any browser &amp; nodejs.</li>
 					<li>Supports all common RDBMS queries.</li>
 					<li>Queries return immutable rows.</li>
-					<li>Super easy IndexedDB support.</li>
 					<li>Import and Export CSV/JSON.</li>
 					<li>Simple &amp; elegant undo/redo.</li>
 					<li>Full Typescript support.</li>
 					<li>Runtime type casting.</li>
 					<li>Transactions support.</li>
 					<li>Full events system.</li>
-					<li>Just 8Kb Gzipped.</li>
+					<li>Just 10Kb Gzipped.</li>
 				</ul>
-				<h2 id="drivers">Drivers</h2>
-				<p><a href="https://github.com/ClickSimply/Nano-SQL/wiki#drivers">What is a driver?</a></p>
-				<table>
-					<thead>
-						<tr>
-							<th>Type</th>
-							<th>Description</th>
-							<th>Node</th>
-							<th>Browser</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>Immutable</td>
-							<td>Runs anywhere, can persist to IndexedDB in the browser, used by default.</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td><a href="https://github.com/ClickSimply/Nano-SQL/wiki/5.-SQLite">SQLite 3</a></td>
-							<td>Useful for nodeJS applications, supports full NanoSQL API.</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-					</tbody>
-				</table>
 				<h3 id="oh-look-another-data-store">Oh Look, Another Data Store</h3>
 				<p>I spent a long time looking for an existing solution that would do everything I needed and couldn&#39;t find one, here&#39;s some of the other data stores I looked into and why I didn&#39;t end up using them:</p>
 				<table>
@@ -120,11 +95,11 @@
 							<th>Database</th>
 							<th style="text-align:center">Events</th>
 							<th style="text-align:center">TS</th>
-							<th style="text-align:center">Undo</th>
+							<th style="text-align:center">Undo &amp; Redo</th>
 							<th style="text-align:center">Immutable</th>
 							<th style="text-align:center">RDBMS</th>
 							<th style="text-align:center">IndexedDB</th>
-							<th style="text-align:center">NodeJS</th>
+							<th style="text-align:center">Node</th>
 							<th style="text-align:center">Any Backend</th>
 							<th style="text-align:center">Size</th>
 						</tr>
@@ -140,7 +115,7 @@
 							<td style="text-align:center">✓</td>
 							<td style="text-align:center">✓</td>
 							<td style="text-align:center">✓</td>
-							<td style="text-align:center">8</td>
+							<td style="text-align:center">10</td>
 						</tr>
 						<tr>
 							<td><a href="https://github.com/reactjs/redux">Redux</a></td>
@@ -203,6 +178,18 @@
 							<td style="text-align:center">40</td>
 						</tr>
 						<tr>
+							<td><a href="https://github.com/pouchdb/pouchdb">PouchDB</a></td>
+							<td style="text-align:center">✓</td>
+							<td style="text-align:center">✓</td>
+							<td style="text-align:center">✕</td>
+							<td style="text-align:center">✕</td>
+							<td style="text-align:center">✓</td>
+							<td style="text-align:center">✓</td>
+							<td style="text-align:center">✓</td>
+							<td style="text-align:center">✓</td>
+							<td style="text-align:center">46</td>
+						</tr>
+						<tr>
 							<td><a href="https://github.com/agershun/alasql">AlaSQL</a></td>
 							<td style="text-align:center">✕</td>
 							<td style="text-align:center">✕</td>
@@ -228,7 +215,7 @@
 						</tr>
 					</tbody>
 				</table>
-				<p>I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and it needs to work with TypeScript.  NanoSQL is that.  </p>
+				<p>I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  NanoSQL is that.  </p>
 				<h2 id="installation">Installation</h2>
 				<p><code>npm i nano-sql --save</code></p>
 				<p>Using in typescript project:</p>
@@ -272,7 +259,7 @@
     {<span class="hljs-attr">key</span>:<span class="hljs-string">'postIDs'</span>,<span class="hljs-attr">type</span>:<span class="hljs-string">'array'</span>},
     {<span class="hljs-attr">key</span>:<span class="hljs-string">'meta'</span>,<span class="hljs-attr">type</span>:<span class="hljs-string">'map'</span>}
 ])
-.config({<span class="hljs-attr">persistent</span>:<span class="hljs-literal">true</span>}) <span class="hljs-comment">// The long and difficult process of enabling indexed DB support, optional.</span>
+.config({<span class="hljs-attr">persistent</span>:<span class="hljs-literal">true</span>}) <span class="hljs-comment">// With this enabled, the best storage engine will be auttomatically selected and all changes saved to it.  Works in browser AND nodeJS automatically.</span>
 .actions([ <span class="hljs-comment">// Optional</span>
     {
         <span class="hljs-attr">name</span>:<span class="hljs-string">'add_new_user'</span>,
