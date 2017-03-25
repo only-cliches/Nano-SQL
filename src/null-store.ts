@@ -19,7 +19,7 @@ export class _NanoSQLNullStore implements NanoSQLBackend {
     }
 
     public _exec(execArgs: DBExec): void {
-        execArgs._onSuccess([],"null",[]);
+        execArgs.onSuccess([], "null",[]);
     }
 
     public _extend(instance: NanoSQLInstance, ...args: Array<any>) {

@@ -596,6 +596,14 @@ export declare class NanoSQLInstance {
      */
     endTransaction(): void;
     /**
+     * Adds a query filter to every request.
+     *
+     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
+     *
+     * @memberOf NanoSQLInstance
+     */
+    queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): void;
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
@@ -726,11 +734,11 @@ export interface DBConnect {
  * @interface DBExec
  */
 export interface DBExec {
-    _table: string;
-    _query: Array<QueryLine>;
-    _viewOrAction: string;
-    _onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
-    _onFail: (rows: Array<Object>) => void;
+    table: string;
+    query: Array<QueryLine>;
+    viewOrAction: string;
+    onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
+    onFail: (rows: Array<Object>) => void;
 }
 export interface NanoSQLBackend {
     /**

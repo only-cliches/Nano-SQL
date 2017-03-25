@@ -8,6 +8,9 @@
 - Write LevelDB Cordova plugin.
 - I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
+## [0.5.4] 3-25-2017
+- Added query filter method.
+
 ## [0.5.3] 3-25-2017
 - Changed the way nodejs packages are being brought in.
 

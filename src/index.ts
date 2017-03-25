@@ -257,6 +257,15 @@ export class NanoSQLInstance {
         [key: string]: (row: any) => any;
     };
 
+    /**
+     * Lets you modify queries before they run on the database
+     *
+     * @internal
+     *
+     * @memberOf NanoSQLInstance
+     */
+    private _queryMod: (args: DBExec, complete:(args: DBExec) => void) => void;
+
 
     constructor() {
         let t = this;
@@ -1016,6 +1025,18 @@ export class NanoSQLInstance {
         if (this.backend._transaction) return this.backend._transaction("end");
     }
 
+
+    /**
+     * Adds a query filter to every request.
+     *
+     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack 
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public queryFilter(callBack:(args: DBExec, complete:(args: DBExec) => void) => void) {
+        this._queryMod = callBack;
+    }
+
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
@@ -1074,18 +1095,25 @@ export class NanoSQLInstance {
                 callBack(data, t);
             };
 
-            t.backend._exec({
-                _table: _t,
-                _query: t._query,
-                _viewOrAction: t._activeActionOrView || "",
-                _onSuccess: (rows, type, affectedRows) => {
+            let execArgs = {
+                table: _t,
+                query: t._query,
+                viewOrAction: t._activeActionOrView || "",
+                onSuccess: (rows, type, affectedRows) => {
                     _tEvent(rows, res, type, affectedRows, false);
                 },
-                _onFail: (err: any) => {
+                onFail: (err: any) => {
                     t._triggerEvents = ["error"];
                     if (rej) _tEvent(err, rej, "error", [], true);
                 }
-            });
+            };
+            if (t._queryMod) {
+                t._queryMod(execArgs, (newArgs) => {
+                    t.backend._exec(newArgs);
+                });
+            } else {
+                t.backend._exec(execArgs);
+            }
         });
     }
 
@@ -1359,11 +1387,11 @@ export interface DBConnect {
  * @interface DBExec
  */
 export interface DBExec {
-    _table: string;
-    _query: Array<QueryLine>;
-    _viewOrAction: string;
-    _onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
-    _onFail: (rows: Array<Object>) => void;
+    table: string;
+    query: Array<QueryLine>;
+    viewOrAction: string;
+    onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
+    onFail: (rows: Array<Object>) => void;
 }
 
 export interface NanoSQLBackend {

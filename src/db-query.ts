@@ -175,10 +175,10 @@ export class _NanoSQLQuery {
 
         let simpleQuery: QueryLine[] = [];
 
-        query._query.forEach((q) => {
+        query.query.forEach((q) => {
             if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
                 t._act = q; // Query Action
-                if (q.type === "select") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query._query));
+                if (q.type === "select") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query.query));
             } else if (["show tables", "describe"].indexOf(q.type) >= 0) {
                 simpleQuery.push(q);
             } else {
@@ -190,7 +190,7 @@ export class _NanoSQLQuery {
             switch (simpleQuery[0].type) {
                 case "show tables":
                     callBack();
-                    query._onSuccess([{tables: Object.keys(this._db._store._tables).map((ta) => this._db._store._tables[ta]._name)}], "info", []);
+                    query.onSuccess([{tables: Object.keys(this._db._store._tables).map((ta) => this._db._store._tables[ta]._name)}], "info", []);
                 break;
                 case "describe":
                     let getTable;
@@ -206,12 +206,12 @@ export class _NanoSQLQuery {
                     rows[tableName] = getTable;
 
                     callBack();
-                    query._onSuccess([rows], "info", []);
+                    query.onSuccess([rows], "info", []);
                 break;
             }
         } else {
             t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[]) => {
-                query._onSuccess(result, changeType, affectedRows);
+                query.onSuccess(result, changeType, affectedRows);
                 callBack(t);
             });
         }

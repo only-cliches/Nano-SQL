@@ -110,7 +110,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
         if (t._pendingQuerys.length) {
             t._pendingQuerys.push(execArgs);
         } else {
-            t._selectedTable = NanoSQLInstance._hash(execArgs._table);
+            t._selectedTable = NanoSQLInstance._hash(execArgs.table);
             new _NanoSQLQuery(t)._doQuery(execArgs, (query) => {
                 if (t._pendingQuerys.length) {
                     t._exec(<any> t._pendingQuerys.pop());

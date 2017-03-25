@@ -45,7 +45,7 @@ var _NanoSQLDB = (function () {
             t._pendingQuerys.push(execArgs);
         }
         else {
-            t._selectedTable = index_1.NanoSQLInstance._hash(execArgs._table);
+            t._selectedTable = index_1.NanoSQLInstance._hash(execArgs.table);
             new db_query_1._NanoSQLQuery(t)._doQuery(execArgs, function (query) {
                 if (t._pendingQuerys.length) {
                     t._exec(t._pendingQuerys.pop());

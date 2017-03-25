@@ -745,6 +745,16 @@ var NanoSQLInstance = (function () {
             return this.backend._transaction("end");
     };
     /**
+     * Adds a query filter to every request.
+     *
+     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
+     *
+     * @memberOf NanoSQLInstance
+     */
+    NanoSQLInstance.prototype.queryFilter = function (callBack) {
+        this._queryMod = callBack;
+    };
+    /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
@@ -794,19 +804,27 @@ var NanoSQLInstance = (function () {
                 }
                 callBack(data, t);
             };
-            t.backend._exec({
-                _table: _t,
-                _query: t._query,
-                _viewOrAction: t._activeActionOrView || "",
-                _onSuccess: function (rows, type, affectedRows) {
+            var execArgs = {
+                table: _t,
+                query: t._query,
+                viewOrAction: t._activeActionOrView || "",
+                onSuccess: function (rows, type, affectedRows) {
                     _tEvent(rows, res, type, affectedRows, false);
                 },
-                _onFail: function (err) {
+                onFail: function (err) {
                     t._triggerEvents = ["error"];
                     if (rej)
                         _tEvent(err, rej, "error", [], true);
                 }
-            });
+            };
+            if (t._queryMod) {
+                t._queryMod(execArgs, function (newArgs) {
+                    t.backend._exec(newArgs);
+                });
+            }
+            else {
+                t.backend._exec(execArgs);
+            }
         });
     };
     /**

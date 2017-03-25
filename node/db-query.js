@@ -127,11 +127,11 @@ var _NanoSQLQuery = (function () {
         t._mod = [];
         t._act = undefined;
         var simpleQuery = [];
-        query._query.forEach(function (q) {
+        query.query.forEach(function (q) {
             if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
                 t._act = q; // Query Action
                 if (q.type === "select")
-                    t._queryHash = index_1.NanoSQLInstance._hash(JSON.stringify(query._query));
+                    t._queryHash = index_1.NanoSQLInstance._hash(JSON.stringify(query.query));
             }
             else if (["show tables", "describe"].indexOf(q.type) >= 0) {
                 simpleQuery.push(q);
@@ -144,7 +144,7 @@ var _NanoSQLQuery = (function () {
             switch (simpleQuery[0].type) {
                 case "show tables":
                     callBack();
-                    query._onSuccess([{ tables: Object.keys(this._db._store._tables).map(function (ta) { return _this._db._store._tables[ta]._name; }) }], "info", []);
+                    query.onSuccess([{ tables: Object.keys(this._db._store._tables).map(function (ta) { return _this._db._store._tables[ta]._name; }) }], "info", []);
                     break;
                 case "describe":
                     var getTable_1;
@@ -158,13 +158,13 @@ var _NanoSQLQuery = (function () {
                     });
                     rows[tableName_1] = getTable_1;
                     callBack();
-                    query._onSuccess([rows], "info", []);
+                    query.onSuccess([rows], "info", []);
                     break;
             }
         }
         else {
             t._execQuery(function (result, changeType, affectedRows) {
-                query._onSuccess(result, changeType, affectedRows);
+                query.onSuccess(result, changeType, affectedRows);
                 callBack(t);
             });
         }
