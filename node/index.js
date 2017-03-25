@@ -1,8 +1,8 @@
 "use strict";
-var immutable_store_1 = require("./immutable-store");
+var db_index_1 = require("./db-index");
 var lie_ts_1 = require("lie-ts");
 /* NODE-START */
-crypto = require("crypto");
+var crypto = require("crypto");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };
@@ -64,7 +64,7 @@ var NanoSQLInstance = (function () {
                 throw Error();
             });
         }
-        t.backend = backend || new immutable_store_1._NanoSQLImmuDB();
+        t.backend = backend || new db_index_1._NanoSQLDB();
         return new lie_ts_1.Promise(function (res, rej) {
             t.backend._connect({
                 _models: t._models,
@@ -968,13 +968,13 @@ var NanoSQLInstance = (function () {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             }
             else {
-                if (crypto["getRandomValues"]) {
+                if (crypto.getRandomValues) {
                     buf = new Uint16Array(1);
-                    crypto["getRandomValues"](buf);
+                    crypto.getRandomValues(buf);
                     return buf[0];
                 }
-                else if (crypto.randomBytes) {
-                    return crypto.randomBytes(2).reduce(function (prev, cur) { return cur * prev; });
+                else if (crypto["randomBytes"]) {
+                    return crypto["randomBytes"](2).reduce(function (prev, cur) { return cur * prev; });
                 }
                 else {
                     return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
@@ -998,7 +998,7 @@ var NanoSQLInstance = (function () {
      * @param {string} key
      * @returns {number}
      *
-     * @memberOf _NanoSQLImmuDB
+     * @memberOf _NanoSQLDB
      */
     NanoSQLInstance._hash = function (key) {
         return Math.abs(key.split("").reduce(function (prev, next, i) {

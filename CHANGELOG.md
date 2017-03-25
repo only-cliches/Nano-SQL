@@ -7,11 +7,17 @@
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
+- I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
-## [0.5.1]
+## [0.5.2] 3-25-2017
+- Added OPEN open contribution stuff to the ReadMe.
+- Added license to ReadMe
+- Fixed issue with NodeJS crypto
+
+## [0.5.1] 3-24-2017
 - Small bugfixes.
 
-## [0.5.0] 
+## [0.5.0] 3-24-2017
 - BREAKING CHANGE: `before_import` and `after_import` have now been switched to `.beginTransaction()` and `.endTransaction()` syntax. See the docs.
 - BREAKING CHANGE: The delete syntax was not deleting entire rows when no arguments were passed as it should, now it is.
 - `config` parameters have been added to handle history, immutable functionionality, and persistent storage type.

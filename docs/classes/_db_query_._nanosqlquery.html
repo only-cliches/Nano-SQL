@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>DBRow | nano-sql</title>
+	<title>_NanoSQLQuery | nano-sql</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,13 +54,13 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="../modules/_index_.html">&quot;index&quot;</a>
+					<a href="../modules/_db_query_.html">&quot;db-query&quot;</a>
 				</li>
 				<li>
-					<a href="_index_.dbrow.html">DBRow</a>
+					<a href="_db_query_._nanosqlquery.html">_NanoSQLQuery</a>
 				</li>
 			</ul>
-			<h1>Interface DBRow</h1>
+			<h1>Class _NanoSQLQuery</h1>
 		</div>
 	</div>
 </header>
@@ -70,13 +70,13 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p> A single database row.</p>
+						<p>Query module called for each database execution to get the desired result on the data.</p>
 					</div>
 					<dl class="tsd-comment-tags">
-						<dt>export</dt>
+						<dt>internal</dt>
 						<dd></dd>
-						<dt>interface</dt>
-						<dd><p>DBRow</p>
+						<dt>class</dt>
+						<dd><p>_NanoSQLQuery</p>
 						</dd>
 					</dl>
 				</div>
@@ -85,18 +85,95 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">DBRow</span>
+						<span class="target">_NanoSQLQuery</span>
 					</li>
 				</ul>
 			</section>
-			<section class="tsd-panel tsd-kind-interface tsd-parent-kind-external-module">
-				<h3 class="tsd-before-signature">Indexable</h3>
-				<div class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">any</span></div>
-				<div class="tsd-comment tsd-typography">
-					<div class="lead">
-						<p> A single database row.</p>
+			<section class="tsd-panel-group tsd-index-group">
+				<h2>Index</h2>
+				<section class="tsd-panel tsd-index-panel">
+					<div class="tsd-index-content">
+						<section class="tsd-index-section ">
+							<h3>Constructors</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_db_query_._nanosqlquery.html#constructor" class="tsd-kind-icon">constructor</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Methods</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_query_._nanosqlquery.html#_doquery" class="tsd-kind-icon">_do<wbr>Query</a></li>
+							</ul>
+						</section>
 					</div>
-				</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Constructors</h2>
+				<section class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class">
+					<a name="constructor" class="tsd-anchor"></a>
+					<h3>constructor</h3>
+					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">new _<wbr><wbr>NanoSQLQuery<span class="tsd-signature-symbol">(</span>database<span class="tsd-signature-symbol">: </span><a href="_db_index_._nanosqldb.html" class="tsd-signature-type">_NanoSQLDB</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_db_query_._nanosqlquery.html" class="tsd-signature-type">_NanoSQLQuery</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-query.ts:155</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>database: <a href="_db_index_._nanosqldb.html" class="tsd-signature-type">_NanoSQLDB</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_db_query_._nanosqlquery.html" class="tsd-signature-type">_NanoSQLQuery</a></h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Methods</h2>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_doquery" class="tsd-anchor"></a>
+					<h3>_do<wbr>Query</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_do<wbr>Query<span class="tsd-signature-symbol">(</span>query<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbexec.html" class="tsd-signature-type">DBExec</a>, callBack<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-query.ts:170</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Setup the query then call the execution command.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>internal</dt>
+									<dd></dd>
+									<dt>memberof</dt>
+									<dd><p>_NanoSQLQuery</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>query: <a href="../interfaces/_index_.dbexec.html" class="tsd-signature-type">DBExec</a></h5>
+								</li>
+								<li>
+									<h5>callBack: <span class="tsd-signature-type">Function</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
 			</section>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
@@ -108,13 +185,13 @@
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_db_index_.html">"db-<wbr>index"</a>
 					</li>
-					<li class=" tsd-kind-external-module">
+					<li class="current tsd-kind-external-module">
 						<a href="../modules/_db_query_.html">"db-<wbr>query"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_db_storage_.html">"db-<wbr>storage"</a>
 					</li>
-					<li class="current tsd-kind-external-module">
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_.html">"index"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
@@ -124,57 +201,26 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
-					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="../classes/_index_.nanosqlinstance.html" class="tsd-kind-icon">NanoSQLInstance</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.actionorview.html" class="tsd-kind-icon">Action<wbr>OrView</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.dbconnect.html" class="tsd-kind-icon">DBConnect</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.dbexec.html" class="tsd-kind-icon">DBExec</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.dbfunction.html" class="tsd-kind-icon">DBFunction</a>
-					</li>
 				</ul>
 				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.dbrow.html" class="tsd-kind-icon">DBRow</a>
+					<li class="current tsd-kind-class tsd-parent-kind-external-module">
+						<a href="_db_query_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a>
+						<ul>
+							<li class=" tsd-kind-constructor tsd-parent-kind-class">
+								<a href="_db_query_._nanosqlquery.html#constructor" class="tsd-kind-icon">constructor</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_db_query_._nanosqlquery.html#_doquery" class="tsd-kind-icon">_do<wbr>Query</a>
+							</li>
+						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.datamodel.html" class="tsd-kind-icon">Data<wbr>Model</a>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="../modules/_db_query_.html#minmax" class="tsd-kind-icon">min<wbr>Max</a>
 					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.databaseevent.html" class="tsd-kind-icon">Database<wbr>Event</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.joinargs.html" class="tsd-kind-icon">Join<wbr>Args</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.nanosqlbackend.html" class="tsd-kind-icon">NanoSQLBackend</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_index_.queryline.html" class="tsd-kind-icon">Query<wbr>Line</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-has-type-parameter">
-						<a href="_index_.stdobject.html" class="tsd-kind-icon">Std<wbr>Object</a>
-					</li>
-					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../modules/_index_.html#_nanosqlstatic" class="tsd-kind-icon">_<wbr>NanoSQLStatic</a>
-					</li>
-					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../modules/_index_.html#crypto" class="tsd-kind-icon">crypto</a>
-					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="../modules/_index_.html#_assign" class="tsd-kind-icon">_assign</a>
-					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="../modules/_index_.html#nsql" class="tsd-kind-icon">nSQL</a>
+					<li class=" tsd-kind-object-literal tsd-parent-kind-external-module">
+						<a href="../modules/_db_query_.html#_functions" class="tsd-kind-icon">_functions</a>
 					</li>
 				</ul>
 			</nav>
