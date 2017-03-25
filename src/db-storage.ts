@@ -2,13 +2,7 @@ import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRo
 import { _NanoSQLDB } from "./db-index";
 import { _functions } from "./db-query";
 
-/* NODE-START */
-
-import levelup = require("levelup");
-import leveldown = require("leveldown");
-import fs = require("fs");
-
-/* NODE-END */
+declare var levelup: any, fs: any;
 
 // Bypass uglifyjs minifaction of these properties
 const _str = (index: number) => {
@@ -394,8 +388,9 @@ export class _NanoSQL_Storage {
                     if (typeof localStorage !== "undefined")                t._mode = 2; // Local storage is the fail safe
                     if (typeof indexedDB !== "undefined")                   t._mode = 1; // Use indexedDB instead if it's there
                     // if ((t._iOS() || t._safari()) && window.openDatabase)   t._mode = 3; // On iOS & Safari, use WebSQL instead of indexedDB.
-                } else {
-                                                                            t._mode = 4; // Use LevelUp in NodeJS if it's there.
+                }
+                if (typeof levelup !== "undefined" && typeof fs !== "undefined") {
+                    t._mode = 4; // Use LevelUp in NodeJS if it's there.
                 }
             }
         } else {
@@ -661,7 +656,6 @@ export class _NanoSQL_Storage {
                     });
                 });
             break;*/
-
             /* NODE-START */
             case 4: // Level Up
 
@@ -1049,7 +1043,6 @@ export class _NanoSQL_Storage {
                     }
                 });
             break;*/
-            /* NODE-START */
             case 4: // Level Up
 
                 if (row === "all" || typeof row === "function") {
@@ -1075,7 +1068,6 @@ export class _NanoSQL_Storage {
                     });
                 }
             break;
-            /* NODE-END */
         }
     }
 

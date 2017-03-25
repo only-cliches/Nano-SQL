@@ -3,11 +3,13 @@
 ## TODO
 - Test and improve performance of LevelDB on the server.
 - Transactions aren't working as consistently as I'd like with history.
-- Finish adding WebSQL support
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 - I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
+
+## [0.5.3] 3-25-2017
+- Changed the way nodejs packages are being brought in.
 
 ## [0.5.2] 3-25-2017
 - Added OPEN open contribution stuff to the ReadMe.

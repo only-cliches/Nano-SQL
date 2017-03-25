@@ -1,8 +1,6 @@
 "use strict";
 var db_index_1 = require("./db-index");
 var lie_ts_1 = require("lie-ts");
-/* NODE-START */
-var crypto = require("crypto");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };

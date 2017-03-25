@@ -1,13 +1,6 @@
 import { _NanoSQLDB } from "./db-index";
 import { Promise } from "lie-ts";
 
-
-/* NODE-START */
-
-let crypto = require("crypto");
-
-/* NODE-END */
-
 /**
  * Standard object placeholder with string key.
  *

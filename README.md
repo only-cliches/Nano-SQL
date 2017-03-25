@@ -63,7 +63,11 @@ Using in node:
 
 ```js
 var nSQL = require("nano-sql").nSQL;
+var crypto =  require("crypto") // needed for strong UUIDs, otherwise Math.random is used.
 
+// Import the two below if you plan to use the level db.
+var fs = require("fs"); 
+var levelup = require("levelup");
 ```
 
 To use directly in the browser, just include the script file found inside the `dist` folder onto your page.

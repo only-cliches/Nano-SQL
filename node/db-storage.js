@@ -1,10 +1,6 @@
 "use strict";
 var index_1 = require("./index");
 var db_query_1 = require("./db-query");
-/* NODE-START */
-var levelup = require("levelup");
-var fs = require("fs");
-/* NODE-END */
 // Bypass uglifyjs minifaction of these properties
 var _str = function (index) {
     return ["_utility", "_historyPoints"][index];
@@ -170,7 +166,7 @@ var _NanoSQL_Storage = (function () {
                     if (typeof indexedDB !== "undefined")
                         t._mode = 1; // Use indexedDB instead if it's there
                 }
-                else {
+                if (typeof levelup !== "undefined" && typeof fs !== "undefined") {
                     t._mode = 4; // Use LevelUp in NodeJS if it's there.
                 }
             }
@@ -803,7 +799,6 @@ var _NanoSQL_Storage = (function () {
                     }
                 });
             break;*/
-            /* NODE-START */
             case 4:
                 if (row === "all" || typeof row === "function") {
                     var rows_3 = [];
