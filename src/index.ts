@@ -1033,8 +1033,9 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public queryFilter(callBack:(args: DBExec, complete:(args: DBExec) => void) => void) {
+    public queryFilter(callBack:(args: DBExec, complete:(args: DBExec) => void) => void): NanoSQLInstance {
         this._queryMod = callBack;
+        return this;
     }
 
     /**

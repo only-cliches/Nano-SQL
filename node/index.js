@@ -753,6 +753,7 @@ var NanoSQLInstance = (function () {
      */
     NanoSQLInstance.prototype.queryFilter = function (callBack) {
         this._queryMod = callBack;
+        return this;
     };
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.

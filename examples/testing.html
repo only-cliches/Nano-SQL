@@ -67,6 +67,10 @@
 */
 
         nSQL('users') //Table/Store Name
+            .queryFilter(function(query, complete) {
+                console.log(query);
+                complete(query);
+            })
             .model([ //Data Model
                 {
                     key: 'id',

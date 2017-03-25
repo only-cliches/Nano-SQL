@@ -602,7 +602,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): void;
+    queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): NanoSQLInstance;
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
