@@ -74,53 +74,6 @@ export class _NanoSQL_Storage {
     };
 
 
-    /**
-     * Mirror of active tables, contains all the row modifications
-     *
-     * @type {{
-     *         [tableHash: number]}
-     * @memberOf _NanoSQLDB
-     */
-/*    public _historyDataTables: {
-        [tableHash: number]: (DBRow|null)[]
-    };*/
-
-    /**
-     * Need to store an auto incriment style counter for history data tables.
-     *
-     * @type {{
-     *         [tableHash: number]: number;
-     *     }}
-     * @memberOf _NanoSQL_Storage
-     */
-/*    public _historyDataTableLengths: {
-        [tableHash: number]: number;
-    };*/
-
-    /**
-     * Contains the records needed to keep track of and adjust the row histories.
-     *
-     * Only used if the memory database is enabled.
-     *
-     * @type {{
-     *         [tableHash: number]: {
-     *             [rowKey: string]: {
-     *                 _pointer: number,
-     *                 _historyDataRowIDs: number[]
-     *             }
-     *         }
-     *     }}
-     * @memberOf _NanoSQLDB
-     */
-/*    public _historyMetaTables: {
-        [tableHash: number]: {
-            [rowKey: string]: {
-                _pointer: number,
-                _historyDataRowIDs: number[]
-            }
-        }
-    };*/
-
 
     /**
      * Utility table to store misc data.
@@ -207,14 +160,6 @@ export class _NanoSQL_Storage {
      * @memberOf _NanoSQL_Storage
      */
     public _savedArgs: DBConnect;
-
-    /**
-     * WebSQL database object.
-     *
-     * @type {Database}
-     * @memberOf _NanoSQL_Storage
-     */
-    // public _webSQL: Database;
 
     /**
      * Level Up store variable.
@@ -363,7 +308,7 @@ export class _NanoSQL_Storage {
          * mode 0: no persistent storage, memory only
          * mode 1: Indexed DB // Preferred, forward compatible browser persistence
          * mode 2: Local Storage // Default fallback
-         * mode 3: WebSQL // Safari hates IndexedDB, use this (non standard) fallback for iOS devices and macOS running safari
+         * mode 3: WebSQL // No longer planned
          * mode 4: Level Up // Used by NodeJS
          */
         if (t._persistent) {
@@ -373,9 +318,6 @@ export class _NanoSQL_Storage {
                     break;
                     case 2: if (typeof localStorage === "undefined") t._mode = 0;
                     break;
-                    // case 3: if (typeof window === "undefined" || typeof window.openDatabase === "undefined") t._mode = 0;
-                    case 3: t._mode = 0;
-                    break;
                     case 4: if (typeof window !== "undefined") t._mode = 0;
                     break;
                 }
@@ -383,7 +325,6 @@ export class _NanoSQL_Storage {
                 if (typeof window !== "undefined") {
                     if (typeof localStorage !== "undefined")                t._mode = 2; // Local storage is the fail safe
                     if (typeof indexedDB !== "undefined")                   t._mode = 1; // Use indexedDB instead if it's there
-                    // if ((t._iOS() || t._safari()) && window.openDatabase)   t._mode = 3; // On iOS & Safari, use WebSQL instead of indexedDB.
                 }
                 if (typeof levelup !== "undefined" && typeof fs !== "undefined") {
                     t._mode = 4; // Use LevelUp in NodeJS if it's there.
@@ -400,6 +341,9 @@ export class _NanoSQL_Storage {
         t._doHistory = false;
 
         switch (beforeMode) {
+            case 0: // memory DB
+                completeSetup();
+            break;
             case 1: // Indexed DB
                 let idb = indexedDB.open(String(t._parent._databaseID), 1);
 
@@ -551,107 +495,6 @@ export class _NanoSQL_Storage {
                     }
                 }
             break;
-            /*case 3: // WebSQL
-
-                const success = (tx, rows) => {
-                    console.log(rows);
-                };
-
-                const error = (tx, error): boolean => {
-                    console.log(error);
-                    return true;
-                }
-
-                const ct = "CREATE TABLE IF NOT EXISTS ";
-                const newStore = () => {
-                    t._webSQL.transaction((tx) => {
-                        tx.executeSql(ct + "tableID (id TEXT);", [], success, error);
-                        tx.executeSql("INSERT INTO tableID (id) VALUES (?)", [t._parent._databaseID], success, error);
-                        tables.forEach((table) => {
-                            let ta = NanoSQLInstance._hash(table);
-                            tx.executeSql(ct + table + "(" + t._tables[ta]._keys.join(", ") + ");", [], success, error);
-                        });
-                        completeSetup();
-                    });
-                };
-
-                const existingTables = () => {
-                    isNewStore = false;
-                    index = 0;
-                    const next = () => {
-                        if (index >= tables.length) {
-                            completeSetup();
-                            return;
-                        }
-
-                        // Do not import history tables if history is disabled.
-                        if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
-                            index++;
-                            next();
-                            return;
-                        }
-
-                        // Load data from WebSQL into memory store
-                        if (index < tables.length) {
-                            let ta = NanoSQLInstance._hash(tables[index]);
-                            let pk = t._tables[ta]._pk;
-                            t._webSQL.transaction((tx) => {
-                                tx.executeSql("SELECT * FROM " + tables[index], [], (tx, result) => {
-
-                                    let items: any[] = [];
-                                    let ptr = result.rows.length;
-
-                                    while (ptr--) {
-                                        let r = result.rows.item(ptr);
-                                        items.unshift(t._storeMemory ? r : r[pk] | ptr);
-                                    }
-
-                                    if (t._storeMemory) {
-                                        if (tables[index].indexOf("_hist__data") !== -1) {
-                                            t._tables[ta]._index.push("0");
-                                            t._tables[ta]._rows["0"] = null;
-                                            t._tables[ta]._incriment++;
-                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
-                                                index++;
-                                                next();
-                                            });
-                                        } else {
-                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
-                                                index++;
-                                                next();
-                                            });
-                                        }
-                                    } else {
-                                        t._tables[ta]._index = items;
-                                        t._tables[ta]._incriment = items.reduce((prev, cur) => {
-                                            return Math.max(parseInt(cur), prev);
-                                        }, 0) + 1;
-                                        index++;
-                                        next();
-                                    }
-                                });
-                            });
-                        }
-                    };
-
-                    next();
-                };
-
-                t._webSQL = window.openDatabase(String(t._parent._databaseID), "1", String(t._parent._databaseID), size * 1024 * 1024);
-                t._webSQL.transaction((tx) => {
-                    tx.executeSql("SELECT * FROM tableID;", [], (tx, results) => {
-                        let dbID = parseInt(results.rows[0].id);
-                        if (dbID === t._parent._databaseID) {
-                            existingTables();
-                        } else {
-                            t._webSQLEmpty(newStore);
-                        }
-                    }, (tx, error): boolean => {
-                        newStore();
-                        return true;
-                    });
-                });
-            break;*/
             /* NODE-START */
             case 4: // Level Up
 
@@ -742,19 +585,7 @@ export class _NanoSQL_Storage {
         }
 
     }
-/*
-    public _webSQLEmpty(callBack: Function): void {
-        this._webSQL.transaction((tx) => {
-            tx.executeSql("SELECT name FROM sqlite_master WHERE type = 'table' AND name != '__WebKitDatabaseInfoTable__'", [], (tx, result) => {
-                let i = result.rows.length;
-                while (i--) {
-                    tx.executeSql("DROP TABLE " + result.rows.item(i).name);
-                }
-                callBack();
-            });
-        });
-    }
-*/
+
     public _clearHistory(complete: Function): void {
         let t = this;
 
@@ -806,12 +637,6 @@ export class _NanoSQL_Storage {
                 localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                 if (callBack) callBack(true);
             break;
-            /*case 3: // WebSQL
-                t._webSQL.transaction((tx) => {
-                    let pk = t._tables[ta]._pk;
-                    tx.executeSql("DELETE FROM " + tableName + " WHERE " + pk + " = ?", [rowID]);
-                });
-            break;*/
             /* NODE-START */
             case 4: // Level Up
                 t._levelDBs[tableName].del(rowID, () => {
@@ -881,32 +706,6 @@ export class _NanoSQL_Storage {
                 localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                 if (callBack) callBack(rowID as string);
             break;
-            /*case 3: // WebSQL
-                t._webSQL.transaction((tx) => {
-                    let pk = t._tables[ta]._pk;
-                    let values = t._models[ta].map((val, i) => {
-                        if (val.type === "map" || val.type === "array") {
-                            return JSON.stringify(value[val.key]);
-                        } else {
-                            return value ? value[val.key] : null;
-                        }
-                    });
-
-                    tx.executeSql("SELECT * FROM " + tableName + " WHERE " + (pk.length ? pk : "rowid") + " = ?", [rowID], (txx, result) => {
-                        if (!result.rows.length) {
-                            tx.executeSql("INSERT INTO '" + tableName + "' (" + t._tables[ta]._keys.join(", ") + ") VALUES (" + t._tables[ta]._keys.map(k => "?").join(", ") + ");", values, () => {
-                                if (callBack) callBack(rowID as string);
-                            });
-                        } else {
-                            values.push(rowID);
-                            tx.executeSql("UPDATE '" + tableName + "' SET " + t._tables[ta]._keys.map((k) => k + " = ?").join(", ")  + " WHERE " + pk + " = ?", values, () => {
-                                if (callBack) callBack(rowID as string);
-                            });
-                        }
-                    });
-
-                });
-            break;*/
             /* NODE-START */
             case 4: // Level Up
 
@@ -998,48 +797,6 @@ export class _NanoSQL_Storage {
                     callBack([item && item.length ? JSON.parse(item) : null]);
                 }
             break;
-            /*case 3: // WebSQL
-                const serialize = (row: DBRow) => {
-                    row = _assign(row);
-                    t._models[ta].forEach((val, i): void => {
-                        if (val.type === "map" || val.type === "array") {
-                            row[val.key] = JSON.parse(row[val.key]);
-                        }
-                        if (row[val.key] === "undefined") {
-                            row[val.key] = undefined;
-                        }
-                    });
-                    return row;
-                }
-
-                t._webSQL.transaction((tx) => {
-                    if (row === "all" || typeof row === "function") {
-                        tx.executeSql("SELECT * FROM " + tableName, [], (tx, result) => {
-                            let rows: any[] = [];
-                            let ptr = result.rows.length;
-                            while (ptr--) {
-                                rows.unshift(serialize(result.rows.item(ptr)));
-                            }
-                            if (row !== "all") {
-                                callBack(rows.filter((r) => row(r)));
-                            } else {
-                                callBack(rows);
-                            }
-                        });
-                    } else {
-                        let pk = t._tables[ta]._pk;
-                        tx.executeSql("SELECT * FROM " + tableName + " WHERE " + pk + " = ?", [row], (tx, result) => {
-                            let r: any[] = [];
-                            if (result.rows.length) {
-                                r.push(serialize(result.rows.item(0)));
-                            } else {
-                                r.push(null);
-                            }
-                            callBack(r);
-                        });
-                    }
-                });
-            break;*/
             case 4: // Level Up
 
                 if (row === "all" || typeof row === "function") {
@@ -1085,11 +842,6 @@ export class _NanoSQL_Storage {
                 localStorage.clear();
                 t.init(t._parent, t._savedArgs);
             break;
-            /*case 3: // WebSQL
-                t._webSQLEmpty(() => {
-                    t.init(t._parent, t._savedArgs);
-                });
-            break;*/
             /* NODE-START */
             case 4: // Level Up
 
@@ -1169,40 +921,5 @@ export class _NanoSQL_Storage {
         }
 
         return tableName;
-    }
-
-    /**
-     * User agent sniffing to discover if we're running in Safari
-     *
-     * @returns
-     *
-     * @memberOf _NanoSQLDB
-     */
-    public _safari() {
-        return typeof navigator !== "undefined" && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    }
-
-    /**
-     * User agent sniffing to discover if we're on an iOS device.
-     *
-     * @returns {boolean}
-     *
-     * @memberOf _NanoSQLDB
-     */
-    public _iOS(): boolean {
-
-        let iDevices = [
-            "iPad",
-            "iPhone",
-            "iPod"
-        ];
-
-        if (typeof navigator !== "undefined" && !!navigator.platform) {
-            while (iDevices.length) {
-                if (navigator.platform.indexOf(iDevices.pop() as string) !== -1) return true;
-            }
-        }
-
-        return false;
     }
 }

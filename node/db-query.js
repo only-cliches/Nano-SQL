@@ -121,7 +121,7 @@ var _NanoSQLQuery = (function () {
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLQuery.prototype._doQuery = function (query, callBack) {
+    _NanoSQLQuery.prototype._doQuery = function (query) {
         var t = this;
         t._tableID = index_1.NanoSQLInstance._hash(query.table);
         t._mod = [];
@@ -143,7 +143,6 @@ var _NanoSQLQuery = (function () {
         if (simpleQuery.length) {
             switch (simpleQuery[0].type) {
                 case "show tables":
-                    callBack();
                     query.onSuccess([{ tables: Object.keys(t._db._store._tables).map(function (ta) { return t._db._store._tables[ta]._name; }) }], "info", []);
                     break;
                 case "describe":
@@ -157,7 +156,6 @@ var _NanoSQLQuery = (function () {
                         }
                     });
                     rows[tableName_1] = getTable_1;
-                    callBack();
                     query.onSuccess([rows], "info", []);
                     break;
             }
@@ -165,7 +163,6 @@ var _NanoSQLQuery = (function () {
         else {
             t._execQuery(function (result, changeType, affectedRows) {
                 query.onSuccess(result, changeType, affectedRows);
-                callBack(t);
             });
         }
     };

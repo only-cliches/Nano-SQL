@@ -8,6 +8,11 @@
 - Write LevelDB Cordova plugin.
 - I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
+## [0.6.1] 3-25-2017
+- Cleaned up some of the code.
+- Did some size optimizations.
+- Fixed issue where resetting the database mode prevented the store from loading.
+
 ## [0.6.0] 3-25-2017
 - Fixed an issue with UUIDs
 - Refactored the abstraction layer and memory store to handle parallel queries.

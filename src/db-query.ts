@@ -176,7 +176,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    public _doQuery(query: DBExec, callBack: Function): void {
+    public _doQuery(query: DBExec): void {
         let t = this;
 
         t._tableID = NanoSQLInstance._hash(query.table);
@@ -199,7 +199,6 @@ export class _NanoSQLQuery {
         if (simpleQuery.length) {
             switch (simpleQuery[0].type) {
                 case "show tables":
-                    callBack();
                     query.onSuccess([{tables: Object.keys(t._db._store._tables).map((ta) => t._db._store._tables[ta]._name)}], "info", []);
                 break;
                 case "describe":
@@ -214,15 +213,12 @@ export class _NanoSQLQuery {
                     });
 
                     rows[tableName] = getTable;
-
-                    callBack();
                     query.onSuccess([rows], "info", []);
                 break;
             }
         } else {
             t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[]) => {
                 query.onSuccess(result, changeType, affectedRows);
-                callBack(t);
             });
         }
     }

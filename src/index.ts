@@ -255,7 +255,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public _queryMod: (args: DBExec, complete:(args: DBExec) => void) => void;
+    public _queryMod: (args: DBExec, complete: (args: DBExec) => void) => void;
 
     constructor() {
         let t = this;
@@ -864,11 +864,11 @@ export class NanoSQLInstance {
     /**
      * Adds a query filter to every request.
      *
-     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack 
+     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
      *
      * @memberOf NanoSQLInstance
      */
-    public queryFilter(callBack:(args: DBExec, complete:(args: DBExec) => void) => void): NanoSQLInstance {
+    public queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): NanoSQLInstance {
         this._queryMod = callBack;
         return this;
     }
@@ -1070,10 +1070,10 @@ export class _NanoSQLQuery {
 
     private _db: NanoSQLInstance;
 
-    public _action:{
+    public _action: {
         type: string;
         args: any;
-    }
+    };
 
     public _modifiers: any[];
 

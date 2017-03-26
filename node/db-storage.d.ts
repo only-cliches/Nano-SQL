@@ -45,36 +45,6 @@ export declare class _NanoSQL_Storage {
         };
     };
     /**
-     * Mirror of active tables, contains all the row modifications
-     *
-     * @type {{
-     *         [tableHash: number]}
-     * @memberOf _NanoSQLDB
-     */
-    /**
-     * Need to store an auto incriment style counter for history data tables.
-     *
-     * @type {{
-     *         [tableHash: number]: number;
-     *     }}
-     * @memberOf _NanoSQL_Storage
-     */
-    /**
-     * Contains the records needed to keep track of and adjust the row histories.
-     *
-     * Only used if the memory database is enabled.
-     *
-     * @type {{
-     *         [tableHash: number]: {
-     *             [rowKey: string]: {
-     *                 _pointer: number,
-     *                 _historyDataRowIDs: number[]
-     *             }
-     *         }
-     *     }}
-     * @memberOf _NanoSQLDB
-     */
-    /**
      * Utility table to store misc data.
      *
      * This is populated regardless of the memory db setting.
@@ -136,12 +106,6 @@ export declare class _NanoSQL_Storage {
      */
     _savedArgs: DBConnect;
     /**
-     * WebSQL database object.
-     *
-     * @type {Database}
-     * @memberOf _NanoSQL_Storage
-     */
-    /**
      * Level Up store variable.
      *
      * @type {{
@@ -190,20 +154,4 @@ export declare class _NanoSQL_Storage {
      * @memberOf _NanoSQL_Storage
      */
     _newTable(tableName: string, dataModels: DataModel[]): string;
-    /**
-     * User agent sniffing to discover if we're running in Safari
-     *
-     * @returns
-     *
-     * @memberOf _NanoSQLDB
-     */
-    _safari(): boolean;
-    /**
-     * User agent sniffing to discover if we're on an iOS device.
-     *
-     * @returns {boolean}
-     *
-     * @memberOf _NanoSQLDB
-     */
-    _iOS(): boolean;
 }

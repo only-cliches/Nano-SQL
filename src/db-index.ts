@@ -43,15 +43,6 @@ export class _NanoSQLDB implements NanoSQLBackend {
     public _parent: NanoSQLInstance;
 
     /**
-     * A hash of the current table name.
-     *
-     * @internal
-     * @type {number}
-     * @memberOf _NanoSQLDB
-     */
-    // public _selectedTable: number;
-
-    /**
      * A query hash split up by tables.
      *
      * @internal
@@ -106,17 +97,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
      */
     public _exec(execArgs: DBExec): void {
         let t = this;
-
-        // if (t._pendingQuerys.length) {
-            // t._pendingQuerys.push(execArgs);
-        // } else {
-            // t._selectedTable = NanoSQLInstance._hash(execArgs.table);
-            new _NanoSQLQuery(t)._doQuery(execArgs, (query) => {
-                //if (t._pendingQuerys.length) {
-                    //t._exec(<any> t._pendingQuerys.pop());
-                // }
-            });
-        // }
+        new _NanoSQLQuery(t)._doQuery(execArgs);
     }
 
     /**

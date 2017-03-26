@@ -41,16 +41,7 @@ var _NanoSQLDB = (function () {
      */
     _NanoSQLDB.prototype._exec = function (execArgs) {
         var t = this;
-        // if (t._pendingQuerys.length) {
-        // t._pendingQuerys.push(execArgs);
-        // } else {
-        // t._selectedTable = NanoSQLInstance._hash(execArgs.table);
-        new db_query_1._NanoSQLQuery(t)._doQuery(execArgs, function (query) {
-            //if (t._pendingQuerys.length) {
-            //t._exec(<any> t._pendingQuerys.pop());
-            // }
-        });
-        // }
+        new db_query_1._NanoSQLQuery(t)._doQuery(execArgs);
     };
     /**
      * Invalidate the query cache based on the rows being affected

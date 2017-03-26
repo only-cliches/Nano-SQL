@@ -1,8 +1,9 @@
 {
     "name": "nano-sql",
-    "version": "0.6.0",
+    "version": "0.6.1",
     "description": "",
     "main": "node/index.js",
+    "browser": "node/db-index.js",
     "scripts": {
         "serve": "bash bin/serve.sh",
         "build": "bash bin/build.sh",
