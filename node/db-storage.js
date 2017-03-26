@@ -1,8 +1,6 @@
 var index_1 = require("./index");
+var db_index_1 = require("./db-index");
 var db_query_1 = require("./db-query");
-var _str = function (index) {
-    return ["_utility", "_historyPoints"][index];
-};
 var _NanoSQL_Storage = (function () {
     function _NanoSQL_Storage(database, args) {
         this._savedArgs = args;
@@ -50,11 +48,11 @@ var _NanoSQL_Storage = (function () {
                 { key: "_historyDataRowIDs", type: "array" },
             ];
         });
-        args._models[_str(0)] = [
+        args._models[db_index_1._str(0)] = [
             { key: "key", type: "string", props: ["pk"] },
             { key: "value", type: "blob" },
         ];
-        args._models[_str(1)] = [
+        args._models[db_index_1._str(1)] = [
             { key: "id", type: "int", props: ["ai", "pk"] },
             { key: "tableID", type: "int" },
             { key: "historyPoint", type: "int" },
@@ -75,7 +73,7 @@ var _NanoSQL_Storage = (function () {
             var i = 0;
             t._mode = beforeMode;
             if (beforeHist) {
-                t._read(_str(0), "all", function (rows) {
+                t._read(db_index_1._str(0), "all", function (rows) {
                     rows.forEach(function (d) {
                         t._utility("w", d.key, d.value);
                         if (d.key === "historyPoint")
@@ -367,17 +365,31 @@ var _NanoSQL_Storage = (function () {
                 break;
         }
     };
-    _NanoSQL_Storage.prototype._clearHistory = function (complete) {
+    _NanoSQL_Storage.prototype._clear = function (type, complete) {
         var t = this;
-        var tables = Object.keys(t._tables);
+        var tables = Object.keys(t._tables).map(function (k) { return t._tables[k]._name; });
         var index = 0;
         var step = function () {
             if (index < tables.length) {
-                if (tables[index].indexOf("_hist__meta") !== -1) {
+                var deleteTable = false;
+                if (type === "hist" && (tables[index] === "_historyPoints" || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
+                    deleteTable = true;
                 }
-                if (tables[index].indexOf("_hist__data") !== -1) {
+                if (type === "all" && tables[index] !== "_utility") {
+                    deleteTable = true;
                 }
-                if (tables[index] === "_historyPoints") {
+                if (deleteTable) {
+                    t._delete(tables[index], "all", function () {
+                        if (tables[index].indexOf("_hist__data") !== -1) {
+                            t._upsert(tables[index], 0, null);
+                        }
+                        index++;
+                        step();
+                    });
+                }
+                else {
+                    index++;
+                    step();
                 }
             }
             else {
@@ -390,32 +402,60 @@ var _NanoSQL_Storage = (function () {
         var t = this;
         var editingHistory = false;
         var ta = index_1.NanoSQLInstance._hash(tableName);
-        t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1);
-        if (t._storeMemory) {
-            console.log(t._tables);
-            delete t._tables[ta]._rows[rowID];
-            if (t._mode === 0 && callBack)
-                return callBack(true);
+        var deleteRowIDS = [];
+        if (rowID === "all") {
+            deleteRowIDS = t._tables[ta]._index.slice();
+            t._tables[ta]._index = [];
         }
-        switch (t._mode) {
-            case 1:
-                var transaction = t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName);
-                transaction.delete(rowID);
-                if (callBack)
-                    callBack(true);
-                break;
-            case 2:
-                localStorage.removeItem(tableName + "-" + String(rowID));
+        else {
+            deleteRowIDS.push(rowID);
+            t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1);
+        }
+        if (t._storeMemory) {
+            if (rowID === "all") {
+                t._tables[ta]._rows = {};
+            }
+            else {
+                delete t._tables[ta]._rows[rowID];
+                if (t._mode === 0 && callBack)
+                    return callBack(true);
+            }
+        }
+        if (t._mode > 0) {
+            if (t._mode === 2) {
                 localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
-                if (callBack)
-                    callBack(true);
-                break;
-            case 4:
-                t._levelDBs[tableName].del(rowID, function () {
+            }
+            var i_1 = 0;
+            var step_3 = function () {
+                if (i_1 < deleteRowIDS.length) {
+                    switch (t._mode) {
+                        case 1:
+                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(parseInt(deleteRowIDS[i_1]));
+                            i_1++;
+                            step_3();
+                            break;
+                        case 2:
+                            localStorage.removeItem(tableName + "-" + String(deleteRowIDS[i_1]));
+                            i_1++;
+                            step_3();
+                            break;
+                        case 4:
+                            t._levelDBs[tableName].del(deleteRowIDS[i_1], function () {
+                                i_1++;
+                                step_3();
+                            });
+                            break;
+                        default:
+                            i_1++;
+                            step_3();
+                    }
+                }
+                else {
                     if (callBack)
                         callBack(true);
-                });
-                break;
+                }
+            };
+            step_3();
         }
     };
     _NanoSQL_Storage.prototype._upsert = function (tableName, rowID, value, callBack) {
@@ -480,7 +520,7 @@ var _NanoSQL_Storage = (function () {
                 break;
             case 4:
                 if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(String(rowID), JSON.stringify(value), function () {
+                    t._levelDBs[tableName].put(String(rowID), value ? JSON.stringify(value) : null, function () {
                         if (callBack)
                             callBack(rowID);
                     });
@@ -599,29 +639,6 @@ var _NanoSQL_Storage = (function () {
                 break;
         }
     };
-    _NanoSQL_Storage.prototype._clearAll = function (callBack) {
-        var t = this;
-        t._savedArgs._onSuccess = callBack;
-        t._savedArgs._onFail = function () { };
-        switch (t._mode) {
-            case 0:
-                t.init(t._parent, t._savedArgs);
-                break;
-            case 1:
-                indexedDB.deleteDatabase(String(t._parent._databaseID)).onsuccess = function () {
-                    t.init(t._parent, t._savedArgs);
-                };
-                break;
-            case 2:
-                localStorage.clear();
-                t.init(t._parent, t._savedArgs);
-                break;
-            case 4:
-                break;
-        }
-        if (callBack)
-            callBack(true);
-    };
     _NanoSQL_Storage.prototype._utility = function (type, key, value) {
         var t = this;
         if (type === "r") {
@@ -633,7 +650,7 @@ var _NanoSQL_Storage = (function () {
             }
         }
         else {
-            t._upsert(_str(0), key, { key: key, value: value });
+            t._upsert(db_index_1._str(0), key, { key: key, value: value });
             t._utility[key] = {
                 key: key,
                 value: value

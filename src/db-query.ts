@@ -1,7 +1,6 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
-import { _NanoSQLDB } from "./db-index";
+import { _NanoSQLDB, _str } from "./db-index";
 import { IHistoryPoint, _NanoSQL_Storage } from "./db-storage";
-
 
 /**
  * Min/Max function for database
@@ -266,19 +265,47 @@ export class _NanoSQLQuery {
             }
         };
 
-        const tableName = this._db._store._tables[t._tableID]._name;
+        const tableData = t._db._store._tables[t._tableID];
 
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
-                // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
-                t._db._store._read(tableName, (row) => {
-                    return row && t._where(row, (t._getMod("where") as QueryLine).args);
-                }, (rows) => {
-                    doQuery(rows);
-                });
+                const whereArgs = (t._getMod("where") as QueryLine).args;
+
+                // Primary key optimization, if we're grabbing a value by it's pk we can skip the full table read
+                whereArgs[1] = whereArgs[1].trim();
+                if (whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
+                    // Goes straight to the right row
+                    let rowPks: any[] = [];
+                    if (whereArgs[1] === "=") {
+                        rowPks.push(whereArgs[2]);
+                    } else {
+                        rowPks = whereArgs[2];
+                    }
+                    let i = 0;
+                    let rows: any[] = [];
+                    const getRow = () => {
+                        if (i < rowPks.length) {
+                            t._db._store._read(tableData._name, rowPks[i], (result) => {
+                                rows = rows.concat(result);
+                                i++;
+                                getRow();
+                            });
+                        } else {
+                            doQuery(rows);
+                        }
+                    };
+                    getRow();
+                } else {
+                    // Full table scan
+                    t._db._store._read(tableData._name, (row) => {
+                        return row && t._where(row, (t._getMod("where") as QueryLine).args);
+                    }, (rows) => {
+                        doQuery(rows);
+                    });
+                }
             } else {
-                if (t._act && t._act.type !== "upsert") {
-                    t._db._store._read(tableName, "all", (rows) => {
+                if (t._act.type !== "upsert") {
+                    t._db._store._read(tableData._name, "all", (rows) => {
                         doQuery(rows);
                     });
                 } else {
@@ -356,7 +383,7 @@ export class _NanoSQLQuery {
             const finishUpdate = () => {
                 if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
                     t._db._store._read("_" + tableName + "_hist__meta", parseInt(rowPK), (rows) => {
-                        rows[0]._historyDataRowIDs.unshift(len);
+                        rows[0][_str(3)].unshift(len);
                         t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
                     });
                 }
@@ -431,7 +458,7 @@ export class _NanoSQLQuery {
 
                     });
                 } else {
-                    let table = t._db._store._tables[this._tableID];
+                    let table = t._db._store._tables[t._tableID];
                     t._db._invalidateCache(t._tableID, [], "");
                     t._db._store._read(table._name, (row) => {
                         return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
@@ -461,8 +488,8 @@ export class _NanoSQLQuery {
                                         // Set this row history pointer to 0;
                                         t._db._store._read("_" + tableName + "_hist__meta", historyPoints[j].rowKeys[k], (rows) => {
                                             rows[0] = _assign(rows[0]);
-                                            rows[0]._pointer = 0;
-                                            let del = rows[0]._historyDataRowIDs.shift(); // Shift off the most recent update
+                                            rows[0][_str(2)] = 0;
+                                            let del = rows[0][_str(3)].shift(); // Shift off the most recent update
                                             t._db._store._upsert("_" + tableName + "_hist__meta", historyPoints[j].rowKeys[k], rows[0], () => {
                                                 if (del) {
                                                     t._db._store._delete("_" + tableName + "_hist__data", del, () => {
@@ -559,13 +586,13 @@ export class _NanoSQLQuery {
             // Entirely new row, setup all the needed stuff for it.
             if (table._index.indexOf(objPK) === -1) {
                 // History
-                let tableName = this._db._store._tables[t._tableID]._name;
+                let tableName = t._db._store._tables[t._tableID]._name;
                 if (tableName.indexOf("_") !== 0) {
                     let histTable = "_" + tableName + "_hist__meta";
-                    t._db._store._upsert(histTable, objPK, {
-                        _pointer: 0,
-                        _historyDataRowIDs: [0]
-                    });
+                    let histRow = {};
+                    histRow[_str(2)] = 0;
+                    histRow[_str(3)] = [0];
+                    t._db._store._upsert(histTable, objPK, histRow);
                 }
 
                 // Index

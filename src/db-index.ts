@@ -3,6 +3,11 @@ import { Promise } from "lie-ts";
 import { IHistoryPoint, _NanoSQL_Storage } from "./db-storage";
 import { _NanoSQLQuery } from "./db-query";
 
+// Bypass uglifyjs minifaction of these properties
+export const _str = (index: number) => {
+    return ["_utility", "_historyPoints", "_pointer", "_historyDataRowIDs"][index];
+};
+
 /**
  * The main class for the immutable database, holds the indexes, data and primary methods.
  *
@@ -220,8 +225,8 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                     // Shift the row pointer
                                     t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
                                         row = _assign(row);
-                                        row[0]._pointer += direction;
-                                        const historyRowID = row[0]._historyDataRowIDs[row[0]._pointer];
+                                        row[0][_str(2)] += direction;
+                                        const historyRowID = row[0][_str(3)][row[0][_str(2)]];
                                         t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
                                             t._store._read("_" + table._name + "_hist__data", historyRowID, (row) => { // Now getting the new row data
                                                 let newRow = row[0] ? _assign(row[0]) : null;
@@ -298,15 +303,21 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     }
                     res(t._store._historyArray);
                 break;
+                case "flush_history":
                 case "flush_db":
+                    t._store._utility("w", "historyPoint", 0);
+                    t._store._utility("w", "historyLength", 0);
+                    t._store._historyPoint = 0;
+                    t._store._historyLength = 0;
+                    if (command === "flush_db") {
+                        t._store._clear("all", res);
+                    } else {
+                        t._store._clear("hist", res);
+                    }
                     Object.keys(t._store._tables).forEach((tableID) => {
                         let rows = t._store._tables[parseInt(tableID)]._rows;
                         t._invalidateCache(parseInt(tableID), Object.keys(rows).map(r => rows[r]) as DBRow[], "remove", "clear");
                     });
-                    t._store._clearAll(res);
-                break;
-                case "flush_history":
-                    t._store._clearHistory(res);
                 break;
             }
         });

@@ -42,11 +42,10 @@ export declare class _NanoSQL_Storage {
     };
     constructor(database: _NanoSQLDB, args: DBConnect);
     init(database: _NanoSQLDB, args: DBConnect): void;
-    _clearHistory(complete: Function): void;
+    _clear(type: "all" | "hist", complete: Function): void;
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
     _upsert(tableName: string, rowID: string | number | null, value: any, callBack?: (rowID: number | string) => void): void;
     _read(tableName: string, row: string | number | Function, callBack: (rows: any[]) => void): void;
-    _clearAll(callBack: Function): void;
     _utility(type: "r" | "w", key: string, value?: any): any;
     _newTable(tableName: string, dataModels: DataModel[]): string;
 }

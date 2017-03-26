@@ -8,6 +8,12 @@
 - Write LevelDB Cordova plugin.
 - I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
+## [0.6.2] 3-26-2017
+- Added function to clear all history
+- Added primary key opitmization to reads when you do `.where(["primaryKey","=",rowID])`. 
+- Fixed some issues caused by uglifyJS.
+- History flush and database flush now implimented completely.
+
 ## [0.6.1] 3-25-2017
 - Cleaned up some of the code.
 - Did some size optimizations.

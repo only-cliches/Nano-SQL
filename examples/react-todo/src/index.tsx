@@ -104,6 +104,16 @@ class TodoApp extends Component<Nothing, TodoAppState> {
         this.markDone = this.markDone.bind(this);
         this.undo = this.undo.bind(this);
         this.redo = this.redo.bind(this);
+        this.clearHist = this.clearHist.bind(this);
+        this.clearAll = this.clearAll.bind(this);
+    }
+
+    public clearHist() {
+        nSQL().extend("flush_history");
+    }
+
+    public clearAll() {
+        nSQL().extend("flush_db");
     }
 
     public markDone(todoID: number): void {
@@ -166,6 +176,9 @@ class TodoApp extends Component<Nothing, TodoAppState> {
                 </div>
                 <TodoForm />
                 <TodoTable markDone={this.markDone} todos={this.state.todos} />
+                <button disabled={this.state.redos[0] === 0 && this.state.redos[0] === 0} onClick={this.clearHist} className="noselect button" >Clear History</button>
+                <span>&nbsp;&nbsp;</span>
+                <button onClick={this.clearAll} className="noselect button" >Clear Everything</button>
             </div>
         );
     }

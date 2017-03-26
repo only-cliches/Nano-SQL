@@ -1,13 +1,10 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
-import { _NanoSQLDB } from "./db-index";
+import { _NanoSQLDB, _str } from "./db-index";
 import { _functions } from "./db-query";
 
 declare var global: any;
 
-// Bypass uglifyjs minifaction of these properties
-const _str = (index: number) => {
-    return ["_utility", "_historyPoints"][index];
-}
+
 
 export interface IHistoryPoint {
     id: number;
@@ -326,12 +323,11 @@ export class _NanoSQL_Storage {
                     if (typeof localStorage !== "undefined")                t._mode = 2; // Local storage is the fail safe
                     if (typeof indexedDB !== "undefined")                   t._mode = 1; // Use indexedDB instead if it's there
                 }
-                if(typeof global !== "undefined") {
+                if (typeof global !== "undefined") {
                     if (typeof global._levelup !== "undefined" && typeof global._fs !== "undefined") {
                         t._mode = 4; // Use LevelUp in NodeJS if it's there.
                     }
                 }
-
             }
         } else {
             t._mode = 0;
@@ -589,23 +585,31 @@ export class _NanoSQL_Storage {
 
     }
 
-    public _clearHistory(complete: Function): void {
+    public _clear(type: "all"|"hist", complete: Function): void {
         let t = this;
 
-        let tables = Object.keys(t._tables);
+        let tables = Object.keys(t._tables).map(k => t._tables[k]._name);
         let index = 0;
         const step = () => {
             if (index < tables.length) {
-                if (tables[index].indexOf("_hist__meta") !== -1) {
-
+                let deleteTable = false;
+                if (type === "hist" && (tables[index] === "_historyPoints" || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
+                    deleteTable = true;
                 }
-
-                if (tables[index].indexOf("_hist__data") !== -1) {
-
+                if (type === "all" && tables[index] !== "_utility") {
+                    deleteTable = true;
                 }
-
-                if (tables[index] === "_historyPoints") {
-
+                if (deleteTable) {
+                    t._delete(tables[index], "all", () => {
+                        if (tables[index].indexOf("_hist__data") !== -1) {
+                            t._upsert(tables[index], 0, null);
+                        }
+                        index++;
+                        step();
+                    });
+                } else {
+                    index++;
+                    step();
                 }
             } else {
                 complete();
@@ -621,33 +625,64 @@ export class _NanoSQL_Storage {
         let editingHistory = false;
 
         const ta = NanoSQLInstance._hash(tableName);
-        t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1); // Update Index
+        let deleteRowIDS: any[] = [];
+
+        if (rowID === "all") {
+            deleteRowIDS = t._tables[ta]._index.slice();
+            t._tables[ta]._index = [];
+        } else {
+            deleteRowIDS.push(rowID);
+            t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1); // Update Index
+        }
 
         if (t._storeMemory) {
-            console.log(t._tables);
-            delete t._tables[ta]._rows[rowID];
-            if (t._mode === 0 && callBack) return callBack(true);
+            if (rowID === "all") {
+                t._tables[ta]._rows = {};
+            } else {
+                delete t._tables[ta]._rows[rowID];
+                if (t._mode === 0 && callBack) return callBack(true);
+            }
         }
 
-        switch (t._mode) {
-            case 1: // IndexedDB
-                const transaction = t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName);
-                transaction.delete(rowID);
-                if (callBack) callBack(true);
-            break;
-            case 2: // Local Storage
-                localStorage.removeItem(tableName + "-" + String(rowID));
+        if (t._mode > 0) {
+            if (t._mode === 2) {
                 localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
-                if (callBack) callBack(true);
-            break;
-            /* NODE-START */
-            case 4: // Level Up
-                t._levelDBs[tableName].del(rowID, () => {
+            }
+
+            let i = 0;
+            const step = () => {
+                if (i < deleteRowIDS.length) {
+                    switch (t._mode) {
+                        case 1: // IndexedDB
+                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(parseInt(deleteRowIDS[i]));
+                            i++;
+                            step();
+                        break;
+                        case 2: // Local Storage
+                            localStorage.removeItem(tableName + "-" + String(deleteRowIDS[i]));
+                            i++;
+                            step();
+                        break;
+                        /* NODE-START */
+                        case 4: // Level Up
+                            t._levelDBs[tableName].del(deleteRowIDS[i], () => {
+                                i++;
+                                step();
+                            });
+                        break;
+                        /* NODE-END */
+                        default:
+                        i++;
+                        step();
+                    }
+                } else {
                     if (callBack) callBack(true);
-                });
-            break;
-            /* NODE-END */
+                }
+            }
+            step();
         }
+
+
     }
 
     public _upsert(tableName: string, rowID: string|number|null, value: any, callBack?: (rowID: number|string) => void): void {
@@ -713,7 +748,7 @@ export class _NanoSQL_Storage {
             case 4: // Level Up
 
                 if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(String(rowID), JSON.stringify(value), () => {
+                    t._levelDBs[tableName].put(String(rowID), value ? JSON.stringify(value) : null, () => {
                         if (callBack) callBack(rowID as string);
                     });
                 } else {
@@ -800,6 +835,8 @@ export class _NanoSQL_Storage {
                     callBack([item && item.length ? JSON.parse(item) : null]);
                 }
             break;
+
+            /* NODE-START */
             case 4: // Level Up
 
                 if (row === "all" || typeof row === "function") {
@@ -825,35 +862,9 @@ export class _NanoSQL_Storage {
                     });
                 }
             break;
-        }
-    }
-
-    public _clearAll(callBack: Function): void {
-        let t = this;
-        t._savedArgs._onSuccess = callBack;
-        t._savedArgs._onFail = () => {};
-        switch (t._mode) {
-            case 0:
-                t.init(t._parent, t._savedArgs);
-            break;
-            case 1: // IndexedDB
-                indexedDB.deleteDatabase(String(t._parent._databaseID)).onsuccess = function() {
-                    t.init(t._parent, t._savedArgs);
-                };
-            break;
-            case 2: // Local Storage
-                localStorage.clear();
-                t.init(t._parent, t._savedArgs);
-            break;
-            /* NODE-START */
-            case 4: // Level Up
-
-            break;
             /* NODE-END */
         }
-        if (callBack) callBack(true);
     }
-
 
     /**
      * Write or access utility options.

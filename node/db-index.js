@@ -2,6 +2,9 @@ var index_1 = require("./index");
 var lie_ts_1 = require("lie-ts");
 var db_storage_1 = require("./db-storage");
 var db_query_1 = require("./db-query");
+exports._str = function (index) {
+    return ["_utility", "_historyPoints", "_pointer", "_historyDataRowIDs"][index];
+};
 var _NanoSQLDB = (function () {
     function _NanoSQLDB() {
         var t = this;
@@ -85,8 +88,8 @@ var _NanoSQLDB = (function () {
                                         rows_1.push(rowData[0]);
                                     t._store._read("_" + table_1._name + "_hist__meta", rowID, function (row) {
                                         row = index_1._assign(row);
-                                        row[0]._pointer += direction;
-                                        var historyRowID = row[0]._historyDataRowIDs[row[0]._pointer];
+                                        row[0][exports._str(2)] += direction;
+                                        var historyRowID = row[0][exports._str(3)][row[0][exports._str(2)]];
                                         t._store._upsert("_" + table_1._name + "_hist__meta", rowID, row[0], function () {
                                             t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (row) {
                                                 var newRow = row[0] ? index_1._assign(row[0]) : null;
@@ -166,15 +169,22 @@ var _NanoSQLDB = (function () {
                     }
                     res(t._store._historyArray);
                     break;
+                case "flush_history":
                 case "flush_db":
+                    t._store._utility("w", "historyPoint", 0);
+                    t._store._utility("w", "historyLength", 0);
+                    t._store._historyPoint = 0;
+                    t._store._historyLength = 0;
+                    if (command === "flush_db") {
+                        t._store._clear("all", res);
+                    }
+                    else {
+                        t._store._clear("hist", res);
+                    }
                     Object.keys(t._store._tables).forEach(function (tableID) {
                         var rows = t._store._tables[parseInt(tableID)]._rows;
                         t._invalidateCache(parseInt(tableID), Object.keys(rows).map(function (r) { return rows[r]; }), "remove", "clear");
                     });
-                    t._store._clearAll(res);
-                    break;
-                case "flush_history":
-                    t._store._clearHistory(res);
                     break;
             }
         });

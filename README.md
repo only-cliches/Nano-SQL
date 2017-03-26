@@ -1,4 +1,4 @@
-Small RDBMS that supports IndexedDB and LevelDB with Undo/Redo.
+Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
 
 ![NanoSQL Logo](https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png)
 
@@ -169,10 +169,6 @@ nSQL().connect().then(function(result, db) {
 Some examples of queries you can do.
 
 ```js
-// Roll the entire database back one delete/drop/upsert query
-nSQL().extend("<") 
-// Yep, that's it.
-
 // Listen for changes on the users table
 nSQL("users").on("change", function(dbEvent) { ... });
 
@@ -243,6 +239,45 @@ nSQL("users")
 .limit(20)
 .exec().then(function(rows, db) {...})
 
+```
+
+[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+
+## History
+
+The Undo/Redo system is enabled by default and it's easy to use.
+
+```js
+// Roll the database back one query.
+nSQL().extend("<");
+
+// Roll it forward one query.
+nSQL().extend(">");
+
+// Delete all history points
+nSQL().extend("flush_history")
+
+// Get the status of the history system
+nSQL().extend("?").then(function(status) {
+    console.log(status) // <= [0,0];
+    // The array from the ? query gives you the length of the history in the first value and the current history reference point in the last.
+    // If the length and point are zero, undo & redo will do nothing.
+    // If the length and point are equal, redo does nothing.
+    // if the point is zero, undo will do nothing.
+});
+
+``` 
+
+Writes are a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by adjusting the config object before calling `connect()`.
+
+```js
+nSQL("table")
+.model([...])
+.views([...])
+
+nSQL()
+.config({history:false})
+.connect().then()...
 ```
 
 [Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
