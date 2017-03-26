@@ -254,14 +254,14 @@ export class _NanoSQLQuery {
             if (!t._act) return;
             switch (t._act.type) {
                 case "upsert":
-                    this._upsert(rows, callBack);
+                    t._upsert(rows, callBack);
                 break;
                 case "select":
-                    this._select(rows, callBack);
+                    t._select(rows, callBack);
                 break;
                 case "drop":
                 case "delete":
-                    this._remove(rows, callBack);
+                    t._remove(rows, callBack);
                 break;
             }
         };

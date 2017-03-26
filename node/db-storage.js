@@ -623,17 +623,18 @@ var _NanoSQL_Storage = (function () {
             callBack(true);
     };
     _NanoSQL_Storage.prototype._utility = function (type, key, value) {
+        var t = this;
         if (type === "r") {
-            if (this._utilityTable[key]) {
-                return this._utilityTable[key].value;
+            if (t._utilityTable[key]) {
+                return t._utilityTable[key].value;
             }
             else {
                 return null;
             }
         }
         else {
-            this._upsert(_str(0), key, { key: key, value: value });
-            this._utility[key] = {
+            t._upsert(_str(0), key, { key: key, value: value });
+            t._utility[key] = {
                 key: key,
                 value: value
             };

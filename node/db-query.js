@@ -140,7 +140,6 @@ var _NanoSQLQuery = (function () {
     };
     ;
     _NanoSQLQuery.prototype._execQuery = function (callBack) {
-        var _this = this;
         var t = this;
         if (!t._act)
             return;
@@ -149,14 +148,14 @@ var _NanoSQLQuery = (function () {
                 return;
             switch (t._act.type) {
                 case "upsert":
-                    _this._upsert(rows, callBack);
+                    t._upsert(rows, callBack);
                     break;
                 case "select":
-                    _this._select(rows, callBack);
+                    t._select(rows, callBack);
                     break;
                 case "drop":
                 case "delete":
-                    _this._remove(rows, callBack);
+                    t._remove(rows, callBack);
                     break;
             }
         };

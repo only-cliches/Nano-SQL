@@ -866,15 +866,16 @@ export class _NanoSQL_Storage {
      * @memberOf _NanoSQLDB
      */
     public _utility(type: "r"|"w", key: string, value?: any): any {
+        let t = this;
         if (type === "r") { // Read
-            if (this._utilityTable[key]) {
-                return this._utilityTable[key].value;
+            if (t._utilityTable[key]) {
+                return t._utilityTable[key].value;
             } else {
                 return null;
             }
         } else { // Write
-            this._upsert(_str(0), key, {key: key, value: value});
-            this._utility[key] = {
+            t._upsert(_str(0), key, {key: key, value: value});
+            t._utility[key] = {
                 key: key,
                 value: value
             };
