@@ -1,56 +1,23 @@
-"use strict";
 var index_1 = require("./index");
 var lie_ts_1 = require("lie-ts");
 var db_storage_1 = require("./db-storage");
 var db_query_1 = require("./db-query");
-/**
- * The main class for the immutable database, holds the indexes, data and primary methods.
- *
- * A majority of data moving around for select statements and the like is indexes, not the actual data.
- *
- * @export
- * @class _NanoSQLDB
- * @implements {NanoSQLBackend}
- */
-// tslint:disable-next-line
 var _NanoSQLDB = (function () {
     function _NanoSQLDB() {
         var t = this;
         t._pendingQuerys = [];
         t._queryCache = {};
     }
-    /**
-     * Called once to init the database, prep all the needed variables and data models
-     *
-     * @param {DBConnect} connectArgs
-     *
-     * @memberOf _NanoSQLDB
-     */
     _NanoSQLDB.prototype._connect = function (connectArgs) {
         var t = this;
         t._databaseID = index_1.NanoSQLInstance._hash(JSON.stringify(connectArgs._models));
         t._parent = connectArgs._parent;
         t._store = new db_storage_1._NanoSQL_Storage(t, connectArgs);
     };
-    /**
-     * Called by NanoSQL to execute queries on this database.
-     *
-     * @param {DBExec} execArgs
-     *
-     * @memberOf _NanoSQLDB
-     */
     _NanoSQLDB.prototype._exec = function (execArgs) {
         var t = this;
         new db_query_1._NanoSQLQuery(t)._doQuery(execArgs);
     };
-    /**
-     * Invalidate the query cache based on the rows being affected
-     *
-     * @internal
-     * @param {boolean} triggerChange
-     *
-     * @memberOf _NanoSQLDB
-     */
     _NanoSQLDB.prototype._invalidateCache = function (changedTableID, changedRows, type, action) {
         var t = this;
         t._queryCache[changedTableID] = {};
@@ -67,15 +34,6 @@ var _NanoSQLDB = (function () {
             }, ["change"]);
         }
     };
-    /**
-     * Recursively freezes a js object, used to prevent the rows from being edited once they're added.
-     *
-     * @internal
-     * @param {*} obj
-     * @returns {*}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLDB.prototype._deepFreeze = function (obj, tableID) {
         if (!obj)
             return obj;
@@ -95,34 +53,6 @@ var _NanoSQLDB = (function () {
             this._store._doingTransaction = false;
         return !!this._store._doingTransaction;
     };
-    /**
-     * Undo & Redo logic.
-     *
-     * ### Undo
-     * Reverse the state of the database by one step into the past.
-     * Usage: `NanoSQL().extend("<")`;
-     *
-     * ### Redo
-     * Step the database state forward by one.
-     * Usage: `NanoSQL().extend(">")`;
-     *
-     * ### Query
-     * Discover the state of the history system
-     * ```ts
-     * NanoSQL().extend("?").then(function(state) {
-     *  console.log(state[0]) // <= length of history records
-     *  console.log(state[1]) // <= current history pointer position
-     * });
-     * ```
-     *
-     * The history point is zero by default, perforing undo shifts the pointer backward while redo shifts it forward.
-     *
-     * @param {NanoSQLInstance} db
-     * @param {("<"|">"|"?")} command
-     * @returns {Promise<any>}
-     *
-     * @memberOf _NanoSQLDB
-     */
     _NanoSQLDB.prototype._extend = function (db, command) {
         var t = this;
         var i;
@@ -152,8 +82,7 @@ var _NanoSQLDB = (function () {
                                     rowID = parseInt(rowID);
                                 t._store._read(table_1._name, rowID, function (rowData) {
                                     if (direction > 0)
-                                        rows_1.push(rowData[0]); // Get current row data befoe shifting to a different row
-                                    // Shift the row pointer
+                                        rows_1.push(rowData[0]);
                                     t._store._read("_" + table_1._name + "_hist__meta", rowID, function (row) {
                                         row = index_1._assign(row);
                                         row[0]._pointer += direction;

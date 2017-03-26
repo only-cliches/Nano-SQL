@@ -62,9 +62,6 @@ import { nSQL } from "nano-sql";
 Using in node:
 
 ```js
-var nSQL = require("nano-sql").nSQL;
-var crypto =  require("crypto") // needed for strong UUIDs, otherwise Math.random is used.
-
 // Import the two below if you plan to use the level db.
 var fs = require("fs"); 
 var levelup = require("levelup");

@@ -2,7 +2,7 @@ import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRo
 import { _NanoSQLDB } from "./db-index";
 import { _functions } from "./db-query";
 
-declare var levelup: any, fs: any;
+declare var global: any;
 
 // Bypass uglifyjs minifaction of these properties
 const _str = (index: number) => {
@@ -326,9 +326,12 @@ export class _NanoSQL_Storage {
                     if (typeof localStorage !== "undefined")                t._mode = 2; // Local storage is the fail safe
                     if (typeof indexedDB !== "undefined")                   t._mode = 1; // Use indexedDB instead if it's there
                 }
-                if (typeof levelup !== "undefined" && typeof fs !== "undefined") {
-                    t._mode = 4; // Use LevelUp in NodeJS if it's there.
+                if(typeof global !== "undefined") {
+                    if (typeof global._levelup !== "undefined" && typeof global._fs !== "undefined") {
+                        t._mode = 4; // Use LevelUp in NodeJS if it's there.
+                    }
                 }
+
             }
         } else {
             t._mode = 0;
@@ -565,13 +568,13 @@ export class _NanoSQL_Storage {
 
                 const dbFolder = "./db_" + t._parent._databaseID;
                 let existing = true;
-                if (!fs.existsSync(dbFolder)) {
-                    fs.mkdirSync(dbFolder);
+                if (!global._fs.existsSync(dbFolder)) {
+                    global._fs.mkdirSync(dbFolder);
                     existing = false;
                 }
 
                 tables.forEach((table) => {
-                    t._levelDBs[table] = levelup(dbFolder + "/" + table);
+                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table);
                 });
 
                 if (existing) {

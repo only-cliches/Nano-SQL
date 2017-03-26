@@ -12,6 +12,7 @@
 - Cleaned up some of the code.
 - Did some size optimizations.
 - Fixed issue where resetting the database mode prevented the store from loading.
+- Adjusted node/browser build.  Lib should work when being webpack included AND in node without work from the dev using it.
 
 ## [0.6.0] 3-25-2017
 - Fixed an issue with UUIDs

@@ -1,6 +1,8 @@
 import { _NanoSQLDB } from "./db-index";
 import { Promise } from "lie-ts";
 
+declare var global: any;
+
 /**
  * Standard object placeholder with string key.
  *
@@ -1031,8 +1033,8 @@ export class NanoSQLInstance {
                     buf = new Uint16Array(1);
                     crypto.getRandomValues(buf);
                     return buf[0];
-                } else if (crypto["randomBytes"]) { // NodeJS crypto
-                    return  crypto["randomBytes"](2).reduce((prev: number, cur: number) => cur * prev);
+                } else if (global !== "undefined" && global._crypto.randomBytes) { // NodeJS crypto
+                    return  global._crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
                 } else {
                     return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
                 }

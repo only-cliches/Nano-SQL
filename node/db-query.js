@@ -1,16 +1,4 @@
-"use strict";
 var index_1 = require("./index");
-/**
- * Min/Max function for database
- *
- * @internal
- * @param {number} type
- * @param {DBRow} row
- * @param {string[]} args
- * @param {number[]} ptr
- * @param {*} prev
- * @returns
- */
 var minMax = function (type, row, args, ptr, prev) {
     var key = args[0];
     if (ptr[0] === 0)
@@ -31,9 +19,6 @@ var minMax = function (type, row, args, ptr, prev) {
         return nextRow;
     }
 };
-/**
- * @internal
- */
 exports._functions = {
     SUM: {
         type: "aggregate",
@@ -101,26 +86,10 @@ exports._functions = {
         }
     }
 };
-/**
- * Query module called for each database execution to get the desired result on the data.
- *
- * @internal
- * @class _NanoSQLQuery
- */
-// tslint:disable-next-line
 var _NanoSQLQuery = (function () {
     function _NanoSQLQuery(database) {
         this._db = database;
     }
-    /**
-     * Setup the query then call the execution command.
-     *
-     * @internal
-     * @param {DBExec} query
-     * @returns {Promise<any>}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._doQuery = function (query) {
         var t = this;
         t._tableID = index_1.NanoSQLInstance._hash(query.table);
@@ -129,7 +98,7 @@ var _NanoSQLQuery = (function () {
         var simpleQuery = [];
         query.query.forEach(function (q) {
             if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
-                t._act = q; // Query Action
+                t._act = q;
                 if (q.type === "select")
                     t._queryHash = index_1.NanoSQLInstance._hash(JSON.stringify(query.query));
             }
@@ -137,7 +106,7 @@ var _NanoSQLQuery = (function () {
                 simpleQuery.push(q);
             }
             else {
-                t._mod.push(q); // Query Modifiers
+                t._mod.push(q);
             }
         });
         if (simpleQuery.length) {
@@ -166,28 +135,10 @@ var _NanoSQLQuery = (function () {
             });
         }
     };
-    /**
-     * Get a query modifier (where/orderby/etc...)
-     *
-     * @internal
-     * @param {string} name
-     * @returns {(QueryLine|undefined)}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._getMod = function (name) {
         return this._mod.filter(function (v) { return v.type === name; }).pop();
     };
     ;
-    /**
-     * Starting query method, sets up initial environment for the query and sets it off.
-     *
-     * @internal
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
-     * @returns {void}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._execQuery = function (callBack) {
         var _this = this;
         var t = this;
@@ -212,7 +163,6 @@ var _NanoSQLQuery = (function () {
         var tableName = this._db._store._tables[t._tableID]._name;
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
-                // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
                 t._db._store._read(tableName, function (row) {
                     return row && t._where(row, t._getMod("where").args);
                 }, function (rows) {
@@ -234,14 +184,6 @@ var _NanoSQLQuery = (function () {
             doQuery([]);
         }
     };
-    /**
-     * Updates a given row with a specific value, also updates the history for that row as needed.
-     *
-     * @internal
-     * @param {string} rowPK
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
         var tableName = t._db._store._tables[t._tableID]._name;
@@ -261,15 +203,9 @@ var _NanoSQLQuery = (function () {
             switch (updateType) {
                 case "upsert":
                     newRow = oldRow ? index_1._assign(oldRow) : {};
-                    /*if(!t._db._doingTransaction) {
-                        newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
-                    } else {
-                        newRow = oldRow || {};
-                    }*/
                     Object.keys(qArgs).forEach(function (k) {
                         newRow[k] = qArgs[k];
                     });
-                    // Add default values
                     var table_1 = t._db._store._tables[t._tableID];
                     table_1._keys.forEach(function (k, i) {
                         var def = table_1._defaults[i];
@@ -278,7 +214,7 @@ var _NanoSQLQuery = (function () {
                     });
                     break;
                 case "delete":
-                    newRow = oldRow ? index_1._assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
+                    newRow = oldRow ? index_1._assign(oldRow) : {};
                     if (qArgs && qArgs.length) {
                         qArgs.forEach(function (column) {
                             newRow[column] = null;
@@ -297,8 +233,6 @@ var _NanoSQLQuery = (function () {
                         t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
                     });
                 }
-                // 3. Move new row data into place on the active table
-                // Apply changes to the store
                 if (updateType === "upsert") {
                     t._db._store._upsert(tableName, rowPK, newRow, function () {
                         callBack();
@@ -310,10 +244,8 @@ var _NanoSQLQuery = (function () {
                     });
                 }
             };
-            // Add to history
-            var len = 0; // 0 index contains a null reference used by all rows;
+            var len = 0;
             if (!doRemove && tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
-                // 1. copy new row data into histoy data table
                 t._db._store._upsert("_" + tableName + "_hist__data", null, newRow, function (rowID) {
                     len = parseInt(rowID);
                     finishUpdate();
@@ -324,16 +256,6 @@ var _NanoSQLQuery = (function () {
             }
         });
     };
-    /**
-     * Called to finish drop/delete/upsert queries to affect the history and memoization as needed.
-     *
-     * @internal
-     * @param {string[]} updatedRowPKs
-     * @param {string} describe
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
         var _this = this;
         var t = this, k = 0, j = 0;
@@ -345,7 +267,6 @@ var _NanoSQLQuery = (function () {
                     }
                     t._db._store._utility("w", "historyLength", t._db._store._historyLength);
                     t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
-                    // Add history records
                     t._db._store._upsert("_historyPoints", null, {
                         historyPoint: t._db._store._historyLength - t._db._store._historyPoint,
                         tableID: t._tableID,
@@ -372,7 +293,6 @@ var _NanoSQLQuery = (function () {
                 }
             };
             if (t._db._store._doHistory) {
-                // Remove history points ahead of the current one if the database has changed
                 if (t._db._store._historyPoint > 0 && t._db._store._doingTransaction !== true) {
                     t._db._store._read("_historyPoints", function (hp) {
                         if (hp.historyPoint > t._db._store._historyLength - t._db._store._historyPoint)
@@ -386,11 +306,10 @@ var _NanoSQLQuery = (function () {
                                 k = 0;
                                 var nextRow_1 = function () {
                                     if (k < historyPoints[j].rowKeys.length) {
-                                        // Set this row history pointer to 0;
                                         t._db._store._read("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], function (rows) {
                                             rows[0] = index_1._assign(rows[0]);
                                             rows[0]._pointer = 0;
-                                            var del = rows[0]._historyDataRowIDs.shift(); // Shift off the most recent update
+                                            var del = rows[0]._historyDataRowIDs.shift();
                                             t._db._store._upsert("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], rows[0], function () {
                                                 if (del) {
                                                     t._db._store._delete("_" + tableName_2 + "_hist__data", del, function () {
@@ -437,15 +356,6 @@ var _NanoSQLQuery = (function () {
         }
     };
     ;
-    /**
-     * Add/modify records to a specific table based on query parameters.
-     *
-     * @internal
-     * @param {DBRow[]} queryRows
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._upsert = function (queryRows, callBack) {
         var t = this;
         var scribe = "", i, changedPKs = [];
@@ -484,9 +394,7 @@ var _NanoSQLQuery = (function () {
             }
             var objPK = qArgs[pk] ? String(qArgs[pk]) : String(table._index.length);
             changedPKs = [objPK];
-            // Entirely new row, setup all the needed stuff for it.
             if (table._index.indexOf(objPK) === -1) {
-                // History
                 var tableName = this._db._store._tables[t._tableID]._name;
                 if (tableName.indexOf("_") !== 0) {
                     var histTable = "_" + tableName + "_hist__meta";
@@ -495,7 +403,6 @@ var _NanoSQLQuery = (function () {
                         _historyDataRowIDs: [0]
                     });
                 }
-                // Index
                 table._index.push(objPK);
             }
             t._updateRow(objPK, function () {
@@ -503,30 +410,11 @@ var _NanoSQLQuery = (function () {
             });
         }
     };
-    /**
-     * Get the table ID for query commands, used to intelligently switch between joined tables and the regular ones.
-     *
-     * @internal
-     * @returns
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._getTableID = function () {
         return this._joinTable ? this._joinTable : this._tableID;
     };
-    /**
-     * Selects rows from a given table using the query parameters.
-     *
-     * @internal
-     * @param {DBRow[]} queryRows
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
-     * @returns
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._select = function (queryRows, callBack) {
         var t = this;
-        // Memoization
         if (t._db._queryCache[t._tableID][t._queryHash]) {
             callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
             return;
@@ -547,7 +435,6 @@ var _NanoSQLQuery = (function () {
         };
         var modifyQuery = function (tableIndex, modIndex, next) {
             curMod = t._getMod(mods[modIndex]);
-            // After GROUP BY command apply functions and AS statements
             if (modIndex === 2) {
                 var functions_1 = [];
                 if (qArgs.length) {
@@ -617,7 +504,7 @@ var _NanoSQLQuery = (function () {
                         var groupKeys = Object.keys(groups);
                         if (groupKeys.length) {
                             rows_1 = groupKeys
-                                .map(function (k) { return doFunctions_1(groups[k]); }) // Apply each function to each group (N^2)
+                                .map(function (k) { return doFunctions_1(groups[k]); })
                                 .reduce(function (prev, curr) {
                                 return prev = prev.concat(curr), prev;
                             }, []);
@@ -740,15 +627,6 @@ var _NanoSQLQuery = (function () {
         };
         stepQuery(queryRows);
     };
-    /**
-     * Removes elements from the currently selected table based on query conditions.
-     *
-     * @internal
-     * @param {DBRow[]} queryRows
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._remove = function (queryRows, callBack) {
         var scribe = "deleted", i;
         var t = this;
@@ -770,17 +648,6 @@ var _NanoSQLQuery = (function () {
         };
         remove();
     };
-    /**
-     * Performs "where" filtering on a given table provided where conditions.
-     *
-     * @internal
-     * @param {number} tableID
-     * @param {string[]} searchIndex
-     * @param {any[]} conditions
-     * @returns {string[]}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._where = function (row, conditions) {
         var t = this;
         var commands = ["AND", "OR"];
@@ -808,22 +675,6 @@ var _NanoSQLQuery = (function () {
             return t._compare(conditions[2], conditions[1], row[conditions[0]]) === 0 ? true : false;
         }
     };
-    /**
-     * Perform a join between two tables.  Generates a new table with the joined records.
-     *
-     * Joined tables are not memoized or cached in any way, they are generated from scrach on every query.
-     *
-     * @private
-     * @param {("left"|"inner"|"right"|"cross"|"outer")} type
-     * @param {any[]} whereArgs
-     * @param {number} leftTableID
-     * @param {number} rightTableID
-     * @param {(null|{_left: string, _check: string, _right: string})} joinConditions
-     * @param {(rows:DBRow[]) => void} complete
-     * @returns {void}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._join = function (type, leftTableID, rightTableID, joinConditions, complete) {
         var L = "left";
         var R = "right";
@@ -864,7 +715,6 @@ var _NanoSQLQuery = (function () {
                 rightUsedPKs = rightUsedPKs.sort().filter(function (item, pos, ary) {
                     return !pos || item !== ary[pos - 1];
                 });
-                // If this is a RIGHT or OUTER join we're going to add the right side rows that haven't been used.
                 if ([R, O].indexOf(type) >= 0) {
                     rightRows.filter(function (r) {
                         return rightUsedPKs.indexOf(r[rightTableData._pk]) === -1;
@@ -876,17 +726,6 @@ var _NanoSQLQuery = (function () {
             });
         });
     };
-    /**
-     * Compare two values together given a comparison value
-     *
-     * @internal
-     * @param {*} val1
-     * @param {string} compare
-     * @param {*} val2
-     * @returns {number}
-     *
-     * @memberOf _NanoSQLQuery
-     */
     _NanoSQLQuery.prototype._compare = function (val1, compare, val2) {
         switch (compare) {
             case "=": return val2 === val1 ? 0 : 1;
