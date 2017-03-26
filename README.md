@@ -62,9 +62,7 @@ import { nSQL } from "nano-sql";
 Using in node:
 
 ```js
-// Import the two below if you plan to use the level db.
-var fs = require("fs"); 
-var levelup = require("levelup");
+var nSQL = require("nano-sql").nSQL;
 ```
 
 To use directly in the browser, just include the script file found inside the `dist` folder onto your page.
