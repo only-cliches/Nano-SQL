@@ -49,7 +49,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
      * @type {number}
      * @memberOf _NanoSQLDB
      */
-    public _selectedTable: number;
+    // public _selectedTable: number;
 
     /**
      * A query hash split up by tables.
@@ -107,16 +107,16 @@ export class _NanoSQLDB implements NanoSQLBackend {
     public _exec(execArgs: DBExec): void {
         let t = this;
 
-        if (t._pendingQuerys.length) {
-            t._pendingQuerys.push(execArgs);
-        } else {
-            t._selectedTable = NanoSQLInstance._hash(execArgs.table);
+        // if (t._pendingQuerys.length) {
+            // t._pendingQuerys.push(execArgs);
+        // } else {
+            // t._selectedTable = NanoSQLInstance._hash(execArgs.table);
             new _NanoSQLQuery(t)._doQuery(execArgs, (query) => {
-                if (t._pendingQuerys.length) {
-                    t._exec(<any> t._pendingQuerys.pop());
-                }
+                //if (t._pendingQuerys.length) {
+                    //t._exec(<any> t._pendingQuerys.pop());
+                // }
             });
-        }
+        // }
     }
 
     /**
@@ -130,7 +130,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
     public _invalidateCache(changedTableID: number, changedRows: DBRow[], type: string, action?: string): void {
         let t = this;
 
-        t._queryCache[t._selectedTable] = {};
+        t._queryCache[changedTableID] = {};
 
         if (changedRows.length && action) {
             t._parent.triggerEvent({
@@ -155,13 +155,13 @@ export class _NanoSQLDB implements NanoSQLBackend {
      *
      * @memberOf _NanoSQLQuery
      */
-    public _deepFreeze(obj: any): any {
+    public _deepFreeze(obj: any, tableID: number): any {
         if (!obj) return obj;
         let t = this;
-        t._store._models[t._selectedTable].forEach((model) => {
+        t._store._models[tableID].forEach((model) => {
             let prop = obj[model.key];
             if (["map", "array"].indexOf(typeof prop) >= 0) {
-                obj[model.key] = t._deepFreeze(prop);
+                obj[model.key] = t._deepFreeze(prop, tableID);
             }
         });
         return Object.freeze(obj);

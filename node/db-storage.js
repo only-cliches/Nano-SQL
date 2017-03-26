@@ -78,7 +78,6 @@ var _NanoSQL_Storage = (function () {
         ];
         var tables = Object.keys(args._models);
         var beforeHist;
-        var beforeSel = t._parent._selectedTable;
         var beforeMode;
         Object.keys(args._models).forEach(function (tableName) {
             t._newTable(tableName, args._models[tableName]);
@@ -105,7 +104,6 @@ var _NanoSQL_Storage = (function () {
                 var step_1 = function () {
                     if (i < tables.length) {
                         if (tables[i].indexOf("_hist__data") !== -1) {
-                            t._parent._selectedTable = index_1.NanoSQLInstance._hash(tables[i]);
                             t._upsert(tables[i], 0, null, function () {
                                 i++;
                                 step_1();
@@ -118,7 +116,6 @@ var _NanoSQL_Storage = (function () {
                     }
                     else {
                         t._doHistory = beforeHist;
-                        t._parent._selectedTable = beforeSel;
                         args._onSuccess();
                     }
                 };
@@ -126,7 +123,6 @@ var _NanoSQL_Storage = (function () {
             }
             else {
                 t._doHistory = beforeHist;
-                t._parent._selectedTable = beforeSel;
                 args._onSuccess();
             }
         };
@@ -234,13 +230,13 @@ var _NanoSQL_Storage = (function () {
                                             t._tables[ta_1]._index.push("0");
                                             t._tables[ta_1]._rows["0"] = null;
                                             t._tables[ta_1]._incriment++;
-                                            t._parent._parent.table(tables[index]).loadJS(items_1).then(function () {
+                                            t._parent._parent.loadJS(tables[index], items_1).then(function () {
                                                 index++;
                                                 next_1();
                                             });
                                         }
                                         else {
-                                            t._parent._parent.table(tables[index]).loadJS(items_1).then(function () {
+                                            t._parent._parent.loadJS(tables[index], items_1).then(function () {
                                                 index++;
                                                 next_1();
                                             });
@@ -307,7 +303,7 @@ var _NanoSQL_Storage = (function () {
                                 JSON.parse(localStorage.getItem(tables[tIndex_1]) || "[]").forEach(function (ptr) {
                                     items_2.push(JSON.parse(localStorage.getItem(tables[tIndex_1] + "-" + ptr) || ""));
                                 });
-                                t._parent._parent.table(tables[tIndex_1]).loadJS(items_2).then(function () {
+                                t._parent._parent.loadJS(tables[tIndex_1], items_2).then(function () {
                                     tIndex_1++;
                                     step_2();
                                 });
@@ -451,13 +447,13 @@ var _NanoSQL_Storage = (function () {
                                             t._tables[ta_2]._index.push("0");
                                             t._tables[ta_2]._rows["0"] = null;
                                             t._tables[ta_2]._incriment++;
-                                            t._parent._parent.table(tables[index]).loadJS(items_3).then(function () {
+                                            t._parent._parent.table().loadJS(tables[index], items_3).then(function () {
                                                 index++;
                                                 next();
                                             });
                                         }
                                         else {
-                                            t._parent._parent.table(tables[index]).loadJS(items_3).then(function () {
+                                            t._parent._parent.loadJS(tables[index], items_3).then(function () {
                                                 index++;
                                                 next();
                                             });
@@ -543,6 +539,7 @@ var _NanoSQL_Storage = (function () {
         var ta = index_1.NanoSQLInstance._hash(tableName);
         t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1); // Update Index
         if (t._storeMemory) {
+            console.log(t._tables);
             delete t._tables[ta]._rows[rowID];
             if (t._mode === 0 && callBack)
                 return callBack(true);
@@ -604,7 +601,7 @@ var _NanoSQL_Storage = (function () {
         }
         // Memory Store Update
         if (t._storeMemory && t._tables[ta]) {
-            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value);
+            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
             if (t._mode === 0 && callBack)
                 return callBack(rowID);
         }
@@ -884,16 +881,6 @@ var _NanoSQL_Storage = (function () {
             };
             return value;
         }
-    };
-    /**
-     * Get the current selected table
-     *
-     * @returns
-     *
-     * @memberOf _NanoSQL_Storage
-     */
-    _NanoSQL_Storage.prototype._getTable = function () {
-        return this._tables[this._parent._selectedTable];
     };
     /**
      * Setup a new table.

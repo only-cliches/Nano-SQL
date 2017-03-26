@@ -308,7 +308,6 @@ export class _NanoSQL_Storage {
         let tables = Object.keys(args._models);
 
         let beforeHist;
-        let beforeSel = t._parent._selectedTable;
         let beforeMode;
 
         Object.keys(args._models).forEach((tableName) => {
@@ -338,7 +337,6 @@ export class _NanoSQL_Storage {
                 const step = () => {
                     if (i < tables.length) {
                         if (tables[i].indexOf("_hist__data") !== -1) {
-                            t._parent._selectedTable = NanoSQLInstance._hash(tables[i]);
                             t._upsert(tables[i], 0, null, () => {
                                 i++;
                                 step();
@@ -349,14 +347,12 @@ export class _NanoSQL_Storage {
                         }
                     } else {
                         t._doHistory = beforeHist;
-                        t._parent._selectedTable = beforeSel;
                         args._onSuccess();
                     }
                 };
                 step();
             } else {
                 t._doHistory = beforeHist;
-                t._parent._selectedTable = beforeSel;
                 args._onSuccess();
             }
         };
@@ -464,12 +460,12 @@ export class _NanoSQL_Storage {
                                             t._tables[ta]._index.push("0");
                                             t._tables[ta]._rows["0"] = null;
                                             t._tables[ta]._incriment++;
-                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
+                                            t._parent._parent.loadJS(tables[index], items).then(() => {
                                                 index++;
                                                 next();
                                             });
                                         } else {
-                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
+                                            t._parent._parent.loadJS(tables[index], items).then(() => {
                                                 index++;
                                                 next();
                                             });
@@ -541,7 +537,7 @@ export class _NanoSQL_Storage {
                                 JSON.parse(localStorage.getItem(tables[tIndex]) || "[]").forEach((ptr) => {
                                     items.push(JSON.parse(localStorage.getItem(tables[tIndex] + "-" + ptr) || ""));
                                 });
-                                t._parent._parent.table(tables[tIndex]).loadJS(items).then(() => {
+                                t._parent._parent.loadJS(tables[tIndex], items).then(() => {
                                     tIndex++;
                                     step();
                                 });
@@ -688,12 +684,12 @@ export class _NanoSQL_Storage {
                                             t._tables[ta]._index.push("0");
                                             t._tables[ta]._rows["0"] = null;
                                             t._tables[ta]._incriment++;
-                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
+                                            t._parent._parent.table().loadJS(tables[index], items).then(() => {
                                                 index++;
                                                 next();
                                             });
                                         } else {
-                                            t._parent._parent.table(tables[index]).loadJS(items).then(() => {
+                                            t._parent._parent.loadJS(tables[index], items).then(() => {
                                                 index++;
                                                 next();
                                             });
@@ -794,6 +790,7 @@ export class _NanoSQL_Storage {
         t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1); // Update Index
 
         if (t._storeMemory) {
+            console.log(t._tables);
             delete t._tables[ta]._rows[rowID];
             if (t._mode === 0 && callBack) return callBack(true);
         }
@@ -857,7 +854,7 @@ export class _NanoSQL_Storage {
 
         // Memory Store Update
         if (t._storeMemory && t._tables[ta]) {
-            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value);
+            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
             if (t._mode === 0 && callBack) return callBack(rowID);
         }
 
@@ -1128,17 +1125,6 @@ export class _NanoSQL_Storage {
             };
             return value;
         }
-    }
-
-    /**
-     * Get the current selected table
-     *
-     * @returns
-     *
-     * @memberOf _NanoSQL_Storage
-     */
-    public _getTable() {
-        return this._tables[this._parent._selectedTable];
     }
 
     /**

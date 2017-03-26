@@ -115,7 +115,6 @@
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_databaseid" class="tsd-kind-icon">_databaseID</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_parent" class="tsd-kind-icon">_parent</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_querycache" class="tsd-kind-icon">_query<wbr>Cache</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_selectedtable" class="tsd-kind-icon">_selected<wbr>Table</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_store" class="tsd-kind-icon">_store</a></li>
 							</ul>
 						</section>
@@ -248,31 +247,6 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_selectedtable" class="tsd-anchor"></a>
-					<h3>_selected<wbr>Table</h3>
-					<div class="tsd-signature tsd-kind-icon">_selected<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in db-index.ts:52</li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>A hash of the current table name.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>internal</dt>
-							<dd></dd>
-							<dt>type</dt>
-							<dd><p>{number}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="_store" class="tsd-anchor"></a>
 					<h3>_store</h3>
 					<div class="tsd-signature tsd-kind-icon">_store<span class="tsd-signature-symbol">:</span> <a href="_db_storage_._nanosql_storage.html" class="tsd-signature-type">_NanoSQL_Storage</a></div>
@@ -338,7 +312,7 @@
 					<a name="_deepfreeze" class="tsd-anchor"></a>
 					<h3>_deep<wbr>Freeze</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_deep<wbr>Freeze<span class="tsd-signature-symbol">(</span>obj<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
+						<li class="tsd-signature tsd-kind-icon">_deep<wbr>Freeze<span class="tsd-signature-symbol">(</span>obj<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, tableID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -363,6 +337,9 @@
 							<ul class="tsd-parameters">
 								<li>
 									<h5>obj: <span class="tsd-signature-type">any</span></h5>
+								</li>
+								<li>
+									<h5>tableID: <span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
@@ -566,9 +543,6 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_db_index_._nanosqldb.html#_querycache" class="tsd-kind-icon">_query<wbr>Cache</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_db_index_._nanosqldb.html#_selectedtable" class="tsd-kind-icon">_selected<wbr>Table</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_db_index_._nanosqldb.html#_store" class="tsd-kind-icon">_store</a>

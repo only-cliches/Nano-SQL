@@ -41,17 +41,16 @@ var _NanoSQLDB = (function () {
      */
     _NanoSQLDB.prototype._exec = function (execArgs) {
         var t = this;
-        if (t._pendingQuerys.length) {
-            t._pendingQuerys.push(execArgs);
-        }
-        else {
-            t._selectedTable = index_1.NanoSQLInstance._hash(execArgs.table);
-            new db_query_1._NanoSQLQuery(t)._doQuery(execArgs, function (query) {
-                if (t._pendingQuerys.length) {
-                    t._exec(t._pendingQuerys.pop());
-                }
-            });
-        }
+        // if (t._pendingQuerys.length) {
+        // t._pendingQuerys.push(execArgs);
+        // } else {
+        // t._selectedTable = NanoSQLInstance._hash(execArgs.table);
+        new db_query_1._NanoSQLQuery(t)._doQuery(execArgs, function (query) {
+            //if (t._pendingQuerys.length) {
+            //t._exec(<any> t._pendingQuerys.pop());
+            // }
+        });
+        // }
     };
     /**
      * Invalidate the query cache based on the rows being affected
@@ -63,7 +62,7 @@ var _NanoSQLDB = (function () {
      */
     _NanoSQLDB.prototype._invalidateCache = function (changedTableID, changedRows, type, action) {
         var t = this;
-        t._queryCache[t._selectedTable] = {};
+        t._queryCache[changedTableID] = {};
         if (changedRows.length && action) {
             t._parent.triggerEvent({
                 name: "change",
@@ -86,14 +85,14 @@ var _NanoSQLDB = (function () {
      *
      * @memberOf _NanoSQLQuery
      */
-    _NanoSQLDB.prototype._deepFreeze = function (obj) {
+    _NanoSQLDB.prototype._deepFreeze = function (obj, tableID) {
         if (!obj)
             return obj;
         var t = this;
-        t._store._models[t._selectedTable].forEach(function (model) {
+        t._store._models[tableID].forEach(function (model) {
             var prop = obj[model.key];
             if (["map", "array"].indexOf(typeof prop) >= 0) {
-                obj[model.key] = t._deepFreeze(prop);
+                obj[model.key] = t._deepFreeze(prop, tableID);
             }
         });
         return Object.freeze(obj);

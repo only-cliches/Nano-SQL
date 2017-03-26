@@ -8,16 +8,12 @@
 - Write LevelDB Cordova plugin.
 - I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
-## [0.5.5] 3-25-2017
-- Forgot to return `this` on the queryFilter method...
-
-## [0.5.4] 3-25-2017
+## [0.6.0] 3-25-2017
+- Fixed an issue with UUIDs
+- Refactored the abstraction layer and memory store to handle parallel queries.
+- BREAKING CHANGE: loadCSV and loadJS now require you pass in the table as the first argument, then the data to import
 - Added query filter method.
-
-## [0.5.3] 3-25-2017
 - Changed the way nodejs packages are being brought in.
-
-## [0.5.2] 3-25-2017
 - Added OPEN open contribution stuff to the ReadMe.
 - Added license to ReadMe
 - Fixed issue with NodeJS crypto

@@ -20,7 +20,9 @@ var options = {
         extensions: ['.ts', '.tsx', '.js']
     },
     externals: [],
-    plugins: [],
+    plugins: [
+
+    ],
     module: {
         loaders: [{
                 test: /\.ts$/,

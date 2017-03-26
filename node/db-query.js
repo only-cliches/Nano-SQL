@@ -122,8 +122,8 @@ var _NanoSQLQuery = (function () {
      * @memberOf _NanoSQLQuery
      */
     _NanoSQLQuery.prototype._doQuery = function (query, callBack) {
-        var _this = this;
         var t = this;
+        t._tableID = index_1.NanoSQLInstance._hash(query.table);
         t._mod = [];
         t._act = undefined;
         var simpleQuery = [];
@@ -144,16 +144,16 @@ var _NanoSQLQuery = (function () {
             switch (simpleQuery[0].type) {
                 case "show tables":
                     callBack();
-                    query.onSuccess([{ tables: Object.keys(this._db._store._tables).map(function (ta) { return _this._db._store._tables[ta]._name; }) }], "info", []);
+                    query.onSuccess([{ tables: Object.keys(t._db._store._tables).map(function (ta) { return t._db._store._tables[ta]._name; }) }], "info", []);
                     break;
                 case "describe":
                     var getTable_1;
-                    var tableName_1 = this._db._selectedTable;
+                    var tableName_1 = t._tableID;
                     var rows = {};
-                    Object.keys(this._db._store._tables).forEach(function (ta) {
-                        if (parseInt(ta) === _this._db._selectedTable) {
-                            getTable_1 = index_1._assign(_this._db._store._models[ta]);
-                            tableName_1 = _this._db._store._tables[ta]._name;
+                    Object.keys(t._db._store._tables).forEach(function (ta) {
+                        if (parseInt(ta) === t._tableID) {
+                            getTable_1 = index_1._assign(t._db._store._models[ta]);
+                            tableName_1 = t._db._store._tables[ta]._name;
                         }
                     });
                     rows[tableName_1] = getTable_1;
@@ -212,7 +212,7 @@ var _NanoSQLQuery = (function () {
                     break;
             }
         };
-        var tableName = this._db._store._tables[t._db._selectedTable]._name;
+        var tableName = this._db._store._tables[t._tableID]._name;
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
                 // We can do the where filtering now if there's no join command and we're using a query that might have a where statement
@@ -247,7 +247,7 @@ var _NanoSQLQuery = (function () {
      */
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
-        var tableName = t._db._store._getTable()._name;
+        var tableName = t._db._store._tables[t._tableID]._name;
         t._db._store._read(tableName, rowPK, function (rows) {
             var newRow = {};
             var oldRow = rows[0] || {};
@@ -273,8 +273,9 @@ var _NanoSQLQuery = (function () {
                         newRow[k] = qArgs[k];
                     });
                     // Add default values
-                    t._db._store._getTable()._keys.forEach(function (k, i) {
-                        var def = t._db._store._getTable()._defaults[i];
+                    var table_1 = t._db._store._tables[t._tableID];
+                    table_1._keys.forEach(function (k, i) {
+                        var def = table_1._defaults[i];
                         if (!newRow[k] && def)
                             newRow[k] = def;
                     });
@@ -350,12 +351,12 @@ var _NanoSQLQuery = (function () {
                     // Add history records
                     t._db._store._upsert("_historyPoints", null, {
                         historyPoint: t._db._store._historyLength - t._db._store._historyPoint,
-                        tableID: t._db._selectedTable,
+                        tableID: t._tableID,
                         rowKeys: updatedRowPKs.map(function (r) { return parseInt(r); }),
                         type: describe
                     }, function (rowID) {
-                        var table = t._db._store._tables[_this._db._selectedTable];
-                        t._db._invalidateCache(t._db._selectedTable, [], "");
+                        var table = t._db._store._tables[_this._tableID];
+                        t._db._invalidateCache(t._tableID, [], "");
                         t._db._store._read(table._name, function (row) {
                             return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
                         }, function (rows) {
@@ -364,10 +365,10 @@ var _NanoSQLQuery = (function () {
                     });
                 }
                 else {
-                    var table_1 = t._db._store._tables[_this._db._selectedTable];
-                    t._db._invalidateCache(t._db._selectedTable, [], "");
-                    t._db._store._read(table_1._name, function (row) {
-                        return row && updatedRowPKs.indexOf(row[table_1._pk]) !== -1;
+                    var table_2 = t._db._store._tables[_this._tableID];
+                    t._db._invalidateCache(t._tableID, [], "");
+                    t._db._store._read(table_2._name, function (row) {
+                        return row && updatedRowPKs.indexOf(row[table_2._pk]) !== -1;
                     }, function (rows) {
                         callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
                     });
@@ -451,7 +452,7 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._upsert = function (queryRows, callBack) {
         var t = this;
         var scribe = "", i, changedPKs = [];
-        var qArgs = t._act.args || {}, table = t._db._store._getTable(), pk = table._pk, whereMod = t._getMod("where");
+        var qArgs = t._act.args || {}, table = t._db._store._tables[t._tableID], pk = table._pk, whereMod = t._getMod("where");
         if (whereMod) {
             scribe = "modified";
             changedPKs = queryRows.map(function (r) { return r[table._pk]; });
@@ -475,7 +476,7 @@ var _NanoSQLQuery = (function () {
                 if (table._pkType === "int") {
                     qArgs[pk] = table._incriment++;
                 }
-                else if (table._pkType === "uint") {
+                else if (table._pkType === "uuid") {
                     qArgs[pk] = index_1.NanoSQLInstance.uuid();
                 }
             }
@@ -489,7 +490,7 @@ var _NanoSQLQuery = (function () {
             // Entirely new row, setup all the needed stuff for it.
             if (table._index.indexOf(objPK) === -1) {
                 // History
-                var tableName = this._db._store._tables[t._db._selectedTable]._name;
+                var tableName = this._db._store._tables[t._tableID]._name;
                 if (tableName.indexOf("_") !== 0) {
                     var histTable = "_" + tableName + "_hist__meta";
                     t._db._store._upsert(histTable, objPK, {
@@ -514,7 +515,7 @@ var _NanoSQLQuery = (function () {
      * @memberOf _NanoSQLQuery
      */
     _NanoSQLQuery.prototype._getTableID = function () {
-        return this._joinTable ? this._joinTable : this._db._selectedTable;
+        return this._joinTable ? this._joinTable : this._tableID;
     };
     /**
      * Selects rows from a given table using the query parameters.
@@ -529,8 +530,8 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._select = function (queryRows, callBack) {
         var t = this;
         // Memoization
-        if (t._db._queryCache[t._db._selectedTable][t._queryHash]) {
-            callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
+        if (t._db._queryCache[t._tableID][t._queryHash]) {
+            callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
             return;
         }
         var mods = ["join", "groupby", "having", "orderby", "offset", "limit"];
@@ -664,7 +665,7 @@ var _NanoSQLQuery = (function () {
                             _right: curMod.args.where[2].split(".").pop()
                         };
                     }
-                    var leftTableID = t._db._selectedTable;
+                    var leftTableID = t._tableID;
                     var rightTableID = index_1.NanoSQLInstance._hash(curMod.args.table);
                     var where_1 = t._getMod("where");
                     t._join(curMod.args.type, leftTableID, rightTableID, joinConditions, function (joinedRows) {
@@ -735,7 +736,7 @@ var _NanoSQLQuery = (function () {
             else {
                 rowPKs = rowPKs.filter(function (r) { return r; });
                 if (!t._getMod("join")) {
-                    t._db._queryCache[t._db._selectedTable][t._queryHash] = rowPKs;
+                    t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
                 }
                 callBack(rowPKs, "none", []);
             }
@@ -755,7 +756,7 @@ var _NanoSQLQuery = (function () {
         var scribe = "deleted", i;
         var t = this;
         var qArgs = t._act.args || [];
-        var pk = this._db._store._getTable()._pk;
+        var pk = t._db._store._tables[t._tableID]._pk;
         i = 0;
         var remove = function () {
             if (i < queryRows.length) {

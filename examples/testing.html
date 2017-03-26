@@ -2,6 +2,7 @@
 
 <head>
     <script src="nano-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
 </head>
 
 <body>
@@ -74,8 +75,8 @@
             .model([ //Data Model
                 {
                     key: 'id',
-                    type: 'int',
-                    props: ['pk', 'ai']
+                    type: 'uuid',
+                    props: ['pk']
                 }, {
                     key: 'name',
                     type: 'string',
@@ -145,23 +146,26 @@
             }])
             .connect().then(() => {
 
-                nSQL("orders").loadJS([{
-                    id: 1,
-                    title: "Test",
-                    total: 200,
-                    userID: 2
-                }, {
-                    id: 2,
-                    title: "Test",
-                    total: 100,
-                    userID: 2
-                }, {
-                    id: 3,
-                    title: "Test",
-                    total: 600,
-                    userID: 5
-                }]).then(() => {
-                    nSQL('users').loadJS([{
+                Promise.all([
+                    nSQL()
+                    .loadJS("orders", [{
+                        id: 1,
+                        title: "Test",
+                        total: 200,
+                        userID: 2
+                    }, {
+                        id: 2,
+                        title: "Test",
+                        total: 100,
+                        userID: 2
+                    }, {
+                        id: 3,
+                        title: "Test",
+                        total: 600,
+                        userID: 5
+                    }]),
+                    nSQL()
+                    .loadJS('users', [{
                         id: null,
                         name: 'jeb',
                         age: 28,
@@ -196,56 +200,55 @@
                         meta: {
                             favorteColor: 'blue'
                         }
-                    }]).then(function() {
-
-                        nSQL("users").query("select").exec()
-                            .then(function(result, db) {
-                                console.log("GROUP", result);
-                                return db.query('upsert', {
-                                    balance: 50
-                                }).where(['name', '=', 'jeb']).exec();
-                            })
-                            .then(function(result, db) {
-                                console.log(result);
-                                /*return db.query('select').orderBy({
-                                    name: 'desc'
-                                }).where([
-                                    ['age', '>', 25], 'or', ['id', '>', 2]
-                                ]).toCSV(true);*/
-                                return db.query('delete').where(["age", ">", 21]).exec();
-                            })
-                            .then(function(result, db) {
-                                console.log(result);
-                                db.query('select').orderBy({
-                                    name: 'asc'
-                                }).exec().then(function(result2) {
-                                    console.log('immuTest: ' + (result === result2));
-                                });
-
-
-                                return db.query('select').toCSV(true);
-                            })
-                            .then(function(result) {
-                                console.log(result);
-                                nSQL("orders")
-                                    .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
-                                    .join({
-                                        type: "left",
-                                        table: "users",
-                                        where: ["orders.userID", "=", "users.id"]
-                                    })
-                                    .groupBy({
-                                        "orders.userID": "asc"
-                                    })
-                                    .orderBy({
-                                        "orders.id": "asc",
-                                        "users.age": "desc"
-                                    })
-                                    .exec().then(function(rows) {
-                                        console.log("JOIN", rows);
-                                    });
+                    }])
+                ]).then(function() {
+                    nSQL("orders")
+                        .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
+                        .join({
+                            type: "left",
+                            table: "users",
+                            where: ["orders.userID", "=", "users.id"]
+                        })
+                        .groupBy({
+                            "orders.userID": "asc"
+                        })
+                        .orderBy({
+                            "orders.id": "asc",
+                            "users.age": "desc"
+                        })
+                        .exec().then(function(rows) {
+                            console.log("JOIN", rows);
+                        });
+                    nSQL("users").query("select").exec()
+                        .then(function(result, db) {
+                            console.log("GROUP", result);
+                            return db.query('upsert', {
+                                balance: 50
+                            }).where(['name', '=', 'jeb']).exec();
+                        })
+                        .then(function(result, db) {
+                            console.log(result);
+                            /*return db.query('select').orderBy({
+                                name: 'desc'
+                            }).where([
+                                ['age', '>', 25], 'or', ['id', '>', 2]
+                            ]).toCSV(true);*/
+                            return db.query('delete').where(["age", ">", 21]).exec();
+                        })
+                        .then(function(result, db) {
+                            console.log(result);
+                            db.query('select').orderBy({
+                                name: 'asc'
+                            }).exec().then(function(result2) {
+                                console.log('immuTest: ' + (result === result2));
                             });
-                    });
+
+
+                            return db.query('select').toCSV(true);
+                        })
+                        .then(function(result) {
+                            console.log(result);
+                        });
                 });
             });
 

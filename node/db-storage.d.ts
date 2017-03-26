@@ -181,25 +181,6 @@ export declare class _NanoSQL_Storage {
      */
     _utility(type: "r" | "w", key: string, value?: any): any;
     /**
-     * Get the current selected table
-     *
-     * @returns
-     *
-     * @memberOf _NanoSQL_Storage
-     */
-    _getTable(): {
-        _pk: string;
-        _pkType: string;
-        _name: string;
-        _incriment: number;
-        _index: string[];
-        _keys: string[];
-        _defaults: any[];
-        _rows: {
-            [key: string]: DBRow;
-        };
-    };
-    /**
      * Setup a new table.
      *
      * @param {string} tableName

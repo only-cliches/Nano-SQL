@@ -154,6 +154,15 @@ export class _NanoSQLQuery {
      */
     private _joinTable: number;
 
+    /**
+     * Selected table.
+     *
+     * @private
+     * @type {number}
+     * @memberOf _NanoSQLQuery
+     */
+    private _tableID: number;
+
     constructor(database: _NanoSQLDB) {
         this._db = database;
     }
@@ -170,6 +179,7 @@ export class _NanoSQLQuery {
     public _doQuery(query: DBExec, callBack: Function): void {
         let t = this;
 
+        t._tableID = NanoSQLInstance._hash(query.table);
         t._mod = [];
         t._act = undefined;
 
@@ -190,16 +200,16 @@ export class _NanoSQLQuery {
             switch (simpleQuery[0].type) {
                 case "show tables":
                     callBack();
-                    query.onSuccess([{tables: Object.keys(this._db._store._tables).map((ta) => this._db._store._tables[ta]._name)}], "info", []);
+                    query.onSuccess([{tables: Object.keys(t._db._store._tables).map((ta) => t._db._store._tables[ta]._name)}], "info", []);
                 break;
                 case "describe":
                     let getTable;
-                    let tableName = this._db._selectedTable;
+                    let tableName = t._tableID;
                     let rows = {};
-                    Object.keys(this._db._store._tables).forEach((ta) => {
-                        if (parseInt(ta) === this._db._selectedTable) {
-                            getTable = _assign(this._db._store._models[ta]);
-                            tableName = this._db._store._tables[ta]._name;
+                    Object.keys(t._db._store._tables).forEach((ta) => {
+                        if (parseInt(ta) === t._tableID) {
+                            getTable = _assign(t._db._store._models[ta]);
+                            tableName = t._db._store._tables[ta]._name;
                         }
                     });
 
@@ -260,7 +270,7 @@ export class _NanoSQLQuery {
             }
         };
 
-        const tableName = this._db._store._tables[t._db._selectedTable]._name;
+        const tableName = this._db._store._tables[t._tableID]._name;
 
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
@@ -296,7 +306,7 @@ export class _NanoSQLQuery {
     private _updateRow(rowPK: string, callBack: Function): void {
 
         const t = this;
-        const tableName = t._db._store._getTable()._name;
+        const tableName = t._db._store._tables[t._tableID]._name;
 
         t._db._store._read(tableName, rowPK, (rows) => {
             let newRow = {};
@@ -328,8 +338,9 @@ export class _NanoSQLQuery {
                     });
 
                     // Add default values
-                    t._db._store._getTable()._keys.forEach((k, i) => {
-                        let def = t._db._store._getTable()._defaults[i];
+                    let table = t._db._store._tables[t._tableID];
+                    table._keys.forEach((k, i) => {
+                        let def = table._defaults[i];
                         if (!newRow[k] && def) newRow[k] = def;
                     });
                 break;
@@ -410,12 +421,12 @@ export class _NanoSQLQuery {
                     // Add history records
                     t._db._store._upsert("_historyPoints", null, {
                         historyPoint: t._db._store._historyLength - t._db._store._historyPoint,
-                        tableID: t._db._selectedTable,
+                        tableID: t._tableID,
                         rowKeys: updatedRowPKs.map(r => parseInt(r)),
                         type: describe
                     }, (rowID) => {
-                        let table = t._db._store._tables[this._db._selectedTable];
-                        t._db._invalidateCache(t._db._selectedTable, [], "");
+                        let table = t._db._store._tables[this._tableID];
+                        t._db._invalidateCache(t._tableID, [], "");
                         t._db._store._read(table._name, (row) => {
                             return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
                         }, (rows) => {
@@ -424,8 +435,8 @@ export class _NanoSQLQuery {
 
                     });
                 } else {
-                    let table = t._db._store._tables[this._db._selectedTable];
-                    t._db._invalidateCache(t._db._selectedTable, [], "");
+                    let table = t._db._store._tables[this._tableID];
+                    t._db._invalidateCache(t._tableID, [], "");
                     t._db._store._read(table._name, (row) => {
                         return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
                     }, (rows) => {
@@ -512,7 +523,7 @@ export class _NanoSQLQuery {
         let scribe = "", i, changedPKs: string[] = [];
 
         const qArgs = (t._act as QueryLine).args  || {},
-        table = t._db._store._getTable(),
+        table = t._db._store._tables[t._tableID],
         pk = table._pk,
         whereMod = t._getMod("where");
 
@@ -537,7 +548,7 @@ export class _NanoSQLQuery {
             if (!qArgs[pk]) {
                 if (table._pkType === "int") {
                     qArgs[pk] = table._incriment++;
-                } else if (table._pkType === "uint") {
+                } else if (table._pkType === "uuid") {
                     qArgs[pk] = NanoSQLInstance.uuid();
                 }
             } else {
@@ -552,7 +563,7 @@ export class _NanoSQLQuery {
             // Entirely new row, setup all the needed stuff for it.
             if (table._index.indexOf(objPK) === -1) {
                 // History
-                let tableName = this._db._store._tables[t._db._selectedTable]._name;
+                let tableName = this._db._store._tables[t._tableID]._name;
                 if (tableName.indexOf("_") !== 0) {
                     let histTable = "_" + tableName + "_hist__meta";
                     t._db._store._upsert(histTable, objPK, {
@@ -580,7 +591,7 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     private _getTableID() {
-        return this._joinTable ? this._joinTable : this._db._selectedTable;
+        return this._joinTable ? this._joinTable : this._tableID;
     }
 
     /**
@@ -597,8 +608,8 @@ export class _NanoSQLQuery {
 
         let t = this;
         // Memoization
-        if (t._db._queryCache[t._db._selectedTable][t._queryHash]) {
-            callBack(t._db._queryCache[t._db._selectedTable][t._queryHash], "none", []);
+        if (t._db._queryCache[t._tableID][t._queryHash]) {
+            callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
             return;
         }
 
@@ -743,7 +754,7 @@ export class _NanoSQLQuery {
                         };
                     }
 
-                    let leftTableID = t._db._selectedTable;
+                    let leftTableID = t._tableID;
 
                     let rightTableID = NanoSQLInstance._hash(curMod.args.table);
 
@@ -818,7 +829,7 @@ export class _NanoSQLQuery {
             } else {
                 rowPKs = rowPKs.filter(r => r);
                 if (!t._getMod("join")) { // Join commands are not memoized.
-                    t._db._queryCache[t._db._selectedTable][t._queryHash] = rowPKs;
+                    t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
                 }
                 callBack(rowPKs, "none", []);
             }
@@ -841,7 +852,7 @@ export class _NanoSQLQuery {
         let scribe = "deleted", i;
         let t = this;
         const qArgs = (t._act as QueryLine).args  || [];
-        let pk = this._db._store._getTable()._pk;
+        let pk = t._db._store._tables[t._tableID]._pk;
         i = 0;
 
         const remove = () => {

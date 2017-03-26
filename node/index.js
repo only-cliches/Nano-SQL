@@ -17,7 +17,6 @@ var NanoSQLInstance = (function () {
         t._actions = {};
         t._views = {};
         t._models = {};
-        t._query = [];
         t._preConnectExtend = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
         t._callbacks = {};
@@ -494,7 +493,7 @@ var NanoSQLInstance = (function () {
      */
     NanoSQLInstance.prototype.query = function (action, args) {
         var _this = this;
-        this._query = [];
+        var query = new _NanoSQLQuery(this._selectedTable, this);
         var a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
             var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
@@ -512,157 +511,12 @@ var NanoSQLInstance = (function () {
                 }
                 newArgs_1 = inputArgs_1;
             }
-            this._query.push({ type: a, args: newArgs_1 });
+            query._action = { type: a, args: newArgs_1 };
         }
         else {
             throw Error;
         }
-        return this;
-    };
-    /**
-     * Used to select specific rows based on a set of conditions.
-     * You can pass in a single array with a conditional statement or an array of arrays seperated by "and", "or" for compound selects.
-     * A single where statement has the column name on the left, an operator in the middle, then a comparison on the right.
-     *
-     * Where Examples:
-     *
-     * ```ts
-     * .where(['username','=','billy'])
-     * .where(['balance','>',20])
-     * .where(['catgory','IN',['jeans','shirts']])
-     * .where([['name','=','scott'],'and',['balance','>',200]])
-     * .where([['id','>',50],'or',['postIDs','IN',[12,20,30]],'and',['name','LIKE','Billy']])
-     * ```
-     *
-     * @param {(Array<any|Array<any>>)} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.where = function (args) {
-        return this._addCmd("where", args);
-    };
-    /**
-     * Order the results by a given column or columns.
-     *
-     * Examples:
-     *
-     * ```ts
-     * .orderBy({username:"asc"}) // order by username column, ascending
-     * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
-     * ```
-     *
-     * @param {Object} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.orderBy = function (args) {
-        return this._addCmd("orderby", args);
-    };
-    /**
-     * Group By command, typically used with an aggregate function.
-     *
-     * Example:
-     *
-     * ```ts
-     * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
-     * ```
-     *
-     * This will provide a list of all favorite colors and how many each of them are in the db.
-     *
-     * @param {({[key: string]:"asc"|"desc"})} columns
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.groupBy = function (columns) {
-        return this._addCmd("groupby", columns);
-    };
-    /**
-     * Having statement, used to filter Group BY statements. Syntax is identical to where statements.
-     *
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.having = function (args) {
-        return this._addCmd("having", args);
-    };
-    /**
-     * Join command.
-     *
-     * Example:
-     *
-     * ```ts
-     *  NanoSQL("orders")
-     *  .query("select", ["orders.id","orders.title","users.name"])
-     *  .where(["orders.status","=","complete"])
-     *  .orderBy({"orders.date":"asc"})
-     *  .join({
-     *      type:"inner",
-     *      table:"users",
-     *      where:["orders.customerID","=","user.id"]
-     *  }).exec();
-     *```
-     * A few notes on the join command:
-     * 1. You muse use dot notation with the table names in all "where", "select", "orderby", and "groupby" arguments.
-     * 2. Possible join types are `inner`, `left`, `right`, and `outer`.
-     * 3. The "table" argument lets you determine the data on the right side of the join.
-     * 4. The "where" argument lets you set what conditions the tables are joined on.
-     *
-     *
-     *
-     * @param {JoinArgs} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.join = function (args) {
-        return this._addCmd("join", args);
-    };
-    /**
-     * Limits the result to a specific amount.  Example:
-     *
-     * ```ts
-     * .limit(20) // Limit to the first 20 results
-     * ```
-     *
-     * @param {number} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.limit = function (args) {
-        return this._addCmd("limit", args);
-    };
-    /**
-     * Offsets the results by a specific amount from the beginning.  Example:
-     *
-     * ```ts
-     * .offset(10) // Skip the first 10 results.
-     * ```
-     *
-     * @param {number} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.offset = function (args) {
-        return this._addCmd("offset", args);
-    };
-    /**
-     * Used to add a command to the query
-     *
-     * @internal
-     * @param {string} type
-     * @param {(any)} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype._addCmd = function (type, args) {
-        return this._query.push({ type: type, args: args }), this;
+        return query;
     };
     /**
      * Trigger a database event
@@ -756,79 +610,6 @@ var NanoSQLInstance = (function () {
         return this;
     };
     /**
-     * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
-     * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
-     *
-     * Example:
-     * NanoSQL("users").query("select").exec().then(function(rows, db) {
-     *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
-     *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
-     * }).then(function(rows, db) {
-     *  ...
-     * })...
-     *
-     * @returns {(Promise<Array<Object>>)}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    NanoSQLInstance.prototype.exec = function () {
-        var t = this;
-        var _t = t._selectedTable;
-        if (t._hasEvents[_t]) {
-            t._triggerEvents = t._query.map(function (q) {
-                switch (q.type) {
-                    case "select": return [q.type];
-                    case "delete":
-                    case "upsert":
-                    case "drop": return [q.type, "change"];
-                    default: return [];
-                }
-            }).reduce(function (a, b) { return a.concat(b); });
-        }
-        return new lie_ts_1.Promise(function (res, rej) {
-            if (!t.backend) {
-                rej();
-                throw Error;
-            }
-            var _tEvent = function (data, callBack, type, changedRows, isError) {
-                if (t._hasEvents[_t]) {
-                    t.triggerEvent({
-                        name: "error",
-                        actionOrView: "",
-                        table: _t,
-                        query: t._query,
-                        time: new Date().getTime(),
-                        result: data,
-                        changeType: type,
-                        changedRows: changedRows
-                    }, t._triggerEvents);
-                }
-                callBack(data, t);
-            };
-            var execArgs = {
-                table: _t,
-                query: t._query,
-                viewOrAction: t._activeActionOrView || "",
-                onSuccess: function (rows, type, affectedRows) {
-                    _tEvent(rows, res, type, affectedRows, false);
-                },
-                onFail: function (err) {
-                    t._triggerEvents = ["error"];
-                    if (rej)
-                        _tEvent(err, rej, "error", [], true);
-                }
-            };
-            if (t._queryMod) {
-                t._queryMod(execArgs, function (newArgs) {
-                    t.backend._exec(newArgs);
-                });
-            }
-            else {
-                t.backend._exec(execArgs);
-            }
-        });
-    };
-    /**
      * Configure the database driver, must be called before the connect() method.
      *
      * @param {any} args
@@ -883,7 +664,7 @@ var NanoSQLInstance = (function () {
      *
      * @memberOf NanoSQLInstance
      */
-    NanoSQLInstance.prototype.loadJS = function (rows) {
+    NanoSQLInstance.prototype.loadJS = function (table, rows) {
         var t = this;
         t.beginTransaction();
         return new lie_ts_1.Promise(function (res, rej) {
@@ -892,7 +673,7 @@ var NanoSQLInstance = (function () {
             var next = function () {
                 if (pointer < rows.length) {
                     if (rows[pointer]) {
-                        t.table(t._selectedTable).query("upsert", rows[pointer]).exec().then(function (res) {
+                        t.table(table).query("upsert", rows[pointer]).exec().then(function (res) {
                             rowData.push(res);
                             pointer++;
                             next();
@@ -937,7 +718,7 @@ var NanoSQLInstance = (function () {
      *
      * @memberOf NanoSQLInstance
      */
-    NanoSQLInstance.prototype.loadCSV = function (csv) {
+    NanoSQLInstance.prototype.loadCSV = function (table, csv) {
         var t = this;
         var fields = [];
         t.beginTransaction();
@@ -959,7 +740,7 @@ var NanoSQLInstance = (function () {
                             }
                             record[fields[i]] = row[i];
                         }
-                        t.table(t._selectedTable).query("upsert", record).exec().then(function () {
+                        t.table(table).query("upsert", record).exec().then(function () {
                             resolve();
                         });
                     }
@@ -1022,6 +803,161 @@ var NanoSQLInstance = (function () {
             return ((prev << 5) + prev) + key.charCodeAt(i);
         }, 0));
     };
+    return NanoSQLInstance;
+}());
+exports.NanoSQLInstance = NanoSQLInstance;
+// tslint:disable-next-line
+var _NanoSQLQuery = (function () {
+    function _NanoSQLQuery(table, db) {
+        this._db = db;
+        this._modifiers = [];
+        this._table = table;
+    }
+    /**
+     * Used to select specific rows based on a set of conditions.
+     * You can pass in a single array with a conditional statement or an array of arrays seperated by "and", "or" for compound selects.
+     * A single where statement has the column name on the left, an operator in the middle, then a comparison on the right.
+     *
+     * Where Examples:
+     *
+     * ```ts
+     * .where(['username','=','billy'])
+     * .where(['balance','>',20])
+     * .where(['catgory','IN',['jeans','shirts']])
+     * .where([['name','=','scott'],'and',['balance','>',200]])
+     * .where([['id','>',50],'or',['postIDs','IN',[12,20,30]],'and',['name','LIKE','Billy']])
+     * ```
+     *
+     * @param {(Array<any|Array<any>>)} args
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.where = function (args) {
+        return this._addCmd("where", args);
+    };
+    /**
+     * Order the results by a given column or columns.
+     *
+     * Examples:
+     *
+     * ```ts
+     * .orderBy({username:"asc"}) // order by username column, ascending
+     * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
+     * ```
+     *
+     * @param {Object} args
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.orderBy = function (args) {
+        return this._addCmd("orderby", args);
+    };
+    /**
+     * Group By command, typically used with an aggregate function.
+     *
+     * Example:
+     *
+     * ```ts
+     * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
+     * ```
+     *
+     * This will provide a list of all favorite colors and how many each of them are in the db.
+     *
+     * @param {({[key: string]:"asc"|"desc"})} columns
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.groupBy = function (columns) {
+        return this._addCmd("groupby", columns);
+    };
+    /**
+     * Having statement, used to filter Group BY statements. Syntax is identical to where statements.
+     *
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.having = function (args) {
+        return this._addCmd("having", args);
+    };
+    /**
+     * Join command.
+     *
+     * Example:
+     *
+     * ```ts
+     *  NanoSQL("orders")
+     *  .query("select", ["orders.id","orders.title","users.name"])
+     *  .where(["orders.status","=","complete"])
+     *  .orderBy({"orders.date":"asc"})
+     *  .join({
+     *      type:"inner",
+     *      table:"users",
+     *      where:["orders.customerID","=","user.id"]
+     *  }).exec();
+     *```
+     * A few notes on the join command:
+     * 1. You muse use dot notation with the table names in all "where", "select", "orderby", and "groupby" arguments.
+     * 2. Possible join types are `inner`, `left`, `right`, and `outer`.
+     * 3. The "table" argument lets you determine the data on the right side of the join.
+     * 4. The "where" argument lets you set what conditions the tables are joined on.
+     *
+     *
+     *
+     * @param {JoinArgs} args
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.join = function (args) {
+        return this._addCmd("join", args);
+    };
+    /**
+     * Limits the result to a specific amount.  Example:
+     *
+     * ```ts
+     * .limit(20) // Limit to the first 20 results
+     * ```
+     *
+     * @param {number} args
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.limit = function (args) {
+        return this._addCmd("limit", args);
+    };
+    /**
+     * Offsets the results by a specific amount from the beginning.  Example:
+     *
+     * ```ts
+     * .offset(10) // Skip the first 10 results.
+     * ```
+     *
+     * @param {number} args
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype.offset = function (args) {
+        return this._addCmd("offset", args);
+    };
+    /**
+     * Used to add a command to the query
+     *
+     * @internal
+     * @param {string} type
+     * @param {(any)} args
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    _NanoSQLQuery.prototype._addCmd = function (type, args) {
+        return this._modifiers.push({ type: type, args: args }), this;
+    };
     /**
      * Export the current query to a CSV file, use in place of "exec()";
      *
@@ -1039,17 +975,13 @@ var NanoSQLInstance = (function () {
      *
      * @memberOf NanoSQLInstance
      */
-    NanoSQLInstance.prototype.toCSV = function (headers) {
+    _NanoSQLQuery.prototype.toCSV = function (headers) {
         var t = this;
         return new lie_ts_1.Promise(function (res, rej) {
             t.exec().then(function (json) {
-                var header = t._query.filter(function (q) {
-                    return q.type === "select";
-                }).map(function (q) {
-                    return q.args.length ? q.args.map(function (m) {
-                        return t._models[t._selectedTable].filter(function (f) { return f["key"] === m; })[0];
-                    }) : t._models[t._selectedTable];
-                })[0];
+                var header = t._action.args.length ? t._action.args.map(function (m) {
+                    return t._db._models[t._table].filter(function (f) { return f["key"] === m; })[0];
+                }) : t._db._models[t._table];
                 if (headers) {
                     json.unshift(header.map(function (h) {
                         return h["key"];
@@ -1072,9 +1004,82 @@ var NanoSQLInstance = (function () {
             });
         });
     };
-    return NanoSQLInstance;
+    /**
+     * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
+     * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
+     *
+     * Example:
+     * NanoSQL("users").query("select").exec().then(function(rows, db) {
+     *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
+     *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
+     * }).then(function(rows, db) {
+     *  ...
+     * })...
+     *
+     * @returns {(Promise<Array<Object>>)}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    _NanoSQLQuery.prototype.exec = function () {
+        var t = this;
+        var _t = t._table;
+        if (t._db._hasEvents[_t]) {
+            t._db._triggerEvents = (function () {
+                switch (t._action.type) {
+                    case "select": return [t._action.type];
+                    case "delete":
+                    case "upsert":
+                    case "drop": return [t._action.type, "change"];
+                    default: return [];
+                }
+            })();
+        }
+        return new lie_ts_1.Promise(function (res, rej) {
+            if (!t._db.backend) {
+                rej();
+                throw Error;
+            }
+            var _tEvent = function (data, callBack, type, changedRows, isError) {
+                if (t._db._hasEvents[_t]) {
+                    t._db.triggerEvent({
+                        name: "error",
+                        actionOrView: "",
+                        table: _t,
+                        query: [t._action].concat(t._modifiers),
+                        time: new Date().getTime(),
+                        result: data,
+                        changeType: type,
+                        changedRows: changedRows
+                    }, t._db._triggerEvents);
+                }
+                callBack(data, t._db);
+            };
+            var execArgs = {
+                table: _t,
+                query: [t._action].concat(t._modifiers),
+                viewOrAction: t._db._activeActionOrView || "",
+                onSuccess: function (rows, type, affectedRows) {
+                    _tEvent(rows, res, type, affectedRows, false);
+                },
+                onFail: function (err) {
+                    t._db._triggerEvents = ["error"];
+                    if (rej)
+                        _tEvent(err, rej, "error", [], true);
+                }
+            };
+            if (t._db._queryMod) {
+                t._db._queryMod(execArgs, function (newArgs) {
+                    t._db.backend._exec(newArgs);
+                });
+            }
+            else {
+                t._db.backend._exec(execArgs);
+            }
+        });
+    };
+    return _NanoSQLQuery;
 }());
-exports.NanoSQLInstance = NanoSQLInstance;
+exports._NanoSQLQuery = _NanoSQLQuery;
 /**
  * @internal
  */
