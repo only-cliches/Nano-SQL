@@ -519,7 +519,7 @@ export class _NanoSQL_Storage {
                                 if (t._storeMemory) {
                                     t._levelDBs[tables[index]].createValueStream()
                                     .on("data", (data) => {
-                                        items.push(JSON.parse(data));
+                                        items.push(data);
                                     })
                                     .on("end", () => {
                                         if (tables[index].indexOf("_hist__data") !== -1) {
@@ -570,7 +570,9 @@ export class _NanoSQL_Storage {
                 }
 
                 tables.forEach((table) => {
-                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table);
+                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table, {
+                        valueEncoding: "json"
+                    });
                 });
 
                 if (existing) {
@@ -748,12 +750,12 @@ export class _NanoSQL_Storage {
             case 4: // Level Up
 
                 if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(String(rowID), value ? JSON.stringify(value) : null, () => {
+                    t._levelDBs[tableName].put(String(rowID), value ? value : null, () => {
                         if (callBack) callBack(rowID as string);
                     });
                 } else {
                     if (value) {
-                        t._levelDBs[tableName].put(String(rowID), JSON.stringify(value), () => {
+                        t._levelDBs[tableName].put(String(rowID), value, () => {
                             if (callBack) callBack(rowID as string);
                         });
                     } else {
@@ -843,7 +845,7 @@ export class _NanoSQL_Storage {
                     let rows: any[] = [];
                     t._levelDBs[tableName].createValueStream()
                     .on("data", (data) => {
-                        rows.push(JSON.parse(data));
+                        if (data) rows.push(data);
                     })
                     .on("end", () => {
                         if (row !== "all") {

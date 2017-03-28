@@ -304,7 +304,7 @@ var _NanoSQL_Storage = (function () {
                                 if (t._storeMemory) {
                                     t._levelDBs[tables[index]].createValueStream()
                                         .on("data", function (data) {
-                                        items_3.push(JSON.parse(data));
+                                        items_3.push(data);
                                     })
                                         .on("end", function () {
                                         if (tables[index].indexOf("_hist__data") !== -1) {
@@ -354,7 +354,9 @@ var _NanoSQL_Storage = (function () {
                     existing = false;
                 }
                 tables.forEach(function (table) {
-                    t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table);
+                    t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table, {
+                        valueEncoding: "json"
+                    });
                 });
                 if (existing) {
                     existingStore();
@@ -520,14 +522,14 @@ var _NanoSQL_Storage = (function () {
                 break;
             case 4:
                 if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(String(rowID), value ? JSON.stringify(value) : null, function () {
+                    t._levelDBs[tableName].put(String(rowID), value ? value : null, function () {
                         if (callBack)
                             callBack(rowID);
                     });
                 }
                 else {
                     if (value) {
-                        t._levelDBs[tableName].put(String(rowID), JSON.stringify(value), function () {
+                        t._levelDBs[tableName].put(String(rowID), value, function () {
                             if (callBack)
                                 callBack(rowID);
                         });
@@ -615,7 +617,8 @@ var _NanoSQL_Storage = (function () {
                     var rows_3 = [];
                     t._levelDBs[tableName].createValueStream()
                         .on("data", function (data) {
-                        rows_3.push(JSON.parse(data));
+                        if (data)
+                            rows_3.push(data);
                     })
                         .on("end", function () {
                         if (row !== "all") {
