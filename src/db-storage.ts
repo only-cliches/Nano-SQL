@@ -4,8 +4,6 @@ import { _functions } from "./db-query";
 
 declare var global: any;
 
-
-
 export interface IHistoryPoint {
     id: number;
     historyPoint: number;
@@ -592,6 +590,36 @@ export class _NanoSQL_Storage {
 
         let tables = Object.keys(t._tables).map(k => t._tables[k]._name);
         let index = 0;
+        const setupNewHist = () => {
+            let index = 0;
+            const histStep = () => {
+                if (index < tables.length) {
+                    if (tables[index].indexOf("_hist__meta") !== -1) {
+                        let referenceTable = String(tables[index]).slice(1).replace("_hist__meta", "");
+                        let ta = NanoSQLInstance._hash(referenceTable);
+                        let pk = t._tables[ta]._pk;
+                        t._read(referenceTable, "all", (rows) => {
+                            rows.forEach((row, i) => {
+                                let hist = {};
+                                hist[_str(2)] = 0;
+                                hist[_str(3)] = [i + 1];
+                                t._upsert(tables[index], row[pk], hist);
+                                t._upsert("_" + referenceTable + "_hist__data", i + 1, row);
+                            });
+                            index++;
+                            histStep();
+                        });
+                    } else {
+                        index++;
+                        histStep();
+                    }
+                } else {
+                    complete();
+                }
+            }
+            histStep();
+        };
+
         const step = () => {
             if (index < tables.length) {
                 let deleteTable = false;
@@ -614,7 +642,11 @@ export class _NanoSQL_Storage {
                     step();
                 }
             } else {
-                complete();
+                if (type === "hist") {
+                    setupNewHist();
+                } else {
+                    complete();
+                }
             }
         };
 

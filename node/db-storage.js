@@ -371,6 +371,37 @@ var _NanoSQL_Storage = (function () {
         var t = this;
         var tables = Object.keys(t._tables).map(function (k) { return t._tables[k]._name; });
         var index = 0;
+        var setupNewHist = function () {
+            var index = 0;
+            var histStep = function () {
+                if (index < tables.length) {
+                    if (tables[index].indexOf("_hist__meta") !== -1) {
+                        var referenceTable_1 = String(tables[index]).slice(1).replace("_hist__meta", "");
+                        var ta = index_1.NanoSQLInstance._hash(referenceTable_1);
+                        var pk_1 = t._tables[ta]._pk;
+                        t._read(referenceTable_1, "all", function (rows) {
+                            rows.forEach(function (row, i) {
+                                var hist = {};
+                                hist[db_index_1._str(2)] = 0;
+                                hist[db_index_1._str(3)] = [i + 1];
+                                t._upsert(tables[index], row[pk_1], hist);
+                                t._upsert("_" + referenceTable_1 + "_hist__data", i + 1, row);
+                            });
+                            index++;
+                            histStep();
+                        });
+                    }
+                    else {
+                        index++;
+                        histStep();
+                    }
+                }
+                else {
+                    complete();
+                }
+            };
+            histStep();
+        };
         var step = function () {
             if (index < tables.length) {
                 var deleteTable = false;
@@ -395,7 +426,12 @@ var _NanoSQL_Storage = (function () {
                 }
             }
             else {
-                complete();
+                if (type === "hist") {
+                    setupNewHist();
+                }
+                else {
+                    complete();
+                }
             }
         };
         step();

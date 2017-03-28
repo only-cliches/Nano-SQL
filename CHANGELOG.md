@@ -11,6 +11,7 @@
 ## [0.6.4] 3-28-2017
 - Fixed a bug that prevented LevelDB stores from restoring into the memory DB in some situations.
 - Switched levelDB to JSON encoding.
+- Fixed clear history bug.
 
 ## [0.6.3] 3-27-2017
 - Fixed a bug caused by the primary key optimization that prevented compound where statements from working correctly.

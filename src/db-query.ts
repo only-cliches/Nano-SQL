@@ -383,6 +383,12 @@ export class _NanoSQLQuery {
             const finishUpdate = () => {
                 if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
                     t._db._store._read("_" + tableName + "_hist__meta", parseInt(rowPK), (rows) => {
+                        /*if (!rows.length) {
+                            let newRow = {};
+                            newRow[_str(2)] = 0;
+                            newRow[_str(3)] = [0];
+                            rows = [newRow];
+                        }*/
                         rows[0][_str(3)].unshift(len);
                         t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
                     });
