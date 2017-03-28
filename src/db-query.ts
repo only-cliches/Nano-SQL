@@ -273,7 +273,7 @@ export class _NanoSQLQuery {
 
                 // Primary key optimization, if we're grabbing a value by it's pk we can skip the full table read
                 whereArgs[1] = whereArgs[1].trim();
-                if (whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
+                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
                     // Goes straight to the right row
                     let rowPks: any[] = [];
                     if (whereArgs[1] === "=") {

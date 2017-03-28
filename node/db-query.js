@@ -165,7 +165,7 @@ var _NanoSQLQuery = (function () {
             if (t._getMod("where")) {
                 var whereArgs = t._getMod("where").args;
                 whereArgs[1] = whereArgs[1].trim();
-                if (whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
+                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
                     var rowPks_1 = [];
                     if (whereArgs[1] === "=") {
                         rowPks_1.push(whereArgs[2]);

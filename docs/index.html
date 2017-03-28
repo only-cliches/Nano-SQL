@@ -62,7 +62,7 @@
 	<div class="row">
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
-				<p>Small RDBMS that supports IndexedDB and LevelDB with Undo/Redo.</p>
+				<p>Isomorphic RDBMS that supports IndexedDB &amp; LevelDB with Undo/Redo.</p>
 				<p><img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="NanoSQL Logo"></p>
 				<p><a href="https://github.com/ClickSimply/nano-sql/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 				<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint"></p>
@@ -310,11 +310,7 @@ nSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">fun
 </code></pre>
 				<p><a href="https://github.com/ClickSimply/Nano-SQL/wiki">Documentation</a></p>
 				<p>Some examples of queries you can do.</p>
-				<pre><code class="lang-js"><span class="hljs-comment">// Roll the entire database back one delete/drop/upsert query</span>
-nSQL().extend(<span class="hljs-string">"&lt;"</span>) 
-<span class="hljs-comment">// Yep, that's it.</span>
-
-<span class="hljs-comment">// Listen for changes on the users table</span>
+				<pre><code class="lang-js"><span class="hljs-comment">// Listen for changes on the users table</span>
 nSQL(<span class="hljs-string">"users"</span>).on(<span class="hljs-string">"change"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">dbEvent</span>) </span>{ ... });
 
 <span class="hljs-comment">// Listen for changes on any table</span>
@@ -379,6 +375,36 @@ nSQL(<span class="hljs-string">"users"</span>)
 .orderBy({<span class="hljs-attr">Total</span>:<span class="hljs-string">"desc"</span>})
 .limit(<span class="hljs-number">20</span>)
 .exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{...})
+</code></pre>
+				<p><a href="https://github.com/ClickSimply/Nano-SQL/wiki">Documentation</a></p>
+				<h2 id="history">History</h2>
+				<p>The Undo/Redo system is enabled by default and it&#39;s easy to use.</p>
+				<pre><code class="lang-js"><span class="hljs-comment">// Roll the database back one query.</span>
+nSQL().extend(<span class="hljs-string">"&lt;"</span>);
+
+<span class="hljs-comment">// Roll it forward one query.</span>
+nSQL().extend(<span class="hljs-string">"&gt;"</span>);
+
+<span class="hljs-comment">// Delete all history points</span>
+nSQL().extend(<span class="hljs-string">"flush_history"</span>)
+
+<span class="hljs-comment">// Get the status of the history system</span>
+nSQL().extend(<span class="hljs-string">"?"</span>).then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">status</span>) </span>{
+    <span class="hljs-built_in">console</span>.log(status) <span class="hljs-comment">// &lt;= [0,0];</span>
+    <span class="hljs-comment">// The array from the ? query gives you the length of the history in the first value and the current history reference point in the last.</span>
+    <span class="hljs-comment">// If the length and point are zero, undo &amp; redo will do nothing.</span>
+    <span class="hljs-comment">// If the length and point are equal, redo does nothing.</span>
+    <span class="hljs-comment">// if the point is zero, undo will do nothing.</span>
+});
+</code></pre>
+				<p>Writes are a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by adjusting the config object before calling <code>connect()</code>.</p>
+				<pre><code class="lang-js">nSQL(<span class="hljs-string">"table"</span>)
+.model([...])
+.views([...])
+
+nSQL()
+.config({<span class="hljs-attr">history</span>:<span class="hljs-literal">false</span>})
+.connect().then()...
 </code></pre>
 				<p><a href="https://github.com/ClickSimply/Nano-SQL/wiki">Documentation</a></p>
 				<h1 id="contributing">Contributing</h1>
