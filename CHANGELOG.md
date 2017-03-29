@@ -8,6 +8,10 @@
 - Write LevelDB Cordova plugin.
 - I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
+## [0.6.5]
+- Added `HAVE` where condition useful for searching arrays in the database.
+- Changed `LIKE` behavior where strings will be lowercased to match string values with different casing.
+
 ## [0.6.4] 3-28-2017
 - Fixed a bug that prevented LevelDB stores from restoring into the memory DB in some situations.
 - Switched levelDB to JSON encoding.

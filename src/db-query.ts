@@ -383,12 +383,6 @@ export class _NanoSQLQuery {
             const finishUpdate = () => {
                 if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
                     t._db._store._read("_" + tableName + "_hist__meta", parseInt(rowPK), (rows) => {
-                        /*if (!rows.length) {
-                            let newRow = {};
-                            newRow[_str(2)] = 0;
-                            newRow[_str(3)] = [0];
-                            rows = [newRow];
-                        }*/
                         rows[0][_str(3)].unshift(len);
                         t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
                     });
@@ -1020,17 +1014,28 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     private _compare(val1: any, compare: string, val2: any): number {
+        const setValue = (val: any) => {
+            if (compare !== "LIKE") return val;
+            if (typeof val === "string") return String(val).toLowerCase();
+            if (Array.isArray(val)) return val.map((v) => setValue(v));
+            return val;
+        }
+
+        let left = setValue(val2);
+        let right = setValue(val1);
+
         switch (compare) {
-            case "=": return val2 === val1 ? 0 : 1;
-            case ">": return val2 > val1 ? 0 : 1;
-            case "<": return val2 < val1 ? 0 : 1;
-            case "<=": return val2 <= val1 ? 0 : 1;
-            case ">=": return val2 >= val1 ? 0 : 1;
-            case "IN": return val1.indexOf(val2) < 0 ? 1 : 0;
-            case "NOT IN": return val1.indexOf(val2) < 0 ? 0 : 1;
+            case "=": return left === right ? 0 : 1;
+            case ">": return left > right ? 0 : 1;
+            case "<": return left < right ? 0 : 1;
+            case "<=": return left <= right ? 0 : 1;
+            case ">=": return left >= right ? 0 : 1;
+            case "IN": return right.indexOf(left) < 0 ? 1 : 0;
+            case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
             case "REGEX":
-            case "LIKE": return val2.search(val1) < 0 ? 1 : 0;
-            case "BETWEEN": return val1[0] < val2 && val1[1] > val2 ? 0 : 1;
+            case "LIKE": return left.search(right) < 0 ? 1 : 0;
+            case "BETWEEN": return right[0] < left && right[1] > left ? 0 : 1;
+            case "HAVE": return left.indexOf(right) < 0 ? 1 : 0;
             default: return 0;
         }
     }

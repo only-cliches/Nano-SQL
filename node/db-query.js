@@ -755,17 +755,29 @@ var _NanoSQLQuery = (function () {
         });
     };
     _NanoSQLQuery.prototype._compare = function (val1, compare, val2) {
+        var setValue = function (val) {
+            if (compare !== "LIKE")
+                return val;
+            if (typeof val === "string")
+                return String(val).toLowerCase();
+            if (Array.isArray(val))
+                return val.map(function (v) { return setValue(v); });
+            return val;
+        };
+        var left = setValue(val2);
+        var right = setValue(val1);
         switch (compare) {
-            case "=": return val2 === val1 ? 0 : 1;
-            case ">": return val2 > val1 ? 0 : 1;
-            case "<": return val2 < val1 ? 0 : 1;
-            case "<=": return val2 <= val1 ? 0 : 1;
-            case ">=": return val2 >= val1 ? 0 : 1;
-            case "IN": return val1.indexOf(val2) < 0 ? 1 : 0;
-            case "NOT IN": return val1.indexOf(val2) < 0 ? 0 : 1;
+            case "=": return left === right ? 0 : 1;
+            case ">": return left > right ? 0 : 1;
+            case "<": return left < right ? 0 : 1;
+            case "<=": return left <= right ? 0 : 1;
+            case ">=": return left >= right ? 0 : 1;
+            case "IN": return right.indexOf(left) < 0 ? 1 : 0;
+            case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
             case "REGEX":
-            case "LIKE": return val2.search(val1) < 0 ? 1 : 0;
-            case "BETWEEN": return val1[0] < val2 && val1[1] > val2 ? 0 : 1;
+            case "LIKE": return left.search(right) < 0 ? 1 : 0;
+            case "BETWEEN": return right[0] < left && right[1] > left ? 0 : 1;
+            case "HAVE": return left.indexOf(right) < 0 ? 1 : 0;
             default: return 0;
         }
     };
