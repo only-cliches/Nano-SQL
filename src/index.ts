@@ -1081,6 +1081,8 @@ export class _NanoSQLQuery {
 
     public _table: string;
 
+    public _error: string;
+
     constructor(table: string, db: NanoSQLInstance) {
         this._db = db;
         this._modifiers = [];
@@ -1109,6 +1111,9 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     public where(args: Array<any|Array<any>>): _NanoSQLQuery {
+        if (!args.length || !Array.isArray(args)) {
+            this._error = "Where condition requires an array!";
+        }
         return this._addCmd("where", args);
     }
 
@@ -1159,6 +1164,9 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     public having(args: Array<any|Array<any>>): _NanoSQLQuery {
+        if (!args.length || !Array.isArray(args)) {
+            this._error = "Having condition requires an array!";
+        }
         return this._addCmd("having", args);
     }
 
@@ -1192,6 +1200,9 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     public join(args: JoinArgs): _NanoSQLQuery {
+        if (!args.table || !args.type) {
+            this._error = "Join command requires table and type arguments!";
+        }
         return this._addCmd("join", args);
     }
 
@@ -1325,6 +1336,11 @@ export class _NanoSQLQuery {
 
 
         return new Promise((res, rej) => {
+
+            if (t._error) {
+                rej(t._error);
+                throw Error;
+            }
 
             if (!t._db.backend) {
                 rej();

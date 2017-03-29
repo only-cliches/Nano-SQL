@@ -777,7 +777,7 @@ var _NanoSQLQuery = (function () {
             case "REGEX":
             case "LIKE": return left.search(right) < 0 ? 1 : 0;
             case "BETWEEN": return right[0] < left && right[1] > left ? 0 : 1;
-            case "HAVE": return left.indexOf(right) < 0 ? 1 : 0;
+            case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
             default: return 0;
         }
     };

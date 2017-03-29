@@ -179,7 +179,7 @@
                         name: 'bob',
                         age: 25,
                         balance: 25.02,
-                        postIDs: [0, 20, 5],
+                        postIDs: [0, 5],
                         meta: {
                             favorteColor: 'blue'
                         }
@@ -228,12 +228,12 @@
                         })
                         .then(function(result, db) {
                             console.log(result);
-                            /*return db.query('select').orderBy({
+                            return db.query('select').orderBy({
                                 name: 'desc'
                             }).where([
                                 ['age', '>', 25], 'or', ['id', '>', 2]
-                            ]).toCSV(true);*/
-                            return db.query('delete').where(["age", ">", 21]).exec();
+                            ]).exec();
+                            // return db.query('delete').where(["age", ">", 21]).exec();
                         })
                         .then(function(result, db) {
                             console.log(result);
@@ -242,7 +242,9 @@
                             }).exec().then(function(result2) {
                                 console.log('immuTest: ' + (result === result2));
                             });
-
+                            db.query("select").where(["name", "LIKE", "ScOTT"]).exec().then((rows) => {
+                                console.log("HAVE", rows);
+                            })
 
                             return db.query('select').toCSV(true);
                         })

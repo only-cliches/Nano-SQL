@@ -11,6 +11,7 @@
 ## [0.6.5]
 - Added `HAVE` where condition useful for searching arrays in the database.
 - Changed `LIKE` behavior where strings will be lowercased to match string values with different casing.
+- Added error condition if `WHERE` or `HAVING` aren't passed any arguments.
 
 ## [0.6.4] 3-28-2017
 - Fixed a bug that prevented LevelDB stores from restoring into the memory DB in some situations.

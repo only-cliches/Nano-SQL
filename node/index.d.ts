@@ -81,6 +81,7 @@ export declare class _NanoSQLQuery {
     };
     _modifiers: any[];
     _table: string;
+    _error: string;
     constructor(table: string, db: NanoSQLInstance);
     where(args: Array<any | Array<any>>): _NanoSQLQuery;
     orderBy(args: {

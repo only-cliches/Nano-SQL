@@ -382,6 +382,9 @@ var _NanoSQLQuery = (function () {
         this._table = table;
     }
     _NanoSQLQuery.prototype.where = function (args) {
+        if (!args.length || !Array.isArray(args)) {
+            this._error = "Where condition requires an array!";
+        }
         return this._addCmd("where", args);
     };
     _NanoSQLQuery.prototype.orderBy = function (args) {
@@ -391,9 +394,15 @@ var _NanoSQLQuery = (function () {
         return this._addCmd("groupby", columns);
     };
     _NanoSQLQuery.prototype.having = function (args) {
+        if (!args.length || !Array.isArray(args)) {
+            this._error = "Having condition requires an array!";
+        }
         return this._addCmd("having", args);
     };
     _NanoSQLQuery.prototype.join = function (args) {
+        if (!args.table || !args.type) {
+            this._error = "Join command requires table and type arguments!";
+        }
         return this._addCmd("join", args);
     };
     _NanoSQLQuery.prototype.limit = function (args) {
@@ -448,6 +457,10 @@ var _NanoSQLQuery = (function () {
             })();
         }
         return new lie_ts_1.Promise(function (res, rej) {
+            if (t._error) {
+                rej(t._error);
+                throw Error;
+            }
             if (!t._db.backend) {
                 rej();
                 throw Error;
