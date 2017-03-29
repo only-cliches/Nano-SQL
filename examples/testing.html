@@ -115,10 +115,12 @@
             ])
             .actions([ //Cached actions to update specific data
                 {
-                    name: 'add_new_user',
-                    args: ['user:map'],
+                    name: 'clearPostIDs',
+                    args: ['name:string'],
                     call: function(args, db) {
-                        return db.query('upsert', args.user).exec();
+                        return db.query('upsert', {
+                            postIDs: []
+                        }).where(["name", "=", args.name]).exec();
                     }
                 }, {
                     name: 'login',
@@ -222,9 +224,9 @@
                     nSQL("users").query("select").exec()
                         .then(function(result, db) {
                             console.log("GROUP", result);
-                            return db.query('upsert', {
-                                balance: 50
-                            }).where(['name', '=', 'jeb']).exec();
+                            return db.doAction("clearPostIDs", {
+                                name: "scott"
+                            });
                         })
                         .then(function(result, db) {
                             console.log(result);

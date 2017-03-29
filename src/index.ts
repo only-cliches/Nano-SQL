@@ -1377,6 +1377,7 @@ export class _NanoSQLQuery {
                     if (rej) _tEvent(err, rej, "error", [], true);
                 }
             };
+            console.log(execArgs);
             if (t._db._queryMod) {
                 t._db._queryMod(execArgs, (newArgs) => {
                     t._db.backend._exec(newArgs);

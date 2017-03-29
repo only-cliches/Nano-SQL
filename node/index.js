@@ -493,6 +493,7 @@ var _NanoSQLQuery = (function () {
                         _tEvent(err, rej, "error", [], true);
                 }
             };
+            console.log(execArgs);
             if (t._db._queryMod) {
                 t._db._queryMod(execArgs, function (newArgs) {
                     t._db.backend._exec(newArgs);
