@@ -111,7 +111,7 @@ export const _assign = (obj: any) => {
 };
 
 export interface IActionViewMod {
-    (actionOrView: "Action"|"View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
+    (tableName: string, actionOrView: "Action"|"View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
 }
 
 /**
@@ -671,7 +671,7 @@ export class NanoSQLInstance {
 
         if (t._AVMod) {
             return new Promise((res, rej) => {
-                t._AVMod(AVType, t._activeAV || "", cleanArgs, (args) => {
+                t._AVMod(this._selectedTable, AVType, t._activeAV || "", cleanArgs, (args) => {
                     selAV ? selAV.call(args, t).then((result) => {
                         res(result, t);
                     }) : false;

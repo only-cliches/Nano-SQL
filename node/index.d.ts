@@ -42,7 +42,7 @@ export interface DBRow {
 }
 export declare const _assign: (obj: any) => any;
 export interface IActionViewMod {
-    (actionOrView: "Action" | "View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
+    (tableName: string, actionOrView: "Action" | "View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
 }
 export declare class NanoSQLInstance {
     activeTable: string;

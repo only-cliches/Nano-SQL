@@ -156,6 +156,7 @@ var NanoSQLInstance = (function () {
         return this._doAV("Action", this._actions[this._selectedTable], actionName, actionArgs);
     };
     NanoSQLInstance.prototype._doAV = function (AVType, AVList, AVName, AVargs) {
+        var _this = this;
         var t = this;
         var selAV = AVList.reduce(function (prev, cur) {
             if (cur.name === AVName)
@@ -169,7 +170,7 @@ var NanoSQLInstance = (function () {
         var cleanArgs = selAV.args ? t._cleanArgs(selAV.args, AVargs) : {};
         if (t._AVMod) {
             return new lie_ts_1.Promise(function (res, rej) {
-                t._AVMod(AVType, t._activeAV || "", cleanArgs, function (args) {
+                t._AVMod(_this._selectedTable, AVType, t._activeAV || "", cleanArgs, function (args) {
                     selAV ? selAV.call(args, t).then(function (result) {
                         res(result, t);
                     }) : false;
