@@ -23,7 +23,7 @@ var NanoSQLInstance = (function () {
     }
     NanoSQLInstance.prototype.table = function (table) {
         if (table)
-            this._selectedTable = table, this.activeTable = table;
+            this._selectedTable = table;
         return this;
     };
     NanoSQLInstance.prototype.connect = function (backend) {

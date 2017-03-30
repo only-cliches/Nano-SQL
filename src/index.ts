@@ -134,14 +134,6 @@ export class NanoSQLInstance {
     private _selectedTable: string;
 
     /**
-     * Most recent selected table.
-     *
-     * @type {string}
-     * @memberOf NanoSQLInstance
-     */
-    public activeTable: string;
-
-    /**
      * The backend currently being used
      *
      * @public
@@ -149,6 +141,14 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public backend: NanoSQLBackend;
+
+    /**
+     * Misc placeholder that can be used by the dev.
+     *
+     * @type {*}
+     * @memberOf NanoSQLInstance
+     */
+    public data: any;
 
     /**
      * The callbacks for events
@@ -301,7 +301,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public table(table?: string): NanoSQLInstance {
-        if (table) this._selectedTable = table, this.activeTable = table;
+        if (table) this._selectedTable = table;
         return this;
     }
 

@@ -7,8 +7,9 @@
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
-## [0.6.7] 3-30-2017
+## [0.6.8] 3-30-2017
 - Added selected table to Action/View filter function.
+- Added a misc data object to make passing around information easier.
 
 ## [0.6.6] 3-30-2017
 - Added filter function for actions & views.

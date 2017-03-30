@@ -45,8 +45,8 @@ export interface IActionViewMod {
     (tableName: string, actionOrView: "Action" | "View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
 }
 export declare class NanoSQLInstance {
-    activeTable: string;
     backend: NanoSQLBackend;
+    data: any;
     _hasEvents: StdObject<boolean>;
     private _functions;
     _AVMod: IActionViewMod;
