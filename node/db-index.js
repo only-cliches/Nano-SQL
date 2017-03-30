@@ -175,16 +175,23 @@ var _NanoSQLDB = (function () {
                     t._store._utility("w", "historyLength", 0);
                     t._store._historyPoint = 0;
                     t._store._historyLength = 0;
+                    Object.keys(t._store._tables).forEach(function (tableID) {
+                        var rows;
+                        if (t._store._tables[parseInt(tableID)]._name.indexOf("_") === 0) {
+                            rows = [];
+                        }
+                        else {
+                            rows = t._store._tables[parseInt(tableID)]._rows;
+                            rows = Object.keys(rows).map(function (r) { return rows[r]; });
+                        }
+                        t._invalidateCache(parseInt(tableID), rows, "remove", "clear");
+                    });
                     if (command === "flush_db") {
                         t._store._clear("all", res);
                     }
                     else {
                         t._store._clear("hist", res);
                     }
-                    Object.keys(t._store._tables).forEach(function (tableID) {
-                        var rows = t._store._tables[parseInt(tableID)]._rows;
-                        t._invalidateCache(parseInt(tableID), Object.keys(rows).map(function (r) { return rows[r]; }), "remove", "clear");
-                    });
                     break;
             }
         });

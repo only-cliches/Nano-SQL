@@ -41,6 +41,7 @@ I spent a long time looking for an existing solution that would do everything I 
 | [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 5          |
 | [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✓         | ✕    | ✕        | ✓      | ✕          | 16         |
 | [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 19         |
+| [NeDB](https://github.com/louischatriot/nedb)            | ✕      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 27  
 | [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✕      | ✕          | 40         |
 | [PouchDB](https://github.com/pouchdb/pouchdb)            | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 46         |
 | [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 88         |
@@ -48,6 +49,8 @@ I spent a long time looking for an existing solution that would do everything I 
 
 
 I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  NanoSQL is that.  
+
+
 
 ## Installation
 

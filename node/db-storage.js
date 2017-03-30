@@ -460,9 +460,6 @@ var _NanoSQL_Storage = (function () {
             }
         }
         if (t._mode > 0) {
-            if (t._mode === 2) {
-                localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
-            }
             var i_1 = 0;
             var step_3 = function () {
                 if (i_1 < deleteRowIDS.length) {
@@ -473,6 +470,7 @@ var _NanoSQL_Storage = (function () {
                             step_3();
                             break;
                         case 2:
+                            localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                             localStorage.removeItem(tableName + "-" + String(deleteRowIDS[i_1]));
                             i_1++;
                             step_3();

@@ -117,19 +117,7 @@ var NanoSQLInstance = (function () {
     };
     NanoSQLInstance.prototype.getView = function (viewName, viewArgs) {
         if (viewArgs === void 0) { viewArgs = {}; }
-        var t = this;
-        var l = t._selectedTable;
-        var selView;
-        var i = t._views[l].length;
-        while (i--) {
-            if (t._views[l][i].name === viewName) {
-                selView = t._views[l][i];
-            }
-        }
-        if (!selView)
-            throw Error;
-        t._activeActionOrView = viewName;
-        return selView.call.apply(t, [t._cleanArgs(selView.args ? selView.args : [], viewArgs), t]);
+        return this._doAV("View", this._views[this._selectedTable], viewName, viewArgs);
     };
     NanoSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
         var t = this;
@@ -165,39 +153,54 @@ var NanoSQLInstance = (function () {
         return this._actions[this._selectedTable] = actionArray, this;
     };
     NanoSQLInstance.prototype.doAction = function (actionName, actionArgs) {
-        if (actionArgs === void 0) { actionArgs = {}; }
+        return this._doAV("Action", this._actions[this._selectedTable], actionName, actionArgs);
+    };
+    NanoSQLInstance.prototype._doAV = function (AVType, AVList, AVName, AVargs) {
         var t = this;
-        var l = t._selectedTable;
-        var selAction;
-        var i = t._actions[l].length;
-        while (i--) {
-            if (t._actions[l][i].name === actionName) {
-                selAction = t._actions[l][i];
-            }
+        var selAV = AVList.reduce(function (prev, cur) {
+            if (cur.name === AVName)
+                return cur;
+            return prev;
+        }, null);
+        if (!selAV) {
+            return new lie_ts_1.Promise(function (res, rej) { return rej("Action/View Not Found!"); });
         }
-        if (!selAction)
-            throw Error;
-        t._activeActionOrView = actionName;
-        return selAction.call.apply(t, [t._cleanArgs(selAction.args ? selAction.args : [], actionArgs), t]);
+        t._activeAV = AVName;
+        var cleanArgs = selAV.args ? t._cleanArgs(selAV.args, AVargs) : {};
+        if (t._AVMod) {
+            return new lie_ts_1.Promise(function (res, rej) {
+                t._AVMod(AVType, t._activeAV || "", cleanArgs, function (args) {
+                    selAV ? selAV.call(args, t).then(function (result) {
+                        res(result, t);
+                    }) : false;
+                }, function (err) {
+                    rej(err);
+                });
+            });
+        }
+        else {
+            return selAV.call(cleanArgs, t);
+        }
     };
     NanoSQLInstance.prototype.newFunction = function (functionName, functionType, filterFunction) {
         return this._functions[functionName] = { type: functionType, call: filterFunction }, this;
     };
     NanoSQLInstance.prototype.query = function (action, args) {
-        var _this = this;
-        var query = new _NanoSQLQuery(this._selectedTable, this);
+        var t = this;
+        var query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
+        t._activeAV = undefined;
         var a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
             var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
             if (action === "upsert") {
                 var inputArgs_1 = {};
-                this._models[this._selectedTable].forEach(function (model) {
+                t._models[t._selectedTable].forEach(function (model) {
                     if (newArgs_1[model.key]) {
-                        inputArgs_1[model.key] = _this._cast(model.type, newArgs_1[model.key]);
+                        inputArgs_1[model.key] = t._cast(model.type, newArgs_1[model.key]);
                     }
                 });
-                if (this._rowFilters[this._selectedTable]) {
-                    inputArgs_1 = this._rowFilters[this._selectedTable](inputArgs_1);
+                if (t._rowFilters[t._selectedTable]) {
+                    inputArgs_1 = t._rowFilters[t._selectedTable](inputArgs_1);
                 }
                 newArgs_1 = inputArgs_1;
             }
@@ -217,15 +220,13 @@ var NanoSQLInstance = (function () {
             var c;
             while (i--) {
                 e = triggerEvents[i];
-                c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
+                c = t._callbacks[eventData.table][e].concat(t._callbacks[eventData.table]["*"]);
                 j = c.length;
                 while (j--) {
                     eventData.name = e;
-                    eventData.actionOrView = t._activeActionOrView || "";
                     c[j](eventData, t);
                 }
             }
-            t._activeActionOrView = undefined;
         }, 0);
     };
     NanoSQLInstance.prototype.default = function (replaceObj) {
@@ -249,6 +250,10 @@ var NanoSQLInstance = (function () {
     };
     NanoSQLInstance.prototype.queryFilter = function (callBack) {
         this._queryMod = callBack;
+        return this;
+    };
+    NanoSQLInstance.prototype.avFilter = function (filterFunc) {
+        this._AVMod = filterFunc;
         return this;
     };
     NanoSQLInstance.prototype.config = function (args) {
@@ -376,10 +381,11 @@ var NanoSQLInstance = (function () {
 }());
 exports.NanoSQLInstance = NanoSQLInstance;
 var _NanoSQLQuery = (function () {
-    function _NanoSQLQuery(table, db) {
+    function _NanoSQLQuery(table, db, actionOrView) {
         this._db = db;
         this._modifiers = [];
         this._table = table;
+        this._AV = actionOrView || "";
     }
     _NanoSQLQuery.prototype.where = function (args) {
         if (!args.length || !Array.isArray(args)) {
@@ -469,7 +475,7 @@ var _NanoSQLQuery = (function () {
                 if (t._db._hasEvents[_t]) {
                     t._db.triggerEvent({
                         name: "error",
-                        actionOrView: "",
+                        actionOrView: t._AV,
                         table: _t,
                         query: [t._action].concat(t._modifiers),
                         time: new Date().getTime(),
@@ -483,7 +489,7 @@ var _NanoSQLQuery = (function () {
             var execArgs = {
                 table: _t,
                 query: [t._action].concat(t._modifiers),
-                viewOrAction: t._db._activeActionOrView || "",
+                viewOrAction: t._AV,
                 onSuccess: function (rows, type, affectedRows) {
                     _tEvent(rows, res, type, affectedRows, false);
                 },

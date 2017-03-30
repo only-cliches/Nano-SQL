@@ -730,7 +730,7 @@ export class _NanoSQLQuery {
                         let groupKeys: any = Object.keys(groups);
                         if (groupKeys.length) { // Groups Exist
                             rows = groupKeys
-                            .map((k) => doFunctions(groups[k])) // Apply each function to each group (N^2)
+                            .map((k) => {return prevFunc = null, doFunctions(groups[k]); }) // Apply each function to each group (N^2)
                             .reduce((prev, curr) => { // Combine the results into a single array
                                 return prev = prev.concat(curr), prev;
                             }, []);
@@ -1019,7 +1019,7 @@ export class _NanoSQLQuery {
             if (typeof val === "string") return String(val).toLowerCase();
             if (Array.isArray(val)) return val.map((v) => setValue(v));
             return val;
-        }
+        };
 
         let left = setValue(val2);
         let right = setValue(val1);

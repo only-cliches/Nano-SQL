@@ -532,7 +532,7 @@ var _NanoSQLQuery = (function () {
                         var groupKeys = Object.keys(groups);
                         if (groupKeys.length) {
                             rows_2 = groupKeys
-                                .map(function (k) { return doFunctions_1(groups[k]); })
+                                .map(function (k) { return prevFunc_1 = null, doFunctions_1(groups[k]); })
                                 .reduce(function (prev, curr) {
                                 return prev = prev.concat(curr), prev;
                             }, []);

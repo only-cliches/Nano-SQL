@@ -41,11 +41,15 @@ export interface DBRow {
     [key: string]: any;
 }
 export declare const _assign: (obj: any) => any;
+export interface IActionViewMod {
+    (actionOrView: "Action" | "View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
+}
 export declare class NanoSQLInstance {
     activeTable: string;
     backend: NanoSQLBackend;
     _hasEvents: StdObject<boolean>;
     private _functions;
+    _AVMod: IActionViewMod;
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(backend?: NanoSQLBackend): Promise<Object | string>;
@@ -54,9 +58,10 @@ export declare class NanoSQLInstance {
     private _refreshEventChecker();
     model(dataModel: Array<DataModel>): NanoSQLInstance;
     views(viewArray: Array<ActionOrView>): NanoSQLInstance;
-    getView(viewName: string, viewArgs?: any): Promise<Array<Object>>;
+    getView(viewName: string, viewArgs?: any): Promise<Array<any> | NanoSQLInstance>;
     actions(actionArray: Array<ActionOrView>): NanoSQLInstance;
-    doAction(actionName: string, actionArgs?: any): Promise<Array<Object>>;
+    doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
+    private _doAV(AVType, AVList, AVName, AVargs);
     newFunction(functionName: string, functionType: "aggregate" | "simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance;
     query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
     triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;
@@ -66,6 +71,7 @@ export declare class NanoSQLInstance {
     beginTransaction(): void;
     endTransaction(): void;
     queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): NanoSQLInstance;
+    avFilter(filterFunc: IActionViewMod): this;
     config(args: any): NanoSQLInstance;
     extend(...args: Array<any>): any | NanoSQLInstance;
     loadJS(table: string, rows: Array<Object>): Promise<Array<Object>>;
@@ -82,7 +88,8 @@ export declare class _NanoSQLQuery {
     _modifiers: any[];
     _table: string;
     _error: string;
-    constructor(table: string, db: NanoSQLInstance);
+    _AV: string;
+    constructor(table: string, db: NanoSQLInstance, actionOrView?: string);
     where(args: Array<any | Array<any>>): _NanoSQLQuery;
     orderBy(args: {
         [key: string]: "asc" | "desc";

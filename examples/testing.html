@@ -131,7 +131,10 @@
                         ]).exec();
                     }
                 }
-            ])
+            ]).avFilter(function(actionOrView, name, args, complete, error) {
+                console.log(actionOrView, name, args);
+                complete(args);
+            })
         nSQL("orders").model([{
                 key: 'id',
                 type: 'int',
@@ -204,7 +207,7 @@
                         }
                     }])
                 ]).then(function() {
-                    nSQL("orders")
+                    /*nSQL("orders")
                         .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
                         .join({
                             type: "left",
@@ -220,8 +223,10 @@
                         })
                         .exec().then(function(rows) {
                             console.log("JOIN", rows);
-                        });
-                    nSQL("users").query("select").exec()
+                        });*/
+                    nSQL("users").query("select", ["name", "age", "COUNT(*)"]).groupBy({
+                            age: "asc"
+                        }).exec()
                         .then(function(result, db) {
                             console.log("GROUP", result);
                             return db.doAction("clearPostIDs", {

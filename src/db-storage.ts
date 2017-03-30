@@ -616,7 +616,7 @@ export class _NanoSQL_Storage {
                 } else {
                     complete();
                 }
-            }
+            };
             histStep();
         };
 
@@ -679,9 +679,6 @@ export class _NanoSQL_Storage {
         }
 
         if (t._mode > 0) {
-            if (t._mode === 2) {
-                localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
-            }
 
             let i = 0;
             const step = () => {
@@ -693,6 +690,7 @@ export class _NanoSQL_Storage {
                             step();
                         break;
                         case 2: // Local Storage
+                            localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                             localStorage.removeItem(tableName + "-" + String(deleteRowIDS[i]));
                             i++;
                             step();

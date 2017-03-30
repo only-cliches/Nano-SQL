@@ -6,9 +6,14 @@
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
-- I think join performance could be increased even further by putting WHERE in front of the query instead of after it.
 
-## [0.6.5]
+## [0.6.6] 3-30-2017
+- Added filter function for actions & views.
+- Refactored Actions/views to take less space.
+- Fixed bug with group by being used with functions.
+- Adjusted events system a little.
+
+## [0.6.5] 3-29-2017
 - Added `HAVE` where condition useful for searching arrays in the database.
 - Changed `LIKE` behavior where strings will be lowercased to match string values with different casing.
 - Added error condition if `WHERE` or `HAVING` aren't passed any arguments.

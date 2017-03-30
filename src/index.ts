@@ -110,6 +110,10 @@ export const _assign = (obj: any) => {
     return JSON.parse(JSON.stringify(obj));
 };
 
+export interface IActionViewMod {
+    (actionOrView: "Action"|"View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
+}
+
 /**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
@@ -217,7 +221,7 @@ export class NanoSQLInstance {
      * @type {string}
      * @memberOf NanoSQLInstance
      */
-    public _activeActionOrView: string|undefined;
+    public _activeAV: string|undefined;
 
     /**
      * Holds custom filters implimented by the user
@@ -258,6 +262,14 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public _queryMod: (args: DBExec, complete: (args: DBExec) => void) => void;
+
+    /**
+     * Holds a reference to the optional action/view modifier
+     *
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public _AVMod: IActionViewMod;
 
     constructor() {
         let t = this;
@@ -500,19 +512,8 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public getView(viewName: string, viewArgs: any = {}): Promise<Array<Object>> {
-        let t = this;
-        let l = t._selectedTable;
-        let selView: ActionOrView | undefined;
-        let i = t._views[l].length;
-        while (i--) {
-            if (t._views[l][i].name === viewName) {
-                selView = t._views[l][i];
-            }
-        }
-        if (!selView) throw Error;
-        t._activeActionOrView = viewName;
-        return selView.call.apply(t, [t._cleanArgs(selView.args ? selView.args : [], viewArgs), t]);
+    public getView(viewName: string, viewArgs: any = {}): Promise<Array<any>|NanoSQLInstance> {
+        return this._doAV("View", this._views[this._selectedTable], viewName, viewArgs);
     }
 
     /**
@@ -637,19 +638,50 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public doAction(actionName: string, actionArgs: any = {}): Promise<Array<Object>> {
-        let t = this;
-        let l = t._selectedTable;
-        let selAction: ActionOrView | undefined;
-        let i = t._actions[l].length;
-        while (i--) {
-            if (t._actions[l][i].name === actionName) {
-                selAction = t._actions[l][i];
-            }
+    public doAction(actionName: string, actionArgs: any): Promise<Array<DBRow>|NanoSQLInstance> {
+        return this._doAV("Action", this._actions[this._selectedTable], actionName, actionArgs);
+    }
+
+    /**
+     * Internal function to fire action/views.
+     *
+     * @private
+     * @param {("Action"|"View")} AVType
+     * @param {ActionOrView[]} AVList
+     * @param {string} AVName
+     * @param {*} AVargs
+     * @returns {(Promise<Array<DBRow>|NanoSQLInstance>)}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    private _doAV(AVType: "Action"|"View", AVList: ActionOrView[], AVName: string, AVargs: any): Promise<Array<DBRow>|NanoSQLInstance> {
+       let t = this;
+
+        let selAV: ActionOrView|null = AVList.reduce((prev, cur) => {
+            if (cur.name === AVName) return cur;
+            return prev;
+        }, null as any);
+
+        if (!selAV) {
+            return new Promise((res, rej) => rej("Action/View Not Found!"));
         }
-        if (!selAction) throw Error;
-        t._activeActionOrView = actionName;
-        return selAction.call.apply(t, [t._cleanArgs(selAction.args ? selAction.args : [], actionArgs), t]);
+        t._activeAV = AVName;
+
+        let cleanArgs = selAV.args ? t._cleanArgs(selAV.args, AVargs) : {};
+
+        if (t._AVMod) {
+            return new Promise((res, rej) => {
+                t._AVMod(AVType, t._activeAV || "", cleanArgs, (args) => {
+                    selAV ? selAV.call(args, t).then((result) => {
+                        res(result, t);
+                    }) : false;
+                }, (err) => {
+                    rej(err);
+                });
+            });
+        } else {
+            return selAV.call(cleanArgs, t);
+        }
     }
 
     /**
@@ -752,7 +784,9 @@ export class NanoSQLInstance {
      */
     public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any): _NanoSQLQuery {
 
-        let query = new _NanoSQLQuery(this._selectedTable, this);
+        let t = this;
+        let query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
+        t._activeAV = undefined;
         const a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
 
@@ -761,15 +795,15 @@ export class NanoSQLInstance {
             if (action === "upsert") {
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
-                this._models[this._selectedTable].forEach((model) => {
+                t._models[t._selectedTable].forEach((model) => {
                     if (newArgs[model.key]) {
-                        inputArgs[model.key] = this._cast(model.type, newArgs[model.key]);
+                        inputArgs[model.key] = t._cast(model.type, newArgs[model.key]);
                     }
                 });
 
                 // Apply insert filters
-                if (this._rowFilters[this._selectedTable]) {
-                    inputArgs = this._rowFilters[this._selectedTable](inputArgs);
+                if (t._rowFilters[t._selectedTable]) {
+                    inputArgs = t._rowFilters[t._selectedTable](inputArgs);
                 }
                 newArgs = inputArgs;
             }
@@ -797,15 +831,13 @@ export class NanoSQLInstance {
             let c: Array<Function>;
             while (i--) {
                 e = triggerEvents[i];
-                c = t._callbacks[t._selectedTable][e].concat(t._callbacks[t._selectedTable]["*"]);
+                c = t._callbacks[eventData.table][e].concat(t._callbacks[eventData.table]["*"]);
                 j = c.length;
                 while (j--) {
                     eventData.name = e;
-                    eventData.actionOrView = t._activeActionOrView || "";
                     c[j](eventData, t);
                 }
             }
-            t._activeActionOrView = undefined;
         }, 0);
     }
 
@@ -875,6 +907,19 @@ export class NanoSQLInstance {
         return this;
     }
 
+
+    /**
+     * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
+     *
+     * @param {IActionViewMod} filterFunc
+     * @returns
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public avFilter(filterFunc: IActionViewMod) {
+        this._AVMod = filterFunc;
+        return this;
+    }
 
     /**
      * Configure the database driver, must be called before the connect() method.
@@ -1083,10 +1128,13 @@ export class _NanoSQLQuery {
 
     public _error: string;
 
-    constructor(table: string, db: NanoSQLInstance) {
+    public _AV: string;
+
+    constructor(table: string, db: NanoSQLInstance, actionOrView?: string) {
         this._db = db;
         this._modifiers = [];
         this._table = table;
+        this._AV = actionOrView || "";
     }
 
 
@@ -1352,7 +1400,7 @@ export class _NanoSQLQuery {
                 if (t._db._hasEvents[_t]) { // Only trigger events if there are listeners
                     t._db.triggerEvent({
                         name: "error",
-                        actionOrView: "",
+                        actionOrView: t._AV,
                         table: _t,
                         query: [t._action].concat(t._modifiers),
                         time: new Date().getTime(),
@@ -1368,7 +1416,7 @@ export class _NanoSQLQuery {
             let execArgs = {
                 table: _t,
                 query: [t._action].concat(t._modifiers),
-                viewOrAction: t._db._activeActionOrView || "",
+                viewOrAction: t._AV,
                 onSuccess: (rows, type, affectedRows) => {
                     _tEvent(rows, res, type, affectedRows, false);
                 },

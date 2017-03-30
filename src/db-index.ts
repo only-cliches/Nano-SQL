@@ -309,15 +309,21 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     t._store._utility("w", "historyLength", 0);
                     t._store._historyPoint = 0;
                     t._store._historyLength = 0;
+                    Object.keys(t._store._tables).forEach((tableID) => {
+                        let rows: any|null[];
+                        if (t._store._tables[parseInt(tableID)]._name.indexOf("_") === 0) {
+                            rows = []
+                        } else {
+                            rows = t._store._tables[parseInt(tableID)]._rows;
+                            rows = Object.keys(rows).map(r => rows[r]);
+                        }
+                        t._invalidateCache(parseInt(tableID), rows as DBRow[], "remove", "clear");
+                    });
                     if (command === "flush_db") {
                         t._store._clear("all", res);
                     } else {
                         t._store._clear("hist", res);
                     }
-                    Object.keys(t._store._tables).forEach((tableID) => {
-                        let rows = t._store._tables[parseInt(tableID)]._rows;
-                        t._invalidateCache(parseInt(tableID), Object.keys(rows).map(r => rows[r]) as DBRow[], "remove", "clear");
-                    });
                 break;
             }
         });
