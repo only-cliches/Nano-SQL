@@ -59,6 +59,7 @@ export declare class NanoSQLInstance {
     model(dataModel: Array<DataModel>): NanoSQLInstance;
     views(viewArray: Array<ActionOrView>): NanoSQLInstance;
     getView(viewName: string, viewArgs?: any): Promise<Array<any> | NanoSQLInstance>;
+    cleanArgs(argDeclarations: Array<string>, args: StdObject<any>): StdObject<any>;
     actions(actionArray: Array<ActionOrView>): NanoSQLInstance;
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     private _doAV(AVType, AVList, AVName, AVargs);

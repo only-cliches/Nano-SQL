@@ -519,7 +519,7 @@ export class NanoSQLInstance {
     /**
      * Take an action or view and it's args, then make sure the args comform to the types declared in the model.
      *
-     * @internal
+     * @public
      * @param {Array<string>} argDeclarations
      * @param {Object} args
      * @returns {Object}

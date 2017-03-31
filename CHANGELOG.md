@@ -7,7 +7,8 @@
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
-## [0.6.9] 3-31-2017
+
+## [0.6.91] 3-31-2017
 - Made `cleanArgs` method public.
 - Added primary key range optimizations for Level DB and Indexed DB.
 - Fixed issue with history when using UUIDs
