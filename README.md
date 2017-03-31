@@ -244,6 +244,12 @@ nSQL("users")
 
 ```
 
+## Performance
+
+NanoSQL is built on top of NoSQL systems so there are several performance optimizations you can take advantage of for super fast queries.
+
+[Performance Docs](https://github.com/ClickSimply/Nano-SQL/wiki/4.-Default-Store#performance-considerations)
+
 [Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
 
 ## History

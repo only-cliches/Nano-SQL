@@ -131,7 +131,7 @@
                         ]).exec();
                     }
                 }
-            ]).avFilter(function(actionOrView, name, args, complete, error) {
+            ]).avFilter(function(tableName, actionOrView, name, args, complete, error) {
                 console.log(actionOrView, name, args);
                 complete(args);
             })
@@ -149,22 +149,26 @@
                 key: 'userID',
                 type: 'int'
             }])
+            .config({
+                persistent: true,
+                memory: false
+            })
             .connect().then(() => {
 
                 Promise.all([
                     nSQL()
                     .loadJS("orders", [{
-                        id: 1,
+                        id: null,
                         title: "Test",
                         total: 200,
                         userID: 2
                     }, {
-                        id: 2,
+                        id: null,
                         title: "Test",
                         total: 100,
                         userID: 2
                     }, {
-                        id: 3,
+                        id: null,
                         title: "Test",
                         total: 600,
                         userID: 5
@@ -207,6 +211,9 @@
                         }
                     }])
                 ]).then(function() {
+                    nSQL("orders").query("select").where(["id", "BETWEEN", [1, 2]]).exec().then((rows) => {
+                        console.log("BETWEEN", rows);
+                    });
                     /*nSQL("orders")
                         .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
                         .join({

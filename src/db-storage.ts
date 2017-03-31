@@ -59,7 +59,7 @@ export class _NanoSQL_Storage {
             _pkType: string;
             _name: string
             _incriment: number;
-            _index: string[];
+            _index: (string|number)[];
             _keys: string[];
             _defaults: any[];
             _rows: {
@@ -219,17 +219,21 @@ export class _NanoSQL_Storage {
         let isNewStore = true;
 
         Object.keys(args._models).forEach((t) => {
-            args._models["_" + t + "_hist__data"] = _assign(args._models[t]);
-            args._models["_" + t + "_hist__data"] = args._models["_" + t + "_hist__data"].map((m) => {
-                delete m.props;
-                return m;
+            let pkRow: any;
+            args._models[t].forEach((m) => {
+                if (m.props && m.props.indexOf("pk") !== -1) pkRow = _assign(m);
             });
-            // args._models["_" + t + "_hist__data"].unshift({key: "__id", type: "int", props:["ai", "pk"]});
-            args._models["_" + t + "_hist__meta"] = [
-                {key: "id", type: "int", props: ["ai", "pk"]},
-                {key: "_pointer", type: "int"},
-                {key: "_historyDataRowIDs", type: "array"},
-            ];
+            if (pkRow) {
+                args._models["_" + t + "_hist__data"] = _assign(args._models[t]).map((m) => {
+                    delete m.props;
+                    return m;
+                });
+                args._models["_" + t + "_hist__meta"] = [
+                    pkRow,
+                    {key: "_pointer", type: "int"},
+                    {key: "_historyDataRowIDs", type: "array"},
+                ];
+            }
         });
 
         args._models[_str(0)] = [
@@ -666,7 +670,7 @@ export class _NanoSQL_Storage {
             t._tables[ta]._index = [];
         } else {
             deleteRowIDS.push(rowID);
-            t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(String(rowID)), 1); // Update Index
+            t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(rowID), 1); // Update Index
         }
 
         if (t._storeMemory) {
@@ -720,7 +724,6 @@ export class _NanoSQL_Storage {
     public _upsert(tableName: string, rowID: string|number|null, value: any, callBack?: (rowID: number|string) => void): void {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);
-
         if (rowID === undefined || rowID === null) {
             t._models[ta].forEach((m) => {
                 if (m.props && m.props.indexOf("pk") !== -1) {
@@ -732,7 +735,7 @@ export class _NanoSQL_Storage {
                 }
             });
 
-            if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
+            if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] as string || "0") + 1;
         }
 
         if (t._tables[ta]._pkType === "int") rowID = parseInt(rowID as string);
@@ -743,8 +746,8 @@ export class _NanoSQL_Storage {
         }
 
         // Index update
-        if (t._tables[ta] && t._tables[ta]._index.indexOf(String(rowID)) === -1) {
-            t._tables[ta]._index.push(String(rowID));
+        if (t._tables[ta] && t._tables[ta]._index.indexOf(rowID) === -1) {
+            t._tables[ta]._index.push(rowID);
         }
 
         // Memory Store Update
@@ -780,16 +783,16 @@ export class _NanoSQL_Storage {
             case 4: // Level Up
 
                 if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(String(rowID), value ? value : null, () => {
+                    t._levelDBs[tableName].put(rowID, value ? value : null, () => {
                         if (callBack) callBack(rowID as string);
                     });
                 } else {
                     if (value) {
-                        t._levelDBs[tableName].put(String(rowID), value, () => {
+                        t._levelDBs[tableName].put(rowID, value, () => {
                             if (callBack) callBack(rowID as string);
                         });
                     } else {
-                        t._levelDBs[tableName].del(String(rowID), () => {
+                        t._levelDBs[tableName].del(rowID, () => {
                             if (callBack) callBack(rowID as string);
                         });
                     }
@@ -800,6 +803,52 @@ export class _NanoSQL_Storage {
             /* NODE-END */
         }
 
+    }
+
+    public _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void {
+        let t = this;
+        const ta = NanoSQLInstance._hash(tableName);
+        // Memory is faster, local storage cannot be optimized in this way.
+        if ((t._storeMemory && t._tables[ta]) || t._mode === 2 ) {
+            this._read(tableName, (row) => {
+                return row[key] >= between[0] && row[key] <= between[1];
+            }, callBack);
+            return;
+        }
+
+        let rows: any[] = [];
+
+        switch (t._mode) {
+            case 1: // IndexedDB
+                const transaction = t._indexedDB.transaction(tableName, "readonly");
+                const store = transaction.objectStore(tableName);
+                let cursorRequest = store.openCursor(IDBKeyRange.bound(between[0], between[1]));
+                transaction.oncomplete = () => {
+                    callBack(rows);
+                };
+                cursorRequest.onsuccess = (evt: any) => {
+                    let cursor = evt.target.result;
+                    if (cursor) {
+                        rows.push(cursor.value);
+                        cursor.continue();
+                    }
+                };
+            break;
+            /* NODE-START */
+            case 4: // LevelDB
+                t._levelDBs[tableName].createValueStream({
+                    gte: between[0],
+                    lte: between[1]
+                })
+                .on("data", (data) => {
+                    if (data) rows.push(data);
+                })
+                .on("end", () => {
+                    callBack(rows);
+                });
+            break;
+            /* NODE-END */
+        }
     }
 
     public _read(tableName: string, row: string|number|Function, callBack: (rows: any[]) => void): void {
@@ -885,7 +934,7 @@ export class _NanoSQL_Storage {
                         }
                     });
                 } else {
-                    t._levelDBs[tableName].get(String(row), (err, data) => {
+                    t._levelDBs[tableName].get(row, (err, data) => {
                         if (err) {
                             callBack([null]);
                         } else {

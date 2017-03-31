@@ -1,6 +1,6 @@
 {
     "name": "nano-sql",
-    "version": "0.6.8",
+    "version": "0.6.9",
     "description": "",
     "main": "node/index-server.js",
     "browser": "node/index.js",
@@ -67,7 +67,9 @@
         "nanosql",
         "levelDB",
         "level DB",
-        "Indexed DB"
+        "Indexed DB",
+        "isomorphic",
+        "universal"
     ],
     "author": "Scott Lott <Scott@ClickSimply.com>",
     "license": "MIT",

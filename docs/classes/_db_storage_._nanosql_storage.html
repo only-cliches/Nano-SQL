@@ -112,6 +112,7 @@
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_delete" class="tsd-kind-icon">_delete</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_newtable" class="tsd-kind-icon">_new<wbr>Table</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_read" class="tsd-kind-icon">_read</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_readrange" class="tsd-kind-icon">_read<wbr>Range</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_upsert" class="tsd-kind-icon">_upsert</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_utility" class="tsd-kind-icon">_utility</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#init" class="tsd-kind-icon">init</a></li>
@@ -485,7 +486,7 @@
 										<h5>_incriment<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
 									</li>
 									<li class="tsd-parameter">
-										<h5>_index<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+										<h5>_index<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">[]</span></h5>
 									</li>
 									<li class="tsd-parameter">
 										<h5>_keys<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
@@ -570,7 +571,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:588</li>
+									<li>Defined in db-storage.ts:592</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -596,7 +597,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:657</li>
+									<li>Defined in db-storage.ts:661</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -625,7 +626,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:938</li>
+									<li>Defined in db-storage.ts:987</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -661,7 +662,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:805</li>
+									<li>Defined in db-storage.ts:854</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -699,6 +700,56 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_readrange" class="tsd-anchor"></a>
+					<h3>_read<wbr>Range</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_read<wbr>Range<span class="tsd-signature-symbol">(</span>tableName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, key<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, between<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, callBack<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-storage.ts:808</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>tableName: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>key: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>between: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>callBack: <span class="tsd-signature-type">function</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-parameters-title">Parameters</h4>
+													<ul class="tsd-parameters">
+														<li>
+															<h5>rows: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></h5>
+														</li>
+													</ul>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="_upsert" class="tsd-anchor"></a>
 					<h3>_upsert</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -708,7 +759,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:720</li>
+									<li>Defined in db-storage.ts:724</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -740,7 +791,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:911</li>
+									<li>Defined in db-storage.ts:960</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -901,6 +952,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_read" class="tsd-kind-icon">_read</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_db_storage_._nanosql_storage.html#_readrange" class="tsd-kind-icon">_read<wbr>Range</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_upsert" class="tsd-kind-icon">_upsert</a>

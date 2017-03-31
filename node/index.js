@@ -119,7 +119,7 @@ var NanoSQLInstance = (function () {
         if (viewArgs === void 0) { viewArgs = {}; }
         return this._doAV("View", this._views[this._selectedTable], viewName, viewArgs);
     };
-    NanoSQLInstance.prototype._cleanArgs = function (argDeclarations, args) {
+    NanoSQLInstance.prototype.cleanArgs = function (argDeclarations, args) {
         var t = this;
         var l = t._selectedTable;
         var a = {};
@@ -167,7 +167,7 @@ var NanoSQLInstance = (function () {
             return new lie_ts_1.Promise(function (res, rej) { return rej("Action/View Not Found!"); });
         }
         t._activeAV = AVName;
-        var cleanArgs = selAV.args ? t._cleanArgs(selAV.args, AVargs) : {};
+        var cleanArgs = selAV.args ? t.cleanArgs(selAV.args, AVargs) : {};
         if (t._AVMod) {
             return new lie_ts_1.Promise(function (res, rej) {
                 t._AVMod(_this._selectedTable, AVType, t._activeAV || "", cleanArgs, function (args) {

@@ -165,29 +165,36 @@ var _NanoSQLQuery = (function () {
             if (t._getMod("where")) {
                 var whereArgs = t._getMod("where").args;
                 whereArgs[1] = whereArgs[1].trim();
-                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
-                    var rowPks_1 = [];
-                    if (whereArgs[1] === "=") {
-                        rowPks_1.push(whereArgs[2]);
+                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN", "BETWEEN"].indexOf(whereArgs[1]) !== -1) {
+                    if (whereArgs[1] === "BETWEEN") {
+                        t._db._store._readRange(tableData._name, whereArgs[0], whereArgs[2], function (rows) {
+                            doQuery(rows);
+                        });
                     }
                     else {
-                        rowPks_1 = whereArgs[2];
-                    }
-                    var i_1 = 0;
-                    var rows_1 = [];
-                    var getRow_1 = function () {
-                        if (i_1 < rowPks_1.length) {
-                            t._db._store._read(tableData._name, rowPks_1[i_1], function (result) {
-                                rows_1 = rows_1.concat(result);
-                                i_1++;
-                                getRow_1();
-                            });
+                        var rowPks_1 = [];
+                        var rows_1 = [];
+                        if (whereArgs[1] === "=") {
+                            rowPks_1.push(whereArgs[2]);
                         }
                         else {
-                            doQuery(rows_1);
+                            rowPks_1 = whereArgs[2];
                         }
-                    };
-                    getRow_1();
+                        var i_1 = 0;
+                        var getRow_1 = function () {
+                            if (i_1 < rowPks_1.length) {
+                                t._db._store._read(tableData._name, rowPks_1[i_1], function (result) {
+                                    rows_1 = rows_1.concat(result);
+                                    i_1++;
+                                    getRow_1();
+                                });
+                            }
+                            else {
+                                doQuery(rows_1);
+                            }
+                        };
+                        getRow_1();
+                    }
                 }
                 else {
                     t._db._store._read(tableData._name, function (row) {
@@ -214,8 +221,8 @@ var _NanoSQLQuery = (function () {
     };
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
-        var tableName = t._db._store._tables[t._tableID]._name;
-        t._db._store._read(tableName, rowPK, function (rows) {
+        var table = t._db._store._tables[t._tableID];
+        t._db._store._read(table._name, rowPK, function (rows) {
             var newRow = {};
             var oldRow = rows[0] || {};
             var qArgs = t._act.args;
@@ -255,26 +262,26 @@ var _NanoSQLQuery = (function () {
                     break;
             }
             var finishUpdate = function () {
-                if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
-                    t._db._store._read("_" + tableName + "_hist__meta", parseInt(rowPK), function (rows) {
+                if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
+                    t._db._store._read("_" + table._name + "_hist__meta", rowPK, function (rows) {
                         rows[0][db_index_1._str(3)].unshift(len);
-                        t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
+                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
                 }
                 if (updateType === "upsert") {
-                    t._db._store._upsert(tableName, rowPK, newRow, function () {
+                    t._db._store._upsert(table._name, rowPK, newRow, function () {
                         callBack();
                     });
                 }
                 else {
-                    t._db._store._delete(tableName, rowPK, function () {
+                    t._db._store._delete(table._name, rowPK, function () {
                         callBack();
                     });
                 }
             };
             var len = 0;
-            if (!doRemove && tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
-                t._db._store._upsert("_" + tableName + "_hist__data", null, newRow, function (rowID) {
+            if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
+                t._db._store._upsert("_" + table._name + "_hist__data", null, newRow, function (rowID) {
                     len = parseInt(rowID);
                     finishUpdate();
                 });
@@ -420,7 +427,7 @@ var _NanoSQLQuery = (function () {
                     table._incriment = Math.max(qArgs[pk] + 1, table._incriment);
                 }
             }
-            var objPK = qArgs[pk] ? String(qArgs[pk]) : String(table._index.length);
+            var objPK = qArgs[pk] ? qArgs[pk] : table._index.length;
             changedPKs = [objPK];
             if (table._index.indexOf(objPK) === -1) {
                 var tableName = t._db._store._tables[t._tableID]._name;
@@ -776,7 +783,7 @@ var _NanoSQLQuery = (function () {
             case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
             case "REGEX":
             case "LIKE": return left.search(right) < 0 ? 1 : 0;
-            case "BETWEEN": return right[0] < left && right[1] > left ? 0 : 1;
+            case "BETWEEN": return right[0] <= left && right[1] >= left ? 0 : 1;
             case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
             default: return 0;
         }

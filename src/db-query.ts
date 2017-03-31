@@ -273,28 +273,37 @@ export class _NanoSQLQuery {
 
                 // Primary key optimization, if we're grabbing a value by it's pk we can skip the full table read
                 whereArgs[1] = whereArgs[1].trim();
-                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN"].indexOf(whereArgs[1]) !== -1) {
-                    // Goes straight to the right row
-                    let rowPks: any[] = [];
-                    if (whereArgs[1] === "=") {
-                        rowPks.push(whereArgs[2]);
-                    } else {
-                        rowPks = whereArgs[2];
-                    }
-                    let i = 0;
-                    let rows: any[] = [];
-                    const getRow = () => {
-                        if (i < rowPks.length) {
-                            t._db._store._read(tableData._name, rowPks[i], (result) => {
-                                rows = rows.concat(result);
-                                i++;
-                                getRow();
-                            });
-                        } else {
+                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN", "BETWEEN"].indexOf(whereArgs[1]) !== -1) {
+
+                    if (whereArgs[1] === "BETWEEN") {
+                        // Go straight to the desired range
+                        t._db._store._readRange(tableData._name, whereArgs[0], whereArgs[2], (rows) => {
                             doQuery(rows);
+                        });
+                    } else {
+                        // Goes straight to the right row
+                        let rowPks: any[] = [];
+                        let rows: any[] = [];
+                        if (whereArgs[1] === "=") {
+                            rowPks.push(whereArgs[2]);
+                        } else {
+                            rowPks = whereArgs[2];
                         }
-                    };
-                    getRow();
+                        let i = 0;
+                        const getRow = () => {
+                            if (i < rowPks.length) {
+                                t._db._store._read(tableData._name, rowPks[i], (result) => {
+                                    rows = rows.concat(result);
+                                    i++;
+                                    getRow();
+                                });
+                            } else {
+                                doQuery(rows);
+                            }
+                        };
+                        getRow();
+                    }
+
                 } else {
                     // Full table scan
                     t._db._store._read(tableData._name, (row) => {
@@ -329,9 +338,9 @@ export class _NanoSQLQuery {
     private _updateRow(rowPK: string, callBack: Function): void {
 
         const t = this;
-        const tableName = t._db._store._tables[t._tableID]._name;
+        const table = t._db._store._tables[t._tableID];
 
-        t._db._store._read(tableName, rowPK, (rows) => {
+        t._db._store._read(table._name, rowPK, (rows) => {
             let newRow = {};
             const oldRow = rows[0] || {};
 
@@ -381,21 +390,21 @@ export class _NanoSQLQuery {
             }
 
             const finishUpdate = () => {
-                if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
-                    t._db._store._read("_" + tableName + "_hist__meta", parseInt(rowPK), (rows) => {
+                if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
+                    t._db._store._read("_" + table._name + "_hist__meta", rowPK, (rows) => {
                         rows[0][_str(3)].unshift(len);
-                        t._db._store._upsert("_" + tableName + "_hist__meta", parseInt(rowPK), rows[0]);
+                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
                 }
 
                 // 3. Move new row data into place on the active table
                 // Apply changes to the store
                 if (updateType === "upsert") {
-                    t._db._store._upsert(tableName, rowPK, newRow, () => {
+                    t._db._store._upsert(table._name, rowPK, newRow, () => {
                         callBack();
                     });
                 } else {
-                    t._db._store._delete(tableName, rowPK, () => {
+                    t._db._store._delete(table._name, rowPK, () => {
                         callBack();
                     });
                 }
@@ -403,9 +412,9 @@ export class _NanoSQLQuery {
 
             // Add to history
             let len = 0; // 0 index contains a null reference used by all rows;
-            if (!doRemove && tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
+            if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
                 // 1. copy new row data into histoy data table
-                t._db._store._upsert("_" + tableName + "_hist__data", null, newRow, (rowID) => {
+                t._db._store._upsert("_" + table._name + "_hist__data", null, newRow, (rowID) => {
                     len = parseInt(rowID as string);
                     finishUpdate();
                 });
@@ -580,7 +589,7 @@ export class _NanoSQLQuery {
                 }
             }
 
-            const objPK = qArgs[pk] ? String(qArgs[pk]) : String(table._index.length);
+            const objPK = qArgs[pk] ? qArgs[pk] : table._index.length;
             changedPKs = [objPK];
 
             // Entirely new row, setup all the needed stuff for it.
@@ -1034,7 +1043,7 @@ export class _NanoSQLQuery {
             case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
             case "REGEX":
             case "LIKE": return left.search(right) < 0 ? 1 : 0;
-            case "BETWEEN": return right[0] < left && right[1] > left ? 0 : 1;
+            case "BETWEEN": return right[0] <= left && right[1] >= left ? 0 : 1;
             case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
             default: return 0;
         }

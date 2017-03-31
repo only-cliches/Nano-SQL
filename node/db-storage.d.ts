@@ -17,7 +17,7 @@ export declare class _NanoSQL_Storage {
             _pkType: string;
             _name: string;
             _incriment: number;
-            _index: string[];
+            _index: (string | number)[];
             _keys: string[];
             _defaults: any[];
             _rows: {
@@ -45,6 +45,7 @@ export declare class _NanoSQL_Storage {
     _clear(type: "all" | "hist", complete: Function): void;
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
     _upsert(tableName: string, rowID: string | number | null, value: any, callBack?: (rowID: number | string) => void): void;
+    _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void;
     _read(tableName: string, row: string | number | Function, callBack: (rows: any[]) => void): void;
     _utility(type: "r" | "w", key: string, value?: any): any;
     _newTable(tableName: string, dataModels: DataModel[]): string;

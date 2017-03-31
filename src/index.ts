@@ -526,7 +526,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    private _cleanArgs(argDeclarations: Array<string>, args: StdObject<any>): StdObject<any> {
+    public cleanArgs(argDeclarations: Array<string>, args: StdObject<any>): StdObject<any> {
         let t = this;
         let l = t._selectedTable;
         let a: StdObject<any> = {};
@@ -667,7 +667,7 @@ export class NanoSQLInstance {
         }
         t._activeAV = AVName;
 
-        let cleanArgs = selAV.args ? t._cleanArgs(selAV.args, AVargs) : {};
+        let cleanArgs = selAV.args ? t.cleanArgs(selAV.args, AVargs) : {};
 
         if (t._AVMod) {
             return new Promise((res, rej) => {
