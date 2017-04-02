@@ -19,7 +19,13 @@ var options = {
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },
-    externals: [],
+    node: {
+        console: false,
+        global: false,
+        process: false,
+        Buffer: false,
+        setImmediate: false
+    },
     plugins: [
 
     ],

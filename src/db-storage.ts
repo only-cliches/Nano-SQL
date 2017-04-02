@@ -341,6 +341,82 @@ export class _NanoSQL_Storage {
         t._mode = 0;
         t._doHistory = false;
 
+        const createTables = (makeTable: (tableName: string, tableHash: number, tableData: any) => void, complete: () => void) => {
+            const next = () => {
+                if (index < tables.length) {
+                    let ta = NanoSQLInstance._hash(tables[index]);
+                    makeTable(tables[index], ta, t._tables[ta]);
+                    index++;
+                    next();
+                } else {
+                    complete();
+                }
+            };
+            next();
+        };
+
+        const cacheTableData = (args: {
+            requestIndex: (tableName: string, callBack: (tableIndex: (string|number)[]) => void) => void,
+            requestTable: (tableName: string, callBack: (tableData: any[]) => void) => void,
+            forceIndex?: boolean,
+            cleanup?: (done: () => void) => void
+        }) => {
+            isNewStore = false;
+            let index = 0;
+            const next = () => {
+                if (index >= tables.length) {
+                    if (args.cleanup) {
+                        args.cleanup(() => {
+                            completeSetup();
+                        });
+                    } else {
+                        completeSetup();
+                    }
+                    return;
+                }
+
+                // Do not import history tables if history is disabled.
+                if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                    index++;
+                    next();
+                    return;
+                }
+
+                // Load data into memory store
+                if (index < tables.length) {
+                    let ta = NanoSQLInstance._hash(tables[index]);
+
+                    if (t._storeMemory) {
+                        args.requestTable(tables[index], (tableData) => {
+                            if (tables[index].indexOf("_hist__data") !== -1) {
+                                t._tables[ta]._index.push("0");
+                                t._tables[ta]._rows["0"] = null;
+                                t._tables[ta]._incriment++;
+                                t._parent._parent.loadJS(tables[index], tableData).then(() => {
+                                    index++;
+                                    next();
+                                });
+                            } else {
+                                t._parent._parent.loadJS(tables[index], tableData).then(() => {
+                                    index++;
+                                    next();
+                                });
+                            }
+                        });
+
+                    } else if (!t._storeMemory || args.forceIndex) {
+                        args.requestIndex(tables[index], (indexData) => {
+                            t._parent._parent.loadJS(tables[index], indexData).then(() => {
+                                index++;
+                                next();
+                            });
+                        });
+                    }
+                }
+            };
+            next();
+        };
+
         switch (beforeMode) {
             case 0: // memory DB
                 completeSetup();
@@ -354,146 +430,74 @@ export class _NanoSQL_Storage {
                     let db: IDBDatabase = event.target.result;
                     let transaction: IDBTransaction = event.target.transaction;
                     t._indexedDB = db;
-                    const next = () => {
-                        if (index < tables.length) {
-                            let ta = NanoSQLInstance._hash(tables[index]);
-                            let config = t._tables[ta]._pk ? { keyPath: t._tables[ta]._pk } : {};
-                            db.createObjectStore(t._tables[ta]._name, config); // Standard Tables
-                            index++;
-                            next();
-                        } else {
-                            transaction.oncomplete = () => {
-                                completeSetup();
-                            };
-                        }
-                    };
-                    next();
+                    createTables((tableName, tableHash, tableObj) => {
+                        let config = tableObj._pk ? { keyPath: tableObj._pk } : {};
+                        db.createObjectStore(tableName, config); // Standard Tables
+                    }, () => {
+                        transaction.oncomplete = () => {
+                            completeSetup();
+                        };
+                    });
                 };
 
                 // Called once the database is connected and working
                 idb.onsuccess = (event: any) => {
                     t._indexedDB = event.target.result;
 
-                    // Called to import existing indexed DB data into the memory store.
                     if (!upgrading) {
-                        isNewStore = false;
 
-                        const next = () => {
-                            if (index >= tables.length) {
-                                completeSetup();
-                                return;
-                            }
-
-                            // Do not import history tables if history is disabled.
-                            if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
-                                index++;
-                                next();
-                                return;
-                            }
-
-                            // Load data from indexed DB into memory store
-                            if (index < tables.length) {
-                                let ta = NanoSQLInstance._hash(tables[index]);
-                                let transaction = t._indexedDB.transaction(tables[index], "readonly");
-                                let store = transaction.objectStore(tables[index]);
-                                let cursorRequest = store.openCursor();
-                                let items: any[] = [];
-                                transaction.oncomplete = () => {
-
-                                    if (t._storeMemory) {
-                                        if (tables[index].indexOf("_hist__data") !== -1) {
-                                            t._tables[ta]._index.push("0");
-                                            t._tables[ta]._rows["0"] = null;
-                                            t._tables[ta]._incriment++;
-                                            t._parent._parent.loadJS(tables[index], items).then(() => {
-                                                index++;
-                                                next();
-                                            });
-                                        } else {
-                                            t._parent._parent.loadJS(tables[index], items).then(() => {
-                                                index++;
-                                                next();
-                                            });
-                                        }
-                                    } else {
-                                        t._tables[ta]._index = items;
-                                        t._tables[ta]._incriment = items.reduce((prev, cur) => {
-                                            return Math.max(parseInt(cur), prev);
-                                        }, 0) + 1;
-                                        index++;
-                                        next();
-                                    }
-
-                                };
-
-                                cursorRequest.onsuccess = (evt: any) => {
-                                    let cursor: IDBCursorWithValue = evt.target.result;
-                                    if (cursor) {
-                                        items.push(t._storeMemory ? cursor.value : cursor.key);
-                                        cursor.continue();
-                                    }
-                                };
-
-                            }
+                        const getIDBData = (tName: string, callBack: (items) => void) => {
+                            let items: any[] = [];
+                            let transaction = t._indexedDB.transaction(tName, "readonly");
+                            let store = transaction.objectStore(tName);
+                            let cursorRequest = store.openCursor();
+                            cursorRequest.onsuccess = (evt: any) => {
+                                let cursor: IDBCursorWithValue = evt.target.result;
+                                if (cursor) {
+                                    items.push(t._storeMemory ? cursor.value : cursor.key);
+                                    cursor.continue();
+                                }
+                            };
+                            transaction.oncomplete = () => {
+                                callBack(items);
+                            };
                         };
 
-                        next();
-                    };
+                        cacheTableData({
+                            requestIndex: (tableName, complete) => {
+                                getIDBData(tableName, complete);
+                            },
+                            requestTable: (tableName, complete ) => {
+                                getIDBData(tableName, complete);
+                            }
+                        });
+
+                    }
                 };
             break;
             case 2: // Local Storage
                 if (localStorage.getItem("dbID") !== String(t._parent._databaseID)) { // New storage, just set it up
-                    localStorage.clear();
                     localStorage.setItem("dbID", String(t._parent._databaseID));
-                    tables.forEach((table) => {
-                        let ta = NanoSQLInstance._hash(table);
-                        localStorage.setItem(table, JSON.stringify([]));
+                    createTables((tableName, tableHash, tableObj) => {
+                        localStorage.setItem(tableName, JSON.stringify([]));
+                    }, () => {
+                        completeSetup();
                     });
-                    completeSetup();
                 } else { // Existing, import data from local storage
-                    isNewStore = false;
-                    // import indexes no matter what
-                    tables.forEach((tName) => {
-                        let ta = NanoSQLInstance._hash(tName);
-                        let tableIndex = JSON.parse(localStorage.getItem(tName) || "[]");
-                        t._tables[ta]._index = tableIndex;
-
-                        if (!t._storeMemory) {
-                            t._tables[ta]._incriment = tableIndex.reduce((prev, cur) => {
-                                return Math.max(parseInt(cur), prev);
-                            }, 0) + 1;
+                    cacheTableData({
+                        forceIndex: true,
+                        requestIndex: (tableName, complete) => {
+                            let tableIndex = JSON.parse(localStorage.getItem(tableName) || "[]");
+                            complete(tableIndex);
+                        },
+                        requestTable: (tableName, complete ) => {
+                            let items: any[] = [];
+                            JSON.parse(localStorage.getItem(tableName) || "[]").forEach((ptr) => {
+                                items.push(JSON.parse(localStorage.getItem(tableName + "-" + ptr) || ""));
+                            });
+                            complete(items);
                         }
                     });
-
-                    // only import data if the memory store is enabled
-                    if (t._storeMemory) {
-                        let tIndex = 0;
-                        const step = () => {
-                            if (tIndex < tables.length) {
-                                let items: any[] = [];
-
-                                // Do not import history tables if history is disabled.
-                                if (!beforeHist && (tables[tIndex].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
-                                    tIndex++;
-                                    step();
-                                    return;
-                                }
-
-                                JSON.parse(localStorage.getItem(tables[tIndex]) || "[]").forEach((ptr) => {
-                                    items.push(JSON.parse(localStorage.getItem(tables[tIndex] + "-" + ptr) || ""));
-                                });
-                                t._parent._parent.loadJS(tables[tIndex], items).then(() => {
-                                    tIndex++;
-                                    step();
-                                });
-                            } else {
-                                completeSetup();
-                            }
-                        };
-                        step();
-                    } else {
-                        completeSetup();
-                    }
                 }
             break;
             /* NODE-START */
@@ -502,66 +506,25 @@ export class _NanoSQL_Storage {
                 // Called to import existing  data into the memory store.
                 const existingStore = () => {
 
-                    isNewStore = false;
-
-                    const next = () => {
-                        if (index < tables.length) {
-
-                            // Do not import history tables if history is disabled.
-                            if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
-                                index++;
-                                next();
-                                return;
-                            }
-
-                            // Load data from level up into memory store
-                            if (index < tables.length) {
-                                let ta = NanoSQLInstance._hash(tables[index]);
-                                let items: any[] = [];
-                                if (t._storeMemory) {
-                                    t._levelDBs[tables[index]].createValueStream()
-                                    .on("data", (data) => {
-                                        items.push(data);
-                                    })
-                                    .on("end", () => {
-                                        if (tables[index].indexOf("_hist__data") !== -1) {
-                                            t._tables[ta]._index.push("0");
-                                            t._tables[ta]._rows["0"] = null;
-                                            t._tables[ta]._incriment++;
-                                            t._parent._parent.table().loadJS(tables[index], items).then(() => {
-                                                index++;
-                                                next();
-                                            });
-                                        } else {
-                                            t._parent._parent.loadJS(tables[index], items).then(() => {
-                                                index++;
-                                                next();
-                                            });
-                                        }
-                                    });
-                                } else {
-                                    t._levelDBs[tables[index]].createKeyStream()
-                                    .on("data", (data) => {
-                                        items.push(data);
-                                    })
-                                    .on("end", () => {
-                                        t._tables[ta]._index = items;
-                                        t._tables[ta]._incriment = items.reduce((prev, cur) => {
-                                            return Math.max(parseInt(cur), prev);
-                                        }, 0) + 1;
-                                        index++;
-                                        next();
-                                    });
-                                }
-                            }
-                        } else {
-                            completeSetup();
-                            return;
-                        }
-
+                    const getLevelData = (tName: string, callBack: (items) => void) => {
+                        let items: any[] = [];
+                        let stream = t._storeMemory ? t._levelDBs[tName].createValueStream() : t._levelDBs[tName].createKeyStream();
+                        stream.on("data", (data) => {
+                            items.push(data);
+                        })
+                        .on("end", () => {
+                            callBack(items);
+                        });
                     };
 
-                    next();
+                    cacheTableData({
+                        requestIndex: (tableName, complete) => {
+                            getLevelData(tableName, complete);
+                        },
+                        requestTable: (tableName, complete ) => {
+                            getLevelData(tableName, complete);
+                        }
+                    });
                 };
 
                 const dbFolder = "./db_" + t._parent._databaseID;
@@ -714,7 +677,7 @@ export class _NanoSQL_Storage {
                 } else {
                     if (callBack) callBack(true);
                 }
-            }
+            };
             step();
         }
 

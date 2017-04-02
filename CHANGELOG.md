@@ -7,6 +7,9 @@
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
+## [0.6.92] 
+- Code optimizations, removed local storage from clearing everything on setup.
+- Removed global polyfill.
 
 ## [0.6.91] 3-31-2017
 - Made `cleanArgs` method public.
