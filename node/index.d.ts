@@ -1,4 +1,6 @@
 import { Promise } from "lie-ts";
+export interface UUID extends String {
+}
 export interface StdObject<T> {
     [key: string]: T;
 }

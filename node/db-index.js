@@ -50,10 +50,16 @@ var _NanoSQLDB = (function () {
         return Object.freeze(obj);
     };
     _NanoSQLDB.prototype._transaction = function (type) {
-        if (type === "start")
+        if (type === "start") {
+            this._store._transactionData = {};
             this._store._doingTransaction = true;
-        if (type === "end")
+        }
+        ;
+        if (type === "end") {
             this._store._doingTransaction = false;
+            this._store._execTransaction();
+        }
+        ;
         return !!this._store._doingTransaction;
     };
     _NanoSQLDB.prototype._extend = function (db, command) {

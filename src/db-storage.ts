@@ -168,6 +168,14 @@ export class _NanoSQL_Storage {
         [key: string]: any;
     };
 
+    public _transactionData: {
+        [tableName: string]:    {
+            type: string;
+            key: string|number;
+            value: string;
+        }[]
+    };
+
     constructor(database: _NanoSQLDB, args: DBConnect) {
         this._savedArgs = args;
         this.init(database, args);
@@ -316,6 +324,7 @@ export class _NanoSQL_Storage {
          * mode 4: Level Up // Used by NodeJS
          */
         if (t._persistent) {
+            
             if (t._mode !== 0) { // Mode has been set by dev, make sure it will work in our current environment.  If not, set mode to 0
                 switch (t._mode) {
                     case 1: if (typeof indexedDB === "undefined") t._mode = 0;
@@ -369,27 +378,18 @@ export class _NanoSQL_Storage {
             isNewStore = false;
             let index = 0;
             const next = () => {
-                if (index >= tables.length) {
-                    if (args.cleanup) {
-                        args.cleanup(() => {
-                            completeSetup();
-                        });
-                    } else {
-                        completeSetup();
-                    }
-                    return;
-                }
 
-                // Do not import history tables if history is disabled.
-                if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
-                    index++;
-                    next();
-                    return;
-                }
-
-                // Load data into memory store
                 if (index < tables.length) {
+                    // Load data into memory store
+
                     let ta = NanoSQLInstance._hash(tables[index]);
+
+                    // Do not import history tables if history is disabled.
+                    if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                        index++;
+                        next();
+                        return;
+                    }
 
                     if (t._storeMemory) {
                         args.requestTable(tables[index], (tableData) => {
@@ -411,13 +411,28 @@ export class _NanoSQL_Storage {
 
                     } else if (!t._storeMemory || args.forceIndex) {
                         args.requestIndex(tables[index], (indexData) => {
-                            t._parent._parent.loadJS(tables[index], indexData).then(() => {
-                                index++;
-                                next();
-                            });
+                            t._parent._store._tables[ta]._index = indexData;
+                            t._parent._store._tables[ta]._incriment = indexData.reduce((prev, cur) => {
+                                return Math.max(prev as  number, parseInt(cur as string) || 0);
+                            }, 0) as number;
+                            t._parent._store._tables[ta]._incriment++;
+                            index++;
+                            next();
                         });
                     }
+                } else {
+                    if (args.cleanup) {
+                        args.cleanup(() => {
+                            completeSetup();
+                        });
+                    } else {
+                        completeSetup();
+                    }
+                    return;
                 }
+
+
+
             };
             next();
         };
@@ -515,7 +530,7 @@ export class _NanoSQL_Storage {
                         let items: any[] = [];
                         let stream = t._storeMemory ? t._levelDBs[tName].createValueStream() : t._levelDBs[tName].createKeyStream();
                         stream.on("data", (data) => {
-                            items.push(data);
+                            items.push(t._storeMemory ? JSON.parse(data) : data);
                         })
                         .on("end", () => {
                             callBack(items);
@@ -540,9 +555,7 @@ export class _NanoSQL_Storage {
                 }
 
                 tables.forEach((table) => {
-                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table, {
-                        valueEncoding: "json"
-                    });
+                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table);
                 });
 
                 if (existing) {
@@ -555,6 +568,20 @@ export class _NanoSQL_Storage {
             /* NODE-END */
         }
 
+    }
+
+    public _execTransaction() {
+        this._transactionData;
+        let t = this;
+        switch (t._mode) {
+            /* NODE-START */
+            case 4:
+                Object.keys(t._transactionData).forEach((tableName) => {
+                    t._levelDBs[tableName].batch(t._transactionData[tableName]);
+                });
+            break;
+            /* NODE-END */
+        }
     }
 
     public _clear(type: "all"|"hist", complete: Function): void {
@@ -669,10 +696,23 @@ export class _NanoSQL_Storage {
                         break;
                         /* NODE-START */
                         case 4: // Level Up
-                            t._levelDBs[tableName].del(deleteRowIDS[i], () => {
+                            if (t._doingTransaction) {
+                                if (!t._transactionData[tableName]) {
+                                    t._transactionData[tableName] = [];
+                                }
+                                t._transactionData[tableName].push({
+                                    type: "del",
+                                    key: deleteRowIDS[i],
+                                    value: ""
+                                });
                                 i++;
                                 step();
-                            });
+                            } else {
+                                t._levelDBs[tableName].del(deleteRowIDS[i], () => {
+                                    i++;
+                                    step();
+                                });
+                            }
                         break;
                         /* NODE-END */
                         default:
@@ -750,22 +790,34 @@ export class _NanoSQL_Storage {
             /* NODE-START */
             case 4: // Level Up
 
-                if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(rowID, value ? value : null, () => {
-                        if (callBack) callBack(rowID as string);
+                if (t._doingTransaction) {
+                    if (!t._transactionData[tableName]) {
+                        t._transactionData[tableName] = [];
+                    }
+
+                    t._transactionData[tableName].push({
+                        type: tableName.indexOf("_hist__data") !== -1 ? "put" : !value ? "del" : "put",
+                        key: rowID,
+                        value: value ? JSON.stringify(value) : ""
                     });
+                    if (callBack) callBack(rowID as string);
                 } else {
-                    if (value) {
-                        t._levelDBs[tableName].put(rowID, value, () => {
+                    if (tableName.indexOf("_hist__data") !== -1) {
+                        t._levelDBs[tableName].put(rowID, value ? JSON.stringify(value) : null, () => {
                             if (callBack) callBack(rowID as string);
                         });
                     } else {
-                        t._levelDBs[tableName].del(rowID, () => {
-                            if (callBack) callBack(rowID as string);
-                        });
+                        if (value) {
+                            t._levelDBs[tableName].put(rowID, JSON.stringify(value), () => {
+                                if (callBack) callBack(rowID as string);
+                            });
+                        } else {
+                            t._levelDBs[tableName].del(rowID, () => {
+                                if (callBack) callBack(rowID as string);
+                            });
+                        }
                     }
                 }
-
 
             break;
             /* NODE-END */
@@ -809,7 +861,7 @@ export class _NanoSQL_Storage {
                     lte: between[1]
                 })
                 .on("data", (data) => {
-                    if (data) rows.push(data);
+                    if (data) rows.push(JSON.parse(data));
                 })
                 .on("end", () => {
                     callBack(rows);
@@ -892,7 +944,7 @@ export class _NanoSQL_Storage {
                     let rows: any[] = [];
                     t._levelDBs[tableName].createValueStream()
                     .on("data", (data) => {
-                        if (data) rows.push(data);
+                        if (data) rows.push(JSON.parse(data));
                     })
                     .on("end", () => {
                         if (row !== "all") {

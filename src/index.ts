@@ -3,6 +3,10 @@ import { Promise } from "lie-ts";
 
 declare var global: any;
 
+export interface UUID extends String {
+
+}
+
 /**
  * Standard object placeholder with string key.
  *

@@ -154,8 +154,14 @@ export class _NanoSQLDB implements NanoSQLBackend {
     }
 
     public _transaction(type: "start"|"end") {
-        if (type === "start") this._store._doingTransaction = true;
-        if (type === "end") this._store._doingTransaction = false;
+        if (type === "start") {
+            this._store._transactionData = {};
+            this._store._doingTransaction = true;
+        };
+        if (type === "end") {
+            this._store._doingTransaction = false;
+            this._store._execTransaction();
+        };
         return !!this._store._doingTransaction;
     }
 

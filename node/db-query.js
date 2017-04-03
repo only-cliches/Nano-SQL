@@ -264,6 +264,12 @@ var _NanoSQLQuery = (function () {
             var finishUpdate = function () {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, function (rows) {
+                        if (!rows.length || !rows[0]) {
+                            rows[0] = {};
+                            rows[0][db_index_1._str(2)] = 0;
+                            rows[0][db_index_1._str(3)] = [];
+                            rows[0].id = rowPK;
+                        }
                         rows[0][db_index_1._str(3)].unshift(len);
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
@@ -431,7 +437,7 @@ var _NanoSQLQuery = (function () {
             changedPKs = [objPK];
             if (table._index.indexOf(objPK) === -1) {
                 var tableName = t._db._store._tables[t._tableID]._name;
-                if (tableName.indexOf("_") !== 0) {
+                if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
                     var histTable = "_" + tableName + "_hist__meta";
                     var histRow = {};
                     histRow[db_index_1._str(2)] = 0;

@@ -1,11 +1,20 @@
 # Change Log
 
 ## TODO
+Recent benchmarks with LevelDB on a low end laptop:
+Write: ~10 records/second.  Way too slow, there are read before writes for the history taking place, that needs to be streamlined especially if history is disabled and a transaction is taking place.
+Read: ~100 records/ms.  This is acceptable for now, will be prioritizing write speed in subsequent releases.
 - Test and improve performance of LevelDB on the server.
 - Transactions aren't working as consistently as I'd like with history.
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
+
+## [0.7.0] 
+- Added `uuid` interface.
+- Fixed issue with existing indexes not being imported when memory: false and persistent: true.
+- Removed code that added history meta for every row, even if history is disabled.
+- Added transaction support to level DB.
 
 ## [0.6.93] 4-2-2017
 - Added `id` config option to default storage driver.

@@ -176,24 +176,13 @@ var _NanoSQL_Storage = (function () {
             isNewStore = false;
             var index = 0;
             var next = function () {
-                if (index >= tables.length) {
-                    if (args.cleanup) {
-                        args.cleanup(function () {
-                            completeSetup();
-                        });
-                    }
-                    else {
-                        completeSetup();
-                    }
-                    return;
-                }
-                if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
-                    index++;
-                    next();
-                    return;
-                }
                 if (index < tables.length) {
                     var ta_1 = index_1.NanoSQLInstance._hash(tables[index]);
+                    if (!beforeHist && (tables[index].indexOf("_hist__data") !== -1 || tables[index].indexOf("_hist__meta") !== -1)) {
+                        index++;
+                        next();
+                        return;
+                    }
                     if (t._storeMemory) {
                         args.requestTable(tables[index], function (tableData) {
                             if (tables[index].indexOf("_hist__data") !== -1) {
@@ -215,12 +204,26 @@ var _NanoSQL_Storage = (function () {
                     }
                     else if (!t._storeMemory || args.forceIndex) {
                         args.requestIndex(tables[index], function (indexData) {
-                            t._parent._parent.loadJS(tables[index], indexData).then(function () {
-                                index++;
-                                next();
-                            });
+                            t._parent._store._tables[ta_1]._index = indexData;
+                            t._parent._store._tables[ta_1]._incriment = indexData.reduce(function (prev, cur) {
+                                return Math.max(prev, parseInt(cur) || 0);
+                            }, 0);
+                            t._parent._store._tables[ta_1]._incriment++;
+                            index++;
+                            next();
                         });
                     }
+                }
+                else {
+                    if (args.cleanup) {
+                        args.cleanup(function () {
+                            completeSetup();
+                        });
+                    }
+                    else {
+                        completeSetup();
+                    }
+                    return;
                 }
             };
             next();
@@ -307,7 +310,7 @@ var _NanoSQL_Storage = (function () {
                         var items = [];
                         var stream = t._storeMemory ? t._levelDBs[tName].createValueStream() : t._levelDBs[tName].createKeyStream();
                         stream.on("data", function (data) {
-                            items.push(data);
+                            items.push(t._storeMemory ? JSON.parse(data) : data);
                         })
                             .on("end", function () {
                             callBack(items);
@@ -329,9 +332,7 @@ var _NanoSQL_Storage = (function () {
                     existing = false;
                 }
                 tables.forEach(function (table) {
-                    t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table, {
-                        valueEncoding: "json"
-                    });
+                    t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table);
                 });
                 if (existing) {
                     existingStore();
@@ -339,6 +340,17 @@ var _NanoSQL_Storage = (function () {
                 else {
                     completeSetup();
                 }
+                break;
+        }
+    };
+    _NanoSQL_Storage.prototype._execTransaction = function () {
+        this._transactionData;
+        var t = this;
+        switch (t._mode) {
+            case 4:
+                Object.keys(t._transactionData).forEach(function (tableName) {
+                    t._levelDBs[tableName].batch(t._transactionData[tableName]);
+                });
                 break;
         }
     };
@@ -451,10 +463,24 @@ var _NanoSQL_Storage = (function () {
                             step_2();
                             break;
                         case 4:
-                            t._levelDBs[tableName].del(deleteRowIDS[i_1], function () {
+                            if (t._doingTransaction) {
+                                if (!t._transactionData[tableName]) {
+                                    t._transactionData[tableName] = [];
+                                }
+                                t._transactionData[tableName].push({
+                                    type: "del",
+                                    key: deleteRowIDS[i_1],
+                                    value: ""
+                                });
                                 i_1++;
                                 step_2();
-                            });
+                            }
+                            else {
+                                t._levelDBs[tableName].del(deleteRowIDS[i_1], function () {
+                                    i_1++;
+                                    step_2();
+                                });
+                            }
                             break;
                         default:
                             i_1++;
@@ -530,24 +556,38 @@ var _NanoSQL_Storage = (function () {
                     callBack(rowID);
                 break;
             case 4:
-                if (tableName.indexOf("_hist__data") !== -1) {
-                    t._levelDBs[tableName].put(rowID, value ? value : null, function () {
-                        if (callBack)
-                            callBack(rowID);
+                if (t._doingTransaction) {
+                    if (!t._transactionData[tableName]) {
+                        t._transactionData[tableName] = [];
+                    }
+                    t._transactionData[tableName].push({
+                        type: tableName.indexOf("_hist__data") !== -1 ? "put" : !value ? "del" : "put",
+                        key: rowID,
+                        value: value ? JSON.stringify(value) : ""
                     });
+                    if (callBack)
+                        callBack(rowID);
                 }
                 else {
-                    if (value) {
-                        t._levelDBs[tableName].put(rowID, value, function () {
+                    if (tableName.indexOf("_hist__data") !== -1) {
+                        t._levelDBs[tableName].put(rowID, value ? JSON.stringify(value) : null, function () {
                             if (callBack)
                                 callBack(rowID);
                         });
                     }
                     else {
-                        t._levelDBs[tableName].del(rowID, function () {
-                            if (callBack)
-                                callBack(rowID);
-                        });
+                        if (value) {
+                            t._levelDBs[tableName].put(rowID, JSON.stringify(value), function () {
+                                if (callBack)
+                                    callBack(rowID);
+                            });
+                        }
+                        else {
+                            t._levelDBs[tableName].del(rowID, function () {
+                                if (callBack)
+                                    callBack(rowID);
+                            });
+                        }
                     }
                 }
                 break;
@@ -586,7 +626,7 @@ var _NanoSQL_Storage = (function () {
                 })
                     .on("data", function (data) {
                     if (data)
-                        rows.push(data);
+                        rows.push(JSON.parse(data));
                 })
                     .on("end", function () {
                     callBack(rows);
@@ -668,7 +708,7 @@ var _NanoSQL_Storage = (function () {
                     t._levelDBs[tableName].createValueStream()
                         .on("data", function (data) {
                         if (data)
-                            rows_3.push(data);
+                            rows_3.push(JSON.parse(data));
                     })
                         .on("end", function () {
                         if (row !== "all") {

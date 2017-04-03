@@ -40,8 +40,16 @@ export declare class _NanoSQL_Storage {
     _levelDBs: {
         [key: string]: any;
     };
+    _transactionData: {
+        [tableName: string]: {
+            type: string;
+            key: string | number;
+            value: string;
+        }[];
+    };
     constructor(database: _NanoSQLDB, args: DBConnect);
     init(database: _NanoSQLDB, args: DBConnect): void;
+    _execTransaction(): void;
     _clear(type: "all" | "hist", complete: Function): void;
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
     _upsert(tableName: string, rowID: string | number | null, value: any, callBack?: (rowID: number | string) => void): void;
