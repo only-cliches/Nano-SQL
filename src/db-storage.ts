@@ -212,6 +212,11 @@ export class _NanoSQL_Storage {
                 // WSQL: 3,
                 LVL: 4
             }[args._config[0].mode] || 0;
+
+            // Set database ID
+            if (args._config[0].id) {
+                t._parent._databaseID = String(args._config[0].id);
+            }
         }
 
         let upgrading = false;
@@ -422,7 +427,7 @@ export class _NanoSQL_Storage {
                 completeSetup();
             break;
             case 1: // Indexed DB
-                let idb = indexedDB.open(String(t._parent._databaseID), 1);
+                let idb = indexedDB.open(t._parent._databaseID, 1);
 
                 // Called only when there is no existing DB, creates the tables and data store.
                 idb.onupgradeneeded = (event: any) => {
@@ -476,8 +481,8 @@ export class _NanoSQL_Storage {
                 };
             break;
             case 2: // Local Storage
-                if (localStorage.getItem("dbID") !== String(t._parent._databaseID)) { // New storage, just set it up
-                    localStorage.setItem("dbID", String(t._parent._databaseID));
+                if (localStorage.getItem("dbID") !== t._parent._databaseID) { // New storage, just set it up
+                    localStorage.setItem("dbID", t._parent._databaseID);
                     createTables((tableName, tableHash, tableObj) => {
                         localStorage.setItem(tableName, JSON.stringify([]));
                     }, () => {

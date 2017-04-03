@@ -7,7 +7,10 @@
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
-## [0.6.92] 
+## [0.6.93] 4-2-2017
+- Added `id` config option to default storage driver.
+
+## [0.6.92] 4-1-2017
 - Code optimizations, removed local storage from clearing everything on setup.
 - Removed global polyfill.
 

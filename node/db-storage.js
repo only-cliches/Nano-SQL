@@ -32,6 +32,9 @@ var _NanoSQL_Storage = (function () {
                 LS: 2,
                 LVL: 4
             }[args._config[0].mode] || 0;
+            if (args._config[0].id) {
+                t._parent._databaseID = String(args._config[0].id);
+            }
         }
         var upgrading = false;
         var index = 0;
@@ -227,7 +230,7 @@ var _NanoSQL_Storage = (function () {
                 completeSetup();
                 break;
             case 1:
-                var idb = indexedDB.open(String(t._parent._databaseID), 1);
+                var idb = indexedDB.open(t._parent._databaseID, 1);
                 idb.onupgradeneeded = function (event) {
                     upgrading = true;
                     var db = event.target.result;
@@ -273,8 +276,8 @@ var _NanoSQL_Storage = (function () {
                 };
                 break;
             case 2:
-                if (localStorage.getItem("dbID") !== String(t._parent._databaseID)) {
-                    localStorage.setItem("dbID", String(t._parent._databaseID));
+                if (localStorage.getItem("dbID") !== t._parent._databaseID) {
+                    localStorage.setItem("dbID", t._parent._databaseID);
                     createTables(function (tableName, tableHash, tableObj) {
                         localStorage.setItem(tableName, JSON.stringify([]));
                     }, function () {

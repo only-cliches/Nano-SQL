@@ -13,7 +13,7 @@ var _NanoSQLDB = (function () {
     }
     _NanoSQLDB.prototype._connect = function (connectArgs) {
         var t = this;
-        t._databaseID = index_1.NanoSQLInstance._hash(JSON.stringify(connectArgs._models));
+        t._databaseID = index_1.NanoSQLInstance._hash(JSON.stringify(connectArgs._models)).toString();
         t._parent = connectArgs._parent;
         t._store = new db_storage_1._NanoSQL_Storage(t, connectArgs);
     };

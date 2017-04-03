@@ -5,4 +5,5 @@ exports._NanoSQLQuery = index_1._NanoSQLQuery;
 exports.nSQL = index_1.nSQL;
 global._fs = require("fs");
 global._levelup = require("levelup");
+global._leveldown = require("leveldown");
 global._crypto = require("crypto");

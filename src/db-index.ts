@@ -24,10 +24,10 @@ export class _NanoSQLDB implements NanoSQLBackend {
      * Unique database hash ID based on the data model.
      *
      * @internal
-     * @type {number}
+     * @type {string}
      * @memberOf _NanoSQLDB
      */
-    public _databaseID: number;
+    public _databaseID: string;
 
     /**
      * An array holding any queries that should be executed after the current one.
@@ -88,7 +88,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
      */
     public _connect(connectArgs: DBConnect): void {
         let t = this;
-        t._databaseID = NanoSQLInstance._hash(JSON.stringify(connectArgs._models));
+        t._databaseID = NanoSQLInstance._hash(JSON.stringify(connectArgs._models)).toString();
         t._parent = connectArgs._parent;
         t._store = new _NanoSQL_Storage(t, connectArgs);
     }
