@@ -285,7 +285,7 @@ export class NanoSQLInstance {
 
     /**
      * The current timezone offset of this system.
-     * 
+     *
      * @private
      * @type {number}
      * @memberOf NanoSQLInstance
@@ -817,13 +817,13 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe"|"select-range", args?: any): _NanoSQLQuery {
+    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any): _NanoSQLQuery {
 
         let t = this;
         let query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
         t._activeAV = undefined;
         const a = action.toLowerCase();
-        if (["select", "upsert", "delete", "drop", "show tables", "describe", "select-range"].indexOf(a) !== -1) {
+        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
 
             let newArgs = args || (a === "select" || a === "delete" ? [] : {});
 
@@ -1115,10 +1115,10 @@ export class NanoSQLInstance {
 
     /**
      * Generate a unique, sortable time ID
-     * 
+     *
      * @static
-     * @returns {string} 
-     * 
+     * @returns {string}
+     *
      * @memberOf NanoSQLInstance
      */
     public static timeid(ms?: boolean): string {
@@ -1220,6 +1220,19 @@ export class _NanoSQLQuery {
             this._error = "Where condition requires an array!";
         }
         return this._addCmd("where", args);
+    }
+
+    /**
+     * Query to get a specific range of rows very efficiently.
+     *
+     * @param {number} limit
+     * @param {number} offset
+     * @returns
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    public range(limit: number, offset: number) {
+        return this._addCmd("range", [limit, offset]);
     }
 
     /**

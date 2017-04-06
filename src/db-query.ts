@@ -185,9 +185,9 @@ export class _NanoSQLQuery {
         let simpleQuery: QueryLine[] = [];
 
         query.query.forEach((q) => {
-            if (["upsert", "select", "delete", "drop", "select-range"].indexOf(q.type) >= 0) {
+            if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
                 t._act = q; // Query Action
-                if (q.type === "select" || q.type === "select-range") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query.query));
+                if (q.type === "select") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query.query));
             } else if (["show tables", "describe"].indexOf(q.type) >= 0) {
                 simpleQuery.push(q);
             } else {
@@ -257,9 +257,6 @@ export class _NanoSQLQuery {
                 break;
                 case "select":
                     t._select(rows, callBack);
-                break;
-                case "select-range":
-                    t._getRange(callBack);
                 break;
                 case "drop":
                 case "delete":
@@ -337,6 +334,9 @@ export class _NanoSQLQuery {
                         doQuery(rows);
                     });
                 }
+            } else if (t._getMod("range")) {
+                const rangeArgs = (t._getMod("range") as QueryLine).args;
+                t._getRange(rangeArgs[0], rangeArgs[1], doQuery);
             } else {
                 if (t._act.type !== "upsert") {
                     t._db._store._read(tableData._name, "all", (rows) => {
@@ -352,14 +352,13 @@ export class _NanoSQLQuery {
 
     }
 
-    private _getRange(callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
+    private _getRange(limit: number, offset: number, callBack: (rows: DBRow[]) => void): void {
         let t = this;
-        const qArgs = (t._act as QueryLine).args;
         const table = t._db._store._tables[t._tableID];
-        let startIndex = table._index[qArgs[1] || 0];
-        let endIndex = table._index[qArgs[0] + (qArgs[1] || 0) - 1];
+        let startIndex = table._index[offset];
+        let endIndex = table._index[offset + (limit - 1)];
         t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], (rows) => {
-            callBack(rows, "none", []);
+            callBack(rows);
         });
     }
 

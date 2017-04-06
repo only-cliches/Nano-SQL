@@ -99,9 +99,9 @@ var _NanoSQLQuery = (function () {
         t._act = undefined;
         var simpleQuery = [];
         query.query.forEach(function (q) {
-            if (["upsert", "select", "delete", "drop", "select-range"].indexOf(q.type) >= 0) {
+            if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
                 t._act = q;
-                if (q.type === "select" || q.type === "select-range")
+                if (q.type === "select")
                     t._queryHash = index_1.NanoSQLInstance._hash(JSON.stringify(query.query));
             }
             else if (["show tables", "describe"].indexOf(q.type) >= 0) {
@@ -154,9 +154,6 @@ var _NanoSQLQuery = (function () {
                     break;
                 case "select":
                     t._select(rows, callBack);
-                    break;
-                case "select-range":
-                    t._getRange(callBack);
                     break;
                 case "drop":
                 case "delete":
@@ -214,6 +211,10 @@ var _NanoSQLQuery = (function () {
                     });
                 }
             }
+            else if (t._getMod("range")) {
+                var rangeArgs = t._getMod("range").args;
+                t._getRange(rangeArgs[0], rangeArgs[1], doQuery);
+            }
             else {
                 if (t._act.type !== "upsert") {
                     t._db._store._read(tableData._name, "all", function (rows) {
@@ -229,14 +230,13 @@ var _NanoSQLQuery = (function () {
             doQuery([]);
         }
     };
-    _NanoSQLQuery.prototype._getRange = function (callBack) {
+    _NanoSQLQuery.prototype._getRange = function (limit, offset, callBack) {
         var t = this;
-        var qArgs = t._act.args;
         var table = t._db._store._tables[t._tableID];
-        var startIndex = table._index[qArgs[1] || 0];
-        var endIndex = table._index[qArgs[0] + (qArgs[1] || 0) - 1];
+        var startIndex = table._index[offset];
+        var endIndex = table._index[offset + (limit - 1)];
         t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], function (rows) {
-            callBack(rows, "none", []);
+            callBack(rows);
         });
     };
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {

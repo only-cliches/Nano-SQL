@@ -208,7 +208,7 @@ var NanoSQLInstance = (function () {
         var query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
         t._activeAV = undefined;
         var a = action.toLowerCase();
-        if (["select", "upsert", "delete", "drop", "show tables", "describe", "select-range"].indexOf(a) !== -1) {
+        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
             var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
             if (action === "upsert") {
                 var inputArgs_1 = {};
@@ -424,6 +424,9 @@ var _NanoSQLQuery = (function () {
             this._error = "Where condition requires an array!";
         }
         return this._addCmd("where", args);
+    };
+    _NanoSQLQuery.prototype.range = function (limit, offset) {
+        return this._addCmd("range", [limit, offset]);
     };
     _NanoSQLQuery.prototype.orderBy = function (args) {
         return this._addCmd("orderby", args);

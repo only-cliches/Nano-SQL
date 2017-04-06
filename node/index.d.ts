@@ -68,7 +68,7 @@ export declare class NanoSQLInstance {
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     private _doAV(AVType, AVList, AVName, AVargs);
     newFunction(functionName: string, functionType: "aggregate" | "simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance;
-    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe" | "select-range", args?: any): _NanoSQLQuery;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
     triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;
     default(replaceObj?: any): {
         [key: string]: any;
@@ -98,6 +98,7 @@ export declare class _NanoSQLQuery {
     _AV: string;
     constructor(table: string, db: NanoSQLInstance, actionOrView?: string);
     where(args: Array<any | Array<any>>): _NanoSQLQuery;
+    range(limit: number, offset: number): _NanoSQLQuery;
     orderBy(args: {
         [key: string]: "asc" | "desc";
     }): _NanoSQLQuery;
