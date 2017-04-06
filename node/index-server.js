@@ -1,3 +1,4 @@
+Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 exports._assign = index_1._assign;
 exports.NanoSQLInstance = index_1.NanoSQLInstance;

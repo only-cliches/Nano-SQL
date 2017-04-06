@@ -2,15 +2,23 @@
 
 ## TODO
 Recent benchmarks with LevelDB on a low end laptop:
-Write: ~10 records/second.  Way too slow, there are read before writes for the history taking place, that needs to be streamlined especially if history is disabled and a transaction is taking place.
-Read: ~100 records/ms.  This is acceptable for now, will be prioritizing write speed in subsequent releases.
+Write: ~10 records/ms 
+Read: ~100 records/ms
 - Test and improve performance of LevelDB on the server.
 - Transactions aren't working as consistently as I'd like with history.
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
+- Add BTrees with `props:["trie"]` and `.extend("search",args)`.
 - Write LevelDB Cordova plugin.
+- Finish secondary indexe support by adding `props: ["idx"]` to a data model, when a secondary index or primary key is used in a where statement the data will be retrieved much faster.
 
-## [0.7.0] 
+## [0.7.1] 4-6-2017
+- Implimented a new TS style array api for data models, the old style is kept around to prevent breaking changes but moving forward types of `array` should become `any[]`.  You can also typecast the array like `bool[]` and even nest the arrays like `string[][]`.
+- Added new `any` type for data models, can be used with array type casting as well with `any` and `any[]`.
+- Switched to setImmediate in NodeJS, write speed is now 8 records/ms, 800 times faster.
+- Disabled history/event triggering for transactions to increase transaction speed.
+
+## [0.7.0] 4-3-2017
 - Added `uuid` interface.
 - Fixed issue with existing indexes not being imported when memory: false and persistent: true.
 - Removed code that added history meta for every row, even if history is disabled.

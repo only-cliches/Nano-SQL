@@ -52,6 +52,7 @@ export declare class NanoSQLInstance {
     _hasEvents: StdObject<boolean>;
     private _functions;
     _AVMod: IActionViewMod;
+    doingTransaction: boolean;
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(backend?: NanoSQLBackend): Promise<Object | string>;

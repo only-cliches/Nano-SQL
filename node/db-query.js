@@ -1,3 +1,4 @@
+Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 var db_index_1 = require("./db-index");
 var minMax = function (type, row, args, ptr, prev) {
@@ -163,22 +164,28 @@ var _NanoSQLQuery = (function () {
         var tableData = t._db._store._tables[t._tableID];
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
-                var whereArgs = t._getMod("where").args;
-                whereArgs[1] = whereArgs[1].trim();
-                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN", "BETWEEN"].indexOf(whereArgs[1]) !== -1) {
-                    if (whereArgs[1] === "BETWEEN") {
-                        t._db._store._readRange(tableData._name, whereArgs[0], whereArgs[2], function (rows) {
+                var whereArgs_1 = t._getMod("where").args;
+                whereArgs_1[1] = whereArgs_1[1].trim();
+                var indexes = [tableData._pk].concat(Object.keys(tableData._secondaryIndexs));
+                if (typeof whereArgs_1[0] === "string" && indexes.indexOf(whereArgs_1[0].trim()) !== -1 && ["=", "IN", "BETWEEN"].indexOf(whereArgs_1[1]) !== -1) {
+                    if (whereArgs_1[1] === "BETWEEN") {
+                        t._db._store._readRange(tableData._name, whereArgs_1[0], whereArgs_1[2], function (rows) {
                             doQuery(rows);
                         });
                     }
                     else {
                         var rowPks_1 = [];
                         var rows_1 = [];
-                        if (whereArgs[1] === "=") {
-                            rowPks_1.push(whereArgs[2]);
+                        if (whereArgs_1[1] === "=") {
+                            rowPks_1.push(whereArgs_1[2]);
                         }
                         else {
-                            rowPks_1 = whereArgs[2];
+                            rowPks_1 = whereArgs_1[2];
+                        }
+                        if (whereArgs_1[0] !== tableData._pk) {
+                            rowPks_1 = rowPks_1.map(function (idx) {
+                                return tableData._secondaryIndexs[whereArgs_1[0]][idx];
+                            });
                         }
                         var i_1 = 0;
                         var getRow_1 = function () {
@@ -222,18 +229,39 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
         var table = t._db._store._tables[t._tableID];
+        var qArgs = t._act.args;
+        var updateType = (function () {
+            if (t._act) {
+                if (t._act.type === "delete" && !qArgs.length) {
+                    return "drop";
+                }
+            }
+            return t._act ? t._act.type : "";
+        })();
+        var writeChanges = function (newRow) {
+            if (updateType === "upsert") {
+                t._db._store._upsert(table._name, rowPK, newRow, function () {
+                    callBack();
+                });
+            }
+            else {
+                t._db._store._delete(table._name, rowPK, function () {
+                    callBack();
+                });
+            }
+        };
+        if (t._db._store._doingTransaction) {
+            if (updateType === "upsert") {
+                writeChanges(qArgs);
+            }
+            else {
+                writeChanges({});
+            }
+            return;
+        }
         t._db._store._read(table._name, rowPK, function (rows) {
             var newRow = {};
             var oldRow = rows[0] || {};
-            var qArgs = t._act.args;
-            var updateType = (function () {
-                if (t._act) {
-                    if (t._act.type === "delete" && !qArgs.length) {
-                        return "drop";
-                    }
-                }
-                return t._act ? t._act.type : "";
-            })();
             var doRemove = false;
             switch (updateType) {
                 case "upsert":
@@ -274,16 +302,7 @@ var _NanoSQLQuery = (function () {
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
                 }
-                if (updateType === "upsert") {
-                    t._db._store._upsert(table._name, rowPK, newRow, function () {
-                        callBack();
-                    });
-                }
-                else {
-                    t._db._store._delete(table._name, rowPK, function () {
-                        callBack();
-                    });
-                }
+                writeChanges(newRow);
             };
             var len = 0;
             if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
@@ -300,6 +319,10 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
         var _this = this;
         var t = this, k = 0, j = 0;
+        if (t._db._store._doingTransaction) {
+            callBack([], "trans", []);
+            return;
+        }
         if (updatedRowPKs.length > 0) {
             var completeChange_1 = function () {
                 if (t._db._store._doHistory) {
@@ -334,7 +357,7 @@ var _NanoSQLQuery = (function () {
                 }
             };
             if (t._db._store._doHistory) {
-                if (t._db._store._historyPoint > 0 && t._db._store._doingTransaction !== true) {
+                if (t._db._store._historyPoint > 0) {
                     t._db._store._read("_historyPoints", function (hp) {
                         if (hp.historyPoint > t._db._store._historyLength - t._db._store._historyPoint)
                             return true;

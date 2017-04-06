@@ -1,3 +1,4 @@
+Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 var lie_ts_1 = require("lie-ts");
 var db_storage_1 = require("./db-storage");

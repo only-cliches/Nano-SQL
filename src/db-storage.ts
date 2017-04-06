@@ -60,6 +60,11 @@ export class _NanoSQL_Storage {
             _name: string
             _incriment: number;
             _index: (string|number)[];
+            _secondaryIndexs: {
+                [rowKey: string]: {
+                    [rowValue: string]: string|number; // RowPK
+                }
+            }
             _keys: string[];
             _defaults: any[];
             _rows: {
@@ -324,7 +329,7 @@ export class _NanoSQL_Storage {
          * mode 4: Level Up // Used by NodeJS
          */
         if (t._persistent) {
-            
+
             if (t._mode !== 0) { // Mode has been set by dev, make sure it will work in our current environment.  If not, set mode to 0
                 switch (t._mode) {
                     case 1: if (typeof indexedDB === "undefined") t._mode = 0;
@@ -1016,6 +1021,7 @@ export class _NanoSQL_Storage {
             _pkType: "",
             _keys: [],
             _defaults: [],
+            _secondaryIndexs: {},
             _name: tableName,
             _incriment: 1,
             _index: [],
@@ -1033,6 +1039,9 @@ export class _NanoSQL_Storage {
             if (p.props && p.props.indexOf("pk") >= 0) {
                 t._tables[ta]._pk = p.key;
                 t._tables[ta]._pkType = p.type;
+            }
+            if (p.props && p.props.indexOf("idx") >= 0) {
+                t._tables[ta]._secondaryIndexs[p.key] = {};
             }
         }
 

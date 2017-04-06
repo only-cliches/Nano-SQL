@@ -275,6 +275,14 @@ export class NanoSQLInstance {
      */
     public _AVMod: IActionViewMod;
 
+    /**
+     * Flag to indicate if a transaction is in progress or not.
+     *
+     * @type {boolean}
+     * @memberOf NanoSQLInstance
+     */
+    public doingTransaction: boolean;
+
     constructor() {
         let t = this;
         t._actions = {};
@@ -561,15 +569,29 @@ export class NanoSQLInstance {
      */
     private _cast(type: string, val?: any): any {
         const t = typeof val;
-        let types: StdObject<any> = {
-            "string": t !== "string" ? String(val || "") : val,
-            "int": t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
-            "float": t !== "number" ? parseFloat(val || 0) : val,
-            "array": Array.isArray(val) ? _assign(val || []) : [],
-            "map": t === "object" ? _assign(val || {}) : {},
-            "bool": val === true
+        let types: object = {
+            string: t !== "string" ? String(val) : val,
+            int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
+            float: t !== "number" ? parseFloat(val || 0) : val,
+            array: Array.isArray(val) ? _assign(val || []) : [],
+            "any[]": Array.isArray(val) ? _assign(val || []) : [],
+            any: val,
+            blob: val,
+            map: t === "object" ? _assign(val || {}) : {},
+            bool: val === true
         };
-        return types[type] || val;
+        const newVal = types[type];
+        if (newVal !== undefined) {
+            return newVal;
+        } else {
+            if (type.indexOf("[]") !== -1) {
+                const arrayOf = type.slice(0, type.lastIndexOf("[]"));
+                return (val || []).map((v) => {
+                    return this._cast(arrayOf, v);
+                });
+            }
+        }
+        return val;
     }
 
 	/**
@@ -886,6 +908,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public beginTransaction() {
+        this.doingTransaction = true;
         if (this.backend._transaction) return this.backend._transaction("start");
     }
 
@@ -896,6 +919,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public endTransaction() {
+        this.doingTransaction = false;
         if (this.backend._transaction) return this.backend._transaction("end");
     }
 
@@ -1422,11 +1446,19 @@ export class _NanoSQLQuery {
                 query: [t._action].concat(t._modifiers),
                 viewOrAction: t._AV,
                 onSuccess: (rows, type, affectedRows) => {
-                    _tEvent(rows, res, type, affectedRows, false);
+                    if (t._db.doingTransaction) {
+                        res(rows, t._db);
+                    } else {
+                        _tEvent(rows, res, type, affectedRows, false);
+                    }
                 },
                 onFail: (err: any) => {
-                    t._db._triggerEvents = ["error"];
-                    if (rej) _tEvent(err, rej, "error", [], true);
+                    if (t._db.doingTransaction) {
+                        res(err, t._db);
+                    } else {
+                        t._db._triggerEvents = ["error"];
+                        if (rej) _tEvent(err, rej, "error", [], true);
+                    }
                 }
             };
 

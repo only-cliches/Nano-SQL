@@ -1,3 +1,4 @@
+Object.defineProperty(exports, "__esModule", { value: true });
 var _NanoSQLNullStore = (function () {
     function _NanoSQLNullStore() {
     }

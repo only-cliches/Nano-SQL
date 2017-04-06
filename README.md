@@ -16,19 +16,21 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 
 [Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
 
-## Features
+## Highlighted Features
 
-- Run in Node, IE8+ & modern browsers.
-- Persistence in any browser & nodejs.
+- **Easy `LevelDB` & `IndexedDB` support**.
+- Runs in Node, IE8+ & modern browsers.
 - Supports all common RDBMS queries.
 - Queries return immutable rows.
 - Import and Export CSV/JSON.
-- Simple & elegant undo/redo.
+- **Simple & elegant undo/redo**.
 - Full Typescript support.
-- Runtime type casting.
+- **Runtime type casting**.
+- Fast secondary indexes.
 - Transactions support.
 - Full events system.
 - Just 10Kb Gzipped.
+
 
 ### Oh Look, Another Data Store
 

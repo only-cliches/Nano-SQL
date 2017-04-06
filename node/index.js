@@ -1,3 +1,4 @@
+Object.defineProperty(exports, "__esModule", { value: true });
 var db_index_1 = require("./db-index");
 var lie_ts_1 = require("lie-ts");
 exports._assign = function (obj) {
@@ -138,16 +139,32 @@ var NanoSQLInstance = (function () {
         return a;
     };
     NanoSQLInstance.prototype._cast = function (type, val) {
+        var _this = this;
         var t = typeof val;
         var types = {
-            "string": t !== "string" ? String(val || "") : val,
-            "int": t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
-            "float": t !== "number" ? parseFloat(val || 0) : val,
-            "array": Array.isArray(val) ? exports._assign(val || []) : [],
-            "map": t === "object" ? exports._assign(val || {}) : {},
-            "bool": val === true
+            string: t !== "string" ? String(val) : val,
+            int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
+            float: t !== "number" ? parseFloat(val || 0) : val,
+            array: Array.isArray(val) ? exports._assign(val || []) : [],
+            "any[]": Array.isArray(val) ? exports._assign(val || []) : [],
+            any: val,
+            blob: val,
+            map: t === "object" ? exports._assign(val || {}) : {},
+            bool: val === true
         };
-        return types[type] || val;
+        var newVal = types[type];
+        if (newVal !== undefined) {
+            return newVal;
+        }
+        else {
+            if (type.indexOf("[]") !== -1) {
+                var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
+                return (val || []).map(function (v) {
+                    return _this._cast(arrayOf_1, v);
+                });
+            }
+        }
+        return val;
     };
     NanoSQLInstance.prototype.actions = function (actionArray) {
         return this._actions[this._selectedTable] = actionArray, this;
@@ -242,10 +259,12 @@ var NanoSQLInstance = (function () {
         return newObj;
     };
     NanoSQLInstance.prototype.beginTransaction = function () {
+        this.doingTransaction = true;
         if (this.backend._transaction)
             return this.backend._transaction("start");
     };
     NanoSQLInstance.prototype.endTransaction = function () {
+        this.doingTransaction = false;
         if (this.backend._transaction)
             return this.backend._transaction("end");
     };
@@ -492,12 +511,22 @@ var _NanoSQLQuery = (function () {
                 query: [t._action].concat(t._modifiers),
                 viewOrAction: t._AV,
                 onSuccess: function (rows, type, affectedRows) {
-                    _tEvent(rows, res, type, affectedRows, false);
+                    if (t._db.doingTransaction) {
+                        res(rows, t._db);
+                    }
+                    else {
+                        _tEvent(rows, res, type, affectedRows, false);
+                    }
                 },
                 onFail: function (err) {
-                    t._db._triggerEvents = ["error"];
-                    if (rej)
-                        _tEvent(err, rej, "error", [], true);
+                    if (t._db.doingTransaction) {
+                        res(err, t._db);
+                    }
+                    else {
+                        t._db._triggerEvents = ["error"];
+                        if (rej)
+                            _tEvent(err, rej, "error", [], true);
+                    }
                 }
             };
             if (t._db._queryMod) {

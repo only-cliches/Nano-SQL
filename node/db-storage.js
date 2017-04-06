@@ -1,3 +1,4 @@
+Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 var db_index_1 = require("./db-index");
 var db_query_1 = require("./db-query");
@@ -761,6 +762,7 @@ var _NanoSQL_Storage = (function () {
             _pkType: "",
             _keys: [],
             _defaults: [],
+            _secondaryIndexs: {},
             _name: tableName,
             _incriment: 1,
             _index: [],
@@ -776,6 +778,9 @@ var _NanoSQL_Storage = (function () {
             if (p.props && p.props.indexOf("pk") >= 0) {
                 t._tables[ta]._pk = p.key;
                 t._tables[ta]._pkType = p.type;
+            }
+            if (p.props && p.props.indexOf("idx") >= 0) {
+                t._tables[ta]._secondaryIndexs[p.key] = {};
             }
         }
         return tableName;

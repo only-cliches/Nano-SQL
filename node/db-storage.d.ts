@@ -18,6 +18,11 @@ export declare class _NanoSQL_Storage {
             _name: string;
             _incriment: number;
             _index: (string | number)[];
+            _secondaryIndexs: {
+                [rowKey: string]: {
+                    [rowValue: string]: string | number;
+                };
+            };
             _keys: string[];
             _defaults: any[];
             _rows: {

@@ -6,6 +6,68 @@
 </head>
 
 <body>
+    <button onclick="doWrite()">write</button>
+    <script>
+        function makeid() {
+            var text = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+            for (var i = 0; i < 10; i++)
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+            return text;
+        }
+
+        function doWrite() {
+            let db = new NanoSQLInstance();
+            db.table("users")
+                .model([{
+                    key: "id",
+                    type: "uuid",
+                    props: ["pk"]
+                }, {
+                    key: "name",
+                    type: "string"
+                }, {
+                    key: "pass",
+                    type: 'string'
+                }, {
+                    key: "email",
+                    type: "string"
+                }])
+                // .config({ memory: false, persistent: true, history: false })
+                .connect().then(() => {
+                    let i = 0;
+                    console.time("WRITE");
+                    db.table("users").beginTransaction();
+                    const step = () => {
+                        if (i < 100) {
+                            db.table("users")
+                                .query("upsert", {
+                                    name: makeid(),
+                                    pass: makeid(),
+                                    email: makeid()
+                                }).exec().then(() => {
+                                    i++;
+                                    if (i % 100 === 0) {
+                                        console.log(i);
+                                    }
+                                    step();
+                                })
+                        } else {
+                            db.table("users").endTransaction();
+                            console.timeEnd("WRITE");
+                        }
+                    }
+                    step();
+                    console.time("READ");
+                    db.table("users").query("select").exec().then((rows) => {
+                        console.timeEnd("READ");
+                        console.log(rows.length);
+                    })
+                });
+        }
+    </script>
     <script>
         /* This file used to run tests and play with the lib */
 
@@ -69,7 +131,7 @@
 
         nSQL('users') //Table/Store Name
             .queryFilter(function(query, complete) {
-                console.log(query);
+                // console.log(query);
                 complete(query);
             })
             .model([ //Data Model
@@ -91,7 +153,7 @@
                     default: 0.0
                 }, {
                     key: 'postIDs',
-                    type: 'array'
+                    type: 'string[]'
                 }, {
                     key: 'meta',
                     type: 'map',
@@ -132,7 +194,7 @@
                     }
                 }
             ]).avFilter(function(tableName, actionOrView, name, args, complete, error) {
-                console.log(actionOrView, name, args);
+                // console.log(actionOrView, name, args);
                 complete(args);
             })
         nSQL("orders").model([{
@@ -150,8 +212,8 @@
                 type: 'int'
             }])
             .config({
-                persistent: true,
-                memory: false
+                //persistent: true,
+                //memory: false
             })
             .connect().then(() => {
 
@@ -281,32 +343,35 @@
 
 
         /*
-                    //Possible ORM Api  
 
-                    nSQL("posts")
-                    .model([
-                        {key:'id',type:'int',props:['pk','ai']},
-                        {key:'title',type:'string'}
-                    ])
-                    nSQL("dog")
-                    .model([
-                        {key:'id',type:'int',props:['pk','ai']},
-                        {key:'name',type:'string'}
-                    ])
-                    nSQL("users")
-                    .model([
-                        {key:'id',type:'int,props:['pk','ai']},
-                        {key:'posts',type:'relation',props:['many::posts']}
-                        {key:'dog',type:'relation',props:['one::dog']}
-                    ])
-                    .connect()
-                   
+            // BTree/ Secondary indexs
+            .model([
+                {key: "id", type: "string", props: ["pk", "ai"]},
+                {key: "name", type: "string", props: ["idx"]}
+                {key: "email", type: "string", props: ["idx"]},
+                {key: "color", type: "string", props: ["trie"]}
+            ])
 
-                    possible new select syntax:
+            //Possible ORM Api  
+            nSQL("posts")
+            .model([
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'title',type:'string'}
+            ])
+            nSQL("dog")
+            .model([
+                {key:'id',type:'int',props:['pk','ai']},
+                {key:'name',type:'string'}
+            ])
+            nSQL("users")
+            .model([
+                {key:'id',type:'int,props:['pk','ai']},
+                {key:'posts',type:'posts[]'}
+                {key:'dog',type:'dog'}
+            ])
+            .connect()
 
-                    .query("select",["max(col1) as hello","col2"]).groupBy(["hello"])
-
-                    */
+            */
     </script>
     Everything is in the console, not much to see here just a scratchpad to test queries with.
 </body>

@@ -273,8 +273,10 @@ export class _NanoSQLQuery {
 
                 // Primary key optimization, if we're grabbing a value by it's pk we can skip the full table read
                 whereArgs[1] = whereArgs[1].trim();
-                if (typeof whereArgs[0] === "string" && whereArgs[0].trim() === tableData._pk && ["=", "IN", "BETWEEN"].indexOf(whereArgs[1]) !== -1) {
+                const indexes = [tableData._pk].concat(Object.keys(tableData._secondaryIndexs));
+                if (typeof whereArgs[0] === "string" && indexes.indexOf(whereArgs[0].trim()) !== -1 && ["=", "IN", "BETWEEN"].indexOf(whereArgs[1]) !== -1) {
 
+                    // if (whereArgs[1] === "BETWEEN" && whereArgs[0] === tableData._pk) {
                     if (whereArgs[1] === "BETWEEN") {
                         // Go straight to the desired range
                         t._db._store._readRange(tableData._name, whereArgs[0], whereArgs[2], (rows) => {
@@ -284,11 +286,31 @@ export class _NanoSQLQuery {
                         // Goes straight to the right row
                         let rowPks: any[] = [];
                         let rows: any[] = [];
-                        if (whereArgs[1] === "=") {
-                            rowPks.push(whereArgs[2]);
+/*
+                        if (whereArgs[1] === "BETWEEN") {
+                            // Secondary index range query optimization
+                            let rowPKS = Object.keys(tableData._secondaryIndexs[whereArgs[0]])
+                            .filter((k) => {
+                                return whereArgs[2][0] >= k && whereArgs[2][1] <= k;
+                            }).map((val) => {
+                                return tableData._secondaryIndexs[whereArgs[0]][val];
+                            });
                         } else {
-                            rowPks = whereArgs[2];
-                        }
+                            // If we're here, query is using IN or = and has a primary key or secondary index as it's search
+                            */
+                            if (whereArgs[1] === "=") {
+                                rowPks.push(whereArgs[2]);
+                            } else {
+                                rowPks = whereArgs[2];
+                            }
+
+                            if (whereArgs[0] !== tableData._pk) {
+                                rowPks = rowPks.map((idx) => {
+                                    return tableData._secondaryIndexs[whereArgs[0]][idx];
+                                });
+                            }
+                        // }
+
                         let i = 0;
                         const getRow = () => {
                             if (i < rowPks.length) {
@@ -339,20 +361,41 @@ export class _NanoSQLQuery {
 
         const t = this;
         const table = t._db._store._tables[t._tableID];
+        const qArgs = (t._act as QueryLine).args;
+
+        const updateType = ((): string => {
+            if (t._act) {
+                if (t._act.type === "delete" && !qArgs.length) {
+                    return "drop";
+                }
+            }
+            return t._act ? t._act.type : "";
+        })();
+
+        const writeChanges = (newRow: DBRow) => {
+            if (updateType === "upsert") {
+                t._db._store._upsert(table._name, rowPK, newRow, () => {
+                    callBack();
+                });
+            } else {
+                t._db._store._delete(table._name, rowPK, () => {
+                    callBack();
+                });
+            }
+        };
+
+        if (t._db._store._doingTransaction) {
+            if (updateType === "upsert") {
+                writeChanges(qArgs);
+            } else {
+                writeChanges({});
+            }
+            return;
+        }
 
         t._db._store._read(table._name, rowPK, (rows) => {
             let newRow = {};
             const oldRow = rows[0] || {};
-
-            const qArgs = (t._act as QueryLine).args;
-            const updateType = ((): string => {
-                if (t._act) {
-                    if (t._act.type === "delete" && !qArgs.length) {
-                        return "drop";
-                    }
-                }
-                return t._act ? t._act.type : "";
-            })();
 
             let doRemove = false;
 
@@ -405,15 +448,7 @@ export class _NanoSQLQuery {
 
                 // 3. Move new row data into place on the active table
                 // Apply changes to the store
-                if (updateType === "upsert") {
-                    t._db._store._upsert(table._name, rowPK, newRow, () => {
-                        callBack();
-                    });
-                } else {
-                    t._db._store._delete(table._name, rowPK, () => {
-                        callBack();
-                    });
-                }
+                writeChanges(newRow);
             };
 
             // Add to history
@@ -443,6 +478,11 @@ export class _NanoSQLQuery {
      */
     private _tableChanged(updatedRowPKs: string[], describe: string, callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
         let t = this, k = 0, j = 0;
+
+        if (t._db._store._doingTransaction) {
+            callBack([], "trans", []);
+            return;
+        }
 
         if (updatedRowPKs.length > 0) {
 
@@ -485,7 +525,7 @@ export class _NanoSQLQuery {
 
             if (t._db._store._doHistory) {
                 // Remove history points ahead of the current one if the database has changed
-                if (t._db._store._historyPoint > 0 && t._db._store._doingTransaction !== true) {
+                if (t._db._store._historyPoint > 0) {
 
                     t._db._store._read("_historyPoints", (hp: IHistoryPoint) => {
                         if (hp.historyPoint > t._db._store._historyLength - t._db._store._historyPoint) return true;
