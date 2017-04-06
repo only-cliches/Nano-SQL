@@ -1,4 +1,4 @@
-var nsql = require("../node/index-server.js").nSQL;
+var nsql = require("../node/index-server.js").NanoSQLInstance;
 
 function makeid() {
     var text = "";
@@ -10,6 +10,23 @@ function makeid() {
     return text;
 }
 
+function makRandom() {
+    let number = Math.floor(Math.random() * 1000);
+    return number.toString();
+}
+let r = [];
+const step = () => {
+    r.push(nsql.timeid(true));
+    if (r.length < 10) {
+        setTimeout(step, 500);
+    } else {
+        r = r.sort();
+        console.log(r);
+    }
+}
+step();
+
+/*
 nsql("users")
     .model([
         { key: "id", type: "uuid", props: ["pk"] },
@@ -47,4 +64,4 @@ nsql("users")
             console.timeEnd("READ");
             console.log(rows.length);
         })
-    });
+    });*/

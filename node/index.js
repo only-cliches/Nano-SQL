@@ -149,6 +149,8 @@ var NanoSQLInstance = (function () {
             "any[]": Array.isArray(val) ? exports._assign(val || []) : [],
             any: val,
             blob: val,
+            uudi: val,
+            timeId: val,
             map: t === "object" ? exports._assign(val || {}) : {},
             bool: val === true
         };
@@ -156,13 +158,11 @@ var NanoSQLInstance = (function () {
         if (newVal !== undefined) {
             return newVal;
         }
-        else {
-            if (type.indexOf("[]") !== -1) {
-                var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
-                return (val || []).map(function (v) {
-                    return _this._cast(arrayOf_1, v);
-                });
-            }
+        else if (type.indexOf("[]") !== -1) {
+            var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
+            return (val || []).map(function (v) {
+                return _this._cast(arrayOf_1, v);
+            });
         }
         return val;
     };
@@ -208,7 +208,7 @@ var NanoSQLInstance = (function () {
         var query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
         t._activeAV = undefined;
         var a = action.toLowerCase();
-        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
+        if (["select", "upsert", "delete", "drop", "show tables", "describe", "select-range"].indexOf(a) !== -1) {
             var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
             if (action === "upsert") {
                 var inputArgs_1 = {};
@@ -362,28 +362,40 @@ var NanoSQLInstance = (function () {
             });
         });
     };
-    NanoSQLInstance.uuid = function () {
-        var r, s, buf;
-        var random16Bits = function () {
-            if (typeof crypto === "undefined") {
-                return Math.round(Math.random() * Math.pow(2, 16));
+    NanoSQLInstance._random16Bits = function () {
+        if (typeof crypto === "undefined") {
+            return Math.round(Math.random() * Math.pow(2, 16));
+        }
+        else {
+            if (crypto.getRandomValues) {
+                var buf = new Uint16Array(1);
+                crypto.getRandomValues(buf);
+                return buf[0];
+            }
+            else if (global !== "undefined" && global._crypto.randomBytes) {
+                return global._crypto.randomBytes(2).reduce(function (prev, cur) { return cur * prev; });
             }
             else {
-                if (crypto.getRandomValues) {
-                    buf = new Uint16Array(1);
-                    crypto.getRandomValues(buf);
-                    return buf[0];
-                }
-                else if (global !== "undefined" && global._crypto.randomBytes) {
-                    return global._crypto.randomBytes(2).reduce(function (prev, cur) { return cur * prev; });
-                }
-                else {
-                    return Math.round(Math.random() * Math.pow(2, 16));
-                }
+                return Math.round(Math.random() * Math.pow(2, 16));
             }
-        }, b = "";
+        }
+    };
+    NanoSQLInstance.timeid = function (ms) {
+        var t = this;
+        if (!t._tzOffset) {
+            t._tzOffset = new Date().getTimezoneOffset() * 60000;
+        }
+        var time = Math.round((new Date().getTime() + t._tzOffset) / (ms ? 1 : 1000)).toString();
+        while (time.length < (ms ? 13 : 10)) {
+            time = "0" + time;
+        }
+        return time + "-" + (t._random16Bits() + t._random16Bits()).toString(16);
+    };
+    NanoSQLInstance.uuid = function () {
+        var _this = this;
+        var r, s, b = "";
         return [b, b, b, b, b, b, b, b, b].reduce(function (prev, cur, i) {
-            r = random16Bits();
+            r = _this._random16Bits();
             s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
             r = r.toString(16);
             while (r.length < 4)

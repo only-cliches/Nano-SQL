@@ -595,12 +595,26 @@ var _NanoSQL_Storage = (function () {
         }
     };
     _NanoSQL_Storage.prototype._readRange = function (tableName, key, between, callBack) {
+        var _this = this;
         var t = this;
         var ta = index_1.NanoSQLInstance._hash(tableName);
-        if ((t._storeMemory && t._tables[ta]) || t._mode === 2) {
-            this._read(tableName, function (row) {
-                return row[key] >= between[0] && row[key] <= between[1];
-            }, callBack);
+        if (t._mode === 0 || t._mode === 2) {
+            var startPtr_1 = t._tables[ta]._index.indexOf(between[0]);
+            var resultRows_1 = [];
+            var stepRead_1 = function () {
+                var pk = t._tables[ta]._index[startPtr_1];
+                if (pk <= between[1]) {
+                    _this._read(tableName, pk, function (rows) {
+                        resultRows_1 = resultRows_1.concat(rows);
+                        startPtr_1++;
+                        stepRead_1();
+                    });
+                }
+                else {
+                    callBack(resultRows_1);
+                }
+            };
+            stepRead_1();
             return;
         }
         var rows = [];

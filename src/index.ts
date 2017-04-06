@@ -283,6 +283,15 @@ export class NanoSQLInstance {
      */
     public doingTransaction: boolean;
 
+    /**
+     * The current timezone offset of this system.
+     * 
+     * @private
+     * @type {number}
+     * @memberOf NanoSQLInstance
+     */
+    private static _tzOffset: number;
+
     constructor() {
         let t = this;
         t._actions = {};
@@ -577,19 +586,19 @@ export class NanoSQLInstance {
             "any[]": Array.isArray(val) ? _assign(val || []) : [],
             any: val,
             blob: val,
+            uudi: val,
+            timeId: val,
             map: t === "object" ? _assign(val || {}) : {},
             bool: val === true
         };
         const newVal = types[type];
         if (newVal !== undefined) {
             return newVal;
-        } else {
-            if (type.indexOf("[]") !== -1) {
-                const arrayOf = type.slice(0, type.lastIndexOf("[]"));
-                return (val || []).map((v) => {
-                    return this._cast(arrayOf, v);
-                });
-            }
+        } else if (type.indexOf("[]") !== -1) {
+            const arrayOf = type.slice(0, type.lastIndexOf("[]"));
+            return (val || []).map((v) => {
+                return this._cast(arrayOf, v);
+            });
         }
         return val;
     }
@@ -808,13 +817,13 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any): _NanoSQLQuery {
+    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe"|"select-range", args?: any): _NanoSQLQuery {
 
         let t = this;
         let query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
         t._activeAV = undefined;
         const a = action.toLowerCase();
-        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
+        if (["select", "upsert", "delete", "drop", "show tables", "describe", "select-range"].indexOf(a) !== -1) {
 
             let newArgs = args || (a === "select" || a === "delete" ? [] : {});
 
@@ -1088,6 +1097,42 @@ export class NanoSQLInstance {
         });
     }
 
+    private static _random16Bits(): number {
+        if (typeof crypto === "undefined") {
+            return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
+        } else {
+            if (crypto.getRandomValues) { // Browser crypto
+                let buf = new Uint16Array(1);
+                crypto.getRandomValues(buf);
+                return buf[0];
+            } else if (global !== "undefined" && global._crypto.randomBytes) { // NodeJS crypto
+                return  global._crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
+            } else {
+                return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
+            }
+        }
+    }
+
+    /**
+     * Generate a unique, sortable time ID
+     * 
+     * @static
+     * @returns {string} 
+     * 
+     * @memberOf NanoSQLInstance
+     */
+    public static timeid(ms?: boolean): string {
+        let t = this;
+        if (!t._tzOffset) {
+            t._tzOffset = new Date().getTimezoneOffset() * 60000; // In milliseconds
+        }
+        let time = Math.round((new Date().getTime() + t._tzOffset) / (ms ? 1 : 1000)).toString();
+        while (time.length < (ms ? 13 : 10)) {
+            time = "0" + time;
+        }
+        return time + "-" +  (t._random16Bits() + t._random16Bits()).toString(16);
+    }
+
     /**
      * RFC4122 compliant UUID v4, 9 randomly generated 16 bit numbers.
      *
@@ -1097,25 +1142,9 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public static uuid(): string {
-        let r, s, buf;
-        const random16Bits = (): number => {
-            if (typeof crypto === "undefined") {
-                return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
-            } else {
-                if (crypto.getRandomValues) { // Browser crypto
-                    buf = new Uint16Array(1);
-                    crypto.getRandomValues(buf);
-                    return buf[0];
-                } else if (global !== "undefined" && global._crypto.randomBytes) { // NodeJS crypto
-                    return  global._crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
-                } else {
-                    return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
-                }
-            }
-        }, b = "";
-
+        let r, s, b = "";
         return [b, b, b, b, b, b, b, b, b].reduce((prev: string, cur: any, i: number): string => {
-            r = random16Bits();
+            r = this._random16Bits();
             s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
             r = r.toString(16);
             while (r.length < 4) r = "0" + r;

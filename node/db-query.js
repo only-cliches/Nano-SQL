@@ -99,9 +99,9 @@ var _NanoSQLQuery = (function () {
         t._act = undefined;
         var simpleQuery = [];
         query.query.forEach(function (q) {
-            if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
+            if (["upsert", "select", "delete", "drop", "select-range"].indexOf(q.type) >= 0) {
                 t._act = q;
-                if (q.type === "select")
+                if (q.type === "select" || q.type === "select-range")
                     t._queryHash = index_1.NanoSQLInstance._hash(JSON.stringify(query.query));
             }
             else if (["show tables", "describe"].indexOf(q.type) >= 0) {
@@ -154,6 +154,9 @@ var _NanoSQLQuery = (function () {
                     break;
                 case "select":
                     t._select(rows, callBack);
+                    break;
+                case "select-range":
+                    t._getRange(callBack);
                     break;
                 case "drop":
                 case "delete":
@@ -225,6 +228,16 @@ var _NanoSQLQuery = (function () {
         else {
             doQuery([]);
         }
+    };
+    _NanoSQLQuery.prototype._getRange = function (callBack) {
+        var t = this;
+        var qArgs = t._act.args;
+        var table = t._db._store._tables[t._tableID];
+        var startIndex = table._index[qArgs[1] || 0];
+        var endIndex = table._index[qArgs[0] + (qArgs[1] || 0) - 1];
+        t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], function (rows) {
+            callBack(rows, "none", []);
+        });
     };
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
@@ -319,6 +332,9 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
         var _this = this;
         var t = this, k = 0, j = 0;
+        if (t._db._store._tables[t._tableID]._pk !== "int") {
+            t._db._store._tables[t._tableID]._index = t._db._store._tables[t._tableID]._index.sort();
+        }
         if (t._db._store._doingTransaction) {
             callBack([], "trans", []);
             return;
@@ -444,11 +460,19 @@ var _NanoSQLQuery = (function () {
         else {
             scribe = "inserted";
             if (!qArgs[pk]) {
-                if (table._pkType === "int") {
-                    qArgs[pk] = table._incriment++;
-                }
-                else if (table._pkType === "uuid") {
-                    qArgs[pk] = index_1.NanoSQLInstance.uuid();
+                switch (table._pkType) {
+                    case "int":
+                        qArgs[pk] = table._incriment++;
+                        break;
+                    case "uuid":
+                        qArgs[pk] = index_1.NanoSQLInstance.uuid();
+                        break;
+                    case "timeId":
+                        qArgs[pk] = index_1.NanoSQLInstance.timeid();
+                        break;
+                    case "timeIdms":
+                        qArgs[pk] = index_1.NanoSQLInstance.timeid(true);
+                        break;
                 }
             }
             else {

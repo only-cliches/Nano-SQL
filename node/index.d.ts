@@ -53,6 +53,7 @@ export declare class NanoSQLInstance {
     private _functions;
     _AVMod: IActionViewMod;
     doingTransaction: boolean;
+    private static _tzOffset;
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(backend?: NanoSQLBackend): Promise<Object | string>;
@@ -67,7 +68,7 @@ export declare class NanoSQLInstance {
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     private _doAV(AVType, AVList, AVName, AVargs);
     newFunction(functionName: string, functionType: "aggregate" | "simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance;
-    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe" | "select-range", args?: any): _NanoSQLQuery;
     triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;
     default(replaceObj?: any): {
         [key: string]: any;
@@ -81,6 +82,8 @@ export declare class NanoSQLInstance {
     loadJS(table: string, rows: Array<Object>): Promise<Array<Object>>;
     rowFilter(callBack: (row: any) => any): this;
     loadCSV(table: string, csv: string): Promise<Array<Object>>;
+    private static _random16Bits();
+    static timeid(ms?: boolean): string;
     static uuid(): string;
 }
 export declare class _NanoSQLQuery {

@@ -12,6 +12,10 @@ Read: ~100 records/ms
 - Write LevelDB Cordova plugin.
 - Finish secondary indexe support by adding `props: ["idx"]` to a data model, when a secondary index or primary key is used in a where statement the data will be retrieved much faster.
 
+## [0.7.2] 4-6-2017
+- Added a new `select-range` query optimized for pagination style queries.
+- Added a new `timeId` and `timeIdms` types that generates a unique, random sortable id with 32 bits of randomness.
+
 ## [0.7.1] 4-6-2017
 - Implimented a new TS style array api for data models, the old style is kept around to prevent breaking changes but moving forward types of `array` should become `any[]`.  You can also typecast the array like `bool[]` and even nest the arrays like `string[][]`.
 - Added new `any` type for data models, can be used with array type casting as well with `any` and `any[]`.

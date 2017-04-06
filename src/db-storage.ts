@@ -833,16 +833,29 @@ export class _NanoSQL_Storage {
     public _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);
-        // Memory is faster, local storage cannot be optimized in this way.
-        if ((t._storeMemory && t._tables[ta]) || t._mode === 2 ) {
-            this._read(tableName, (row) => {
-                return row[key] >= between[0] && row[key] <= between[1];
-            }, callBack);
+        // Memory and local storage need their own optimization.
+        if (t._mode === 0 || t._mode === 2 ) {
+            let startPtr = t._tables[ta]._index.indexOf(between[0]);
+            let resultRows: DBRow[] = [];
+            const stepRead = () => {
+                let pk = t._tables[ta]._index[startPtr];
+                if (pk <= between[1]) {
+                    this._read(tableName, pk, (rows) => {
+                        resultRows = resultRows.concat(rows);
+                        startPtr++;
+                        stepRead();
+                    });
+                } else {
+                    callBack(resultRows);
+                }
+            }
+            stepRead();
             return;
         }
 
         let rows: any[] = [];
 
+        // Let other folks do the hard work for us.
         switch (t._mode) {
             case 1: // IndexedDB
                 const transaction = t._indexedDB.transaction(tableName, "readonly");

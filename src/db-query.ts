@@ -185,9 +185,9 @@ export class _NanoSQLQuery {
         let simpleQuery: QueryLine[] = [];
 
         query.query.forEach((q) => {
-            if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
+            if (["upsert", "select", "delete", "drop", "select-range"].indexOf(q.type) >= 0) {
                 t._act = q; // Query Action
-                if (q.type === "select") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query.query));
+                if (q.type === "select" || q.type === "select-range") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query.query));
             } else if (["show tables", "describe"].indexOf(q.type) >= 0) {
                 simpleQuery.push(q);
             } else {
@@ -257,6 +257,9 @@ export class _NanoSQLQuery {
                 break;
                 case "select":
                     t._select(rows, callBack);
+                break;
+                case "select-range":
+                    t._getRange(callBack);
                 break;
                 case "drop":
                 case "delete":
@@ -347,6 +350,17 @@ export class _NanoSQLQuery {
             doQuery([]);
         }
 
+    }
+
+    private _getRange(callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
+        let t = this;
+        const qArgs = (t._act as QueryLine).args;
+        const table = t._db._store._tables[t._tableID];
+        let startIndex = table._index[qArgs[1] || 0];
+        let endIndex = table._index[qArgs[0] + (qArgs[1] || 0) - 1];
+        t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], (rows) => {
+            callBack(rows, "none", []);
+        });
     }
 
     /**
@@ -478,6 +492,11 @@ export class _NanoSQLQuery {
      */
     private _tableChanged(updatedRowPKs: string[], describe: string, callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
         let t = this, k = 0, j = 0;
+
+        // Make sure the primary key index is sorted.
+        if (t._db._store._tables[t._tableID]._pk !== "int") {
+            t._db._store._tables[t._tableID]._index = t._db._store._tables[t._tableID]._index.sort();
+        }
 
         if (t._db._store._doingTransaction) {
             callBack([], "trans", []);
@@ -624,10 +643,19 @@ export class _NanoSQLQuery {
             scribe = "inserted";
 
             if (!qArgs[pk]) {
-                if (table._pkType === "int") {
-                    qArgs[pk] = table._incriment++;
-                } else if (table._pkType === "uuid") {
-                    qArgs[pk] = NanoSQLInstance.uuid();
+                switch(table._pkType) {
+                    case "int":
+                        qArgs[pk] = table._incriment++;
+                    break;
+                    case "uuid":
+                        qArgs[pk] = NanoSQLInstance.uuid();
+                    break;
+                    case "timeId":
+                        qArgs[pk] = NanoSQLInstance.timeid();
+                    break;
+                    case "timeIdms":
+                        qArgs[pk] = NanoSQLInstance.timeid(true);
+                    break;
                 }
             } else {
                 if (table._pkType === "int") {
