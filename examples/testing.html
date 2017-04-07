@@ -273,7 +273,7 @@
                         }
                     }])
                 ]).then(function() {
-                    nSQL("users").query("select").range(2, 0).exec().then((rows) => {
+                    nSQL("users").query("select").range(2, 1).exec().then((rows) => {
                         console.log("RANGE", rows);
                     })
                     nSQL("orders").query("select").where(["id", "BETWEEN", [1, 2]]).exec().then((rows) => {

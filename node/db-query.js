@@ -165,47 +165,102 @@ var _NanoSQLQuery = (function () {
         if (!t._getMod("join") && t._act.type !== "drop") {
             if (t._getMod("where")) {
                 var whereArgs_1 = t._getMod("where").args;
-                whereArgs_1[1] = whereArgs_1[1].trim();
-                var indexes = [tableData._pk].concat(Object.keys(tableData._secondaryIndexs));
-                if (typeof whereArgs_1[0] === "string" && indexes.indexOf(whereArgs_1[0].trim()) !== -1 && ["=", "IN", "BETWEEN"].indexOf(whereArgs_1[1]) !== -1) {
-                    if (whereArgs_1[1] === "BETWEEN") {
-                        t._db._store._readRange(tableData._name, whereArgs_1[0], whereArgs_1[2], function (rows) {
-                            doQuery(rows);
-                        });
+                var isOptimizedWhere_1 = function (wArgs) {
+                    if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) !== -1) {
+                        if (wArgs[0] === tableData._pk) {
+                            return 0;
+                        }
+                        else if (tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1) {
+                            return 0;
+                        }
                     }
                     else {
-                        var rowPks_1 = [];
-                        var rows_1 = [];
-                        if (whereArgs_1[1] === "=") {
-                            rowPks_1.push(whereArgs_1[2]);
-                        }
-                        else {
-                            rowPks_1 = whereArgs_1[2];
-                        }
-                        if (whereArgs_1[0] !== tableData._pk) {
-                            rowPks_1 = rowPks_1.map(function (idx) {
-                                return tableData._secondaryIndexs[whereArgs_1[0]][idx];
+                        return 1;
+                    }
+                    return 1;
+                };
+                var doFastWhere_1 = function (wArgs, callBack) {
+                    var tableName = wArgs[0] === tableData._pk ? tableData._name : "_" + tableData._name + "_idx_" + wArgs[0];
+                    switch (wArgs[1]) {
+                        case "=":
+                            t._db._store._read(tableName, wArgs[2], function (rows) {
+                                callBack(rows);
                             });
-                        }
-                        var i_1 = 0;
-                        var getRow_1 = function () {
-                            if (i_1 < rowPks_1.length) {
-                                t._db._store._read(tableData._name, rowPks_1[i_1], function (result) {
-                                    rows_1 = rows_1.concat(result);
-                                    i_1++;
-                                    getRow_1();
-                                });
+                            break;
+                        case "IN":
+                            var ptr_1 = 0;
+                            var resultRows_1 = [];
+                            var step_1 = function () {
+                                if (ptr_1 < wArgs[2].length) {
+                                    t._db._store._read(tableName, wArgs[2][ptr_1], function (rows) {
+                                        resultRows_1 = resultRows_1.concat(rows);
+                                        ptr_1++;
+                                        step_1();
+                                    });
+                                }
+                                else {
+                                    callBack(resultRows_1);
+                                }
+                            };
+                            step_1();
+                            break;
+                        case "BETWEEN":
+                            t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
+                            break;
+                    }
+                };
+                var doFastRead = false;
+                if (typeof whereArgs_1[0] === "string") {
+                    doFastRead = isOptimizedWhere_1(whereArgs_1) === 0;
+                }
+                else {
+                    doFastRead = whereArgs_1.reduce(function (prev, cur, i) {
+                        if (i % 2 === 1)
+                            return prev;
+                        return prev + isOptimizedWhere_1(cur);
+                    }, 0) === 0;
+                }
+                if (doFastRead) {
+                    if (typeof whereArgs_1[0] === "string") {
+                        doFastWhere_1(whereArgs_1, doQuery);
+                    }
+                    else {
+                        var resultRows_2 = [];
+                        var ptr_2 = 0;
+                        var lastCommand_1 = "";
+                        var nextWhere_1 = function () {
+                            if (ptr_2 < whereArgs_1.length) {
+                                if (ptr_2 % 2 === 1) {
+                                    lastCommand_1 = whereArgs_1[ptr_2];
+                                    ptr_2++;
+                                    nextWhere_1();
+                                }
+                                else {
+                                    doFastWhere_1(whereArgs_1[ptr_2], function (rows) {
+                                        if (lastCommand_1 === "AND") {
+                                            var idx_1 = rows.map(function (r) { return r[tableData._pk]; });
+                                            resultRows_2 = resultRows_2.filter(function (row) {
+                                                return idx_1.indexOf(row[tableData._pk]) !== -1;
+                                            });
+                                        }
+                                        else {
+                                            resultRows_2 = resultRows_2.concat(rows);
+                                        }
+                                        ptr_2++;
+                                        nextWhere_1();
+                                    });
+                                }
                             }
                             else {
-                                doQuery(rows_1);
+                                doQuery(resultRows_2);
                             }
                         };
-                        getRow_1();
+                        nextWhere_1();
                     }
                 }
                 else {
                     t._db._store._read(tableData._name, function (row) {
-                        return row && t._where(row, t._getMod("where").args);
+                        return row && t._where(row, whereArgs_1);
                     }, function (rows) {
                         doQuery(rows);
                     });
@@ -253,11 +308,24 @@ var _NanoSQLQuery = (function () {
         })();
         var writeChanges = function (newRow) {
             if (updateType === "upsert") {
+                if (table._name.indexOf("_") !== 0) {
+                    table._secondaryIndexes.forEach(function (key) {
+                        t._db._store._upsert("_" + table._name + "_idx_" + key, newRow[key], {
+                            id: newRow[key],
+                            rowPK: rowPK
+                        }, function () { });
+                    });
+                }
                 t._db._store._upsert(table._name, rowPK, newRow, function () {
                     callBack();
                 });
             }
             else {
+                if (table._name.indexOf("_") !== 0) {
+                    table._secondaryIndexes.forEach(function (key) {
+                        t._db._store._delete("_" + table._name + "_idx_" + key, newRow[key], function () { });
+                    });
+                }
                 t._db._store._delete(table._name, rowPK, function () {
                     callBack();
                 });
@@ -332,9 +400,6 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
         var _this = this;
         var t = this, k = 0, j = 0;
-        if (t._db._store._tables[t._tableID]._pk !== "int") {
-            t._db._store._tables[t._tableID]._index = t._db._store._tables[t._tableID]._index.sort();
-        }
         if (t._db._store._doingTransaction) {
             callBack([], "trans", []);
             return;
@@ -435,7 +500,6 @@ var _NanoSQLQuery = (function () {
             callBack([{ msg: "0 rows " + describe }], describe, []);
         }
     };
-    ;
     _NanoSQLQuery.prototype._upsert = function (queryRows, callBack) {
         var t = this;
         var scribe = "", i, changedPKs = [];
@@ -555,7 +619,7 @@ var _NanoSQLQuery = (function () {
                             type: exports._functions[funcName].type
                         };
                     });
-                    var rows_2 = [];
+                    var rows_1 = [];
                     if (functions_1.length) {
                         var prevFunc_1;
                         var doFunctions_1 = function (rows) {
@@ -591,24 +655,24 @@ var _NanoSQLQuery = (function () {
                         };
                         var groupKeys = Object.keys(groups);
                         if (groupKeys.length) {
-                            rows_2 = groupKeys
+                            rows_1 = groupKeys
                                 .map(function (k) { return prevFunc_1 = null, doFunctions_1(groups[k]); })
                                 .reduce(function (prev, curr) {
                                 return prev = prev.concat(curr), prev;
                             }, []);
                         }
                         else {
-                            rows_2 = doFunctions_1(tableIndex);
+                            rows_1 = doFunctions_1(tableIndex);
                         }
                     }
                     else {
-                        rows_2 = tableIndex;
+                        rows_1 = tableIndex;
                     }
                     var convertKeys_1 = keepColumns_1.map(function (n) {
                         return n.match(/(.*)\sAS\s(.*)/) || n;
                     }).filter(function (n) { return n; }) || [];
                     if (convertKeys_1.length) {
-                        rows_2 = rows_2.map(function (r) {
+                        rows_1 = rows_1.map(function (r) {
                             r = index_1._assign(r);
                             var newRow = {};
                             convertKeys_1.forEach(function (key) {
@@ -622,7 +686,7 @@ var _NanoSQLQuery = (function () {
                             return newRow;
                         });
                     }
-                    tableIndex = rows_2;
+                    tableIndex = rows_1;
                 }
             }
             if (!curMod)

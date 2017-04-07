@@ -31,6 +31,11 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Full events system.
 - Just 11Kb Gzipped.
 
+## New Features
+- Secondary indexes are now supported by putting `props: ["idx"]` in the data model.  Secondary indexes will slow down the write speed the more you have.
+- You can force all secondary indexes to build/rebuild by passing `rebuildIndexes: true` into the `.config()` object.
+- You can fast select a range for instant pagination queries with the new `.range(offset, limit)`.  This can be hundreds of times faster than using `.offset(x).limit(x)` but prevents you from using `.where()` statements.
+- There are two new data types for your primary keys, `timeId` and `timeIdms`.  They allow rows to be sorted by insert date easily.
 
 ### Oh Look, Another Data Store
 

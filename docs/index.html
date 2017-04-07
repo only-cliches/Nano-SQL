@@ -89,6 +89,13 @@
 					<li>Full events system.</li>
 					<li>Just 11Kb Gzipped.</li>
 				</ul>
+				<h2 id="new-features">New Features</h2>
+				<ul>
+					<li>Secondary indexes are now supported by putting <code>props: [&quot;idx&quot;]</code> in the data model.  Secondary indexes will slow down the write speed the more you have.</li>
+					<li>You can force all secondary indexes to build/rebuild by passing <code>rebuildIndexes: true</code> into the <code>.config()</code> object.</li>
+					<li>You can fast select a range for instant pagination queries with the new <code>.range(offset, limit)</code>.  This can be hundreds of times faster than using <code>.offset(x).limit(x)</code> but prevents you from using <code>.where()</code> statements.</li>
+					<li>There are two new data types for your primary keys, <code>timeId</code> and <code>timeIdms</code>.  They allow rows to be sorted by insert date easily.</li>
+				</ul>
 				<h3 id="oh-look-another-data-store">Oh Look, Another Data Store</h3>
 				<p>I spent a long time looking for an existing solution that would do everything I needed and couldn&#39;t find one, here&#39;s some of the other data stores I looked into and why I didn&#39;t end up using them:</p>
 				<table>

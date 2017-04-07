@@ -271,74 +271,112 @@ export class _NanoSQLQuery {
             if (t._getMod("where")) {
                 const whereArgs = (t._getMod("where") as QueryLine).args;
 
-                // Primary key optimization, if we're grabbing a value by it's pk we can skip the full table read
-                whereArgs[1] = whereArgs[1].trim();
-                const indexes = [tableData._pk].concat(Object.keys(tableData._secondaryIndexs));
-                if (typeof whereArgs[0] === "string" && indexes.indexOf(whereArgs[0].trim()) !== -1 && ["=", "IN", "BETWEEN"].indexOf(whereArgs[1]) !== -1) {
-
-                    // if (whereArgs[1] === "BETWEEN" && whereArgs[0] === tableData._pk) {
-                    if (whereArgs[1] === "BETWEEN") {
-                        // Go straight to the desired range
-                        t._db._store._readRange(tableData._name, whereArgs[0], whereArgs[2], (rows) => {
-                            doQuery(rows);
-                        });
+                // Checks if this WHERE statement can be optimized with primary keys or secondary indexes
+                const isOptimizedWhere = (wArgs: any[]): number => {
+                    if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) !== -1) {
+                        if (wArgs[0] === tableData._pk) {
+                            return 0;
+                        } else if (tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1) {
+                            return 0;
+                        }
                     } else {
-                        // Goes straight to the right row
-                        let rowPks: any[] = [];
-                        let rows: any[] = [];
-/*
-                        if (whereArgs[1] === "BETWEEN") {
-                            // Secondary index range query optimization
-                            let rowPKS = Object.keys(tableData._secondaryIndexs[whereArgs[0]])
-                            .filter((k) => {
-                                return whereArgs[2][0] >= k && whereArgs[2][1] <= k;
-                            }).map((val) => {
-                                return tableData._secondaryIndexs[whereArgs[0]][val];
-                            });
-                        } else {
-                            // If we're here, query is using IN or = and has a primary key or secondary index as it's search
-                            */
-                            if (whereArgs[1] === "=") {
-                                rowPks.push(whereArgs[2]);
-                            } else {
-                                rowPks = whereArgs[2];
-                            }
-
-                            if (whereArgs[0] !== tableData._pk) {
-                                rowPks = rowPks.map((idx) => {
-                                    return tableData._secondaryIndexs[whereArgs[0]][idx];
-                                });
-                            }
-                        // }
-
-                        let i = 0;
-                        const getRow = () => {
-                            if (i < rowPks.length) {
-                                t._db._store._read(tableData._name, rowPks[i], (result) => {
-                                    rows = rows.concat(result);
-                                    i++;
-                                    getRow();
-                                });
-                            } else {
-                                doQuery(rows);
-                            }
-                        };
-                        getRow();
+                        return 1;
                     }
+                    return 1;
+                };
 
-                } else {
-                    // Full table scan
+                // Performs a fast read of the desired data using primary key or secondary indexes
+                const doFastWhere = (wArgs: any[], callBack: (rows: DBRow[]) => void) => {
+                    // If PK then get directly from table, if secondary index then get from secondary index table
+                    let tableName = wArgs[0] === tableData._pk ? tableData._name : "_" + tableData._name + "_idx_" + wArgs[0];
+
+                    switch (wArgs[1]) {
+                        case "=":
+                            t._db._store._read(tableName, wArgs[2], (rows) => {
+                                callBack(rows);
+                            });
+                        break;
+                        case "IN":
+                            let ptr = 0;
+                            let resultRows:DBRow[] = [];
+                            const step = () => {
+                                if (ptr < wArgs[2].length) {
+                                    t._db._store._read(tableName, wArgs[2][ptr], (rows) => {
+                                        resultRows = resultRows.concat(rows);
+                                        ptr++;
+                                        step();
+                                    });
+                                } else {
+                                    callBack(resultRows);
+                                }
+                            };
+                            step();
+                        break;
+                        case "BETWEEN":
+                            t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
+                        break;
+                    }
+                }
+
+                let doFastRead = false;
+                if (typeof whereArgs[0] === "string") { // Single WHERE
+                    doFastRead = isOptimizedWhere(whereArgs) === 0;
+                } else { // combined where statements
+                    doFastRead = whereArgs.reduce((prev, cur, i) => {
+                        if (i % 2 === 1) return prev;
+                        return prev + isOptimizedWhere(cur);
+                    }, 0) === 0;
+                }
+
+                if (doFastRead) { // Optimized read path
+                    if (typeof whereArgs[0] === "string") { // Single WHERE
+                        doFastWhere(whereArgs, doQuery);
+                    } else { // combined where statements
+                        let resultRows: DBRow[] = [];
+                        let ptr = 0;
+                        let lastCommand = "";
+                        const nextWhere = () => {
+                            if (ptr < whereArgs.length) {
+                                if (ptr % 2 === 1) {
+                                    lastCommand = whereArgs[ptr];
+                                    ptr++;
+                                    nextWhere();
+                                } else {
+                                    doFastWhere(whereArgs[ptr], (rows) => {
+                                        if (lastCommand === "AND") {
+                                            let idx = rows.map((r) => r[tableData._pk]);
+                                            resultRows = resultRows.filter((row) => {
+                                                return idx.indexOf(row[tableData._pk]) !== -1;
+                                            });
+                                        } else {
+                                            resultRows = resultRows.concat(rows);
+                                        }
+                                        ptr++;
+                                        nextWhere();
+                                    });
+                                }
+                            } else {
+                                doQuery(resultRows);
+                            }
+                        }
+                        nextWhere();
+                    }
+                } else { // Full table scan
                     t._db._store._read(tableData._name, (row) => {
-                        return row && t._where(row, (t._getMod("where") as QueryLine).args);
+                        return row && t._where(row, whereArgs);
                     }, (rows) => {
                         doQuery(rows);
                     });
                 }
-            } else if (t._getMod("range")) {
+
+            } else if (t._getMod("range")) { // Range modifier
+
                 const rangeArgs = (t._getMod("range") as QueryLine).args;
                 t._getRange(rangeArgs[0], rangeArgs[1], doQuery);
+
             } else {
-                if (t._act.type !== "upsert") {
+
+                if (t._act.type !== "upsert") { // in all other cases, just get all rows
                     t._db._store._read(tableData._name, "all", (rows) => {
                         doQuery(rows);
                     });
@@ -352,6 +390,16 @@ export class _NanoSQLQuery {
 
     }
 
+    /**
+     * Get a specific range of rows from the database.
+     *
+     * @private
+     * @param {number} limit
+     * @param {number} offset
+     * @param {(rows: DBRow[]) => void} callBack
+     *
+     * @memberOf _NanoSQLQuery
+     */
     private _getRange(limit: number, offset: number, callBack: (rows: DBRow[]) => void): void {
         let t = this;
         const table = t._db._store._tables[t._tableID];
@@ -387,10 +435,27 @@ export class _NanoSQLQuery {
 
         const writeChanges = (newRow: DBRow) => {
             if (updateType === "upsert") {
+                // Update secondary indexes
+                if (table._name.indexOf("_") !== 0) {
+                    table._secondaryIndexes.forEach((key) => {
+                        t._db._store._upsert("_" + table._name + "_idx_" + key, newRow[key], {
+                            id: newRow[key],
+                            rowPK: rowPK
+                        }, () => {});
+                    });
+                }
+                // Update actual row
                 t._db._store._upsert(table._name, rowPK, newRow, () => {
                     callBack();
                 });
             } else {
+                if (table._name.indexOf("_") !== 0) {
+                    // Clear out secondary index
+                    table._secondaryIndexes.forEach((key) => {
+                        t._db._store._delete("_" + table._name + "_idx_" + key, newRow[key], () => {});
+                    });
+                }
+                // Update actual row data
                 t._db._store._delete(table._name, rowPK, () => {
                     callBack();
                 });
@@ -491,11 +556,6 @@ export class _NanoSQLQuery {
      */
     private _tableChanged(updatedRowPKs: string[], describe: string, callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
         let t = this, k = 0, j = 0;
-
-        // Make sure the primary key index is sorted.
-        if (t._db._store._tables[t._tableID]._pk !== "int") {
-            t._db._store._tables[t._tableID]._index = t._db._store._tables[t._tableID]._index.sort();
-        }
 
         if (t._db._store._doingTransaction) {
             callBack([], "trans", []);
@@ -603,7 +663,7 @@ export class _NanoSQLQuery {
         } else {
             callBack([{msg: "0 rows " + describe}], describe, []);
         }
-    };
+    }
 
     /**
      * Add/modify records to a specific table based on query parameters.
@@ -642,7 +702,7 @@ export class _NanoSQLQuery {
             scribe = "inserted";
 
             if (!qArgs[pk]) {
-                switch(table._pkType) {
+                switch (table._pkType) {
                     case "int":
                         qArgs[pk] = table._incriment++;
                     break;

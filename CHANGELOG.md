@@ -10,7 +10,11 @@ Read: ~100 records/ms
 - Use the SQLite driver to write integration tests.
 - Add BTrees with `props:["trie"]` and `.extend("search",args)`.
 - Write LevelDB Cordova plugin.
-- Finish secondary indexe support by adding `props: ["idx"]` to a data model, when a secondary index or primary key is used in a where statement the data will be retrieved much faster.
+
+
+## [0.7.4] 4-6-2017
+- Finished secondary index support.  You can now add `props: ["idx"]` to a data model, when a secondary index or primary key is used in a where statement the data will be retrieved much faster.
+- Added `rebuildIndexes:true` config parameter.  When passed, the lib will rebuild all secondary indexes before finishing the `connect()` command.  This is mainly to let folks add secondary indexes to existing data models.
 
 ## [0.7.3] 4-6-2017
 - Added `range()` functionality to `join()` queries.
@@ -19,7 +23,7 @@ Read: ~100 records/ms
 - Added a new `.range()` query modifier optimized for pagination style queries.
 - Added a new `timeId` and `timeIdms` types that generates a unique, random sortable id with 32 bits of randomness.
 
-## [0.7.1] 4-6-2017
+## [0.7.1] 4-5-2017
 - Implimented a new TS style array api for data models, the old style is kept around to prevent breaking changes but moving forward types of `array` should become `any[]`.  You can also typecast the array like `bool[]` and even nest the arrays like `string[][]`.
 - Added new `any` type for data models, can be used with array type casting as well with `any` and `any[]`.
 - Switched to setImmediate in NodeJS, write speed is now 8 records/ms, 800 times faster.
