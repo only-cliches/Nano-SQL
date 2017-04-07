@@ -640,11 +640,15 @@ var _NanoSQLQuery = (function () {
                     var leftTableID = t._tableID;
                     var rightTableID = index_1.NanoSQLInstance._hash(curMod.args.table);
                     var where_1 = t._getMod("where");
+                    var range_1 = t._getMod("range");
                     t._join(curMod.args.type, leftTableID, rightTableID, joinConditions, function (joinedRows) {
                         if (where_1) {
                             next(joinedRows.filter(function (row) {
                                 return t._where(row, where_1.args);
                             }));
+                        }
+                        else if (range_1) {
+                            t._getRange(range_1.args[0], range_1.args[1], next);
                         }
                         else {
                             next(joinedRows);

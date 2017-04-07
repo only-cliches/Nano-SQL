@@ -864,12 +864,15 @@ export class _NanoSQLQuery {
                     let rightTableID = NanoSQLInstance._hash(curMod.args.table);
 
                     let where = t._getMod("where") as QueryLine;
+                    let range = t._getMod("range") as QueryLine;
 
                     t._join(curMod.args.type, leftTableID, rightTableID, joinConditions, (joinedRows) => {
                         if (where) {
                             next(joinedRows.filter((row: DBRow) => {
                                 return t._where(row, where.args);
                             }));
+                        } else if (range) {
+                            t._getRange(range.args[0], range.args[1], next);
                         } else {
                             next(joinedRows);
                         }

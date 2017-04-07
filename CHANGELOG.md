@@ -12,6 +12,9 @@ Read: ~100 records/ms
 - Write LevelDB Cordova plugin.
 - Finish secondary indexe support by adding `props: ["idx"]` to a data model, when a secondary index or primary key is used in a where statement the data will be retrieved much faster.
 
+## [0.7.3] 4-6-2017
+- Added `range()` functionality to `join()` queries.
+
 ## [0.7.21] 4-6-2017
 - Added a new `.range()` query modifier optimized for pagination style queries.
 - Added a new `timeId` and `timeIdms` types that generates a unique, random sortable id with 32 bits of randomness.
