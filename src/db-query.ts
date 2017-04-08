@@ -233,7 +233,7 @@ export class _NanoSQLQuery {
      */
     private _getMod(name: string): QueryLine|undefined {
         return this._mod.filter((v) => v.type === name).pop();
-    };
+    }
 
 
     /**
@@ -298,7 +298,7 @@ export class _NanoSQLQuery {
                         break;
                         case "IN":
                             let ptr = 0;
-                            let resultRows:DBRow[] = [];
+                            let resultRows: DBRow[] = [];
                             const step = () => {
                                 if (ptr < wArgs[2].length) {
                                     t._db._store._read(tableName, wArgs[2][ptr], (rows) => {
@@ -316,7 +316,7 @@ export class _NanoSQLQuery {
                             t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
                         break;
                     }
-                }
+                };
 
                 let doFastRead = false;
                 if (typeof whereArgs[0] === "string") { // Single WHERE
@@ -358,7 +358,7 @@ export class _NanoSQLQuery {
                             } else {
                                 doQuery(resultRows);
                             }
-                        }
+                        };
                         nextWhere();
                     }
                 } else { // Full table scan
@@ -452,39 +452,63 @@ export class _NanoSQLQuery {
             return t._act ? t._act.type : "";
         })();
 
+        const updateSecondaryIndex = (newRow: DBRow, rem?: boolean) => {
+
+            if (table._name.indexOf("_") !== 0) {
+                let emptyColumns: string[] = [];
+
+                // Update secondary indexes
+                table._secondaryIndexes.forEach((key) => {
+                    const idxTable = "_" + table._name + "_idx_" + key;
+                    const rowID = String(newRow[key]).toLocaleLowerCase();
+                    t._db._store._read(idxTable, rowID, (rows) => {
+
+                        let indexedRows: any[] = [];
+                        if (rows.length &&  rows[0].rowPK) indexedRows = indexedRows.concat(rows[0].rowPK);
+                        if (!rem) indexedRows.push(newRow[table._pk]);
+                        indexedRows = indexedRows.filter((item, pos) => {
+                            return indexedRows.indexOf(item) === pos || !(rem && item === newRow[table._pk]);
+                        });
+
+                        if (indexedRows.length) {
+                            t._db._store._upsert(idxTable, rowID, {
+                                id: newRow[key],
+                                rowPK: indexedRows
+                            }, () => {});
+                        } else {
+                            emptyColumns.push(key);
+                            t._db._store._delete(idxTable, rowID);
+                        }
+
+                    }, true);
+                });
+
+
+                // Update tries
+                table._trieColumns.forEach((key) => {
+                    const word = String(newRow[key]).toLocaleLowerCase();
+                    if (emptyColumns.indexOf(key) !== -1) {
+                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
+                    } else {
+                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
+                    }
+                });
+            }
+        };
+
         const writeChanges = (newRow: DBRow) => {
             if (updateType === "upsert") {
 
-                if (table._name.indexOf("_") !== 0) {
-                    // Update secondary indexes
-                    table._secondaryIndexes.forEach((key) => {
-                        t._db._store._upsert("_" + table._name + "_idx_" + key, String(newRow[key]).toLocaleLowerCase(), {
-                            id: newRow[key],
-                            rowPK: rowPK
-                        }, () => {});
-                    });
-
-                    // Update tries
-                    table._trieColumns.forEach((key) => {
-                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(String(newRow[key]).toLocaleLowerCase());
-                    });
-                }
+                updateSecondaryIndex(newRow);
 
                 // Update actual row
                 t._db._store._upsert(table._name, rowPK, newRow, () => {
                     callBack();
                 });
             } else {
-                if (table._name.indexOf("_") !== 0) {
-                    // Clear out secondary index
-                    table._secondaryIndexes.forEach((key) => {
-                        t._db._store._delete("_" + table._name + "_idx_" + key, newRow[key], () => {});
-                    });
-                    // Remove trie values
-                    table._trieColumns.forEach((key) => {
-                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(newRow[key]);
-                    });
-                }
+
+                updateSecondaryIndex(newRow, true);
+
                 // Update actual row data
                 t._db._store._delete(table._name, rowPK, () => {
                     callBack();

@@ -160,15 +160,24 @@ var _NanoSQL_Storage = (function () {
                                     var ptr3_1 = 0;
                                     var step3_1 = function () {
                                         if (ptr3_1 < rebuildJob_1[tables_2[tablePTR_1]].length) {
-                                            var key = rebuildJob_1[tables_2[tablePTR_1]][ptr3_1];
-                                            var idxTbl = "_" + tables_2[tablePTR_1] + "_idx_" + key;
-                                            t._upsert(idxTbl, String(rows[rowPTR_1][key]).toLocaleLowerCase(), {
-                                                id: rows[rowPTR_1][key],
-                                                rowPK: rows[rowPTR_1][PK]
-                                            }, function () {
-                                                ptr3_1++;
-                                                step3_1();
-                                            });
+                                            var key_1 = rebuildJob_1[tables_2[tablePTR_1]][ptr3_1];
+                                            var idxTbl_1 = "_" + tables_2[tablePTR_1] + "_idx_" + key_1;
+                                            var rowKey_1 = String(rows[rowPTR_1][key_1]).toLocaleLowerCase();
+                                            t._read(idxTbl_1, rowKey_1, function (readRows) {
+                                                var indexedRows = [rows[rowPTR_1][PK]];
+                                                if (readRows.length && readRows[0].rowPK) {
+                                                    indexedRows = indexedRows.concat(readRows[0].rowPK).filter(function (item, pos) {
+                                                        return indexedRows.indexOf(item) === pos;
+                                                    });
+                                                }
+                                                t._upsert(idxTbl_1, rowKey_1, {
+                                                    id: rows[rowPTR_1][key_1],
+                                                    rowPK: indexedRows
+                                                }, function () {
+                                                    ptr3_1++;
+                                                    step3_1();
+                                                });
+                                            }, true);
                                         }
                                         else {
                                             rowPTR_1++;
@@ -707,19 +716,22 @@ var _NanoSQL_Storage = (function () {
                 break;
         }
     };
-    _NanoSQL_Storage.prototype._indexRead = function (tableName, rows, callBack) {
+    _NanoSQL_Storage.prototype._indexRead = function (tableName, rows, callBack, getIndex) {
         var _this = this;
         var isSecondIndex = tableName.indexOf("_") === 0 && tableName.indexOf("_idx_") !== -1;
-        var parentTable = !isSecondIndex ? "" : tableName.slice(1, tableName.indexOf("_idx_"));
-        if (!isSecondIndex) {
+        if (!isSecondIndex || getIndex) {
             callBack(rows);
         }
         else {
+            var parentTable_1 = !isSecondIndex ? "" : tableName.slice(1, tableName.indexOf("_idx_"));
+            var allRowIDs_1 = rows.reduce(function (prev, cur) {
+                return prev.concat(cur.rowPK);
+            }, []);
             var resultRows_1 = [];
             var ptr_2 = 0;
             var step_5 = function () {
-                if (ptr_2 < rows.length) {
-                    _this._read(parentTable, rows[ptr_2].rowPK, function (rows) {
+                if (ptr_2 < allRowIDs_1.length) {
+                    _this._read(parentTable_1, allRowIDs_1[ptr_2], function (rows) {
                         resultRows_1 = resultRows_1.concat(rows);
                         ptr_2++;
                         step_5();
@@ -787,7 +799,7 @@ var _NanoSQL_Storage = (function () {
                 break;
         }
     };
-    _NanoSQL_Storage.prototype._read = function (tableName, row, callBack) {
+    _NanoSQL_Storage.prototype._read = function (tableName, row, callBack, readIndex) {
         var _this = this;
         var t = this;
         var ta = index_1.NanoSQLInstance._hash(tableName);
@@ -797,14 +809,14 @@ var _NanoSQL_Storage = (function () {
                 if (row === "all" || typeof row === "function") {
                     var allRows = Object.keys(rows_1).map(function (r) { return rows_1[r]; });
                     if (row === "all") {
-                        this._indexRead(tableName, allRows.filter(function (r) { return r; }), callBack);
+                        this._indexRead(tableName, allRows.filter(function (r) { return r; }), callBack, readIndex);
                     }
                     else {
-                        this._indexRead(tableName, allRows.filter(function (r) { return row(r); }), callBack);
+                        this._indexRead(tableName, allRows.filter(function (r) { return row(r); }), callBack, readIndex);
                     }
                 }
                 else {
-                    this._indexRead(tableName, [rows_1[row]].filter(function (r) { return r; }), callBack);
+                    this._indexRead(tableName, [rows_1[row]].filter(function (r) { return r; }), callBack, readIndex);
                 }
                 break;
             case 1:
@@ -814,7 +826,7 @@ var _NanoSQL_Storage = (function () {
                     var cursorRequest = store.openCursor();
                     var rows_2 = [];
                     transaction.oncomplete = function () {
-                        _this._indexRead(tableName, rows_2, callBack);
+                        _this._indexRead(tableName, rows_2, callBack, readIndex);
                     };
                     cursorRequest.onsuccess = function (evt) {
                         var cursor = evt.target.result;
@@ -833,7 +845,7 @@ var _NanoSQL_Storage = (function () {
                 else {
                     var singleReq_1 = store.get(row);
                     singleReq_1.onsuccess = function (event) {
-                        _this._indexRead(tableName, [singleReq_1.result], callBack);
+                        _this._indexRead(tableName, [singleReq_1.result], callBack, readIndex);
                     };
                 }
                 break;
@@ -844,15 +856,15 @@ var _NanoSQL_Storage = (function () {
                         return item && item.length ? JSON.parse(item) : null;
                     });
                     if (row !== "all") {
-                        this._indexRead(tableName, rows_3.filter(function (r) { return row(r); }), callBack);
+                        this._indexRead(tableName, rows_3.filter(function (r) { return row(r); }), callBack, readIndex);
                     }
                     else {
-                        this._indexRead(tableName, rows_3, callBack);
+                        this._indexRead(tableName, rows_3, callBack, readIndex);
                     }
                 }
                 else {
                     var item = localStorage.getItem(tableName + "-" + row);
-                    this._indexRead(tableName, [item && item.length ? JSON.parse(item) : null], callBack);
+                    this._indexRead(tableName, [item && item.length ? JSON.parse(item) : null], callBack, readIndex);
                 }
                 break;
             case 4:
@@ -865,20 +877,20 @@ var _NanoSQL_Storage = (function () {
                     })
                         .on("end", function () {
                         if (row !== "all") {
-                            _this._indexRead(tableName, rows_4.filter(function (r) { return row(r); }), callBack);
+                            _this._indexRead(tableName, rows_4.filter(function (r) { return row(r); }), callBack, readIndex);
                         }
                         else {
-                            _this._indexRead(tableName, rows_4, callBack);
+                            _this._indexRead(tableName, rows_4, callBack, readIndex);
                         }
                     });
                 }
                 else {
                     t._levelDBs[tableName].get(row, function (err, data) {
                         if (err) {
-                            _this._indexRead(tableName, [], callBack);
+                            _this._indexRead(tableName, [], callBack, readIndex);
                         }
                         else {
-                            _this._indexRead(tableName, [JSON.parse(data)], callBack);
+                            _this._indexRead(tableName, [JSON.parse(data)], callBack, readIndex);
                         }
                     });
                 }

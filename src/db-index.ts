@@ -153,16 +153,17 @@ export class _NanoSQLDB implements NanoSQLBackend {
         return Object.freeze(obj);
     }
 
-    public _transaction(type: "start"|"end") {
+    public _transaction(type: "start"|"end"): boolean {
+        let t = this;
         if (type === "start") {
-            this._store._transactionData = {};
-            this._store._doingTransaction = true;
+            t._store._transactionData = {};
+            t._store._doingTransaction = true;
         };
         if (type === "end") {
-            this._store._doingTransaction = false;
-            this._store._execTransaction();
+            t._store._doingTransaction = false;
+            t._store._execTransaction();
         };
-        return !!this._store._doingTransaction;
+        return !!t._store._doingTransaction;
     }
 
     /**

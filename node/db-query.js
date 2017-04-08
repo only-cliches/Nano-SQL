@@ -140,7 +140,6 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._getMod = function (name) {
         return this._mod.filter(function (v) { return v.type === name; }).pop();
     };
-    ;
     _NanoSQLQuery.prototype._execQuery = function (callBack) {
         var t = this;
         if (!t._act)
@@ -326,32 +325,53 @@ var _NanoSQLQuery = (function () {
             }
             return t._act ? t._act.type : "";
         })();
+        var updateSecondaryIndex = function (newRow, rem) {
+            if (table._name.indexOf("_") !== 0) {
+                var emptyColumns_1 = [];
+                table._secondaryIndexes.forEach(function (key) {
+                    var idxTable = "_" + table._name + "_idx_" + key;
+                    var rowID = String(newRow[key]).toLocaleLowerCase();
+                    t._db._store._read(idxTable, rowID, function (rows) {
+                        var indexedRows = [];
+                        if (rows.length && rows[0].rowPK)
+                            indexedRows = indexedRows.concat(rows[0].rowPK);
+                        if (!rem)
+                            indexedRows.push(newRow[table._pk]);
+                        indexedRows = indexedRows.filter(function (item, pos) {
+                            return indexedRows.indexOf(item) === pos || !(rem && item === newRow[table._pk]);
+                        });
+                        if (indexedRows.length) {
+                            t._db._store._upsert(idxTable, rowID, {
+                                id: newRow[key],
+                                rowPK: indexedRows
+                            }, function () { });
+                        }
+                        else {
+                            emptyColumns_1.push(key);
+                            t._db._store._delete(idxTable, rowID);
+                        }
+                    }, true);
+                });
+                table._trieColumns.forEach(function (key) {
+                    var word = String(newRow[key]).toLocaleLowerCase();
+                    if (emptyColumns_1.indexOf(key) !== -1) {
+                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
+                    }
+                    else {
+                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
+                    }
+                });
+            }
+        };
         var writeChanges = function (newRow) {
             if (updateType === "upsert") {
-                if (table._name.indexOf("_") !== 0) {
-                    table._secondaryIndexes.forEach(function (key) {
-                        t._db._store._upsert("_" + table._name + "_idx_" + key, String(newRow[key]).toLocaleLowerCase(), {
-                            id: newRow[key],
-                            rowPK: rowPK
-                        }, function () { });
-                    });
-                    table._trieColumns.forEach(function (key) {
-                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(String(newRow[key]).toLocaleLowerCase());
-                    });
-                }
+                updateSecondaryIndex(newRow);
                 t._db._store._upsert(table._name, rowPK, newRow, function () {
                     callBack();
                 });
             }
             else {
-                if (table._name.indexOf("_") !== 0) {
-                    table._secondaryIndexes.forEach(function (key) {
-                        t._db._store._delete("_" + table._name + "_idx_" + key, newRow[key], function () { });
-                    });
-                    table._trieColumns.forEach(function (key) {
-                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(newRow[key]);
-                    });
-                }
+                updateSecondaryIndex(newRow, true);
                 t._db._store._delete(table._name, rowPK, function () {
                     callBack();
                 });

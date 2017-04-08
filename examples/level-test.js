@@ -18,7 +18,7 @@ nsql("users")
         { key: "pass", type: 'string' },
         { key: "email", type: "string" }
     ])
-    .config({ id: "testing", memory: false, rebuildIndexes: true, persistent: true, history: false })
+    .config({ id: "testing", memory: false, persistent: true, history: false })
     .connect().then(() => {
         let i = 0;
         console.time("WRITE");
@@ -48,15 +48,15 @@ nsql("users")
                 .query("upsert", {
                     name: "scott",
                     pass: "",
-                    email: "scott@clicksimply.com"
+                    email: "scott33@clicksimply.com"
                 }).exec()*/
         console.time("READ");
 
-        //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((
+        //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((rows) => {
 
-        nsql("users").query("select").trieSearch("name", "a").exec().then((rows) => {
+        nsql("users").query("select").trieSearch("name", "sco").exec().then((rows) => {
             console.timeEnd("READ");
-            console.log(rows.length);
+            console.log(rows);
         })
     });
 //}, 10000)

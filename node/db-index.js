@@ -51,17 +51,18 @@ var _NanoSQLDB = (function () {
         return Object.freeze(obj);
     };
     _NanoSQLDB.prototype._transaction = function (type) {
+        var t = this;
         if (type === "start") {
-            this._store._transactionData = {};
-            this._store._doingTransaction = true;
+            t._store._transactionData = {};
+            t._store._doingTransaction = true;
         }
         ;
         if (type === "end") {
-            this._store._doingTransaction = false;
-            this._store._execTransaction();
+            t._store._doingTransaction = false;
+            t._store._execTransaction();
         }
         ;
-        return !!this._store._doingTransaction;
+        return !!t._store._doingTransaction;
     };
     _NanoSQLDB.prototype._extend = function (db, command) {
         var t = this;

@@ -941,6 +941,20 @@ export class NanoSQLInstance {
      */
     public endTransaction() {
         this.doingTransaction = false;
+        Object.keys(this._models).forEach((table) => {
+            if(table.indexOf("_") !== 0) {
+                this.triggerEvent({
+                    table: table,
+                    query: [],
+                    time: new Date().getTime(),
+                    result: [],
+                    name: "change",
+                    actionOrView: "",
+                    changeType: "transaction",
+                    changedRows: []
+                }, ["change"]);
+            }
+        });
         if (this.backend._transaction) return this.backend._transaction("end");
     }
 

@@ -369,10 +369,10 @@ export class _NanoSQL_Storage {
                     } else {
                         args._onSuccess();
                     }
-                }
+                };
                 step();
             }
-        }
+        };
 
         // Rebuild secondary indexes
         const rebuildSecondaryIndexes = () => {
@@ -407,13 +407,24 @@ export class _NanoSQL_Storage {
                                         if (ptr3 < rebuildJob[tables[tablePTR]].length) {
                                             let key = rebuildJob[tables[tablePTR]][ptr3];
                                             let idxTbl = "_" + tables[tablePTR] + "_idx_" + key;
-                                                t._upsert(idxTbl, String(rows[rowPTR][key]).toLocaleLowerCase(), {
+                                            let rowKey = String(rows[rowPTR][key]).toLocaleLowerCase();
+                                            t._read(idxTbl, rowKey, (readRows) => {
+                                                let indexedRows: any[] = [rows[rowPTR][PK]];
+                                                if (readRows.length && readRows[0].rowPK) {
+                                                    indexedRows = indexedRows.concat(readRows[0].rowPK).filter((item, pos) => {
+                                                        return indexedRows.indexOf(item) === pos;
+                                                    });
+                                                }
+
+                                                t._upsert(idxTbl, rowKey, {
                                                     id: rows[rowPTR][key],
-                                                    rowPK: rows[rowPTR][PK]
+                                                    rowPK: indexedRows
                                                 }, () => {
                                                     ptr3++;
                                                     step3();
                                                 });
+                                            }, true);
+
                                         } else {
                                             rowPTR++;
                                             step2();
@@ -426,7 +437,6 @@ export class _NanoSQL_Storage {
                                 }
                             };
                             step2();
-                        
                         });
 
                     } else {
@@ -986,19 +996,25 @@ export class _NanoSQL_Storage {
 
     }
 
-    private _indexRead(tableName: string, rows: DBRow[], callBack: (rows: DBRow[]) => void): void {
-
+    private _indexRead(tableName: string, rows: DBRow[], callBack: (rows: DBRow[]) => void, getIndex?: boolean): void {
         const isSecondIndex = tableName.indexOf("_") === 0 && tableName.indexOf("_idx_") !== -1;
-        const parentTable = !isSecondIndex ? "" : tableName.slice(1, tableName.indexOf("_idx_"));
 
-        if (!isSecondIndex) {
+        if (!isSecondIndex || getIndex) {
             callBack(rows);
         } else {
+
+            const parentTable = !isSecondIndex ? "" : tableName.slice(1, tableName.indexOf("_idx_"));
+
+            const allRowIDs = rows.reduce((prev, cur) => {
+                return prev.concat(cur.rowPK);
+            }, []);
+            // console.log("SEC", rows, allRowIDs);
+
             let resultRows: DBRow[] = [];
             let ptr = 0;
             const step = () => {
-                if (ptr < rows.length) {
-                    this._read(parentTable, rows[ptr].rowPK, (rows) => {
+                if (ptr < allRowIDs.length) {
+                    this._read(parentTable, allRowIDs[ptr], (rows) => {
                         resultRows = resultRows.concat(rows);
                         ptr++;
                         step();
@@ -1071,7 +1087,7 @@ export class _NanoSQL_Storage {
         }
     }
 
-    public _read(tableName: string, row: string|number|Function, callBack: (rows: any[]) => void): void {
+    public _read(tableName: string, row: string|number|Function, callBack: (rows: any[]) => void, readIndex?: boolean): void {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);
 
@@ -1081,12 +1097,12 @@ export class _NanoSQL_Storage {
                 if (row === "all" || typeof row === "function") {
                     let allRows = Object.keys(rows).map(r => rows[r]);
                     if (row === "all") {
-                        this._indexRead(tableName, allRows.filter((r) => r) as DBRow[], callBack);
+                        this._indexRead(tableName, allRows.filter((r) => r) as DBRow[], callBack, readIndex);
                     } else {
-                        this._indexRead(tableName, allRows.filter((r) => row(r)) as DBRow[], callBack);
+                        this._indexRead(tableName, allRows.filter((r) => row(r)) as DBRow[], callBack, readIndex);
                     }
                 } else {
-                    this._indexRead(tableName, [rows[row]].filter((r) => r) as DBRow[], callBack);
+                    this._indexRead(tableName, [rows[row]].filter((r) => r) as DBRow[], callBack, readIndex);
                 }
             break;
             case 1: // IndexedDB
@@ -1096,7 +1112,7 @@ export class _NanoSQL_Storage {
                     let cursorRequest = store.openCursor();
                     let rows: any[] = [];
                     transaction.oncomplete = () => {
-                        this._indexRead(tableName, rows, callBack);
+                        this._indexRead(tableName, rows, callBack, readIndex);
                     };
 
                     cursorRequest.onsuccess = (evt: any) => {
@@ -1113,7 +1129,7 @@ export class _NanoSQL_Storage {
                 } else {
                     let singleReq = store.get(row);
                     singleReq.onsuccess = (event) => {
-                        this._indexRead(tableName, [singleReq.result], callBack);
+                        this._indexRead(tableName, [singleReq.result], callBack, readIndex);
                     };
                 }
             break;
@@ -1124,13 +1140,13 @@ export class _NanoSQL_Storage {
                         return item && item.length ? JSON.parse(item) : null;
                     });
                     if (row !== "all") {
-                        this._indexRead(tableName, rows.filter((r) => row(r)), callBack);
+                        this._indexRead(tableName, rows.filter((r) => row(r)), callBack, readIndex);
                     } else {
-                        this._indexRead(tableName, rows, callBack);
+                        this._indexRead(tableName, rows, callBack, readIndex);
                     }
                 } else {
                     let item = localStorage.getItem(tableName + "-" + row);
-                    this._indexRead(tableName, [item && item.length ? JSON.parse(item) : null], callBack);
+                    this._indexRead(tableName, [item && item.length ? JSON.parse(item) : null], callBack, readIndex);
                 }
             break;
 
@@ -1145,17 +1161,17 @@ export class _NanoSQL_Storage {
                     })
                     .on("end", () => {
                         if (row !== "all") {
-                            this._indexRead(tableName, rows.filter((r) => row(r)), callBack);
+                            this._indexRead(tableName, rows.filter((r) => row(r)), callBack, readIndex);
                         } else {
-                            this._indexRead(tableName, rows, callBack);
+                            this._indexRead(tableName, rows, callBack, readIndex);
                         }
                     });
                 } else {
                     t._levelDBs[tableName].get(row, (err, data) => {
                         if (err) {
-                            this._indexRead(tableName, [], callBack);
+                            this._indexRead(tableName, [], callBack, readIndex);
                         } else {
-                            this._indexRead(tableName, [JSON.parse(data)], callBack);
+                            this._indexRead(tableName, [JSON.parse(data)], callBack, readIndex);
                         }
                     });
                 }

@@ -4,6 +4,8 @@ Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
+[![npm downloads](https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square)](https://www.npmjs.com/package/nano-sql)
+![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.7.5/dist/nano-sql.min.js?compression=gzip)
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
@@ -118,7 +120,8 @@ nSQL('users')// Table/Store Name, required to declare model and attach it to thi
 .model([ // Data Model, required
     {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
     {key:'name',type:'string', default:"None"}, // This will cause inserts to always use "None" if no value is provided.
-    {key:'age',type:'int'},
+    {key:'age',type:'int', props: ["idx"]}, // secondary index
+    {key: "eyeColor", type: "string", props:["trie"]}, // Index as trie
     {key:'balance',type:'float', default: 0},
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
