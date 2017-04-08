@@ -1,6 +1,10 @@
 import { Promise } from "lie-ts";
 export interface UUID extends String {
 }
+export interface timeId extends String {
+}
+export interface timeIdms extends String {
+}
 export interface StdObject<T> {
     [key: string]: T;
 }
@@ -108,6 +112,7 @@ export declare class _NanoSQLQuery {
     having(args: Array<any | Array<any>>): _NanoSQLQuery;
     join(args: JoinArgs): _NanoSQLQuery;
     limit(args: number): _NanoSQLQuery;
+    trieSearch(column: string, stringToSearch: string): _NanoSQLQuery;
     offset(args: number): _NanoSQLQuery;
     toCSV(headers?: boolean): Promise<string>;
     exec(): Promise<Array<Object | NanoSQLInstance>>;

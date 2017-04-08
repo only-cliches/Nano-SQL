@@ -7,7 +7,7 @@ Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
-NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 11Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.
+NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 13Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.
 
 Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
@@ -21,6 +21,7 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - **Easy `LevelDB` & `IndexedDB` support**.
 - Runs in Node, IE8+ & modern browsers.
 - Supports all common RDBMS queries.
+- Built in optomized **trie indexes**.
 - Queries return immutable rows.
 - Import and Export CSV/JSON.
 - **Simple & elegant undo/redo**.
@@ -29,9 +30,11 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Fast secondary indexes.
 - Transactions support.
 - Full events system.
-- Just 11Kb Gzipped.
+- Just 13Kb Gzipped.
 
 ## New Features
+
+- You can index a specific row with a `trie` structure for super fast string searching by putting `props: ["trie"]` in the data model.
 - Secondary indexes are now supported by putting `props: ["idx"]` in the data model.  Secondary indexes will slow down the write speed the more you have.
 - You can force all secondary indexes to build/rebuild by passing `rebuildIndexes: true` into the `.config()` object.
 - You can fast select a range for instant pagination queries with the new `.range(offset, limit)`.  This can be hundreds of times faster than using `.offset(x).limit(x)` but prevents you from using `.where()` statements.
@@ -43,7 +46,7 @@ I spent a long time looking for an existing solution that would do everything I 
 
 | Database                                                 | Events | TS  | Undo & Redo  | Immutable | RDBMS | IndexedDB | Node | Any Backend | Size |
 |----------------------------------------------------------|:------:|:---:|:------------:|:---------:|:-----:|:---------:|:----:|:-----------:|:----------:|
-| NanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 11         |
+| NanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 13         |
 | [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕         | ✕    | ✕        | ✓      | ✕          | 2          |
 | [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 5          |
 | [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✓         | ✕    | ✕        | ✓      | ✕          | 16         |

@@ -11,6 +11,11 @@ Read: ~100 records/ms
 - Add BTrees with `props:["trie"]` and `.extend("search",args)`.
 - Write LevelDB Cordova plugin.
 
+## [0.7.5] 4-7-2017
+- Removed transactions from index rebuilding, this was causing the index rebuild to fail on data sets in the thousands.
+- Removed automatic index sorting to speed up inserts again.
+- Added a trie implimentation that can be taken advantage of by entering `props: ["trie"]` into the data model.  The trie will always create a secondary index as well meaing `props: ["trie", "idx"]` is identical to `props:["trie"]`.
+- Added setImmediate polyfill to increase promise speed, a significant factor contributing to poor performance.
 
 ## [0.7.4] 4-6-2017
 - Finished secondary index support.  You can now add `props: ["idx"]` to a data model, when a secondary index or primary key is used in a where statement the data will be retrieved much faster.

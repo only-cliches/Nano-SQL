@@ -1,7 +1,20 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
 import { _NanoSQLDB, _str } from "./db-index";
 import { _functions } from "./db-query";
+import * as trie from "trie-prefix-tree";
 
+export interface Trie {
+    dump(spaces?: number): string;
+    addWord(word: string): Trie;
+    removeWord(word: string): Trie;
+    getWords(): string[];
+    isPrefix(str: string): boolean;
+    countPrefix(str: string): number;
+    getPrefix(str: string): string[];
+    hasWord(str: string): boolean;
+    getAnagrams(str: string): string[];
+    getSubAnagrams(str: string): string[];
+}
 declare var global: any;
 
 export interface IHistoryPoint {
@@ -61,6 +74,10 @@ export class _NanoSQL_Storage {
             _incriment: number;
             _index: (string|number)[];
             _secondaryIndexes: string[];
+            _trieColumns: string[];
+            _trieObjects: {
+                [column: string]: Trie;
+            };
             _keys: string[];
             _defaults: any[];
             _rows: {
@@ -261,7 +278,7 @@ export class _NanoSQL_Storage {
                 if (m.props && m.props.indexOf("pk") !== -1) {
                     pkRow = _assign(m);
                 }
-                if (m.props && m.props.indexOf("idx") !== -1) {
+                if (m.props && (m.props.indexOf("idx") !== -1 || m.props.indexOf("trie") !== -1)) {
                     secondaryIndexes.push(m);
                 }
             });
@@ -290,8 +307,6 @@ export class _NanoSQL_Storage {
             }
         });
 
-
-
         args._models[_str(0)] = [
             {key: "key", type: "string", props: ["pk"]},
             {key: "value", type: "blob"},
@@ -318,11 +333,53 @@ export class _NanoSQL_Storage {
             _functions[f] = args._functions[f];
         });
 
-        const rebuildSecondaryIndexes = () => {
-            if (!t._rebuildIndexes) {
+        // Populate trie objects
+        const rebuildTries = () => {
+            let rebuildJob: {
+                [tableName: string]: string[] // indexes
+            } = {};
+            let jobLength = 0;
+            Object.keys(args._models).forEach((table) => {
+                if (table.indexOf("_") !== 0) { // only check non internal tables
+                    const ta = NanoSQLInstance._hash(table);
+                    if  (t._tables[ta]._trieColumns.length) {
+                        rebuildJob[table] = t._tables[ta]._trieColumns;
+                        jobLength++;
+                    }
+                }
+            });
+
+            if (jobLength === 0) {
                 args._onSuccess();
             } else {
-                let rebuildJob:{
+                let tables = Object.keys(rebuildJob);
+                let ptr = 0;
+                const step = () => {
+                    if (ptr < tables.length) {
+                        const ta = NanoSQLInstance._hash(tables[ptr]);
+                        t._read(tables[ptr], "all", (rows) => {
+                            rows.forEach((row, i) => {
+                                rebuildJob[tables[ptr]].forEach((key) => {
+                                    if (row[key]) t._tables[ta]._trieObjects[key].addWord(String(row[key]).toLocaleLowerCase());
+                                });
+                            });
+                            ptr++;
+                            step();
+                        });
+                    } else {
+                        args._onSuccess();
+                    }
+                }
+                step();
+            }
+        }
+
+        // Rebuild secondary indexes
+        const rebuildSecondaryIndexes = () => {
+            if (!t._rebuildIndexes) {
+                rebuildTries();
+            } else {
+                let rebuildJob: {
                     [tableName: string]: string[] // indexes
                 } = {};
                 Object.keys(args._models).forEach((table) => {
@@ -333,41 +390,52 @@ export class _NanoSQL_Storage {
                         }
                     }
                 });
+
                 const tables = Object.keys(rebuildJob);
                 let tablePTR = 0;
                 const step = () => {
                     if (tablePTR < tables.length) {
-                        t._parent._parent.beginTransaction();
                         const ta = NanoSQLInstance._hash(tables[tablePTR]);
                         let rowPTR = 0;
+
                         this._read(tables[tablePTR], "all", (rows) => {
                             let PK = t._tables[ta]._pk;
                             const step2 = () => {
                                 if (rowPTR < rows.length) {
-                                    rebuildJob[tables[tablePTR]].forEach((key) => {
-                                        let idxTbl = "_" + tables[tablePTR] + "_idx_" + key;
-                                        t._upsert(idxTbl, rows[rowPTR][key], {
-                                            id: rows[rowPTR][key],
-                                            rowPK: rows[rowPTR][PK]
-                                        }, () => {});
-                                    });
-                                    rowPTR++;
-                                    step2();
+                                    let ptr3 = 0;
+                                    const step3 = () => {
+                                        if (ptr3 < rebuildJob[tables[tablePTR]].length) {
+                                            let key = rebuildJob[tables[tablePTR]][ptr3];
+                                            let idxTbl = "_" + tables[tablePTR] + "_idx_" + key;
+                                                t._upsert(idxTbl, String(rows[rowPTR][key]).toLocaleLowerCase(), {
+                                                    id: rows[rowPTR][key],
+                                                    rowPK: rows[rowPTR][PK]
+                                                }, () => {
+                                                    ptr3++;
+                                                    step3();
+                                                });
+                                        } else {
+                                            rowPTR++;
+                                            step2();
+                                        }
+                                    };
+                                    step3();
                                 } else {
-                                    t._parent._parent.endTransaction();
                                     tablePTR++;
                                     step();
                                 }
-                            }
+                            };
                             step2();
+                        
                         });
+
                     } else {
-                        args._onSuccess();
+                        rebuildTries();
                     }
-                }
+                };
                 step();
             }
-        }
+        };
 
         const completeSetup = () => {
             let tables = Object.keys(args._models);
@@ -665,7 +733,6 @@ export class _NanoSQL_Storage {
     }
 
     public _execTransaction() {
-        // this._transactionData;
         let t = this;
 
         switch (t._mode) {
@@ -849,16 +916,9 @@ export class _NanoSQL_Storage {
             value[pk] = rowID;
         }
 
-        // Index update, make sure the index remains sorted.
-        if (t._tables[ta] && t._tables[ta]._index.indexOf(rowID) === -1) {
+        // add to index
+        if (t._tables[ta]._index.indexOf(rowID) === -1) {
             t._tables[ta]._index.push(rowID);
-            let i = t._tables[ta]._index.length - 1;
-            let key = t._tables[ta]._index[i];
-            while (i > 0 && key < t._tables[ta]._index[i - 1]) {
-                t._tables[ta]._index[i] = t._tables[ta]._index[i -1];
-                i--;
-            }
-            t._tables[ta]._index[i] = key;
         }
 
         switch (t._mode) {
@@ -902,7 +962,7 @@ export class _NanoSQL_Storage {
                     });
                     if (callBack) callBack(rowID as string);
                 } else {
-                    
+
                     if (tableName.indexOf("_hist__data") !== -1) {
                         t._levelDBs[tableName].put(rowID, value ? JSON.stringify(value) : null, () => {
                             if (callBack) callBack(rowID as string);
@@ -927,7 +987,7 @@ export class _NanoSQL_Storage {
     }
 
     private _indexRead(tableName: string, rows: DBRow[], callBack: (rows: DBRow[]) => void): void {
-        
+
         const isSecondIndex = tableName.indexOf("_") === 0 && tableName.indexOf("_idx_") !== -1;
         const parentTable = !isSecondIndex ? "" : tableName.slice(1, tableName.indexOf("_idx_"));
 
@@ -1154,6 +1214,8 @@ export class _NanoSQL_Storage {
             _keys: [],
             _defaults: [],
             _secondaryIndexes: [],
+            _trieColumns: [],
+            _trieObjects: {},
             _name: tableName,
             _incriment: 1,
             _index: [],
@@ -1172,9 +1234,15 @@ export class _NanoSQL_Storage {
                 t._tables[ta]._pk = p.key;
                 t._tables[ta]._pkType = p.type;
             }
-            if (p.props && p.props.indexOf("idx") >= 0) {
+            if (p.props && (p.props.indexOf("idx") >= 0 || p.props.indexOf("trie") >= 0)) {
                 t._tables[ta]._secondaryIndexes.push(p.key);
             }
+
+            if (p.props && p.props.indexOf("trie") >= 0) {
+                t._tables[ta]._trieColumns.push(p.key);
+                t._tables[ta]._trieObjects[p.key] = trie([]);
+            }
+
         }
 
         return tableName;

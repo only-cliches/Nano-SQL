@@ -67,7 +67,7 @@
 				<p><a href="https://github.com/ClickSimply/nano-sql/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 				<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint"></p>
 				<p><a href="https://nodei.co/npm/nano-sql/"><img src="https://nodei.co/npm/nano-sql.png?downloads=true&amp;stars=true" alt="NPM"></a></p>
-				<p>NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 11Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.</p>
+				<p>NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 13Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.</p>
 				<p>Persistence supports <code>Local Storage</code> and <code>Indexed DB</code> in the browser and <code>Level DB</code> in NodeJS <em>with the same API</em>.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.</p>
 				<ul>
 					<li><a href="https://some-sql.com/react-todo/">Todo Example</a></li>
@@ -79,6 +79,7 @@
 					<li><strong>Easy <code>LevelDB</code> &amp; <code>IndexedDB</code> support</strong>.</li>
 					<li>Runs in Node, IE8+ &amp; modern browsers.</li>
 					<li>Supports all common RDBMS queries.</li>
+					<li>Built in optomized <strong>trie indexes</strong>.</li>
 					<li>Queries return immutable rows.</li>
 					<li>Import and Export CSV/JSON.</li>
 					<li><strong>Simple &amp; elegant undo/redo</strong>.</li>
@@ -87,10 +88,11 @@
 					<li>Fast secondary indexes.</li>
 					<li>Transactions support.</li>
 					<li>Full events system.</li>
-					<li>Just 11Kb Gzipped.</li>
+					<li>Just 13Kb Gzipped.</li>
 				</ul>
 				<h2 id="new-features">New Features</h2>
 				<ul>
+					<li>You can index a specific row with a <code>trie</code> structure for super fast string searching by putting <code>props: [&quot;trie&quot;]</code> in the data model.</li>
 					<li>Secondary indexes are now supported by putting <code>props: [&quot;idx&quot;]</code> in the data model.  Secondary indexes will slow down the write speed the more you have.</li>
 					<li>You can force all secondary indexes to build/rebuild by passing <code>rebuildIndexes: true</code> into the <code>.config()</code> object.</li>
 					<li>You can fast select a range for instant pagination queries with the new <code>.range(offset, limit)</code>.  This can be hundreds of times faster than using <code>.offset(x).limit(x)</code> but prevents you from using <code>.where()</code> statements.</li>
@@ -124,7 +126,7 @@
 							<td style="text-align:center">✓</td>
 							<td style="text-align:center">✓</td>
 							<td style="text-align:center">✓</td>
-							<td style="text-align:center">11</td>
+							<td style="text-align:center">13</td>
 						</tr>
 						<tr>
 							<td><a href="https://github.com/reactjs/redux">Redux</a></td>

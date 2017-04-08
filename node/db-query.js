@@ -270,6 +270,26 @@ var _NanoSQLQuery = (function () {
                 var rangeArgs = t._getMod("range").args;
                 t._getRange(rangeArgs[0], rangeArgs[1], doQuery);
             }
+            else if (t._getMod("trie")) {
+                var trieArgs = t._getMod("trie").args;
+                var words_1 = tableData._trieObjects[trieArgs[0]].getPrefix(String(trieArgs[1]).toLocaleLowerCase());
+                var indexTable_1 = "_" + tableData._name + "_idx_" + trieArgs[0];
+                var ptr_3 = 0;
+                var resultRows_3 = [];
+                var step_2 = function () {
+                    if (ptr_3 < words_1.length) {
+                        t._db._store._read(indexTable_1, words_1[ptr_3], function (rows) {
+                            resultRows_3 = resultRows_3.concat(rows);
+                            ptr_3++;
+                            step_2();
+                        });
+                    }
+                    else {
+                        doQuery(resultRows_3);
+                    }
+                };
+                step_2();
+            }
             else {
                 if (t._act.type !== "upsert") {
                     t._db._store._read(tableData._name, "all", function (rows) {
@@ -310,10 +330,13 @@ var _NanoSQLQuery = (function () {
             if (updateType === "upsert") {
                 if (table._name.indexOf("_") !== 0) {
                     table._secondaryIndexes.forEach(function (key) {
-                        t._db._store._upsert("_" + table._name + "_idx_" + key, newRow[key], {
+                        t._db._store._upsert("_" + table._name + "_idx_" + key, String(newRow[key]).toLocaleLowerCase(), {
                             id: newRow[key],
                             rowPK: rowPK
                         }, function () { });
+                    });
+                    table._trieColumns.forEach(function (key) {
+                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(String(newRow[key]).toLocaleLowerCase());
                     });
                 }
                 t._db._store._upsert(table._name, rowPK, newRow, function () {
@@ -324,6 +347,9 @@ var _NanoSQLQuery = (function () {
                 if (table._name.indexOf("_") !== 0) {
                     table._secondaryIndexes.forEach(function (key) {
                         t._db._store._delete("_" + table._name + "_idx_" + key, newRow[key], function () { });
+                    });
+                    table._trieColumns.forEach(function (key) {
+                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(newRow[key]);
                     });
                 }
                 t._db._store._delete(table._name, rowPK, function () {

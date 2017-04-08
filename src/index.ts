@@ -1,9 +1,20 @@
 import { _NanoSQLDB } from "./db-index";
 import { Promise } from "lie-ts";
+require("setimmediate");
 
 declare var global: any;
 
 export interface UUID extends String {
+
+}
+
+// tslint:disable-next-line
+export interface timeId extends String {
+
+}
+
+// tslint:disable-next-line
+export interface timeIdms extends String {
 
 }
 
@@ -293,6 +304,7 @@ export class NanoSQLInstance {
     private static _tzOffset: number;
 
     constructor() {
+
         let t = this;
         t._actions = {};
         t._views = {};
@@ -1338,6 +1350,18 @@ export class _NanoSQLQuery {
      */
     public limit(args: number): _NanoSQLQuery {
         return this._addCmd("limit", args);
+    }
+
+    /**
+     * Perform a trie search on a trie column.
+     *
+     * @param {string} stringToSearch
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberOf _NanoSQLQuery
+     */
+    public trieSearch(column: string, stringToSearch: string): _NanoSQLQuery {
+        return this._addCmd("trie", [column, stringToSearch]);
     }
 
     /**

@@ -1,6 +1,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var db_index_1 = require("./db-index");
 var lie_ts_1 = require("lie-ts");
+require("setimmediate");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };
@@ -448,6 +449,9 @@ var _NanoSQLQuery = (function () {
     };
     _NanoSQLQuery.prototype.limit = function (args) {
         return this._addCmd("limit", args);
+    };
+    _NanoSQLQuery.prototype.trieSearch = function (column, stringToSearch) {
+        return this._addCmd("trie", [column, stringToSearch]);
     };
     _NanoSQLQuery.prototype.offset = function (args) {
         return this._addCmd("offset", args);

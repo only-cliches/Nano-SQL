@@ -374,6 +374,25 @@ export class _NanoSQLQuery {
                 const rangeArgs = (t._getMod("range") as QueryLine).args;
                 t._getRange(rangeArgs[0], rangeArgs[1], doQuery);
 
+            } else if (t._getMod("trie")) { // Trie modifier
+                const trieArgs = (t._getMod("trie") as QueryLine).args;
+                const words = tableData._trieObjects[trieArgs[0]].getPrefix(String(trieArgs[1]).toLocaleLowerCase());
+                const indexTable = "_" + tableData._name + "_idx_" + trieArgs[0];
+                let ptr = 0;
+                let resultRows: DBRow[] = [];
+                const step = () => {
+                    if (ptr < words.length) {
+                        t._db._store._read(indexTable, words[ptr], (rows) => {
+                            resultRows = resultRows.concat(rows);
+                            ptr++;
+                            step();
+                        });
+                    } else {
+                        doQuery(resultRows);
+                    }
+                };
+                step();
+
             } else {
 
                 if (t._act.type !== "upsert") { // in all other cases, just get all rows
@@ -435,15 +454,22 @@ export class _NanoSQLQuery {
 
         const writeChanges = (newRow: DBRow) => {
             if (updateType === "upsert") {
-                // Update secondary indexes
+
                 if (table._name.indexOf("_") !== 0) {
+                    // Update secondary indexes
                     table._secondaryIndexes.forEach((key) => {
-                        t._db._store._upsert("_" + table._name + "_idx_" + key, newRow[key], {
+                        t._db._store._upsert("_" + table._name + "_idx_" + key, String(newRow[key]).toLocaleLowerCase(), {
                             id: newRow[key],
                             rowPK: rowPK
                         }, () => {});
                     });
+
+                    // Update tries
+                    table._trieColumns.forEach((key) => {
+                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(String(newRow[key]).toLocaleLowerCase());
+                    });
                 }
+
                 // Update actual row
                 t._db._store._upsert(table._name, rowPK, newRow, () => {
                     callBack();
@@ -453,6 +479,10 @@ export class _NanoSQLQuery {
                     // Clear out secondary index
                     table._secondaryIndexes.forEach((key) => {
                         t._db._store._delete("_" + table._name + "_idx_" + key, newRow[key], () => {});
+                    });
+                    // Remove trie values
+                    table._trieColumns.forEach((key) => {
+                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(newRow[key]);
                     });
                 }
                 // Update actual row data

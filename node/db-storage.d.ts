@@ -1,5 +1,17 @@
 import { DBRow, DataModel, DBConnect } from "./index";
 import { _NanoSQLDB } from "./db-index";
+export interface Trie {
+    dump(spaces?: number): string;
+    addWord(word: string): Trie;
+    removeWord(word: string): Trie;
+    getWords(): string[];
+    isPrefix(str: string): boolean;
+    countPrefix(str: string): number;
+    getPrefix(str: string): string[];
+    hasWord(str: string): boolean;
+    getAnagrams(str: string): string[];
+    getSubAnagrams(str: string): string[];
+}
 export interface IHistoryPoint {
     id: number;
     historyPoint: number;
@@ -19,6 +31,10 @@ export declare class _NanoSQL_Storage {
             _incriment: number;
             _index: (string | number)[];
             _secondaryIndexes: string[];
+            _trieColumns: string[];
+            _trieObjects: {
+                [column: string]: Trie;
+            };
             _keys: string[];
             _defaults: any[];
             _rows: {

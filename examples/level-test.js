@@ -10,21 +10,22 @@ function makeid() {
     return text;
 }
 
-
+// setTimeout(() => {
 nsql("users")
     .model([
         { key: "id", type: "uuid", props: ["pk"] },
-        { key: "name", type: "string", props: ["idx"] },
+        { key: "name", type: "string", props: ["trie"] },
         { key: "pass", type: 'string' },
         { key: "email", type: "string" }
     ])
-    .config({ id: "testing", memory: false, persistent: true, history: false })
+    .config({ id: "testing", memory: false, rebuildIndexes: true, persistent: true, history: false })
     .connect().then(() => {
         let i = 0;
         console.time("WRITE");
+        console.log("CONNECTED");
         //nsql("users").beginTransaction();
         const step = () => {
-                if (i < 1000) {
+                if (i < 10) {
                     nsql("users")
                         .query("upsert", {
                             name: makeid(),
@@ -38,7 +39,7 @@ nsql("users")
                             step();
                         })
                 } else {
-                    nsql("users").endTransaction();
+                    // nsql("users").endTransaction();
                     console.timeEnd("WRITE");
                 }
             }
@@ -50,8 +51,12 @@ nsql("users")
                     email: "scott@clicksimply.com"
                 }).exec()*/
         console.time("READ");
-        nsql("users").query("select").where(["name", "IN", ["scott", "bill"]]).exec().then((rows) => {
+
+        //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((
+
+        nsql("users").query("select").trieSearch("name", "a").exec().then((rows) => {
             console.timeEnd("READ");
-            console.log(rows);
+            console.log(rows.length);
         })
     });
+//}, 10000)
