@@ -565,9 +565,9 @@ var _NanoSQL_Storage = (function () {
             }
             else {
                 delete t._tables[ta]._rows[rowID];
-                if (t._mode === 0 && callBack)
-                    return callBack(true);
             }
+            if (t._mode === 0 && callBack)
+                return callBack(true);
         }
         if (t._mode > 0) {
             var i_1 = 0;
@@ -644,12 +644,12 @@ var _NanoSQL_Storage = (function () {
         if (t._tables[ta]._index.indexOf(rowID) === -1) {
             t._tables[ta]._index.push(rowID);
         }
+        if (t._storeMemory) {
+            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
+            if (t._mode === 0 && callBack)
+                return callBack(rowID);
+        }
         switch (t._mode) {
-            case 0:
-                t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
-                if (callBack)
-                    return callBack(rowID);
-                break;
             case 1:
                 var transaction = t._indexedDB.transaction(tableName, "readwrite");
                 var store = transaction.objectStore(tableName);

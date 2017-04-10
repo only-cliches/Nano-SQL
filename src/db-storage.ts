@@ -742,6 +742,12 @@ export class _NanoSQL_Storage {
 
     }
 
+    /**
+     * Complets a transaction.
+     *
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     public _execTransaction() {
         let t = this;
 
@@ -756,6 +762,14 @@ export class _NanoSQL_Storage {
         }
     }
 
+    /**
+     * Clears everything from the data store.
+     *
+     * @param {("all"|"hist")} type
+     * @param {Function} complete
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     public _clear(type: "all"|"hist", complete: Function): void {
         let t = this;
 
@@ -825,6 +839,16 @@ export class _NanoSQL_Storage {
     }
 
 
+    /**
+     * Removes rows from the store.
+     *
+     * @param {string} tableName
+     * @param {(string|number)} rowID
+     * @param {(success: boolean) => void} [callBack]
+     * @returns {void}
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     public _delete(tableName: string, rowID: string|number, callBack?: (success: boolean) => void): void {
         let t = this;
         let editingHistory = false;
@@ -845,12 +869,11 @@ export class _NanoSQL_Storage {
                 t._tables[ta]._rows = {};
             } else {
                 delete t._tables[ta]._rows[rowID];
-                if (t._mode === 0 && callBack) return callBack(true);
             }
+            if (t._mode === 0 && callBack) return callBack(true);
         }
 
         if (t._mode > 0) {
-
             let i = 0;
             const step = () => {
                 if (i < deleteRowIDS.length) {
@@ -901,6 +924,17 @@ export class _NanoSQL_Storage {
 
     }
 
+    /**
+     * Inserts data into the store.
+     *
+     * @param {string} tableName
+     * @param {(string|number|null)} rowID
+     * @param {*} value
+     * @param {((rowID: number|string) => void)} [callBack]
+     * @returns {void}
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     public _upsert(tableName: string, rowID: string|number|null, value: any, callBack?: (rowID: number|string) => void): void {
         let t = this;
 
@@ -931,11 +965,12 @@ export class _NanoSQL_Storage {
             t._tables[ta]._index.push(rowID);
         }
 
+        if (t._storeMemory) {
+            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
+            if (t._mode === 0 && callBack) return callBack(rowID);
+        }
+
         switch (t._mode) {
-            case 0: // Memory
-                t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
-                if (callBack) return callBack(rowID);
-            break;
             case 1: // IndexedDB
                 const transaction = t._indexedDB.transaction(tableName, "readwrite");
                 const store = transaction.objectStore(tableName);
@@ -996,6 +1031,17 @@ export class _NanoSQL_Storage {
 
     }
 
+    /**
+     * This method is used to convert a set of primary keys read from a secondary index into the actual row data.
+     *
+     * @private
+     * @param {string} tableName
+     * @param {DBRow[]} rows
+     * @param {(rows: DBRow[]) => void} callBack
+     * @param {boolean} [getIndex]
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     private _indexRead(tableName: string, rows: DBRow[], callBack: (rows: DBRow[]) => void, getIndex?: boolean): void {
         const isSecondIndex = tableName.indexOf("_") === 0 && tableName.indexOf("_idx_") !== -1;
 
@@ -1027,11 +1073,23 @@ export class _NanoSQL_Storage {
         }
     }
 
+    /**
+     * IndexedDB and LevelDB both have optimizations for reading a range of primary keys,
+     * this method takes advantage of those optimizations.
+     *
+     * @param {string} tableName
+     * @param {string} key
+     * @param {any[]} between
+     * @param {(rows: DBRow[]) => void} callBack
+     * @returns {void}
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     public _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);
 
-        // Memory and local storage need their own optimization.
+        // Memory and local storage can't be range optimized in the same way.
         if (t._mode === 0 || t._mode === 2 ) {
             let startPtr = t._tables[ta]._index.indexOf(between[0]);
             let resultRows: DBRow[] = [];
@@ -1087,6 +1145,20 @@ export class _NanoSQL_Storage {
         }
     }
 
+    /**
+     * Simple read from the database store.
+     *
+     * You can either pass in a primary key or a function for the row.  If a function is passed in,
+     * that function is called for every row to allow filtering.
+     * You can also pass in the string "all" to just read every row.
+     *
+     * @param {string} tableName
+     * @param {(string|number|Function)} row
+     * @param {(rows: any[]) => void} callBack
+     * @param {boolean} [readIndex]
+     *
+     * @memberOf _NanoSQL_Storage
+     */
     public _read(tableName: string, row: string|number|Function, callBack: (rows: any[]) => void, readIndex?: boolean): void {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);

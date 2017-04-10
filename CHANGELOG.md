@@ -11,6 +11,10 @@ Read: ~100 records/ms
 - Add BTrees with `props:["trie"]` and `.extend("search",args)`.
 - Write LevelDB Cordova plugin.
 
+## [0.7.61] 4-9-2017
+- Trigger change events after transactions now only affect the tables that the transaction touched.
+- Restored memory db usage.
+
 ## [0.7.6] 4-8-2017
 - Secondary indexes and trie indexing now support multiple rows per entry. Existing secondary indexes should be rebuilt with `rebuildIndexes:true` before using this version.
 - Added naive event triggering on all tables after a transaction.

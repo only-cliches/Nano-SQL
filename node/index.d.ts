@@ -58,6 +58,7 @@ export declare class NanoSQLInstance {
     _AVMod: IActionViewMod;
     doingTransaction: boolean;
     private static _tzOffset;
+    private _transactionTables;
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(backend?: NanoSQLBackend): Promise<Object | string>;

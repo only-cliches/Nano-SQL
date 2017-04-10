@@ -303,6 +303,16 @@ export class NanoSQLInstance {
      */
     private static _tzOffset: number;
 
+
+    /**
+     * Store an array of updated tables to decide what tables to trigger a change on after the transaction.
+     * 
+     * @private
+     * @type {string[]}
+     * @memberOf NanoSQLInstance
+     */
+    private _transactionTables: string[];
+
     constructor() {
 
         let t = this;
@@ -310,6 +320,7 @@ export class NanoSQLInstance {
         t._views = {};
         t._models = {};
         t._preConnectExtend = [];
+        t._transactionTables = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 
         t._callbacks = {};
@@ -838,6 +849,9 @@ export class NanoSQLInstance {
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
 
             let newArgs = args || (a === "select" || a === "delete" ? [] : {});
+            if (["upsert", "delete", "drop"].indexOf(a) !== -1) {
+                this._transactionTables.push(t._selectedTable);
+            }
 
             if (action === "upsert") {
                 // Cast row types and remove columns that don't exist in the data model
@@ -930,6 +944,7 @@ export class NanoSQLInstance {
      */
     public beginTransaction() {
         this.doingTransaction = true;
+        this._transactionTables = [];
         if (this.backend._transaction) return this.backend._transaction("start");
     }
 
@@ -941,8 +956,8 @@ export class NanoSQLInstance {
      */
     public endTransaction() {
         this.doingTransaction = false;
-        Object.keys(this._models).forEach((table) => {
-            if(table.indexOf("_") !== 0) {
+        this._transactionTables.forEach((table) => {
+            if (table.indexOf("_") !== 0) {
                 this.triggerEvent({
                     table: table,
                     query: [],

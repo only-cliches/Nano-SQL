@@ -12,6 +12,7 @@ var NanoSQLInstance = (function () {
         t._views = {};
         t._models = {};
         t._preConnectExtend = [];
+        t._transactionTables = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
         t._callbacks = {};
         t._hasEvents = {};
@@ -211,6 +212,9 @@ var NanoSQLInstance = (function () {
         var a = action.toLowerCase();
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
             var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
+            if (["upsert", "delete", "drop"].indexOf(a) !== -1) {
+                this._transactionTables.push(t._selectedTable);
+            }
             if (action === "upsert") {
                 var inputArgs_1 = {};
                 t._models[t._selectedTable].forEach(function (model) {
@@ -261,13 +265,14 @@ var NanoSQLInstance = (function () {
     };
     NanoSQLInstance.prototype.beginTransaction = function () {
         this.doingTransaction = true;
+        this._transactionTables = [];
         if (this.backend._transaction)
             return this.backend._transaction("start");
     };
     NanoSQLInstance.prototype.endTransaction = function () {
         var _this = this;
         this.doingTransaction = false;
-        Object.keys(this._models).forEach(function (table) {
+        this._transactionTables.forEach(function (table) {
             if (table.indexOf("_") !== 0) {
                 _this.triggerEvent({
                     table: table,
