@@ -60,7 +60,7 @@ var _NanoSQL_Storage = (function () {
                     delete m.props;
                     return m;
                 });
-                args._models["_" + t + "_hist__data"].unshift({ key: "_id", type: "int" });
+                args._models["_" + t + "_hist__data"].unshift({ key: db_index_1._str(4), type: "int" });
                 args._models["_" + t + "_hist__meta"] = [
                     pkRow,
                     { key: "_pointer", type: "int", default: 0 },
@@ -217,7 +217,7 @@ var _NanoSQL_Storage = (function () {
                             t._historyLength = d.value || 0;
                     });
                 });
-                t._read("_historyPoints", "all", function (rows) {
+                t._read(db_index_1._str(1), "all", function (rows) {
                     rows.forEach(function (row) {
                         if (!t._historyPointIndex[row.historyPoint]) {
                             t._historyPointIndex[row.historyPoint] = [];
@@ -525,7 +525,7 @@ var _NanoSQL_Storage = (function () {
         var step = function () {
             if (index < tables.length) {
                 var deleteTable = false;
-                if (type === "hist" && (tables[index] === "_historyPoints" || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
+                if (type === "hist" && (tables[index] === db_index_1._str(1) || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
                     deleteTable = true;
                 }
                 if (type === "all" && tables[index] !== "_utility") {
@@ -646,7 +646,7 @@ var _NanoSQL_Storage = (function () {
                 rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
         }
         if (tableName.indexOf("_hist__data") !== -1 && value) {
-            rowID = value._id;
+            rowID = value[db_index_1._str(4)];
         }
         if (t._tables[ta]._pkType === "int")
             rowID = parseInt(rowID);
@@ -770,7 +770,7 @@ var _NanoSQL_Storage = (function () {
                 });
             }
             else {
-                callBack(rows);
+                _this._indexRead(tableName, rows, callBack);
             }
         };
         readRow();

@@ -289,7 +289,7 @@ export class _NanoSQL_Storage {
                     delete m.props;
                     return m;
                 });
-                args._models["_" + t + "_hist__data"].unshift({key: "_id", type: "int"});
+                args._models["_" + t + "_hist__data"].unshift({key: _str(4), type: "int"});
 
                 args._models["_" + t + "_hist__meta"] = [
                     pkRow,
@@ -465,7 +465,7 @@ export class _NanoSQL_Storage {
                 });
 
                 // Rebuild history point index
-                t._read("_historyPoints", "all", (rows) => {
+                t._read(_str(1), "all", (rows) => {
                     rows.forEach((row) => {
                         if (!t._historyPointIndex[row.historyPoint]) {
                             t._historyPointIndex[row.historyPoint] = [];
@@ -821,7 +821,7 @@ export class _NanoSQL_Storage {
         const step = () => {
             if (index < tables.length) {
                 let deleteTable = false;
-                if (type === "hist" && (tables[index] === "_historyPoints" || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
+                if (type === "hist" && (tables[index] === _str(1) || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
                     deleteTable = true;
                 }
                 if (type === "all" && tables[index] !== "_utility") {
@@ -967,7 +967,7 @@ export class _NanoSQL_Storage {
         }
 
         if (tableName.indexOf("_hist__data") !== -1 && value) {
-            rowID = value._id as number;
+            rowID = value[_str(4)] as number;
         }
 
         if (t._tables[ta]._pkType === "int") rowID = parseInt(rowID as string);
@@ -1109,7 +1109,7 @@ export class _NanoSQL_Storage {
                     readRow();
                 });
             } else {
-                callBack(rows);
+                this._indexRead(tableName, rows, callBack);
             }
         };
         readRow();

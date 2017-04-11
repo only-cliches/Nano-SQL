@@ -274,13 +274,9 @@ export class _NanoSQLQuery {
                 // Checks if this WHERE statement can be optimized with primary keys or secondary indexes
                 const isOptimizedWhere = (wArgs: any[]): number => {
                     if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) !== -1) {
-                        if (wArgs[0] === tableData._pk) {
-                            return 0;
-                        } else if (tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1) {
+                        if (wArgs[0] === tableData._pk || tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1) {
                             return 0;
                         }
-                    } else {
-                        return 1;
                     }
                     return 1;
                 };
@@ -299,18 +295,9 @@ export class _NanoSQLQuery {
                         case "IN":
                             let ptr = 0;
                             let resultRows: DBRow[] = [];
-                            const step = () => {
-                                if (ptr < wArgs[2].length) {
-                                    t._db._store._read(tableName, wArgs[2][ptr], (rows) => {
-                                        resultRows = resultRows.concat(rows);
-                                        ptr++;
-                                        step();
-                                    });
-                                } else {
-                                    callBack(resultRows);
-                                }
-                            };
-                            step();
+                            t._db._store._readArray(tableName, wArgs[2], (rows) => {
+                                callBack(rows);
+                            });
                         break;
                         case "BETWEEN":
                             t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
@@ -361,7 +348,7 @@ export class _NanoSQLQuery {
                         };
                         nextWhere();
                     }
-                } else { // Full table scan
+                } else { // Full table scan, what we're trying to avoid!
                     t._db._store._read(tableData._name, (row) => {
                         return row && t._where(row, whereArgs);
                     }, (rows) => {
@@ -378,20 +365,9 @@ export class _NanoSQLQuery {
                 const trieArgs = (t._getMod("trie") as QueryLine).args;
                 const words = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
                 const indexTable = "_" + tableData._name + "_idx_" + trieArgs[0];
-                let ptr = 0;
-                let resultRows: DBRow[] = [];
-                const step = () => {
-                    if (ptr < words.length) {
-                        t._db._store._read(indexTable, words[ptr], (rows) => {
-                            resultRows = resultRows.concat(rows);
-                            ptr++;
-                            step();
-                        });
-                    } else {
-                        doQuery(resultRows);
-                    }
-                };
-                step();
+                t._db._store._readArray(indexTable, words, (rows) => {
+                    doQuery(rows);
+                });
 
             } else {
 
@@ -584,7 +560,7 @@ export class _NanoSQLQuery {
                 // 1. copy new row data into histoy data table
                 const histTable = "_" + table._name + "_hist__data";
                 const tah = NanoSQLInstance._hash(histTable);
-                newRow._id = t._db._store._tables[tah]._index.length;
+                newRow[_str(4)] = t._db._store._tables[tah]._index.length;
                 t._db._store._upsert(histTable, null, newRow, (rowID) => {
                     finishUpdate(rowID as number);
                 });
@@ -635,7 +611,7 @@ export class _NanoSQLQuery {
 
                     // Add history records
                     const histPoint = t._db._store._historyLength - t._db._store._historyPoint;
-                    t._db._store._upsert("_historyPoints", null, {
+                    t._db._store._upsert(_str(1), null, {
                         historyPoint: histPoint,
                         tableID: t._tableID,
                         rowKeys: updatedRowPKs,
@@ -662,7 +638,7 @@ export class _NanoSQLQuery {
                         delete t._db._store._historyPointIndex[startIndex]; // Update index
                         startIndex++;
                     }
-                    t._db._store._readArray("_historyPoints", histPoints, (historyPoints: IHistoryPoint[]) => {
+                    t._db._store._readArray(_str(1), histPoints, (historyPoints: IHistoryPoint[]) => {
                         j = 0;
                         const nextPoint = () => {
 
@@ -693,7 +669,7 @@ export class _NanoSQLQuery {
                                         nextPoint();
                                     }
                                 };
-                                t._db._store._delete("_historyPoints", historyPoints[j].id, () => { // remove this point from history
+                                t._db._store._delete(_str(1), historyPoints[j].id, () => { // remove this point from history
                                     nextRow();
                                 });
                             } else {

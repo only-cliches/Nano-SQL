@@ -4,7 +4,7 @@ var lie_ts_1 = require("lie-ts");
 var db_storage_1 = require("./db-storage");
 var db_query_1 = require("./db-query");
 exports._str = function (index) {
-    return ["_utility", "_historyPoints", "_pointer", "_historyDataRowIDs"][index];
+    return ["_utility", "_historyPoints", "_pointer", "_historyDataRowIDs", "_id"][index];
 };
 var _NanoSQLDB = (function () {
     function _NanoSQLDB() {
@@ -78,7 +78,7 @@ var _NanoSQLDB = (function () {
         var shiftRowIDs = function (direction, callBack) {
             var results = {};
             var check = (t._store._historyLength - t._store._historyPoint);
-            t._store._readArray("_historyPoints", t._store._historyPointIndex[check], function (hps) {
+            t._store._readArray(exports._str(1), t._store._historyPointIndex[check], function (hps) {
                 j = 0;
                 var nextPoint = function () {
                     if (j < hps.length) {
@@ -101,6 +101,7 @@ var _NanoSQLDB = (function () {
                                         t._store._upsert("_" + table_1._name + "_hist__meta", rowID, row[0], function () {
                                             t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (setRow) {
                                                 var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
+                                                delete newRow[exports._str(4)];
                                                 t._store._upsert(table_1._name, rowID, newRow, function () {
                                                     if (direction < 0)
                                                         rows_1.push(newRow);

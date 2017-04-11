@@ -166,15 +166,9 @@ var _NanoSQLQuery = (function () {
                 var whereArgs_1 = t._getMod("where").args;
                 var isOptimizedWhere_1 = function (wArgs) {
                     if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) !== -1) {
-                        if (wArgs[0] === tableData._pk) {
+                        if (wArgs[0] === tableData._pk || tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1) {
                             return 0;
                         }
-                        else if (tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1) {
-                            return 0;
-                        }
-                    }
-                    else {
-                        return 1;
                     }
                     return 1;
                 };
@@ -187,21 +181,11 @@ var _NanoSQLQuery = (function () {
                             });
                             break;
                         case "IN":
-                            var ptr_1 = 0;
-                            var resultRows_1 = [];
-                            var step_1 = function () {
-                                if (ptr_1 < wArgs[2].length) {
-                                    t._db._store._read(tableName, wArgs[2][ptr_1], function (rows) {
-                                        resultRows_1 = resultRows_1.concat(rows);
-                                        ptr_1++;
-                                        step_1();
-                                    });
-                                }
-                                else {
-                                    callBack(resultRows_1);
-                                }
-                            };
-                            step_1();
+                            var ptr = 0;
+                            var resultRows = [];
+                            t._db._store._readArray(tableName, wArgs[2], function (rows) {
+                                callBack(rows);
+                            });
                             break;
                         case "BETWEEN":
                             t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
@@ -224,34 +208,34 @@ var _NanoSQLQuery = (function () {
                         doFastWhere_1(whereArgs_1, doQuery);
                     }
                     else {
-                        var resultRows_2 = [];
-                        var ptr_2 = 0;
+                        var resultRows_1 = [];
+                        var ptr_1 = 0;
                         var lastCommand_1 = "";
                         var nextWhere_1 = function () {
-                            if (ptr_2 < whereArgs_1.length) {
-                                if (ptr_2 % 2 === 1) {
-                                    lastCommand_1 = whereArgs_1[ptr_2];
-                                    ptr_2++;
+                            if (ptr_1 < whereArgs_1.length) {
+                                if (ptr_1 % 2 === 1) {
+                                    lastCommand_1 = whereArgs_1[ptr_1];
+                                    ptr_1++;
                                     nextWhere_1();
                                 }
                                 else {
-                                    doFastWhere_1(whereArgs_1[ptr_2], function (rows) {
+                                    doFastWhere_1(whereArgs_1[ptr_1], function (rows) {
                                         if (lastCommand_1 === "AND") {
                                             var idx_1 = rows.map(function (r) { return r[tableData._pk]; });
-                                            resultRows_2 = resultRows_2.filter(function (row) {
+                                            resultRows_1 = resultRows_1.filter(function (row) {
                                                 return idx_1.indexOf(row[tableData._pk]) !== -1;
                                             });
                                         }
                                         else {
-                                            resultRows_2 = resultRows_2.concat(rows);
+                                            resultRows_1 = resultRows_1.concat(rows);
                                         }
-                                        ptr_2++;
+                                        ptr_1++;
                                         nextWhere_1();
                                     });
                                 }
                             }
                             else {
-                                doQuery(resultRows_2);
+                                doQuery(resultRows_1);
                             }
                         };
                         nextWhere_1();
@@ -271,23 +255,11 @@ var _NanoSQLQuery = (function () {
             }
             else if (t._getMod("trie")) {
                 var trieArgs = t._getMod("trie").args;
-                var words_1 = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
-                var indexTable_1 = "_" + tableData._name + "_idx_" + trieArgs[0];
-                var ptr_3 = 0;
-                var resultRows_3 = [];
-                var step_2 = function () {
-                    if (ptr_3 < words_1.length) {
-                        t._db._store._read(indexTable_1, words_1[ptr_3], function (rows) {
-                            resultRows_3 = resultRows_3.concat(rows);
-                            ptr_3++;
-                            step_2();
-                        });
-                    }
-                    else {
-                        doQuery(resultRows_3);
-                    }
-                };
-                step_2();
+                var words = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
+                var indexTable = "_" + tableData._name + "_idx_" + trieArgs[0];
+                t._db._store._readArray(indexTable, words, function (rows) {
+                    doQuery(rows);
+                });
             }
             else {
                 if (t._act.type !== "upsert") {
@@ -434,7 +406,7 @@ var _NanoSQLQuery = (function () {
             if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
                 var histTable = "_" + table._name + "_hist__data";
                 var tah = index_1.NanoSQLInstance._hash(histTable);
-                newRow._id = t._db._store._tables[tah]._index.length;
+                newRow[db_index_1._str(4)] = t._db._store._tables[tah]._index.length;
                 t._db._store._upsert(histTable, null, newRow, function (rowID) {
                     finishUpdate(rowID);
                 });
@@ -467,7 +439,7 @@ var _NanoSQLQuery = (function () {
                     t._db._store._utility("w", "historyLength", t._db._store._historyLength);
                     t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
                     var histPoint_1 = t._db._store._historyLength - t._db._store._historyPoint;
-                    t._db._store._upsert("_historyPoints", null, {
+                    t._db._store._upsert(db_index_1._str(1), null, {
                         historyPoint: histPoint_1,
                         tableID: t._tableID,
                         rowKeys: updatedRowPKs,
@@ -493,7 +465,7 @@ var _NanoSQLQuery = (function () {
                         delete t._db._store._historyPointIndex[startIndex];
                         startIndex++;
                     }
-                    t._db._store._readArray("_historyPoints", histPoints, function (historyPoints) {
+                    t._db._store._readArray(db_index_1._str(1), histPoints, function (historyPoints) {
                         j = 0;
                         var nextPoint = function () {
                             if (j < historyPoints.length) {
@@ -524,7 +496,7 @@ var _NanoSQLQuery = (function () {
                                         nextPoint();
                                     }
                                 };
-                                t._db._store._delete("_historyPoints", historyPoints[j].id, function () {
+                                t._db._store._delete(db_index_1._str(1), historyPoints[j].id, function () {
                                     nextRow_1();
                                 });
                             }
