@@ -141,15 +141,18 @@ export class _NanoSQLDB implements NanoSQLBackend {
      *
      * @memberOf _NanoSQLQuery
      */
-    public _deepFreeze(obj: any, tableID: number): any {
+    public _deepFreeze(obj: any, tableID?: number): any {
         if (!obj) return obj;
         let t = this;
-        t._store._models[tableID].forEach((model) => {
-            let prop = obj[model.key];
-            if (["map", "array"].indexOf(typeof prop) >= 0) {
-                obj[model.key] = t._deepFreeze(prop, tableID);
-            }
-        });
+        if (tableID) {
+            t._store._models[tableID].forEach((model) => {
+                let prop = obj[model.key];
+                if (["map", "array"].indexOf(model.type) >= 0 || model.type.indexOf("[]") >= 0) {
+                    obj[model.key] = t._deepFreeze(prop);
+                }
+            });
+        }
+
         return Object.freeze(obj);
     }
 
@@ -206,11 +209,8 @@ export class _NanoSQLDB implements NanoSQLBackend {
         let store: IDBObjectStore;
         const shiftRowIDs = (direction: number, callBack: (info: {[tableID: number]: {rows: DBRow[], type: string}}) => void): void  => {
             let results = {};
-            let check = (t._store._historyLength - t._store._historyPoint);
-
-            t._store._read("_historyPoints", (row: IHistoryPoint) => {
-                return row.historyPoint === check;
-            }, (hps: IHistoryPoint[]) => {
+            const check = (t._store._historyLength - t._store._historyPoint);
+            t._store._readArray("_historyPoints", t._store._historyPointIndex[check], (hps: IHistoryPoint[]) => {
                 j = 0;
                 const nextPoint = () => {
                     if (j < hps.length) {
@@ -232,11 +232,11 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                     // Shift the row pointer
                                     t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
                                         row = _assign(row);
-                                        row[0][_str(2)] += direction;
+                                        row[0][_str(2)] = (row[0][_str(2)] || 0) + direction;
                                         const historyRowID = row[0][_str(3)][row[0][_str(2)]];
                                         t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
-                                            t._store._read("_" + table._name + "_hist__data", historyRowID, (row) => { // Now getting the new row data
-                                                let newRow = row[0] ? _assign(row[0]) : null;
+                                            t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
+                                                let newRow = setRow[0] ? _assign(setRow[0]) : null;
                                                 t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
                                                     if (direction < 0) rows.push(newRow);
                                                     if (!results[tableID]) results[tableID] = {type: hps[j].type, rows: []};

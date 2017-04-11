@@ -5,11 +5,11 @@ Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 [![npm downloads](https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square)](https://www.npmjs.com/package/nano-sql)
-![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.7.5/dist/nano-sql.min.js?compression=gzip)
+![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.7.7/dist/nano-sql.min.js?compression=gzip)
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
-NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 13Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.
+NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 12Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.
 
 Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
@@ -32,7 +32,7 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Fast secondary indexes.
 - Transactions support.
 - Full events system.
-- Just 13Kb Gzipped.
+- Just 12Kb Gzipped.
 
 ## New Features
 
@@ -48,7 +48,7 @@ I spent a long time looking for an existing solution that would do everything I 
 
 | Database                                                 | Events | TS  | Undo & Redo  | Immutable | RDBMS | IndexedDB | Node | Any Backend | Size |
 |----------------------------------------------------------|:------:|:---:|:------------:|:---------:|:-----:|:---------:|:----:|:-----------:|:----------:|
-| NanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 13         |
+| NanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 12         |
 | [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕         | ✕    | ✕        | ✓      | ✕          | 2          |
 | [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 5          |
 | [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✓         | ✕    | ✕        | ✓      | ✕          | 16         |

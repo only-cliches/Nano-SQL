@@ -271,7 +271,7 @@ var _NanoSQLQuery = (function () {
             }
             else if (t._getMod("trie")) {
                 var trieArgs = t._getMod("trie").args;
-                var words_1 = tableData._trieObjects[trieArgs[0]].getPrefix(String(trieArgs[1]).toLocaleLowerCase());
+                var words_1 = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
                 var indexTable_1 = "_" + tableData._name + "_idx_" + trieArgs[0];
                 var ptr_3 = 0;
                 var resultRows_3 = [];
@@ -355,10 +355,10 @@ var _NanoSQLQuery = (function () {
                 table._trieColumns.forEach(function (key) {
                     var word = String(newRow[key]).toLocaleLowerCase();
                     if (emptyColumns_1.indexOf(key) !== -1) {
-                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key]._removeWord(word);
                     }
                     else {
-                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key]._addWord(word);
                     }
                 });
             }
@@ -387,13 +387,11 @@ var _NanoSQLQuery = (function () {
             return;
         }
         t._db._store._read(table._name, rowPK, function (rows) {
-            var newRow = {};
-            var oldRow = rows[0] || {};
+            var newRow = index_1._assign(rows[0] || {});
             var doRemove = false;
             switch (updateType) {
                 case "upsert":
-                    newRow = oldRow ? index_1._assign(oldRow) : {};
-                    Object.keys(qArgs).forEach(function (k) {
+                    Object.getOwnPropertyNames(qArgs).forEach(function (k) {
                         newRow[k] = qArgs[k];
                     });
                     var table_1 = t._db._store._tables[t._tableID];
@@ -404,7 +402,6 @@ var _NanoSQLQuery = (function () {
                     });
                     break;
                 case "delete":
-                    newRow = oldRow ? index_1._assign(oldRow) : {};
                     if (qArgs && qArgs.length) {
                         qArgs.forEach(function (column) {
                             newRow[column] = null;
@@ -416,7 +413,7 @@ var _NanoSQLQuery = (function () {
                     }
                     break;
             }
-            var finishUpdate = function () {
+            var finishUpdate = function (histDataID) {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, function (rows) {
                         if (!rows.length || !rows[0]) {
@@ -425,21 +422,25 @@ var _NanoSQLQuery = (function () {
                             rows[0][db_index_1._str(3)] = [];
                             rows[0].id = rowPK;
                         }
-                        rows[0][db_index_1._str(3)].unshift(len);
+                        else {
+                            rows = index_1._assign(rows);
+                        }
+                        rows[0][db_index_1._str(3)].unshift(histDataID);
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
                 }
                 writeChanges(newRow);
             };
-            var len = 0;
             if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
-                t._db._store._upsert("_" + table._name + "_hist__data", null, newRow, function (rowID) {
-                    len = parseInt(rowID);
-                    finishUpdate();
+                var histTable = "_" + table._name + "_hist__data";
+                var tah = index_1.NanoSQLInstance._hash(histTable);
+                newRow._id = t._db._store._tables[tah]._index.length;
+                t._db._store._upsert(histTable, null, newRow, function (rowID) {
+                    finishUpdate(rowID);
                 });
             }
             else {
-                finishUpdate();
+                finishUpdate(0);
             }
         });
     };
@@ -451,6 +452,13 @@ var _NanoSQLQuery = (function () {
             return;
         }
         if (updatedRowPKs.length > 0) {
+            var triggerComplete_1 = function () {
+                var table = t._db._store._tables[_this._tableID];
+                t._db._invalidateCache(t._tableID, [], "");
+                t._db._store._readArray(table._name, updatedRowPKs, function (rows) {
+                    callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
+                });
+            };
             var completeChange_1 = function () {
                 if (t._db._store._doHistory) {
                     if (!t._db._store._doingTransaction && t._db._store._historyPoint === 0) {
@@ -458,38 +466,34 @@ var _NanoSQLQuery = (function () {
                     }
                     t._db._store._utility("w", "historyLength", t._db._store._historyLength);
                     t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
+                    var histPoint_1 = t._db._store._historyLength - t._db._store._historyPoint;
                     t._db._store._upsert("_historyPoints", null, {
-                        historyPoint: t._db._store._historyLength - t._db._store._historyPoint,
+                        historyPoint: histPoint_1,
                         tableID: t._tableID,
-                        rowKeys: updatedRowPKs.map(function (r) { return parseInt(r); }),
+                        rowKeys: updatedRowPKs,
                         type: describe
                     }, function (rowID) {
-                        var table = t._db._store._tables[_this._tableID];
-                        t._db._invalidateCache(t._tableID, [], "");
-                        t._db._store._read(table._name, function (row) {
-                            return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
-                        }, function (rows) {
-                            callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
-                        });
+                        if (!t._db._store._historyPointIndex[histPoint_1]) {
+                            t._db._store._historyPointIndex[histPoint_1] = [];
+                        }
+                        t._db._store._historyPointIndex[histPoint_1].push(rowID);
+                        triggerComplete_1();
                     });
                 }
                 else {
-                    var table_2 = t._db._store._tables[t._tableID];
-                    t._db._invalidateCache(t._tableID, [], "");
-                    t._db._store._read(table_2._name, function (row) {
-                        return row && updatedRowPKs.indexOf(row[table_2._pk]) !== -1;
-                    }, function (rows) {
-                        callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
-                    });
+                    triggerComplete_1();
                 }
             };
             if (t._db._store._doHistory) {
                 if (t._db._store._historyPoint > 0) {
-                    t._db._store._read("_historyPoints", function (hp) {
-                        if (hp.historyPoint > t._db._store._historyLength - t._db._store._historyPoint)
-                            return true;
-                        return false;
-                    }, function (historyPoints) {
+                    var histPoints = [];
+                    var startIndex = (t._db._store._historyLength - t._db._store._historyPoint) + 1;
+                    while (t._db._store._historyPointIndex[startIndex]) {
+                        histPoints = histPoints.concat(t._db._store._historyPointIndex[startIndex].slice());
+                        delete t._db._store._historyPointIndex[startIndex];
+                        startIndex++;
+                    }
+                    t._db._store._readArray("_historyPoints", histPoints, function (historyPoints) {
                         j = 0;
                         var nextPoint = function () {
                             if (j < historyPoints.length) {
@@ -930,13 +934,7 @@ var _NanoSQLQuery = (function () {
     };
     _NanoSQLQuery.prototype._compare = function (val1, compare, val2) {
         var setValue = function (val) {
-            if (compare !== "LIKE")
-                return val;
-            if (typeof val === "string")
-                return String(val).toLowerCase();
-            if (Array.isArray(val))
-                return val.map(function (v) { return setValue(v); });
-            return val;
+            return (compare === "LIKE" && typeof val === "string") ? val.toLowerCase() : val;
         };
         var left = setValue(val2);
         var right = setValue(val1);
@@ -948,11 +946,11 @@ var _NanoSQLQuery = (function () {
             case ">=": return left >= right ? 0 : 1;
             case "IN": return right.indexOf(left) < 0 ? 1 : 0;
             case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
-            case "REGEX":
-            case "LIKE": return left.search(right) < 0 ? 1 : 0;
+            case "REGEX": return left.search(right) < 0 ? 1 : 0;
+            case "LIKE": return left.indexOf(right) < 0 ? 1 : 0;
             case "BETWEEN": return right[0] <= left && right[1] >= left ? 0 : 1;
             case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
-            default: return 0;
+            default: return 1;
         }
     };
     return _NanoSQLQuery;

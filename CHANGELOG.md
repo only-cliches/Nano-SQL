@@ -8,8 +8,17 @@ Read: ~100 records/ms
 - Transactions aren't working as consistently as I'd like with history.
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
-- Add BTrees with `props:["trie"]` and `.extend("search",args)`.
 - Write LevelDB Cordova plugin.
+
+## [0.7.7] 4-10-2017
+- Switched to internal, smaller trie implimentation, reduced gzip size by more than half a kb.
+- Removed setImediate polyfill, saved another gzip half kb.
+- Fixed multiple bugs with the history system:
+1. Changes to the same row would sometimes overwrite previous row edits.
+2. History state wouldn't persist correctly into indexedDB/LevelUP
+3. The code that cleans future history points wasn't working correctly.
+- Improved write speed significantly.
+- History Points now have an in memory secondary index, increasing the history undo/redo performance significantly.
 
 ## [0.7.61] 4-9-2017
 - Trigger change events after transactions now only affect the tables that the transaction touched.

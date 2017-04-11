@@ -1,17 +1,6 @@
 import { DBRow, DataModel, DBConnect } from "./index";
 import { _NanoSQLDB } from "./db-index";
-export interface Trie {
-    dump(spaces?: number): string;
-    addWord(word: string): Trie;
-    removeWord(word: string): Trie;
-    getWords(): string[];
-    isPrefix(str: string): boolean;
-    countPrefix(str: string): number;
-    getPrefix(str: string): string[];
-    hasWord(str: string): boolean;
-    getAnagrams(str: string): string[];
-    getSubAnagrams(str: string): string[];
-}
+import { Trie } from "./trie";
 export interface IHistoryPoint {
     id: number;
     historyPoint: number;
@@ -48,6 +37,9 @@ export declare class _NanoSQL_Storage {
             value: any;
         };
     };
+    _historyPointIndex: {
+        [historyPoint: number]: number[];
+    };
     _historyLength: number;
     _doingTransaction: boolean;
     _persistent: boolean;
@@ -72,6 +64,7 @@ export declare class _NanoSQL_Storage {
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
     _upsert(tableName: string, rowID: string | number | null, value: any, callBack?: (rowID: number | string) => void): void;
     private _indexRead(tableName, rows, callBack, getIndex?);
+    _readArray(tableName: string, pkArray: any[], callBack: (rows: DBRow[]) => void): void;
     _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void;
     _read(tableName: string, row: string | number | Function, callBack: (rows: any[]) => void, readIndex?: boolean): void;
     _utility(type: "r" | "w", key: string, value?: any): any;

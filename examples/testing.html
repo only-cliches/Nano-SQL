@@ -142,7 +142,8 @@
                 }, {
                     key: 'name',
                     type: 'string',
-                    default: "none"
+                    default: "none",
+                    props: ["trie"]
                 }, {
                     key: 'age',
                     type: 'int',
@@ -153,7 +154,7 @@
                     default: 0.0
                 }, {
                     key: 'postIDs',
-                    type: 'string[]'
+                    type: 'int[]'
                 }, {
                     key: 'meta',
                     type: 'map',
@@ -273,7 +274,7 @@
                         }
                     }])
                 ]).then(function() {
-                    nSQL("users").query("select").range(2, 1).exec().then((rows) => {
+                    nSQL("users").query("select").trieSearch("name", "j").exec().then((rows) => {
                         console.log("RANGE", rows);
                     })
                     nSQL("orders").query("select").where(["id", "BETWEEN", [1, 2]]).exec().then((rows) => {

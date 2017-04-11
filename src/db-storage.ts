@@ -1,20 +1,8 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
 import { _NanoSQLDB, _str } from "./db-index";
 import { _functions } from "./db-query";
-import * as trie from "trie-prefix-tree";
+import { Trie } from "./trie";
 
-export interface Trie {
-    dump(spaces?: number): string;
-    addWord(word: string): Trie;
-    removeWord(word: string): Trie;
-    getWords(): string[];
-    isPrefix(str: string): boolean;
-    countPrefix(str: string): number;
-    getPrefix(str: string): string[];
-    hasWord(str: string): boolean;
-    getAnagrams(str: string): string[];
-    getSubAnagrams(str: string): string[];
-}
 declare var global: any;
 
 export interface IHistoryPoint {
@@ -86,8 +74,6 @@ export class _NanoSQL_Storage {
         }
     };
 
-
-
     /**
      * Utility table to store misc data.
      *
@@ -106,6 +92,19 @@ export class _NanoSQL_Storage {
             key: string,
             value: any;
         }
+    };
+
+    /**
+     * Since multiple rows might be inside a single history point, this keeps track
+     * of which history points are attached to which history point rows for fast seeking.
+     *
+     * @type {{
+     *         [historyPoint: number]: number[]; // History Row IDs
+     *     }}
+     * @memberOf _NanoSQL_Storage
+     */
+    public _historyPointIndex: {
+        [historyPoint: number]: number[]; // History Row IDs
     };
 
     /**
@@ -243,6 +242,7 @@ export class _NanoSQL_Storage {
         t._storeMemory = true;
         t._persistent = false;
         t._utilityTable = {};
+        t._historyPointIndex = {};
 
         t._mode = 0;
         t._parent = database;
@@ -289,9 +289,11 @@ export class _NanoSQL_Storage {
                     delete m.props;
                     return m;
                 });
+                args._models["_" + t + "_hist__data"].unshift({key: "_id", type: "int"});
+
                 args._models["_" + t + "_hist__meta"] = [
                     pkRow,
-                    {key: "_pointer", type: "int"},
+                    {key: "_pointer", type: "int", default: 0},
                     {key: "_historyDataRowIDs", type: "array"},
                 ];
             }
@@ -307,17 +309,17 @@ export class _NanoSQL_Storage {
             }
         });
 
-        args._models[_str(0)] = [
-            {key: "key", type: "string", props: ["pk"]},
-            {key: "value", type: "blob"},
-        ];
-
         args._models[_str(1)] = [
             {key: "id", type: "int", props: ["ai", "pk"]},
             {key: "tableID", type: "int"},
-            {key: "historyPoint", type: "int"},
+            {key: "historyPoint", type: "int"}, // TODO build a manual seconday index for history pionts.
             {key: "rowKeys", type: "array"},
             {key: "type", type: "string"}
+        ];
+
+        args._models[_str(0)] = [
+            {key: "key", type: "string", props: ["pk"]},
+            {key: "value", type: "blob"},
         ];
 
         let tables = Object.keys(args._models);
@@ -360,7 +362,7 @@ export class _NanoSQL_Storage {
                         t._read(tables[ptr], "all", (rows) => {
                             rows.forEach((row, i) => {
                                 rebuildJob[tables[ptr]].forEach((key) => {
-                                    if (row[key]) t._tables[ta]._trieObjects[key].addWord(String(row[key]).toLocaleLowerCase());
+                                    if (row[key]) t._tables[ta]._trieObjects[key]._addWord(row[key]);
                                 });
                             });
                             ptr++;
@@ -407,7 +409,7 @@ export class _NanoSQL_Storage {
                                         if (ptr3 < rebuildJob[tables[tablePTR]].length) {
                                             let key = rebuildJob[tables[tablePTR]][ptr3];
                                             let idxTbl = "_" + tables[tablePTR] + "_idx_" + key;
-                                            let rowKey = String(rows[rowPTR][key]).toLocaleLowerCase();
+                                            let rowKey = String(rows[rowPTR][key]).toLowerCase();
                                             t._read(idxTbl, rowKey, (readRows) => {
                                                 let indexedRows: any[] = [rows[rowPTR][PK]];
                                                 if (readRows.length && readRows[0].rowPK) {
@@ -453,11 +455,22 @@ export class _NanoSQL_Storage {
 
             t._mode = beforeMode;
             if (beforeHist) {
+                // Restore history point and length
                 t._read(_str(0), "all", (rows) => {
                     rows.forEach((d) => {
                         t._utility("w", d.key, d.value);
                         if (d.key === "historyPoint") t._historyPoint = d.value || 0;
                         if (d.key === "historyLength") t._historyLength = d.value || 0;
+                    });
+                });
+
+                // Rebuild history point index
+                t._read("_historyPoints", "all", (rows) => {
+                    rows.forEach((row) => {
+                        if (!t._historyPointIndex[row.historyPoint]) {
+                            t._historyPointIndex[row.historyPoint] = [];
+                        }
+                        t._historyPointIndex[row.historyPoint].push(row.id);
                     });
                 });
             }
@@ -566,8 +579,8 @@ export class _NanoSQL_Storage {
                     if (t._storeMemory) {
                         args.requestTable(tables[index], (tableData) => {
                             if (tables[index].indexOf("_hist__data") !== -1) {
-                                t._tables[ta]._index.push("0");
-                                t._tables[ta]._rows["0"] = null;
+                                t._tables[ta]._index.push(0);
+                                t._tables[ta]._rows[0] = null;
                                 t._tables[ta]._incriment++;
                                 t._parent._parent.loadJS(tables[index], tableData).then(() => {
                                     index++;
@@ -953,6 +966,10 @@ export class _NanoSQL_Storage {
             if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] as string || "0") + 1;
         }
 
+        if (tableName.indexOf("_hist__data") !== -1 && value) {
+            rowID = value._id as number;
+        }
+
         if (t._tables[ta]._pkType === "int") rowID = parseInt(rowID as string);
 
         const pk = t._tables[ta]._pk;
@@ -1054,7 +1071,6 @@ export class _NanoSQL_Storage {
             const allRowIDs = rows.reduce((prev, cur) => {
                 return prev.concat(cur.rowPK);
             }, []);
-            // console.log("SEC", rows, allRowIDs);
 
             let resultRows: DBRow[] = [];
             let ptr = 0;
@@ -1071,6 +1087,32 @@ export class _NanoSQL_Storage {
             };
             step();
         }
+    }
+
+    /**
+     * Read an array of rows from a given database by an array of primary keys.
+     *
+     * @param {string} tableName
+     * @param {any[]} pkArray
+     * @param {(rows: DBRow[]) => void} callBack
+     *
+     * @memberOf _NanoSQL_Storage
+     */
+    public _readArray(tableName: string, pkArray: any[], callBack: (rows: DBRow[]) => void ) {
+        let rows: any[] = [];
+        let ptr = 0;
+        const readRow = () => {
+            if (ptr < pkArray.length) {
+                this._read(tableName, pkArray[ptr], (newRows: any[]) => {
+                    rows = rows.concat(newRows);
+                    ptr++;
+                    readRow();
+                });
+            } else {
+                callBack(rows);
+            }
+        };
+        readRow();
     }
 
     /**
@@ -1163,20 +1205,23 @@ export class _NanoSQL_Storage {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);
 
-        switch (t._mode) {
-            case 0: // MemoryDB
-                let rows = t._tables[ta]._rows;
-                if (row === "all" || typeof row === "function") {
-                    let allRows = Object.keys(rows).map(r => rows[r]);
-                    if (row === "all") {
-                        this._indexRead(tableName, allRows.filter((r) => r) as DBRow[], callBack, readIndex);
-                    } else {
-                        this._indexRead(tableName, allRows.filter((r) => row(r)) as DBRow[], callBack, readIndex);
-                    }
+        // Perfer read from memory
+        if (t._storeMemory) {
+            let rows = t._tables[ta]._rows;
+            if (row === "all" || typeof row === "function") {
+                let allRows = Object.keys(rows).map(r => rows[r]);
+                if (row === "all") {
+                    t._indexRead(tableName, allRows.filter((r) => r) as DBRow[], callBack, readIndex);
                 } else {
-                    this._indexRead(tableName, [rows[row]].filter((r) => r) as DBRow[], callBack, readIndex);
+                    t._indexRead(tableName, allRows.filter((r) => row(r)) as DBRow[], callBack, readIndex);
                 }
-            break;
+            } else {
+                t._indexRead(tableName, [rows[row]].filter((r) => r) as DBRow[], callBack, readIndex);
+            }
+            return;
+        }
+
+        switch (t._mode) {
             case 1: // IndexedDB
                 const transaction = t._indexedDB.transaction(tableName, "readonly");
                 const store = transaction.objectStore(tableName);
@@ -1328,7 +1373,7 @@ export class _NanoSQL_Storage {
 
             if (p.props && p.props.indexOf("trie") >= 0) {
                 t._tables[ta]._trieColumns.push(p.key);
-                t._tables[ta]._trieObjects[p.key] = trie([]);
+                t._tables[ta]._trieObjects[p.key] = new Trie([]);
             }
 
         }

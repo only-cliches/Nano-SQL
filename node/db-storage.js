@@ -2,7 +2,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 var db_index_1 = require("./db-index");
 var db_query_1 = require("./db-query");
-var trie = require("trie-prefix-tree");
+var trie_1 = require("./trie");
 var _NanoSQL_Storage = (function () {
     function _NanoSQL_Storage(database, args) {
         this._savedArgs = args;
@@ -22,6 +22,7 @@ var _NanoSQL_Storage = (function () {
         t._storeMemory = true;
         t._persistent = false;
         t._utilityTable = {};
+        t._historyPointIndex = {};
         t._mode = 0;
         t._parent = database;
         var size = 5;
@@ -59,9 +60,10 @@ var _NanoSQL_Storage = (function () {
                     delete m.props;
                     return m;
                 });
+                args._models["_" + t + "_hist__data"].unshift({ key: "_id", type: "int" });
                 args._models["_" + t + "_hist__meta"] = [
                     pkRow,
-                    { key: "_pointer", type: "int" },
+                    { key: "_pointer", type: "int", default: 0 },
                     { key: "_historyDataRowIDs", type: "array" },
                 ];
             }
@@ -74,16 +76,16 @@ var _NanoSQL_Storage = (function () {
                 });
             }
         });
-        args._models[db_index_1._str(0)] = [
-            { key: "key", type: "string", props: ["pk"] },
-            { key: "value", type: "blob" },
-        ];
         args._models[db_index_1._str(1)] = [
             { key: "id", type: "int", props: ["ai", "pk"] },
             { key: "tableID", type: "int" },
             { key: "historyPoint", type: "int" },
             { key: "rowKeys", type: "array" },
             { key: "type", type: "string" }
+        ];
+        args._models[db_index_1._str(0)] = [
+            { key: "key", type: "string", props: ["pk"] },
+            { key: "value", type: "blob" },
         ];
         var tables = Object.keys(args._models);
         var beforeHist;
@@ -119,7 +121,7 @@ var _NanoSQL_Storage = (function () {
                             rows.forEach(function (row, i) {
                                 rebuildJob[tables_1[ptr_1]].forEach(function (key) {
                                     if (row[key])
-                                        t._tables[ta_1]._trieObjects[key].addWord(String(row[key]).toLocaleLowerCase());
+                                        t._tables[ta_1]._trieObjects[key]._addWord(row[key]);
                                 });
                             });
                             ptr_1++;
@@ -162,7 +164,7 @@ var _NanoSQL_Storage = (function () {
                                         if (ptr3_1 < rebuildJob_1[tables_2[tablePTR_1]].length) {
                                             var key_1 = rebuildJob_1[tables_2[tablePTR_1]][ptr3_1];
                                             var idxTbl_1 = "_" + tables_2[tablePTR_1] + "_idx_" + key_1;
-                                            var rowKey_1 = String(rows[rowPTR_1][key_1]).toLocaleLowerCase();
+                                            var rowKey_1 = String(rows[rowPTR_1][key_1]).toLowerCase();
                                             t._read(idxTbl_1, rowKey_1, function (readRows) {
                                                 var indexedRows = [rows[rowPTR_1][PK]];
                                                 if (readRows.length && readRows[0].rowPK) {
@@ -213,6 +215,14 @@ var _NanoSQL_Storage = (function () {
                             t._historyPoint = d.value || 0;
                         if (d.key === "historyLength")
                             t._historyLength = d.value || 0;
+                    });
+                });
+                t._read("_historyPoints", "all", function (rows) {
+                    rows.forEach(function (row) {
+                        if (!t._historyPointIndex[row.historyPoint]) {
+                            t._historyPointIndex[row.historyPoint] = [];
+                        }
+                        t._historyPointIndex[row.historyPoint].push(row.id);
                     });
                 });
             }
@@ -310,8 +320,8 @@ var _NanoSQL_Storage = (function () {
                     if (t._storeMemory) {
                         args.requestTable(tables[index], function (tableData) {
                             if (tables[index].indexOf("_hist__data") !== -1) {
-                                t._tables[ta_3]._index.push("0");
-                                t._tables[ta_3]._rows["0"] = null;
+                                t._tables[ta_3]._index.push(0);
+                                t._tables[ta_3]._rows[0] = null;
                                 t._tables[ta_3]._incriment++;
                                 t._parent._parent.loadJS(tables[index], tableData).then(function () {
                                     index++;
@@ -635,6 +645,9 @@ var _NanoSQL_Storage = (function () {
             if (!rowID)
                 rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
         }
+        if (tableName.indexOf("_hist__data") !== -1 && value) {
+            rowID = value._id;
+        }
         if (t._tables[ta]._pkType === "int")
             rowID = parseInt(rowID);
         var pk = t._tables[ta]._pk;
@@ -744,6 +757,24 @@ var _NanoSQL_Storage = (function () {
             step_5();
         }
     };
+    _NanoSQL_Storage.prototype._readArray = function (tableName, pkArray, callBack) {
+        var _this = this;
+        var rows = [];
+        var ptr = 0;
+        var readRow = function () {
+            if (ptr < pkArray.length) {
+                _this._read(tableName, pkArray[ptr], function (newRows) {
+                    rows = rows.concat(newRows);
+                    ptr++;
+                    readRow();
+                });
+            }
+            else {
+                callBack(rows);
+            }
+        };
+        readRow();
+    };
     _NanoSQL_Storage.prototype._readRange = function (tableName, key, between, callBack) {
         var _this = this;
         var t = this;
@@ -803,22 +834,23 @@ var _NanoSQL_Storage = (function () {
         var _this = this;
         var t = this;
         var ta = index_1.NanoSQLInstance._hash(tableName);
-        switch (t._mode) {
-            case 0:
-                var rows_1 = t._tables[ta]._rows;
-                if (row === "all" || typeof row === "function") {
-                    var allRows = Object.keys(rows_1).map(function (r) { return rows_1[r]; });
-                    if (row === "all") {
-                        this._indexRead(tableName, allRows.filter(function (r) { return r; }), callBack, readIndex);
-                    }
-                    else {
-                        this._indexRead(tableName, allRows.filter(function (r) { return row(r); }), callBack, readIndex);
-                    }
+        if (t._storeMemory) {
+            var rows_1 = t._tables[ta]._rows;
+            if (row === "all" || typeof row === "function") {
+                var allRows = Object.keys(rows_1).map(function (r) { return rows_1[r]; });
+                if (row === "all") {
+                    t._indexRead(tableName, allRows.filter(function (r) { return r; }), callBack, readIndex);
                 }
                 else {
-                    this._indexRead(tableName, [rows_1[row]].filter(function (r) { return r; }), callBack, readIndex);
+                    t._indexRead(tableName, allRows.filter(function (r) { return row(r); }), callBack, readIndex);
                 }
-                break;
+            }
+            else {
+                t._indexRead(tableName, [rows_1[row]].filter(function (r) { return r; }), callBack, readIndex);
+            }
+            return;
+        }
+        switch (t._mode) {
             case 1:
                 var transaction = t._indexedDB.transaction(tableName, "readonly");
                 var store = transaction.objectStore(tableName);
@@ -851,15 +883,15 @@ var _NanoSQL_Storage = (function () {
                 break;
             case 2:
                 if (row === "all" || typeof row === "function") {
-                    var rows_3 = t._tables[ta]._index.map(function (idx) {
+                    var rows = t._tables[ta]._index.map(function (idx) {
                         var item = localStorage.getItem(tableName + "-" + idx);
                         return item && item.length ? JSON.parse(item) : null;
                     });
                     if (row !== "all") {
-                        this._indexRead(tableName, rows_3.filter(function (r) { return row(r); }), callBack, readIndex);
+                        this._indexRead(tableName, rows.filter(function (r) { return row(r); }), callBack, readIndex);
                     }
                     else {
-                        this._indexRead(tableName, rows_3, callBack, readIndex);
+                        this._indexRead(tableName, rows, callBack, readIndex);
                     }
                 }
                 else {
@@ -869,18 +901,18 @@ var _NanoSQL_Storage = (function () {
                 break;
             case 4:
                 if (row === "all" || typeof row === "function") {
-                    var rows_4 = [];
+                    var rows_3 = [];
                     t._levelDBs[tableName].createValueStream()
                         .on("data", function (data) {
                         if (data)
-                            rows_4.push(JSON.parse(data));
+                            rows_3.push(JSON.parse(data));
                     })
                         .on("end", function () {
                         if (row !== "all") {
-                            _this._indexRead(tableName, rows_4.filter(function (r) { return row(r); }), callBack, readIndex);
+                            _this._indexRead(tableName, rows_3.filter(function (r) { return row(r); }), callBack, readIndex);
                         }
                         else {
-                            _this._indexRead(tableName, rows_4, callBack, readIndex);
+                            _this._indexRead(tableName, rows_3, callBack, readIndex);
                         }
                     });
                 }
@@ -950,7 +982,7 @@ var _NanoSQL_Storage = (function () {
             }
             if (p.props && p.props.indexOf("trie") >= 0) {
                 t._tables[ta]._trieColumns.push(p.key);
-                t._tables[ta]._trieObjects[p.key] = trie([]);
+                t._tables[ta]._trieObjects[p.key] = new trie_1.Trie([]);
             }
         }
         return tableName;

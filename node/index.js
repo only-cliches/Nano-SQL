@@ -1,7 +1,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var db_index_1 = require("./db-index");
 var lie_ts_1 = require("lie-ts");
-require("setimmediate");
 exports._assign = function (obj) {
     return JSON.parse(JSON.stringify(obj));
 };

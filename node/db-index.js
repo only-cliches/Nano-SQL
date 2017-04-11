@@ -42,12 +42,14 @@ var _NanoSQLDB = (function () {
         if (!obj)
             return obj;
         var t = this;
-        t._store._models[tableID].forEach(function (model) {
-            var prop = obj[model.key];
-            if (["map", "array"].indexOf(typeof prop) >= 0) {
-                obj[model.key] = t._deepFreeze(prop, tableID);
-            }
-        });
+        if (tableID) {
+            t._store._models[tableID].forEach(function (model) {
+                var prop = obj[model.key];
+                if (["map", "array"].indexOf(model.type) >= 0 || model.type.indexOf("[]") >= 0) {
+                    obj[model.key] = t._deepFreeze(prop);
+                }
+            });
+        }
         return Object.freeze(obj);
     };
     _NanoSQLDB.prototype._transaction = function (type) {
@@ -76,9 +78,7 @@ var _NanoSQLDB = (function () {
         var shiftRowIDs = function (direction, callBack) {
             var results = {};
             var check = (t._store._historyLength - t._store._historyPoint);
-            t._store._read("_historyPoints", function (row) {
-                return row.historyPoint === check;
-            }, function (hps) {
+            t._store._readArray("_historyPoints", t._store._historyPointIndex[check], function (hps) {
                 j = 0;
                 var nextPoint = function () {
                     if (j < hps.length) {
@@ -96,11 +96,11 @@ var _NanoSQLDB = (function () {
                                         rows_1.push(rowData[0]);
                                     t._store._read("_" + table_1._name + "_hist__meta", rowID, function (row) {
                                         row = index_1._assign(row);
-                                        row[0][exports._str(2)] += direction;
+                                        row[0][exports._str(2)] = (row[0][exports._str(2)] || 0) + direction;
                                         var historyRowID = row[0][exports._str(3)][row[0][exports._str(2)]];
                                         t._store._upsert("_" + table_1._name + "_hist__meta", rowID, row[0], function () {
-                                            t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (row) {
-                                                var newRow = row[0] ? index_1._assign(row[0]) : null;
+                                            t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (setRow) {
+                                                var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
                                                 t._store._upsert(table_1._name, rowID, newRow, function () {
                                                     if (direction < 0)
                                                         rows_1.push(newRow);

@@ -1,6 +1,6 @@
 import { _NanoSQLDB } from "./db-index";
 import { Promise } from "lie-ts";
-require("setimmediate");
+
 
 declare var global: any;
 

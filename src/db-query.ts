@@ -376,7 +376,7 @@ export class _NanoSQLQuery {
 
             } else if (t._getMod("trie")) { // Trie modifier
                 const trieArgs = (t._getMod("trie") as QueryLine).args;
-                const words = tableData._trieObjects[trieArgs[0]].getPrefix(String(trieArgs[1]).toLocaleLowerCase());
+                const words = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
                 const indexTable = "_" + tableData._name + "_idx_" + trieArgs[0];
                 let ptr = 0;
                 let resultRows: DBRow[] = [];
@@ -453,7 +453,7 @@ export class _NanoSQLQuery {
         })();
 
         const updateSecondaryIndex = (newRow: DBRow, rem?: boolean) => {
-
+  
             if (table._name.indexOf("_") !== 0) {
                 let emptyColumns: string[] = [];
 
@@ -488,9 +488,9 @@ export class _NanoSQLQuery {
                 table._trieColumns.forEach((key) => {
                     const word = String(newRow[key]).toLocaleLowerCase();
                     if (emptyColumns.indexOf(key) !== -1) {
-                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key]._removeWord(word);
                     } else {
-                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key]._addWord(word);
                     }
                 });
             }
@@ -526,21 +526,14 @@ export class _NanoSQLQuery {
         }
 
         t._db._store._read(table._name, rowPK, (rows) => {
-            let newRow = {};
-            const oldRow = rows[0] || {};
+            let newRow = _assign(rows[0] || {});
 
             let doRemove = false;
 
             switch (updateType) {
                 case "upsert":
-                    newRow = oldRow ? _assign(oldRow) : {};
-                    /*if(!t._db._doingTransaction) {
-                        newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
-                    } else {
-                        newRow = oldRow || {};
-                    }*/
 
-                    Object.keys(qArgs).forEach((k) => {
+                    Object.getOwnPropertyNames(qArgs).forEach((k) => {
                         newRow[k] = qArgs[k];
                     });
 
@@ -552,7 +545,7 @@ export class _NanoSQLQuery {
                     });
                 break;
                 case "delete":
-                    newRow = oldRow ? _assign(oldRow) : {}; // Perform a deep copy of the existing row so we can modify it.
+
                     if (qArgs && qArgs.length) {
                         qArgs.forEach((column) => {
                             newRow[column] = null;
@@ -564,7 +557,7 @@ export class _NanoSQLQuery {
                 break;
             }
 
-            const finishUpdate = () => {
+            const finishUpdate = (histDataID: number) => {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, (rows) => {
                         if (!rows.length || !rows[0]) {
@@ -572,8 +565,10 @@ export class _NanoSQLQuery {
                             rows[0][_str(2)] = 0;
                             rows[0][_str(3)] = [];
                             rows[0].id = rowPK;
+                        } else {
+                            rows = _assign(rows);
                         }
-                        rows[0][_str(3)].unshift(len);
+                        rows[0][_str(3)].unshift(histDataID);
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
                 }
@@ -584,15 +579,17 @@ export class _NanoSQLQuery {
             };
 
             // Add to history
-            let len = 0; // 0 index contains a null reference used by all rows;
+            // let len = 0; // 0 index contains a null reference used by all rows;
             if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
                 // 1. copy new row data into histoy data table
-                t._db._store._upsert("_" + table._name + "_hist__data", null, newRow, (rowID) => {
-                    len = parseInt(rowID as string);
-                    finishUpdate();
+                const histTable = "_" + table._name + "_hist__data";
+                const tah = NanoSQLInstance._hash(histTable);
+                newRow._id = t._db._store._tables[tah]._index.length;
+                t._db._store._upsert(histTable, null, newRow, (rowID) => {
+                    finishUpdate(rowID as number);
                 });
             } else {
-                finishUpdate();
+                finishUpdate(0);
             }
 
         });
@@ -618,6 +615,14 @@ export class _NanoSQLQuery {
 
         if (updatedRowPKs.length > 0) {
 
+            const triggerComplete = () => {
+                let table = t._db._store._tables[this._tableID];
+                t._db._invalidateCache(t._tableID, [], "");
+                t._db._store._readArray(table._name, updatedRowPKs, (rows) => {
+                    callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows);
+                });
+            }
+
             const completeChange = () => {
 
                 if (t._db._store._doHistory) {
@@ -629,41 +634,35 @@ export class _NanoSQLQuery {
                     t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
 
                     // Add history records
+                    const histPoint = t._db._store._historyLength - t._db._store._historyPoint;
                     t._db._store._upsert("_historyPoints", null, {
-                        historyPoint: t._db._store._historyLength - t._db._store._historyPoint,
+                        historyPoint: histPoint,
                         tableID: t._tableID,
-                        rowKeys: updatedRowPKs.map(r => parseInt(r)),
+                        rowKeys: updatedRowPKs,
                         type: describe
                     }, (rowID) => {
-                        let table = t._db._store._tables[this._tableID];
-                        t._db._invalidateCache(t._tableID, [], "");
-                        t._db._store._read(table._name, (row) => {
-                            return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
-                        }, (rows) => {
-                            callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows);
-                        });
-
+                        if (!t._db._store._historyPointIndex[histPoint]) {
+                            t._db._store._historyPointIndex[histPoint] = [];
+                        }
+                        t._db._store._historyPointIndex[histPoint].push(rowID as number);
+                        triggerComplete();
                     });
                 } else {
-                    let table = t._db._store._tables[t._tableID];
-                    t._db._invalidateCache(t._tableID, [], "");
-                    t._db._store._read(table._name, (row) => {
-                        return row && updatedRowPKs.indexOf(row[table._pk]) !== -1;
-                    }, (rows) => {
-                        callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows);
-                    });
+                    triggerComplete();
                 }
             };
 
             if (t._db._store._doHistory) {
                 // Remove history points ahead of the current one if the database has changed
                 if (t._db._store._historyPoint > 0) {
-
-                    t._db._store._read("_historyPoints", (hp: IHistoryPoint) => {
-                        if (hp.historyPoint > t._db._store._historyLength - t._db._store._historyPoint) return true;
-                        return false;
-                    }, (historyPoints: IHistoryPoint[]) => {
-
+                    let histPoints: number[] = [];
+                    let startIndex = (t._db._store._historyLength - t._db._store._historyPoint) + 1;
+                    while (t._db._store._historyPointIndex[startIndex]) {
+                        histPoints = histPoints.concat(t._db._store._historyPointIndex[startIndex].slice());
+                        delete t._db._store._historyPointIndex[startIndex]; // Update index
+                        startIndex++;
+                    }
+                    t._db._store._readArray("_historyPoints", histPoints, (historyPoints: IHistoryPoint[]) => {
                         j = 0;
                         const nextPoint = () => {
 
@@ -1203,6 +1202,7 @@ export class _NanoSQLQuery {
 
     /**
      * Compare two values together given a comparison value
+     * returns 1 for false, 0 for true
      *
      * @internal
      * @param {*} val1
@@ -1214,10 +1214,7 @@ export class _NanoSQLQuery {
      */
     private _compare(val1: any, compare: string, val2: any): number {
         const setValue = (val: any) => {
-            if (compare !== "LIKE") return val;
-            if (typeof val === "string") return String(val).toLowerCase();
-            if (Array.isArray(val)) return val.map((v) => setValue(v));
-            return val;
+            return (compare === "LIKE" && typeof val === "string") ? val.toLowerCase() : val;
         };
 
         let left = setValue(val2);
@@ -1231,11 +1228,11 @@ export class _NanoSQLQuery {
             case ">=": return left >= right ? 0 : 1;
             case "IN": return right.indexOf(left) < 0 ? 1 : 0;
             case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
-            case "REGEX":
-            case "LIKE": return left.search(right) < 0 ? 1 : 0;
+            case "REGEX": return left.search(right) < 0 ? 1 : 0;
+            case "LIKE": return left.indexOf(right) < 0 ? 1 : 0;
             case "BETWEEN": return right[0] <= left && right[1] >= left ? 0 : 1;
             case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
-            default: return 0;
+            default: return 1;
         }
     }
 }

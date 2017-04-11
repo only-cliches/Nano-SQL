@@ -54,7 +54,7 @@ nsql("users")
 
         //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((rows) => {
 
-        nsql("users").query("select").trieSearch("name", "sco").exec().then((rows) => {
+        nsql("users").query("select").trieSearch("name", "gh").exec().then((rows) => {
             console.timeEnd("READ");
             console.log(rows);
         })
