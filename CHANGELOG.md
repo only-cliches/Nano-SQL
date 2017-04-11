@@ -10,8 +10,7 @@ Read: ~100 records/ms
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
-
-## [0.7.71] 4-11-2017
+## [0.7.75] 4-11-2017
 - Fixed UglifyJS breaking the history system.
 - Small size/performance optimizations.
 

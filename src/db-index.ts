@@ -237,7 +237,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                         t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
                                             t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
                                                 let newRow = setRow[0] ? _assign(setRow[0]) : null;
-                                                delete newRow[_str(4)]; // Remove history ID
+                                                if (newRow) delete newRow[_str(4)]; // Remove history ID
                                                 t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
                                                     if (direction < 0) rows.push(newRow);
                                                     if (!results[tableID]) results[tableID] = {type: hps[j].type, rows: []};

@@ -10,7 +10,7 @@ export function initStore() {
 
     nSQL("todos")
     .model([
-        {key: "id" ,type: "timeId", props: ["pk"]},
+        {key: "id", type: "int", props: ["pk", "ai"]},
         {key: "done", type: "bool", default: false},
         {key: "title", type: "string", default: ""}
     ])
@@ -42,6 +42,6 @@ export function initStore() {
         }
     ])
 
-    return nSQL().config({persistent: true}).connect();
+    return nSQL().config({persistent: true, id: "Todo-App"}).connect();
 
 }

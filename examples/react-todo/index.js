@@ -14,7 +14,7 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
     function initStore() {
         nano_sql_1.nSQL("todos")
             .model([
-            { key: "id", type: "timeId", props: ["pk"] },
+            { key: "id", type: "int", props: ["pk", "ai"] },
             { key: "done", type: "bool", default: false },
             { key: "title", type: "string", default: "" }
         ])
@@ -45,7 +45,7 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
                 }
             }
         ]);
-        return nano_sql_1.nSQL().config({ persistent: true }).connect();
+        return nano_sql_1.nSQL().config({ persistent: true, id: "Todo-App" }).connect();
     }
     exports.initStore = initStore;
 });

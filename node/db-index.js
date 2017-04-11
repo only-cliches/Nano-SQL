@@ -101,7 +101,8 @@ var _NanoSQLDB = (function () {
                                         t._store._upsert("_" + table_1._name + "_hist__meta", rowID, row[0], function () {
                                             t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (setRow) {
                                                 var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
-                                                delete newRow[exports._str(4)];
+                                                if (newRow)
+                                                    delete newRow[exports._str(4)];
                                                 t._store._upsert(table_1._name, rowID, newRow, function () {
                                                     if (direction < 0)
                                                         rows_1.push(newRow);

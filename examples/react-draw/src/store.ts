@@ -14,11 +14,11 @@ export interface Path {
 export const DrawStore = (): Promise<any> => {
     nSQL("paths")
     .model([
-        {key: "id", type: "timeId", props: ["pk"]},
+        {key: "id", type: "int", props: ["pk", "ai"]},
         {key: "color", type: "string"},
         {key: "size", type: "int"},
         {key: "path", type: "array"}
     ])
 
-    return nSQL().config({persistent:true}).connect();
+    return nSQL().config({persistent: true, id: "Draw-App"}).connect();
 }

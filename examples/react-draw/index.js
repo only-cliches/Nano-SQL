@@ -22,12 +22,12 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
     exports.DrawStore = function () {
         nano_sql_1.nSQL("paths")
             .model([
-            { key: "id", type: "timeId", props: ["pk"] },
+            { key: "id", type: "int", props: ["pk", "ai"] },
             { key: "color", type: "string" },
             { key: "size", type: "int" },
             { key: "path", type: "array" }
         ]);
-        return nano_sql_1.nSQL().config({ persistent: true }).connect();
+        return nano_sql_1.nSQL().config({ persistent: true, id: "Draw-App" }).connect();
     };
 });
 define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql", "jquery"], function (require, exports, react_1, React, ReactDOM, store_1, nano_sql_2, $) {
