@@ -5,7 +5,7 @@ Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 [![npm downloads](https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square)](https://www.npmjs.com/package/nano-sql)
-![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.7.75/dist/nano-sql.min.js?compression=gzip)
+![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.7.8/dist/nano-sql.min.js?compression=gzip)
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
@@ -193,6 +193,10 @@ nSQL("*").on("change", function(dbEvent) { ... });
 
 // Get all rows, only provide the "name" column.
 nSQL("users").query("select",["name"]).exec().then(function(rows, db) {...});
+
+// find all users who's name begins with "fr".
+// must have props: ["trie"] on the name column in the data model.
+nSQL("users").query("select").trieSearch("name","fr").exec()...
 
 // Select all users with the name "John".
 nSQL("users").query("select").where(["name","=","John"]).exec().then(function(rows, db) {...});

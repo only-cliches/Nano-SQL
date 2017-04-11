@@ -21,7 +21,6 @@ export class Trie {
 
         const input: string[] = word.toLowerCase().split("");
         input.reduce(reducer, this._trie);
-
         return this;
     }
 

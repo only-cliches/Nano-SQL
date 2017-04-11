@@ -23,8 +23,8 @@
             db.table("users")
                 .model([{
                     key: "id",
-                    type: "uuid",
-                    props: ["pk"]
+                    type: "int",
+                    props: ["pk", "ai"]
                 }, {
                     key: "name",
                     type: "string"
@@ -274,7 +274,7 @@
                         }
                     }])
                 ]).then(function() {
-                    nSQL("users").query("select").trieSearch("name", "j").exec().then((rows) => {
+                    nSQL("users").query("select").trieSearch("name", "sc").exec().then((rows) => {
                         console.log("RANGE", rows);
                     })
                     nSQL("orders").query("select").where(["id", "BETWEEN", [1, 2]]).exec().then((rows) => {
@@ -322,9 +322,14 @@
                             }).exec().then(function(result2) {
                                 console.log('immuTest: ' + (result === result2));
                             });
-                            db.query("select").where(["name", "LIKE", "ScOTT"]).exec().then((rows) => {
-                                console.log("HAVE", rows);
-                            })
+                            db.query("select")
+                                .join({
+                                    type: "inner",
+                                    table: "orders",
+                                    where: ["users.id", "=", "orders.userID"]
+                                }).exec().then((rows) => {
+                                    console.log("JOIN", rows);
+                                })
 
                             return db.query('select').toCSV(true);
                         })

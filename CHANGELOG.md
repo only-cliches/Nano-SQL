@@ -10,11 +10,16 @@ Read: ~100 records/ms
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
+## [0.7.8] 4-11-2017
+- Fixed an issue with joins.
+- Tries now rebuild after transactions.
+- Fixed an issue with tries not pulling results from the data store correctly.
+
 ## [0.7.75] 4-11-2017
 - Fixed UglifyJS breaking the history system.
 - Small size/performance optimizations.
 
-## [0.7.7] 4-11-2017
+## [0.7.7] 4-10-2017
 - Switched to internal, smaller trie implimentation, reduced gzip size by more than half a kb.
 - Removed setImediate polyfill, saved another gzip half kb.
 - Fixed multiple bugs with the history system:

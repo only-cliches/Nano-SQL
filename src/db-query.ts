@@ -429,7 +429,7 @@ export class _NanoSQLQuery {
         })();
 
         const updateSecondaryIndex = (newRow: DBRow, rem?: boolean) => {
-  
+
             if (table._name.indexOf("_") !== 0) {
                 let emptyColumns: string[] = [];
 
@@ -597,7 +597,7 @@ export class _NanoSQLQuery {
                 t._db._store._readArray(table._name, updatedRowPKs, (rows) => {
                     callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows);
                 });
-            }
+            };
 
             const completeChange = () => {
 
@@ -942,9 +942,9 @@ export class _NanoSQLQuery {
                     let joinConditions;
                     if (curMod.args.type !== "cross") {
                         joinConditions = {
-                            _left: curMod.args.where[0].split(".").pop(),
+                            _left: curMod.args.where[0],
                             _check: curMod.args.where[1],
-                            _right: curMod.args.where[2].split(".").pop()
+                            _right: curMod.args.where[2]
                         };
                     }
 
@@ -1143,13 +1143,13 @@ export class _NanoSQLQuery {
             t._db._store._read(rightTableData._name, "all", (rightRows: DBRow[]) => {
 
                 leftRows.forEach((leftRow) => {
-                    let joinRows = rightRows.filter((rightRow) => {
+                    let joinRows = rightRows.map((rightRow) => {
                         if (!joinConditions) return true;
                         let joinedRow = doJoinRows(leftRow, rightRow);
-                        let keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinConditions._right]);
+                        let keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinedRow[joinConditions._right]]);
                         if (keep) rightUsedPKs.push(rightRow[rightTableData._pk]);
-                        return keep;
-                    });
+                        return keep ? joinedRow : null;
+                    }).filter(r => r);
 
                     if (joinRows.length) { // All joins bring together rows that succesfully compare.
                         joinTable = joinTable.concat(joinRows);

@@ -718,9 +718,9 @@ var _NanoSQLQuery = (function () {
                     var joinConditions = void 0;
                     if (curMod.args.type !== "cross") {
                         joinConditions = {
-                            _left: curMod.args.where[0].split(".").pop(),
+                            _left: curMod.args.where[0],
                             _check: curMod.args.where[1],
-                            _right: curMod.args.where[2].split(".").pop()
+                            _right: curMod.args.where[2]
                         };
                     }
                     var leftTableID = t._tableID;
@@ -874,15 +874,15 @@ var _NanoSQLQuery = (function () {
         t._db._store._read(leftTableData._name, "all", function (leftRows) {
             t._db._store._read(rightTableData._name, "all", function (rightRows) {
                 leftRows.forEach(function (leftRow) {
-                    var joinRows = rightRows.filter(function (rightRow) {
+                    var joinRows = rightRows.map(function (rightRow) {
                         if (!joinConditions)
                             return true;
                         var joinedRow = doJoinRows(leftRow, rightRow);
-                        var keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinConditions._right]);
+                        var keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinedRow[joinConditions._right]]);
                         if (keep)
                             rightUsedPKs.push(rightRow[rightTableData._pk]);
-                        return keep;
-                    });
+                        return keep ? joinedRow : null;
+                    }).filter(function (r) { return r; });
                     if (joinRows.length) {
                         joinTable = joinTable.concat(joinRows);
                     }
