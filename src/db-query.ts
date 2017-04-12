@@ -363,7 +363,7 @@ export class _NanoSQLQuery {
 
             } else if (t._getMod("trie")) { // Trie modifier
                 const trieArgs = (t._getMod("trie") as QueryLine).args;
-                const words = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
+                const words = tableData._trieObjects[trieArgs[0]].getPrefix(trieArgs[1]);
                 const indexTable = "_" + tableData._name + "_idx_" + trieArgs[0];
                 t._db._store._readArray(indexTable, words, (rows) => {
                     doQuery(rows);
@@ -464,9 +464,9 @@ export class _NanoSQLQuery {
                 table._trieColumns.forEach((key) => {
                     const word = String(newRow[key]).toLocaleLowerCase();
                     if (emptyColumns.indexOf(key) !== -1) {
-                        t._db._store._tables[t._tableID]._trieObjects[key]._removeWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
                     } else {
-                        t._db._store._tables[t._tableID]._trieObjects[key]._addWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
                     }
                 });
             }
@@ -555,7 +555,6 @@ export class _NanoSQLQuery {
             };
 
             // Add to history
-            // let len = 0; // 0 index contains a null reference used by all rows;
             if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
                 // 1. copy new row data into histoy data table
                 const histTable = "_" + table._name + "_hist__data";
@@ -755,7 +754,7 @@ export class _NanoSQLQuery {
             changedPKs = [objPK];
 
             // Entirely new row, setup all the needed stuff for it.
-            if (table._index.indexOf(objPK) === -1) {
+            if (!table._trieIndex.getPrefix(String(objPK)).length) {
                 // History
                 let tableName = t._db._store._tables[t._tableID]._name;
                 if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
@@ -765,9 +764,6 @@ export class _NanoSQLQuery {
                     histRow[_str(3)] = [0];
                     t._db._store._upsert(histTable, objPK, histRow);
                 }
-
-                // Index
-                table._index.push(objPK);
             }
 
             t._updateRow(objPK, () => {
@@ -1121,7 +1117,6 @@ export class _NanoSQLQuery {
         const L = "left";
         const R = "right";
         const O = "outer";
-        let joinHelper: {[tableID: number]: {_keys: string[], _name: string}} = {};
         let t = this;
 
         let leftTableData = t._db._store._tables[leftTableID];
@@ -1144,8 +1139,8 @@ export class _NanoSQLQuery {
 
                 leftRows.forEach((leftRow) => {
                     let joinRows = rightRows.map((rightRow) => {
-                        if (!joinConditions) return true;
                         let joinedRow = doJoinRows(leftRow, rightRow);
+                        if (!joinConditions) return joinedRow;
                         let keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinedRow[joinConditions._right]]);
                         if (keep) rightUsedPKs.push(rightRow[rightTableData._pk]);
                         return keep ? joinedRow : null;

@@ -2,7 +2,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 var db_index_1 = require("./db-index");
 var db_query_1 = require("./db-query");
-var trie_1 = require("./trie");
+var prefix_trie_ts_1 = require("prefix-trie-ts");
 var _NanoSQL_Storage = (function () {
     function _NanoSQL_Storage(database, args) {
         this._savedArgs = args;
@@ -282,6 +282,7 @@ var _NanoSQL_Storage = (function () {
                         args.requestTable(tables[index], function (tableData) {
                             if (tables[index].indexOf("_hist__data") !== -1) {
                                 t._tables[ta_2]._index.push(0);
+                                t._tables[ta_2]._trieIndex.addWord("0");
                                 t._tables[ta_2]._rows[0] = null;
                                 t._tables[ta_2]._incriment++;
                                 t._parent._parent.loadJS(tables[index], tableData).then(function () {
@@ -427,7 +428,10 @@ var _NanoSQL_Storage = (function () {
                     existing = false;
                 }
                 tables.forEach(function (table) {
-                    t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table);
+                    t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table, {
+                        cacheSize: 24 * 1024 * 1024,
+                        writeBufferSize: 12 * 1024 * 1024
+                    });
                 });
                 if (existing) {
                     existingStore();
@@ -464,7 +468,7 @@ var _NanoSQL_Storage = (function () {
                         rows.forEach(function (row, i) {
                             rebuildJob[tables_2[ptr_1]].forEach(function (key) {
                                 if (row[key])
-                                    t._tables[ta_3]._trieObjects[key]._addWord(row[key]);
+                                    t._tables[ta_3]._trieObjects[key].addWord(row[key]);
                             });
                         });
                         ptr_1++;
@@ -479,7 +483,6 @@ var _NanoSQL_Storage = (function () {
         }
     };
     _NanoSQL_Storage.prototype._execTransaction = function () {
-        var _this = this;
         var t = this;
         if (t._mode !== 4) {
             this._rebuildTries(function () { });
@@ -488,8 +491,8 @@ var _NanoSQL_Storage = (function () {
             case 4:
                 Object.keys(t._transactionData).forEach(function (tableName) {
                     t._levelDBs[tableName].batch(t._transactionData[tableName]);
-                    _this._rebuildTries(function () { });
                 });
+                this._rebuildTries(function () { });
                 break;
         }
     };
@@ -570,9 +573,11 @@ var _NanoSQL_Storage = (function () {
         if (rowID === "all") {
             deleteRowIDS = t._tables[ta]._index.slice();
             t._tables[ta]._index = [];
+            t._tables[ta]._trieIndex = new prefix_trie_ts_1.Trie([]);
         }
         else {
             deleteRowIDS.push(rowID);
+            t._tables[ta]._trieIndex.removeWord(String(rowID));
             t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(rowID), 1);
         }
         if (t._storeMemory) {
@@ -660,7 +665,7 @@ var _NanoSQL_Storage = (function () {
         if (pk && pk.length && value && !value[pk]) {
             value[pk] = rowID;
         }
-        if (t._tables[ta]._index.indexOf(rowID) === -1) {
+        if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {
             t._tables[ta]._index.push(rowID);
         }
         if (t._storeMemory) {
@@ -970,6 +975,7 @@ var _NanoSQL_Storage = (function () {
             _name: tableName,
             _incriment: 1,
             _index: [],
+            _trieIndex: new prefix_trie_ts_1.Trie([]),
             _rows: {}
         };
         var i = t._models[ta].length;
@@ -988,7 +994,7 @@ var _NanoSQL_Storage = (function () {
             }
             if (p.props && p.props.indexOf("trie") >= 0) {
                 t._tables[ta]._trieColumns.push(p.key);
-                t._tables[ta]._trieObjects[p.key] = new trie_1.Trie([]);
+                t._tables[ta]._trieObjects[p.key] = new prefix_trie_ts_1.Trie([]);
             }
         }
         return tableName;

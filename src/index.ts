@@ -305,7 +305,7 @@ export class NanoSQLInstance {
 
     /**
      * Store an array of updated tables to decide what tables to trigger a change on after the transaction.
-     * 
+     *
      * @private
      * @type {string[]}
      * @memberOf NanoSQLInstance
@@ -1190,7 +1190,7 @@ export class NanoSQLInstance {
             while (r.length < 4) r = "0" + r;
             return prev + ([3, 4, 5, 6].indexOf(i) >= 0 ? "-" : b) + (s + r).slice(0, 4);
         }, b);
-    };
+    }
 
     /**
      * Utility function for generating numerical hashes from strings.

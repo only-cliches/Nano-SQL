@@ -255,7 +255,7 @@ var _NanoSQLQuery = (function () {
             }
             else if (t._getMod("trie")) {
                 var trieArgs = t._getMod("trie").args;
-                var words = tableData._trieObjects[trieArgs[0]]._getPrefix(trieArgs[1]);
+                var words = tableData._trieObjects[trieArgs[0]].getPrefix(trieArgs[1]);
                 var indexTable = "_" + tableData._name + "_idx_" + trieArgs[0];
                 t._db._store._readArray(indexTable, words, function (rows) {
                     doQuery(rows);
@@ -327,10 +327,10 @@ var _NanoSQLQuery = (function () {
                 table._trieColumns.forEach(function (key) {
                     var word = String(newRow[key]).toLocaleLowerCase();
                     if (emptyColumns_1.indexOf(key) !== -1) {
-                        t._db._store._tables[t._tableID]._trieObjects[key]._removeWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
                     }
                     else {
-                        t._db._store._tables[t._tableID]._trieObjects[key]._addWord(word);
+                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
                     }
                 });
             }
@@ -568,7 +568,7 @@ var _NanoSQLQuery = (function () {
             }
             var objPK = qArgs[pk] ? qArgs[pk] : table._index.length;
             changedPKs = [objPK];
-            if (table._index.indexOf(objPK) === -1) {
+            if (!table._trieIndex.getPrefix(String(objPK)).length) {
                 var tableName = t._db._store._tables[t._tableID]._name;
                 if (tableName.indexOf("_") !== 0 && t._db._store._doHistory) {
                     var histTable = "_" + tableName + "_hist__meta";
@@ -577,7 +577,6 @@ var _NanoSQLQuery = (function () {
                     histRow[db_index_1._str(3)] = [0];
                     t._db._store._upsert(histTable, objPK, histRow);
                 }
-                table._index.push(objPK);
             }
             t._updateRow(objPK, function () {
                 t._tableChanged(changedPKs, scribe, callBack);
@@ -857,7 +856,6 @@ var _NanoSQLQuery = (function () {
         var L = "left";
         var R = "right";
         var O = "outer";
-        var joinHelper = {};
         var t = this;
         var leftTableData = t._db._store._tables[leftTableID];
         var rightTableData = t._db._store._tables[rightTableID];
@@ -875,9 +873,9 @@ var _NanoSQLQuery = (function () {
             t._db._store._read(rightTableData._name, "all", function (rightRows) {
                 leftRows.forEach(function (leftRow) {
                     var joinRows = rightRows.map(function (rightRow) {
-                        if (!joinConditions)
-                            return true;
                         var joinedRow = doJoinRows(leftRow, rightRow);
+                        if (!joinConditions)
+                            return joinedRow;
                         var keep = t._where(joinedRow, [joinConditions._left, joinConditions._check, joinedRow[joinConditions._right]]);
                         if (keep)
                             rightUsedPKs.push(rightRow[rightTableData._pk]);

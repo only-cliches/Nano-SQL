@@ -2,13 +2,18 @@
 
 ## TODO
 Recent benchmarks with LevelDB on a low end laptop:
-Write: ~10 records/ms 
+Write:  ~1 record/ms 
 Read: ~100 records/ms
 - Test and improve performance of LevelDB on the server.
-- Transactions aren't working as consistently as I'd like with history.
 - Complete the SQLite driver.
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
+
+## [0.7.9] 4-11-2017
+- Updated promise lib with smaller setImediate polyfill, in browser performance is 10x and lib is only 200 bytes larger.
+- Moved Trie implimintation to external lib.
+- Increased leveldown write buffer size.
+- Added trie to primary key indexes, writes are 10 - 20x faster now.
 
 ## [0.7.8] 4-11-2017
 - Fixed an issue with joins.

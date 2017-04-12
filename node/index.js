@@ -423,7 +423,6 @@ var NanoSQLInstance = (function () {
             return prev + ([3, 4, 5, 6].indexOf(i) >= 0 ? "-" : b) + (s + r).slice(0, 4);
         }, b);
     };
-    ;
     NanoSQLInstance._hash = function (key) {
         return Math.abs(key.split("").reduce(function (prev, next, i) {
             return ((prev << 5) + prev) + key.charCodeAt(i);

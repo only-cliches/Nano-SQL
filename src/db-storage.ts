@@ -1,7 +1,7 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
 import { _NanoSQLDB, _str } from "./db-index";
 import { _functions } from "./db-query";
-import { Trie } from "./trie";
+import { Trie } from "prefix-trie-ts";
 
 declare var global: any;
 
@@ -61,6 +61,7 @@ export class _NanoSQL_Storage {
             _name: string
             _incriment: number;
             _index: (string|number)[];
+            _trieIndex: Trie;
             _secondaryIndexes: string[];
             _trieColumns: string[];
             _trieObjects: {
@@ -539,6 +540,7 @@ export class _NanoSQL_Storage {
                         args.requestTable(tables[index], (tableData) => {
                             if (tables[index].indexOf("_hist__data") !== -1) {
                                 t._tables[ta]._index.push(0);
+                                t._tables[ta]._trieIndex.addWord("0");
                                 t._tables[ta]._rows[0] = null;
                                 t._tables[ta]._incriment++;
                                 t._parent._parent.loadJS(tables[index], tableData).then(() => {
@@ -699,7 +701,10 @@ export class _NanoSQL_Storage {
                 }
 
                 tables.forEach((table) => {
-                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table);
+                    t._levelDBs[table] = global._levelup(dbFolder + "/" + table, {
+                        cacheSize: 24 * 1024 * 1024,
+                        writeBufferSize: 12 * 1024 * 1024
+                    });
                 });
 
                 if (existing) {
@@ -739,7 +744,6 @@ export class _NanoSQL_Storage {
         });
 
         if (jobLength === 0) {
-            // args._onSuccess();
             callBack();
         } else {
             let tables = Object.keys(rebuildJob);
@@ -750,7 +754,7 @@ export class _NanoSQL_Storage {
                     t._read(tables[ptr], "all", (rows) => {
                         rows.forEach((row, i) => {
                             rebuildJob[tables[ptr]].forEach((key) => {
-                                if (row[key]) t._tables[ta]._trieObjects[key]._addWord(row[key]);
+                                if (row[key]) t._tables[ta]._trieObjects[key].addWord(row[key]);
                             });
                         });
                         ptr++;
@@ -780,8 +784,8 @@ export class _NanoSQL_Storage {
             case 4:
                 Object.keys(t._transactionData).forEach((tableName) => {
                     t._levelDBs[tableName].batch(t._transactionData[tableName]);
-                    this._rebuildTries(() => {});
                 });
+                this._rebuildTries(() => {});
             break;
             /* NODE-END */
         }
@@ -884,8 +888,10 @@ export class _NanoSQL_Storage {
         if (rowID === "all") {
             deleteRowIDS = t._tables[ta]._index.slice();
             t._tables[ta]._index = [];
+            t._tables[ta]._trieIndex = new Trie([]);
         } else {
             deleteRowIDS.push(rowID);
+            t._tables[ta]._trieIndex.removeWord(String(rowID));
             t._tables[ta]._index.splice(t._tables[ta]._index.indexOf(rowID), 1); // Update Index
         }
 
@@ -990,7 +996,7 @@ export class _NanoSQL_Storage {
         }
 
         // add to index
-        if (t._tables[ta]._index.indexOf(rowID) === -1) {
+        if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {
             t._tables[ta]._index.push(rowID);
         }
 
@@ -1364,6 +1370,7 @@ export class _NanoSQL_Storage {
             _name: tableName,
             _incriment: 1,
             _index: [],
+            _trieIndex: new Trie([]),
             _rows: {}
         };
 

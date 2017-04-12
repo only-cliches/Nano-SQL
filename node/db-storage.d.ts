@@ -1,6 +1,6 @@
 import { DBRow, DataModel, DBConnect } from "./index";
 import { _NanoSQLDB } from "./db-index";
-import { Trie } from "./trie";
+import { Trie } from "prefix-trie-ts";
 export interface IHistoryPoint {
     id: number;
     historyPoint: number;
@@ -19,6 +19,7 @@ export declare class _NanoSQL_Storage {
             _name: string;
             _incriment: number;
             _index: (string | number)[];
+            _trieIndex: Trie;
             _secondaryIndexes: string[];
             _trieColumns: string[];
             _trieObjects: {
