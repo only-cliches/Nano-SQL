@@ -10,7 +10,7 @@ Read: ~100 records/ms
 - Write LevelDB Cordova plugin.
 
 ## [0.7.91] 4-13-2017
-- Fixed secondary indexes not updating correctly.
+- Fixed secondary indexes not removing old entries.
 - Moved secondary index updates out of the transaction loop, writes twice as fast now.
 
 ## [0.7.9] 4-11-2017
