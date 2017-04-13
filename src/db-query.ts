@@ -465,8 +465,9 @@ export class _NanoSQLQuery {
                     if (rowID !== oldRowID && oldRow[key]) {
                         // Remove old value from secondary index
                         t._db._store._read(idxTable, oldRowID, (oldRowIndex) => {
-                            let indexes: any[] = _assign(oldRowIndex[0]);
-                            indexes.splice(indexes.indexOf(oldRowID[table._pk]), 1);
+                            let indexes: any[] = oldRowIndex[0] ? _assign(oldRowIndex[0].rowPK || []) : [];
+                            const oldRowLoc = indexes.indexOf(oldRowID[table._pk]);
+                            if (oldRowLoc !== -1) indexes.splice(oldRowLoc, 1);
                             t._db._store._upsert(idxTable, oldRowID, {
                                 id: oldRowID,
                                 rowPK: indexes

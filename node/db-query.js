@@ -329,8 +329,10 @@ var _NanoSQLQuery = (function () {
                     var oldRowID = String(oldRow[key]).toLowerCase();
                     if (rowID !== oldRowID && oldRow[key]) {
                         t._db._store._read(idxTable, oldRowID, function (oldRowIndex) {
-                            var indexes = index_1._assign(oldRowIndex[0]);
-                            indexes.splice(indexes.indexOf(oldRowID[table._pk]), 1);
+                            var indexes = oldRowIndex[0] ? index_1._assign(oldRowIndex[0].rowPK || []) : [];
+                            var oldRowLoc = indexes.indexOf(oldRowID[table._pk]);
+                            if (oldRowLoc !== -1)
+                                indexes.splice(oldRowLoc, 1);
                             t._db._store._upsert(idxTable, oldRowID, {
                                 id: oldRowID,
                                 rowPK: indexes
