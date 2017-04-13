@@ -60,6 +60,7 @@ export declare class _NanoSQL_Storage {
     private _rebuildIndexes;
     constructor(database: _NanoSQLDB, args: DBConnect);
     init(database: _NanoSQLDB, args: DBConnect): void;
+    _rebuildSecondaryIndex(tableName: string, complete: () => void): void;
     _rebuildTries(callBack: Function): void;
     _execTransaction(): void;
     _clear(type: "all" | "hist", complete: Function): void;

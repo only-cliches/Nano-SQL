@@ -1,6 +1,7 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
 import { _NanoSQLDB, _str } from "./db-index";
 import { _functions } from "./db-query";
+import { Promise, setFast } from "lie-ts";
 import { Trie } from "prefix-trie-ts";
 
 declare var global: any;
@@ -341,71 +342,15 @@ export class _NanoSQL_Storage {
             if (!t._rebuildIndexes) {
                 t._rebuildTries(args._onSuccess);
             } else {
-                let rebuildJob: {
-                    [tableName: string]: string[] // indexes
-                } = {};
-                Object.keys(args._models).forEach((table) => {
-                    if (table.indexOf("_") !== 0) { // only check non internal tables
-                        const ta = NanoSQLInstance._hash(table);
-                        if  (t._tables[ta]._secondaryIndexes.length) {
-                            rebuildJob[table] = t._tables[ta]._secondaryIndexes;
-                        }
-                    }
-                });
-
-                const tables = Object.keys(rebuildJob);
-                let tablePTR = 0;
-                const step = () => {
-                    if (tablePTR < tables.length) {
-                        const ta = NanoSQLInstance._hash(tables[tablePTR]);
-                        let rowPTR = 0;
-
-                        this._read(tables[tablePTR], "all", (rows) => {
-                            let PK = t._tables[ta]._pk;
-                            const step2 = () => {
-                                if (rowPTR < rows.length) {
-                                    let ptr3 = 0;
-                                    const step3 = () => {
-                                        if (ptr3 < rebuildJob[tables[tablePTR]].length) {
-                                            let key = rebuildJob[tables[tablePTR]][ptr3];
-                                            let idxTbl = "_" + tables[tablePTR] + "_idx_" + key;
-                                            let rowKey = String(rows[rowPTR][key]).toLowerCase();
-                                            t._read(idxTbl, rowKey, (readRows) => {
-                                                let indexedRows: any[] = [rows[rowPTR][PK]];
-                                                if (readRows.length && readRows[0].rowPK) {
-                                                    indexedRows = indexedRows.concat(readRows[0].rowPK).filter((item, pos) => {
-                                                        return indexedRows.indexOf(item) === pos;
-                                                    });
-                                                }
-
-                                                t._upsert(idxTbl, rowKey, {
-                                                    id: rows[rowPTR][key],
-                                                    rowPK: indexedRows
-                                                }, () => {
-                                                    ptr3++;
-                                                    step3();
-                                                });
-                                            }, true);
-
-                                        } else {
-                                            rowPTR++;
-                                            step2();
-                                        }
-                                    };
-                                    step3();
-                                } else {
-                                    tablePTR++;
-                                    step();
-                                }
-                            };
-                            step2();
+                Promise.all(Object.keys(args._models).map((tableName) => {
+                    return new Promise((res, rej) => {
+                        t._rebuildSecondaryIndex(tableName, () => {
+                            res();
                         });
-
-                    } else {
-                        t._rebuildTries(args._onSuccess);
-                    }
-                };
-                step();
+                    });
+                })).then(() => {
+                    t._rebuildTries(args._onSuccess);
+                });
             }
         };
 
@@ -719,6 +664,52 @@ export class _NanoSQL_Storage {
 
     }
 
+    public _rebuildSecondaryIndex(tableName: string, complete: () => void) {
+        let t = this;
+        const ta = NanoSQLInstance._hash(tableName);
+        let rowPTR = 0;
+        let secondIdx: string[] = t._tables[ta]._secondaryIndexes;
+
+        this._read(tableName, "all", (rows) => {
+            let PK = t._tables[ta]._pk;
+            const step2 = () => {
+                if (rowPTR < rows.length) {
+                    let ptr3 = 0;
+                    const step3 = () => {
+                        if (ptr3 < secondIdx.length) {
+                            let key = secondIdx[ptr3];
+                            let idxTbl = "_" + tableName + "_idx_" + key;
+                            let rowKey = String(rows[rowPTR][key]).toLowerCase();
+                            t._read(idxTbl, rowKey, (readRows) => {
+                                let indexedRows: any[] = [rows[rowPTR][PK]];
+                                if (readRows.length && readRows[0].rowPK) {
+                                    indexedRows = indexedRows.concat(readRows[0].rowPK).filter((item, pos) => {
+                                        return indexedRows.indexOf(item) === pos;
+                                    });
+                                }
+                                t._upsert(idxTbl, rowKey, {
+                                    id: rows[rowPTR][key],
+                                    rowPK: indexedRows
+                                }, () => {
+                                    ptr3++;
+                                    setFast(step3);
+                                });
+                            }, true);
+
+                        } else {
+                            rowPTR++;
+                            setFast(step2);
+                        }
+                    };
+                    step3();
+                } else {
+                    complete();
+                }
+            };
+            step2();
+        });
+
+    }
 
     /**
      * Rebuild Trie structures on secondary indexes
@@ -776,8 +767,15 @@ export class _NanoSQL_Storage {
      */
     public _execTransaction() {
         let t = this;
+
+        const complete = () => {
+            Object.keys(t._transactionData).forEach((tableName) => {
+                t._rebuildSecondaryIndex(tableName, () => {});
+            });
+        };
+
         if (t._mode !== 4) {
-            this._rebuildTries(() => {});
+            complete();
         }
         switch (t._mode) {
             /* NODE-START */
@@ -785,7 +783,7 @@ export class _NanoSQL_Storage {
                 Object.keys(t._transactionData).forEach((tableName) => {
                     t._levelDBs[tableName].batch(t._transactionData[tableName]);
                 });
-                this._rebuildTries(() => {});
+                complete();
             break;
             /* NODE-END */
         }

@@ -25,40 +25,40 @@ nsql("users")
         console.log("CONNECTED");
 
         const step = () => {
-            // if (i === 0) nsql("users").beginTransaction();
-            if (i < 1000) {
-                nsql("users")
-                    .query("upsert", {
-                        name: makeid(),
-                        pass: makeid(),
-                        email: makeid()
-                    }).exec().then(() => {
-                        i++;
-                        if (i % 100 === 0) {
-                            console.log(i);
-                        }
-                        step();
-                    })
-            } else {
-                // nsql("users").endTransaction();
-                console.timeEnd("WRITE");
+                if (i === 0) nsql("users").beginTransaction();
+                if (i < 1000) {
+                    nsql("users")
+                        .query("upsert", {
+                            name: makeid(),
+                            pass: makeid(),
+                            email: makeid()
+                        }).exec().then(() => {
+                            i++;
+                            if (i % 100 === 0) {
+                                console.log(i);
+                            }
+                            step();
+                        })
+                } else {
+                    nsql("users").endTransaction();
+                    console.timeEnd("WRITE");
+                }
             }
-        }
-        step();
-        //setTimeout(step, 10000);
-        /*nsql("users")
-            .query("upsert", {
-                name: "scott",
-                pass: "",
-                email: "scott33@clicksimply.com"
-            }).exec()*/
+            //step();
+            //setTimeout(step, 10000);
+            /*nsql("users")
+                .query("upsert", {
+                    name: "scott",
+                    pass: "",
+                    email: "scott33@clicksimply.com"
+                }).exec()*/
         console.time("READ");
 
         //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((rows) => {
 
-        nsql("users").query("select").exec().then((rows) => {
+        nsql("users").query("select").where(["name", "=", "scott"]).exec().then((rows) => {
             console.timeEnd("READ");
-            console.log(rows.length);
+            console.log(rows);
         })
     });
 //}, 10000)

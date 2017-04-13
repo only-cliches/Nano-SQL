@@ -289,6 +289,7 @@ var _NanoSQLQuery = (function () {
         var t = this;
         var table = t._db._store._tables[t._tableID];
         var qArgs = t._act.args;
+        var oldRow = {};
         var updateType = (function () {
             if (t._act) {
                 if (t._act.type === "delete" && !qArgs.length) {
@@ -300,10 +301,8 @@ var _NanoSQLQuery = (function () {
         var updateSecondaryIndex = function (newRow, rem) {
             if (table._name.indexOf("_") !== 0) {
                 var emptyColumns_1 = [];
-                table._secondaryIndexes.forEach(function (key) {
-                    var idxTable = "_" + table._name + "_idx_" + key;
-                    var rowID = String(newRow[key]).toLocaleLowerCase();
-                    t._db._store._read(idxTable, rowID, function (rows) {
+                var updateIndex_1 = function (tableName, rowID, key) {
+                    t._db._store._read(tableName, rowID, function (rows) {
                         var indexedRows = [];
                         if (rows.length && rows[0].rowPK)
                             indexedRows = indexedRows.concat(rows[0].rowPK);
@@ -313,16 +312,37 @@ var _NanoSQLQuery = (function () {
                             return indexedRows.indexOf(item) === pos || !(rem && item === newRow[table._pk]);
                         });
                         if (indexedRows.length) {
-                            t._db._store._upsert(idxTable, rowID, {
-                                id: newRow[key],
+                            t._db._store._upsert(tableName, rowID, {
+                                id: rowID,
                                 rowPK: indexedRows
                             }, function () { });
                         }
                         else {
                             emptyColumns_1.push(key);
-                            t._db._store._delete(idxTable, rowID);
+                            t._db._store._delete(tableName, rowID);
                         }
                     }, true);
+                };
+                table._secondaryIndexes.forEach(function (key) {
+                    var idxTable = "_" + table._name + "_idx_" + key;
+                    var rowID = String(newRow[key]).toLowerCase();
+                    var oldRowID = String(oldRow[key]).toLowerCase();
+                    if (rowID !== oldRowID && oldRow[key]) {
+                        t._db._store._read(idxTable, oldRowID, function (oldRowIndex) {
+                            var indexes = index_1._assign(oldRowIndex[0]);
+                            indexes.splice(indexes.indexOf(oldRowID[table._pk]), 1);
+                            t._db._store._upsert(idxTable, oldRowID, {
+                                id: oldRowID,
+                                rowPK: indexes
+                            }, function () {
+                                updateIndex_1(idxTable, rowID, key);
+                            });
+                        });
+                    }
+                    else {
+                        if (newRow[key] !== undefined)
+                            updateIndex_1(idxTable, rowID, key);
+                    }
                 });
                 table._trieColumns.forEach(function (key) {
                     var word = String(newRow[key]).toLocaleLowerCase();
@@ -337,13 +357,11 @@ var _NanoSQLQuery = (function () {
         };
         var writeChanges = function (newRow) {
             if (updateType === "upsert") {
-                updateSecondaryIndex(newRow);
                 t._db._store._upsert(table._name, rowPK, newRow, function () {
                     callBack();
                 });
             }
             else {
-                updateSecondaryIndex(newRow, true);
                 t._db._store._delete(table._name, rowPK, function () {
                     callBack();
                 });
@@ -359,6 +377,7 @@ var _NanoSQLQuery = (function () {
             return;
         }
         t._db._store._read(table._name, rowPK, function (rows) {
+            oldRow = rows[0] || {};
             var newRow = index_1._assign(rows[0] || {});
             var doRemove = false;
             switch (updateType) {
@@ -401,6 +420,7 @@ var _NanoSQLQuery = (function () {
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
                     });
                 }
+                updateSecondaryIndex(updateType === "upsert" ? newRow : {});
                 writeChanges(newRow);
             };
             if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {

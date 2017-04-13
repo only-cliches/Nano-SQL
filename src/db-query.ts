@@ -418,6 +418,7 @@ export class _NanoSQLQuery {
         const t = this;
         const table = t._db._store._tables[t._tableID];
         const qArgs = (t._act as QueryLine).args;
+        let oldRow = {};
 
         const updateType = ((): string => {
             if (t._act) {
@@ -433,30 +434,50 @@ export class _NanoSQLQuery {
             if (table._name.indexOf("_") !== 0) {
                 let emptyColumns: string[] = [];
 
-                // Update secondary indexes
-                table._secondaryIndexes.forEach((key) => {
-                    const idxTable = "_" + table._name + "_idx_" + key;
-                    const rowID = String(newRow[key]).toLocaleLowerCase();
-                    t._db._store._read(idxTable, rowID, (rows) => {
+                const updateIndex = (tableName: string, rowID: any, key: string) => {
+                    t._db._store._read(tableName, rowID, (rows) => {
 
                         let indexedRows: any[] = [];
                         if (rows.length &&  rows[0].rowPK) indexedRows = indexedRows.concat(rows[0].rowPK);
                         if (!rem) indexedRows.push(newRow[table._pk]);
-                        indexedRows = indexedRows.filter((item, pos) => {
+                        indexedRows = indexedRows.filter((item, pos) => { // remove duplicates
                             return indexedRows.indexOf(item) === pos || !(rem && item === newRow[table._pk]);
                         });
 
                         if (indexedRows.length) {
-                            t._db._store._upsert(idxTable, rowID, {
-                                id: newRow[key],
+                            t._db._store._upsert(tableName, rowID, {
+                                id: rowID,
                                 rowPK: indexedRows
                             }, () => {});
                         } else {
                             emptyColumns.push(key);
-                            t._db._store._delete(idxTable, rowID);
+                            t._db._store._delete(tableName, rowID);
                         }
 
                     }, true);
+                }
+
+                // Update secondary indexes
+                table._secondaryIndexes.forEach((key) => {
+                    const idxTable = "_" + table._name + "_idx_" + key;
+                    const rowID = String(newRow[key]).toLowerCase();
+                    const oldRowID = String(oldRow[key]).toLowerCase();
+                    if (rowID !== oldRowID && oldRow[key]) {
+                        // Remove old value from secondary index
+                        t._db._store._read(idxTable, oldRowID, (oldRowIndex) => {
+                            let indexes: any[] = _assign(oldRowIndex[0]);
+                            indexes.splice(indexes.indexOf(oldRowID[table._pk]), 1);
+                            t._db._store._upsert(idxTable, oldRowID, {
+                                id: oldRowID,
+                                rowPK: indexes
+                            }, () => {
+                                // Add new value where it belongs
+                                updateIndex(idxTable, rowID, key);
+                            });
+                        });
+                    } else {
+                        if (newRow[key] !== undefined) updateIndex(idxTable, rowID, key);
+                    }
                 });
 
 
@@ -474,17 +495,11 @@ export class _NanoSQLQuery {
 
         const writeChanges = (newRow: DBRow) => {
             if (updateType === "upsert") {
-
-                updateSecondaryIndex(newRow);
-
                 // Update actual row
                 t._db._store._upsert(table._name, rowPK, newRow, () => {
                     callBack();
                 });
             } else {
-
-                updateSecondaryIndex(newRow, true);
-
                 // Update actual row data
                 t._db._store._delete(table._name, rowPK, () => {
                     callBack();
@@ -502,6 +517,7 @@ export class _NanoSQLQuery {
         }
 
         t._db._store._read(table._name, rowPK, (rows) => {
+            oldRow = rows[0] || {};
             let newRow = _assign(rows[0] || {});
 
             let doRemove = false;
@@ -551,6 +567,7 @@ export class _NanoSQLQuery {
 
                 // 3. Move new row data into place on the active table
                 // Apply changes to the store
+                updateSecondaryIndex(updateType === "upsert" ? newRow : {});
                 writeChanges(newRow);
             };
 
