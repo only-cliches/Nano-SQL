@@ -58,12 +58,10 @@ var _NanoSQLDB = (function () {
             t._store._transactionData = {};
             t._store._doingTransaction = true;
         }
-        ;
         if (type === "end") {
             t._store._doingTransaction = false;
             t._store._execTransaction();
         }
-        ;
         return !!t._store._doingTransaction;
     };
     _NanoSQLDB.prototype._extend = function (db, command) {

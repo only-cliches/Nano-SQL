@@ -455,7 +455,7 @@ export class _NanoSQLQuery {
                         }
 
                     }, true);
-                }
+                };
 
                 // Update secondary indexes
                 table._secondaryIndexes.forEach((key) => {

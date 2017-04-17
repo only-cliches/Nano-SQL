@@ -9,6 +9,9 @@ Read: ~100 records/ms
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
+## [0.7.92] 4-17-2017
+- Fixed `null` values in string columns being type casted to `"null"`.
+
 ## [0.7.91] 4-13-2017
 - Fixed secondary indexes not removing old entries.
 - Moved secondary index updates out of the transaction loop, writes twice as fast now.

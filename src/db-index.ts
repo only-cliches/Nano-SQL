@@ -161,11 +161,11 @@ export class _NanoSQLDB implements NanoSQLBackend {
         if (type === "start") {
             t._store._transactionData = {};
             t._store._doingTransaction = true;
-        };
+        }
         if (type === "end") {
             t._store._doingTransaction = false;
             t._store._execTransaction();
-        };
+        }
         return !!t._store._doingTransaction;
     }
 
@@ -320,7 +320,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     Object.keys(t._store._tables).forEach((tableID) => {
                         let rows: any|null[];
                         if (t._store._tables[parseInt(tableID)]._name.indexOf("_") === 0) {
-                            rows = []
+                            rows = [];
                         } else {
                             rows = t._store._tables[parseInt(tableID)]._rows;
                             rows = Object.keys(rows).map(r => rows[r]);

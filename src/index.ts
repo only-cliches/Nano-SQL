@@ -601,7 +601,7 @@ export class NanoSQLInstance {
     private _cast(type: string, val?: any): any {
         const t = typeof val;
         let types: object = {
-            string: t !== "string" ? String(val) : val,
+            string: t === null ? "" : t !== "string" ? String(val) : val,
             int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
             float: t !== "number" ? parseFloat(val || 0) : val,
             array: Array.isArray(val) ? _assign(val || []) : [],
