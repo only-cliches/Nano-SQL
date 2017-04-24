@@ -908,7 +908,7 @@ export class _NanoSQL_Storage {
                 if (i < deleteRowIDS.length) {
                     switch (t._mode) {
                         case 1: // IndexedDB
-                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(parseInt(deleteRowIDS[i]));
+                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(deleteRowIDS[i]);
                             i++;
                             step();
                         break;

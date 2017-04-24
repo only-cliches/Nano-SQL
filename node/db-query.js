@@ -155,6 +155,10 @@ var _NanoSQLQuery = (function () {
                     t._select(rows, callBack);
                     break;
                 case "drop":
+                    t._db._store._read(tableData._name, "all", function (rows) {
+                        t._remove(rows, callBack);
+                    });
+                    break;
                 case "delete":
                     t._remove(rows, callBack);
                     break;

@@ -594,7 +594,7 @@ var _NanoSQL_Storage = (function () {
                 if (i_1 < deleteRowIDS.length) {
                     switch (t._mode) {
                         case 1:
-                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(parseInt(deleteRowIDS[i_1]));
+                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(deleteRowIDS[i_1]);
                             i_1++;
                             step_3();
                             break;

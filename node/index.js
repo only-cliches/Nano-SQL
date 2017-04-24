@@ -141,17 +141,29 @@ var NanoSQLInstance = (function () {
     };
     NanoSQLInstance.prototype._cast = function (type, val) {
         var _this = this;
+        var entityMap = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "'": "&#39;",
+            "/": "&#x2F;",
+            "`": "&#x60;",
+            "=": "&#x3D;"
+        };
         var t = typeof val;
         var types = {
-            string: t === null ? "" : t !== "string" ? String(val) : val,
+            safestr: this._cast("string", val).replace(/[&<>"'`=\/]/g, function (s) { return entityMap[s]; }),
             int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
             float: t !== "number" ? parseFloat(val || 0) : val,
             array: Array.isArray(val) ? exports._assign(val || []) : [],
             "any[]": Array.isArray(val) ? exports._assign(val || []) : [],
+            string: val === null ? "" : t !== "string" ? String(val) : val,
             any: val,
             blob: val,
-            uudi: val,
-            timeId: val,
+            uudi: this._cast("string", val),
+            timeId: this._cast("string", val),
+            timeIdms: this._cast("string", val),
             map: t === "object" ? exports._assign(val || {}) : {},
             bool: val === true
         };

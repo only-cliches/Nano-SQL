@@ -60,7 +60,7 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string"|"int"|"float"|"array"|"map"|"bool"|"uuid"|"blob"|string;
+    type: "string"|"int"|"float"|"array"|"map"|"bool"|"uuid"|"blob"|"timeId"|"timeIdms"|"safestr"|string;
     default?: any;
     props?: Array<any>;
 }
@@ -599,17 +599,29 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     private _cast(type: string, val?: any): any {
-        const t = typeof val;
+        const entityMap = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            "\"": "&quot;",
+            "'": "&#39;",
+            "/": "&#x2F;",
+            "`": "&#x60;",
+            "=": "&#x3D;"
+        };
+        const t = typeof val; 
         let types: object = {
-            string: t === null ? "" : t !== "string" ? String(val) : val,
+            safestr: this._cast("string", val).replace(/[&<>"'`=\/]/g, (s) => entityMap[s]),
             int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
             float: t !== "number" ? parseFloat(val || 0) : val,
             array: Array.isArray(val) ? _assign(val || []) : [],
             "any[]": Array.isArray(val) ? _assign(val || []) : [],
+            string: val === null ? "" : t !== "string" ? String(val) : val,
             any: val,
             blob: val,
-            uudi: val,
-            timeId: val,
+            uudi: this._cast("string", val),
+            timeId: this._cast("string", val),
+            timeIdms: this._cast("string", val),
             map: t === "object" ? _assign(val || {}) : {},
             bool: val === true
         };
