@@ -609,23 +609,24 @@ export class NanoSQLInstance {
             "`": "&#x60;",
             "=": "&#x3D;"
         };
-        const t = typeof val; 
-        let types: object = {
-            safestr: this._cast("string", val).replace(/[&<>"'`=\/]/g, (s) => entityMap[s]),
-            int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
-            float: t !== "number" ? parseFloat(val || 0) : val,
-            array: Array.isArray(val) ? _assign(val || []) : [],
-            "any[]": Array.isArray(val) ? _assign(val || []) : [],
-            string: val === null ? "" : t !== "string" ? String(val) : val,
-            any: val,
-            blob: val,
-            uudi: this._cast("string", val),
-            timeId: this._cast("string", val),
-            timeIdms: this._cast("string", val),
-            map: t === "object" ? _assign(val || {}) : {},
-            bool: val === true
-        };
-        const newVal = types[type];
+        const t = typeof val;
+        let types = (type: string, val: any) => {
+            switch (type) {
+                case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, (s) => entityMap[s]);
+                case "int": return t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val;
+                case "float": return t !== "number" ? parseFloat(val || 0) : val;
+                case "any[]":
+                case "array": return Array.isArray(val) ? _assign(val || []) : [];
+                case "uuid":
+                case "timeId":
+                case "timeIdms":
+                case "string": return val === null ? "" : t !== "string" ? String(val) : val;
+                case "map": return t === "object" ? _assign(val || {}) : {};
+                case "bool": return val === true;
+            };
+            return val;
+        }
+        const newVal = types(type, val);
         if (newVal !== undefined) {
             return newVal;
         } else if (type.indexOf("[]") !== -1) {

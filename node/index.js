@@ -152,22 +152,24 @@ var NanoSQLInstance = (function () {
             "=": "&#x3D;"
         };
         var t = typeof val;
-        var types = {
-            safestr: this._cast("string", val).replace(/[&<>"'`=\/]/g, function (s) { return entityMap[s]; }),
-            int: t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val,
-            float: t !== "number" ? parseFloat(val || 0) : val,
-            array: Array.isArray(val) ? exports._assign(val || []) : [],
-            "any[]": Array.isArray(val) ? exports._assign(val || []) : [],
-            string: val === null ? "" : t !== "string" ? String(val) : val,
-            any: val,
-            blob: val,
-            uudi: this._cast("string", val),
-            timeId: this._cast("string", val),
-            timeIdms: this._cast("string", val),
-            map: t === "object" ? exports._assign(val || {}) : {},
-            bool: val === true
+        var types = function (type, val) {
+            switch (type) {
+                case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, function (s) { return entityMap[s]; });
+                case "int": return t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val;
+                case "float": return t !== "number" ? parseFloat(val || 0) : val;
+                case "any[]":
+                case "array": return Array.isArray(val) ? exports._assign(val || []) : [];
+                case "uuid":
+                case "timeId":
+                case "timeIdms":
+                case "string": return val === null ? "" : t !== "string" ? String(val) : val;
+                case "map": return t === "object" ? exports._assign(val || {}) : {};
+                case "bool": return val === true;
+            }
+            ;
+            return val;
         };
-        var newVal = types[type];
+        var newVal = types(type, val);
         if (newVal !== undefined) {
             return newVal;
         }

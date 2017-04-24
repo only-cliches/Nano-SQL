@@ -1,6 +1,6 @@
 {
     "name": "nano-sql",
-    "version": "0.8.0",
+    "version": "0.8.01",
     "description": "",
     "main": "node/index-server.js",
     "browser": "node/index.js",

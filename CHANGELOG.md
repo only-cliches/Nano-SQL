@@ -9,9 +9,11 @@ Read: ~100 records/ms
 - Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
 
-## [0.8.0] 4-24-2017
+
+## [0.8.01] 4-24-2017
 - Added new `safestr` type, identical to `string` except it escapes all HTML and unsafe JSON charecters.
 - Fixed drop/delete bug.
+- Fixed an issue with callstack exceeded when type casting specific types.
 
 ## [0.7.92] 4-17-2017
 - Fixed `null` values in string columns being type casted to `"null"`.
