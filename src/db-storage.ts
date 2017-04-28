@@ -1,5 +1,5 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
-import { _NanoSQLDB, _str } from "./db-index";
+import { _NanoSQLDB, _str, _fnForEach } from "./db-index";
 import { _functions } from "./db-query";
 import { Promise, setFast } from "lie-ts";
 import { Trie } from "prefix-trie-ts";
@@ -521,9 +521,6 @@ export class _NanoSQL_Storage {
                     }
                     return;
                 }
-
-
-
             };
             next();
         };

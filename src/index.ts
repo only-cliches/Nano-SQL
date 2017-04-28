@@ -623,12 +623,14 @@ export class NanoSQLInstance {
                 case "string": return val === null ? "" : t !== "string" ? String(val) : val;
                 case "map": return t === "object" ? _assign(val || {}) : {};
                 case "bool": return val === true;
+                case "any":
+                case "blob": return val;
             }
             return undefined;
         };
         const newVal = types(type, val);
         if (newVal !== undefined) {
-            if(["int","float"].indexOf(type) !== -1) {
+            if (["int", "float"].indexOf(type) !== -1) {
                 return isNaN(newVal) ? 0 : newVal;
             } else {
                 return newVal;

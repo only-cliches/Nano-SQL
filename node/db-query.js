@@ -216,36 +216,23 @@ var _NanoSQLQuery = (function () {
                     }
                     else {
                         var resultRows_1 = [];
-                        var ptr_1 = 0;
                         var lastCommand_1 = "";
-                        var nextWhere_1 = function () {
-                            if (ptr_1 < whereArgs_1.length) {
-                                if (ptr_1 % 2 === 1) {
-                                    lastCommand_1 = whereArgs_1[ptr_1];
-                                    ptr_1++;
-                                    nextWhere_1();
-                                }
-                                else {
-                                    doFastWhere_1(whereArgs_1[ptr_1], function (rows) {
-                                        if (lastCommand_1 === "AND") {
-                                            var idx_1 = rows.map(function (r) { return r[tableData._pk]; });
-                                            resultRows_1 = resultRows_1.filter(function (row) {
-                                                return idx_1.indexOf(row[tableData._pk]) !== -1;
-                                            });
-                                        }
-                                        else {
-                                            resultRows_1 = resultRows_1.concat(rows);
-                                        }
-                                        ptr_1++;
-                                        nextWhere_1();
+                        new db_index_1._fnForEach().loop(whereArgs_1, function (wArg, next) {
+                            doFastWhere_1(wArg, function (rows) {
+                                if (lastCommand_1 === "AND") {
+                                    var idx_1 = rows.map(function (r) { return r[tableData._pk]; });
+                                    resultRows_1 = resultRows_1.filter(function (row) {
+                                        return idx_1.indexOf(row[tableData._pk]) !== -1;
                                     });
                                 }
-                            }
-                            else {
-                                doQuery(resultRows_1);
-                            }
-                        };
-                        nextWhere_1();
+                                else {
+                                    resultRows_1 = resultRows_1.concat(rows);
+                                }
+                                next();
+                            });
+                        }).then(function () {
+                            doQuery(resultRows_1);
+                        });
                     }
                 }
                 else {

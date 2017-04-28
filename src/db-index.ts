@@ -169,25 +169,6 @@ export class _NanoSQLDB implements NanoSQLBackend {
         return !!t._store._doingTransaction;
     }
 
-    public _fnForEach(items: any[], callBack: (item: any, next: (result?: any) => void) => void): Promise<any> {
-        return new Promise((res, rej) => {
-            let ptr = 0;
-            let results: any[] = [];
-            const next = () => {
-                if (ptr < items.length) {
-                    callBack(items[ptr], (result) => {
-                        results.push(result);
-                        ptr++;
-                        next();
-                    });
-                } else {
-                    res(results);
-                }
-            };
-            next();
-        });
-    }
-
     /**
      * Undo & Redo logic.
      *
@@ -232,14 +213,14 @@ export class _NanoSQLDB implements NanoSQLBackend {
             const check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(_str(1), t._store._historyPointIndex[check], (hps: IHistoryPoint[]) => {
                 // Loop through all history points
-                t._fnForEach(hps, (hp, nextPoint) => {
+                new _fnForEach().loop(hps, (hp, nextPoint) => {
 
                     let tableID: number = hp.tableID;
                     let table = t._store._tables[tableID];
                     let rows: DBRow[] = [];
 
                     // Loop through all rows
-                    t._fnForEach(hp.rowKeys, (rowID, nextRow) => {
+                    new _fnForEach().loop(hp.rowKeys, (rowID, nextRow) => {
 
                         if (table._pkType === "int") rowID = parseInt(rowID);
 
@@ -344,6 +325,28 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     }
                 break;
             }
+        });
+    }
+}
+
+// tslint:disable-next-line
+export class _fnForEach {
+    loop(items: any[], callBack: (item: any, next: (result?: any) => void) => void): Promise<any[]> {
+        return new Promise((res, rej) => {
+            let ptr = 0;
+            let results: any[] = [];
+            const next = () => {
+                if (ptr < items.length) {
+                    callBack(items[ptr], (result) => {
+                        results.push(result);
+                        ptr++;
+                        next();
+                    });
+                } else {
+                    res(results);
+                }
+            };
+            next();
         });
     }
 }

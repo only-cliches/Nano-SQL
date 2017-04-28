@@ -94,6 +94,7 @@
 				</ul>
 				<h2 id="new-features">New Features</h2>
 				<ul>
+					<li>Integration tests now cover all SQL functions.</li>
 					<li>You can index a specific row with a <code>trie</code> structure for super fast string searching by putting <code>props: [&quot;trie&quot;]</code> in the data model.</li>
 					<li>Secondary indexes are now supported by putting <code>props: [&quot;idx&quot;]</code> in the data model.  Secondary indexes will slow down the write speed the more you have.</li>
 					<li>You can force all secondary indexes to build/rebuild by passing <code>rebuildIndexes: true</code> into the <code>.config()</code> object.</li>

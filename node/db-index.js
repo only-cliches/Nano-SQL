@@ -64,25 +64,6 @@ var _NanoSQLDB = (function () {
         }
         return !!t._store._doingTransaction;
     };
-    _NanoSQLDB.prototype._fnForEach = function (items, callBack) {
-        return new lie_ts_1.Promise(function (res, rej) {
-            var ptr = 0;
-            var results = [];
-            var next = function () {
-                if (ptr < items.length) {
-                    callBack(items[ptr], function (result) {
-                        results.push(result);
-                        ptr++;
-                        next();
-                    });
-                }
-                else {
-                    res(results);
-                }
-            };
-            next();
-        });
-    };
     _NanoSQLDB.prototype._extend = function (db, command) {
         var t = this;
         var i;
@@ -96,11 +77,11 @@ var _NanoSQLDB = (function () {
             var results = {};
             var check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(exports._str(1), t._store._historyPointIndex[check], function (hps) {
-                t._fnForEach(hps, function (hp, nextPoint) {
+                new _fnForEach().loop(hps, function (hp, nextPoint) {
                     var tableID = hp.tableID;
                     var table = t._store._tables[tableID];
                     var rows = [];
-                    t._fnForEach(hp.rowKeys, function (rowID, nextRow) {
+                    new _fnForEach().loop(hp.rowKeys, function (rowID, nextRow) {
                         if (table._pkType === "int")
                             rowID = parseInt(rowID);
                         t._store._read(table._name, rowID, function (rowData) {
@@ -212,3 +193,28 @@ var _NanoSQLDB = (function () {
     return _NanoSQLDB;
 }());
 exports._NanoSQLDB = _NanoSQLDB;
+var _fnForEach = (function () {
+    function _fnForEach() {
+    }
+    _fnForEach.prototype.loop = function (items, callBack) {
+        return new lie_ts_1.Promise(function (res, rej) {
+            var ptr = 0;
+            var results = [];
+            var next = function () {
+                if (ptr < items.length) {
+                    callBack(items[ptr], function (result) {
+                        results.push(result);
+                        ptr++;
+                        next();
+                    });
+                }
+                else {
+                    res(results);
+                }
+            };
+            next();
+        });
+    };
+    return _fnForEach;
+}());
+exports._fnForEach = _fnForEach;

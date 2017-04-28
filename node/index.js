@@ -165,6 +165,8 @@ var NanoSQLInstance = (function () {
                 case "string": return val === null ? "" : t !== "string" ? String(val) : val;
                 case "map": return t === "object" ? exports._assign(val || {}) : {};
                 case "bool": return val === true;
+                case "any":
+                case "blob": return val;
             }
             return undefined;
         };

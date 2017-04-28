@@ -7,6 +7,12 @@ Read: ~100 records/ms
 - Test and improve performance of LevelDB on the server.
 - Write LevelDB Cordova plugin.
 - Finish integration tests.
+- Switch in memory indexes to a sorted BTrees.
+- Refactor in memory store to write like other NoSQL dbs (Cassandra and LevelDB), skipping the read-before-write step.
+- Figure out how to impliment a built in ORM letting you do types like `users[]` to represent relationships.
+
+## [0.8.21] 4-28-2017
+- Restored `blob` and `any` as valid types.
 
 ## [0.8.2] 4-28-2017
 - Integration tests written, all basic SQL functions covered now.

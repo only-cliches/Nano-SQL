@@ -1,5 +1,5 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
-import { _NanoSQLDB, _str } from "./db-index";
+import { _NanoSQLDB, _str, _fnForEach } from "./db-index";
 import { IHistoryPoint, _NanoSQL_Storage } from "./db-storage";
 
 /**
@@ -326,33 +326,22 @@ export class _NanoSQLQuery {
                         doFastWhere(whereArgs, doQuery);
                     } else { // combined where statements
                         let resultRows: DBRow[] = [];
-                        let ptr = 0;
                         let lastCommand = "";
-                        const nextWhere = () => {
-                            if (ptr < whereArgs.length) {
-                                if (ptr % 2 === 1) {
-                                    lastCommand = whereArgs[ptr];
-                                    ptr++;
-                                    nextWhere();
-                                } else {
-                                    doFastWhere(whereArgs[ptr], (rows) => {
-                                        if (lastCommand === "AND") {
-                                            let idx = rows.map((r) => r[tableData._pk]);
-                                            resultRows = resultRows.filter((row) => {
-                                                return idx.indexOf(row[tableData._pk]) !== -1;
-                                            });
-                                        } else {
-                                            resultRows = resultRows.concat(rows);
-                                        }
-                                        ptr++;
-                                        nextWhere();
+                        new _fnForEach().loop(whereArgs, (wArg, next) => {
+                            doFastWhere(wArg, (rows) => {
+                                if (lastCommand === "AND") {
+                                    let idx = rows.map((r) => r[tableData._pk]);
+                                    resultRows = resultRows.filter((row) => {
+                                        return idx.indexOf(row[tableData._pk]) !== -1;
                                     });
+                                } else {
+                                    resultRows = resultRows.concat(rows);
                                 }
-                            } else {
-                                doQuery(resultRows);
-                            }
-                        };
-                        nextWhere();
+                                next();
+                            });
+                        }).then(() => {
+                            doQuery(resultRows);
+                        });
                     }
                 } else { // Full table scan, what we're trying to avoid!
                     t._db._store._read(tableData._name, (row) => {
