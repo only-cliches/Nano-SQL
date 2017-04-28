@@ -169,6 +169,25 @@ export class _NanoSQLDB implements NanoSQLBackend {
         return !!t._store._doingTransaction;
     }
 
+    public _fnForEach(items: any[], callBack: (item: any, next: (result?: any) => void) => void): Promise<any> {
+        return new Promise((res, rej) => {
+            let ptr = 0;
+            let results: any[] = [];
+            const next = () => {
+                if (ptr < items.length) {
+                    callBack(items[ptr], (result) => {
+                        results.push(result);
+                        ptr++;
+                        next();
+                    });
+                } else {
+                    res(results);
+                }
+            };
+            next();
+        });
+    }
+
     /**
      * Undo & Redo logic.
      *
@@ -208,60 +227,51 @@ export class _NanoSQLDB implements NanoSQLBackend {
         let rowKey;
         let store: IDBObjectStore;
         const shiftRowIDs = (direction: number, callBack: (info: {[tableID: number]: {rows: DBRow[], type: string}}) => void): void  => {
+
             let results = {};
             const check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(_str(1), t._store._historyPointIndex[check], (hps: IHistoryPoint[]) => {
-                j = 0;
-                const nextPoint = () => {
-                    if (j < hps.length) {
-                        i = 0;
-                        let tableID: number = hps[j].tableID;
-                        let table = t._store._tables[tableID];
-                        let rows: DBRow[] = [];
+                // Loop through all history points
+                t._fnForEach(hps, (hp, nextPoint) => {
 
-                        const nextRow = () => {
-                            if (i < hps[j].rowKeys.length) {
+                    let tableID: number = hp.tableID;
+                    let table = t._store._tables[tableID];
+                    let rows: DBRow[] = [];
 
-                                rowID = hps[j].rowKeys[i];
-                                if (table._pkType === "int") rowID = parseInt(rowID);
+                    // Loop through all rows
+                    t._fnForEach(hp.rowKeys, (rowID, nextRow) => {
 
-                                t._store._read(table._name, rowID, (rowData) => {
+                        if (table._pkType === "int") rowID = parseInt(rowID);
 
-                                    if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
+                        t._store._read(table._name, rowID, (rowData) => {
 
-                                    // Shift the row pointer
-                                    t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
-                                        row = _assign(row);
-                                        row[0][_str(2)] = (row[0][_str(2)] || 0) + direction;
-                                        const historyRowID = row[0][_str(3)][row[0][_str(2)]];
-                                        t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
-                                            t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
-                                                let newRow = setRow[0] ? _assign(setRow[0]) : null;
-                                                if (newRow) delete newRow[_str(4)]; // Remove history ID
-                                                t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
-                                                    if (direction < 0) rows.push(newRow);
-                                                    if (!results[tableID]) results[tableID] = {type: hps[j].type, rows: []};
-                                                    results[tableID].rows = results[tableID].rows.concat(rows);
-                                                    i++;
-                                                    nextRow();
-                                                });
-                                            });
+                            if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
+
+                            // Shift the row pointer
+                            t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
+                                row = _assign(row);
+                                row[0][_str(2)] = (row[0][_str(2)] || 0) + direction;
+                                const historyRowID = row[0][_str(3)][row[0][_str(2)]];
+                                t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
+                                    t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
+                                        let newRow = setRow[0] ? _assign(setRow[0]) : null;
+                                        if (newRow) delete newRow[_str(4)]; // Remove history ID
+                                        t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
+                                            if (direction < 0) rows.push(newRow);
+                                            if (!results[tableID]) results[tableID] = {type: hp.type, rows: []};
+                                            results[tableID].rows = results[tableID].rows.concat(rows);
+                                            i++;
+                                            nextRow();
                                         });
                                     });
                                 });
-                            } else {
-                                j++;
-                                nextPoint();
-                            }
-                        };
-                        nextRow();
-                    } else {
-                        callBack(results);
-                    }
-                };
-                nextPoint();
+                            });
+                        });
+                    }).then(nextPoint);
+                }).then(() => {
+                    callBack(results);
+                });
             });
-
         };
 
         return new Promise((res, rej) => {

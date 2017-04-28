@@ -289,21 +289,23 @@ export class _NanoSQLQuery {
                 const doFastWhere = (wArgs: any[], callBack: (rows: DBRow[]) => void) => {
                     // If PK then get directly from table, if secondary index then get from secondary index table
                     let tableName = wArgs[0] === tableData._pk ? tableData._name : "_" + tableData._name + "_idx_" + wArgs[0];
+                    let isSecondaryIdx = wArgs[0] !== tableData._pk;
 
                     switch (wArgs[1]) {
                         case "=":
-                            t._db._store._read(tableName, wArgs[2], (rows) => {
+                            t._db._store._read(tableName, isSecondaryIdx ? String(wArgs[2]).toLowerCase() : wArgs[2], (rows) => {
                                 callBack(rows);
                             });
                         break;
                         case "IN":
                             let ptr = 0;
                             let resultRows: DBRow[] = [];
-                            t._db._store._readArray(tableName, wArgs[2], (rows) => {
+                            t._db._store._readArray(tableName, isSecondaryIdx ? String(wArgs[2]).toLowerCase() : wArgs[2], (rows) => {
                                 callBack(rows);
                             });
                         break;
                         case "BETWEEN":
+                            if (isSecondaryIdx) wArgs[2].map(a => String(a).toLowerCase());
                             t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
                         break;
                     }

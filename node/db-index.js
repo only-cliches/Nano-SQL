@@ -64,6 +64,25 @@ var _NanoSQLDB = (function () {
         }
         return !!t._store._doingTransaction;
     };
+    _NanoSQLDB.prototype._fnForEach = function (items, callBack) {
+        return new lie_ts_1.Promise(function (res, rej) {
+            var ptr = 0;
+            var results = [];
+            var next = function () {
+                if (ptr < items.length) {
+                    callBack(items[ptr], function (result) {
+                        results.push(result);
+                        ptr++;
+                        next();
+                    });
+                }
+                else {
+                    res(results);
+                }
+            };
+            next();
+        });
+    };
     _NanoSQLDB.prototype._extend = function (db, command) {
         var t = this;
         var i;
@@ -77,56 +96,42 @@ var _NanoSQLDB = (function () {
             var results = {};
             var check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(exports._str(1), t._store._historyPointIndex[check], function (hps) {
-                j = 0;
-                var nextPoint = function () {
-                    if (j < hps.length) {
-                        i = 0;
-                        var tableID_1 = hps[j].tableID;
-                        var table_1 = t._store._tables[tableID_1];
-                        var rows_1 = [];
-                        var nextRow_1 = function () {
-                            if (i < hps[j].rowKeys.length) {
-                                rowID = hps[j].rowKeys[i];
-                                if (table_1._pkType === "int")
-                                    rowID = parseInt(rowID);
-                                t._store._read(table_1._name, rowID, function (rowData) {
-                                    if (direction > 0)
-                                        rows_1.push(rowData[0]);
-                                    t._store._read("_" + table_1._name + "_hist__meta", rowID, function (row) {
-                                        row = index_1._assign(row);
-                                        row[0][exports._str(2)] = (row[0][exports._str(2)] || 0) + direction;
-                                        var historyRowID = row[0][exports._str(3)][row[0][exports._str(2)]];
-                                        t._store._upsert("_" + table_1._name + "_hist__meta", rowID, row[0], function () {
-                                            t._store._read("_" + table_1._name + "_hist__data", historyRowID, function (setRow) {
-                                                var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
-                                                if (newRow)
-                                                    delete newRow[exports._str(4)];
-                                                t._store._upsert(table_1._name, rowID, newRow, function () {
-                                                    if (direction < 0)
-                                                        rows_1.push(newRow);
-                                                    if (!results[tableID_1])
-                                                        results[tableID_1] = { type: hps[j].type, rows: [] };
-                                                    results[tableID_1].rows = results[tableID_1].rows.concat(rows_1);
-                                                    i++;
-                                                    nextRow_1();
-                                                });
-                                            });
+                t._fnForEach(hps, function (hp, nextPoint) {
+                    var tableID = hp.tableID;
+                    var table = t._store._tables[tableID];
+                    var rows = [];
+                    t._fnForEach(hp.rowKeys, function (rowID, nextRow) {
+                        if (table._pkType === "int")
+                            rowID = parseInt(rowID);
+                        t._store._read(table._name, rowID, function (rowData) {
+                            if (direction > 0)
+                                rows.push(rowData[0]);
+                            t._store._read("_" + table._name + "_hist__meta", rowID, function (row) {
+                                row = index_1._assign(row);
+                                row[0][exports._str(2)] = (row[0][exports._str(2)] || 0) + direction;
+                                var historyRowID = row[0][exports._str(3)][row[0][exports._str(2)]];
+                                t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], function () {
+                                    t._store._read("_" + table._name + "_hist__data", historyRowID, function (setRow) {
+                                        var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
+                                        if (newRow)
+                                            delete newRow[exports._str(4)];
+                                        t._store._upsert(table._name, rowID, newRow, function () {
+                                            if (direction < 0)
+                                                rows.push(newRow);
+                                            if (!results[tableID])
+                                                results[tableID] = { type: hp.type, rows: [] };
+                                            results[tableID].rows = results[tableID].rows.concat(rows);
+                                            i++;
+                                            nextRow();
                                         });
                                     });
                                 });
-                            }
-                            else {
-                                j++;
-                                nextPoint();
-                            }
-                        };
-                        nextRow_1();
-                    }
-                    else {
-                        callBack(results);
-                    }
-                };
-                nextPoint();
+                            });
+                        });
+                    }).then(nextPoint);
+                }).then(function () {
+                    callBack(results);
+                });
             });
         };
         return new lie_ts_1.Promise(function (res, rej) {

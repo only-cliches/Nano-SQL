@@ -5,12 +5,15 @@ Recent benchmarks with LevelDB on a low end laptop:
 Write:  ~2 record/ms 
 Read: ~100 records/ms
 - Test and improve performance of LevelDB on the server.
-- Complete the SQLite driver.
-- Use the SQLite driver to write integration tests.
 - Write LevelDB Cordova plugin.
+- Finish integration tests.
 
+## [0.8.2] 4-28-2017
+- Integration tests written, all basic SQL functions covered now.
+- Fixed a variety of small bugs discovered by the tests.
+- A few small code optimizations.
 
-## [0.8.01] 4-24-2017
+## [0.8.1] 4-24-2017
 - Added new `safestr` type, identical to `string` except it escapes all HTML and unsafe JSON charecters.
 - Fixed drop/delete bug.
 - Fixed an issue with callstack exceeded when type casting specific types.

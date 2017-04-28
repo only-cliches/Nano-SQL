@@ -155,7 +155,7 @@ var NanoSQLInstance = (function () {
         var types = function (type, val) {
             switch (type) {
                 case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, function (s) { return entityMap[s]; });
-                case "int": return t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val;
+                case "int": return (t !== "number" || val % 1 !== 0) ? parseInt(val || 0) : val;
                 case "float": return t !== "number" ? parseFloat(val || 0) : val;
                 case "any[]":
                 case "array": return Array.isArray(val) ? exports._assign(val || []) : [];
@@ -166,12 +166,16 @@ var NanoSQLInstance = (function () {
                 case "map": return t === "object" ? exports._assign(val || {}) : {};
                 case "bool": return val === true;
             }
-            ;
-            return val;
+            return undefined;
         };
         var newVal = types(type, val);
         if (newVal !== undefined) {
-            return newVal;
+            if (["int", "float"].indexOf(type) !== -1) {
+                return isNaN(newVal) ? 0 : newVal;
+            }
+            else {
+                return newVal;
+            }
         }
         else if (type.indexOf("[]") !== -1) {
             var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
@@ -179,7 +183,7 @@ var NanoSQLInstance = (function () {
                 return _this._cast(arrayOf_1, v);
             });
         }
-        return val;
+        return null;
     };
     NanoSQLInstance.prototype.actions = function (actionArray) {
         return this._actions[this._selectedTable] = actionArray, this;
@@ -377,11 +381,13 @@ var NanoSQLInstance = (function () {
                     else {
                         var record = {};
                         var row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                        row = row.map(function (str) { return str.replace(/^"(.+(?="$))"$/, "$1"); });
                         var i = fields.length;
                         while (i--) {
-                            if (row[i].indexOf("{") === 0 || row[i].indexOf("[") === 0) {
-                                row[i] = JSON.parse(row[i].replace(/'/g, ""));
+                            if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                                row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                            }
+                            else if (row[i].indexOf('"') === 0) {
+                                row[i] = row[i].slice(1, row[i].length - 1);
                             }
                             record[fields[i]] = row[i];
                         }
@@ -495,6 +501,7 @@ var _NanoSQLQuery = (function () {
         var t = this;
         return new lie_ts_1.Promise(function (res, rej) {
             t.exec().then(function (json) {
+                json = exports._assign(json);
                 var header = t._action.args.length ? t._action.args.map(function (m) {
                     return t._db._models[t._table].filter(function (f) { return f["key"] === m; })[0];
                 }) : t._db._models[t._table];
@@ -509,9 +516,15 @@ var _NanoSQLQuery = (function () {
                     return header.filter(function (column) {
                         return row[column["key"]] ? true : false;
                     }).map(function (column) {
-                        switch (column["type"]) {
+                        var columnType = column["type"];
+                        if (columnType.indexOf("[]") !== -1)
+                            columnType = "any[]";
+                        switch (columnType) {
                             case "map":
+                            case "any[]":
                             case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
+                            case "string":
+                            case "safestr": return '"' + row[column["key"]].replace(/"/g, '\"') + '"';
                             default: return row[column["key"]];
                         }
                     }).join(",");

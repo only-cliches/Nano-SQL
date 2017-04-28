@@ -178,20 +178,23 @@ var _NanoSQLQuery = (function () {
                 };
                 var doFastWhere_1 = function (wArgs, callBack) {
                     var tableName = wArgs[0] === tableData._pk ? tableData._name : "_" + tableData._name + "_idx_" + wArgs[0];
+                    var isSecondaryIdx = wArgs[0] !== tableData._pk;
                     switch (wArgs[1]) {
                         case "=":
-                            t._db._store._read(tableName, wArgs[2], function (rows) {
+                            t._db._store._read(tableName, isSecondaryIdx ? String(wArgs[2]).toLowerCase() : wArgs[2], function (rows) {
                                 callBack(rows);
                             });
                             break;
                         case "IN":
                             var ptr = 0;
                             var resultRows = [];
-                            t._db._store._readArray(tableName, wArgs[2], function (rows) {
+                            t._db._store._readArray(tableName, isSecondaryIdx ? String(wArgs[2]).toLowerCase() : wArgs[2], function (rows) {
                                 callBack(rows);
                             });
                             break;
                         case "BETWEEN":
+                            if (isSecondaryIdx)
+                                wArgs[2].map(function (a) { return String(a).toLowerCase(); });
                             t._db._store._readRange(tableName, wArgs[0], wArgs[2], callBack);
                             break;
                     }

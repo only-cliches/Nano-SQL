@@ -125,6 +125,7 @@
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_deepfreeze" class="tsd-kind-icon">_deep<wbr>Freeze</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_exec" class="tsd-kind-icon">_exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_extend" class="tsd-kind-icon">_extend</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_fnforeach" class="tsd-kind-icon">_fn<wbr>For<wbr>Each</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_invalidatecache" class="tsd-kind-icon">_invalidate<wbr>Cache</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_index_._nanosqldb.html#_transaction" class="tsd-kind-icon">_transaction</a></li>
 							</ul>
@@ -392,7 +393,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-index.ts:200</li>
+									<li>Defined in db-index.ts:219</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -426,6 +427,71 @@
 								</li>
 								<li>
 									<h5>command: <span class="tsd-signature-type">string</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_fnforeach" class="tsd-anchor"></a>
+					<h3>_fn<wbr>For<wbr>Each</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_fn<wbr>For<wbr>Each<span class="tsd-signature-symbol">(</span>items<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, callBack<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-index.ts:172</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>items: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>callBack: <span class="tsd-signature-type">function</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>item<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, next<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-parameters-title">Parameters</h4>
+													<ul class="tsd-parameters">
+														<li>
+															<h5>item: <span class="tsd-signature-type">any</span></h5>
+														</li>
+														<li>
+															<h5>next: <span class="tsd-signature-type">function</span></h5>
+															<ul class="tsd-parameters">
+																<li class="tsd-parameter-siganture">
+																	<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+																		<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>result<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+																	</ul>
+																	<ul class="tsd-descriptions">
+																		<li class="tsd-description">
+																			<h4 class="tsd-parameters-title">Parameters</h4>
+																			<ul class="tsd-parameters">
+																				<li>
+																					<h5><span class="tsd-flag ts-flagOptional">Optional</span> result: <span class="tsd-signature-type">any</span></h5>
+																				</li>
+																			</ul>
+																			<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+																		</li>
+																	</ul>
+																</li>
+															</ul>
+														</li>
+													</ul>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -561,6 +627,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_index_._nanosqldb.html#_extend" class="tsd-kind-icon">_extend</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_db_index_._nanosqldb.html#_fnforeach" class="tsd-kind-icon">_fn<wbr>For<wbr>Each</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_index_._nanosqldb.html#_invalidatecache" class="tsd-kind-icon">_invalidate<wbr>Cache</a>

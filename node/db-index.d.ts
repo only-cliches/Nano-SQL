@@ -8,5 +8,6 @@ export declare class _NanoSQLDB implements NanoSQLBackend {
     _connect(connectArgs: DBConnect): void;
     _exec(execArgs: DBExec): void;
     _transaction(type: "start" | "end"): boolean;
+    _fnForEach(items: any[], callBack: (item: any, next: (result?: any) => void) => void): Promise<any>;
     _extend(db: NanoSQLInstance, command: string): Promise<any>;
 }

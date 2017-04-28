@@ -36,6 +36,7 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 
 ## New Features
 
+- Integration tests now cover all SQL functions.
 - You can index a specific row with a `trie` structure for super fast string searching by putting `props: ["trie"]` in the data model.
 - Secondary indexes are now supported by putting `props: ["idx"]` in the data model.  Secondary indexes will slow down the write speed the more you have.
 - You can force all secondary indexes to build/rebuild by passing `rebuildIndexes: true` into the `.config()` object.

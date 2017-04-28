@@ -613,7 +613,7 @@ export class NanoSQLInstance {
         let types = (type: string, val: any) => {
             switch (type) {
                 case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, (s) => entityMap[s]);
-                case "int": return t !== "number" || val % 1 !== 0 ? parseInt(val || 0) : val;
+                case "int": return (t !== "number" || val % 1 !== 0) ? parseInt(val || 0) : val;
                 case "float": return t !== "number" ? parseFloat(val || 0) : val;
                 case "any[]":
                 case "array": return Array.isArray(val) ? _assign(val || []) : [];
@@ -623,19 +623,23 @@ export class NanoSQLInstance {
                 case "string": return val === null ? "" : t !== "string" ? String(val) : val;
                 case "map": return t === "object" ? _assign(val || {}) : {};
                 case "bool": return val === true;
-            };
-            return val;
-        }
+            }
+            return undefined;
+        };
         const newVal = types(type, val);
         if (newVal !== undefined) {
-            return newVal;
+            if(["int","float"].indexOf(type) !== -1) {
+                return isNaN(newVal) ? 0 : newVal;
+            } else {
+                return newVal;
+            }
         } else if (type.indexOf("[]") !== -1) {
             const arrayOf = type.slice(0, type.lastIndexOf("[]"));
             return (val || []).map((v) => {
                 return this._cast(arrayOf, v);
             });
         }
-        return val;
+        return null;
     }
 
 	/**
@@ -1058,8 +1062,9 @@ export class NanoSQLInstance {
      *
      * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
      *
+     * @param {string} table
      * @param {Array<Object>} rows
-     * @returns {(Promise<Array<Object>>)}
+     * @returns {Promise<Array<Object>>}
      *
      * @memberOf NanoSQLInstance
      */
@@ -1130,11 +1135,12 @@ export class NanoSQLInstance {
                     } else {
                         let record: StdObject<any> = {};
                         let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                        row = row.map(str => str.replace(/^"(.+(?="$))"$/, "$1"));
                         let i = fields.length;
                         while (i--) {
-                            if (row[i].indexOf("{") === 0 || row[i].indexOf("[") === 0) {
-                                row[i] = JSON.parse(row[i].replace(/'/g, ""));
+                            if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                                row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                            } else if (row[i].indexOf('"') === 0) {
+                                row[i] = row[i].slice(1, row[i].length - 1);
                             }
                             record[fields[i]] = row[i];
                         }
@@ -1458,6 +1464,7 @@ export class _NanoSQLQuery {
         return new Promise((res, rej) => {
 
             t.exec().then((json: Array<Object>) => {
+                json = _assign(json);
                 let header = t._action.args.length ? (<Array<any>>t._action.args).map((m) => {
                     return t._db._models[t._table].filter((f) => f["key"] === m)[0];
                 }) : t._db._models[t._table];
@@ -1473,10 +1480,16 @@ export class _NanoSQLQuery {
                     return header.filter((column) => {
                         return row[column["key"]] ? true : false;
                     }).map((column) => {
-                        switch (column["type"]) {
+                        let columnType = column["type"];
+                        if (columnType.indexOf("[]") !== -1) columnType = "any[]";
+                        switch (columnType) {
                             case "map":
+                            case "any[]":
                             // tslint:disable-next-line
                             case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
+                            case "string":
+                            // tslint:disable-next-line
+                            case "safestr": return '"' + row[column["key"]].replace(/"/g, '\"') + '"';
                             default: return row[column["key"]];
                         }
                     }).join(",");
