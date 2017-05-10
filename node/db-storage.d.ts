@@ -65,7 +65,7 @@ export declare class _NanoSQL_Storage {
     _execTransaction(): void;
     _clear(type: "all" | "hist", complete: Function): void;
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
-    _upsert(tableName: string, rowID: string | number | null, value: any, callBack?: (rowID: number | string) => void): void;
+    _upsert(tableName: string, rowID: string | number | null, rowData: any, callBack?: (rowID: number | string) => void): void;
     private _indexRead(tableName, rows, callBack, getIndex?);
     _readArray(tableName: string, pkArray: any[], callBack: (rows: DBRow[]) => void): void;
     _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void;

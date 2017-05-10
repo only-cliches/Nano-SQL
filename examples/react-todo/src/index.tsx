@@ -1,4 +1,4 @@
-import { EventHandler, FormEvent, Component } from "react";
+import { EventHandler, FormEvent, Component, PureComponent } from "react";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { initStore, ItodoItem } from "./store";
@@ -13,7 +13,7 @@ const Done = {
     textDecoration: "line-through"
 };
 
-interface Nothing {};
+interface Nothing {}
 
 const TodoTable = (props: {todos: Array<ItodoItem>, markDone: (todoID: number) => void}): JSX.Element => {
     return(
@@ -41,7 +41,7 @@ interface FormState {
     value: string;
 }
 
-class TodoForm extends Component<Nothing, FormState> {
+class TodoForm extends PureComponent<Nothing, FormState> {
 
     constructor() {
         super();
@@ -65,7 +65,7 @@ class TodoForm extends Component<Nothing, FormState> {
         this.setState({
             value: event.currentTarget.value
         });
-    };
+    }
 
     public shouldComponentUpdate(nextProps, nextState): boolean {
         return this.state.value !== nextState.value;

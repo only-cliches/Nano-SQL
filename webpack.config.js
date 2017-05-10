@@ -16,6 +16,9 @@ var options = {
         libraryTarget: 'umd',
         umdNamedDefine: true
     },
+    devServer: {
+        contentBase: "./examples"
+    },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },

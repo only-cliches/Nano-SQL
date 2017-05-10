@@ -269,6 +269,7 @@ export class _NanoSQL_Storage {
             if (args._config[0].id) t._parent._databaseID = String(args._config[0].id);
         }
 
+
         let upgrading = false;
         let index = 0;
         let isNewStore = true;
@@ -359,6 +360,7 @@ export class _NanoSQL_Storage {
             let i = 0;
 
             t._mode = beforeMode;
+
             if (beforeHist) {
                 // Restore history point and length
                 t._read(_str(0), "all", (rows) => {
@@ -437,13 +439,12 @@ export class _NanoSQL_Storage {
             }
         } else {
             t._mode = 0;
-            completeSetup();
         }
 
         beforeHist = t._doHistory;
         beforeMode = t._mode;
         t._mode = 0;
-        t._doHistory = false;
+        // t._doHistory = false;
 
         const createTables = (makeTable: (tableName: string, tableHash: number, tableData: any) => void, complete: () => void) => {
             const next = () => {
@@ -961,7 +962,7 @@ export class _NanoSQL_Storage {
      *
      * @memberOf _NanoSQL_Storage
      */
-    public _upsert(tableName: string, rowID: string|number|null, value: any, callBack?: (rowID: number|string) => void): void {
+    public _upsert(tableName: string, rowID: string|number|null, rowData: any, callBack?: (rowID: number|string) => void): void {
         let t = this;
 
         const ta = NanoSQLInstance._hash(tableName);
@@ -979,15 +980,15 @@ export class _NanoSQL_Storage {
             if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] as string || "0") + 1;
         }
 
-        if (tableName.indexOf("_hist__data") !== -1 && value) {
-            rowID = value[_str(4)] as number;
+        if (tableName.indexOf("_hist__data") !== -1 && rowData) {
+            rowID = rowData[_str(4)] as number;
         }
 
         if (t._tables[ta]._pkType === "int") rowID = parseInt(rowID as string);
 
         const pk = t._tables[ta]._pk;
-        if (pk && pk.length && value && !value[pk]) {
-            value[pk] = rowID;
+        if (pk && pk.length && rowData && !rowData[pk]) {
+            rowData[pk] = rowID;
         }
 
         // add to index
@@ -996,7 +997,7 @@ export class _NanoSQL_Storage {
         }
 
         if (t._storeMemory) {
-            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(value, ta);
+            t._tables[ta]._rows[rowID] = t._parent._deepFreeze(rowData, ta);
             if (t._mode === 0 && callBack) return callBack(rowID);
         }
 
@@ -1004,14 +1005,14 @@ export class _NanoSQL_Storage {
             case 1: // IndexedDB
                 const transaction = t._indexedDB.transaction(tableName, "readwrite");
                 const store = transaction.objectStore(tableName);
-                if (pk.length && value) {
-                    store.put(value);
+                if (pk.length && rowData) {
+                    store.put(rowData);
                 } else {
                     if (tableName.indexOf("_hist__data") !== -1) {
-                        store.put(value, rowID);
+                        store.put(rowData, rowID);
                     } else {
-                        if (value) store.put(value);
-                        if (!value) store.delete(rowID);
+                        if (rowData) store.put(rowData);
+                        if (!rowData) store.delete(rowID);
                     }
                 }
                 transaction.oncomplete = function() {
@@ -1019,7 +1020,7 @@ export class _NanoSQL_Storage {
                 };
             break;
             case 2: // Local Storage
-                localStorage.setItem(tableName + "-" + String(rowID), value ? JSON.stringify(value) : "");
+                localStorage.setItem(tableName + "-" + String(rowID), rowData ? JSON.stringify(rowData) : "");
                 localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                 if (callBack) callBack(rowID as string);
             break;
@@ -1031,20 +1032,20 @@ export class _NanoSQL_Storage {
                     }
 
                     t._transactionData[tableName].push({
-                        type: tableName.indexOf("_hist__data") !== -1 ? "put" : !value ? "del" : "put",
+                        type: tableName.indexOf("_hist__data") !== -1 ? "put" : !rowData ? "del" : "put",
                         key: rowID,
-                        value: value ? JSON.stringify(value) : ""
+                        value: rowData ? JSON.stringify(rowData) : ""
                     });
                     if (callBack) callBack(rowID as string);
                 } else {
 
                     if (tableName.indexOf("_hist__data") !== -1) {
-                        t._levelDBs[tableName].put(rowID, value ? JSON.stringify(value) : null, () => {
+                        t._levelDBs[tableName].put(rowID, rowData ? JSON.stringify(rowData) : null, () => {
                             if (callBack) callBack(rowID as string);
                         });
                     } else {
-                        if (value) {
-                            t._levelDBs[tableName].put(rowID, JSON.stringify(value), () => {
+                        if (rowData) {
+                            t._levelDBs[tableName].put(rowID, JSON.stringify(rowData), () => {
                                 if (callBack) callBack(rowID as string);
                             });
                         } else {

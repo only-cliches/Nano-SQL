@@ -11,6 +11,9 @@ Read: ~100 records/ms
 - Refactor in memory store to write like other NoSQL dbs (Cassandra and LevelDB), skipping the read-before-write step.
 - Figure out how to impliment a built in ORM letting you do types like `users[]` to represent relationships.
 
+## [0.8.3] 5-9-2017
+- Fixed an issue with history not working for the memory only store.
+
 ## [0.8.21] 4-28-2017
 - Restored `blob` and `any` as valid types.
 
