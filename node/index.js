@@ -237,7 +237,7 @@ var NanoSQLInstance = (function () {
             if (action === "upsert") {
                 var inputArgs_1 = {};
                 t._models[t._selectedTable].forEach(function (model) {
-                    if (newArgs_1[model.key]) {
+                    if (newArgs_1[model.key] !== undefined) {
                         inputArgs_1[model.key] = t._cast(model.type, newArgs_1[model.key]);
                     }
                 });

@@ -875,7 +875,7 @@ export class NanoSQLInstance {
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
                 t._models[t._selectedTable].forEach((model) => {
-                    if (newArgs[model.key]) {
+                    if (newArgs[model.key] !== undefined) {
                         inputArgs[model.key] = t._cast(model.type, newArgs[model.key]);
                     }
                 });
