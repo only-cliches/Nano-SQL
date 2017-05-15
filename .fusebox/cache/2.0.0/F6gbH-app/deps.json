@@ -1,0 +1,56 @@
+{
+  "tree": {
+    "lie-ts@3.2.3": {
+      "deps": {
+        "process@0.0.0": {
+          "deps": {
+            "object-assign-polyfill@0.0.0": {
+              "deps": {},
+              "name": "object-assign-polyfill",
+              "version": "0.0.0"
+            }
+          },
+          "name": "process",
+          "version": "0.0.0"
+        }
+      },
+      "name": "lie-ts",
+      "version": "3.2.3"
+    },
+    "prefix-trie-ts@0.0.2": {
+      "deps": {},
+      "name": "prefix-trie-ts",
+      "version": "0.0.2"
+    }
+  },
+  "flat": {
+    "lie-ts@3.2.3": {
+      "name": "lie-ts",
+      "version": "3.2.3",
+      "files": [
+        "index.js"
+      ]
+    },
+    "process@0.0.0": {
+      "name": "process",
+      "version": "0.0.0",
+      "files": [
+        "index.js"
+      ]
+    },
+    "object-assign-polyfill@0.0.0": {
+      "name": "object-assign-polyfill",
+      "version": "0.0.0",
+      "files": [
+        "index.js"
+      ]
+    },
+    "prefix-trie-ts@0.0.2": {
+      "name": "prefix-trie-ts",
+      "version": "0.0.2",
+      "files": [
+        "node/index.js"
+      ]
+    }
+  }
+}

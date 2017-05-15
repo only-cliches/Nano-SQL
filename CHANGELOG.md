@@ -5,11 +5,21 @@ Recent benchmarks with LevelDB on a low end laptop:
 Write:  ~2 record/ms 
 Read: ~100 records/ms
 - Test and improve performance of LevelDB on the server.
-- Write LevelDB Cordova plugin.
+- Write Cordova plugin.
+- Write SQLite plugin.
 - Finish integration tests.
 - Switch in memory indexes to a sorted BTrees.
-- Refactor in memory store to write like other NoSQL dbs (Cassandra and LevelDB), skipping the read-before-write step.
-- Figure out how to impliment a built in ORM letting you do types like `users[]` to represent relationships.
+- Increase memory db write performance by just appending data to the rows, skipping a read before write.
+
+## [0.8.4] 5-13-2017
+- Updated the lib logo and chose a mascot, the hummingbird. :)
+- Added a complete ORM system.
+- `.length` can now be used with array/orm columns for most queries:
+    select: `.query("select",["arrayColumn.length AS Total"])`
+    where: `.where(["arrayColumn.length", ">", 2])`
+    groupBy: `.groupBy({"arrayColumn.length":"asc"})`
+    orderBy: `.orderBy({"arrayColumn.length":"asc"})`
+- Temprarily disabled query memoization to resolve ORM issue.  Memoization does not get along with transactions very well.
 
 ## [0.8.31] 5-11-2017
 - Fixed an issue preventing falsy like values from being inserted into the database.

@@ -1,6 +1,7 @@
-import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
+import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, ORMArgs, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
 import { _NanoSQLDB, _str, _fnForEach } from "./db-index";
 import { IHistoryPoint, _NanoSQL_Storage } from "./db-storage";
+import { Promise } from "lie-ts";
 
 /**
  * Min/Max function for database
@@ -259,9 +260,21 @@ export class _NanoSQLQuery {
                     t._select(rows, callBack);
                 break;
                 case "drop":
-                    t._db._store._read(tableData._name, "all", (rows) => {
-                        t._remove(rows, callBack);
-                    });
+                    let ptr = 0;
+                    let idx = tableData._index.slice();
+                    const nextRow = () => {
+                        if (ptr < idx.length) {
+                            t._db._store._read(tableData._name, idx[ptr], (row) => {
+                                t._remove(row, () => {
+                                    ptr++;
+                                    nextRow();
+                                });
+                            });
+                        } else {
+                            callBack([], "drop", idx.map(i => { return {}; }));
+                        }
+                    };
+                    nextRow();
                 break;
                 case "delete":
                     t._remove(rows, callBack);
@@ -391,13 +404,18 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     private _getRange(limit: number, offset: number, callBack: (rows: DBRow[]) => void): void {
+
         let t = this;
         const table = t._db._store._tables[t._tableID];
         let startIndex = table._index[offset];
         let endIndex = table._index[offset + (limit - 1)];
-        t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], (rows) => {
-            callBack(rows);
-        });
+        if (!startIndex) {
+            callBack([]);
+        } else {
+            t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], (rows) => {
+                callBack(rows);
+            });
+        }
     }
 
     /**
@@ -416,11 +434,6 @@ export class _NanoSQLQuery {
         let oldRow = {};
 
         const updateType = ((): string => {
-            if (t._act) {
-                if (t._act.type === "delete" && !qArgs.length) {
-                    return "drop";
-                }
-            }
             return t._act ? t._act.type : "";
         })();
 
@@ -505,6 +518,13 @@ export class _NanoSQLQuery {
 
         if (t._db._store._doingTransaction) {
             if (updateType === "upsert") {
+
+                // Apply row defaults
+                t._db._store._tables[t._tableID]._keys.forEach((k, i) => {
+                    let def = table._defaults[i];
+                    if (qArgs[k] === undefined && def !== undefined) qArgs[k] = def;
+                });
+
                 writeChanges(qArgs);
             } else {
                 writeChanges({});
@@ -517,33 +537,6 @@ export class _NanoSQLQuery {
             let newRow = _assign(rows[0] || {});
 
             let doRemove = false;
-
-            switch (updateType) {
-                case "upsert":
-
-                    Object.getOwnPropertyNames(qArgs).forEach((k) => {
-                        newRow[k] = qArgs[k];
-                    });
-
-                    // Add default values
-                    let table = t._db._store._tables[t._tableID];
-                    table._keys.forEach((k, i) => {
-                        let def = table._defaults[i];
-                        if (!newRow[k] && def !== undefined) newRow[k] = def;
-                    });
-                break;
-                case "delete":
-
-                    if (qArgs && qArgs.length) {
-                        qArgs.forEach((column) => {
-                            newRow[column] = null;
-                        });
-                    } else {
-                        doRemove = true;
-                        newRow = {};
-                    }
-                break;
-            }
 
             const finishUpdate = (histDataID: number) => {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
@@ -567,17 +560,68 @@ export class _NanoSQLQuery {
                 writeChanges(newRow);
             };
 
-            // Add to history
-            if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
-                // 1. copy new row data into histoy data table
-                const histTable = "_" + table._name + "_hist__data";
-                const tah = NanoSQLInstance._hash(histTable);
-                newRow[_str(4)] = t._db._store._tables[tah]._index.length;
-                t._db._store._upsert(histTable, null, newRow, (rowID) => {
-                    finishUpdate(rowID as number);
-                });
-            } else {
-                finishUpdate(0);
+            const doHistory = () => {
+                // Add to history
+                if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
+                    // 1. copy new row data into histoy data table
+                    const histTable = "_" + table._name + "_hist__data";
+                    const tah = NanoSQLInstance._hash(histTable);
+                    newRow[_str(4)] = t._db._store._tables[tah]._index.length;
+                    t._db._store._upsert(histTable, null, newRow, (rowID) => {
+                        finishUpdate(rowID as number);
+                    });
+                } else {
+                    finishUpdate(0);
+                }
+            };
+
+            switch (updateType) {
+                case "upsert":
+
+                    Object.getOwnPropertyNames(qArgs).forEach((k) => {
+                        newRow[k] = qArgs[k];
+                    });
+
+                    // Add default values
+                    let table = t._db._store._tables[t._tableID];
+                    table._keys.forEach((k, i) => {
+                        let def = table._defaults[i];
+                        if (!newRow[k] && def !== undefined) newRow[k] = def;
+                    });
+                    doHistory();
+                break;
+                case "delete":
+                case "drop":
+                    if (qArgs && qArgs.length && updateType !== "drop") {
+                        // just removing columns
+                        qArgs.forEach((column) => {
+                            newRow[column] = null;
+                        });
+                        doHistory();
+                    } else {
+                        // removing whole row
+                        doRemove = true;
+                        newRow = {};
+
+                        // Update ORM values attached to this row
+                        if (t._db._store._tables[t._tableID]._relations.length) {
+                            t._db._store._tables[t._tableID]._relations.forEach((rel) => {
+                                if (rel._mapTo.length) {
+                                    let relatedPK = t._db._store._tables[NanoSQLInstance._hash(rel._table)]._pk;
+                                    let related = oldRow[rel._key] || [];
+                                    if (!Array.isArray(related)) related = [related];
+                                    t._db._parent.table(rel._table).updateORM("delete", rel._mapTo, [rowPK]).where([relatedPK, "IN", related]).exec().then(() => {
+                                        doHistory();
+                                    });
+                                } else {
+                                    doHistory();
+                                }
+                            });
+                        } else {
+                            doHistory();
+                        }
+                    }
+                break;
             }
 
         });
@@ -623,6 +667,7 @@ export class _NanoSQLQuery {
 
                     // Add history records
                     const histPoint = t._db._store._historyLength - t._db._store._historyPoint;
+
                     t._db._store._upsert(_str(1), null, {
                         historyPoint: histPoint,
                         tableID: t._tableID,
@@ -743,20 +788,7 @@ export class _NanoSQLQuery {
             scribe = "inserted";
 
             if (!qArgs[pk]) {
-                switch (table._pkType) {
-                    case "int":
-                        qArgs[pk] = table._incriment++;
-                    break;
-                    case "uuid":
-                        qArgs[pk] = NanoSQLInstance.uuid();
-                    break;
-                    case "timeId":
-                        qArgs[pk] = NanoSQLInstance.timeid();
-                    break;
-                    case "timeIdms":
-                        qArgs[pk] = NanoSQLInstance.timeid(true);
-                    break;
-                }
+                qArgs[pk] = t._db._store._generateID(table._pkType, t._tableID);
             } else {
                 if (table._pkType === "int") {
                     table._incriment = Math.max(qArgs[pk] + 1, table._incriment);
@@ -810,26 +842,32 @@ export class _NanoSQLQuery {
     private _select(queryRows: DBRow[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
 
         let t = this;
-        // Memoization
+        // Memoization (Temprarily disabled)
         if (t._db._queryCache[t._tableID][t._queryHash]) {
-            callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
-            return;
+            // callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
+            // return;
         }
 
-        const mods = ["join", "groupby", "having", "orderby", "offset", "limit"];
+        const mods = ["join", "groupby", "having", "orderby", "offset", "limit", "orm"];
         let curMod, column, i, k, rows, obj, rowData, groups = {};
         const sortObj = (objA: DBRow, objB: DBRow, columns: {[key: string]: string}) => {
             return Object.keys(columns).reduce((prev, cur) => {
+                let A = objA[cur];
+                let B = objB[cur];
+                if (cur.split(".").pop() === "length") {
+                    A = objA[cur.replace(".length", "")].length;
+                    B = objB[cur.replace(".length", "")].length;
+                }
                 if (!prev) {
-                    if (objA[cur] === objB[cur]) return 0;
-                    return (objA[cur] > objB[cur] ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
+                    if (A === B) return 0;
+                    return (A > B ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
                 } else {
                     return prev;
                 }
             }, 0);
         };
 
-        const modifyQuery = (tableIndex: any[], modIndex: number, next: (tableIndex: any[]) => void): void => {
+        const modifyQuery = (tableResult: any[], modIndex: number, next: (tableIndex: any[]) => void): void => {
 
             curMod = t._getMod(mods[modIndex]);
 
@@ -915,12 +953,11 @@ export class _NanoSQLQuery {
                                 return prev = prev.concat(curr), prev;
                             }, []);
                         } else { // No Groups, apply all functions to the rows
-                            rows = doFunctions(tableIndex);
+                            rows = doFunctions(tableResult);
                         }
                     } else {
-                        rows = tableIndex;
+                        rows = tableResult;
                     }
-
                     let convertKeys = keepColumns.map((n) => {
                         return n.match(/(.*)\sAS\s(.*)/) || n;
                     }).filter(n => n) || [];
@@ -930,21 +967,31 @@ export class _NanoSQLQuery {
                             r = _assign(r);
                             let newRow = {};
                             convertKeys.forEach((key) => {
-                                if (typeof key === "string") {
-                                    newRow[key] = r[key];
-                                } else {
-                                    newRow[key[2]] = r[key[1]];
+                                if (typeof key === "string") { // No AS statement
+                                    if (key.indexOf(".length") !== -1) {
+                                        let newKey = key.replace(".length", "");
+                                        newRow[key] = (r[newKey] || []).length;
+                                    } else {
+                                        newRow[key] = r[key];
+                                    }
+                                } else { // has AS statement
+                                    if (key[1].indexOf(".length") !== -1) {
+                                        let newKey = key[1].replace(".length", "");
+                                        newRow[key[2]] = (r[newKey] || []).length;
+                                    } else {
+                                        newRow[key[2]] = r[key[1]];
+                                    }
                                 }
                             });
                             return newRow;
                         });
                     }
 
-                    tableIndex = rows;
+                    tableResult = rows;
                 }
             }
 
-            if (!curMod) return next(tableIndex);
+            if (!curMod) return next(tableResult);
 
             switch (modIndex) {
                 case 0: // Join
@@ -980,12 +1027,28 @@ export class _NanoSQLQuery {
                 case 1: // Group By
                     let columns = curMod.args as {[key: string]: "asc"|"desc"};
                     let sortGroups = {};
+
                     if (columns) {
-                        groups = tableIndex.reduce((prev, curr: DBRow) => {
-                            let key = Object.keys(columns).reduce((p, c) => p + "." + String(curr[c]), "").slice(1);
+
+                        groups = tableResult.reduce((prev, curr: DBRow) => {
+                            let key = Object.keys(columns).reduce((p, c) => {
+                                // handle ".length"
+                                if (c.indexOf(".length") !== -1) {
+                                    return p + "." + String((curr[c.replace(".length", "")] || []).length);
+                                } else {
+                                    return p + "." + String(curr[c]);
+                                }
+                            }, "").slice(1);
+
                             (prev[key] = prev[key] || []).push(curr);
                             sortGroups[key] = Object.keys(columns).reduce((pr, cu) => {
-                                pr[cu] = curr[cu];
+                                // handle ".length"
+                                if (cu.indexOf(".length") !== -1) {
+                                    let newCu = cu.replace(".length", "");
+                                    pr[newCu] = (curr[newCu] || []).length ;
+                                } else {
+                                    pr[cu] = curr[cu];
+                                }
                                 return pr;
                             }, {});
                             return prev;
@@ -997,28 +1060,141 @@ export class _NanoSQLQuery {
                             return prev.concat(groups[curr]);
                         }, []));
                     } else {
-                        next(tableIndex);
+                        next(tableResult);
                     }
                     break;
                 case 2: // Having
-                    next(tableIndex.filter((row: DBRow) => {
+                    next(tableResult.filter((row: DBRow) => {
                         return t._where(row, (t._getMod("having") as QueryLine).args);
                     }));
                     break;
                 case 3: // Order By
-                    next(tableIndex.sort((a: DBRow, b: DBRow) => {
+                    next(tableResult.sort((a: DBRow, b: DBRow) => {
                         return sortObj(a, b, curMod.args);
                     }));
                     break;
                 case 4: // Offset
-                    next(tableIndex.filter((row: DBRow, index: number) => {
+                    next(tableResult.filter((row: DBRow, index: number) => {
                         return curMod ? index >= curMod.args : true;
                     }));
                     break;
                 case 5: // Limit
-                    next(tableIndex.filter((row: DBRow, index: number) => {
+                    next(tableResult.filter((row: DBRow, index: number) => {
                         return curMod ?  index < curMod.args : true;
                     }));
+                    break;
+                case 6: // ORM
+
+                    let modifiers: (ORMArgs|string)[] = [];
+                    if (curMod.args) modifiers = curMod.args;
+
+                    let defaultModifier = t._db._store._parent._parent._ormFns[t._db._store._tables[t._tableID]._name];
+
+                    if (!t._getMod("join")) {
+                        Promise.all(tableResult.map((row, k) => {
+                            tableResult[k] = _assign(row);
+
+                            return Promise.all(t._db._store._tables[t._tableID]._relations.map((rel) => {
+
+                                let useKey = rel._key;
+                                // Handle AS statements
+                                if (qArgs && qArgs.length) {
+                                    qArgs.forEach((q: string) => {
+                                        let column = q.split(" ");
+                                        if (column[0] === rel._key && column[1] === "AS") {
+                                            useKey = column[2];
+                                        }
+                                    });
+                                }
+
+                                if (row[useKey] === undefined) {
+                                    return new Promise(res => res());
+                                }
+
+                                let tablePK = t._db._store._tables[NanoSQLInstance._hash(rel._table)]._pk;
+                                return new Promise((res, rej) => {
+
+                                    let modifier: undefined|ORMArgs = undefined;
+
+                                    // Resolve modifiers for this relationship
+                                    if (defaultModifier) {
+                                        modifier = defaultModifier(rel._key, tableResult[k]);
+                                    }
+
+                                    if (modifiers.length) {
+                                        modifiers.forEach((mod) => {
+                                            if (typeof mod !== "string") {
+                                                if (mod.key === rel._key || !mod.key || mod.key === "*") {
+                                                    modifier = mod;
+                                                }
+                                            }
+                                        });
+                                    }
+
+                                    // If there's no custom modifier and the current key isn't in the modifier list, then skip this relation query.
+                                    if (!modifier && modifiers.indexOf(rel._key) === -1) {
+                                        res();
+                                        return;
+                                    }
+
+                                    let Ids = row[useKey];
+
+                                    // Handle undefined relationship
+                                    if (Ids === undefined) {
+                                        tableResult[k][useKey] = rel._type === "single" ? undefined : [];
+                                        res();
+                                        return;
+                                    }
+
+                                    if (rel._type === "single") Ids = [Ids];
+
+                                    let query = t._db._parent.table(rel._table).query("select");
+
+                                    if (modifier) {
+
+                                        if (!modifier.where && !modifier.orderBy) { // Speed optimized read path
+
+                                            let offset = modifier.offset || 0;
+                                            let limit = modifier.limit || 0;
+                                            query.where([tablePK, "IN", Ids.filter((v, i) => {
+                                                return i >= offset && i < offset + limit;
+                                            })]);
+
+                                        } else { // Slower query path (gets all rows, then limits and offsets)
+                                            if (modifier.where) {
+                                                if (typeof modifier.where[0] === "string") {
+                                                    query.where([[tablePK, "IN", Ids], "AND", modifier.where]);
+                                                } else {
+                                                    (modifier.where as any[]).push("AND");
+                                                    (modifier.where as any[]).push([tablePK, "IN", Ids]);
+                                                    query.where(modifier.where);
+                                                }
+                                            } else {
+                                                query.where([tablePK, "IN", Ids]);
+                                            }
+
+                                            if (modifier.orderBy) query.orderBy(modifier.orderBy);
+
+                                            query.limit(modifier.limit || 5).offset(modifier.offset || 0);
+                                        }
+
+                                    } else {
+                                        // get first 5 rows
+                                        query.where([tablePK, "IN", Ids.filter((v, i) => i < 5)]);
+                                    }
+
+                                    query.exec().then((relations) => {
+                                        tableResult[k][useKey] = rel._type === "single" ? relations[0] : relations;
+                                        res();
+                                    });
+                                });
+                            }));
+                        })).then(() => {
+                            next(tableResult);
+                        });
+                    } else {
+                        next(tableResult);
+                    }
                     break;
             }
         };
@@ -1034,8 +1210,8 @@ export class _NanoSQLQuery {
                 });
             } else {
                 rowPKs = rowPKs.filter(r => r);
-                if (!t._getMod("join")) { // Join commands are not memoized.
-                    t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
+                if (!t._getMod("join") && !t._getMod("orm")) { // Join commands & orm commands are not memoized.
+                    // t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
                 }
                 callBack(rowPKs, "none", []);
             }
@@ -1089,6 +1265,16 @@ export class _NanoSQLQuery {
     private _where(row: DBRow, conditions: any[]): boolean {
         let t = this;
         const commands = ["AND", "OR"];
+
+        const maybeGetLength = (key: string) => {
+            if (key.indexOf(".length") !== -1) {
+                let value = row[key.replace(".length", "")];
+                return Array.isArray(value) ? value.length : 0;
+            } else {
+                return row[key];
+            }
+        };
+
         if (typeof conditions[0] !== "string") {
             let prevCmd: string;
             return conditions.reduce((prev, cur, i) => {
@@ -1096,7 +1282,7 @@ export class _NanoSQLQuery {
                     prevCmd = cur;
                     return prev;
                 } else {
-                    let compare = t._compare(cur[2], cur[1], row[cur[0]]) === 0 ? true : false;
+                    let compare = t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
                     if (i === 0) return compare;
                     if (prevCmd === "AND") {
                         return prev && compare;
@@ -1106,7 +1292,7 @@ export class _NanoSQLQuery {
                 }
             }, true);
         } else {
-            return t._compare(conditions[2], conditions[1], row[conditions[0]]) === 0 ? true : false;
+            return t._compare(conditions[2], conditions[1], maybeGetLength(conditions[0])) === 0 ? true : false;
         }
     }
 

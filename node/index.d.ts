@@ -43,6 +43,15 @@ export interface JoinArgs {
     table: string;
     where?: Array<string>;
 }
+export interface ORMArgs {
+    key?: string;
+    offset?: number;
+    limit?: number;
+    orderBy?: {
+        [column: string]: "asc" | "desc";
+    };
+    where?: any[] | any[][];
+}
 export interface DBRow {
     [key: string]: any;
 }
@@ -53,11 +62,15 @@ export interface IActionViewMod {
 export declare class NanoSQLInstance {
     backend: NanoSQLBackend;
     data: any;
+    _ormFns: {
+        [table: string]: (column: string, row: DBRow) => ORMArgs;
+    };
     _hasEvents: StdObject<boolean>;
     private _functions;
     _AVMod: IActionViewMod;
     doingTransaction: boolean;
     private static _tzOffset;
+    _tableNames: string[];
     private _transactionTables;
     constructor();
     table(table?: string): NanoSQLInstance;
@@ -73,13 +86,15 @@ export declare class NanoSQLInstance {
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     private _doAV(AVType, AVList, AVName, AVargs);
     newFunction(functionName: string, functionType: "aggregate" | "simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance;
-    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassClean?: boolean): _NanoSQLQuery;
+    updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery;
+    defaultORM(callBack: (column: string, parentRowData: DBRow[]) => ORMArgs): this;
     triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;
     default(replaceObj?: any): {
         [key: string]: any;
     };
-    beginTransaction(): void;
-    endTransaction(): void;
+    beginTransaction(): any;
+    endTransaction(): any;
     queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): NanoSQLInstance;
     avFilter(filterFunc: IActionViewMod): this;
     config(args: any): NanoSQLInstance;
@@ -90,6 +105,18 @@ export declare class NanoSQLInstance {
     private static _random16Bits();
     static timeid(ms?: boolean): string;
     static uuid(): string;
+}
+export declare class _NanoSQLORMQuery {
+    private _db;
+    private _tableName;
+    private _action;
+    private _column;
+    private _relationIDs;
+    private _whereArgs;
+    constructor(db: NanoSQLInstance, table: string, action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]);
+    where(args: Array<any | Array<any>>): this;
+    rebuild(callBack: (updatedRows: number) => void): void;
+    exec(): Promise<number>;
 }
 export declare class _NanoSQLQuery {
     private _db;
@@ -104,6 +131,7 @@ export declare class _NanoSQLQuery {
     constructor(table: string, db: NanoSQLInstance, actionOrView?: string);
     where(args: Array<any | Array<any>>): _NanoSQLQuery;
     range(limit: number, offset: number): _NanoSQLQuery;
+    orm(ormArgs?: (string | ORMArgs)[]): _NanoSQLQuery;
     orderBy(args: {
         [key: string]: "asc" | "desc";
     }): _NanoSQLQuery;

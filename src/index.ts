@@ -1,4 +1,4 @@
-import { _NanoSQLDB } from "./db-index";
+import { _NanoSQLDB, _fnForEach } from "./db-index";
 import { Promise } from "lie-ts";
 
 declare var global: any;
@@ -111,6 +111,22 @@ export interface JoinArgs {
 }
 
 /**
+ * ORM arguments to query ORM data.
+ *
+ * @export
+ * @interface ORMArgs
+ */
+export interface ORMArgs {
+    key?: string;
+    offset?: number;
+    limit?: number;
+    orderBy?: {
+        [column: string]: "asc"|"desc";
+    };
+    where?: any[]|any[][];
+}
+
+/**
  *  A single database row.
  *
  * @export
@@ -210,6 +226,18 @@ export class NanoSQLInstance {
      */
     public _models: StdObject<Array<DataModel>>;
 
+
+    /**
+     * Stores the default ORM functions for each table.
+     *
+     * @public
+     *
+     * @memberof NanoSQLInstance
+     */
+    public _ormFns: {
+        [table: string]: (column: string, row: DBRow) => ORMArgs
+    };
+
     /**
      * An array containing a temporary list of events to trigger
      *
@@ -302,6 +330,14 @@ export class NanoSQLInstance {
      */
     private static _tzOffset: number;
 
+    /**
+     * Store an array of table names for ORM type casting.
+     *
+     * @private
+     * @type {string[]}
+     * @memberof NanoSQLInstance
+     */
+    public _tableNames: string[];
 
     /**
      * Store an array of updated tables to decide what tables to trigger a change on after the transaction.
@@ -323,8 +359,10 @@ export class NanoSQLInstance {
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
 
         t._callbacks = {};
+        t._ormFns = {};
         t._hasEvents = {};
         t._callbacks["*"] = {};
+        t._tableNames = [];
         let i = t._events.length;
         while (i--) {
             t._callbacks["*"][t._events[i]] = [];
@@ -478,6 +516,7 @@ export class NanoSQLInstance {
             }
         }
         t._models[l] = dataModel;
+        t._tableNames.push(l);
         t._views[l] = [];
         t._actions[l] = [];
         return t;
@@ -599,6 +638,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     private _cast(type: string, val?: any): any {
+        let p = this;
         const entityMap = {
             "&": "&amp;",
             "<": "&lt;",
@@ -623,25 +663,29 @@ export class NanoSQLInstance {
                 case "string": return val === null ? "" : t !== "string" ? String(val) : val;
                 case "map": return t === "object" ? _assign(val || {}) : {};
                 case "bool": return val === true;
-                case "any":
-                case "blob": return val;
+                // case "any":
+                // case "blob": return val;
             }
-            return undefined;
+
+            return val;
         };
+
         const newVal = types(type, val);
-        if (newVal !== undefined) {
+
+        if (type.indexOf("[]") !== -1) {
+            const arrayOf = type.slice(0, type.lastIndexOf("[]"));
+            return (val || []).map((v) => {
+                return this._cast(arrayOf, v);
+            });
+        } else if (newVal !== undefined) {
             if (["int", "float"].indexOf(type) !== -1) {
                 return isNaN(newVal) ? 0 : newVal;
             } else {
                 return newVal;
             }
-        } else if (type.indexOf("[]") !== -1) {
-            const arrayOf = type.slice(0, type.lastIndexOf("[]"));
-            return (val || []).map((v) => {
-                return this._cast(arrayOf, v);
-            });
         }
-        return null;
+
+        return undefined;
     }
 
 	/**
@@ -858,7 +902,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any): _NanoSQLQuery {
+    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any, bypassClean?: boolean): _NanoSQLQuery {
 
         let t = this;
         let query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
@@ -868,22 +912,45 @@ export class NanoSQLInstance {
 
             let newArgs = args || (a === "select" || a === "delete" ? [] : {});
             if (["upsert", "delete", "drop"].indexOf(a) !== -1) {
-                this._transactionTables.push(t._selectedTable);
+                t._transactionTables.push(t._selectedTable);
+            }
+
+            // Purge ORM columns from the delete arguments
+            if (action === "delete" && !bypassClean) {
+                let inputArgs = {};
+                t._models[t._selectedTable].forEach((model) => {
+                    if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
+                        newArgs[model.key] = undefined;
+                    }
+                });
+                newArgs = inputArgs;
             }
 
             if (action === "upsert") {
+
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
-                t._models[t._selectedTable].forEach((model) => {
-                    if (newArgs[model.key] !== undefined) {
-                        inputArgs[model.key] = t._cast(model.type, newArgs[model.key]);
-                    }
-                });
+                if (!bypassClean) {
+                    t._models[t._selectedTable].forEach((model) => {
+                        // Purge ORM columns
+                        if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
+                            newArgs[model.key] = undefined;
+                        }
+                        // Cast known columns
+                        if (newArgs[model.key] !== undefined) {
+                            let cast = t._cast(model.type, newArgs[model.key]);
+                            if (cast !== undefined) inputArgs[model.key] = cast;
+                        }
+                    });
+                } else {
+                    inputArgs = newArgs;
+                }
 
                 // Apply insert filters
                 if (t._rowFilters[t._selectedTable]) {
                     inputArgs = t._rowFilters[t._selectedTable](inputArgs);
                 }
+
                 newArgs = inputArgs;
             }
 
@@ -892,6 +959,32 @@ export class NanoSQLInstance {
             throw Error;
         }
         return query;
+    }
+
+    /**
+     * Update relational ORM data.
+     *
+     * @param {("add"|"delete"|"drop"|"rebuild"|"set")} action
+     * @param {string} column
+     * @param {any[]} [relationIDs]
+     * @returns
+     *
+     * @memberof NanoSQLInstance
+     */
+    public updateORM(action: "add"|"delete"|"drop"|"rebuild"|"set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery {
+        return new _NanoSQLORMQuery(this, this._selectedTable, action, column, relationIDs);
+    }
+
+    /**
+     * Add a default ORM query to a speicfic table.
+     *
+     * @param {(column: string) => ORMArgs} callBack
+     *
+     * @memberof NanoSQLInstance
+     */
+    public defaultORM(callBack: (column: string, parentRowData: DBRow[]) => ORMArgs): this {
+        this._ormFns[this._selectedTable] = callBack;
+        return this;
     }
 
     /**
@@ -960,7 +1053,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public beginTransaction() {
+    public beginTransaction(): any {
         this.doingTransaction = true;
         this._transactionTables = [];
         if (this.backend._transaction) return this.backend._transaction("start");
@@ -972,7 +1065,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public endTransaction() {
+    public endTransaction(): any {
         this.doingTransaction = false;
         this._transactionTables.forEach((table) => {
             if (table.indexOf("_") !== 0) {
@@ -1128,6 +1221,7 @@ export class NanoSQLInstance {
         let t = this;
         let fields: Array<string> = [];
         t.beginTransaction();
+        console.log("CSV");
         return new Promise((res, rej) => {
             Promise.all(csv.split("\n").map((v, k) => {
                 return new Promise((resolve, reject) => {
@@ -1140,7 +1234,9 @@ export class NanoSQLInstance {
                         let i = fields.length;
                         while (i--) {
                             if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                                // tslint:disable-next-line
                                 row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                            // tslint:disable-next-line
                             } else if (row[i].indexOf('"') === 0) {
                                 row[i] = row[i].slice(1, row[i].length - 1);
                             }
@@ -1231,6 +1327,321 @@ export class NanoSQLInstance {
 }
 
 // tslint:disable-next-line
+export class _NanoSQLORMQuery {
+
+    private _db: NanoSQLInstance;
+    private _tableName: string;
+    private _action: "add"|"delete"|"drop"|"rebuild"|"set";
+    private _column: string;
+    private _relationIDs: any[];
+    private _whereArgs: any[];
+
+    constructor(db: NanoSQLInstance, table: string, action: "add"|"delete"|"drop"|"rebuild"|"set", column?: string, relationIDs?: any[]) {
+        this._db = db;
+        this._tableName = table;
+        this._action = action;
+        this._column = column || "";
+        this._relationIDs = relationIDs || [];
+    }
+
+    public where(args: Array<any|Array<any>>): this {
+        this._whereArgs = args;
+        return this;
+    }
+
+    public rebuild(callBack: (updatedRows: number) => void): void {
+        let t = this;
+        t._db.beginTransaction();
+
+        // Build relationship information for this table's model.
+        let relations: {
+            key: string;
+            tablePK: string;
+            table: string;
+            type: "single"|"array"|string;
+        }[] = t._db._models[t._tableName].filter((m) => {
+            return t._db._tableNames.indexOf(m.type.replace("[]", "")) !== -1;
+        }).map((m) => {
+            let tableName = m.type.replace("[]", "");
+            return {
+                key: m.key,
+                tablePK: t._db._models[tableName].reduce((prev, cur): string => {
+                    if (cur.props && cur.props.indexOf("pk") !== -1) return cur.key;
+                    return prev;
+                }, ""),
+                table: tableName,
+                type: m.type.indexOf("[]") === -1 ? "single" : "array"
+            };
+        });
+
+        // Get the primary key of the selected table.
+        let tablePK: string = t._db._models[t._tableName].reduce((prev, cur): string => {
+            if (cur.props && cur.props.indexOf("pk") !== -1) return cur.key;
+            return prev;
+        }, "");
+
+        let ptr = 0;
+        // One row at a time, one after another.
+        const nextRow = () => {
+            // Get current ORM Ids
+            t._db.table(t._tableName).query("select").range(1, ptr).exec().then((rows) => {
+                if (rows.length) {
+                    // Loop through all ORM columns
+                    Promise.all(relations.map((r) => {
+                        return new Promise((res, rej) => {
+
+                            let ids: any;
+                            if (rows[0][r.key] === undefined) {
+                                ids = r.type === "single" ? "" : [];
+                            } else {
+                                ids = _assign(rows[0][r.key]);
+                            }
+
+                            if (r.type === "single") ids = [ids];
+
+                            ids = ids.filter((v, i, s) => {
+                                return s.indexOf(v) === i;
+                            });
+
+                            // Query the ids to see if they exist
+                            t._db.table(r.table).query("select").where([r.tablePK, "IN", ids]).exec().then((childRows) => {
+                                // Build array of rows that still exist
+                                let activeIDs: any[] = childRows.length ? childRows.map(row => row[r.tablePK]) : [];
+                                // Restore activeIDs and their relationships in the current active row
+                                return t._db.table(t._tableName).updateORM("set", r.key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
+                            }).then(() => {
+                                res();
+                            });
+                        });
+                    })).then(() => {
+                        ptr++;
+                        nextRow();
+                    });
+                } else {
+                    t._db.endTransaction();
+                    callBack(ptr);
+                }
+            });
+        };
+        nextRow();
+    }
+
+    public exec(): Promise<number> {
+
+        let t = this;
+        return new Promise((res, rej) => {
+
+            if (t._action === "rebuild") {
+                return t.rebuild(res);
+            }
+
+            let pk = t._db._models[t._tableName].filter((m) => {
+                return m.props && m.props.indexOf("pk") !== -1;
+            })[0].key;
+
+            let rowModel = t._db._models[t._tableName].filter(m => m.key === t._column)[0];
+            let relationTable = rowModel.type.replace("[]", "");
+            let relationPK = t._db._models[relationTable].filter((m) => {
+                return m.props && m.props.indexOf("pk") !== -1;
+            })[0].key;
+
+            let isArrayRelation = rowModel.type.indexOf("[]") !== -1;
+
+            let mapTo = rowModel.props && rowModel.props.filter(p => p.indexOf("orm::") !== -1)[0];
+            let mapToIsArray = "single";
+            if (mapTo) {
+                mapTo = mapTo.replace("orm::", "");
+                mapToIsArray = t._db._models[relationTable].filter(m => m.key === mapTo)[0].type.indexOf("[]") === -1 ? "single" : "array";
+            }
+
+            if (!pk || !pk.length || !relationPK || !relationPK.length) {
+                rej("Relation models require a primary key!");
+            }
+
+            // Get all parent rows to be updated
+            let query = t._db.table(t._tableName).query("select");
+
+            if (t._whereArgs) query.where(t._whereArgs);
+
+            query.exec().then((rows: DBRow[]) => {
+
+                let ptr = 0;
+                // Loop through parent rows
+                const nextRow = () => {
+                    if (ptr < rows.length) {
+
+                        let newRow = _assign(rows[ptr]);
+
+                        let oldRelations = [];
+
+                        if (newRow[t._column] !== undefined) oldRelations = newRow[t._column];
+                        if (!Array.isArray(oldRelations)) oldRelations = [oldRelations];
+
+                        // Modify row
+                        switch (t._action) {
+                            case "set": // Set a relation, destroying old relations
+                            case "add": // Add given ids to the relation
+                                if (isArrayRelation) {
+                                    if (newRow[t._column] === undefined) newRow[t._column] = [];
+                                    if (!Array.isArray(newRow[t._column])) newRow[t._column] = [];
+
+                                    if (t._action === "set") {
+                                        newRow[t._column] = t._relationIDs;
+                                    } else {
+                                        newRow[t._column] = newRow[t._column].concat(t._relationIDs);
+                                        newRow[t._column] = newRow[t._column].filter((v, i, s) => {
+                                            return s.indexOf(v) === i;
+                                        });
+                                    }
+
+                                } else {
+                                    newRow[t._column] = t._relationIDs[0];
+                                }
+                            break;
+                            case "delete": // Remove given Ids from the relation
+                                if (isArrayRelation) {
+                                    let loc = newRow[t._column].indexOf(rows[ptr][pk]);
+                                    if (loc !== -1) newRow[t._column] = newRow[t._column].splice(loc, 1);
+                                } else {
+                                    newRow[t._column] = "";
+                                }
+                            break;
+                            case "drop": // Drop all relationships for all selected posts at the given column
+                                newRow[t._column] = isArrayRelation ? [] : undefined;
+                            break;
+                        }
+
+                        const updateRow = (newRow: DBRow, callBack: () => void) => {
+                            t._db.table(relationTable).query("upsert", newRow, true).exec().then(callBack);
+                        };
+
+                        const removeOldRelations = (): Promise<void> => {
+                            return Promise.all(oldRelations.map((id) => {
+                                return new Promise((resolve, reject) => {
+                                    t._db.table(relationTable).query("select").where([relationPK, "=", id]).exec().then((relateRows: DBRow[]) => {
+
+                                        // Row doesn't actually exist anymore.
+                                        if (!relateRows.length) {
+                                            resolve();
+                                            return;
+                                        }
+
+                                        let modifyRow = _assign(relateRows[0]);
+
+                                        if (Array.isArray(modifyRow[mapTo])) {
+                                            let idx = modifyRow[mapTo].indexOf(rows[ptr][pk]);
+                                            if (idx !== -1) {
+                                                modifyRow[mapTo] = modifyRow[mapTo].splice(idx, 1);
+                                            }
+                                        } else {
+                                            modifyRow[mapTo] = "";
+                                        }
+                                        updateRow(modifyRow, resolve);
+                                    });
+                                });
+                            }));
+                        };
+
+                        t._db.table(t._tableName).query("upsert", newRow, true).exec().then(() => {
+
+                            if (mapTo) { // Adjust the row data mapped to this one
+                                switch (t._action) {
+                                    case "set":
+                                    case "add":
+                                        let ptr2 = 0;
+                                        const appendRelations = () => {
+                                            if (ptr2 < t._relationIDs.length) {
+
+                                                t._db.table(relationTable).query("select").where([relationPK, "=", t._relationIDs[ptr2]]).exec().then((relateRows: DBRow[]) => {
+                                                    // Row doesn't actually exist anymore.
+                                                    if (!relateRows.length) {
+                                                        ptr2++;
+                                                        appendRelations();
+                                                        return;
+                                                    }
+
+                                                    let modifyRow = _assign(relateRows[0]);
+
+                                                    if (modifyRow[mapTo] === undefined) modifyRow[mapTo] = mapToIsArray === "array" ? [] : "";
+
+                                                    if (mapToIsArray === "array") {
+
+                                                        if (!Array.isArray(modifyRow[mapTo])) modifyRow[mapTo] = [];
+
+                                                        modifyRow[mapTo].push(rows[ptr][pk]);
+                                                        modifyRow[mapTo] = modifyRow[mapTo].filter((v, i, s) => {
+                                                            return s.indexOf(v) === i; // removes duplicates
+                                                        });
+
+                                                        updateRow(modifyRow, () => {
+                                                            ptr2++;
+                                                            appendRelations();
+                                                        });
+                                                    } else {
+                                                        if (modifyRow[mapTo] && modifyRow[mapTo].length) { // This item is a 1 to 1 relation but is already assigned a different object, go to that object and remove it's relation to this object.
+                                                            t._db.table(t._tableName).query("select").where([pk, "=", modifyRow[mapTo]]).exec().then((relateRows2: DBRow[]) => {
+                                                                let modifyRow2 = _assign(relateRows2[0]);
+
+                                                                if (Array.isArray(modifyRow2[t._column])) {
+                                                                    let idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
+                                                                    if (idx === -1) {
+                                                                        modifyRow2[t._column] = modifyRow2[t._column].splice(modifyRow2[t._column].indexOf(modifyRow[mapTo]), 1);
+                                                                    }
+                                                                } else {
+                                                                    modifyRow2[t._column] = "";
+                                                                }
+                                                                t._db.table(t._tableName).query("upsert", modifyRow2, true).where([pk, "=", modifyRow[mapTo]]).exec().then(() => {
+                                                                    modifyRow[mapTo] = rows[ptr][pk];
+                                                                    updateRow(modifyRow, () => {
+                                                                        ptr2++;
+                                                                        appendRelations();
+                                                                    });
+                                                                });
+                                                            });
+                                                        } else { // No existing relation, set it
+                                                            modifyRow[mapTo] = rows[ptr][pk];
+                                                            updateRow(modifyRow, () => {
+                                                                ptr2++;
+                                                                appendRelations();
+                                                            });
+                                                        }
+                                                    }
+                                                });
+                                            } else {
+                                                ptr++;
+                                                nextRow();
+                                            }
+                                        };
+                                        appendRelations();
+                                    break;
+                                    case "delete":
+                                    case "drop":
+                                        removeOldRelations().then(() => {
+                                            ptr++;
+                                            nextRow();
+                                        });
+                                    break;
+                                }
+
+
+                            } else {
+                                ptr++;
+                                nextRow();
+                            }
+                        });
+
+                    } else {
+                        res(ptr);
+                    }
+                };
+                nextRow();
+
+            });
+        });
+    }
+}
+
+// tslint:disable-next-line
 export class _NanoSQLQuery {
 
     private _db: NanoSQLInstance;
@@ -1292,8 +1703,20 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    public range(limit: number, offset: number) {
+    public range(limit: number, offset: number): _NanoSQLQuery {
         return this._addCmd("range", [limit, offset]);
+    }
+
+    /**
+     * Trigge ORM queries for all result rows.
+     *
+     * @param {((string|ORMArgs)[])} [ormArgs]
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberof _NanoSQLQuery
+     */
+    public orm(ormArgs?: (string|ORMArgs)[]): _NanoSQLQuery {
+        return this._addCmd("orm", ormArgs);
     }
 
     /**

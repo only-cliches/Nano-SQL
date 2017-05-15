@@ -28,6 +28,7 @@ describe("Delete & Drop", () => {
             }
         });
     });
+
     it("Drop entire table.", (done: MochaDone) => {
         nSQL("uuid").query("drop").exec().then((rows) => {
             return nSQL("uuid").query("select").exec();

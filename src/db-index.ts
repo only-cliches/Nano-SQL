@@ -165,6 +165,9 @@ export class _NanoSQLDB implements NanoSQLBackend {
         if (type === "end") {
             t._store._doingTransaction = false;
             t._store._execTransaction();
+            t._parent._tableNames.forEach((tableName) => {
+                t._invalidateCache(NanoSQLInstance._hash(tableName), [], "transaction");
+            });
         }
         return !!t._store._doingTransaction;
     }
@@ -226,7 +229,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
 
                         t._store._read(table._name, rowID, (rowData) => {
 
-                            if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
+                            // if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
 
                             // Shift the row pointer
                             t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
@@ -236,9 +239,9 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                 t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
                                     t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
                                         let newRow = setRow[0] ? _assign(setRow[0]) : null;
-                                        if (newRow) delete newRow[_str(4)]; // Remove history ID
                                         t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
-                                            if (direction < 0) rows.push(newRow);
+                                            // if (direction < 0) rows.push(newRow);
+                                            rows.push(newRow);
                                             if (!results[tableID]) results[tableID] = {type: hp.type, rows: []};
                                             results[tableID].rows = results[tableID].rows.concat(rows);
                                             i++;

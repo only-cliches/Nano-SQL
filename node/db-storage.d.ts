@@ -16,6 +16,12 @@ export declare class _NanoSQL_Storage {
         [tableHash: number]: {
             _pk: string;
             _pkType: string;
+            _relations: {
+                _table: string;
+                _key: string;
+                _mapTo: string;
+                _type: "array" | "single";
+            }[];
             _name: string;
             _incriment: number;
             _index: (string | number)[];
@@ -65,6 +71,7 @@ export declare class _NanoSQL_Storage {
     _execTransaction(): void;
     _clear(type: "all" | "hist", complete: Function): void;
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
+    _generateID(type: string, tableHash: number): string | number;
     _upsert(tableName: string, rowID: string | number | null, rowData: any, callBack?: (rowID: number | string) => void): void;
     private _indexRead(tableName, rows, callBack, getIndex?);
     _readArray(tableName: string, pkArray: any[], callBack: (rows: DBRow[]) => void): void;

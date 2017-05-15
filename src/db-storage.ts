@@ -59,6 +59,12 @@ export class _NanoSQL_Storage {
         [tableHash: number]: {
             _pk: string
             _pkType: string;
+            _relations: {
+                _table: string;
+                _key: string;
+                _mapTo: string;
+                _type: "array"|"single"
+            }[],
             _name: string
             _incriment: number;
             _index: (string|number)[];
@@ -952,6 +958,25 @@ export class _NanoSQL_Storage {
     }
 
     /**
+     * Generate a row ID given the type of ID needed and the row incriment value.
+     *
+     * @param {string} type
+     * @param {number} tableIncriment
+     * @returns
+     *
+     * @memberof _NanoSQL_Storage
+     */
+    public _generateID(type: string, tableHash: number) {
+        switch (type) {
+            case "int": return this._tables[tableHash]._incriment++;
+            case "uuid": return NanoSQLInstance.uuid();
+            case "timeId": return NanoSQLInstance.timeid();
+            case "timeIdms": return NanoSQLInstance.timeid(true);
+        }
+        return "";
+    }
+
+    /**
      * Inserts data into the store.
      *
      * @param {string} tableName
@@ -965,34 +990,34 @@ export class _NanoSQL_Storage {
     public _upsert(tableName: string, rowID: string|number|null, rowData: any, callBack?: (rowID: number|string) => void): void {
         let t = this;
 
+        if (Object.isFrozen(rowData)) rowData = _assign(rowData);
         const ta = NanoSQLInstance._hash(tableName);
         if (rowID === undefined || rowID === null) {
             t._models[ta].forEach((m) => {
                 if (m.props && m.props.indexOf("pk") !== -1) {
-                    if (m.type === "uuid") {
-                        rowID = NanoSQLInstance.uuid();
-                    } else {
-                        rowID = t._tables[ta]._incriment++;
-                    }
+                    rowID = t._generateID(m.type, ta);
                 }
             });
 
             if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] as string || "0") + 1;
         }
 
-        if (tableName.indexOf("_hist__data") !== -1 && rowData) {
+        if (tableName.indexOf("_") !== 0 && rowData) {
+            delete rowData[_str(4)];
+        } else if (tableName.indexOf("_hist__data") !== -1 && rowData) {
             rowID = rowData[_str(4)] as number;
         }
 
         if (t._tables[ta]._pkType === "int") rowID = parseInt(rowID as string);
 
         const pk = t._tables[ta]._pk;
-        if (pk && pk.length && rowData && !rowData[pk]) {
+        if (pk && pk.length && rowData && rowData[pk] === undefined) {
             rowData[pk] = rowID;
         }
 
         // add to index
         if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {
+            t._tables[ta]._trieIndex.addWord(String(rowID));
             t._tables[ta]._index.push(rowID);
         }
 
@@ -1144,15 +1169,24 @@ export class _NanoSQL_Storage {
     public _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void {
         let t = this;
         const ta = NanoSQLInstance._hash(tableName);
-
         // Memory and local storage can't be range optimized in the same way.
         if (t._mode === 0 || t._mode === 2 ) {
             let startPtr = t._tables[ta]._index.indexOf(between[0]);
             let resultRows: DBRow[] = [];
+
+            if (startPtr === -1) {
+                callBack(resultRows);
+                return;
+            }
+
             const stepRead = () => {
                 let pk = t._tables[ta]._index[startPtr];
+                if (!pk) {
+                    callBack(resultRows);
+                    return;
+                }
                 if (pk <= between[1]) {
-                    this._read(tableName, pk, (rows) => {
+                    t._read(tableName, pk, (rows) => {
                         resultRows = resultRows.concat(rows);
                         startPtr++;
                         stepRead();
@@ -1359,6 +1393,7 @@ export class _NanoSQL_Storage {
             _pk: "",
             _pkType: "",
             _keys: [],
+            _relations: [],
             _defaults: [],
             _secondaryIndexes: [],
             _trieColumns: [],
@@ -1378,17 +1413,36 @@ export class _NanoSQL_Storage {
             const p = t._models[ta][i];
             t._tables[ta]._keys.unshift(p.key);
             t._tables[ta]._defaults[i] = p.default;
+
+            // Check for primary key
             if (p.props && p.props.indexOf("pk") >= 0) {
                 t._tables[ta]._pk = p.key;
                 t._tables[ta]._pkType = p.type;
             }
+
+            // Check for secondary indexes
             if (p.props && (p.props.indexOf("idx") >= 0 || p.props.indexOf("trie") >= 0)) {
                 t._tables[ta]._secondaryIndexes.push(p.key);
             }
 
+            // Check for trie indexes
             if (p.props && p.props.indexOf("trie") >= 0) {
                 t._tables[ta]._trieColumns.push(p.key);
                 t._tables[ta]._trieObjects[p.key] = new Trie([]);
+            }
+
+            // Check for relations
+            if (p.props && t._parent._parent._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
+                let mapTo = "";
+                p.props.forEach((p) => {
+                    if (p.indexOf("orm::") !== -1) mapTo = p.replace("orm::", "");
+                });
+                t._tables[ta]._relations.push({
+                    _table: p.type.replace("[]", ""),
+                    _key: p.key,
+                    _mapTo: mapTo,
+                    _type: p.type.indexOf("[]") === -1 ? "single" : "array"
+                });
             }
 
         }

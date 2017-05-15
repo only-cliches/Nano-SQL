@@ -61,6 +61,9 @@ var _NanoSQLDB = (function () {
         if (type === "end") {
             t._store._doingTransaction = false;
             t._store._execTransaction();
+            t._parent._tableNames.forEach(function (tableName) {
+                t._invalidateCache(index_1.NanoSQLInstance._hash(tableName), [], "transaction");
+            });
         }
         return !!t._store._doingTransaction;
     };
@@ -85,8 +88,6 @@ var _NanoSQLDB = (function () {
                         if (table._pkType === "int")
                             rowID = parseInt(rowID);
                         t._store._read(table._name, rowID, function (rowData) {
-                            if (direction > 0)
-                                rows.push(rowData[0]);
                             t._store._read("_" + table._name + "_hist__meta", rowID, function (row) {
                                 row = index_1._assign(row);
                                 row[0][exports._str(2)] = (row[0][exports._str(2)] || 0) + direction;
@@ -94,11 +95,8 @@ var _NanoSQLDB = (function () {
                                 t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], function () {
                                     t._store._read("_" + table._name + "_hist__data", historyRowID, function (setRow) {
                                         var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
-                                        if (newRow)
-                                            delete newRow[exports._str(4)];
                                         t._store._upsert(table._name, rowID, newRow, function () {
-                                            if (direction < 0)
-                                                rows.push(newRow);
+                                            rows.push(newRow);
                                             if (!results[tableID])
                                                 results[tableID] = { type: hp.type, rows: [] };
                                             results[tableID].rows = results[tableID].rows.concat(rows);

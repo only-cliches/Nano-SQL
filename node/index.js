@@ -14,8 +14,10 @@ var NanoSQLInstance = (function () {
         t._transactionTables = [];
         t._events = ["change", "delete", "upsert", "drop", "select", "error"];
         t._callbacks = {};
+        t._ormFns = {};
         t._hasEvents = {};
         t._callbacks["*"] = {};
+        t._tableNames = [];
         var i = t._events.length;
         while (i--) {
             t._callbacks["*"][t._events[i]] = [];
@@ -110,6 +112,7 @@ var NanoSQLInstance = (function () {
             }
         }
         t._models[l] = dataModel;
+        t._tableNames.push(l);
         t._views[l] = [];
         t._actions[l] = [];
         return t;
@@ -141,6 +144,7 @@ var NanoSQLInstance = (function () {
     };
     NanoSQLInstance.prototype._cast = function (type, val) {
         var _this = this;
+        var p = this;
         var entityMap = {
             "&": "&amp;",
             "<": "&lt;",
@@ -165,13 +169,17 @@ var NanoSQLInstance = (function () {
                 case "string": return val === null ? "" : t !== "string" ? String(val) : val;
                 case "map": return t === "object" ? exports._assign(val || {}) : {};
                 case "bool": return val === true;
-                case "any":
-                case "blob": return val;
             }
-            return undefined;
+            return val;
         };
         var newVal = types(type, val);
-        if (newVal !== undefined) {
+        if (type.indexOf("[]") !== -1) {
+            var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
+            return (val || []).map(function (v) {
+                return _this._cast(arrayOf_1, v);
+            });
+        }
+        else if (newVal !== undefined) {
             if (["int", "float"].indexOf(type) !== -1) {
                 return isNaN(newVal) ? 0 : newVal;
             }
@@ -179,13 +187,7 @@ var NanoSQLInstance = (function () {
                 return newVal;
             }
         }
-        else if (type.indexOf("[]") !== -1) {
-            var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
-            return (val || []).map(function (v) {
-                return _this._cast(arrayOf_1, v);
-            });
-        }
-        return null;
+        return undefined;
     };
     NanoSQLInstance.prototype.actions = function (actionArray) {
         return this._actions[this._selectedTable] = actionArray, this;
@@ -224,7 +226,7 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.newFunction = function (functionName, functionType, filterFunction) {
         return this._functions[functionName] = { type: functionType, call: filterFunction }, this;
     };
-    NanoSQLInstance.prototype.query = function (action, args) {
+    NanoSQLInstance.prototype.query = function (action, args, bypassClean) {
         var t = this;
         var query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
         t._activeAV = undefined;
@@ -232,15 +234,34 @@ var NanoSQLInstance = (function () {
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
             var newArgs_1 = args || (a === "select" || a === "delete" ? [] : {});
             if (["upsert", "delete", "drop"].indexOf(a) !== -1) {
-                this._transactionTables.push(t._selectedTable);
+                t._transactionTables.push(t._selectedTable);
+            }
+            if (action === "delete" && !bypassClean) {
+                var inputArgs = {};
+                t._models[t._selectedTable].forEach(function (model) {
+                    if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
+                        newArgs_1[model.key] = undefined;
+                    }
+                });
+                newArgs_1 = inputArgs;
             }
             if (action === "upsert") {
                 var inputArgs_1 = {};
-                t._models[t._selectedTable].forEach(function (model) {
-                    if (newArgs_1[model.key] !== undefined) {
-                        inputArgs_1[model.key] = t._cast(model.type, newArgs_1[model.key]);
-                    }
-                });
+                if (!bypassClean) {
+                    t._models[t._selectedTable].forEach(function (model) {
+                        if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
+                            newArgs_1[model.key] = undefined;
+                        }
+                        if (newArgs_1[model.key] !== undefined) {
+                            var cast = t._cast(model.type, newArgs_1[model.key]);
+                            if (cast !== undefined)
+                                inputArgs_1[model.key] = cast;
+                        }
+                    });
+                }
+                else {
+                    inputArgs_1 = newArgs_1;
+                }
                 if (t._rowFilters[t._selectedTable]) {
                     inputArgs_1 = t._rowFilters[t._selectedTable](inputArgs_1);
                 }
@@ -252,6 +273,13 @@ var NanoSQLInstance = (function () {
             throw Error;
         }
         return query;
+    };
+    NanoSQLInstance.prototype.updateORM = function (action, column, relationIDs) {
+        return new _NanoSQLORMQuery(this, this._selectedTable, action, column, relationIDs);
+    };
+    NanoSQLInstance.prototype.defaultORM = function (callBack) {
+        this._ormFns[this._selectedTable] = callBack;
+        return this;
     };
     NanoSQLInstance.prototype.triggerEvent = function (eventData, triggerEvents) {
         var t = this;
@@ -373,6 +401,7 @@ var NanoSQLInstance = (function () {
         var t = this;
         var fields = [];
         t.beginTransaction();
+        console.log("CSV");
         return new lie_ts_1.Promise(function (res, rej) {
             lie_ts_1.Promise.all(csv.split("\n").map(function (v, k) {
                 return new lie_ts_1.Promise(function (resolve, reject) {
@@ -453,6 +482,272 @@ var NanoSQLInstance = (function () {
     return NanoSQLInstance;
 }());
 exports.NanoSQLInstance = NanoSQLInstance;
+var _NanoSQLORMQuery = (function () {
+    function _NanoSQLORMQuery(db, table, action, column, relationIDs) {
+        this._db = db;
+        this._tableName = table;
+        this._action = action;
+        this._column = column || "";
+        this._relationIDs = relationIDs || [];
+    }
+    _NanoSQLORMQuery.prototype.where = function (args) {
+        this._whereArgs = args;
+        return this;
+    };
+    _NanoSQLORMQuery.prototype.rebuild = function (callBack) {
+        var t = this;
+        t._db.beginTransaction();
+        var relations = t._db._models[t._tableName].filter(function (m) {
+            return t._db._tableNames.indexOf(m.type.replace("[]", "")) !== -1;
+        }).map(function (m) {
+            var tableName = m.type.replace("[]", "");
+            return {
+                key: m.key,
+                tablePK: t._db._models[tableName].reduce(function (prev, cur) {
+                    if (cur.props && cur.props.indexOf("pk") !== -1)
+                        return cur.key;
+                    return prev;
+                }, ""),
+                table: tableName,
+                type: m.type.indexOf("[]") === -1 ? "single" : "array"
+            };
+        });
+        var tablePK = t._db._models[t._tableName].reduce(function (prev, cur) {
+            if (cur.props && cur.props.indexOf("pk") !== -1)
+                return cur.key;
+            return prev;
+        }, "");
+        var ptr = 0;
+        var nextRow = function () {
+            t._db.table(t._tableName).query("select").range(1, ptr).exec().then(function (rows) {
+                if (rows.length) {
+                    lie_ts_1.Promise.all(relations.map(function (r) {
+                        return new lie_ts_1.Promise(function (res, rej) {
+                            var ids;
+                            if (rows[0][r.key] === undefined) {
+                                ids = r.type === "single" ? "" : [];
+                            }
+                            else {
+                                ids = exports._assign(rows[0][r.key]);
+                            }
+                            if (r.type === "single")
+                                ids = [ids];
+                            ids = ids.filter(function (v, i, s) {
+                                return s.indexOf(v) === i;
+                            });
+                            t._db.table(r.table).query("select").where([r.tablePK, "IN", ids]).exec().then(function (childRows) {
+                                var activeIDs = childRows.length ? childRows.map(function (row) { return row[r.tablePK]; }) : [];
+                                return t._db.table(t._tableName).updateORM("set", r.key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
+                            }).then(function () {
+                                res();
+                            });
+                        });
+                    })).then(function () {
+                        ptr++;
+                        nextRow();
+                    });
+                }
+                else {
+                    t._db.endTransaction();
+                    callBack(ptr);
+                }
+            });
+        };
+        nextRow();
+    };
+    _NanoSQLORMQuery.prototype.exec = function () {
+        var t = this;
+        return new lie_ts_1.Promise(function (res, rej) {
+            if (t._action === "rebuild") {
+                return t.rebuild(res);
+            }
+            var pk = t._db._models[t._tableName].filter(function (m) {
+                return m.props && m.props.indexOf("pk") !== -1;
+            })[0].key;
+            var rowModel = t._db._models[t._tableName].filter(function (m) { return m.key === t._column; })[0];
+            var relationTable = rowModel.type.replace("[]", "");
+            var relationPK = t._db._models[relationTable].filter(function (m) {
+                return m.props && m.props.indexOf("pk") !== -1;
+            })[0].key;
+            var isArrayRelation = rowModel.type.indexOf("[]") !== -1;
+            var mapTo = rowModel.props && rowModel.props.filter(function (p) { return p.indexOf("orm::") !== -1; })[0];
+            var mapToIsArray = "single";
+            if (mapTo) {
+                mapTo = mapTo.replace("orm::", "");
+                mapToIsArray = t._db._models[relationTable].filter(function (m) { return m.key === mapTo; })[0].type.indexOf("[]") === -1 ? "single" : "array";
+            }
+            if (!pk || !pk.length || !relationPK || !relationPK.length) {
+                rej("Relation models require a primary key!");
+            }
+            var query = t._db.table(t._tableName).query("select");
+            if (t._whereArgs)
+                query.where(t._whereArgs);
+            query.exec().then(function (rows) {
+                var ptr = 0;
+                var nextRow = function () {
+                    if (ptr < rows.length) {
+                        var newRow = exports._assign(rows[ptr]);
+                        var oldRelations_1 = [];
+                        if (newRow[t._column] !== undefined)
+                            oldRelations_1 = newRow[t._column];
+                        if (!Array.isArray(oldRelations_1))
+                            oldRelations_1 = [oldRelations_1];
+                        switch (t._action) {
+                            case "set":
+                            case "add":
+                                if (isArrayRelation) {
+                                    if (newRow[t._column] === undefined)
+                                        newRow[t._column] = [];
+                                    if (!Array.isArray(newRow[t._column]))
+                                        newRow[t._column] = [];
+                                    if (t._action === "set") {
+                                        newRow[t._column] = t._relationIDs;
+                                    }
+                                    else {
+                                        newRow[t._column] = newRow[t._column].concat(t._relationIDs);
+                                        newRow[t._column] = newRow[t._column].filter(function (v, i, s) {
+                                            return s.indexOf(v) === i;
+                                        });
+                                    }
+                                }
+                                else {
+                                    newRow[t._column] = t._relationIDs[0];
+                                }
+                                break;
+                            case "delete":
+                                if (isArrayRelation) {
+                                    var loc = newRow[t._column].indexOf(rows[ptr][pk]);
+                                    if (loc !== -1)
+                                        newRow[t._column] = newRow[t._column].splice(loc, 1);
+                                }
+                                else {
+                                    newRow[t._column] = "";
+                                }
+                                break;
+                            case "drop":
+                                newRow[t._column] = isArrayRelation ? [] : undefined;
+                                break;
+                        }
+                        var updateRow_1 = function (newRow, callBack) {
+                            t._db.table(relationTable).query("upsert", newRow, true).exec().then(callBack);
+                        };
+                        var removeOldRelations_1 = function () {
+                            return lie_ts_1.Promise.all(oldRelations_1.map(function (id) {
+                                return new lie_ts_1.Promise(function (resolve, reject) {
+                                    t._db.table(relationTable).query("select").where([relationPK, "=", id]).exec().then(function (relateRows) {
+                                        if (!relateRows.length) {
+                                            resolve();
+                                            return;
+                                        }
+                                        var modifyRow = exports._assign(relateRows[0]);
+                                        if (Array.isArray(modifyRow[mapTo])) {
+                                            var idx = modifyRow[mapTo].indexOf(rows[ptr][pk]);
+                                            if (idx !== -1) {
+                                                modifyRow[mapTo] = modifyRow[mapTo].splice(idx, 1);
+                                            }
+                                        }
+                                        else {
+                                            modifyRow[mapTo] = "";
+                                        }
+                                        updateRow_1(modifyRow, resolve);
+                                    });
+                                });
+                            }));
+                        };
+                        t._db.table(t._tableName).query("upsert", newRow, true).exec().then(function () {
+                            if (mapTo) {
+                                switch (t._action) {
+                                    case "set":
+                                    case "add":
+                                        var ptr2_1 = 0;
+                                        var appendRelations_1 = function () {
+                                            if (ptr2_1 < t._relationIDs.length) {
+                                                t._db.table(relationTable).query("select").where([relationPK, "=", t._relationIDs[ptr2_1]]).exec().then(function (relateRows) {
+                                                    if (!relateRows.length) {
+                                                        ptr2_1++;
+                                                        appendRelations_1();
+                                                        return;
+                                                    }
+                                                    var modifyRow = exports._assign(relateRows[0]);
+                                                    if (modifyRow[mapTo] === undefined)
+                                                        modifyRow[mapTo] = mapToIsArray === "array" ? [] : "";
+                                                    if (mapToIsArray === "array") {
+                                                        if (!Array.isArray(modifyRow[mapTo]))
+                                                            modifyRow[mapTo] = [];
+                                                        modifyRow[mapTo].push(rows[ptr][pk]);
+                                                        modifyRow[mapTo] = modifyRow[mapTo].filter(function (v, i, s) {
+                                                            return s.indexOf(v) === i;
+                                                        });
+                                                        updateRow_1(modifyRow, function () {
+                                                            ptr2_1++;
+                                                            appendRelations_1();
+                                                        });
+                                                    }
+                                                    else {
+                                                        if (modifyRow[mapTo] && modifyRow[mapTo].length) {
+                                                            t._db.table(t._tableName).query("select").where([pk, "=", modifyRow[mapTo]]).exec().then(function (relateRows2) {
+                                                                var modifyRow2 = exports._assign(relateRows2[0]);
+                                                                if (Array.isArray(modifyRow2[t._column])) {
+                                                                    var idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
+                                                                    if (idx === -1) {
+                                                                        modifyRow2[t._column] = modifyRow2[t._column].splice(modifyRow2[t._column].indexOf(modifyRow[mapTo]), 1);
+                                                                    }
+                                                                }
+                                                                else {
+                                                                    modifyRow2[t._column] = "";
+                                                                }
+                                                                t._db.table(t._tableName).query("upsert", modifyRow2, true).where([pk, "=", modifyRow[mapTo]]).exec().then(function () {
+                                                                    modifyRow[mapTo] = rows[ptr][pk];
+                                                                    updateRow_1(modifyRow, function () {
+                                                                        ptr2_1++;
+                                                                        appendRelations_1();
+                                                                    });
+                                                                });
+                                                            });
+                                                        }
+                                                        else {
+                                                            modifyRow[mapTo] = rows[ptr][pk];
+                                                            updateRow_1(modifyRow, function () {
+                                                                ptr2_1++;
+                                                                appendRelations_1();
+                                                            });
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                            else {
+                                                ptr++;
+                                                nextRow();
+                                            }
+                                        };
+                                        appendRelations_1();
+                                        break;
+                                    case "delete":
+                                    case "drop":
+                                        removeOldRelations_1().then(function () {
+                                            ptr++;
+                                            nextRow();
+                                        });
+                                        break;
+                                }
+                            }
+                            else {
+                                ptr++;
+                                nextRow();
+                            }
+                        });
+                    }
+                    else {
+                        res(ptr);
+                    }
+                };
+                nextRow();
+            });
+        });
+    };
+    return _NanoSQLORMQuery;
+}());
+exports._NanoSQLORMQuery = _NanoSQLORMQuery;
 var _NanoSQLQuery = (function () {
     function _NanoSQLQuery(table, db, actionOrView) {
         this._db = db;
@@ -468,6 +763,9 @@ var _NanoSQLQuery = (function () {
     };
     _NanoSQLQuery.prototype.range = function (limit, offset) {
         return this._addCmd("range", [limit, offset]);
+    };
+    _NanoSQLQuery.prototype.orm = function (ormArgs) {
+        return this._addCmd("orm", ormArgs);
     };
     _NanoSQLQuery.prototype.orderBy = function (args) {
         return this._addCmd("orderby", args);

@@ -8,18 +8,6 @@ import {
 
 
 describe("Data Integrity", () => {
-    it("Undefined columns should be ignored.", (done: MochaDone) => {
-        nSQL("ships").query("upsert", {random: "value"}).where(["id", "=", 1]).exec().then((rows) => {
-            return nSQL("ships").query("select").where(["id", "=", 1]).exec()
-        }).then((rows) => {
-            try {
-                expect(rows[0]).to.deep.equal(spaceShipsDatabase[0], "Undefined column added!");
-                done();
-            } catch(e) {
-                done(e);
-            }
-        })
-    });
     it("Columns should be force type casted", (done: MochaDone) => {
         nSQL("ships").query("upsert", {
             pilotId: "20",

@@ -153,8 +153,9 @@
                     type: 'float',
                     default: 0.0
                 }, {
-                    key: 'postIDs',
-                    type: 'int[]'
+                    key: 'orderIDs',
+                    type: 'orders[]',
+                    props: ["orm::user"]
                 }, {
                     key: 'meta',
                     type: 'map',
@@ -209,8 +210,9 @@
                 key: 'total',
                 type: 'float'
             }, {
-                key: 'userID',
-                type: 'int'
+                key: 'user',
+                type: 'users',
+                props: ["orm::orderIDs"]
             }])
             .config({
                 //persistent: true,
@@ -224,17 +226,17 @@
                         id: null,
                         title: "Test",
                         total: 200,
-                        userID: 2
+                        user: 2
                     }, {
                         id: null,
                         title: "Test",
                         total: 100,
-                        userID: 2
+                        user: 2
                     }, {
                         id: null,
                         title: "Test",
                         total: 600,
-                        userID: 5
+                        user: 5
                     }]),
                     nSQL()
                     .loadJS('users', [{
@@ -274,12 +276,23 @@
                         }
                     }])
                 ]).then(function() {
-                    nSQL("users").query("select").trieSearch("name", "sc").exec().then((rows) => {
-                        console.log("RANGE", rows);
+                    nSQL("orders").updateORM("rebuild").exec().then(() => {
+                        return nSQL("users").updateORM("rebuild").exec();
+                        //return new Promise(res => res());
+                    }).then(() => {
+                        nSQL("orders").query("select").exec().then((rows) => {
+                            console.log("Orders", rows);
+                        });
+                        nSQL("users").query("select").orm(["orderIDs"]).exec().then((users) => {
+                            console.log("Users", users);
+                        });
+                        return nSQL("orders").query("delete").where(["id", "=", 1]).exec();
+                    }).then(() => {
+                        nSQL("users").query("select").orm(["orderIDs"]).exec().then((rows) => {
+                            console.log("Users2", rows);
+                        });
                     })
-                    nSQL("orders").query("select").where(["id", "BETWEEN", [1, 2]]).exec().then((rows) => {
-                        console.log("BETWEEN", rows);
-                    });
+
                     /*nSQL("orders")
                         .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
                         .join({
@@ -326,7 +339,7 @@
                                 .join({
                                     type: "inner",
                                     table: "orders",
-                                    where: ["users.id", "=", "orders.userID"]
+                                    where: ["users.id", "=", "orders.user"]
                                 }).exec().then((rows) => {
                                     console.log("JOIN", rows);
                                 })
@@ -340,45 +353,52 @@
             });
 
 
-        /*
-
-            // orderby Api
-            nSQL("Users")
-                .query("select",["name","count(*)"])
-                .groupBy(["name"])
-                .exec();
-
-        */
-
 
         /*
-
-            // BTree/ Secondary indexs
-            .model([
-                {key: "id", type: "string", props: ["pk", "ai"]},
-                {key: "name", type: "string", props: ["idx"]}
-                {key: "email", type: "string", props: ["idx"]},
-                {key: "color", type: "string", props: ["trie"]}
-            ])
 
             //Possible ORM Api  
             nSQL("posts")
             .model([
                 {key:'id',type:'int',props:['pk','ai']},
+                {key:'author', type: 'user', props:["orm::posts"]}
                 {key:'title',type:'string'}
             ])
+            .defaultORM((rowKey: string) => {
+                return {
+                    offset: 0,
+                    limit: 5
+                }
+            })
             nSQL("dog")
             .model([
                 {key:'id',type:'int',props:['pk','ai']},
+                {key:"owner", type: "user[]", props:["orm::dogs"]} 
                 {key:'name',type:'string'}
             ])
-            nSQL("users")
+            nSQL("user")
             .model([
-                {key:'id',type:'int,props:['pk','ai']},
-                {key:'posts',type:'posts[]'}
-                {key:'dog',type:'dog'}
+                {key:'id',type:'int, props:['pk','ai']},
+                {key:'posts',type:'posts[]', props:["orm::author"]}
+                {key:'dogs',type:'dog[]', props: ["orm::owner"]}
             ])
             .connect()
+
+            nSQL("users").updateORM("append", "posts", [postIds..]).where(["posts.length", ">", 2]).exec().then(...) // 
+            nSQL("users").updateORM("delete", "posts", [postIds..]).where(["id","=",2]).exec().then(...) // delete set postIDs where users id = 2
+            nSQL("users").updateORM("drop", "posts").exec().then(...) // drop all "posts" relationships
+
+            nSQL("users").query("select").orm().exec() // usedefault ORM behavior, request single rows and the first 5 records of "many" relationships
+
+            nSQL("users").query("select").where(...).orm([ // specify for this query
+                {
+                    key: "*"
+                    offset:0,
+                    limit:0,
+                    orderBy: {name:"asc"}
+                    where: ["comments", ">", 2]
+                },
+                "dog"
+            ]).exec()
 
             */
     </script>

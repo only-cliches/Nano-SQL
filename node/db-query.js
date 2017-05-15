@@ -1,6 +1,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var index_1 = require("./index");
 var db_index_1 = require("./db-index");
+var lie_ts_1 = require("lie-ts");
 var minMax = function (type, row, args, ptr, prev) {
     var key = args[0];
     if (ptr[0] === 0)
@@ -155,9 +156,22 @@ var _NanoSQLQuery = (function () {
                     t._select(rows, callBack);
                     break;
                 case "drop":
-                    t._db._store._read(tableData._name, "all", function (rows) {
-                        t._remove(rows, callBack);
-                    });
+                    var ptr_1 = 0;
+                    var idx_1 = tableData._index.slice();
+                    var nextRow_1 = function () {
+                        if (ptr_1 < idx_1.length) {
+                            t._db._store._read(tableData._name, idx_1[ptr_1], function (row) {
+                                t._remove(row, function () {
+                                    ptr_1++;
+                                    nextRow_1();
+                                });
+                            });
+                        }
+                        else {
+                            callBack([], "drop", idx_1.map(function (i) { return {}; }));
+                        }
+                    };
+                    nextRow_1();
                     break;
                 case "delete":
                     t._remove(rows, callBack);
@@ -220,9 +234,9 @@ var _NanoSQLQuery = (function () {
                         new db_index_1._fnForEach().loop(whereArgs_1, function (wArg, next) {
                             doFastWhere_1(wArg, function (rows) {
                                 if (lastCommand_1 === "AND") {
-                                    var idx_1 = rows.map(function (r) { return r[tableData._pk]; });
+                                    var idx_2 = rows.map(function (r) { return r[tableData._pk]; });
                                     resultRows_1 = resultRows_1.filter(function (row) {
-                                        return idx_1.indexOf(row[tableData._pk]) !== -1;
+                                        return idx_2.indexOf(row[tableData._pk]) !== -1;
                                     });
                                 }
                                 else {
@@ -275,9 +289,14 @@ var _NanoSQLQuery = (function () {
         var table = t._db._store._tables[t._tableID];
         var startIndex = table._index[offset];
         var endIndex = table._index[offset + (limit - 1)];
-        t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], function (rows) {
-            callBack(rows);
-        });
+        if (!startIndex) {
+            callBack([]);
+        }
+        else {
+            t._db._store._readRange(table._name, table._pk, [startIndex, endIndex], function (rows) {
+                callBack(rows);
+            });
+        }
     };
     _NanoSQLQuery.prototype._updateRow = function (rowPK, callBack) {
         var t = this;
@@ -285,11 +304,6 @@ var _NanoSQLQuery = (function () {
         var qArgs = t._act.args;
         var oldRow = {};
         var updateType = (function () {
-            if (t._act) {
-                if (t._act.type === "delete" && !qArgs.length) {
-                    return "drop";
-                }
-            }
             return t._act ? t._act.type : "";
         })();
         var updateSecondaryIndex = function (newRow, rem) {
@@ -365,6 +379,11 @@ var _NanoSQLQuery = (function () {
         };
         if (t._db._store._doingTransaction) {
             if (updateType === "upsert") {
+                t._db._store._tables[t._tableID]._keys.forEach(function (k, i) {
+                    var def = table._defaults[i];
+                    if (qArgs[k] === undefined && def !== undefined)
+                        qArgs[k] = def;
+                });
                 writeChanges(qArgs);
             }
             else {
@@ -376,30 +395,6 @@ var _NanoSQLQuery = (function () {
             oldRow = rows[0] || {};
             var newRow = index_1._assign(rows[0] || {});
             var doRemove = false;
-            switch (updateType) {
-                case "upsert":
-                    Object.getOwnPropertyNames(qArgs).forEach(function (k) {
-                        newRow[k] = qArgs[k];
-                    });
-                    var table_1 = t._db._store._tables[t._tableID];
-                    table_1._keys.forEach(function (k, i) {
-                        var def = table_1._defaults[i];
-                        if (!newRow[k] && def !== undefined)
-                            newRow[k] = def;
-                    });
-                    break;
-                case "delete":
-                    if (qArgs && qArgs.length) {
-                        qArgs.forEach(function (column) {
-                            newRow[column] = null;
-                        });
-                    }
-                    else {
-                        doRemove = true;
-                        newRow = {};
-                    }
-                    break;
-            }
             var finishUpdate = function (histDataID) {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, function (rows) {
@@ -419,16 +414,64 @@ var _NanoSQLQuery = (function () {
                 updateSecondaryIndex(updateType === "upsert" ? newRow : {});
                 writeChanges(newRow);
             };
-            if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
-                var histTable = "_" + table._name + "_hist__data";
-                var tah = index_1.NanoSQLInstance._hash(histTable);
-                newRow[db_index_1._str(4)] = t._db._store._tables[tah]._index.length;
-                t._db._store._upsert(histTable, null, newRow, function (rowID) {
-                    finishUpdate(rowID);
-                });
-            }
-            else {
-                finishUpdate(0);
+            var doHistory = function () {
+                if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
+                    var histTable = "_" + table._name + "_hist__data";
+                    var tah = index_1.NanoSQLInstance._hash(histTable);
+                    newRow[db_index_1._str(4)] = t._db._store._tables[tah]._index.length;
+                    t._db._store._upsert(histTable, null, newRow, function (rowID) {
+                        finishUpdate(rowID);
+                    });
+                }
+                else {
+                    finishUpdate(0);
+                }
+            };
+            switch (updateType) {
+                case "upsert":
+                    Object.getOwnPropertyNames(qArgs).forEach(function (k) {
+                        newRow[k] = qArgs[k];
+                    });
+                    var table_1 = t._db._store._tables[t._tableID];
+                    table_1._keys.forEach(function (k, i) {
+                        var def = table_1._defaults[i];
+                        if (!newRow[k] && def !== undefined)
+                            newRow[k] = def;
+                    });
+                    doHistory();
+                    break;
+                case "delete":
+                case "drop":
+                    if (qArgs && qArgs.length && updateType !== "drop") {
+                        qArgs.forEach(function (column) {
+                            newRow[column] = null;
+                        });
+                        doHistory();
+                    }
+                    else {
+                        doRemove = true;
+                        newRow = {};
+                        if (t._db._store._tables[t._tableID]._relations.length) {
+                            t._db._store._tables[t._tableID]._relations.forEach(function (rel) {
+                                if (rel._mapTo.length) {
+                                    var relatedPK = t._db._store._tables[index_1.NanoSQLInstance._hash(rel._table)]._pk;
+                                    var related = oldRow[rel._key] || [];
+                                    if (!Array.isArray(related))
+                                        related = [related];
+                                    t._db._parent.table(rel._table).updateORM("delete", rel._mapTo, [rowPK]).where([relatedPK, "IN", related]).exec().then(function () {
+                                        doHistory();
+                                    });
+                                }
+                                else {
+                                    doHistory();
+                                }
+                            });
+                        }
+                        else {
+                            doHistory();
+                        }
+                    }
+                    break;
             }
         });
     };
@@ -487,7 +530,7 @@ var _NanoSQLQuery = (function () {
                             if (j < historyPoints.length) {
                                 var tableName_2 = t._db._store._tables[historyPoints[j].tableID]._name;
                                 k = 0;
-                                var nextRow_1 = function () {
+                                var nextRow_2 = function () {
                                     if (k < historyPoints[j].rowKeys.length) {
                                         t._db._store._read("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], function (rows) {
                                             rows[0] = index_1._assign(rows[0]);
@@ -497,12 +540,12 @@ var _NanoSQLQuery = (function () {
                                                 if (del) {
                                                     t._db._store._delete("_" + tableName_2 + "_hist__data", del, function () {
                                                         k++;
-                                                        nextRow_1();
+                                                        nextRow_2();
                                                     });
                                                 }
                                                 else {
                                                     k++;
-                                                    nextRow_1();
+                                                    nextRow_2();
                                                 }
                                             });
                                         });
@@ -513,7 +556,7 @@ var _NanoSQLQuery = (function () {
                                     }
                                 };
                                 t._db._store._delete(db_index_1._str(1), historyPoints[j].id, function () {
-                                    nextRow_1();
+                                    nextRow_2();
                                 });
                             }
                             else {
@@ -562,20 +605,7 @@ var _NanoSQLQuery = (function () {
         else {
             scribe = "inserted";
             if (!qArgs[pk]) {
-                switch (table._pkType) {
-                    case "int":
-                        qArgs[pk] = table._incriment++;
-                        break;
-                    case "uuid":
-                        qArgs[pk] = index_1.NanoSQLInstance.uuid();
-                        break;
-                    case "timeId":
-                        qArgs[pk] = index_1.NanoSQLInstance.timeid();
-                        break;
-                    case "timeIdms":
-                        qArgs[pk] = index_1.NanoSQLInstance.timeid(true);
-                        break;
-                }
+                qArgs[pk] = t._db._store._generateID(table._pkType, t._tableID);
             }
             else {
                 if (table._pkType === "int") {
@@ -605,24 +635,28 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._select = function (queryRows, callBack) {
         var t = this;
         if (t._db._queryCache[t._tableID][t._queryHash]) {
-            callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
-            return;
         }
-        var mods = ["join", "groupby", "having", "orderby", "offset", "limit"];
+        var mods = ["join", "groupby", "having", "orderby", "offset", "limit", "orm"];
         var curMod, column, i, k, rows, obj, rowData, groups = {};
         var sortObj = function (objA, objB, columns) {
             return Object.keys(columns).reduce(function (prev, cur) {
+                var A = objA[cur];
+                var B = objB[cur];
+                if (cur.split(".").pop() === "length") {
+                    A = objA[cur.replace(".length", "")].length;
+                    B = objB[cur.replace(".length", "")].length;
+                }
                 if (!prev) {
-                    if (objA[cur] === objB[cur])
+                    if (A === B)
                         return 0;
-                    return (objA[cur] > objB[cur] ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
+                    return (A > B ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
                 }
                 else {
                     return prev;
                 }
             }, 0);
         };
-        var modifyQuery = function (tableIndex, modIndex, next) {
+        var modifyQuery = function (tableResult, modIndex, next) {
             curMod = t._getMod(mods[modIndex]);
             if (modIndex === 2) {
                 var functions_1 = [];
@@ -699,11 +733,11 @@ var _NanoSQLQuery = (function () {
                             }, []);
                         }
                         else {
-                            rows_1 = doFunctions_1(tableIndex);
+                            rows_1 = doFunctions_1(tableResult);
                         }
                     }
                     else {
-                        rows_1 = tableIndex;
+                        rows_1 = tableResult;
                     }
                     var convertKeys_1 = keepColumns_1.map(function (n) {
                         return n.match(/(.*)\sAS\s(.*)/) || n;
@@ -714,20 +748,32 @@ var _NanoSQLQuery = (function () {
                             var newRow = {};
                             convertKeys_1.forEach(function (key) {
                                 if (typeof key === "string") {
-                                    newRow[key] = r[key];
+                                    if (key.indexOf(".length") !== -1) {
+                                        var newKey = key.replace(".length", "");
+                                        newRow[key] = (r[newKey] || []).length;
+                                    }
+                                    else {
+                                        newRow[key] = r[key];
+                                    }
                                 }
                                 else {
-                                    newRow[key[2]] = r[key[1]];
+                                    if (key[1].indexOf(".length") !== -1) {
+                                        var newKey = key[1].replace(".length", "");
+                                        newRow[key[2]] = (r[newKey] || []).length;
+                                    }
+                                    else {
+                                        newRow[key[2]] = r[key[1]];
+                                    }
                                 }
                             });
                             return newRow;
                         });
                     }
-                    tableIndex = rows_1;
+                    tableResult = rows_1;
                 }
             }
             if (!curMod)
-                return next(tableIndex);
+                return next(tableResult);
             switch (modIndex) {
                 case 0:
                     var joinConditions = void 0;
@@ -760,11 +806,24 @@ var _NanoSQLQuery = (function () {
                     var columns_1 = curMod.args;
                     var sortGroups_1 = {};
                     if (columns_1) {
-                        groups = tableIndex.reduce(function (prev, curr) {
-                            var key = Object.keys(columns_1).reduce(function (p, c) { return p + "." + String(curr[c]); }, "").slice(1);
+                        groups = tableResult.reduce(function (prev, curr) {
+                            var key = Object.keys(columns_1).reduce(function (p, c) {
+                                if (c.indexOf(".length") !== -1) {
+                                    return p + "." + String((curr[c.replace(".length", "")] || []).length);
+                                }
+                                else {
+                                    return p + "." + String(curr[c]);
+                                }
+                            }, "").slice(1);
                             (prev[key] = prev[key] || []).push(curr);
                             sortGroups_1[key] = Object.keys(columns_1).reduce(function (pr, cu) {
-                                pr[cu] = curr[cu];
+                                if (cu.indexOf(".length") !== -1) {
+                                    var newCu = cu.replace(".length", "");
+                                    pr[newCu] = (curr[newCu] || []).length;
+                                }
+                                else {
+                                    pr[cu] = curr[cu];
+                                }
                                 return pr;
                             }, {});
                             return prev;
@@ -776,28 +835,121 @@ var _NanoSQLQuery = (function () {
                         }, []));
                     }
                     else {
-                        next(tableIndex);
+                        next(tableResult);
                     }
                     break;
                 case 2:
-                    next(tableIndex.filter(function (row) {
+                    next(tableResult.filter(function (row) {
                         return t._where(row, t._getMod("having").args);
                     }));
                     break;
                 case 3:
-                    next(tableIndex.sort(function (a, b) {
+                    next(tableResult.sort(function (a, b) {
                         return sortObj(a, b, curMod.args);
                     }));
                     break;
                 case 4:
-                    next(tableIndex.filter(function (row, index) {
+                    next(tableResult.filter(function (row, index) {
                         return curMod ? index >= curMod.args : true;
                     }));
                     break;
                 case 5:
-                    next(tableIndex.filter(function (row, index) {
+                    next(tableResult.filter(function (row, index) {
                         return curMod ? index < curMod.args : true;
                     }));
+                    break;
+                case 6:
+                    var modifiers_1 = [];
+                    if (curMod.args)
+                        modifiers_1 = curMod.args;
+                    var defaultModifier_1 = t._db._store._parent._parent._ormFns[t._db._store._tables[t._tableID]._name];
+                    if (!t._getMod("join")) {
+                        lie_ts_1.Promise.all(tableResult.map(function (row, k) {
+                            tableResult[k] = index_1._assign(row);
+                            return lie_ts_1.Promise.all(t._db._store._tables[t._tableID]._relations.map(function (rel) {
+                                var useKey = rel._key;
+                                if (qArgs && qArgs.length) {
+                                    qArgs.forEach(function (q) {
+                                        var column = q.split(" ");
+                                        if (column[0] === rel._key && column[1] === "AS") {
+                                            useKey = column[2];
+                                        }
+                                    });
+                                }
+                                if (row[useKey] === undefined) {
+                                    return new lie_ts_1.Promise(function (res) { return res(); });
+                                }
+                                var tablePK = t._db._store._tables[index_1.NanoSQLInstance._hash(rel._table)]._pk;
+                                return new lie_ts_1.Promise(function (res, rej) {
+                                    var modifier = undefined;
+                                    if (defaultModifier_1) {
+                                        modifier = defaultModifier_1(rel._key, tableResult[k]);
+                                    }
+                                    if (modifiers_1.length) {
+                                        modifiers_1.forEach(function (mod) {
+                                            if (typeof mod !== "string") {
+                                                if (mod.key === rel._key || !mod.key || mod.key === "*") {
+                                                    modifier = mod;
+                                                }
+                                            }
+                                        });
+                                    }
+                                    if (!modifier && modifiers_1.indexOf(rel._key) === -1) {
+                                        res();
+                                        return;
+                                    }
+                                    var Ids = row[useKey];
+                                    if (Ids === undefined) {
+                                        tableResult[k][useKey] = rel._type === "single" ? undefined : [];
+                                        res();
+                                        return;
+                                    }
+                                    if (rel._type === "single")
+                                        Ids = [Ids];
+                                    var query = t._db._parent.table(rel._table).query("select");
+                                    if (modifier) {
+                                        if (!modifier.where && !modifier.orderBy) {
+                                            var offset_1 = modifier.offset || 0;
+                                            var limit_1 = modifier.limit || 0;
+                                            query.where([tablePK, "IN", Ids.filter(function (v, i) {
+                                                    return i >= offset_1 && i < offset_1 + limit_1;
+                                                })]);
+                                        }
+                                        else {
+                                            if (modifier.where) {
+                                                if (typeof modifier.where[0] === "string") {
+                                                    query.where([[tablePK, "IN", Ids], "AND", modifier.where]);
+                                                }
+                                                else {
+                                                    modifier.where.push("AND");
+                                                    modifier.where.push([tablePK, "IN", Ids]);
+                                                    query.where(modifier.where);
+                                                }
+                                            }
+                                            else {
+                                                query.where([tablePK, "IN", Ids]);
+                                            }
+                                            if (modifier.orderBy)
+                                                query.orderBy(modifier.orderBy);
+                                            query.limit(modifier.limit || 5).offset(modifier.offset || 0);
+                                        }
+                                    }
+                                    else {
+                                        query.where([tablePK, "IN", Ids.filter(function (v, i) { return i < 5; })]);
+                                    }
+                                    query.exec().then(function (relations) {
+                                        tableResult[k][useKey] = rel._type === "single" ? relations[0] : relations;
+                                        res();
+                                    });
+                                });
+                            }));
+                        })).then(function () {
+                            next(tableResult);
+                        });
+                    }
+                    else {
+                        next(tableResult);
+                    }
                     break;
             }
         };
@@ -812,8 +964,7 @@ var _NanoSQLQuery = (function () {
             }
             else {
                 rowPKs = rowPKs.filter(function (r) { return r; });
-                if (!t._getMod("join")) {
-                    t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
+                if (!t._getMod("join") && !t._getMod("orm")) {
                 }
                 callBack(rowPKs, "none", []);
             }
@@ -844,6 +995,15 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._where = function (row, conditions) {
         var t = this;
         var commands = ["AND", "OR"];
+        var maybeGetLength = function (key) {
+            if (key.indexOf(".length") !== -1) {
+                var value = row[key.replace(".length", "")];
+                return Array.isArray(value) ? value.length : 0;
+            }
+            else {
+                return row[key];
+            }
+        };
         if (typeof conditions[0] !== "string") {
             var prevCmd_1;
             return conditions.reduce(function (prev, cur, i) {
@@ -852,7 +1012,7 @@ var _NanoSQLQuery = (function () {
                     return prev;
                 }
                 else {
-                    var compare = t._compare(cur[2], cur[1], row[cur[0]]) === 0 ? true : false;
+                    var compare = t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
                     if (i === 0)
                         return compare;
                     if (prevCmd_1 === "AND") {
@@ -865,7 +1025,7 @@ var _NanoSQLQuery = (function () {
             }, true);
         }
         else {
-            return t._compare(conditions[2], conditions[1], row[conditions[0]]) === 0 ? true : false;
+            return t._compare(conditions[2], conditions[1], maybeGetLength(conditions[0])) === 0 ? true : false;
         }
     };
     _NanoSQLQuery.prototype._join = function (type, leftTableID, rightTableID, joinConditions, complete) {

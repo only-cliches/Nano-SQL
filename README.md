@@ -1,6 +1,8 @@
-Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
+<p style="text-align:center">
+The most powerful little data store.<br/>
+<img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
+</p>
 
-![NanoSQL Logo](https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png)
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
@@ -9,7 +11,7 @@ Isomorphic RDBMS that supports IndexedDB & LevelDB with Undo/Redo.
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
-NanoSQL is the smallest and quickest way to get SQL power into your app, built specifically for modern frameworks like Angular2 and React. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 12Kb package.   As a bonus, you also get the performance perks of ImmutableJS in a smaller lib.
+NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 14Kb package.   As a bonus, you also get the performance perks of ImmutableJS.
 
 Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
@@ -26,17 +28,19 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Built in optomized **trie indexes**.
 - Queries return immutable rows.
 - Import and Export CSV/JSON.
-- **Simple & elegant undo/redo**.
+- **Simple & elegant undo/redo.**.
 - Full Typescript support.
-- **Runtime type casting**.
+- **Runtime type casting.**.
+- **Complete ORM support.**.
 - Fast secondary indexes.
 - Transactions support.
 - Full events system.
-- Just 12Kb Gzipped.
+- Just 14Kb Gzipped.
 
 ## New Features
 
-- Integration tests now cover all SQL functions.
+- ORM support has been added! [ORM Docs](https://github.com/ClickSimply/Nano-SQL/wiki/ORM)
+- Integration tests now cover all standard SQL functions.
 - You can index a specific row with a `trie` structure for super fast string searching by putting `props: ["trie"]` in the data model.
 - Secondary indexes are now supported by putting `props: ["idx"]` in the data model.  Secondary indexes will slow down the write speed the more you have.
 - You can force all secondary indexes to build/rebuild by passing `rebuildIndexes: true` into the `.config()` object.
@@ -49,7 +53,7 @@ I spent a long time looking for an existing solution that would do everything I 
 
 | Database                                                 | Events | TS  | Undo & Redo  | Immutable | RDBMS | IndexedDB | Node | Any Backend | Size |
 |----------------------------------------------------------|:------:|:---:|:------------:|:---------:|:-----:|:---------:|:----:|:-----------:|:----------:|
-| NanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 12         |
+| nanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 14         |
 | [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕         | ✕    | ✕        | ✓      | ✕          | 2          |
 | [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 5          |
 | [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✓         | ✕    | ✕        | ✓      | ✕          | 16         |
@@ -61,7 +65,7 @@ I spent a long time looking for an existing solution that would do everything I 
 | [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 500        |
 
 
-I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  NanoSQL is that.  
+I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  nanoSQL is that.  
 
 
 
@@ -95,7 +99,7 @@ nSQL('users') //  "users" is our table name.
 ])
 .connect() // Init the data store for usage.
 .then(function(result, db) {
-    // "db" holds the current NanoSQL var with the previous table still selected.
+    // "db" holds the current nanoSQL var with the previous table still selected.
     return db.query('upsert',{ // Add a record
         name:"Billy",
     }).exec();
@@ -264,7 +268,7 @@ nSQL("users")
 
 ## Performance
 
-NanoSQL is built on top of NoSQL systems so there are several performance optimizations you can take advantage of for super fast queries.
+nanoSQL is built on top of NoSQL systems so there are several performance optimizations you can take advantage of for super fast queries.
 
 [Performance Docs](https://github.com/ClickSimply/Nano-SQL/wiki/4.-Default-Store#performance-considerations)
 
@@ -311,7 +315,7 @@ nSQL()
 
 # Contributing
 
-NanoSQL is an **OPEN Open Source Project**. This means that:
+nanoSQL is an **OPEN Open Source Project**. This means that:
 
 > Individuals making significant and valuable contributions are given commit-access to the project to contribute as they see fit. This project is more like an open wiki than a standard guarded open source project.
 

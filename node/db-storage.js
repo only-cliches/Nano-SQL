@@ -635,33 +635,43 @@ var _NanoSQL_Storage = (function () {
             step_3();
         }
     };
+    _NanoSQL_Storage.prototype._generateID = function (type, tableHash) {
+        switch (type) {
+            case "int": return this._tables[tableHash]._incriment++;
+            case "uuid": return index_1.NanoSQLInstance.uuid();
+            case "timeId": return index_1.NanoSQLInstance.timeid();
+            case "timeIdms": return index_1.NanoSQLInstance.timeid(true);
+        }
+        return "";
+    };
     _NanoSQL_Storage.prototype._upsert = function (tableName, rowID, rowData, callBack) {
         var t = this;
+        if (Object.isFrozen(rowData))
+            rowData = index_1._assign(rowData);
         var ta = index_1.NanoSQLInstance._hash(tableName);
         if (rowID === undefined || rowID === null) {
             t._models[ta].forEach(function (m) {
                 if (m.props && m.props.indexOf("pk") !== -1) {
-                    if (m.type === "uuid") {
-                        rowID = index_1.NanoSQLInstance.uuid();
-                    }
-                    else {
-                        rowID = t._tables[ta]._incriment++;
-                    }
+                    rowID = t._generateID(m.type, ta);
                 }
             });
             if (!rowID)
                 rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
         }
-        if (tableName.indexOf("_hist__data") !== -1 && rowData) {
+        if (tableName.indexOf("_") !== 0 && rowData) {
+            delete rowData[db_index_1._str(4)];
+        }
+        else if (tableName.indexOf("_hist__data") !== -1 && rowData) {
             rowID = rowData[db_index_1._str(4)];
         }
         if (t._tables[ta]._pkType === "int")
             rowID = parseInt(rowID);
         var pk = t._tables[ta]._pk;
-        if (pk && pk.length && rowData && !rowData[pk]) {
+        if (pk && pk.length && rowData && rowData[pk] === undefined) {
             rowData[pk] = rowID;
         }
         if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {
+            t._tables[ta]._trieIndex.addWord(String(rowID));
             t._tables[ta]._index.push(rowID);
         }
         if (t._storeMemory) {
@@ -789,10 +799,18 @@ var _NanoSQL_Storage = (function () {
         if (t._mode === 0 || t._mode === 2) {
             var startPtr_1 = t._tables[ta]._index.indexOf(between[0]);
             var resultRows_2 = [];
+            if (startPtr_1 === -1) {
+                callBack(resultRows_2);
+                return;
+            }
             var stepRead_1 = function () {
                 var pk = t._tables[ta]._index[startPtr_1];
+                if (!pk) {
+                    callBack(resultRows_2);
+                    return;
+                }
                 if (pk <= between[1]) {
-                    _this._read(tableName, pk, function (rows) {
+                    t._read(tableName, pk, function (rows) {
                         resultRows_2 = resultRows_2.concat(rows);
                         startPtr_1++;
                         stepRead_1();
@@ -964,6 +982,7 @@ var _NanoSQL_Storage = (function () {
             _pk: "",
             _pkType: "",
             _keys: [],
+            _relations: [],
             _defaults: [],
             _secondaryIndexes: [],
             _trieColumns: [],
@@ -977,7 +996,7 @@ var _NanoSQL_Storage = (function () {
         var i = t._models[ta].length;
         var keys = [];
         var defaults = [];
-        while (i--) {
+        var _loop_1 = function () {
             var p = t._models[ta][i];
             t._tables[ta]._keys.unshift(p.key);
             t._tables[ta]._defaults[i] = p.default;
@@ -992,6 +1011,22 @@ var _NanoSQL_Storage = (function () {
                 t._tables[ta]._trieColumns.push(p.key);
                 t._tables[ta]._trieObjects[p.key] = new prefix_trie_ts_1.Trie([]);
             }
+            if (p.props && t._parent._parent._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
+                var mapTo_1 = "";
+                p.props.forEach(function (p) {
+                    if (p.indexOf("orm::") !== -1)
+                        mapTo_1 = p.replace("orm::", "");
+                });
+                t._tables[ta]._relations.push({
+                    _table: p.type.replace("[]", ""),
+                    _key: p.key,
+                    _mapTo: mapTo_1,
+                    _type: p.type.indexOf("[]") === -1 ? "single" : "array"
+                });
+            }
+        };
+        while (i--) {
+            _loop_1();
         }
         return tableName;
     };
