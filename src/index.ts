@@ -1220,9 +1220,9 @@ export class NanoSQLInstance {
     public loadCSV(table: string, csv: string): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
-        t.beginTransaction();
-        console.log("CSV");
+
         return new Promise((res, rej) => {
+            t.beginTransaction();
             Promise.all(csv.split("\n").map((v, k) => {
                 return new Promise((resolve, reject) => {
                     if (k === 0) {

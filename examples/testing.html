@@ -356,51 +356,19 @@
 
         /*
 
-            //Possible ORM Api  
-            nSQL("posts")
-            .model([
-                {key:'id',type:'int',props:['pk','ai']},
-                {key:'author', type: 'user', props:["orm::posts"]}
-                {key:'title',type:'string'}
-            ])
-            .defaultORM((rowKey: string) => {
-                return {
-                    offset: 0,
-                    limit: 5
-                }
-            })
-            nSQL("dog")
-            .model([
-                {key:'id',type:'int',props:['pk','ai']},
-                {key:"owner", type: "user[]", props:["orm::dogs"]} 
-                {key:'name',type:'string'}
-            ])
-            nSQL("user")
-            .model([
-                {key:'id',type:'int, props:['pk','ai']},
-                {key:'posts',type:'posts[]', props:["orm::author"]}
-                {key:'dogs',type:'dog[]', props: ["orm::owner"]}
-            ])
-            .connect()
+        // New transaction API
+        nSQL().beginTransaction().then((db, endTransaction) => {
 
-            nSQL("users").updateORM("append", "posts", [postIds..]).where(["posts.length", ">", 2]).exec().then(...) // 
-            nSQL("users").updateORM("delete", "posts", [postIds..]).where(["id","=",2]).exec().then(...) // delete set postIDs where users id = 2
-            nSQL("users").updateORM("drop", "posts").exec().then(...) // drop all "posts" relationships
+            db().quey().exec();
+            db().ormQuery().exec();
+            db().query().exec();
+            
+            endTransaction();
+        }).then((results: DBResults[]) => {
 
-            nSQL("users").query("select").orm().exec() // usedefault ORM behavior, request single rows and the first 5 records of "many" relationships
+        });
 
-            nSQL("users").query("select").where(...).orm([ // specify for this query
-                {
-                    key: "*"
-                    offset:0,
-                    limit:0,
-                    orderBy: {name:"asc"}
-                    where: ["comments", ">", 2]
-                },
-                "dog"
-            ]).exec()
-
-            */
+        */
     </script>
     Everything is in the console, not much to see here just a scratchpad to test queries with.
 </body>
