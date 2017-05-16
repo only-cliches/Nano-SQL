@@ -902,7 +902,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any, bypassClean?: boolean): _NanoSQLQuery {
+    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery {
 
         let t = this;
         let query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
@@ -916,7 +916,7 @@ export class NanoSQLInstance {
             }
 
             // Purge ORM columns from the delete arguments
-            if (action === "delete" && !bypassClean) {
+            if (action === "delete" && !bypassORMPurge) {
                 let inputArgs = {};
                 t._models[t._selectedTable].forEach((model) => {
                     if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
@@ -930,21 +930,22 @@ export class NanoSQLInstance {
 
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
-                if (!bypassClean) {
-                    t._models[t._selectedTable].forEach((model) => {
+
+                t._models[t._selectedTable].forEach((model) => {
+                    if (!bypassORMPurge) {
                         // Purge ORM columns
                         if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
                             newArgs[model.key] = undefined;
                         }
-                        // Cast known columns
-                        if (newArgs[model.key] !== undefined) {
-                            let cast = t._cast(model.type, newArgs[model.key]);
-                            if (cast !== undefined) inputArgs[model.key] = cast;
-                        }
-                    });
-                } else {
-                    inputArgs = newArgs;
-                }
+                    }
+
+                    // Cast known columns and purge uknown columns
+                    if (newArgs[model.key] !== undefined) {
+                        let cast = t._cast(model.type, newArgs[model.key]);
+                        if (cast !== undefined) inputArgs[model.key] = cast;
+                    }
+
+                });
 
                 // Apply insert filters
                 if (t._rowFilters[t._selectedTable]) {
@@ -1172,7 +1173,7 @@ export class NanoSQLInstance {
             const next = () => {
                 if (pointer < rows.length) {
                     if (rows[pointer]) {
-                        t.table(table).query("upsert", rows[pointer]).exec().then((res) => {
+                        t.table(table).query("upsert", rows[pointer], true).exec().then((res) => {
                             rowData.push(res);
                             pointer++;
                             next();
@@ -1242,7 +1243,7 @@ export class NanoSQLInstance {
                             }
                             record[fields[i]] = row[i];
                         }
-                        t.table(table).query("upsert", record).exec().then(() => {
+                        t.table(table).query("upsert", record, true).exec().then(() => {
                             resolve();
                         });
                     }

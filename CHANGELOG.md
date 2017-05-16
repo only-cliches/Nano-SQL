@@ -11,6 +11,10 @@ Read: ~100 records/ms
 - Switch in memory indexes to a sorted BTrees.
 - Increase memory db write performance by just appending data to the rows, skipping a read before write.
 
+## [0.8.41] 5-16-2017
+- [Issue #11](https://github.com/ClickSimply/Nano-SQL/issues/11) partially implimented, history triggered events now return the rows after the history action was performed.
+- Fixed an issue with the ORM imports with loadJS and loadCSV.
+
 ## [0.8.4] 5-13-2017
 - Updated the lib logo and chose a mascot, the hummingbird. :)
 - Added a complete ORM system.

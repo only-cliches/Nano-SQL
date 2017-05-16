@@ -86,7 +86,7 @@ export declare class NanoSQLInstance {
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     private _doAV(AVType, AVList, AVName, AVargs);
     newFunction(functionName: string, functionType: "aggregate" | "simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance;
-    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassClean?: boolean): _NanoSQLQuery;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery;
     updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery;
     defaultORM(callBack: (column: string, parentRowData: DBRow[]) => ORMArgs): this;
     triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void;

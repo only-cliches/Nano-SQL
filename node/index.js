@@ -226,7 +226,7 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.newFunction = function (functionName, functionType, filterFunction) {
         return this._functions[functionName] = { type: functionType, call: filterFunction }, this;
     };
-    NanoSQLInstance.prototype.query = function (action, args, bypassClean) {
+    NanoSQLInstance.prototype.query = function (action, args, bypassORMPurge) {
         var t = this;
         var query = new _NanoSQLQuery(t._selectedTable, t, t._activeAV);
         t._activeAV = undefined;
@@ -236,7 +236,7 @@ var NanoSQLInstance = (function () {
             if (["upsert", "delete", "drop"].indexOf(a) !== -1) {
                 t._transactionTables.push(t._selectedTable);
             }
-            if (action === "delete" && !bypassClean) {
+            if (action === "delete" && !bypassORMPurge) {
                 var inputArgs = {};
                 t._models[t._selectedTable].forEach(function (model) {
                     if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
@@ -247,21 +247,18 @@ var NanoSQLInstance = (function () {
             }
             if (action === "upsert") {
                 var inputArgs_1 = {};
-                if (!bypassClean) {
-                    t._models[t._selectedTable].forEach(function (model) {
+                t._models[t._selectedTable].forEach(function (model) {
+                    if (!bypassORMPurge) {
                         if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
                             newArgs_1[model.key] = undefined;
                         }
-                        if (newArgs_1[model.key] !== undefined) {
-                            var cast = t._cast(model.type, newArgs_1[model.key]);
-                            if (cast !== undefined)
-                                inputArgs_1[model.key] = cast;
-                        }
-                    });
-                }
-                else {
-                    inputArgs_1 = newArgs_1;
-                }
+                    }
+                    if (newArgs_1[model.key] !== undefined) {
+                        var cast = t._cast(model.type, newArgs_1[model.key]);
+                        if (cast !== undefined)
+                            inputArgs_1[model.key] = cast;
+                    }
+                });
                 if (t._rowFilters[t._selectedTable]) {
                     inputArgs_1 = t._rowFilters[t._selectedTable](inputArgs_1);
                 }
@@ -375,7 +372,7 @@ var NanoSQLInstance = (function () {
             var next = function () {
                 if (pointer < rows.length) {
                     if (rows[pointer]) {
-                        t.table(table).query("upsert", rows[pointer]).exec().then(function (res) {
+                        t.table(table).query("upsert", rows[pointer], true).exec().then(function (res) {
                             rowData.push(res);
                             pointer++;
                             next();
@@ -400,9 +397,8 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.loadCSV = function (table, csv) {
         var t = this;
         var fields = [];
-        t.beginTransaction();
-        console.log("CSV");
         return new lie_ts_1.Promise(function (res, rej) {
+            t.beginTransaction();
             lie_ts_1.Promise.all(csv.split("\n").map(function (v, k) {
                 return new lie_ts_1.Promise(function (resolve, reject) {
                     if (k === 0) {
@@ -422,7 +418,7 @@ var NanoSQLInstance = (function () {
                             }
                             record[fields[i]] = row[i];
                         }
-                        t.table(table).query("upsert", record).exec().then(function () {
+                        t.table(table).query("upsert", record, true).exec().then(function () {
                             resolve();
                         });
                     }
