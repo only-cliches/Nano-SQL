@@ -1,5 +1,6 @@
 import { DBRow, DataModel, DBConnect } from "./index";
 import { _NanoSQLDB } from "./db-index";
+import { Promise } from "lie-ts";
 import { Trie } from "prefix-trie-ts";
 export interface IHistoryPoint {
     id: number;
@@ -48,7 +49,7 @@ export declare class _NanoSQL_Storage {
         [historyPoint: number]: number[];
     };
     _historyLength: number;
-    _doingTransaction: boolean;
+    _activeTransactions: number[];
     _persistent: boolean;
     _doHistory: boolean;
     _storeMemory: boolean;
@@ -57,22 +58,24 @@ export declare class _NanoSQL_Storage {
         [key: string]: any;
     };
     _transactionData: {
-        [tableName: string]: {
-            type: string;
-            key: string | number;
-            value: string;
-        }[];
+        [transactionID: number]: {
+            [tableName: string]: {
+                type: string;
+                key: string | number;
+                value: string;
+            }[];
+        };
     };
     private _rebuildIndexes;
     constructor(database: _NanoSQLDB, args: DBConnect);
     init(database: _NanoSQLDB, args: DBConnect): void;
     _rebuildSecondaryIndex(tableName: string, complete: () => void): void;
     _rebuildTries(callBack: Function): void;
-    _execTransaction(): void;
+    _execTransaction(transactionID: number): Promise<any[]>;
     _clear(type: "all" | "hist", complete: Function): void;
-    _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void): void;
+    _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void, transactionID?: number): void;
     _generateID(type: string, tableHash: number): string | number;
-    _upsert(tableName: string, rowID: string | number | null, rowData: any, callBack?: (rowID: number | string) => void): void;
+    _upsert(tableName: string, rowID: string | number | null, rowData: any, callBack?: (rowID: number | string) => void, transactionID?: number): void;
     private _indexRead(tableName, rows, callBack, getIndex?);
     _readArray(tableName: string, pkArray: any[], callBack: (rows: DBRow[]) => void): void;
     _readRange(tableName: string, key: string, between: any[], callBack: (rows: DBRow[]) => void): void;

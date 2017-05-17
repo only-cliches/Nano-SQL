@@ -3,6 +3,10 @@ import { _NanoSQLDB, _str, _fnForEach } from "./db-index";
 import { IHistoryPoint, _NanoSQL_Storage } from "./db-storage";
 import { Promise } from "lie-ts";
 
+export interface QueryCallBack {
+    (result: Array<Object>, changeType: string, affectedRows: DBRow[], affectedPKs: any[]): void;
+}
+
 /**
  * Min/Max function for database
  *
@@ -163,6 +167,15 @@ export class _NanoSQLQuery {
      */
     private _tableID: number;
 
+    /**
+     * Holds a copy of the query object so other parts of the class can use it.
+     *
+     * @private
+     * @type {DBExec}
+     * @memberof _NanoSQLQuery
+     */
+    private _query: DBExec;
+
     constructor(database: _NanoSQLDB) {
         this._db = database;
     }
@@ -182,6 +195,7 @@ export class _NanoSQLQuery {
         t._tableID = NanoSQLInstance._hash(query.table);
         t._mod = [];
         t._act = undefined;
+        t._query = query;
 
         let simpleQuery: QueryLine[] = [];
 
@@ -199,7 +213,7 @@ export class _NanoSQLQuery {
         if (simpleQuery.length) {
             switch (simpleQuery[0].type) {
                 case "show tables":
-                    query.onSuccess([{tables: Object.keys(t._db._store._tables).map((ta) => t._db._store._tables[ta]._name)}], "info", []);
+                    query.onSuccess([{tables: Object.keys(t._db._store._tables).map((ta) => t._db._store._tables[ta]._name)}], "info", [], []);
                 break;
                 case "describe":
                     let getTable;
@@ -213,12 +227,12 @@ export class _NanoSQLQuery {
                     });
 
                     rows[tableName] = getTable;
-                    query.onSuccess([rows], "info", []);
+                    query.onSuccess([rows], "info", [], []);
                 break;
             }
         } else {
-            t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[]) => {
-                query.onSuccess(result, changeType, affectedRows);
+            t._execQuery((result: Array<Object>, changeType: string, affectedRows: DBRow[], affectedPKs: any[]) => {
+                query.onSuccess(result, changeType, affectedRows, affectedPKs);
             });
         }
     }
@@ -246,7 +260,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    private _execQuery(callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
+    private _execQuery(callBack: QueryCallBack): void {
         const t = this;
         if (!t._act) return;
 
@@ -271,7 +285,7 @@ export class _NanoSQLQuery {
                                 });
                             });
                         } else {
-                            callBack([], "drop", idx.map(i => { return {}; }));
+                            callBack([], "drop", idx.map(i => { return {}; }), idx);
                         }
                     };
                     nextRow();
@@ -456,10 +470,10 @@ export class _NanoSQLQuery {
                             t._db._store._upsert(tableName, rowID, {
                                 id: rowID,
                                 rowPK: indexedRows
-                            }, () => {});
+                            }, () => {}, t._query.transactionID);
                         } else {
                             emptyColumns.push(key);
-                            t._db._store._delete(tableName, rowID);
+                            t._db._store._delete(tableName, rowID, () => {}, t._query.transactionID);
                         }
 
                     }, true);
@@ -482,7 +496,7 @@ export class _NanoSQLQuery {
                             }, () => {
                                 // Add new value where it belongs
                                 updateIndex(idxTable, rowID, key);
-                            });
+                            }, t._query.transactionID);
                         });
                     } else {
                         if (newRow[key] !== undefined) updateIndex(idxTable, rowID, key);
@@ -507,16 +521,17 @@ export class _NanoSQLQuery {
                 // Update actual row
                 t._db._store._upsert(table._name, rowPK, newRow, () => {
                     callBack();
-                });
+                }, t._query.transactionID);
             } else {
                 // Update actual row data
                 t._db._store._delete(table._name, rowPK, () => {
                     callBack();
-                });
+                }, t._query.transactionID);
             }
         };
 
-        if (t._db._store._doingTransaction) {
+        if (t._query.transactionID) {
+
             if (updateType === "upsert") {
 
                 // Apply row defaults
@@ -524,6 +539,9 @@ export class _NanoSQLQuery {
                     let def = table._defaults[i];
                     if (qArgs[k] === undefined && def !== undefined) qArgs[k] = def;
                 });
+
+                // Seconday Idx and tries
+                updateSecondaryIndex(updateType === "upsert" ? qArgs : {});
 
                 writeChanges(qArgs);
             } else {
@@ -550,7 +568,7 @@ export class _NanoSQLQuery {
                             rows = _assign(rows);
                         }
                         rows[0][_str(3)].unshift(histDataID);
-                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
+                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], () => {}, t._query.transactionID);
                     });
                 }
 
@@ -569,7 +587,7 @@ export class _NanoSQLQuery {
                     newRow[_str(4)] = t._db._store._tables[tah]._index.length;
                     t._db._store._upsert(histTable, null, newRow, (rowID) => {
                         finishUpdate(rowID as number);
-                    });
+                    }, t._query.transactionID);
                 } else {
                     finishUpdate(0);
                 }
@@ -633,15 +651,15 @@ export class _NanoSQLQuery {
      * @internal
      * @param {string[]} updatedRowPKs
      * @param {string} describe
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
+     * @param {QueryCallBack} callBack
      *
      * @memberOf _NanoSQLQuery
      */
-    private _tableChanged(updatedRowPKs: string[], describe: string, callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void): void {
+    private _tableChanged(updatedRowPKs: string[], describe: string, callBack: QueryCallBack): void {
         let t = this, k = 0, j = 0;
 
-        if (t._db._store._doingTransaction) {
-            callBack([], "trans", []);
+        if (t._query.transactionID) {
+            callBack([], "trans", [], []);
             return;
         }
 
@@ -649,18 +667,16 @@ export class _NanoSQLQuery {
 
             const triggerComplete = () => {
                 let table = t._db._store._tables[this._tableID];
-                t._db._invalidateCache(t._tableID, [], "");
+                t._db._invalidateCache(t._tableID, [], [], "");
                 t._db._store._readArray(table._name, updatedRowPKs, (rows) => {
-                    callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows);
+                    callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows, updatedRowPKs);
                 });
             };
 
             const completeChange = () => {
 
                 if (t._db._store._doHistory) {
-                    if (!t._db._store._doingTransaction && t._db._store._historyPoint === 0) {
-                        t._db._store._historyLength++;
-                    }
+                    if (t._db._store._historyPoint === 0) t._db._store._historyLength++;
 
                     t._db._store._utility("w", "historyLength", t._db._store._historyLength);
                     t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
@@ -714,12 +730,12 @@ export class _NanoSQLQuery {
                                                     t._db._store._delete("_" + tableName + "_hist__data", del, () => {
                                                         k++;
                                                         nextRow();
-                                                    });
+                                                    }, t._query.transactionID);
                                                 } else {
                                                     k++;
                                                     nextRow();
                                                 }
-                                            });
+                                            }, t._query.transactionID);
                                         });
                                     } else {
                                         j++;
@@ -728,7 +744,7 @@ export class _NanoSQLQuery {
                                 };
                                 t._db._store._delete(_str(1), historyPoints[j].id, () => { // remove this point from history
                                     nextRow();
-                                });
+                                }, t._query.transactionID);
                             } else {
                                 t._db._store._historyLength -= t._db._store._historyPoint;
                                 t._db._store._historyPoint = 0;
@@ -747,7 +763,7 @@ export class _NanoSQLQuery {
             }
 
         } else {
-            callBack([{msg: "0 rows " + describe}], describe, []);
+            callBack([{msg: "0 rows " + describe}], describe, [], []);
         }
     }
 
@@ -760,7 +776,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    private _upsert(queryRows: DBRow[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
+    private _upsert(queryRows: DBRow[], callBack: QueryCallBack) {
         let t = this;
         let scribe = "", i, changedPKs: string[] = [];
 
@@ -807,7 +823,7 @@ export class _NanoSQLQuery {
                     let histRow = {};
                     histRow[_str(2)] = 0;
                     histRow[_str(3)] = [0];
-                    t._db._store._upsert(histTable, objPK, histRow);
+                    t._db._store._upsert(histTable, objPK, histRow, () => {}, t._query.transactionID);
                 }
             }
 
@@ -834,18 +850,17 @@ export class _NanoSQLQuery {
      *
      * @internal
      * @param {DBRow[]} queryRows
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
+     * @param {QueryCallBack} callBack
      * @returns
      *
      * @memberOf _NanoSQLQuery
      */
-    private _select(queryRows: DBRow[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
+    private _select(queryRows: DBRow[], callBack: QueryCallBack) {
 
         let t = this;
-        // Memoization (Temprarily disabled)
         if (t._db._queryCache[t._tableID][t._queryHash]) {
-            // callBack(t._db._queryCache[t._tableID][t._queryHash], "none", []);
-            // return;
+            callBack(t._db._queryCache[t._tableID][t._queryHash], "none", [], []);
+            return;
         }
 
         const mods = ["join", "groupby", "having", "orderby", "offset", "limit", "orm"];
@@ -1211,9 +1226,9 @@ export class _NanoSQLQuery {
             } else {
                 rowPKs = rowPKs.filter(r => r);
                 if (!t._getMod("join") && !t._getMod("orm")) { // Join commands & orm commands are not memoized.
-                    // t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
+                    t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
                 }
-                callBack(rowPKs, "none", []);
+                callBack(rowPKs, "none", [], []);
             }
         };
 
@@ -1226,11 +1241,11 @@ export class _NanoSQLQuery {
      *
      * @internal
      * @param {DBRow[]} queryRows
-     * @param {(result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void} callBack
+     * @param {QueryCallBack} callBack
      *
      * @memberOf _NanoSQLQuery
      */
-    private _remove(queryRows: DBRow[], callBack: (result: Array<Object>, changeType: string, affectedRows: DBRow[]) => void) {
+    private _remove(queryRows: DBRow[], callBack: QueryCallBack) {
         let scribe = "deleted", i;
         let t = this;
         const qArgs = (t._act as QueryLine).args  || [];

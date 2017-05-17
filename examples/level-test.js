@@ -21,44 +21,30 @@ nsql("users")
     .config({ id: "testing", memory: false, persistent: true, history: false })
     .connect().then(() => {
         let i = 0;
-        console.time("WRITE");
+
         console.log("CONNECTED");
 
-        const step = () => {
-                if (i === 0) nsql("users").beginTransaction();
-                if (i < 1000) {
-                    nsql("users")
-                        .query("upsert", {
-                            name: makeid(),
-                            pass: makeid(),
-                            email: makeid()
-                        }).exec().then(() => {
-                            i++;
-                            if (i % 100 === 0) {
-                                console.log(i);
-                            }
-                            step();
-                        })
-                } else {
-                    nsql("users").endTransaction();
-                    console.timeEnd("WRITE");
-                }
+        /*nsql().doTransaction((db, complete) => {
+            console.time("WRITE");
+            for (let i = 0; i < 8000; i++) {
+                db("users")
+                    .query("upsert", {
+                        name: makeid(),
+                        pass: makeid(),
+                        email: makeid()
+                    }).exec();
             }
-            //step();
-            //setTimeout(step, 10000);
-            /*nsql("users")
-                .query("upsert", {
-                    name: "scott",
-                    pass: "",
-                    email: "scott33@clicksimply.com"
-                }).exec()*/
+            complete();
+        }).then(() => {
+
+            console.timeEnd("WRITE");*/
         console.time("READ");
 
         //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((rows) => {
-
-        nsql("users").query("select").where(["name", "=", "scott"]).exec().then((rows) => {
+        nsql("users").query("select").trieSearch("name", "DfqUJ").exec().then((rows) => {
             console.timeEnd("READ");
             console.log(rows);
-        })
+        });
+        // });
     });
 //}, 10000)

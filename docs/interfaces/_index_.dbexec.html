@@ -100,6 +100,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.dbexec.html#onsuccess" class="tsd-kind-icon">on<wbr>Success</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.dbexec.html#query" class="tsd-kind-icon">query</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.dbexec.html#table" class="tsd-kind-icon">table</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.dbexec.html#transactionid" class="tsd-kind-icon">transactionID</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.dbexec.html#vieworaction" class="tsd-kind-icon">view<wbr>OrAction</a></li>
 							</ul>
 						</section>
@@ -114,7 +115,7 @@
 					<div class="tsd-signature tsd-kind-icon">on<wbr>Fail<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:2053</li>
+							<li>Defined in index.ts:1412</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -145,7 +146,7 @@
 					<div class="tsd-signature tsd-kind-icon">on<wbr>Success<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:2052</li>
+							<li>Defined in index.ts:1411</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -153,7 +154,7 @@
 						<ul class="tsd-parameters">
 							<li class="tsd-parameter-siganture">
 								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
-									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span>, type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, affectedRows<span class="tsd-signature-symbol">: </span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>rows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol">&gt;</span>, type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, affectedRows<span class="tsd-signature-symbol">: </span><a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span>, affectedPKS<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 								</ul>
 								<ul class="tsd-descriptions">
 									<li class="tsd-description">
@@ -167,6 +168,9 @@
 											</li>
 											<li>
 												<h5>affectedRows: <a href="_index_.dbrow.html" class="tsd-signature-type">DBRow</a><span class="tsd-signature-symbol">[]</span></h5>
+											</li>
+											<li>
+												<h5>affectedPKS: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
 											</li>
 										</ul>
 										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
@@ -182,7 +186,7 @@
 					<div class="tsd-signature tsd-kind-icon">query<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><a href="_index_.queryline.html" class="tsd-signature-type">QueryLine</a><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:2050</li>
+							<li>Defined in index.ts:1408</li>
 						</ul>
 					</aside>
 				</section>
@@ -192,7 +196,17 @@
 					<div class="tsd-signature tsd-kind-icon">table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:2049</li>
+							<li>Defined in index.ts:1407</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="transactionid" class="tsd-anchor"></a>
+					<h3>transactionID</h3>
+					<div class="tsd-signature tsd-kind-icon">transactionID<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:1410</li>
 						</ul>
 					</aside>
 				</section>
@@ -202,7 +216,7 @@
 					<div class="tsd-signature tsd-kind-icon">view<wbr>OrAction<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:2051</li>
+							<li>Defined in index.ts:1409</li>
 						</ul>
 					</aside>
 				</section>
@@ -227,7 +241,13 @@
 						<a href="../modules/_index_.html">"index"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
+						<a href="../modules/_index_query_.html">"index-<wbr>query"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_server_.html">"index-<wbr>server"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="../modules/_index_transaction_.html">"index-<wbr>transaction"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_null_store_.html">"null-<wbr>store"</a>
@@ -238,12 +258,6 @@
 				<ul class="before-current">
 					<li class=" tsd-kind-class tsd-parent-kind-external-module">
 						<a href="../classes/_index_.nanosqlinstance.html" class="tsd-kind-icon">NanoSQLInstance</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="../classes/_index_._nanosqlormquery.html" class="tsd-kind-icon">_<wbr>NanoSQLORMQuery</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="../classes/_index_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a>
 					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
 						<a href="_index_.actionorview.html" class="tsd-kind-icon">Action<wbr>OrView</a>
@@ -267,6 +281,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.dbexec.html#table" class="tsd-kind-icon">table</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.dbexec.html#transactionid" class="tsd-kind-icon">transactionID</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.dbexec.html#vieworaction" class="tsd-kind-icon">view<wbr>OrAction</a>

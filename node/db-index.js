@@ -22,7 +22,7 @@ var _NanoSQLDB = (function () {
         var t = this;
         new db_query_1._NanoSQLQuery(t)._doQuery(execArgs);
     };
-    _NanoSQLDB.prototype._invalidateCache = function (changedTableID, changedRows, type, action) {
+    _NanoSQLDB.prototype._invalidateCache = function (changedTableID, changedRows, changedRowPKS, type, action) {
         var t = this;
         t._queryCache[changedTableID] = {};
         if (changedRows.length && action) {
@@ -34,6 +34,7 @@ var _NanoSQLDB = (function () {
                 time: new Date().getTime(),
                 result: [{ msg: action + " was performed.", type: action }],
                 changedRows: changedRows,
+                changedRowPKS: changedRowPKS,
                 changeType: type
             }, ["change"]);
         }
@@ -52,20 +53,25 @@ var _NanoSQLDB = (function () {
         }
         return Object.freeze(obj);
     };
-    _NanoSQLDB.prototype._transaction = function (type) {
+    _NanoSQLDB.prototype._transaction = function (type, transactionID) {
         var t = this;
-        if (type === "start") {
-            t._store._transactionData = {};
-            t._store._doingTransaction = true;
-        }
-        if (type === "end") {
-            t._store._doingTransaction = false;
-            t._store._execTransaction();
-            t._parent._tableNames.forEach(function (tableName) {
-                t._invalidateCache(index_1.NanoSQLInstance._hash(tableName), [], "transaction");
-            });
-        }
-        return !!t._store._doingTransaction;
+        return new lie_ts_1.Promise(function (res, rej) {
+            if (type === "start") {
+                t._store._activeTransactions.push(transactionID);
+                res();
+            }
+            if (type === "end") {
+                t._store._execTransaction(transactionID).then(function (result) {
+                    var tLoc = t._store._activeTransactions.indexOf(transactionID);
+                    if (tLoc !== -1)
+                        t._store._activeTransactions.splice(tLoc, 1);
+                    t._parent._tableNames.forEach(function (tableName) {
+                        t._invalidateCache(index_1.NanoSQLInstance._hash(tableName), [], [], "transaction");
+                    });
+                    res(result);
+                });
+            }
+        });
     };
     _NanoSQLDB.prototype._extend = function (db, command) {
         var t = this;
@@ -87,6 +93,8 @@ var _NanoSQLDB = (function () {
                     new _fnForEach().loop(hp.rowKeys, function (rowID, nextRow) {
                         if (table._pkType === "int")
                             rowID = parseInt(rowID);
+                        if (!results[tableID])
+                            results[tableID] = { type: hp.type, rows: [], affectedPKS: hp.rowKeys };
                         t._store._read(table._name, rowID, function (rowData) {
                             t._store._read("_" + table._name + "_hist__meta", rowID, function (row) {
                                 row = index_1._assign(row);
@@ -97,8 +105,6 @@ var _NanoSQLDB = (function () {
                                         var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
                                         t._store._upsert(table._name, rowID, newRow, function () {
                                             rows.push(newRow);
-                                            if (!results[tableID])
-                                                results[tableID] = { type: hp.type, rows: [] };
                                             results[tableID].rows = results[tableID].rows.concat(rows);
                                             i++;
                                             nextRow();
@@ -133,7 +139,7 @@ var _NanoSQLDB = (function () {
                                         description = "inserted";
                                         break;
                                 }
-                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, description, "undo");
+                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].affectedPKS, description, "undo");
                             });
                             res(true);
                         });
@@ -148,7 +154,7 @@ var _NanoSQLDB = (function () {
                         t._store._utility("w", "historyPoint", t._store._historyPoint);
                         shiftRowIDs(-1, function (affectedTables) {
                             Object.keys(affectedTables).forEach(function (tableID) {
-                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].type, "redo");
+                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].affectedPKS, affectedTables[tableID].type, "redo");
                             });
                             res(true);
                         });
@@ -168,15 +174,14 @@ var _NanoSQLDB = (function () {
                     t._store._historyPoint = 0;
                     t._store._historyLength = 0;
                     Object.keys(t._store._tables).forEach(function (tableID) {
-                        var rows;
+                        var pks;
                         if (t._store._tables[parseInt(tableID)]._name.indexOf("_") === 0) {
-                            rows = [];
+                            pks = [];
                         }
                         else {
-                            rows = t._store._tables[parseInt(tableID)]._rows;
-                            rows = Object.keys(rows).map(function (r) { return rows[r]; });
+                            pks = t._store._tables[parseInt(tableID)]._index;
                         }
-                        t._invalidateCache(parseInt(tableID), rows, "remove", "clear");
+                        t._invalidateCache(parseInt(tableID), pks.map(function (r) { return null; }), pks, "remove", "clear");
                     });
                     if (command === "flush_db") {
                         t._store._clear("all", res);

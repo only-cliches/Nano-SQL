@@ -8,6 +8,14 @@ export const _str = (index: number) => {
     return ["_utility", "_historyPoints", "_pointer", "_historyDataRowIDs", "_id"][index];
 };
 
+export interface HistoryCallBack {
+    [tableID: number]: {
+        rows: DBRow[];
+        type: string;
+        affectedPKS: any[]
+    };
+}
+
 /**
  * The main class for the immutable database, holds the indexes, data and primary methods.
  *
@@ -113,11 +121,10 @@ export class _NanoSQLDB implements NanoSQLBackend {
      *
      * @memberOf _NanoSQLDB
      */
-    public _invalidateCache(changedTableID: number, changedRows: DBRow[], type: string, action?: string): void {
+    public _invalidateCache(changedTableID: number, changedRows: DBRow[], changedRowPKS: any[], type: string, action?: string): void {
         let t = this;
 
         t._queryCache[changedTableID] = {};
-
         if (changedRows.length && action) {
             t._parent.triggerEvent({
                 name: "change",
@@ -127,6 +134,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                 time: new Date().getTime(),
                 result: [{msg: action + " was performed.", type: action}],
                 changedRows: changedRows,
+                changedRowPKS: changedRowPKS,
                 changeType: type
             }, ["change"]);
         }
@@ -156,20 +164,24 @@ export class _NanoSQLDB implements NanoSQLBackend {
         return Object.freeze(obj);
     }
 
-    public _transaction(type: "start"|"end"): boolean {
+    public _transaction(type: "start"|"end", transactionID: number): Promise<any[]> {
         let t = this;
-        if (type === "start") {
-            t._store._transactionData = {};
-            t._store._doingTransaction = true;
-        }
-        if (type === "end") {
-            t._store._doingTransaction = false;
-            t._store._execTransaction();
-            t._parent._tableNames.forEach((tableName) => {
-                t._invalidateCache(NanoSQLInstance._hash(tableName), [], "transaction");
-            });
-        }
-        return !!t._store._doingTransaction;
+        return new Promise((res, rej) => {
+            if (type === "start") {
+                t._store._activeTransactions.push(transactionID);
+                res();
+            }
+            if (type === "end") {
+                t._store._execTransaction(transactionID).then((result) => {
+                    let tLoc = t._store._activeTransactions.indexOf(transactionID);
+                    if (tLoc !== -1) t._store._activeTransactions.splice(tLoc, 1);
+                    t._parent._tableNames.forEach((tableName) => {
+                        t._invalidateCache(NanoSQLInstance._hash(tableName), [], [], "transaction");
+                    });
+                    res(result);
+                });
+            }
+        });
     }
 
     /**
@@ -210,9 +222,9 @@ export class _NanoSQLDB implements NanoSQLBackend {
         let rowData;
         let rowKey;
         let store: IDBObjectStore;
-        const shiftRowIDs = (direction: number, callBack: (info: {[tableID: number]: {rows: DBRow[], type: string}}) => void): void  => {
+        const shiftRowIDs = (direction: number, callBack: (cbData: HistoryCallBack) => void): void  => {
 
-            let results = {};
+            let results: HistoryCallBack = {};
             const check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(_str(1), t._store._historyPointIndex[check], (hps: IHistoryPoint[]) => {
                 // Loop through all history points
@@ -227,10 +239,11 @@ export class _NanoSQLDB implements NanoSQLBackend {
 
                         if (table._pkType === "int") rowID = parseInt(rowID);
 
+                        if (!results[tableID]) results[tableID] = {type: hp.type, rows: [], affectedPKS: hp.rowKeys};
+
                         t._store._read(table._name, rowID, (rowData) => {
 
                             // if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
-
                             // Shift the row pointer
                             t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
                                 row = _assign(row);
@@ -242,7 +255,6 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                         t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
                                             // if (direction < 0) rows.push(newRow);
                                             rows.push(newRow);
-                                            if (!results[tableID]) results[tableID] = {type: hp.type, rows: []};
                                             results[tableID].rows = results[tableID].rows.concat(rows);
                                             i++;
                                             nextRow();
@@ -265,7 +277,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     if (!t._store._historyLength || t._store._historyPoint === t._store._historyLength) { // end of history
                         res(false);
                     } else {
-                        shiftRowIDs(1, (affectedTables) => {
+                        shiftRowIDs(1, (affectedTables: HistoryCallBack) => {
                             t._store._historyPoint++;
                             t._store._utility("w", "historyPoint", t._store._historyPoint);
                             Object.keys(affectedTables).forEach((tableID) => {
@@ -278,7 +290,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                         description = "inserted";
                                         break;
                                 }
-                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, description, "undo");
+                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].affectedPKS, description, "undo");
                             });
                             res(true);
                         });
@@ -292,7 +304,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                         t._store._utility("w", "historyPoint", t._store._historyPoint);
                         shiftRowIDs(-1, (affectedTables) => {
                             Object.keys(affectedTables).forEach((tableID) => {
-                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].type, "redo");
+                                t._invalidateCache(parseInt(tableID), affectedTables[tableID].rows, affectedTables[tableID].affectedPKS, affectedTables[tableID].type, "redo");
                             });
                             res(true);
                         });
@@ -312,14 +324,13 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     t._store._historyPoint = 0;
                     t._store._historyLength = 0;
                     Object.keys(t._store._tables).forEach((tableID) => {
-                        let rows: any|null[];
+                        let pks: any|null[];
                         if (t._store._tables[parseInt(tableID)]._name.indexOf("_") === 0) {
-                            rows = [];
+                            pks = [];
                         } else {
-                            rows = t._store._tables[parseInt(tableID)]._rows;
-                            rows = Object.keys(rows).map(r => rows[r]);
+                            pks = t._store._tables[parseInt(tableID)]._index;
                         }
-                        t._invalidateCache(parseInt(tableID), rows as DBRow[], "remove", "clear");
+                        t._invalidateCache(parseInt(tableID), pks.map(r => null), pks, "remove", "clear");
                     });
                     if (command === "flush_db") {
                         t._store._clear("all", res);

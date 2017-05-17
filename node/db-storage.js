@@ -17,7 +17,8 @@ var _NanoSQL_Storage = (function () {
         t._historyPoint = 0;
         t._historyLength = 0;
         t._historyArray = [0, 0];
-        t._doingTransaction = false;
+        t._activeTransactions = [];
+        t._transactionData = {};
         t._doHistory = true;
         t._storeMemory = true;
         t._persistent = false;
@@ -473,101 +474,100 @@ var _NanoSQL_Storage = (function () {
             step_2();
         }
     };
-    _NanoSQL_Storage.prototype._execTransaction = function () {
+    _NanoSQL_Storage.prototype._execTransaction = function (transactionID) {
         var t = this;
-        var complete = function () {
-            Object.keys(t._transactionData).forEach(function (tableName) {
-                t._rebuildSecondaryIndex(tableName, function () { });
-            });
-        };
-        if (t._mode !== 4) {
-            complete();
-        }
-        switch (t._mode) {
-            case 4:
-                Object.keys(t._transactionData).forEach(function (tableName) {
-                    t._levelDBs[tableName].batch(t._transactionData[tableName]);
+        return new lie_ts_1.Promise(function (res, rej) {
+            var complete = function () {
+                (function () {
+                    if (t._transactionData[transactionID]) {
+                        return lie_ts_1.Promise.all(Object.keys(t._transactionData[transactionID]).map(function (table) {
+                            return new lie_ts_1.Promise(function (resolve) {
+                                t._rebuildSecondaryIndex(table, resolve);
+                            });
+                        }));
+                    }
+                    else {
+                        return new lie_ts_1.Promise(function (res) { return res(); });
+                    }
+                })().then(function () {
+                    delete t._transactionData[transactionID];
+                    res();
                 });
-                complete();
-                break;
-        }
+            };
+            switch (t._mode) {
+                case 4:
+                    Object.keys(t._transactionData[transactionID]).forEach(function (tableName) {
+                        t._levelDBs[tableName].batch(t._transactionData[transactionID][tableName]);
+                    });
+                    complete();
+                    break;
+                default:
+                    complete();
+            }
+        });
     };
     _NanoSQL_Storage.prototype._clear = function (type, complete) {
         var t = this;
         var tables = Object.keys(t._tables).map(function (k) { return t._tables[k]._name; });
-        var index = 0;
         var setupNewHist = function () {
-            var index = 0;
-            var histStep = function () {
-                if (index < tables.length) {
-                    if (tables[index].indexOf("_hist__meta") !== -1) {
-                        var referenceTable_1 = String(tables[index]).slice(1).replace("_hist__meta", "");
-                        var ta = index_1.NanoSQLInstance._hash(referenceTable_1);
-                        var pk_1 = t._tables[ta]._pk;
-                        t._read(referenceTable_1, "all", function (rows) {
-                            rows.forEach(function (row, i) {
-                                var hist = {};
-                                hist[db_index_1._str(2)] = 0;
-                                hist[db_index_1._str(3)] = [i + 1];
-                                t._upsert(tables[index], row[pk_1], hist);
-                                t._upsert("_" + referenceTable_1 + "_hist__data", i + 1, row);
-                            });
-                            index++;
-                            histStep();
+            new db_index_1._fnForEach().loop(tables, function (table, next) {
+                if (table.indexOf("_hist__meta") !== -1) {
+                    var referenceTable_1 = String(table).slice(1).replace("_hist__meta", "");
+                    var ta = index_1.NanoSQLInstance._hash(referenceTable_1);
+                    var pk_1 = t._tables[ta]._pk;
+                    t._read(referenceTable_1, "all", function (rows) {
+                        rows.forEach(function (row, i) {
+                            var hist = {};
+                            hist[db_index_1._str(2)] = 0;
+                            hist[db_index_1._str(3)] = [i + 1];
+                            t._upsert(table, row[pk_1], hist);
+                            t._upsert("_" + referenceTable_1 + "_hist__data", i + 1, row);
                         });
-                    }
-                    else {
-                        index++;
-                        histStep();
-                    }
-                }
-                else {
-                    complete();
-                }
-            };
-            histStep();
-        };
-        var step = function () {
-            if (index < tables.length) {
-                var deleteTable = false;
-                if (type === "hist" && (tables[index] === db_index_1._str(1) || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
-                    deleteTable = true;
-                }
-                if (type === "all" && tables[index] !== "_utility") {
-                    deleteTable = true;
-                }
-                if (deleteTable) {
-                    t._delete(tables[index], "all", function () {
-                        if (tables[index].indexOf("_hist__data") !== -1) {
-                            t._upsert(tables[index], 0, null);
-                        }
-                        index++;
-                        step();
+                        next();
                     });
                 }
                 else {
-                    index++;
-                    step();
+                    next();
                 }
+            }).then(function () {
+                complete();
+            });
+        };
+        new db_index_1._fnForEach().loop(tables, function (table, next) {
+            var deleteTable = false;
+            if (type === "hist" && (table === db_index_1._str(1) || table.indexOf("_hist__meta") !== -1 || table.indexOf("_hist__data") !== -1)) {
+                deleteTable = true;
+            }
+            if (type === "all" && table !== "_utility") {
+                deleteTable = true;
+            }
+            if (deleteTable) {
+                t._delete(table, "all", function () {
+                    if (table.indexOf("_hist__data") !== -1) {
+                        t._upsert(table, 0, null);
+                    }
+                    next();
+                });
             }
             else {
-                if (type === "hist") {
-                    setupNewHist();
-                }
-                else {
-                    complete();
-                }
+                next();
             }
-        };
-        step();
+        }).then(function () {
+            if (type === "hist") {
+                setupNewHist();
+            }
+            else {
+                complete();
+            }
+        });
     };
-    _NanoSQL_Storage.prototype._delete = function (tableName, rowID, callBack) {
+    _NanoSQL_Storage.prototype._delete = function (tableName, rowID, callBack, transactionID) {
         var t = this;
         var editingHistory = false;
         var ta = index_1.NanoSQLInstance._hash(tableName);
         var deleteRowIDS = [];
         if (rowID === "all") {
-            deleteRowIDS = t._tables[ta]._index.slice();
+            deleteRowIDS = t._tables[ta]._index.slice().filter(function (i) { return i; });
             t._tables[ta]._index = [];
             t._tables[ta]._trieIndex = new prefix_trie_ts_1.Trie([]);
         }
@@ -583,57 +583,50 @@ var _NanoSQL_Storage = (function () {
             else {
                 delete t._tables[ta]._rows[rowID];
             }
-            if (t._mode === 0 && callBack)
-                return callBack(true);
         }
-        if (t._mode > 0) {
-            var i_1 = 0;
-            var step_3 = function () {
-                if (i_1 < deleteRowIDS.length) {
-                    switch (t._mode) {
-                        case 1:
-                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(deleteRowIDS[i_1]);
-                            i_1++;
-                            step_3();
-                            break;
-                        case 2:
-                            localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
-                            localStorage.removeItem(tableName + "-" + String(deleteRowIDS[i_1]));
-                            i_1++;
-                            step_3();
-                            break;
-                        case 4:
-                            if (t._doingTransaction) {
-                                if (!t._transactionData[tableName]) {
-                                    t._transactionData[tableName] = [];
-                                }
-                                t._transactionData[tableName].push({
-                                    type: "del",
-                                    key: deleteRowIDS[i_1],
-                                    value: ""
-                                });
-                                i_1++;
-                                step_3();
-                            }
-                            else {
-                                t._levelDBs[tableName].del(deleteRowIDS[i_1], function () {
-                                    i_1++;
-                                    step_3();
-                                });
-                            }
-                            break;
-                        default:
-                            i_1++;
-                            step_3();
+        new db_index_1._fnForEach().loop(deleteRowIDS, function (rowID, next) {
+            if (transactionID) {
+                if (!t._transactionData[transactionID])
+                    t._transactionData[transactionID] = {};
+                if (!t._transactionData[transactionID][tableName]) {
+                    t._transactionData[transactionID][tableName] = [];
+                }
+                t._transactionData[transactionID][tableName].push({
+                    type: "del",
+                    key: rowID,
+                    value: ""
+                });
+            }
+            switch (t._mode) {
+                case 0:
+                    next();
+                    break;
+                case 1:
+                    t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowID);
+                    next();
+                    break;
+                case 2:
+                    localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
+                    localStorage.removeItem(tableName + "-" + String(rowID));
+                    next();
+                    break;
+                case 4:
+                    if (transactionID) {
+                        next();
                     }
-                }
-                else {
-                    if (callBack)
-                        callBack(true);
-                }
-            };
-            step_3();
-        }
+                    else {
+                        t._levelDBs[tableName].del(rowID, function () {
+                            next();
+                        });
+                    }
+                    break;
+                default:
+                    next();
+            }
+        }).then(function () {
+            if (callBack)
+                callBack(true);
+        });
     };
     _NanoSQL_Storage.prototype._generateID = function (type, tableHash) {
         switch (type) {
@@ -644,7 +637,7 @@ var _NanoSQL_Storage = (function () {
         }
         return "";
     };
-    _NanoSQL_Storage.prototype._upsert = function (tableName, rowID, rowData, callBack) {
+    _NanoSQL_Storage.prototype._upsert = function (tableName, rowID, rowData, callBack, transactionID) {
         var t = this;
         if (Object.isFrozen(rowData))
             rowData = index_1._assign(rowData);
@@ -673,6 +666,18 @@ var _NanoSQL_Storage = (function () {
         if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {
             t._tables[ta]._trieIndex.addWord(String(rowID));
             t._tables[ta]._index.push(rowID);
+        }
+        if (transactionID) {
+            if (!t._transactionData[transactionID])
+                t._transactionData[transactionID] = {};
+            if (!t._transactionData[transactionID][tableName]) {
+                t._transactionData[transactionID][tableName] = [];
+            }
+            t._transactionData[transactionID][tableName].push({
+                type: tableName.indexOf("_hist__data") !== -1 ? "put" : !rowData ? "del" : "put",
+                key: rowID,
+                value: rowData ? JSON.stringify(rowData) : ""
+            });
         }
         if (t._storeMemory) {
             t._tables[ta]._rows[rowID] = t._parent._deepFreeze(rowData, ta);
@@ -709,15 +714,7 @@ var _NanoSQL_Storage = (function () {
                     callBack(rowID);
                 break;
             case 4:
-                if (t._doingTransaction) {
-                    if (!t._transactionData[tableName]) {
-                        t._transactionData[tableName] = [];
-                    }
-                    t._transactionData[tableName].push({
-                        type: tableName.indexOf("_hist__data") !== -1 ? "put" : !rowData ? "del" : "put",
-                        key: rowID,
-                        value: rowData ? JSON.stringify(rowData) : ""
-                    });
+                if (transactionID) {
                     if (callBack)
                         callBack(rowID);
                 }
@@ -759,19 +756,19 @@ var _NanoSQL_Storage = (function () {
             }, []);
             var resultRows_1 = [];
             var ptr_2 = 0;
-            var step_4 = function () {
+            var step_3 = function () {
                 if (ptr_2 < allRowIDs_1.length) {
                     _this._read(parentTable_1, allRowIDs_1[ptr_2], function (rows) {
                         resultRows_1 = resultRows_1.concat(rows);
                         ptr_2++;
-                        step_4();
+                        step_3();
                     });
                 }
                 else {
                     callBack(resultRows_1);
                 }
             };
-            step_4();
+            step_3();
         }
     };
     _NanoSQL_Storage.prototype._readArray = function (tableName, pkArray, callBack) {

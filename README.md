@@ -1,7 +1,6 @@
-<p style="text-align:center">
-The most powerful little data store.<br/>
+The most powerful little data store.
+
 <img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
-</p>
 
 
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
@@ -12,6 +11,8 @@ The most powerful little data store.<br/>
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
 NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 14Kb package.   As a bonus, you also get the performance perks of ImmutableJS.
+
+It's written to take advantage of trendy buzzwords like "isomorphic", "immutable", "NoSQL", "TypeScript" and "Kerbal Space Program".
 
 Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
@@ -28,10 +29,10 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Built in optomized **trie indexes**.
 - Queries return immutable rows.
 - Import and Export CSV/JSON.
-- **Simple & elegant undo/redo.**.
+- **Simple & elegant undo/redo.**
 - Full Typescript support.
-- **Runtime type casting.**.
-- **Complete ORM support.**.
+- **Runtime type casting.**
+- **Complete ORM support.**
 - Fast secondary indexes.
 - Transactions support.
 - Full events system.

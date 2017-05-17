@@ -98,6 +98,7 @@ var _NanoSQLQuery = (function () {
         t._tableID = index_1.NanoSQLInstance._hash(query.table);
         t._mod = [];
         t._act = undefined;
+        t._query = query;
         var simpleQuery = [];
         query.query.forEach(function (q) {
             if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
@@ -115,7 +116,7 @@ var _NanoSQLQuery = (function () {
         if (simpleQuery.length) {
             switch (simpleQuery[0].type) {
                 case "show tables":
-                    query.onSuccess([{ tables: Object.keys(t._db._store._tables).map(function (ta) { return t._db._store._tables[ta]._name; }) }], "info", []);
+                    query.onSuccess([{ tables: Object.keys(t._db._store._tables).map(function (ta) { return t._db._store._tables[ta]._name; }) }], "info", [], []);
                     break;
                 case "describe":
                     var getTable_1;
@@ -128,13 +129,13 @@ var _NanoSQLQuery = (function () {
                         }
                     });
                     rows[tableName_1] = getTable_1;
-                    query.onSuccess([rows], "info", []);
+                    query.onSuccess([rows], "info", [], []);
                     break;
             }
         }
         else {
-            t._execQuery(function (result, changeType, affectedRows) {
-                query.onSuccess(result, changeType, affectedRows);
+            t._execQuery(function (result, changeType, affectedRows, affectedPKs) {
+                query.onSuccess(result, changeType, affectedRows, affectedPKs);
             });
         }
     };
@@ -168,7 +169,7 @@ var _NanoSQLQuery = (function () {
                             });
                         }
                         else {
-                            callBack([], "drop", idx_1.map(function (i) { return {}; }));
+                            callBack([], "drop", idx_1.map(function (i) { return {}; }), idx_1);
                         }
                     };
                     nextRow_1();
@@ -323,11 +324,11 @@ var _NanoSQLQuery = (function () {
                             t._db._store._upsert(tableName, rowID, {
                                 id: rowID,
                                 rowPK: indexedRows
-                            }, function () { });
+                            }, function () { }, t._query.transactionID);
                         }
                         else {
                             emptyColumns_1.push(key);
-                            t._db._store._delete(tableName, rowID);
+                            t._db._store._delete(tableName, rowID, function () { }, t._query.transactionID);
                         }
                     }, true);
                 };
@@ -346,7 +347,7 @@ var _NanoSQLQuery = (function () {
                                 rowPK: indexes
                             }, function () {
                                 updateIndex_1(idxTable, rowID, key);
-                            });
+                            }, t._query.transactionID);
                         });
                     }
                     else {
@@ -369,21 +370,22 @@ var _NanoSQLQuery = (function () {
             if (updateType === "upsert") {
                 t._db._store._upsert(table._name, rowPK, newRow, function () {
                     callBack();
-                });
+                }, t._query.transactionID);
             }
             else {
                 t._db._store._delete(table._name, rowPK, function () {
                     callBack();
-                });
+                }, t._query.transactionID);
             }
         };
-        if (t._db._store._doingTransaction) {
+        if (t._query.transactionID) {
             if (updateType === "upsert") {
                 t._db._store._tables[t._tableID]._keys.forEach(function (k, i) {
                     var def = table._defaults[i];
                     if (qArgs[k] === undefined && def !== undefined)
                         qArgs[k] = def;
                 });
+                updateSecondaryIndex(updateType === "upsert" ? qArgs : {});
                 writeChanges(qArgs);
             }
             else {
@@ -408,7 +410,7 @@ var _NanoSQLQuery = (function () {
                             rows = index_1._assign(rows);
                         }
                         rows[0][db_index_1._str(3)].unshift(histDataID);
-                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0]);
+                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], function () { }, t._query.transactionID);
                     });
                 }
                 updateSecondaryIndex(updateType === "upsert" ? newRow : {});
@@ -421,7 +423,7 @@ var _NanoSQLQuery = (function () {
                     newRow[db_index_1._str(4)] = t._db._store._tables[tah]._index.length;
                     t._db._store._upsert(histTable, null, newRow, function (rowID) {
                         finishUpdate(rowID);
-                    });
+                    }, t._query.transactionID);
                 }
                 else {
                     finishUpdate(0);
@@ -478,23 +480,22 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
         var _this = this;
         var t = this, k = 0, j = 0;
-        if (t._db._store._doingTransaction) {
-            callBack([], "trans", []);
+        if (t._query.transactionID) {
+            callBack([], "trans", [], []);
             return;
         }
         if (updatedRowPKs.length > 0) {
             var triggerComplete_1 = function () {
                 var table = t._db._store._tables[_this._tableID];
-                t._db._invalidateCache(t._tableID, [], "");
+                t._db._invalidateCache(t._tableID, [], [], "");
                 t._db._store._readArray(table._name, updatedRowPKs, function (rows) {
-                    callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows);
+                    callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows, updatedRowPKs);
                 });
             };
             var completeChange_1 = function () {
                 if (t._db._store._doHistory) {
-                    if (!t._db._store._doingTransaction && t._db._store._historyPoint === 0) {
+                    if (t._db._store._historyPoint === 0)
                         t._db._store._historyLength++;
-                    }
                     t._db._store._utility("w", "historyLength", t._db._store._historyLength);
                     t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
                     var histPoint_1 = t._db._store._historyLength - t._db._store._historyPoint;
@@ -541,13 +542,13 @@ var _NanoSQLQuery = (function () {
                                                     t._db._store._delete("_" + tableName_2 + "_hist__data", del, function () {
                                                         k++;
                                                         nextRow_2();
-                                                    });
+                                                    }, t._query.transactionID);
                                                 }
                                                 else {
                                                     k++;
                                                     nextRow_2();
                                                 }
-                                            });
+                                            }, t._query.transactionID);
                                         });
                                     }
                                     else {
@@ -557,7 +558,7 @@ var _NanoSQLQuery = (function () {
                                 };
                                 t._db._store._delete(db_index_1._str(1), historyPoints[j].id, function () {
                                     nextRow_2();
-                                });
+                                }, t._query.transactionID);
                             }
                             else {
                                 t._db._store._historyLength -= t._db._store._historyPoint;
@@ -578,7 +579,7 @@ var _NanoSQLQuery = (function () {
             }
         }
         else {
-            callBack([{ msg: "0 rows " + describe }], describe, []);
+            callBack([{ msg: "0 rows " + describe }], describe, [], []);
         }
     };
     _NanoSQLQuery.prototype._upsert = function (queryRows, callBack) {
@@ -621,7 +622,7 @@ var _NanoSQLQuery = (function () {
                     var histRow = {};
                     histRow[db_index_1._str(2)] = 0;
                     histRow[db_index_1._str(3)] = [0];
-                    t._db._store._upsert(histTable, objPK, histRow);
+                    t._db._store._upsert(histTable, objPK, histRow, function () { }, t._query.transactionID);
                 }
             }
             t._updateRow(objPK, function () {
@@ -635,6 +636,8 @@ var _NanoSQLQuery = (function () {
     _NanoSQLQuery.prototype._select = function (queryRows, callBack) {
         var t = this;
         if (t._db._queryCache[t._tableID][t._queryHash]) {
+            callBack(t._db._queryCache[t._tableID][t._queryHash], "none", [], []);
+            return;
         }
         var mods = ["join", "groupby", "having", "orderby", "offset", "limit", "orm"];
         var curMod, column, i, k, rows, obj, rowData, groups = {};
@@ -965,8 +968,9 @@ var _NanoSQLQuery = (function () {
             else {
                 rowPKs = rowPKs.filter(function (r) { return r; });
                 if (!t._getMod("join") && !t._getMod("orm")) {
+                    t._db._queryCache[t._tableID][t._queryHash] = rowPKs;
                 }
-                callBack(rowPKs, "none", []);
+                callBack(rowPKs, "none", [], []);
             }
         };
         stepQuery(queryRows);

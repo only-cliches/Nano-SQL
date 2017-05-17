@@ -11,12 +11,13 @@ import {
     DBRow,
     _assign,
     NanoSQLInstance,
-    _NanoSQLQuery,
     DBConnect,
     DBExec,
     NanoSQLBackend,
     nSQL
  } from "./index";
+
+import { _NanoSQLQuery } from "./index-query";
 
 global._fs = require("fs");
 global._levelup = require("levelup");
@@ -39,4 +40,4 @@ global._crypto = require("crypto");
     DBExec,
     NanoSQLBackend,
     nSQL
- }
+ };

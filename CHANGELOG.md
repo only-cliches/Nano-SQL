@@ -10,6 +10,12 @@ Read: ~100 records/ms
 - Finish integration tests.
 - Switch in memory indexes to a sorted BTrees.
 - Increase memory db write performance by just appending data to the rows, skipping a read before write.
+- Add a "Revisions" mode to history, where you can move specific rows forward and backward in history.
+
+## [0.8.5] 5-17-2017
+- BREAKING CHANGE: Reworked transaction system to allow parallel transactions. See new API in the documentation.
+- Restored query memoization.
+- [Issue #11](https://github.com/ClickSimply/Nano-SQL/issues/11) fully resolved.
 
 ## [0.8.41] 5-16-2017
 - [Issue #11](https://github.com/ClickSimply/Nano-SQL/issues/11) partially implimented, history triggered events now return the rows after the history action was performed.

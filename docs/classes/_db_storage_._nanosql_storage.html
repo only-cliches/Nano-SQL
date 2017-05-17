@@ -88,8 +88,8 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_activetransactions" class="tsd-kind-icon">_active<wbr>Transactions</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_dohistory" class="tsd-kind-icon">_do<wbr>History</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_doingtransaction" class="tsd-kind-icon">_doing<wbr>Transaction</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historylength" class="tsd-kind-icon">_history<wbr>Length</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historypoint" class="tsd-kind-icon">_history<wbr>Point</a></li>
@@ -140,7 +140,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:223</li>
+									<li>Defined in db-storage.ts:225</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -160,6 +160,29 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="_activetransactions" class="tsd-anchor"></a>
+					<h3>_active<wbr>Transactions</h3>
+					<div class="tsd-signature tsd-kind-icon">_active<wbr>Transactions<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in db-storage.ts:150</li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Store current, active transaction information.</p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>type</dt>
+							<dd><p>{number[]}</p>
+							</dd>
+							<dt>memberof</dt>
+							<dd><p>_NanoSQL_Storage</p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="_dohistory" class="tsd-anchor"></a>
 					<h3>_do<wbr>History</h3>
 					<div class="tsd-signature tsd-kind-icon">_do<wbr>History<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
@@ -171,29 +194,6 @@
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
 							<p>Flag to store wether history is enabled or not.</p>
-						</div>
-						<dl class="tsd-comment-tags">
-							<dt>type</dt>
-							<dd><p>{boolean}</p>
-							</dd>
-							<dt>memberof</dt>
-							<dd><p>_NanoSQLDB</p>
-							</dd>
-						</dl>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="_doingtransaction" class="tsd-anchor"></a>
-					<h3>_doing<wbr>Transaction</h3>
-					<div class="tsd-signature tsd-kind-icon">_doing<wbr>Transaction<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in db-storage.ts:150</li>
-						</ul>
-					</aside>
-					<div class="tsd-comment tsd-typography">
-						<div class="lead">
-							<p>Flag to indicate the state of transactions</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>type</dt>
@@ -620,16 +620,21 @@
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
 							<li class="tsd-parameter-index-signature">
-								<h5><span class="tsd-signature-symbol">[</span>tableName: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span></h5>
+								<h5><span class="tsd-signature-symbol">[</span>transactionID: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">object</span></h5>
 								<ul class="tsd-parameters">
-									<li class="tsd-parameter">
-										<h5>key<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
-									</li>
-									<li class="tsd-parameter">
-										<h5>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+									<li class="tsd-parameter-index-signature">
+										<h5><span class="tsd-signature-symbol">[</span>tableName: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span></h5>
+										<ul class="tsd-parameters">
+											<li class="tsd-parameter">
+												<h5>key<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+											</li>
+											<li class="tsd-parameter">
+												<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+											</li>
+											<li class="tsd-parameter">
+												<h5>value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+											</li>
+										</ul>
 									</li>
 								</ul>
 							</li>
@@ -694,7 +699,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:804</li>
+									<li>Defined in db-storage.ts:819</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -726,13 +731,13 @@
 					<a name="_delete" class="tsd-anchor"></a>
 					<h3>_delete</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_delete<span class="tsd-signature-symbol">(</span>tableName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, rowID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span>, callBack<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">_delete<span class="tsd-signature-symbol">(</span>tableName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, rowID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span>, callBack<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span>, transactionID<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:883</li>
+									<li>Defined in db-storage.ts:886</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -756,6 +761,9 @@
 								<li>
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> callBack: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></h5>
 								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> transactionID: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
@@ -765,13 +773,13 @@
 					<a name="_exectransaction" class="tsd-anchor"></a>
 					<h3>_exec<wbr>Transaction</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_exec<wbr>Transaction<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">_exec<wbr>Transaction<span class="tsd-signature-symbol">(</span>transactionID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:772</li>
+									<li>Defined in db-storage.ts:775</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -784,7 +792,13 @@
 									</dd>
 								</dl>
 							</div>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>transactionID: <span class="tsd-signature-type">number</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -798,7 +812,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:969</li>
+									<li>Defined in db-storage.ts:967</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -837,7 +851,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1385</li>
+									<li>Defined in db-storage.ts:1387</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -873,7 +887,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1252</li>
+									<li>Defined in db-storage.ts:1254</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -936,7 +950,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1140</li>
+									<li>Defined in db-storage.ts:1142</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -995,7 +1009,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1169</li>
+									<li>Defined in db-storage.ts:1171</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1056,7 +1070,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:671</li>
+									<li>Defined in db-storage.ts:674</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1094,7 +1108,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:724</li>
+									<li>Defined in db-storage.ts:727</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1121,13 +1135,13 @@
 					<a name="_upsert" class="tsd-anchor"></a>
 					<h3>_upsert</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_upsert<span class="tsd-signature-symbol">(</span>tableName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, rowID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">null</span>, rowData<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, callBack<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">_upsert<span class="tsd-signature-symbol">(</span>tableName<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, rowID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">null</span>, rowData<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, callBack<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span>, transactionID<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:990</li>
+									<li>Defined in db-storage.ts:988</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1154,6 +1168,9 @@
 								<li>
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> callBack: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></h5>
 								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> transactionID: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
@@ -1169,7 +1186,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1358</li>
+									<li>Defined in db-storage.ts:1360</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1208,7 +1225,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:240</li>
+									<li>Defined in db-storage.ts:242</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1257,7 +1274,13 @@
 						<a href="../modules/_index_.html">"index"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
+						<a href="../modules/_index_query_.html">"index-<wbr>query"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_server_.html">"index-<wbr>server"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="../modules/_index_transaction_.html">"index-<wbr>transaction"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_null_store_.html">"null-<wbr>store"</a>
@@ -1275,10 +1298,10 @@
 								<a href="_db_storage_._nanosql_storage.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_db_storage_._nanosql_storage.html#_dohistory" class="tsd-kind-icon">_do<wbr>History</a>
+								<a href="_db_storage_._nanosql_storage.html#_activetransactions" class="tsd-kind-icon">_active<wbr>Transactions</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_db_storage_._nanosql_storage.html#_doingtransaction" class="tsd-kind-icon">_doing<wbr>Transaction</a>
+								<a href="_db_storage_._nanosql_storage.html#_dohistory" class="tsd-kind-icon">_do<wbr>History</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a>

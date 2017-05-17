@@ -1,4 +1,6 @@
 import { Promise } from "lie-ts";
+import { _NanoSQLQuery, _NanoSQLORMQuery } from "./index-query";
+import { _NanoSQLTransactionQuery, _NanoSQLTransactionORMQuery } from "./index-transaction";
 export interface UUID extends String {
 }
 export interface timeId extends String {
@@ -30,13 +32,14 @@ export interface QueryLine {
 }
 export interface DatabaseEvent {
     table: string;
-    query: Array<QueryLine>;
+    query: QueryLine[];
     time: number;
-    result: Array<any>;
+    result: any[];
     name: "change" | "delete" | "upsert" | "drop" | "select" | "error";
     actionOrView: string;
     changeType: string;
     changedRows: DBRow[];
+    changedRowPKS: any[];
 }
 export interface JoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
@@ -68,7 +71,6 @@ export declare class NanoSQLInstance {
     _hasEvents: StdObject<boolean>;
     private _functions;
     _AVMod: IActionViewMod;
-    doingTransaction: boolean;
     private static _tzOffset;
     _tableNames: string[];
     private _transactionTables;
@@ -93,8 +95,10 @@ export declare class NanoSQLInstance {
     default(replaceObj?: any): {
         [key: string]: any;
     };
-    beginTransaction(): any;
-    endTransaction(): any;
+    doTransaction(initTransaction: (db: (table?: string) => {
+        query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => _NanoSQLTransactionQuery;
+        updateORM: (action: "add" | "delete" | "drop" | "set", column?: string, relationIDs?: any[]) => _NanoSQLTransactionORMQuery | undefined;
+    }, complete: () => void) => void): Promise<any>;
     queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): NanoSQLInstance;
     avFilter(filterFunc: IActionViewMod): this;
     config(args: any): NanoSQLInstance;
@@ -105,46 +109,6 @@ export declare class NanoSQLInstance {
     private static _random16Bits();
     static timeid(ms?: boolean): string;
     static uuid(): string;
-}
-export declare class _NanoSQLORMQuery {
-    private _db;
-    private _tableName;
-    private _action;
-    private _column;
-    private _relationIDs;
-    private _whereArgs;
-    constructor(db: NanoSQLInstance, table: string, action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]);
-    where(args: Array<any | Array<any>>): this;
-    rebuild(callBack: (updatedRows: number) => void): void;
-    exec(): Promise<number>;
-}
-export declare class _NanoSQLQuery {
-    private _db;
-    _action: {
-        type: string;
-        args: any;
-    };
-    _modifiers: any[];
-    _table: string;
-    _error: string;
-    _AV: string;
-    constructor(table: string, db: NanoSQLInstance, actionOrView?: string);
-    where(args: Array<any | Array<any>>): _NanoSQLQuery;
-    range(limit: number, offset: number): _NanoSQLQuery;
-    orm(ormArgs?: (string | ORMArgs)[]): _NanoSQLQuery;
-    orderBy(args: {
-        [key: string]: "asc" | "desc";
-    }): _NanoSQLQuery;
-    groupBy(columns: {
-        [key: string]: "asc" | "desc";
-    }): _NanoSQLQuery;
-    having(args: Array<any | Array<any>>): _NanoSQLQuery;
-    join(args: JoinArgs): _NanoSQLQuery;
-    limit(args: number): _NanoSQLQuery;
-    trieSearch(column: string, stringToSearch: string): _NanoSQLQuery;
-    offset(args: number): _NanoSQLQuery;
-    toCSV(headers?: boolean): Promise<string>;
-    exec(): Promise<Array<Object | NanoSQLInstance>>;
 }
 export interface DBConnect {
     _models: StdObject<Array<DataModel>>;
@@ -162,13 +126,14 @@ export interface DBExec {
     table: string;
     query: Array<QueryLine>;
     viewOrAction: string;
-    onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[]) => void;
+    transactionID: number;
+    onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[], affectedPKS: any[]) => void;
     onFail: (rows: Array<Object>) => void;
 }
 export interface NanoSQLBackend {
     _connect(connectArgs: DBConnect): void;
     _exec(execArgs: DBExec): void;
     _extend?(instance: NanoSQLInstance, ...args: Array<any>): any;
-    _transaction?(type: "start" | "end"): void;
+    _transaction(type: "start" | "end", id: number): Promise<any[]>;
 }
 export declare const nSQL: (setTablePointer?: string | undefined) => NanoSQLInstance;

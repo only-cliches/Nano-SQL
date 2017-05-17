@@ -142,12 +142,12 @@ export class _NanoSQL_Storage {
     public _historyArray: Array<number>;
 
     /**
-     * Flag to indicate the state of transactions
+     * Store current, active transaction information.
      *
-     * @type {boolean}
-     * @memberOf _NanoSQLDB
+     * @type {number[]}
+     * @memberof _NanoSQL_Storage
      */
-    public _doingTransaction: boolean;
+    public _activeTransactions: number[];
 
     /**
      * Wether to enable the persistent storage system or not.
@@ -206,11 +206,13 @@ export class _NanoSQL_Storage {
      * @memberOf _NanoSQL_Storage
      */
     public _transactionData: {
-        [tableName: string]:    {
-            type: string;
-            key: string|number;
-            value: string;
-        }[]
+        [transactionID: number]: {
+            [tableName: string]: {
+                type: string;
+                key: string|number;
+                value: string;
+            }[]
+        }
     };
 
     /**
@@ -245,7 +247,8 @@ export class _NanoSQL_Storage {
         t._historyPoint = 0;
         t._historyLength = 0;
         t._historyArray = [0, 0];
-        t._doingTransaction = false;
+        t._activeTransactions = [];
+        t._transactionData = {};
         t._doHistory = true;
         t._storeMemory = true;
         t._persistent = false;
@@ -769,28 +772,40 @@ export class _NanoSQL_Storage {
      *
      * @memberOf _NanoSQL_Storage
      */
-    public _execTransaction() {
+    public _execTransaction(transactionID: number): Promise<any[]> {
         let t = this;
 
-        const complete = () => {
-            Object.keys(t._transactionData).forEach((tableName) => {
-                t._rebuildSecondaryIndex(tableName, () => {});
-            });
-        };
-
-        if (t._mode !== 4) {
-            complete();
-        }
-        switch (t._mode) {
-            /* NODE-START */
-            case 4:
-                Object.keys(t._transactionData).forEach((tableName) => {
-                    t._levelDBs[tableName].batch(t._transactionData[tableName]);
+        return new Promise((res, rej) => {
+            const complete = () => {
+                (() => {
+                    if (t._transactionData[transactionID]) {
+                        return Promise.all(Object.keys(t._transactionData[transactionID]).map((table) => {
+                            return new Promise((resolve) => {
+                                t._rebuildSecondaryIndex(table, resolve);
+                            });
+                        }));
+                    } else {
+                        return new Promise(res => res());
+                    }
+                })().then(() => {
+                    delete t._transactionData[transactionID];
+                    res();
                 });
-                complete();
-            break;
-            /* NODE-END */
-        }
+            };
+
+            switch (t._mode) {
+                /* NODE-START */
+                case 4: // LevelDB
+                    Object.keys(t._transactionData[transactionID]).forEach((tableName) => {
+                        t._levelDBs[tableName].batch(t._transactionData[transactionID][tableName]);
+                    });
+                    complete();
+                break;
+                /* NODE-END */
+                default:
+                    complete();
+            }
+        });
     }
 
     /**
@@ -805,68 +820,56 @@ export class _NanoSQL_Storage {
         let t = this;
 
         let tables = Object.keys(t._tables).map(k => t._tables[k]._name);
-        let index = 0;
-        const setupNewHist = () => {
-            let index = 0;
-            const histStep = () => {
-                if (index < tables.length) {
-                    if (tables[index].indexOf("_hist__meta") !== -1) {
-                        let referenceTable = String(tables[index]).slice(1).replace("_hist__meta", "");
-                        let ta = NanoSQLInstance._hash(referenceTable);
-                        let pk = t._tables[ta]._pk;
-                        t._read(referenceTable, "all", (rows) => {
-                            rows.forEach((row, i) => {
-                                let hist = {};
-                                hist[_str(2)] = 0;
-                                hist[_str(3)] = [i + 1];
-                                t._upsert(tables[index], row[pk], hist);
-                                t._upsert("_" + referenceTable + "_hist__data", i + 1, row);
-                            });
-                            index++;
-                            histStep();
-                        });
-                    } else {
-                        index++;
-                        histStep();
-                    }
-                } else {
-                    complete();
-                }
-            };
-            histStep();
-        };
 
-        const step = () => {
-            if (index < tables.length) {
-                let deleteTable = false;
-                if (type === "hist" && (tables[index] === _str(1) || tables[index].indexOf("_hist__meta") !== -1 || tables[index].indexOf("_hist__data") !== -1)) {
-                    deleteTable = true;
-                }
-                if (type === "all" && tables[index] !== "_utility") {
-                    deleteTable = true;
-                }
-                if (deleteTable) {
-                    t._delete(tables[index], "all", () => {
-                        if (tables[index].indexOf("_hist__data") !== -1) {
-                            t._upsert(tables[index], 0, null);
-                        }
-                        index++;
-                        step();
+        const setupNewHist = () => {
+            new _fnForEach().loop(tables, (table, next) => {
+                if (table.indexOf("_hist__meta") !== -1) {
+                    let referenceTable = String(table).slice(1).replace("_hist__meta", "");
+                    let ta = NanoSQLInstance._hash(referenceTable);
+                    let pk = t._tables[ta]._pk;
+                    t._read(referenceTable, "all", (rows) => {
+                        rows.forEach((row, i) => {
+                            let hist = {};
+                            hist[_str(2)] = 0;
+                            hist[_str(3)] = [i + 1];
+                            t._upsert(table, row[pk], hist);
+                            t._upsert("_" + referenceTable + "_hist__data", i + 1, row);
+                        });
+                        next();
                     });
                 } else {
-                    index++;
-                    step();
+                    next();
                 }
-            } else {
-                if (type === "hist") {
-                    setupNewHist();
-                } else {
-                    complete();
-                }
-            }
+            }).then(() => {
+                complete();
+            });
         };
 
-        step();
+        new _fnForEach().loop(tables, (table, next) => {
+            let deleteTable = false;
+            if (type === "hist" && (table === _str(1) || table.indexOf("_hist__meta") !== -1 || table.indexOf("_hist__data") !== -1)) {
+                deleteTable = true;
+            }
+            if (type === "all" && table !== "_utility") {
+                deleteTable = true;
+            }
+            if (deleteTable) {
+                t._delete(table, "all", () => {
+                    if (table.indexOf("_hist__data") !== -1) {
+                        t._upsert(table, 0, null);
+                    }
+                    next();
+                });
+            } else {
+                next();
+            }
+        }).then(() => {
+            if (type === "hist") {
+                setupNewHist();
+            } else {
+                complete();
+            }
+        });
     }
 
 
@@ -880,7 +883,7 @@ export class _NanoSQL_Storage {
      *
      * @memberOf _NanoSQL_Storage
      */
-    public _delete(tableName: string, rowID: string|number, callBack?: (success: boolean) => void): void {
+    public _delete(tableName: string, rowID: string|number, callBack?: (success: boolean) => void, transactionID?: number): void {
         let t = this;
         let editingHistory = false;
 
@@ -888,7 +891,7 @@ export class _NanoSQL_Storage {
         let deleteRowIDS: any[] = [];
 
         if (rowID === "all") {
-            deleteRowIDS = t._tables[ta]._index.slice();
+            deleteRowIDS = t._tables[ta]._index.slice().filter(i => i);
             t._tables[ta]._index = [];
             t._tables[ta]._trieIndex = new Trie([]);
         } else {
@@ -903,57 +906,52 @@ export class _NanoSQL_Storage {
             } else {
                 delete t._tables[ta]._rows[rowID];
             }
-            if (t._mode === 0 && callBack) return callBack(true);
         }
 
-        if (t._mode > 0) {
-            let i = 0;
-            const step = () => {
-                if (i < deleteRowIDS.length) {
-                    switch (t._mode) {
-                        case 1: // IndexedDB
-                            t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(deleteRowIDS[i]);
-                            i++;
-                            step();
-                        break;
-                        case 2: // Local Storage
-                            localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
-                            localStorage.removeItem(tableName + "-" + String(deleteRowIDS[i]));
-                            i++;
-                            step();
-                        break;
-                        /* NODE-START */
-                        case 4: // Level Up
-                            if (t._doingTransaction) {
-                                if (!t._transactionData[tableName]) {
-                                    t._transactionData[tableName] = [];
-                                }
-                                t._transactionData[tableName].push({
-                                    type: "del",
-                                    key: deleteRowIDS[i],
-                                    value: ""
-                                });
-                                i++;
-                                step();
-                            } else {
-                                t._levelDBs[tableName].del(deleteRowIDS[i], () => {
-                                    i++;
-                                    step();
-                                });
-                            }
-                        break;
-                        /* NODE-END */
-                        default:
-                        i++;
-                        step();
-                    }
-                } else {
-                    if (callBack) callBack(true);
+        new _fnForEach().loop(deleteRowIDS, (rowID, next) => {
+
+            if (transactionID) {
+                if (!t._transactionData[transactionID]) t._transactionData[transactionID] = {};
+                if (!t._transactionData[transactionID][tableName]) {
+                    t._transactionData[transactionID][tableName] = [];
                 }
-            };
-            step();
-        }
+                t._transactionData[transactionID][tableName].push({
+                    type: "del",
+                    key: rowID,
+                    value: ""
+                });
+            }
 
+            switch (t._mode) {
+                case 0:
+                    next();
+                break;
+                case 1: // IndexedDB
+                    t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowID);
+                    next();
+                break;
+                case 2: // Local Storage
+                    localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
+                    localStorage.removeItem(tableName + "-" + String(rowID));
+                    next();
+                break;
+                /* NODE-START */
+                case 4: // Level Up
+                    if (transactionID) {
+                        next();
+                    } else {
+                        t._levelDBs[tableName].del(rowID, () => {
+                            next();
+                        });
+                    }
+                break;
+                /* NODE-END */
+                default:
+                next();
+            }
+        }).then(() => {
+            if (callBack) callBack(true);
+        });
 
     }
 
@@ -987,7 +985,7 @@ export class _NanoSQL_Storage {
      *
      * @memberOf _NanoSQL_Storage
      */
-    public _upsert(tableName: string, rowID: string|number|null, rowData: any, callBack?: (rowID: number|string) => void): void {
+    public _upsert(tableName: string, rowID: string|number|null, rowData: any, callBack?: (rowID: number|string) => void, transactionID?: number): void {
         let t = this;
 
         if (Object.isFrozen(rowData)) rowData = _assign(rowData);
@@ -1021,6 +1019,19 @@ export class _NanoSQL_Storage {
             t._tables[ta]._index.push(rowID);
         }
 
+        if (transactionID) {
+            if (!t._transactionData[transactionID]) t._transactionData[transactionID] = {};
+            if (!t._transactionData[transactionID][tableName]) {
+                t._transactionData[transactionID][tableName] = [];
+            }
+
+            t._transactionData[transactionID][tableName].push({
+                type: tableName.indexOf("_hist__data") !== -1 ? "put" : !rowData ? "del" : "put",
+                key: rowID,
+                value: rowData ? JSON.stringify(rowData) : "" // for LevelDB
+            });
+        }
+
         if (t._storeMemory) {
             t._tables[ta]._rows[rowID] = t._parent._deepFreeze(rowData, ta);
             if (t._mode === 0 && callBack) return callBack(rowID);
@@ -1051,16 +1062,7 @@ export class _NanoSQL_Storage {
             break;
             /* NODE-START */
             case 4: // Level Up
-                if (t._doingTransaction) {
-                    if (!t._transactionData[tableName]) {
-                        t._transactionData[tableName] = [];
-                    }
-
-                    t._transactionData[tableName].push({
-                        type: tableName.indexOf("_hist__data") !== -1 ? "put" : !rowData ? "del" : "put",
-                        key: rowID,
-                        value: rowData ? JSON.stringify(rowData) : ""
-                    });
+                if (transactionID) {
                     if (callBack) callBack(rowID as string);
                 } else {
 

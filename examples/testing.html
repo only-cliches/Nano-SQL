@@ -38,33 +38,29 @@
                 // .config({ memory: false, persistent: true, history: false })
                 .connect().then(() => {
                     let i = 0;
-                    console.time("WRITE");
-                    db.table("users").beginTransaction();
-                    const step = () => {
-                        if (i < 100) {
-                            db.table("users")
+
+                    // db.table("users").beginTransaction();
+                    db.doTransaction((tDB, complete) => {
+                        console.time("WRITE");
+                        for (let i = 0; i < 1000; i++) {
+                            tDB("users")
                                 .query("upsert", {
                                     name: makeid(),
                                     pass: makeid(),
                                     email: makeid()
-                                }).exec().then(() => {
-                                    i++;
-                                    if (i % 100 === 0) {
-                                        console.log(i);
-                                    }
-                                    step();
-                                })
-                        } else {
-                            db.table("users").endTransaction();
-                            console.timeEnd("WRITE");
+                                }).exec()
                         }
-                    }
-                    step();
-                    console.time("READ");
-                    db.table("users").query("select").exec().then((rows) => {
-                        console.timeEnd("READ");
-                        console.log(rows.length);
-                    })
+                        complete();
+                    }).then(() => {
+                        console.timeEnd("WRITE");
+                        console.time("READ");
+                        db.table("users").query("select").exec().then((rows) => {
+                            console.timeEnd("READ");
+                            console.log(rows.length);
+                        })
+                    });
+
+
                 });
         }
     </script>
@@ -276,6 +272,7 @@
                         }
                     }])
                 ]).then(function() {
+
                     nSQL("orders").updateORM("rebuild").exec().then(() => {
                         return nSQL("users").updateORM("rebuild").exec();
                         //return new Promise(res => res());
@@ -367,6 +364,12 @@
         }).then((results: DBResults[]) => {
 
         });
+
+        // revisions API
+
+        nSQL().config({history:"Revisions"}).connect()...
+
+        nSQL().extend("Revision", "table", "primarykey", "<"||">").then(...)
 
         */
     </script>

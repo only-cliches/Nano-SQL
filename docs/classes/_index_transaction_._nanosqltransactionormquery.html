@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>_NanoSQLORMQuery | nano-sql</title>
+	<title>_NanoSQLTransactionORMQuery | nano-sql</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,13 +54,13 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="../modules/_index_.html">&quot;index&quot;</a>
+					<a href="../modules/_index_transaction_.html">&quot;index-transaction&quot;</a>
 				</li>
 				<li>
-					<a href="_index_._nanosqlormquery.html">_NanoSQLORMQuery</a>
+					<a href="_index_transaction_._nanosqltransactionormquery.html">_NanoSQLTransactionORMQuery</a>
 				</li>
 			</ul>
-			<h1>Class _NanoSQLORMQuery</h1>
+			<h1>Class _NanoSQLTransactionORMQuery</h1>
 		</div>
 	</div>
 </header>
@@ -71,7 +71,7 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">_NanoSQLORMQuery</span>
+						<span class="target">_NanoSQLTransactionORMQuery</span>
 					</li>
 				</ul>
 			</section>
@@ -82,15 +82,14 @@
 						<section class="tsd-index-section ">
 							<h3>Constructors</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_index_._nanosqlormquery.html#constructor" class="tsd-kind-icon">constructor</a></li>
+								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_index_transaction_._nanosqltransactionormquery.html#constructor" class="tsd-kind-icon">constructor</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_._nanosqlormquery.html#exec" class="tsd-kind-icon">exec</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_._nanosqlormquery.html#rebuild" class="tsd-kind-icon">rebuild</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_._nanosqlormquery.html#where" class="tsd-kind-icon">where</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_transaction_._nanosqltransactionormquery.html#exec" class="tsd-kind-icon">exec</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_transaction_._nanosqltransactionormquery.html#where" class="tsd-kind-icon">where</a></li>
 							</ul>
 						</section>
 					</div>
@@ -102,19 +101,19 @@
 					<a name="constructor" class="tsd-anchor"></a>
 					<h3>constructor</h3>
 					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">new _<wbr><wbr>NanoSQLORMQuery<span class="tsd-signature-symbol">(</span>db<span class="tsd-signature-symbol">: </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a>, table<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"add"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"delete"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"drop"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"rebuild"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"set"</span>, column<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, relationIDs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_._nanosqlormquery.html" class="tsd-signature-type">_NanoSQLORMQuery</a></li>
+						<li class="tsd-signature tsd-kind-icon">new _<wbr><wbr>NanoSQLTransactionORMQuery<span class="tsd-signature-symbol">(</span>queries<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, table<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"add"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"delete"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"drop"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"rebuild"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"set"</span>, column<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span>, relationIDs<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_transaction_._nanosqltransactionormquery.html" class="tsd-signature-type">_NanoSQLTransactionORMQuery</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1338</li>
+									<li>Defined in index-transaction.ts:21</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>db: <a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></h5>
+									<h5>queries: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
 								</li>
 								<li>
 									<h5>table: <span class="tsd-signature-type">string</span></h5>
@@ -129,7 +128,7 @@
 									<h5><span class="tsd-flag ts-flagOptional">Optional</span> relationIDs: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_index_._nanosqlormquery.html" class="tsd-signature-type">_NanoSQLORMQuery</a></h4>
+							<h4 class="tsd-returns-title">Returns <a href="_index_transaction_._nanosqltransactionormquery.html" class="tsd-signature-type">_NanoSQLTransactionORMQuery</a></h4>
 						</li>
 					</ul>
 				</section>
@@ -140,56 +139,15 @@
 					<a name="exec" class="tsd-anchor"></a>
 					<h3>exec</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">exec<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">exec<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1430</li>
+									<li>Defined in index-transaction.ts:39</li>
 								</ul>
 							</aside>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
-					<a name="rebuild" class="tsd-anchor"></a>
-					<h3>rebuild</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">rebuild<span class="tsd-signature-symbol">(</span>callBack<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in index.ts:1353</li>
-								</ul>
-							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>callBack: <span class="tsd-signature-type">function</span></h5>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-siganture">
-											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>updatedRows<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-											</ul>
-											<ul class="tsd-descriptions">
-												<li class="tsd-description">
-													<h4 class="tsd-parameters-title">Parameters</h4>
-													<ul class="tsd-parameters">
-														<li>
-															<h5>updatedRows: <span class="tsd-signature-type">number</span></h5>
-														</li>
-													</ul>
-													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
-												</li>
-											</ul>
-										</li>
-									</ul>
-								</li>
-							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
 					</ul>
@@ -204,7 +162,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1348</li>
+									<li>Defined in index-transaction.ts:34</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -234,11 +192,17 @@
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_db_storage_.html">"db-<wbr>storage"</a>
 					</li>
-					<li class="current tsd-kind-external-module">
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_.html">"index"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
+						<a href="../modules/_index_query_.html">"index-<wbr>query"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_server_.html">"index-<wbr>server"</a>
+					</li>
+					<li class="current tsd-kind-external-module">
+						<a href="../modules/_index_transaction_.html">"index-<wbr>transaction"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_null_store_.html">"null-<wbr>store"</a>
@@ -247,92 +211,26 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
-					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="_index_.nanosqlinstance.html" class="tsd-kind-icon">NanoSQLInstance</a>
-					</li>
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-class tsd-parent-kind-external-module">
-						<a href="_index_._nanosqlormquery.html" class="tsd-kind-icon">_<wbr>NanoSQLORMQuery</a>
+						<a href="_index_transaction_._nanosqltransactionormquery.html" class="tsd-kind-icon">_<wbr>NanoSQLTransactionORMQuery</a>
 						<ul>
 							<li class=" tsd-kind-constructor tsd-parent-kind-class">
-								<a href="_index_._nanosqlormquery.html#constructor" class="tsd-kind-icon">constructor</a>
+								<a href="_index_transaction_._nanosqltransactionormquery.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_index_._nanosqlormquery.html#exec" class="tsd-kind-icon">exec</a>
+								<a href="_index_transaction_._nanosqltransactionormquery.html#exec" class="tsd-kind-icon">exec</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_index_._nanosqlormquery.html#rebuild" class="tsd-kind-icon">rebuild</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_index_._nanosqlormquery.html#where" class="tsd-kind-icon">where</a>
+								<a href="_index_transaction_._nanosqltransactionormquery.html#where" class="tsd-kind-icon">where</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
 					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="_index_._nanosqlquery.html" class="tsd-kind-icon">_<wbr>NanoSQLQuery</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.actionorview.html" class="tsd-kind-icon">Action<wbr>OrView</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.dbconnect.html" class="tsd-kind-icon">DBConnect</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.dbexec.html" class="tsd-kind-icon">DBExec</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.dbfunction.html" class="tsd-kind-icon">DBFunction</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.dbrow.html" class="tsd-kind-icon">DBRow</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.datamodel.html" class="tsd-kind-icon">Data<wbr>Model</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.databaseevent.html" class="tsd-kind-icon">Database<wbr>Event</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.iactionviewmod.html" class="tsd-kind-icon">IAction<wbr>View<wbr>Mod</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.joinargs.html" class="tsd-kind-icon">Join<wbr>Args</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.nanosqlbackend.html" class="tsd-kind-icon">NanoSQLBackend</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.ormargs.html" class="tsd-kind-icon">ORMArgs</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.queryline.html" class="tsd-kind-icon">Query<wbr>Line</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-has-type-parameter">
-						<a href="../interfaces/_index_.stdobject.html" class="tsd-kind-icon">Std<wbr>Object</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.uuid.html" class="tsd-kind-icon">UUID</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.timeid.html" class="tsd-kind-icon">time<wbr>Id</a>
-					</li>
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_index_.timeidms.html" class="tsd-kind-icon">time<wbr>Idms</a>
-					</li>
-					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../modules/_index_.html#_nanosqlstatic" class="tsd-kind-icon">_<wbr>NanoSQLStatic</a>
-					</li>
-					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../modules/_index_.html#global" class="tsd-kind-icon">global</a>
-					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="../modules/_index_.html#_assign" class="tsd-kind-icon">_assign</a>
-					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="../modules/_index_.html#nsql" class="tsd-kind-icon">nSQL</a>
+						<a href="_index_transaction_._nanosqltransactionquery.html" class="tsd-kind-icon">_<wbr>NanoSQLTransaction<wbr>Query</a>
 					</li>
 				</ul>
 			</nav>
