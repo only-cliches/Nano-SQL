@@ -10,7 +10,13 @@ Read: ~100 records/ms
 - Finish integration tests.
 - Switch in memory indexes to a sorted BTrees.
 - Increase memory db write performance by just appending data to the rows, skipping a read before write.
-- Add a "Revisions" mode to history, where you can move specific rows forward and backward in history.
+- Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
+- Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
+
+## [0.8.51] 5-19-2017
+- BREAKING CHANGE: `["orm::..."]` model props should be changed to `["ref=>..."]`.
+- Fixed a few issues with the history system.
+- Updated Todo example with different CSS lib.
 
 ## [0.8.5] 5-17-2017
 - BREAKING CHANGE: Reworked transaction system to allow parallel transactions. See new API in the documentation.

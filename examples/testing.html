@@ -151,7 +151,7 @@
                 }, {
                     key: 'orderIDs',
                     type: 'orders[]',
-                    props: ["orm::user"]
+                    props: ["ref=>user"]
                 }, {
                     key: 'meta',
                     type: 'map',
@@ -208,7 +208,7 @@
             }, {
                 key: 'user',
                 type: 'users',
-                props: ["orm::orderIDs"]
+                props: ["ref=>orderIDs"]
             }])
             .config({
                 //persistent: true,
@@ -280,12 +280,12 @@
                         nSQL("orders").query("select").exec().then((rows) => {
                             console.log("Orders", rows);
                         });
-                        nSQL("users").query("select").orm(["orderIDs"]).exec().then((users) => {
+                        nSQL("users").query("select").exec().then((users) => {
                             console.log("Users", users);
                         });
                         return nSQL("orders").query("delete").where(["id", "=", 1]).exec();
                     }).then(() => {
-                        nSQL("users").query("select").orm(["orderIDs"]).exec().then((rows) => {
+                        nSQL("users").query("select").exec().then((rows) => {
                             console.log("Users2", rows);
                         });
                     })
@@ -367,9 +367,9 @@
 
         // revisions API
 
-        nSQL().config({history:"Revisions"}).connect()...
+        nSQL().config({historyMode:"revisions"}).connect()...
 
-        nSQL().extend("Revision", "table", "primarykey", "<"||">").then(...)
+        nSQL().extend("Revision", "table", "primarykey", "<"||">"||"?"||revisionID).then(...)
 
         */
     </script>

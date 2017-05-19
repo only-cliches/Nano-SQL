@@ -52,6 +52,7 @@ export declare class _NanoSQL_Storage {
     _activeTransactions: number[];
     _persistent: boolean;
     _doHistory: boolean;
+    _historyMode: 1 | 2;
     _storeMemory: boolean;
     _savedArgs: DBConnect;
     _levelDBs: {
@@ -74,6 +75,9 @@ export declare class _NanoSQL_Storage {
     _execTransaction(transactionID: number): Promise<any[]>;
     _clear(type: "all" | "hist", complete: Function): void;
     _delete(tableName: string, rowID: string | number, callBack?: (success: boolean) => void, transactionID?: number): void;
+    _updateSecondaryIndex(newRow: DBRow, tableID: number, callBack?: () => void): void;
+    _addHistoryRow(tableID: number, rowData: DBRow, transactionID: number, complete: (rowID: number) => void): void;
+    _addHistoryPoint(tableID: number, updatedPKs: any[], describe: string, complete: () => void): void;
     _generateID(type: string, tableHash: number): string | number;
     _upsert(tableName: string, rowID: string | number | null, rowData: any, callBack?: (rowID: number | string) => void, transactionID?: number): void;
     private _indexRead(tableName, rows, callBack, getIndex?);

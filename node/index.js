@@ -312,7 +312,7 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.doTransaction = function (initTransaction) {
         var t = this;
         var queries = [];
-        var transactionID = new Date().getTime();
+        var transactionID = NanoSQLInstance._random16Bits();
         return new lie_ts_1.Promise(function (resolve, reject) {
             t.backend._transaction("start", transactionID).then(function () {
                 initTransaction(function (table) {
@@ -411,34 +411,28 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.loadCSV = function (table, csv) {
         var t = this;
         var fields = [];
-        return new lie_ts_1.Promise(function (res, rej) {
-            lie_ts_1.Promise.all(csv.split("\n").map(function (v, k) {
-                return new lie_ts_1.Promise(function (resolve, reject) {
-                    if (k === 0) {
-                        fields = v.split(",");
-                        resolve();
-                    }
-                    else {
-                        var record = {};
-                        var row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                        var i = fields.length;
-                        while (i--) {
-                            if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
-                                row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
-                            }
-                            else if (row[i].indexOf('"') === 0) {
-                                row[i] = row[i].slice(1, row[i].length - 1);
-                            }
-                            record[fields[i]] = row[i];
+        return t.doTransaction(function (db, complete) {
+            csv.split("\n").forEach(function (v, k) {
+                if (k === 0) {
+                    fields = v.split(",");
+                }
+                else {
+                    var record = {};
+                    var row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                    var i = fields.length;
+                    while (i--) {
+                        if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                            row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
                         }
-                        t.table(table).query("upsert", record, true).exec().then(function () {
-                            resolve();
-                        });
+                        else if (row[i].indexOf('"') === 0) {
+                            row[i] = row[i].slice(1, row[i].length - 1);
+                        }
+                        record[fields[i]] = row[i];
                     }
-                });
-            })).then(function () {
-                res([], t);
+                    db(table).query("upsert", record).exec();
+                }
             });
+            complete();
         });
     };
     NanoSQLInstance._random16Bits = function () {

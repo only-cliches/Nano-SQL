@@ -232,20 +232,22 @@ var _NanoSQLQuery = (function () {
                     else {
                         var resultRows_1 = [];
                         var lastCommand_1 = "";
-                        new db_index_1._fnForEach().loop(whereArgs_1, function (wArg, next) {
-                            doFastWhere_1(wArg, function (rows) {
-                                if (lastCommand_1 === "AND") {
-                                    var idx_2 = rows.map(function (r) { return r[tableData._pk]; });
-                                    resultRows_1 = resultRows_1.filter(function (row) {
-                                        return idx_2.indexOf(row[tableData._pk]) !== -1;
-                                    });
-                                }
-                                else {
-                                    resultRows_1 = resultRows_1.concat(rows);
-                                }
-                                next();
+                        lie_ts_1.Promise.chain(whereArgs_1.map(function (wArg) {
+                            return new lie_ts_1.Promise(function (res, rej) {
+                                doFastWhere_1(wArg, function (rows) {
+                                    if (lastCommand_1 === "AND") {
+                                        var idx_2 = rows.map(function (r) { return r[tableData._pk]; });
+                                        resultRows_1 = resultRows_1.filter(function (row) {
+                                            return idx_2.indexOf(row[tableData._pk]) !== -1;
+                                        });
+                                    }
+                                    else {
+                                        resultRows_1 = resultRows_1.concat(rows);
+                                    }
+                                    res();
+                                });
                             });
-                        }).then(function () {
+                        })).then(function () {
                             doQuery(resultRows_1);
                         });
                     }
@@ -307,65 +309,6 @@ var _NanoSQLQuery = (function () {
         var updateType = (function () {
             return t._act ? t._act.type : "";
         })();
-        var updateSecondaryIndex = function (newRow, rem) {
-            if (table._name.indexOf("_") !== 0) {
-                var emptyColumns_1 = [];
-                var updateIndex_1 = function (tableName, rowID, key) {
-                    t._db._store._read(tableName, rowID, function (rows) {
-                        var indexedRows = [];
-                        if (rows.length && rows[0].rowPK)
-                            indexedRows = indexedRows.concat(rows[0].rowPK);
-                        if (!rem)
-                            indexedRows.push(newRow[table._pk]);
-                        indexedRows = indexedRows.filter(function (item, pos) {
-                            return indexedRows.indexOf(item) === pos || !(rem && item === newRow[table._pk]);
-                        });
-                        if (indexedRows.length) {
-                            t._db._store._upsert(tableName, rowID, {
-                                id: rowID,
-                                rowPK: indexedRows
-                            }, function () { }, t._query.transactionID);
-                        }
-                        else {
-                            emptyColumns_1.push(key);
-                            t._db._store._delete(tableName, rowID, function () { }, t._query.transactionID);
-                        }
-                    }, true);
-                };
-                table._secondaryIndexes.forEach(function (key) {
-                    var idxTable = "_" + table._name + "_idx_" + key;
-                    var rowID = String(newRow[key]).toLowerCase();
-                    var oldRowID = String(oldRow[key]).toLowerCase();
-                    if (rowID !== oldRowID && oldRow[key]) {
-                        t._db._store._read(idxTable, oldRowID, function (oldRowIndex) {
-                            var indexes = oldRowIndex[0] ? index_1._assign(oldRowIndex[0].rowPK || []) : [];
-                            var oldRowLoc = indexes.indexOf(oldRowID[table._pk]);
-                            if (oldRowLoc !== -1)
-                                indexes.splice(oldRowLoc, 1);
-                            t._db._store._upsert(idxTable, oldRowID, {
-                                id: oldRowID,
-                                rowPK: indexes
-                            }, function () {
-                                updateIndex_1(idxTable, rowID, key);
-                            }, t._query.transactionID);
-                        });
-                    }
-                    else {
-                        if (newRow[key] !== undefined)
-                            updateIndex_1(idxTable, rowID, key);
-                    }
-                });
-                table._trieColumns.forEach(function (key) {
-                    var word = String(newRow[key]).toLocaleLowerCase();
-                    if (emptyColumns_1.indexOf(key) !== -1) {
-                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
-                    }
-                    else {
-                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
-                    }
-                });
-            }
-        };
         var writeChanges = function (newRow) {
             if (updateType === "upsert") {
                 t._db._store._upsert(table._name, rowPK, newRow, function () {
@@ -385,7 +328,6 @@ var _NanoSQLQuery = (function () {
                     if (qArgs[k] === undefined && def !== undefined)
                         qArgs[k] = def;
                 });
-                updateSecondaryIndex(updateType === "upsert" ? qArgs : {});
                 writeChanges(qArgs);
             }
             else {
@@ -401,29 +343,21 @@ var _NanoSQLQuery = (function () {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, function (rows) {
                         if (!rows.length || !rows[0]) {
-                            rows[0] = {};
-                            rows[0][db_index_1._str(2)] = 0;
-                            rows[0][db_index_1._str(3)] = [];
-                            rows[0].id = rowPK;
                         }
                         else {
                             rows = index_1._assign(rows);
                         }
                         rows[0][db_index_1._str(3)].unshift(histDataID);
-                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], function () { }, t._query.transactionID);
+                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], function () { });
                     });
                 }
-                updateSecondaryIndex(updateType === "upsert" ? newRow : {});
-                writeChanges(newRow);
+                t._db._store._updateSecondaryIndex(updateType === "upsert" ? newRow : {}, t._tableID, function () {
+                    writeChanges(newRow);
+                });
             };
             var doHistory = function () {
                 if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
-                    var histTable = "_" + table._name + "_hist__data";
-                    var tah = index_1.NanoSQLInstance._hash(histTable);
-                    newRow[db_index_1._str(4)] = t._db._store._tables[tah]._index.length;
-                    t._db._store._upsert(histTable, null, newRow, function (rowID) {
-                        finishUpdate(rowID);
-                    }, t._query.transactionID);
+                    t._db._store._addHistoryRow(t._tableID, newRow, t._query.transactionID, finishUpdate);
                 }
                 else {
                     finishUpdate(0);
@@ -478,105 +412,19 @@ var _NanoSQLQuery = (function () {
         });
     };
     _NanoSQLQuery.prototype._tableChanged = function (updatedRowPKs, describe, callBack) {
-        var _this = this;
         var t = this, k = 0, j = 0;
         if (t._query.transactionID) {
             callBack([], "trans", [], []);
             return;
         }
         if (updatedRowPKs.length > 0) {
-            var triggerComplete_1 = function () {
-                var table = t._db._store._tables[_this._tableID];
+            t._db._store._addHistoryPoint(t._tableID, updatedRowPKs, describe, function () {
+                var table = t._db._store._tables[t._tableID];
                 t._db._invalidateCache(t._tableID, [], [], "");
                 t._db._store._readArray(table._name, updatedRowPKs, function (rows) {
                     callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows, updatedRowPKs);
                 });
-            };
-            var completeChange_1 = function () {
-                if (t._db._store._doHistory) {
-                    if (t._db._store._historyPoint === 0)
-                        t._db._store._historyLength++;
-                    t._db._store._utility("w", "historyLength", t._db._store._historyLength);
-                    t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
-                    var histPoint_1 = t._db._store._historyLength - t._db._store._historyPoint;
-                    t._db._store._upsert(db_index_1._str(1), null, {
-                        historyPoint: histPoint_1,
-                        tableID: t._tableID,
-                        rowKeys: updatedRowPKs,
-                        type: describe
-                    }, function (rowID) {
-                        if (!t._db._store._historyPointIndex[histPoint_1]) {
-                            t._db._store._historyPointIndex[histPoint_1] = [];
-                        }
-                        t._db._store._historyPointIndex[histPoint_1].push(rowID);
-                        triggerComplete_1();
-                    });
-                }
-                else {
-                    triggerComplete_1();
-                }
-            };
-            if (t._db._store._doHistory) {
-                if (t._db._store._historyPoint > 0) {
-                    var histPoints = [];
-                    var startIndex = (t._db._store._historyLength - t._db._store._historyPoint) + 1;
-                    while (t._db._store._historyPointIndex[startIndex]) {
-                        histPoints = histPoints.concat(t._db._store._historyPointIndex[startIndex].slice());
-                        delete t._db._store._historyPointIndex[startIndex];
-                        startIndex++;
-                    }
-                    t._db._store._readArray(db_index_1._str(1), histPoints, function (historyPoints) {
-                        j = 0;
-                        var nextPoint = function () {
-                            if (j < historyPoints.length) {
-                                var tableName_2 = t._db._store._tables[historyPoints[j].tableID]._name;
-                                k = 0;
-                                var nextRow_2 = function () {
-                                    if (k < historyPoints[j].rowKeys.length) {
-                                        t._db._store._read("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], function (rows) {
-                                            rows[0] = index_1._assign(rows[0]);
-                                            rows[0][db_index_1._str(2)] = 0;
-                                            var del = rows[0][db_index_1._str(3)].shift();
-                                            t._db._store._upsert("_" + tableName_2 + "_hist__meta", historyPoints[j].rowKeys[k], rows[0], function () {
-                                                if (del) {
-                                                    t._db._store._delete("_" + tableName_2 + "_hist__data", del, function () {
-                                                        k++;
-                                                        nextRow_2();
-                                                    }, t._query.transactionID);
-                                                }
-                                                else {
-                                                    k++;
-                                                    nextRow_2();
-                                                }
-                                            }, t._query.transactionID);
-                                        });
-                                    }
-                                    else {
-                                        j++;
-                                        nextPoint();
-                                    }
-                                };
-                                t._db._store._delete(db_index_1._str(1), historyPoints[j].id, function () {
-                                    nextRow_2();
-                                }, t._query.transactionID);
-                            }
-                            else {
-                                t._db._store._historyLength -= t._db._store._historyPoint;
-                                t._db._store._historyPoint = 0;
-                                completeChange_1();
-                                return;
-                            }
-                        };
-                        nextPoint();
-                    });
-                }
-                else {
-                    completeChange_1();
-                }
-            }
-            else {
-                completeChange_1();
-            }
+            });
         }
         else {
             callBack([{ msg: "0 rows " + describe }], describe, [], []);

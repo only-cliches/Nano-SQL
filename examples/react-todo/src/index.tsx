@@ -4,11 +4,6 @@ import * as ReactDOM from "react-dom";
 import { initStore, ItodoItem } from "./store";
 import { nSQL, DatabaseEvent, NanoSQLInstance } from "nano-sql";
 
-
-const TitleStyle = {
-    width: "75%"
-};
-
 const Done = {
     textDecoration: "line-through"
 };
@@ -16,24 +11,33 @@ const Done = {
 interface Nothing {}
 
 const TodoTable = (props: {todos: Array<ItodoItem>, markDone: (todoID: number) => void}): JSX.Element => {
+
+    let noTodos = <span></span>;
+    if (!props.todos.length) {
+        noTodos = <h3 className="uk-text-center">No todos yet!<br/><br/></h3>;
+    }
+
     return(
-        <table>
-            <thead>
-                <tr>
-                    <th style={TitleStyle}>Title</th>
-                    <th>Done</th>
-                </tr>
-            </thead>
-            <tbody>
-                {props.todos.map(todo => {
-                        return <tr>
-                            <td  style={todo.done ? Done : {}} >{ todo.title }</td>
-                            <td><input type="checkbox" checked={todo.done ? true : false} disabled={todo.done} onChange={() => todo.done ? null : props.markDone(todo.id)} /></td>
-                        </tr>;
-                    })
-                }
-            </tbody>
-        </table>
+        <div>
+            <table  className="uk-table uk-table-striped uk-table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th className="uk-table-shrink">Done</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {props.todos.map(todo => {
+                            return <tr>
+                                <td style={todo.done ? Done : {}} >{ todo.title }</td>
+                                <td><input className="uk-checkbox uk-padding-small" type="checkbox" checked={todo.done ? true : false} disabled={todo.done} onChange={() => todo.done ? null : props.markDone(todo.id)} /></td>
+                            </tr>;
+                        })
+                    }
+                </tbody>
+            </table>
+            {noTodos}
+        </div>
     );
 };
 
@@ -74,14 +78,7 @@ class TodoForm extends PureComponent<Nothing, FormState> {
     public render(): JSX.Element {
         return (
             <form onSubmit={this.onSubmit}>
-                <div className="row">
-                    <div className="column column-75">
-                        <input placeholder="New Todo Title" type="text" value={this.state.value} onChange={this.updateTitle} />
-                    </div>
-                    <div className="column column-25">
-                        <input className="button button-outline" type="submit" value="+" />
-                    </div>
-                </div>
+                <input placeholder="New Todo Title" className="uk-input" type="text" value={this.state.value} onChange={this.updateTitle} />
             </form>
         );
     }
@@ -160,25 +157,24 @@ class TodoApp extends Component<Nothing, TodoAppState> {
 
     public render(): JSX.Element {
         return (
-            <div className="container">
-                <br/><br/>
-                <a href="https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-todo" target="_blank">View Source</a>
-                <div className="row">
-                    <div className="column column-50">
-                        <h2>Todo Items</h2>
-                    </div>
-                    <div className="column column-25">
-                        <button disabled={this.state.redos[1] === 0} onClick={this.undo} className="noselect button" >Undo</button>
-                    </div>
-                    <div className="column column-25">
-                        <button disabled={this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1]} onClick={this.redo} className="noselect button">Redo</button>
-                    </div>
+            <div className="uk-container uk-container-small" style={{maxWidth: "400px"}}>
+                <br/>
+                <h3 style={{marginTop: "0px"}} className="uk-heading-divider">Todos</h3>
+                <div style={{
+                    float: "right",
+                    position: "relative",
+                    top: "-59px",
+                    marginBottom: "-40px"
+                }}>
+                    <button disabled={this.state.redos[1] === 0} onClick={this.undo}  className="uk-button uk-button-default uk-button-small" >Undo</button>
+                    <button disabled={this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1]} onClick={this.redo}  className="uk-button uk-button-default uk-button-small">Redo</button>
                 </div>
                 <TodoForm />
                 <TodoTable markDone={this.markDone} todos={this.state.todos} />
-                <button disabled={this.state.redos[0] === 0 && this.state.redos[0] === 0} onClick={this.clearHist} className="noselect button" >Clear History</button>
-                <span>&nbsp;&nbsp;</span>
-                <button onClick={this.clearAll} className="noselect button" >Clear Everything</button>
+                <button disabled={this.state.redos[0] === 0 && this.state.redos[0] === 0} onClick={this.clearHist}  className="uk-button uk-button-default uk-button-small" >Clear History</button>
+                <button onClick={this.clearAll}  className="uk-button uk-button-default uk-button-small" >Clear Everything</button>
+                <br/><br/>
+                <a href="https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-todo" target="_blank">View Source</a>
             </div>
         );
     }

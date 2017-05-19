@@ -17,6 +17,3 @@ export declare class _NanoSQLDB implements NanoSQLBackend {
     _transaction(type: "start" | "end", transactionID: number): Promise<any[]>;
     _extend(db: NanoSQLInstance, command: string): Promise<any>;
 }
-export declare class _fnForEach {
-    loop(items: any[], callBack: (item: any, next: (result?: any) => void) => void): Promise<any[]>;
-}

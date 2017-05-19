@@ -1,5 +1,5 @@
 import { NanoSQLInstance, _assign, NanoSQLBackend, ActionOrView, ORMArgs, QueryLine, DBRow, DataModel, StdObject, DBConnect, DBExec, JoinArgs, DBFunction } from "./index";
-import { _NanoSQLDB, _str, _fnForEach } from "./db-index";
+import { _NanoSQLDB, _str } from "./db-index";
 import { IHistoryPoint, _NanoSQL_Storage } from "./db-storage";
 import { Promise } from "lie-ts";
 
@@ -354,19 +354,21 @@ export class _NanoSQLQuery {
                     } else { // combined where statements
                         let resultRows: DBRow[] = [];
                         let lastCommand = "";
-                        new _fnForEach().loop(whereArgs, (wArg, next) => {
-                            doFastWhere(wArg, (rows) => {
-                                if (lastCommand === "AND") {
-                                    let idx = rows.map((r) => r[tableData._pk]);
-                                    resultRows = resultRows.filter((row) => {
-                                        return idx.indexOf(row[tableData._pk]) !== -1;
-                                    });
-                                } else {
-                                    resultRows = resultRows.concat(rows);
-                                }
-                                next();
+                        Promise.chain(whereArgs.map((wArg) => {
+                            return new Promise((res, rej) => {
+                                doFastWhere(wArg, (rows) => {
+                                    if (lastCommand === "AND") {
+                                        let idx = rows.map((r) => r[tableData._pk]);
+                                        resultRows = resultRows.filter((row) => {
+                                            return idx.indexOf(row[tableData._pk]) !== -1;
+                                        });
+                                    } else {
+                                        resultRows = resultRows.concat(rows);
+                                    }
+                                    res();
+                                });
                             });
-                        }).then(() => {
+                        })).then(() => {
                             doQuery(resultRows);
                         });
                     }
@@ -451,71 +453,6 @@ export class _NanoSQLQuery {
             return t._act ? t._act.type : "";
         })();
 
-        const updateSecondaryIndex = (newRow: DBRow, rem?: boolean) => {
-
-            if (table._name.indexOf("_") !== 0) {
-                let emptyColumns: string[] = [];
-
-                const updateIndex = (tableName: string, rowID: any, key: string) => {
-                    t._db._store._read(tableName, rowID, (rows) => {
-
-                        let indexedRows: any[] = [];
-                        if (rows.length &&  rows[0].rowPK) indexedRows = indexedRows.concat(rows[0].rowPK);
-                        if (!rem) indexedRows.push(newRow[table._pk]);
-                        indexedRows = indexedRows.filter((item, pos) => { // remove duplicates
-                            return indexedRows.indexOf(item) === pos || !(rem && item === newRow[table._pk]);
-                        });
-
-                        if (indexedRows.length) {
-                            t._db._store._upsert(tableName, rowID, {
-                                id: rowID,
-                                rowPK: indexedRows
-                            }, () => {}, t._query.transactionID);
-                        } else {
-                            emptyColumns.push(key);
-                            t._db._store._delete(tableName, rowID, () => {}, t._query.transactionID);
-                        }
-
-                    }, true);
-                };
-
-                // Update secondary indexes
-                table._secondaryIndexes.forEach((key) => {
-                    const idxTable = "_" + table._name + "_idx_" + key;
-                    const rowID = String(newRow[key]).toLowerCase();
-                    const oldRowID = String(oldRow[key]).toLowerCase();
-                    if (rowID !== oldRowID && oldRow[key]) {
-                        // Remove old value from secondary index
-                        t._db._store._read(idxTable, oldRowID, (oldRowIndex) => {
-                            let indexes: any[] = oldRowIndex[0] ? _assign(oldRowIndex[0].rowPK || []) : [];
-                            const oldRowLoc = indexes.indexOf(oldRowID[table._pk]);
-                            if (oldRowLoc !== -1) indexes.splice(oldRowLoc, 1);
-                            t._db._store._upsert(idxTable, oldRowID, {
-                                id: oldRowID,
-                                rowPK: indexes
-                            }, () => {
-                                // Add new value where it belongs
-                                updateIndex(idxTable, rowID, key);
-                            }, t._query.transactionID);
-                        });
-                    } else {
-                        if (newRow[key] !== undefined) updateIndex(idxTable, rowID, key);
-                    }
-                });
-
-
-                // Update tries
-                table._trieColumns.forEach((key) => {
-                    const word = String(newRow[key]).toLocaleLowerCase();
-                    if (emptyColumns.indexOf(key) !== -1) {
-                        t._db._store._tables[t._tableID]._trieObjects[key].removeWord(word);
-                    } else {
-                        t._db._store._tables[t._tableID]._trieObjects[key].addWord(word);
-                    }
-                });
-            }
-        };
-
         const writeChanges = (newRow: DBRow) => {
             if (updateType === "upsert") {
                 // Update actual row
@@ -523,7 +460,7 @@ export class _NanoSQLQuery {
                     callBack();
                 }, t._query.transactionID);
             } else {
-                // Update actual row data
+                // Update actual row
                 t._db._store._delete(table._name, rowPK, () => {
                     callBack();
                 }, t._query.transactionID);
@@ -541,7 +478,7 @@ export class _NanoSQLQuery {
                 });
 
                 // Seconday Idx and tries
-                updateSecondaryIndex(updateType === "upsert" ? qArgs : {});
+                // updateSecondaryIndex(updateType === "upsert" ? qArgs : {});
 
                 writeChanges(qArgs);
             } else {
@@ -551,6 +488,7 @@ export class _NanoSQLQuery {
         }
 
         t._db._store._read(table._name, rowPK, (rows) => {
+
             oldRow = rows[0] || {};
             let newRow = _assign(rows[0] || {});
 
@@ -560,34 +498,30 @@ export class _NanoSQLQuery {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, (rows) => {
                         if (!rows.length || !rows[0]) {
-                            rows[0] = {};
-                            rows[0][_str(2)] = 0;
-                            rows[0][_str(3)] = [];
-                            rows[0].id = rowPK;
+                            // rows[0] = {};
+                            // rows[0][_str(2)] = -1;
+                            // rows[0][_str(3)] = [-1];
+                            // rows[0].id = rowPK;
                         } else {
                             rows = _assign(rows);
                         }
                         rows[0][_str(3)].unshift(histDataID);
-                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], () => {}, t._query.transactionID);
+                        t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], () => {});
                     });
                 }
 
                 // 3. Move new row data into place on the active table
                 // Apply changes to the store
-                updateSecondaryIndex(updateType === "upsert" ? newRow : {});
-                writeChanges(newRow);
+                t._db._store._updateSecondaryIndex(updateType === "upsert" ? newRow : {}, t._tableID, () => {
+                    writeChanges(newRow);
+                });
             };
 
             const doHistory = () => {
                 // Add to history
                 if (!doRemove && table._name.indexOf("_") !== 0 && t._db._store._doHistory) {
                     // 1. copy new row data into histoy data table
-                    const histTable = "_" + table._name + "_hist__data";
-                    const tah = NanoSQLInstance._hash(histTable);
-                    newRow[_str(4)] = t._db._store._tables[tah]._index.length;
-                    t._db._store._upsert(histTable, null, newRow, (rowID) => {
-                        finishUpdate(rowID as number);
-                    }, t._query.transactionID);
+                    t._db._store._addHistoryRow(t._tableID, newRow, t._query.transactionID, finishUpdate);
                 } else {
                     finishUpdate(0);
                 }
@@ -665,102 +599,15 @@ export class _NanoSQLQuery {
 
         if (updatedRowPKs.length > 0) {
 
-            const triggerComplete = () => {
-                let table = t._db._store._tables[this._tableID];
+            t._db._store._addHistoryPoint(t._tableID, updatedRowPKs, describe, () => {
+
+                let table = t._db._store._tables[t._tableID];
                 t._db._invalidateCache(t._tableID, [], [], "");
                 t._db._store._readArray(table._name, updatedRowPKs, (rows) => {
                     callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows, updatedRowPKs);
                 });
-            };
 
-            const completeChange = () => {
-
-                if (t._db._store._doHistory) {
-                    if (t._db._store._historyPoint === 0) t._db._store._historyLength++;
-
-                    t._db._store._utility("w", "historyLength", t._db._store._historyLength);
-                    t._db._store._utility("w", "historyPoint", t._db._store._historyPoint);
-
-                    // Add history records
-                    const histPoint = t._db._store._historyLength - t._db._store._historyPoint;
-
-                    t._db._store._upsert(_str(1), null, {
-                        historyPoint: histPoint,
-                        tableID: t._tableID,
-                        rowKeys: updatedRowPKs,
-                        type: describe
-                    }, (rowID) => {
-                        if (!t._db._store._historyPointIndex[histPoint]) {
-                            t._db._store._historyPointIndex[histPoint] = [];
-                        }
-                        t._db._store._historyPointIndex[histPoint].push(rowID as number);
-                        triggerComplete();
-                    });
-                } else {
-                    triggerComplete();
-                }
-            };
-
-            if (t._db._store._doHistory) {
-                // Remove history points ahead of the current one if the database has changed
-                if (t._db._store._historyPoint > 0) {
-                    let histPoints: number[] = [];
-                    let startIndex = (t._db._store._historyLength - t._db._store._historyPoint) + 1;
-                    while (t._db._store._historyPointIndex[startIndex]) {
-                        histPoints = histPoints.concat(t._db._store._historyPointIndex[startIndex].slice());
-                        delete t._db._store._historyPointIndex[startIndex]; // Update index
-                        startIndex++;
-                    }
-                    t._db._store._readArray(_str(1), histPoints, (historyPoints: IHistoryPoint[]) => {
-                        j = 0;
-                        const nextPoint = () => {
-
-                            if (j < historyPoints.length) {
-                                let tableName = t._db._store._tables[historyPoints[j].tableID]._name;
-                                k = 0;
-                                const nextRow = () => {
-                                    if (k < historyPoints[j].rowKeys.length) {
-                                        // Set this row history pointer to 0;
-                                        t._db._store._read("_" + tableName + "_hist__meta", historyPoints[j].rowKeys[k], (rows) => {
-                                            rows[0] = _assign(rows[0]);
-                                            rows[0][_str(2)] = 0;
-                                            let del = rows[0][_str(3)].shift(); // Shift off the most recent update
-                                            t._db._store._upsert("_" + tableName + "_hist__meta", historyPoints[j].rowKeys[k], rows[0], () => {
-                                                if (del) {
-                                                    t._db._store._delete("_" + tableName + "_hist__data", del, () => {
-                                                        k++;
-                                                        nextRow();
-                                                    }, t._query.transactionID);
-                                                } else {
-                                                    k++;
-                                                    nextRow();
-                                                }
-                                            }, t._query.transactionID);
-                                        });
-                                    } else {
-                                        j++;
-                                        nextPoint();
-                                    }
-                                };
-                                t._db._store._delete(_str(1), historyPoints[j].id, () => { // remove this point from history
-                                    nextRow();
-                                }, t._query.transactionID);
-                            } else {
-                                t._db._store._historyLength -= t._db._store._historyPoint;
-                                t._db._store._historyPoint = 0;
-                                completeChange();
-                                return;
-                            }
-                        };
-                        nextPoint();
-                    });
-
-                } else {
-                    completeChange();
-                }
-            } else {
-                completeChange();
-            }
+            });
 
         } else {
             callBack([{msg: "0 rows " + describe}], describe, [], []);
@@ -1251,7 +1098,6 @@ export class _NanoSQLQuery {
         const qArgs = (t._act as QueryLine).args  || [];
         let pk = t._db._store._tables[t._tableID]._pk;
         i = 0;
-
         const remove = () => {
             if (i < queryRows.length) {
                 t._updateRow(queryRows[i][pk], () => {

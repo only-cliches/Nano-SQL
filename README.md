@@ -10,7 +10,7 @@ The most powerful little data store.
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
-NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and IndexedDB support: all in a tiny 14Kb package.   As a bonus, you also get the performance perks of ImmutableJS.
+NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM: all in a 15Kb package.   As a bonus, you also get the performance perks of ImmutableJS.
 
 It's written to take advantage of trendy buzzwords like "isomorphic", "immutable", "NoSQL", "TypeScript" and "Kerbal Space Program".
 
@@ -36,7 +36,7 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Fast secondary indexes.
 - Transactions support.
 - Full events system.
-- Just 14Kb Gzipped.
+- Just 15Kb Gzipped.
 
 ## New Features
 

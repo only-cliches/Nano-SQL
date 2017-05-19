@@ -228,43 +228,54 @@ export class _NanoSQLDB implements NanoSQLBackend {
             const check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(_str(1), t._store._historyPointIndex[check], (hps: IHistoryPoint[]) => {
                 // Loop through all history points
-                new _fnForEach().loop(hps, (hp, nextPoint) => {
+                Promise.chain(hps.map((hp) => {
+                    return new Promise((res, rej) => {
 
-                    let tableID: number = hp.tableID;
-                    let table = t._store._tables[tableID];
-                    let rows: DBRow[] = [];
+                        let tableID: number = hp.tableID;
+                        let table = t._store._tables[tableID];
+                        let rows: DBRow[] = [];
 
-                    // Loop through all rows
-                    new _fnForEach().loop(hp.rowKeys, (rowID, nextRow) => {
+                        // Loop through all rows
+                        Promise.chain(hp.rowKeys.map((rowID: any) => {
+                            return new Promise((res2, rej2) => {
 
-                        if (table._pkType === "int") rowID = parseInt(rowID);
+                            // if (table._pkType === "int") rowID = parseInt(rowID);
 
-                        if (!results[tableID]) results[tableID] = {type: hp.type, rows: [], affectedPKS: hp.rowKeys};
+                            if (!results[tableID]) results[tableID] = {type: hp.type, rows: [], affectedPKS: hp.rowKeys};
 
-                        t._store._read(table._name, rowID, (rowData) => {
+                            // t._store._read(table._name, rowID, (rowData) => {
 
-                            // if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
-                            // Shift the row pointer
-                            t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
-                                row = _assign(row);
-                                row[0][_str(2)] = (row[0][_str(2)] || 0) + direction;
-                                const historyRowID = row[0][_str(3)][row[0][_str(2)]];
-                                t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
-                                    t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
-                                        let newRow = setRow[0] ? _assign(setRow[0]) : null;
-                                        t._store._upsert(table._name, rowID, newRow, () => { // Overwriting row data
-                                            // if (direction < 0) rows.push(newRow);
-                                            rows.push(newRow);
-                                            results[tableID].rows = results[tableID].rows.concat(rows);
-                                            i++;
-                                            nextRow();
+                                // if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
+                                // Shift the row pointer
+                                t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
+                                    row = _assign(row);
+                                    row[0][_str(2)] = (row[0][_str(2)] || 0) + direction;
+                                    const historyRowID = row[0][_str(3)][row[0][_str(2)]];
+                                    t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], () => { // Update row pointer
+                                        t._store._read("_" + table._name + "_hist__data", historyRowID, (setRow) => { // Now getting the new row data
+
+                                            let newRow = {};
+                                            if (setRow.length) {
+                                                table._keys.forEach((k) => {
+                                                    newRow[k] =  setRow[0][k];
+                                                });
+                                            }
+
+                                            t._store._upsert(table._name, rowID, setRow.length ? newRow : null, () => { // Overwriting row data
+                                                // if (direction < 0) rows.push(newRow);
+                                                rows.push(newRow);
+                                                results[tableID].rows = results[tableID].rows.concat(rows);
+                                                i++;
+                                                res2();
+                                            });
                                         });
                                     });
                                 });
+                            // });
                             });
-                        });
-                    }).then(nextPoint);
-                }).then(() => {
+                        })).then(res);
+                    });
+                })).then(() => {
                     callBack(results);
                 });
             });
@@ -339,28 +350,6 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     }
                 break;
             }
-        });
-    }
-}
-
-// tslint:disable-next-line
-export class _fnForEach {
-    loop(items: any[], callBack: (item: any, next: (result?: any) => void) => void): Promise<any[]> {
-        return new Promise((res, rej) => {
-            let ptr = 0;
-            let results: any[] = [];
-            const next = () => {
-                if (ptr < items.length) {
-                    callBack(items[ptr], (result) => {
-                        results.push(result);
-                        ptr++;
-                        next();
-                    });
-                } else {
-                    res(results);
-                }
-            };
-            next();
         });
     }
 }

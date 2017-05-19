@@ -1,4 +1,4 @@
-import { _NanoSQLDB, _fnForEach } from "./db-index";
+import { _NanoSQLDB } from "./db-index";
 import { Promise } from "lie-ts";
 import { _NanoSQLQuery, _NanoSQLORMQuery } from "./index-query";
 import { _NanoSQLTransactionQuery, _NanoSQLTransactionORMQuery } from "./index-transaction";
@@ -1070,7 +1070,7 @@ export class NanoSQLInstance {
             relationIDs?: any[];
             where?: any[];
         }[] = [];
-        let transactionID = new Date().getTime();
+        let transactionID = NanoSQLInstance._random16Bits();
 
         return new Promise((resolve, reject) => {
             t.backend._transaction("start", transactionID).then(() => {
@@ -1216,30 +1216,6 @@ export class NanoSQLInstance {
             });
             complete();
         });
-        /*
-        return new Promise((res, rej) => {
-            let pointer = 0;
-            let rowData: any[] = [];
-            const next = () => {
-                if (pointer < rows.length) {
-                    if (rows[pointer]) {
-                        t.table(table).query("upsert", rows[pointer], true).exec().then((res) => {
-                            rowData.push(res);
-                            pointer++;
-                            next();
-                        });
-                    } else {
-                        pointer++;
-                        next();
-                    }
-                } else {
-                    // t.endTransaction();
-                    res(rowData, t);
-                }
-            };
-            next();
-        });
-        */
     }
 
     /**
@@ -1272,37 +1248,28 @@ export class NanoSQLInstance {
     public loadCSV(table: string, csv: string): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
-
-        return new Promise((res, rej) => {
-            // t.beginTransaction();
-            Promise.all(csv.split("\n").map((v, k) => {
-                return new Promise((resolve, reject) => {
-                    if (k === 0) {
-                        fields = v.split(",");
-                        resolve();
-                    } else {
-                        let record: StdObject<any> = {};
-                        let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                        let i = fields.length;
-                        while (i--) {
-                            if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
-                                // tslint:disable-next-line
-                                row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+        return t.doTransaction((db, complete) => {
+            csv.split("\n").forEach((v, k) => {
+                if (k === 0) {
+                    fields = v.split(",");
+                } else {
+                    let record: StdObject<any> = {};
+                    let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                    let i = fields.length;
+                    while (i--) {
+                        if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
                             // tslint:disable-next-line
-                            } else if (row[i].indexOf('"') === 0) {
-                                row[i] = row[i].slice(1, row[i].length - 1);
-                            }
-                            record[fields[i]] = row[i];
+                            row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                        // tslint:disable-next-line
+                        } else if (row[i].indexOf('"') === 0) {
+                            row[i] = row[i].slice(1, row[i].length - 1);
                         }
-                        t.table(table).query("upsert", record, true).exec().then(() => {
-                            resolve();
-                        });
+                        record[fields[i]] = row[i];
                     }
-                });
-            })).then(function () {
-                // t.endTransaction();
-                res([], t);
+                    db(table).query("upsert", record).exec();
+                }
             });
+            complete();
         });
     }
 

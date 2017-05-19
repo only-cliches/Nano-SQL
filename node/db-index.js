@@ -86,35 +86,40 @@ var _NanoSQLDB = (function () {
             var results = {};
             var check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(exports._str(1), t._store._historyPointIndex[check], function (hps) {
-                new _fnForEach().loop(hps, function (hp, nextPoint) {
-                    var tableID = hp.tableID;
-                    var table = t._store._tables[tableID];
-                    var rows = [];
-                    new _fnForEach().loop(hp.rowKeys, function (rowID, nextRow) {
-                        if (table._pkType === "int")
-                            rowID = parseInt(rowID);
-                        if (!results[tableID])
-                            results[tableID] = { type: hp.type, rows: [], affectedPKS: hp.rowKeys };
-                        t._store._read(table._name, rowID, function (rowData) {
-                            t._store._read("_" + table._name + "_hist__meta", rowID, function (row) {
-                                row = index_1._assign(row);
-                                row[0][exports._str(2)] = (row[0][exports._str(2)] || 0) + direction;
-                                var historyRowID = row[0][exports._str(3)][row[0][exports._str(2)]];
-                                t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], function () {
-                                    t._store._read("_" + table._name + "_hist__data", historyRowID, function (setRow) {
-                                        var newRow = setRow[0] ? index_1._assign(setRow[0]) : null;
-                                        t._store._upsert(table._name, rowID, newRow, function () {
-                                            rows.push(newRow);
-                                            results[tableID].rows = results[tableID].rows.concat(rows);
-                                            i++;
-                                            nextRow();
+                lie_ts_1.Promise.chain(hps.map(function (hp) {
+                    return new lie_ts_1.Promise(function (res, rej) {
+                        var tableID = hp.tableID;
+                        var table = t._store._tables[tableID];
+                        var rows = [];
+                        lie_ts_1.Promise.chain(hp.rowKeys.map(function (rowID) {
+                            return new lie_ts_1.Promise(function (res2, rej2) {
+                                if (!results[tableID])
+                                    results[tableID] = { type: hp.type, rows: [], affectedPKS: hp.rowKeys };
+                                t._store._read("_" + table._name + "_hist__meta", rowID, function (row) {
+                                    row = index_1._assign(row);
+                                    row[0][exports._str(2)] = (row[0][exports._str(2)] || 0) + direction;
+                                    var historyRowID = row[0][exports._str(3)][row[0][exports._str(2)]];
+                                    t._store._upsert("_" + table._name + "_hist__meta", rowID, row[0], function () {
+                                        t._store._read("_" + table._name + "_hist__data", historyRowID, function (setRow) {
+                                            var newRow = {};
+                                            if (setRow.length) {
+                                                table._keys.forEach(function (k) {
+                                                    newRow[k] = setRow[0][k];
+                                                });
+                                            }
+                                            t._store._upsert(table._name, rowID, setRow.length ? newRow : null, function () {
+                                                rows.push(newRow);
+                                                results[tableID].rows = results[tableID].rows.concat(rows);
+                                                i++;
+                                                res2();
+                                            });
                                         });
                                     });
                                 });
                             });
-                        });
-                    }).then(nextPoint);
-                }).then(function () {
+                        })).then(res);
+                    });
+                })).then(function () {
                     callBack(results);
                 });
             });
@@ -196,28 +201,3 @@ var _NanoSQLDB = (function () {
     return _NanoSQLDB;
 }());
 exports._NanoSQLDB = _NanoSQLDB;
-var _fnForEach = (function () {
-    function _fnForEach() {
-    }
-    _fnForEach.prototype.loop = function (items, callBack) {
-        return new lie_ts_1.Promise(function (res, rej) {
-            var ptr = 0;
-            var results = [];
-            var next = function () {
-                if (ptr < items.length) {
-                    callBack(items[ptr], function (result) {
-                        results.push(result);
-                        ptr++;
-                        next();
-                    });
-                }
-                else {
-                    res(results);
-                }
-            };
-            next();
-        });
-    };
-    return _fnForEach;
-}());
-exports._fnForEach = _fnForEach;

@@ -66,32 +66,8 @@ export class _NanoSQLTransactionQuery {
     public where(args: Array<any|Array<any>>): _NanoSQLTransactionQuery {
         return this._addCmd("where", args);
     }
-    public range(limit: number, offset: number): _NanoSQLTransactionQuery {
-        return this._addCmd("range", [limit, offset]);
-    }
     public orm(ormArgs?: (string|ORMArgs)[]): _NanoSQLTransactionQuery {
         return this._addCmd("orm", ormArgs);
-    }
-    public orderBy(args: {[key: string]: "asc"|"desc"}): _NanoSQLTransactionQuery {
-        return this._addCmd("orderby", args);
-    }
-    public groupBy(columns: {[key: string]: "asc"|"desc"}): _NanoSQLTransactionQuery {
-        return this._addCmd("groupby", columns);
-    }
-    public having(args: Array<any|Array<any>>): _NanoSQLTransactionQuery {
-        return this._addCmd("having", args);
-    }
-    public join(args: JoinArgs): _NanoSQLTransactionQuery {
-        return this._addCmd("join", args);
-    }
-    public limit(args: number): _NanoSQLTransactionQuery {
-        return this._addCmd("limit", args);
-    }
-    public trieSearch(column: string, stringToSearch: string): _NanoSQLTransactionQuery {
-        return this._addCmd("trie", [column, stringToSearch]);
-    }
-    public offset(args: number): _NanoSQLTransactionQuery {
-        return this._addCmd("offset", args);
     }
     private _addCmd(type: string, args: any): _NanoSQLTransactionQuery {
         return this._modifiers.push({type: type, args: args}), this;

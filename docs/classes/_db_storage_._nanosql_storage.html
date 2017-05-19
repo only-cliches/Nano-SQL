@@ -92,6 +92,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_dohistory" class="tsd-kind-icon">_do<wbr>History</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historyarray" class="tsd-kind-icon">_history<wbr>Array</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historylength" class="tsd-kind-icon">_history<wbr>Length</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historymode" class="tsd-kind-icon">_history<wbr>Mode</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historypoint" class="tsd-kind-icon">_history<wbr>Point</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_historypointindex" class="tsd-kind-icon">_history<wbr>Point<wbr>Index</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_indexeddb" class="tsd-kind-icon">_indexedDB</a></li>
@@ -110,6 +111,8 @@
 						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_addhistorypoint" class="tsd-kind-icon">_add<wbr>History<wbr>Point</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_addhistoryrow" class="tsd-kind-icon">_add<wbr>History<wbr>Row</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_clear" class="tsd-kind-icon">_clear</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_delete" class="tsd-kind-icon">_delete</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_exectransaction" class="tsd-kind-icon">_exec<wbr>Transaction</a></li>
@@ -120,6 +123,7 @@
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_readrange" class="tsd-kind-icon">_read<wbr>Range</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_rebuildsecondaryindex" class="tsd-kind-icon">_rebuild<wbr>Secondary<wbr>Index</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_rebuildtries" class="tsd-kind-icon">_rebuild<wbr>Tries</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_updatesecondaryindex" class="tsd-kind-icon">_update<wbr>Secondary<wbr>Index</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_upsert" class="tsd-kind-icon">_upsert</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#_utility" class="tsd-kind-icon">_utility</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_db_storage_._nanosql_storage.html#init" class="tsd-kind-icon">init</a></li>
@@ -140,7 +144,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:225</li>
+									<li>Defined in db-storage.ts:235</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -254,6 +258,31 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="_historymode" class="tsd-anchor"></a>
+					<h3>_history<wbr>Mode</h3>
+					<div class="tsd-signature tsd-kind-icon">_history<wbr>Mode<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">1</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">2</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in db-storage.ts:176</li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>The current history mode, linear (standard) or parallel.
+								(mode 1) Linear mode records evey change in the databse as a timeline.
+							(mode 2) Parallel mode creates a linear history for every row, recording revisions to the row.</p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>type</dt>
+							<dd><p>{(&quot;lin&quot;|&quot;par&quot;)}</p>
+							</dd>
+							<dt>memberof</dt>
+							<dd><p>_NanoSQL_Storage</p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="_historypoint" class="tsd-anchor"></a>
 					<h3>_history<wbr>Point</h3>
 					<div class="tsd-signature tsd-kind-icon">_history<wbr>Point<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
@@ -328,7 +357,7 @@
 					<div class="tsd-signature tsd-kind-icon">_levelDBs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in db-storage.ts:192</li>
+							<li>Defined in db-storage.ts:202</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -439,7 +468,7 @@
 					<div class="tsd-signature tsd-kind-icon">_saved<wbr>Args<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_index_.dbconnect.html" class="tsd-signature-type">DBConnect</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in db-storage.ts:182</li>
+							<li>Defined in db-storage.ts:192</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -462,7 +491,7 @@
 					<div class="tsd-signature tsd-kind-icon">_store<wbr>Memory<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in db-storage.ts:174</li>
+							<li>Defined in db-storage.ts:184</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -594,7 +623,7 @@
 					<div class="tsd-signature tsd-kind-icon">_transaction<wbr>Data<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in db-storage.ts:208</li>
+							<li>Defined in db-storage.ts:218</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -690,6 +719,122 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Methods</h2>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_addhistorypoint" class="tsd-anchor"></a>
+					<h3>_add<wbr>History<wbr>Point</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_add<wbr>History<wbr>Point<span class="tsd-signature-symbol">(</span>tableID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, updatedPKs<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, describe<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, complete<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-storage.ts:1106</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Add a new history record to the system.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>_NanoSQL_Storage</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>tableID: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>updatedPKs: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>describe: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>complete: <span class="tsd-signature-type">function</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_addhistoryrow" class="tsd-anchor"></a>
+					<h3>_add<wbr>History<wbr>Row</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_add<wbr>History<wbr>Row<span class="tsd-signature-symbol">(</span>tableID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, rowData<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, transactionID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, complete<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-storage.ts:1082</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Add a record of the previous row data to the history system.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>_NanoSQL_Storage</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>tableID: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>rowData: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
+								</li>
+								<li>
+									<h5>transactionID: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>complete: <span class="tsd-signature-type">function</span></h5>
+									<div class="tsd-comment tsd-typography">
+									</div>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>rowID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-parameters-title">Parameters</h4>
+													<ul class="tsd-parameters">
+														<li>
+															<h5>rowID: <span class="tsd-signature-type">number</span></h5>
+														</li>
+													</ul>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="_clear" class="tsd-anchor"></a>
 					<h3>_clear</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -699,7 +844,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:819</li>
+									<li>Defined in db-storage.ts:827</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -737,7 +882,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:886</li>
+									<li>Defined in db-storage.ts:898</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -779,7 +924,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:775</li>
+									<li>Defined in db-storage.ts:785</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -812,7 +957,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:967</li>
+									<li>Defined in db-storage.ts:1196</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -851,7 +996,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1387</li>
+									<li>Defined in db-storage.ts:1612</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -887,7 +1032,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1254</li>
+									<li>Defined in db-storage.ts:1479</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -950,7 +1095,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1142</li>
+									<li>Defined in db-storage.ts:1367</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1009,7 +1154,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1171</li>
+									<li>Defined in db-storage.ts:1396</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1070,7 +1215,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:674</li>
+									<li>Defined in db-storage.ts:684</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1108,7 +1253,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:727</li>
+									<li>Defined in db-storage.ts:737</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1132,6 +1277,45 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_updatesecondaryindex" class="tsd-anchor"></a>
+					<h3>_update<wbr>Secondary<wbr>Index</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_update<wbr>Secondary<wbr>Index<span class="tsd-signature-symbol">(</span>newRow<span class="tsd-signature-symbol">: </span><a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a>, tableID<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, callBack<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in db-storage.ts:983</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Update the secondary attached to a specific row and table.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>_NanoSQL_Storage</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>newRow: <a href="../interfaces/_index_.dbrow.html" class="tsd-signature-type">DBRow</a></h5>
+								</li>
+								<li>
+									<h5>tableID: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> callBack: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="_upsert" class="tsd-anchor"></a>
 					<h3>_upsert</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -1141,7 +1325,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:988</li>
+									<li>Defined in db-storage.ts:1217</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1186,7 +1370,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:1360</li>
+									<li>Defined in db-storage.ts:1585</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1225,7 +1409,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in db-storage.ts:242</li>
+									<li>Defined in db-storage.ts:252</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1310,6 +1494,9 @@
 								<a href="_db_storage_._nanosql_storage.html#_historylength" class="tsd-kind-icon">_history<wbr>Length</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_db_storage_._nanosql_storage.html#_historymode" class="tsd-kind-icon">_history<wbr>Mode</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_historypoint" class="tsd-kind-icon">_history<wbr>Point</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
@@ -1349,6 +1536,12 @@
 								<a href="_db_storage_._nanosql_storage.html#_utilitytable" class="tsd-kind-icon">_utility<wbr>Table</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_db_storage_._nanosql_storage.html#_addhistorypoint" class="tsd-kind-icon">_add<wbr>History<wbr>Point</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_db_storage_._nanosql_storage.html#_addhistoryrow" class="tsd-kind-icon">_add<wbr>History<wbr>Row</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_clear" class="tsd-kind-icon">_clear</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
@@ -1377,6 +1570,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_rebuildtries" class="tsd-kind-icon">_rebuild<wbr>Tries</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_db_storage_._nanosql_storage.html#_updatesecondaryindex" class="tsd-kind-icon">_update<wbr>Secondary<wbr>Index</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_db_storage_._nanosql_storage.html#_upsert" class="tsd-kind-icon">_upsert</a>
