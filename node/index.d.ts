@@ -103,9 +103,9 @@ export declare class NanoSQLInstance {
     avFilter(filterFunc: IActionViewMod): this;
     config(args: any): NanoSQLInstance;
     extend(...args: Array<any>): any | NanoSQLInstance;
-    loadJS(table: string, rows: Array<Object>): Promise<Array<Object>>;
+    loadJS(table: string, rows: Array<Object>, useTransaction?: boolean): Promise<Array<Object>>;
     rowFilter(callBack: (row: any) => any): this;
-    loadCSV(table: string, csv: string): Promise<Array<Object>>;
+    loadCSV(table: string, csv: string, useTransaction?: boolean): Promise<Array<Object>>;
     private static _random16Bits();
     static timeid(ms?: boolean): string;
     static uuid(): string;

@@ -41,9 +41,9 @@ nsql("users")
         console.time("READ");
 
         //nsql("users").query("select").where(["name", "=", "SYDOgB6WPR"]).exec().then((rows) => {
-        nsql("users").query("select").trieSearch("name", "DfqUJ").exec().then((rows) => {
+        nsql("users").query("select").exec().then((rows) => {
             console.timeEnd("READ");
-            console.log(rows);
+            console.log(rows.length);
         });
         // });
     });

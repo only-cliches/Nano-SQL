@@ -1208,14 +1208,24 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadJS(table: string, rows: Array<Object>): Promise<Array<Object>> {
+    public loadJS(table: string, rows: Array<Object>, useTransaction: boolean = true): Promise<Array<Object>> {
         let t = this;
-        return t.doTransaction((db, complete) => {
-            rows.forEach((row) => {
-                db(table).query("upsert", row).exec();
+        if (useTransaction) {
+            return t.doTransaction((db, complete) => {
+                rows.forEach((row) => {
+                    db(table).query("upsert", row).exec();
+                });
+                complete();
             });
-            complete();
-        });
+        } else {
+            return new Promise((res, rej) => {
+                Promise.chain(rows.map((row) => {
+                    return nSQL(table).query("upsert", row).exec();
+                })).then((rows) => {
+                    res(rows.map(r => r.shift()));
+                });
+            });
+        }
     }
 
     /**
@@ -1245,32 +1255,48 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadCSV(table: string, csv: string): Promise<Array<Object>> {
+    public loadCSV(table: string, csv: string, useTransaction: boolean = true): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
-        return t.doTransaction((db, complete) => {
-            csv.split("\n").forEach((v, k) => {
-                if (k === 0) {
-                    fields = v.split(",");
-                } else {
-                    let record: StdObject<any> = {};
-                    let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                    let i = fields.length;
-                    while (i--) {
-                        if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
-                            // tslint:disable-next-line
-                            row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+
+        let rowData = csv.split("\n").map((v, k) => {
+            if (k === 0) {
+                fields = v.split(",");
+                return undefined;
+            } else {
+                let record: StdObject<any> = {};
+                let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                let i = fields.length;
+                while (i--) {
+                    if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
                         // tslint:disable-next-line
-                        } else if (row[i].indexOf('"') === 0) {
-                            row[i] = row[i].slice(1, row[i].length - 1);
-                        }
-                        record[fields[i]] = row[i];
+                        row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                    // tslint:disable-next-line
+                    } else if (row[i].indexOf('"') === 0) {
+                        row[i] = row[i].slice(1, row[i].length - 1);
                     }
-                    db(table).query("upsert", record).exec();
+                    record[fields[i]] = row[i];
                 }
+                return record;
+            }
+        }).filter(r => r);
+
+        if (useTransaction) {
+            return t.doTransaction((db, complete) => {
+                rowData.forEach((row) => {
+                    db(table).query("upsert", row).exec();
+                });
+                complete();
             });
-            complete();
-        });
+        } else {
+            return new Promise((res, rej) => {
+                Promise.chain(rowData.map((row) => {
+                    return nSQL(table).query("upsert", row).exec();
+                })).then((rows) => {
+                    res(rows.map(r => r.shift()));
+                });
+            });
+        }
     }
 
     private static _random16Bits(): number {

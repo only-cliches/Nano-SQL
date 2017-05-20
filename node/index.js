@@ -396,44 +396,72 @@ var NanoSQLInstance = (function () {
             }
         }
     };
-    NanoSQLInstance.prototype.loadJS = function (table, rows) {
+    NanoSQLInstance.prototype.loadJS = function (table, rows, useTransaction) {
+        if (useTransaction === void 0) { useTransaction = true; }
         var t = this;
-        return t.doTransaction(function (db, complete) {
-            rows.forEach(function (row) {
-                db(table).query("upsert", row).exec();
+        if (useTransaction) {
+            return t.doTransaction(function (db, complete) {
+                rows.forEach(function (row) {
+                    db(table).query("upsert", row).exec();
+                });
+                complete();
             });
-            complete();
-        });
+        }
+        else {
+            return new lie_ts_1.Promise(function (res, rej) {
+                lie_ts_1.Promise.chain(rows.map(function (row) {
+                    return exports.nSQL(table).query("upsert", row).exec();
+                })).then(function (rows) {
+                    res(rows.map(function (r) { return r.shift(); }));
+                });
+            });
+        }
     };
     NanoSQLInstance.prototype.rowFilter = function (callBack) {
         return this._rowFilters[this._selectedTable] = callBack, this;
     };
-    NanoSQLInstance.prototype.loadCSV = function (table, csv) {
+    NanoSQLInstance.prototype.loadCSV = function (table, csv, useTransaction) {
+        if (useTransaction === void 0) { useTransaction = true; }
         var t = this;
         var fields = [];
-        return t.doTransaction(function (db, complete) {
-            csv.split("\n").forEach(function (v, k) {
-                if (k === 0) {
-                    fields = v.split(",");
-                }
-                else {
-                    var record = {};
-                    var row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                    var i = fields.length;
-                    while (i--) {
-                        if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
-                            row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
-                        }
-                        else if (row[i].indexOf('"') === 0) {
-                            row[i] = row[i].slice(1, row[i].length - 1);
-                        }
-                        record[fields[i]] = row[i];
+        var rowData = csv.split("\n").map(function (v, k) {
+            if (k === 0) {
+                fields = v.split(",");
+                return undefined;
+            }
+            else {
+                var record = {};
+                var row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                var i = fields.length;
+                while (i--) {
+                    if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                        row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
                     }
-                    db(table).query("upsert", record).exec();
+                    else if (row[i].indexOf('"') === 0) {
+                        row[i] = row[i].slice(1, row[i].length - 1);
+                    }
+                    record[fields[i]] = row[i];
                 }
+                return record;
+            }
+        }).filter(function (r) { return r; });
+        if (useTransaction) {
+            return t.doTransaction(function (db, complete) {
+                rowData.forEach(function (row) {
+                    db(table).query("upsert", row).exec();
+                });
+                complete();
             });
-            complete();
-        });
+        }
+        else {
+            return new lie_ts_1.Promise(function (res, rej) {
+                lie_ts_1.Promise.chain(rowData.map(function (row) {
+                    return exports.nSQL(table).query("upsert", row).exec();
+                })).then(function (rows) {
+                    res(rows.map(function (r) { return r.shift(); }));
+                });
+            });
+        }
     };
     NanoSQLInstance._random16Bits = function () {
         if (typeof crypto === "undefined") {

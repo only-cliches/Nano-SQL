@@ -132,7 +132,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                 table: t._store._tables[changedTableID]._name,
                 query: [],
                 time: new Date().getTime(),
-                result: [{msg: action + " was performed.", type: action}],
+                result: [{ msg: action + " was performed.", type: action }],
                 changedRows: changedRows,
                 changedRowPKS: changedRowPKS,
                 changeType: type
@@ -164,7 +164,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
         return Object.freeze(obj);
     }
 
-    public _transaction(type: "start"|"end", transactionID: number): Promise<any[]> {
+    public _transaction(type: "start" | "end", transactionID: number): Promise<any[]> {
         let t = this;
         return new Promise((res, rej) => {
             if (type === "start") {
@@ -222,7 +222,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
         let rowData;
         let rowKey;
         let store: IDBObjectStore;
-        const shiftRowIDs = (direction: number, callBack: (cbData: HistoryCallBack) => void): void  => {
+        const shiftRowIDs = (direction: number, callBack: (cbData: HistoryCallBack) => void): void => {
 
             let results: HistoryCallBack = {};
             const check = (t._store._historyLength - t._store._historyPoint);
@@ -239,13 +239,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                         Promise.chain(hp.rowKeys.map((rowID: any) => {
                             return new Promise((res2, rej2) => {
 
-                            // if (table._pkType === "int") rowID = parseInt(rowID);
-
-                            if (!results[tableID]) results[tableID] = {type: hp.type, rows: [], affectedPKS: hp.rowKeys};
-
-                            // t._store._read(table._name, rowID, (rowData) => {
-
-                                // if (direction > 0) rows.push(rowData[0]); // Get current row data befoe shifting to a different row
+                                if (!results[tableID]) results[tableID] = { type: hp.type, rows: [], affectedPKS: hp.rowKeys };
                                 // Shift the row pointer
                                 t._store._read("_" + table._name + "_hist__meta", rowID, (row) => {
                                     row = _assign(row);
@@ -257,12 +251,12 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                             let newRow = {};
                                             if (setRow.length) {
                                                 table._keys.forEach((k) => {
-                                                    newRow[k] =  setRow[0][k];
+                                                    newRow[k] = setRow[0][k];
                                                 });
                                             }
 
                                             t._store._upsert(table._name, rowID, setRow.length ? newRow : null, () => { // Overwriting row data
-                                                // if (direction < 0) rows.push(newRow);
+
                                                 rows.push(newRow);
                                                 results[tableID].rows = results[tableID].rows.concat(rows);
                                                 i++;
@@ -271,7 +265,6 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                         });
                                     });
                                 });
-                            // });
                             });
                         })).then(res);
                     });
@@ -306,7 +299,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                             res(true);
                         });
                     }
-                break;
+                    break;
                 case ">":
                     if (!t._store._historyLength || t._store._historyPoint < 1) { // beginning of history
                         res(false);
@@ -320,14 +313,14 @@ export class _NanoSQLDB implements NanoSQLBackend {
                             res(true);
                         });
                     }
-                break;
+                    break;
                 case "?":
                     h = [t._store._historyLength, t._store._historyLength - t._store._historyPoint];
                     if (t._store._historyArray.join("+") !== h.join("+")) {
                         t._store._historyArray = h;
                     }
                     res(t._store._historyArray);
-                break;
+                    break;
                 case "flush_history":
                 case "flush_db":
                     t._store._utility("w", "historyPoint", 0);
@@ -335,7 +328,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     t._store._historyPoint = 0;
                     t._store._historyLength = 0;
                     Object.keys(t._store._tables).forEach((tableID) => {
-                        let pks: any|null[];
+                        let pks: any | null[];
                         if (t._store._tables[parseInt(tableID)]._name.indexOf("_") === 0) {
                             pks = [];
                         } else {
@@ -348,7 +341,7 @@ export class _NanoSQLDB implements NanoSQLBackend {
                     } else {
                         t._store._clear("hist", res);
                     }
-                break;
+                    break;
             }
         });
     }

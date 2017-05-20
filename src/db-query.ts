@@ -356,6 +356,11 @@ export class _NanoSQLQuery {
                         let lastCommand = "";
                         Promise.chain(whereArgs.map((wArg) => {
                             return new Promise((res, rej) => {
+                                if (wArg === "OR" || wArg === "AND") {
+                                    lastCommand = wArg;
+                                    res();
+                                    return;
+                                }
                                 doFastWhere(wArg, (rows) => {
                                     if (lastCommand === "AND") {
                                         let idx = rows.map((r) => r[tableData._pk]);
@@ -497,14 +502,7 @@ export class _NanoSQLQuery {
             const finishUpdate = (histDataID: number) => {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, (rows) => {
-                        if (!rows.length || !rows[0]) {
-                            // rows[0] = {};
-                            // rows[0][_str(2)] = -1;
-                            // rows[0][_str(3)] = [-1];
-                            // rows[0].id = rowPK;
-                        } else {
-                            rows = _assign(rows);
-                        }
+                        rows = _assign(rows);
                         rows[0][_str(3)].unshift(histDataID);
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], () => {});
                     });

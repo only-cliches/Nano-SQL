@@ -234,6 +234,11 @@ var _NanoSQLQuery = (function () {
                         var lastCommand_1 = "";
                         lie_ts_1.Promise.chain(whereArgs_1.map(function (wArg) {
                             return new lie_ts_1.Promise(function (res, rej) {
+                                if (wArg === "OR" || wArg === "AND") {
+                                    lastCommand_1 = wArg;
+                                    res();
+                                    return;
+                                }
                                 doFastWhere_1(wArg, function (rows) {
                                     if (lastCommand_1 === "AND") {
                                         var idx_2 = rows.map(function (r) { return r[tableData._pk]; });
@@ -342,11 +347,7 @@ var _NanoSQLQuery = (function () {
             var finishUpdate = function (histDataID) {
                 if (table._name.indexOf("_") !== 0 && t._db._store._doHistory && table._pk.length) {
                     t._db._store._read("_" + table._name + "_hist__meta", rowPK, function (rows) {
-                        if (!rows.length || !rows[0]) {
-                        }
-                        else {
-                            rows = index_1._assign(rows);
-                        }
+                        rows = index_1._assign(rows);
                         rows[0][db_index_1._str(3)].unshift(histDataID);
                         t._db._store._upsert("_" + table._name + "_hist__meta", rowPK, rows[0], function () { });
                     });

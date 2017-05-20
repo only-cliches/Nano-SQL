@@ -147,7 +147,6 @@ var _NanoSQL_Storage = (function () {
                     if (tables[i].indexOf("_hist__data") !== -1) {
                         var ta = index_1.NanoSQLInstance._hash(tables[i]);
                         if (isNewStore) {
-                            t._tables[ta]._index.push(0);
                             t._upsert(tables[i], 0, null, function () {
                                 i++;
                                 restoreHistoryData();
@@ -513,6 +512,8 @@ var _NanoSQL_Storage = (function () {
                         var referenceTable_1 = String(table).slice(1).replace("_hist__meta", "");
                         var ta = index_1.NanoSQLInstance._hash(referenceTable_1);
                         var pk_1 = t._tables[ta]._pk;
+                        t._upsert("_" + referenceTable_1 + "_hist__data", 0, null);
+                        t._tables["_" + referenceTable_1 + "_hist__data"]._index.push(0);
                         t._read(referenceTable_1, "all", function (rows) {
                             rows.forEach(function (row, i) {
                                 var hist = {};
@@ -554,12 +555,7 @@ var _NanoSQL_Storage = (function () {
                 }
             });
         })).then(function () {
-            if (type === "hist") {
-                setupNewHist();
-            }
-            else {
-                complete();
-            }
+            setupNewHist();
         });
     };
     _NanoSQL_Storage.prototype._delete = function (tableName, rowID, callBack, transactionID) {
@@ -815,22 +811,25 @@ var _NanoSQL_Storage = (function () {
         var t = this;
         rowData = index_1._assign(rowData);
         var ta = index_1.NanoSQLInstance._hash(tableName);
+        var pk = t._tables[ta]._pk;
         if (tableName.indexOf("_hist__data") !== -1 && rowData) {
             rowID = rowData[db_index_1._str(4)];
         }
-        if (rowID === undefined || rowID === null) {
-            t._models[ta].forEach(function (m) {
-                if (m.props && m.props.indexOf("pk") !== -1) {
-                    rowID = t._generateID(m.type, ta);
-                }
-            });
-            if (!rowID)
-                rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
+        else {
+            if (rowID === undefined || rowID === null) {
+                t._models[ta].forEach(function (m) {
+                    if (m.props && m.props.indexOf("pk") !== -1) {
+                        rowID = t._generateID(m.type, ta);
+                    }
+                });
+                if (!rowID)
+                    rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] || "0") + 1;
+            }
+            if (pk && pk.length && rowData && rowData[pk] === undefined) {
+                rowData[pk] = rowID;
+            }
         }
-        var pk = t._tables[ta]._pk;
-        if (pk && pk.length && rowData && rowData[pk] === undefined) {
-            rowData[pk] = rowID;
-        }
+        rowID = (rowID !== undefined && rowID !== null) ? rowID : -1;
         if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {
             t._tables[ta]._trieIndex.addWord(String(rowID));
             t._tables[ta]._index.push(rowID);

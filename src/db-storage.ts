@@ -414,7 +414,8 @@ export class _NanoSQL_Storage {
                         let ta = NanoSQLInstance._hash(tables[i]);
                         if (isNewStore) {
                             // setup initial null row
-                            t._tables[ta]._index.push(0);
+                            // t._tables[ta]._index.push(0);
+                            // t._tables[ta]._rows[0] = null;
                             t._upsert(tables[i], 0, null, () => {
                                 i++;
                                 restoreHistoryData();
@@ -836,6 +837,8 @@ export class _NanoSQL_Storage {
                         let referenceTable = String(table).slice(1).replace("_hist__meta", "");
                         let ta = NanoSQLInstance._hash(referenceTable);
                         let pk = t._tables[ta]._pk;
+                        t._upsert("_" + referenceTable + "_hist__data", 0, null);
+                        t._tables["_" + referenceTable + "_hist__data"]._index.push(0);
                         t._read(referenceTable, "all", (rows) => {
                             rows.forEach((row, i) => {
                                 let hist = {};
@@ -876,11 +879,7 @@ export class _NanoSQL_Storage {
                 }
             });
         })).then(() => {
-            if (type === "hist") {
-                setupNewHist();
-            } else {
-                complete();
-            }
+            setupNewHist();
         });
     }
 
@@ -1218,25 +1217,27 @@ export class _NanoSQL_Storage {
         let t = this;
         rowData = _assign(rowData);
         const ta = NanoSQLInstance._hash(tableName);
+        const pk = t._tables[ta]._pk;
 
         if (tableName.indexOf("_hist__data") !== -1 && rowData) {
             rowID = rowData[_str(4)];
+        } else {
+            if (rowID === undefined || rowID === null) {
+                t._models[ta].forEach((m) => {
+                    if (m.props && m.props.indexOf("pk") !== -1) {
+                        rowID = t._generateID(m.type, ta);
+                    }
+                });
+
+                if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] as string || "0") + 1;
+            }
+
+            if (pk && pk.length && rowData && rowData[pk] === undefined) {
+                rowData[pk] = rowID;
+            }
         }
 
-        if (rowID === undefined || rowID === null) {
-            t._models[ta].forEach((m) => {
-                if (m.props && m.props.indexOf("pk") !== -1) {
-                    rowID = t._generateID(m.type, ta);
-                }
-            });
-
-            if (!rowID) rowID = parseInt(t._tables[ta]._index[t._tables[ta]._index.length - 1] as string || "0") + 1;
-        }
-
-        const pk = t._tables[ta]._pk;
-        if (pk && pk.length && rowData && rowData[pk] === undefined) {
-            rowData[pk] = rowID;
-        }
+        rowID = (rowID !== undefined && rowID !== null) ? rowID : -1;
 
         // add to index
         if (!t._tables[ta]._trieIndex.getPrefix(String(rowID)).length) {

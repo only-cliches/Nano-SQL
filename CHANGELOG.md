@@ -13,6 +13,11 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
+## [0.8.52] 5-20-2017
+- Fixed an issue with compound where statements using primary or secondary keys.
+- Added optional argument to `loadJS` and `loadCSV` to disable transactions for the import.
+- More history bugfixes.
+
 ## [0.8.51] 5-19-2017
 - BREAKING CHANGE: `["orm::..."]` model props should be changed to `["ref=>..."]`.
 - Fixed a few issues with the history system.
