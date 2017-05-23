@@ -932,6 +932,9 @@ var _NanoSQLQuery = (function () {
         });
     };
     _NanoSQLQuery.prototype._compare = function (val1, compare, val2) {
+        if (val1 === undefined || val2 === undefined || val1 === null || val2 === null) {
+            return ["=", ">=", "<="].indexOf(compare) !== -1 ? (val1 === val2 ? 0 : 1) : 1;
+        }
         var setValue = function (val) {
             return (compare === "LIKE" && typeof val === "string") ? val.toLowerCase() : val;
         };

@@ -1242,6 +1242,11 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     private _compare(val1: any, compare: string, val2: any): number {
+
+        if (val1 === undefined || val2 === undefined || val1 === null || val2 === null) {
+            return ["=", ">=", "<="].indexOf(compare) !== -1 ? (val1 === val2 ? 0 : 1) : 1;
+        }
+
         const setValue = (val: any) => {
             return (compare === "LIKE" && typeof val === "string") ? val.toLowerCase() : val;
         };

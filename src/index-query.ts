@@ -280,7 +280,7 @@ export class _NanoSQLQuery {
                 res(json.map((row: StdObject<any>, i) => {
                     if (headers && i === 0) return row;
                     return header.filter((column) => {
-                        return row[column["key"]] ? true : false;
+                        return row[column["key"]];
                     }).map((column) => {
                         let columnType = column["type"];
                         if (columnType.indexOf("[]") !== -1) columnType = "any[]";

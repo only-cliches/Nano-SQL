@@ -13,6 +13,9 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
+## [0.8.53] 5-22-2017
+- Fixed an issue where the query would error when using columns containing `undfined`.
+
 ## [0.8.52] 5-20-2017
 - Fixed an issue with compound where statements using primary or secondary keys.
 - Added optional argument to `loadJS` and `loadCSV` to disable transactions for the import.

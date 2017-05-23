@@ -70,7 +70,7 @@ var _NanoSQLQuery = (function () {
                     if (headers && i === 0)
                         return row;
                     return header.filter(function (column) {
-                        return row[column["key"]] ? true : false;
+                        return row[column["key"]];
                     }).map(function (column) {
                         var columnType = column["type"];
                         if (columnType.indexOf("[]") !== -1)
