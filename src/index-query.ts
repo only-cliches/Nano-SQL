@@ -279,20 +279,22 @@ export class _NanoSQLQuery {
 
                 res(json.map((row: StdObject<any>, i) => {
                     if (headers && i === 0) return row;
-                    return header.filter((column) => {
-                        return row[column["key"]];
-                    }).map((column) => {
-                        let columnType = column["type"];
-                        if (columnType.indexOf("[]") !== -1) columnType = "any[]";
-                        switch (columnType) {
-                            case "map":
-                            case "any[]":
-                            // tslint:disable-next-line
-                            case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
-                            case "string":
-                            // tslint:disable-next-line
-                            case "safestr": return '"' + row[column["key"]].replace(/"/g, '\"') + '"';
-                            default: return row[column["key"]];
+                    return header.map((column) => {
+                        if (row[column["key"]] === undefined) {
+                            return "";
+                        } else {
+                            let columnType = column["type"];
+                            if (columnType.indexOf("[]") !== -1) columnType = "any[]";
+                            switch (columnType) {
+                                case "map":
+                                case "any[]":
+                                // tslint:disable-next-line
+                                case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
+                                case "string":
+                                // tslint:disable-next-line
+                                case "safestr": return '"' + row[column["key"]].replace(/"/g, '\"') + '"';
+                                default: return row[column["key"]];
+                            }
                         }
                     }).join(",");
                 }).join("\n"), t);

@@ -69,19 +69,22 @@ var _NanoSQLQuery = (function () {
                 res(json.map(function (row, i) {
                     if (headers && i === 0)
                         return row;
-                    return header.filter(function (column) {
-                        return row[column["key"]];
-                    }).map(function (column) {
-                        var columnType = column["type"];
-                        if (columnType.indexOf("[]") !== -1)
-                            columnType = "any[]";
-                        switch (columnType) {
-                            case "map":
-                            case "any[]":
-                            case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
-                            case "string":
-                            case "safestr": return '"' + row[column["key"]].replace(/"/g, '\"') + '"';
-                            default: return row[column["key"]];
+                    return header.map(function (column) {
+                        if (row[column["key"]] === undefined) {
+                            return "";
+                        }
+                        else {
+                            var columnType = column["type"];
+                            if (columnType.indexOf("[]") !== -1)
+                                columnType = "any[]";
+                            switch (columnType) {
+                                case "map":
+                                case "any[]":
+                                case "array": return '"' + JSON.stringify(row[column["key"]]).replace(/"/g, "'") + '"';
+                                case "string":
+                                case "safestr": return '"' + row[column["key"]].replace(/"/g, '\"') + '"';
+                                default: return row[column["key"]];
+                            }
                         }
                     }).join(",");
                 }).join("\n"), t);
