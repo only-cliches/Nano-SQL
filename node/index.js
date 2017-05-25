@@ -312,7 +312,7 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.doTransaction = function (initTransaction) {
         var t = this;
         var queries = [];
-        var transactionID = NanoSQLInstance._random16Bits();
+        var transactionID = NanoSQLInstance.random16Bits();
         return new lie_ts_1.Promise(function (resolve, reject) {
             t.backend._transaction("start", transactionID).then(function () {
                 initTransaction(function (table) {
@@ -463,7 +463,7 @@ var NanoSQLInstance = (function () {
             });
         }
     };
-    NanoSQLInstance._random16Bits = function () {
+    NanoSQLInstance.random16Bits = function () {
         if (typeof crypto === "undefined") {
             return Math.round(Math.random() * Math.pow(2, 16));
         }
@@ -490,13 +490,13 @@ var NanoSQLInstance = (function () {
         while (time.length < (ms ? 13 : 10)) {
             time = "0" + time;
         }
-        return time + "-" + (t._random16Bits() + t._random16Bits()).toString(16);
+        return time + "-" + (t.random16Bits() + t.random16Bits()).toString(16);
     };
     NanoSQLInstance.uuid = function () {
         var _this = this;
         var r, s, b = "";
         return [b, b, b, b, b, b, b, b, b].reduce(function (prev, cur, i) {
-            r = _this._random16Bits();
+            r = _this.random16Bits();
             s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
             r = r.toString(16);
             while (r.length < 4)

@@ -308,9 +308,11 @@ var _NanoSQLORMQuery = (function () {
                                 break;
                             case "delete":
                                 if (isArrayRelation) {
-                                    var loc = newRow[t._column].indexOf(rowData[pk]);
-                                    if (loc !== -1)
-                                        newRow[t._column] = newRow[t._column].splice(loc, 1);
+                                    t._relationIDs.forEach(function (relId) {
+                                        var loc = newRow[t._column].indexOf(relId);
+                                        if (loc !== -1)
+                                            newRow[t._column].splice(loc, 1);
+                                    });
                                 }
                                 else {
                                     newRow[t._column] = "";
@@ -335,7 +337,7 @@ var _NanoSQLORMQuery = (function () {
                                         if (Array.isArray(modifyRow[mapTo])) {
                                             var idx = modifyRow[mapTo].indexOf(rowData[pk]);
                                             if (idx !== -1) {
-                                                modifyRow[mapTo] = modifyRow[mapTo].splice(idx, 1);
+                                                modifyRow[mapTo].splice(idx, 1);
                                             }
                                         }
                                         else {
@@ -377,7 +379,7 @@ var _NanoSQLORMQuery = (function () {
                                                                 if (Array.isArray(modifyRow2[t._column])) {
                                                                     var idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
                                                                     if (idx === -1) {
-                                                                        modifyRow2[t._column] = modifyRow2[t._column].splice(modifyRow2[t._column].indexOf(modifyRow[mapTo]), 1);
+                                                                        modifyRow2[t._column].splice(modifyRow2[t._column].indexOf(modifyRow[mapTo]), 1);
                                                                     }
                                                                 }
                                                                 else {

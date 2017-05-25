@@ -1070,7 +1070,7 @@ export class NanoSQLInstance {
             relationIDs?: any[];
             where?: any[];
         }[] = [];
-        let transactionID = NanoSQLInstance._random16Bits();
+        let transactionID = NanoSQLInstance.random16Bits();
 
         return new Promise((resolve, reject) => {
             t.backend._transaction("start", transactionID).then(() => {
@@ -1299,7 +1299,7 @@ export class NanoSQLInstance {
         }
     }
 
-    private static _random16Bits(): number {
+    public static random16Bits(): number {
         if (typeof crypto === "undefined") {
             return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
         } else {
@@ -1332,7 +1332,7 @@ export class NanoSQLInstance {
         while (time.length < (ms ? 13 : 10)) {
             time = "0" + time;
         }
-        return time + "-" +  (t._random16Bits() + t._random16Bits()).toString(16);
+        return time + "-" +  (t.random16Bits() + t.random16Bits()).toString(16);
     }
 
     /**
@@ -1346,7 +1346,7 @@ export class NanoSQLInstance {
     public static uuid(): string {
         let r, s, b = "";
         return [b, b, b, b, b, b, b, b, b].reduce((prev: string, cur: any, i: number): string => {
-            r = this._random16Bits();
+            r = this.random16Bits();
             s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
             r = r.toString(16);
             while (r.length < 4) r = "0" + r;

@@ -106,7 +106,7 @@ export declare class NanoSQLInstance {
     loadJS(table: string, rows: Array<Object>, useTransaction?: boolean): Promise<Array<Object>>;
     rowFilter(callBack: (row: any) => any): this;
     loadCSV(table: string, csv: string, useTransaction?: boolean): Promise<Array<Object>>;
-    private static _random16Bits();
+    static random16Bits(): number;
     static timeid(ms?: boolean): string;
     static uuid(): string;
 }

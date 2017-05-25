@@ -584,8 +584,10 @@ export class _NanoSQLORMQuery {
                             break;
                             case "delete": // Remove given Ids from the relation
                                 if (isArrayRelation) {
-                                    let loc = newRow[t._column].indexOf(rowData[pk]);
-                                    if (loc !== -1) newRow[t._column] = newRow[t._column].splice(loc, 1);
+                                    t._relationIDs.forEach((relId) => {
+                                        let loc = newRow[t._column].indexOf(relId);
+                                        if (loc !== -1) newRow[t._column].splice(loc, 1);
+                                    });
                                 } else {
                                     newRow[t._column] = "";
                                 }
@@ -615,7 +617,7 @@ export class _NanoSQLORMQuery {
                                         if (Array.isArray(modifyRow[mapTo])) {
                                             let idx = modifyRow[mapTo].indexOf(rowData[pk]);
                                             if (idx !== -1) {
-                                                modifyRow[mapTo] = modifyRow[mapTo].splice(idx, 1);
+                                                modifyRow[mapTo].splice(idx, 1);
                                             }
                                         } else {
                                             modifyRow[mapTo] = "";
@@ -664,7 +666,7 @@ export class _NanoSQLORMQuery {
                                                                 if (Array.isArray(modifyRow2[t._column])) {
                                                                     let idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
                                                                     if (idx === -1) {
-                                                                        modifyRow2[t._column] = modifyRow2[t._column].splice(modifyRow2[t._column].indexOf(modifyRow[mapTo]), 1);
+                                                                        modifyRow2[t._column].splice(idx, 1);
                                                                     }
                                                                 } else {
                                                                     modifyRow2[t._column] = "";
