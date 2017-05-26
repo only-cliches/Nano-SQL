@@ -1,6 +1,6 @@
 {
     "name": "nano-sql",
-    "version": "0.8.6",
+    "version": "0.8.61",
     "description": "The most powerful little databse.",
     "main": "node/index-server.js",
     "browser": "node/index.js",
