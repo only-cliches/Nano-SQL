@@ -305,6 +305,9 @@ var _NanoSQLORMQuery = (function () {
                                 else {
                                     newRow[t._column] = t._relationIDs[0];
                                 }
+                                oldRelations = oldRelations.filter(function (relationID) {
+                                    return t._relationIDs.indexOf(relationID) === -1;
+                                });
                                 break;
                             case "delete":
                                 if (isArrayRelation) {
@@ -353,52 +356,54 @@ var _NanoSQLORMQuery = (function () {
                                 switch (t._action) {
                                     case "set":
                                     case "add":
-                                        lie_ts_1.Promise.all(t._relationIDs.map(function (relID) {
-                                            return new lie_ts_1.Promise(function (res3, rej3) {
-                                                t._db.table(relationTable).query("select").where([relationPK, "=", relID]).exec().then(function (relateRows) {
-                                                    if (!relateRows.length) {
-                                                        res3();
-                                                        return;
-                                                    }
-                                                    var modifyRow = index_1._assign(relateRows[0]);
-                                                    if (modifyRow[mapTo] === undefined)
-                                                        modifyRow[mapTo] = mapToIsArray === "array" ? [] : "";
-                                                    if (mapToIsArray === "array") {
-                                                        if (!Array.isArray(modifyRow[mapTo]))
-                                                            modifyRow[mapTo] = [];
-                                                        modifyRow[mapTo].push(rowData[pk]);
-                                                        modifyRow[mapTo] = modifyRow[mapTo].filter(function (v, i, s) {
-                                                            return s.indexOf(v) === i;
-                                                        });
-                                                        updateRow(modifyRow, res3);
-                                                    }
-                                                    else {
-                                                        if (modifyRow[mapTo] && modifyRow[mapTo].length) {
-                                                            t._db.table(t._tableName).query("select").where([pk, "=", modifyRow[mapTo]]).exec().then(function (relateRows2) {
-                                                                var modifyRow2 = index_1._assign(relateRows2[0]);
-                                                                if (Array.isArray(modifyRow2[t._column])) {
-                                                                    var idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
-                                                                    if (idx === -1) {
-                                                                        modifyRow2[t._column].splice(idx, 1);
-                                                                    }
-                                                                }
-                                                                else {
-                                                                    modifyRow2[t._column] = "";
-                                                                }
-                                                                t._db.table(t._tableName).query("upsert", modifyRow2, true).where([pk, "=", modifyRow[mapTo]]).exec().then(function () {
-                                                                    modifyRow[mapTo] = rowData[pk];
-                                                                    updateRow(modifyRow, res3);
-                                                                });
-                                                            });
+                                        removeOldRelations().then(function () {
+                                            return lie_ts_1.Promise.all(t._relationIDs.map(function (relID) {
+                                                return new lie_ts_1.Promise(function (res3, rej3) {
+                                                    t._db.table(relationTable).query("select").where([relationPK, "=", relID]).exec().then(function (relateRows) {
+                                                        if (!relateRows.length) {
+                                                            res3();
+                                                            return;
                                                         }
-                                                        else {
-                                                            modifyRow[mapTo] = rowData[pk];
+                                                        var modifyRow = index_1._assign(relateRows[0]);
+                                                        if (modifyRow[mapTo] === undefined)
+                                                            modifyRow[mapTo] = mapToIsArray === "array" ? [] : "";
+                                                        if (mapToIsArray === "array") {
+                                                            if (!Array.isArray(modifyRow[mapTo]))
+                                                                modifyRow[mapTo] = [];
+                                                            modifyRow[mapTo].push(rowData[pk]);
+                                                            modifyRow[mapTo] = modifyRow[mapTo].filter(function (v, i, s) {
+                                                                return s.indexOf(v) === i;
+                                                            });
                                                             updateRow(modifyRow, res3);
                                                         }
-                                                    }
+                                                        else {
+                                                            if (modifyRow[mapTo] && modifyRow[mapTo].length) {
+                                                                t._db.table(t._tableName).query("select").where([pk, "=", modifyRow[mapTo]]).exec().then(function (relateRows2) {
+                                                                    var modifyRow2 = index_1._assign(relateRows2[0]);
+                                                                    if (Array.isArray(modifyRow2[t._column])) {
+                                                                        var idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
+                                                                        if (idx === -1) {
+                                                                            modifyRow2[t._column].splice(idx, 1);
+                                                                        }
+                                                                    }
+                                                                    else {
+                                                                        modifyRow2[t._column] = "";
+                                                                    }
+                                                                    t._db.table(t._tableName).query("upsert", modifyRow2, true).where([pk, "=", modifyRow[mapTo]]).exec().then(function () {
+                                                                        modifyRow[mapTo] = rowData[pk];
+                                                                        updateRow(modifyRow, res3);
+                                                                    });
+                                                                });
+                                                            }
+                                                            else {
+                                                                modifyRow[mapTo] = rowData[pk];
+                                                                updateRow(modifyRow, res3);
+                                                            }
+                                                        }
+                                                    });
                                                 });
-                                            });
-                                        })).then(res2);
+                                            }));
+                                        }).then(res2);
                                         break;
                                     case "delete":
                                     case "drop":
