@@ -266,7 +266,7 @@ var _NanoSQLORMQuery = (function () {
             var mapToIsArray = "single";
             if (mapTo) {
                 mapTo = mapTo.replace("ref=>", "");
-                mapToIsArray = t._db._models[relationTable].filter(function (m) { return m.type.replace("[]", "") === mapTo; })[0].type.indexOf("[]") === -1 ? "single" : "array";
+                mapToIsArray = t._db._models[relationTable].filter(function (m) { return m.key === mapTo; })[0].type.indexOf("[]") === -1 ? "single" : "array";
             }
             if (!pk || !pk.length || !relationPK || !relationPK.length) {
                 rej("Relation models require a primary key!");
