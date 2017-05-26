@@ -537,7 +537,7 @@ export class _NanoSQLORMQuery {
             let mapToIsArray = "single";
             if (mapTo) {
                 mapTo = mapTo.replace("ref=>", "");
-                mapToIsArray = t._db._models[relationTable].filter(m => m.key === mapTo)[0].type.indexOf("[]") === -1 ? "single" : "array";
+                mapToIsArray = t._db._models[relationTable].filter(m => m.type === mapTo)[0].type.indexOf("[]") === -1 ? "single" : "array";
             }
 
             if (!pk || !pk.length || !relationPK || !relationPK.length) {

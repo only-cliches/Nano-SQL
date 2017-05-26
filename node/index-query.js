@@ -266,7 +266,7 @@ var _NanoSQLORMQuery = (function () {
             var mapToIsArray = "single";
             if (mapTo) {
                 mapTo = mapTo.replace("ref=>", "");
-                mapToIsArray = t._db._models[relationTable].filter(function (m) { return m.key === mapTo; })[0].type.indexOf("[]") === -1 ? "single" : "array";
+                mapToIsArray = t._db._models[relationTable].filter(function (m) { return m.type === mapTo; })[0].type.indexOf("[]") === -1 ? "single" : "array";
             }
             if (!pk || !pk.length || !relationPK || !relationPK.length) {
                 rej("Relation models require a primary key!");
@@ -379,7 +379,7 @@ var _NanoSQLORMQuery = (function () {
                                                                 if (Array.isArray(modifyRow2[t._column])) {
                                                                     var idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
                                                                     if (idx === -1) {
-                                                                        modifyRow2[t._column].splice(modifyRow2[t._column].indexOf(modifyRow[mapTo]), 1);
+                                                                        modifyRow2[t._column].splice(idx, 1);
                                                                     }
                                                                 }
                                                                 else {
