@@ -1,5 +1,5 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, _assign, StdObject, DBRow, DBExec } from "./index";
-import { Promise } from "lie-ts";
+import { Promise, setFast } from "lie-ts";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -551,8 +551,10 @@ export class _NanoSQLORMQuery {
 
             query.exec().then((rows: DBRow[]) => {
 
-                Promise.all(rows.map((rowData) => {
-                    return new Promise((res2, rej2) => {
+                let ptr0 = 0;
+                const nextRow = () => {
+                    if (ptr0 < rows.length) {
+                        let rowData = rows[ptr0];
 
                         let newRow = _assign(rowData);
 
@@ -598,17 +600,22 @@ export class _NanoSQLORMQuery {
                         }
 
                         const updateRow = (newRow: DBRow, callBack: () => void) => {
-                            t._db.table(relationTable).query("upsert", newRow, true).exec().then(callBack);
+                            t._db.table(relationTable).query("upsert", newRow, true).exec().then(() => {
+                                setFast(callBack);
+                            });
                         };
 
-                        const removeOldRelations = (): Promise<void> => {
-                            return Promise.all(oldRelations.map((id) => {
-                                return new Promise((resolve, reject) => {
-                                    t._db.table(relationTable).query("select").where([relationPK, "=", id]).exec().then((relateRows: DBRow[]) => {
+                        const removeOldRelations = (callBack: () => void) => {
+
+                            let ptr = oldRelations.length;
+                            const nextRelation = () => {
+                                if (ptr < oldRelations.length) {
+                                    t._db.table(relationTable).query("select").where([relationPK, "=", oldRelations[ptr]]).exec().then((relateRows: DBRow[]) => {
 
                                         // Row doesn't actually exist anymore.
                                         if (!relateRows.length) {
-                                            resolve();
+                                            ptr++;
+                                            nextRelation();
                                             return;
                                         }
 
@@ -622,10 +629,17 @@ export class _NanoSQLORMQuery {
                                         } else {
                                             modifyRow[mapTo] = "";
                                         }
-                                        updateRow(modifyRow, resolve);
+                                        updateRow(modifyRow, () => {
+                                            ptr++;
+                                            nextRelation();
+                                        });
                                     });
-                                });
-                            }));
+                                } else {
+                                    callBack();
+                                }
+                            };
+                            nextRelation();
+
                         };
 
                         t._db.table(t._tableName).query("upsert", newRow, true).exec().then(() => {
@@ -633,15 +647,17 @@ export class _NanoSQLORMQuery {
                                 switch (t._action) {
                                     case "set":
                                     case "add":
-                                        removeOldRelations().then(() => {
-                                            return Promise.all(t._relationIDs.map((relID) => {
-                                                return new Promise((res3, rej3) => {
+                                        removeOldRelations(() => {
+                                            let ptr = 0;
 
-                                                    t._db.table(relationTable).query("select").where([relationPK, "=", relID]).exec().then((relateRows: DBRow[]) => {
+                                            const nextRelation = () => {
+                                                if (ptr < t._relationIDs.length) {
+                                                    t._db.table(relationTable).query("select").where([relationPK, "=", t._relationIDs[ptr]]).exec().then((relateRows: DBRow[]) => {
 
                                                         // Row doesn't actually exist anymore.
                                                         if (!relateRows.length) {
-                                                            res3();
+                                                            ptr++;
+                                                            nextRelation();
                                                             return;
                                                         }
 
@@ -658,48 +674,45 @@ export class _NanoSQLORMQuery {
                                                                 return s.indexOf(v) === i; // removes duplicates
                                                             });
 
-                                                            updateRow(modifyRow, res3);
+                                                            updateRow(modifyRow, () => {
+                                                                ptr++;
+                                                                nextRelation();
+                                                            });
                                                         } else {
-                                                            if (modifyRow[mapTo] && modifyRow[mapTo].length) { // This item is a 1 to 1 relation but is already assigned a different object, go to that object and remove it's relation to this object.
-                                                                t._db.table(t._tableName).query("select").where([pk, "=", modifyRow[mapTo]]).exec().then((relateRows2: DBRow[]) => {
-                                                                    let modifyRow2 = _assign(relateRows2[0]);
-
-                                                                    if (Array.isArray(modifyRow2[t._column])) {
-                                                                        let idx = modifyRow2[t._column].indexOf(modifyRow[mapTo]);
-                                                                        if (idx === -1) {
-                                                                            modifyRow2[t._column].splice(idx, 1);
-                                                                        }
-                                                                    } else {
-                                                                        modifyRow2[t._column] = "";
-                                                                    }
-                                                                    t._db.table(t._tableName).query("upsert", modifyRow2, true).where([pk, "=", modifyRow[mapTo]]).exec().then(() => {
-                                                                        modifyRow[mapTo] = rowData[pk];
-                                                                        updateRow(modifyRow, res3);
-                                                                    });
-                                                                });
-                                                            } else { // No existing relation, set it
-                                                                modifyRow[mapTo] = rowData[pk];
-                                                                updateRow(modifyRow, res3);
-                                                            }
+                                                            modifyRow[mapTo] = rowData[pk];
+                                                            updateRow(modifyRow, () => {
+                                                                ptr++;
+                                                                nextRelation();
+                                                            });
                                                         }
                                                     });
-                                                });
-                                            }));
-                                        }).then(res2);
+                                                } else {
+                                                    ptr0++;
+                                                    nextRow();
+                                                }
+                                            };
+                                            nextRelation();
+                                        });
                                         break;
                                     case "delete":
                                     case "drop":
-                                        removeOldRelations().then(res2);
+                                        removeOldRelations(() => {
+                                            ptr0++;
+                                            nextRow();
+                                        });
                                         break;
                                 }
                             } else {
-                                res2();
+                                ptr0++;
+                                nextRow();
                             }
                         });
-                    });
-                })).then((results) => {
-                    res(results.length);
-                });
+
+                    } else {
+                        res(rows.length);
+                    }
+                };
+                nextRow();
             });
         });
     }
