@@ -107,6 +107,7 @@ export declare class NanoSQLInstance {
     rowFilter(callBack: (row: any) => any): this;
     loadCSV(table: string, csv: string, useTransaction?: boolean): Promise<Array<Object>>;
     static random16Bits(): number;
+    static chain(callbacks: ((next: (result?: any) => void) => void)[]): (complete: (results: any[]) => void) => void;
     static timeid(ms?: boolean): string;
     static uuid(): string;
 }

@@ -86,13 +86,13 @@ var _NanoSQLDB = (function () {
             var results = {};
             var check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(exports._str(1), t._store._historyPointIndex[check], function (hps) {
-                lie_ts_1.Promise.chain(hps.map(function (hp) {
-                    return new lie_ts_1.Promise(function (res, rej) {
+                index_1.NanoSQLInstance.chain(hps.map(function (hp) {
+                    return function (nextHP) {
                         var tableID = hp.tableID;
                         var table = t._store._tables[tableID];
                         var rows = [];
-                        lie_ts_1.Promise.chain(hp.rowKeys.map(function (rowID) {
-                            return new lie_ts_1.Promise(function (res2, rej2) {
+                        index_1.NanoSQLInstance.chain(hp.rowKeys.map(function (rowID) {
+                            return function (nextRowKey) {
                                 if (!results[tableID])
                                     results[tableID] = { type: hp.type, rows: [], affectedPKS: hp.rowKeys };
                                 t._store._read("_" + table._name + "_hist__meta", rowID, function (row) {
@@ -111,15 +111,15 @@ var _NanoSQLDB = (function () {
                                                 rows.push(newRow);
                                                 results[tableID].rows = results[tableID].rows.concat(rows);
                                                 i++;
-                                                res2();
+                                                nextRowKey();
                                             });
                                         });
                                     });
                                 });
-                            });
-                        })).then(res);
-                    });
-                })).then(function () {
+                            };
+                        }))(nextHP);
+                    };
+                }))(function () {
                     callBack(results);
                 });
             });

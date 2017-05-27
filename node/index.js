@@ -409,9 +409,11 @@ var NanoSQLInstance = (function () {
         }
         else {
             return new lie_ts_1.Promise(function (res, rej) {
-                lie_ts_1.Promise.chain(rows.map(function (row) {
-                    return exports.nSQL(table).query("upsert", row).exec();
-                })).then(function (rows) {
+                NanoSQLInstance.chain(rows.map(function (row) {
+                    return function (nextRow) {
+                        exports.nSQL(table).query("upsert", row).exec().then(nextRow);
+                    };
+                }))(function (rows) {
                     res(rows.map(function (r) { return r.shift(); }));
                 });
             });
@@ -455,9 +457,11 @@ var NanoSQLInstance = (function () {
         }
         else {
             return new lie_ts_1.Promise(function (res, rej) {
-                lie_ts_1.Promise.chain(rowData.map(function (row) {
-                    return exports.nSQL(table).query("upsert", row).exec();
-                })).then(function (rows) {
+                NanoSQLInstance.chain(rowData.map(function (row) {
+                    return function (nextRow) {
+                        exports.nSQL(table).query("upsert", row).exec().then(nextRow);
+                    };
+                }))(function (rows) {
                     res(rows.map(function (r) { return r.shift(); }));
                 });
             });
@@ -480,6 +484,28 @@ var NanoSQLInstance = (function () {
                 return Math.round(Math.random() * Math.pow(2, 16));
             }
         }
+    };
+    NanoSQLInstance.chain = function (callbacks) {
+        return function (complete) {
+            var results = [];
+            var ptr = 0;
+            if (!callbacks.length) {
+                complete([]);
+            }
+            var next = function () {
+                if (ptr < callbacks.length) {
+                    callbacks[ptr](function (result) {
+                        results.push(result);
+                        ptr++;
+                        next();
+                    });
+                }
+                else {
+                    complete(results);
+                }
+            };
+            next();
+        };
     };
     NanoSQLInstance.timeid = function (ms) {
         var t = this;

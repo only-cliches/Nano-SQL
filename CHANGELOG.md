@@ -13,7 +13,7 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
-## [0.8.61] 5-26-2017
+## [0.8.61] 5-27-2017
 - Fixed another ORM issue involving many to many relationships.
 - Promise.chain method was not chaining methods but running them all at once, causing big problems when sequential processing is needed.  Switched to a different chaining method.
 

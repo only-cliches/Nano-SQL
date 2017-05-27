@@ -232,11 +232,11 @@ var _NanoSQLQuery = (function () {
                     else {
                         var resultRows_1 = [];
                         var lastCommand_1 = "";
-                        lie_ts_1.Promise.chain(whereArgs_1.map(function (wArg) {
-                            return new lie_ts_1.Promise(function (res, rej) {
+                        index_1.NanoSQLInstance.chain(whereArgs_1.map(function (wArg) {
+                            return function (nextWArg) {
                                 if (wArg === "OR" || wArg === "AND") {
                                     lastCommand_1 = wArg;
-                                    res();
+                                    nextWArg();
                                     return;
                                 }
                                 doFastWhere_1(wArg, function (rows) {
@@ -249,10 +249,10 @@ var _NanoSQLQuery = (function () {
                                     else {
                                         resultRows_1 = resultRows_1.concat(rows);
                                     }
-                                    res();
+                                    nextWArg();
                                 });
-                            });
-                        })).then(function () {
+                            };
+                        }))(function () {
                             doQuery(resultRows_1);
                         });
                     }

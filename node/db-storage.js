@@ -762,11 +762,11 @@ var _NanoSQL_Storage = (function () {
                 startIndex++;
             }
             t._readArray(db_index_1._str(1), histPoints, function (historyPoints) {
-                lie_ts_1.Promise.chain(historyPoints.map(function (histPoint) {
-                    return new lie_ts_1.Promise(function (res, rej) {
+                index_1.NanoSQLInstance.chain(historyPoints.map(function (histPoint) {
+                    return function (nextHistPoint) {
                         var tableName = t._tables[histPoint.tableID]._name;
-                        lie_ts_1.Promise.chain(histPoint.rowKeys.map(function (rowKey) {
-                            return new lie_ts_1.Promise(function (res2, rej2) {
+                        index_1.NanoSQLInstance.chain(histPoint.rowKeys.map(function (rowKey) {
+                            return function (nextRowKey) {
                                 t._read("_" + tableName + "_hist__meta", rowKey, function (rows) {
                                     rows[0] = index_1._assign(rows[0]);
                                     rows[0][db_index_1._str(2)] = 0;
@@ -775,21 +775,21 @@ var _NanoSQL_Storage = (function () {
                                         if (del) {
                                             t._delete("_" + tableName + "_hist__data", del, function () {
                                                 k_1++;
-                                                res2();
+                                                nextRowKey();
                                             });
                                         }
                                         else {
                                             k_1++;
-                                            res2();
+                                            nextRowKey();
                                         }
                                     });
                                 });
-                            });
-                        })).then(function () {
-                            t._delete(db_index_1._str(1), histPoint.id, res);
+                            };
+                        }))(function () {
+                            t._delete(db_index_1._str(1), histPoint.id, nextHistPoint);
                         });
-                    });
-                })).then(function () {
+                    };
+                }))(function () {
                     t._historyLength -= t._historyPoint;
                     t._historyLength++;
                     t._historyPoint = 0;

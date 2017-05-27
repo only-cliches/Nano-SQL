@@ -276,72 +276,74 @@ var _NanoSQLORMQuery = (function () {
             if (t._whereArgs)
                 query.where(t._whereArgs);
             query.exec().then(function (rows) {
-                var ptr0 = 0;
-                var nextRow = function () {
-                    if (ptr0 < rows.length) {
-                        var rowData_1 = rows[ptr0];
-                        var newRow_1 = index_1._assign(rowData_1);
-                        var oldRelations_1 = [];
-                        if (newRow_1[t._column] !== undefined)
-                            oldRelations_1 = index_1._assign(newRow_1[t._column]);
-                        if (!Array.isArray(oldRelations_1))
-                            oldRelations_1 = [oldRelations_1];
+                index_1.NanoSQLInstance.chain(rows.map(function (rowData) {
+                    return function (nextRow) {
+                        var newRow = index_1._assign(rowData);
+                        var oldRelations = [];
+                        if (newRow[t._column] !== undefined)
+                            oldRelations = index_1._assign(newRow[t._column]);
+                        if (!Array.isArray(oldRelations))
+                            oldRelations = [oldRelations];
                         switch (t._action) {
                             case "set":
                             case "add":
                                 if (isArrayRelation) {
-                                    if (newRow_1[t._column] === undefined)
-                                        newRow_1[t._column] = [];
-                                    if (!Array.isArray(newRow_1[t._column]))
-                                        newRow_1[t._column] = [];
+                                    if (newRow[t._column] === undefined)
+                                        newRow[t._column] = [];
+                                    if (!Array.isArray(newRow[t._column]))
+                                        newRow[t._column] = [];
                                     if (t._action === "set") {
-                                        newRow_1[t._column] = t._relationIDs;
+                                        newRow[t._column] = t._relationIDs;
                                     }
                                     else {
-                                        newRow_1[t._column] = newRow_1[t._column].concat(t._relationIDs);
-                                        newRow_1[t._column] = newRow_1[t._column].filter(function (v, i, s) {
+                                        newRow[t._column] = newRow[t._column].concat(t._relationIDs);
+                                        newRow[t._column] = newRow[t._column].filter(function (v, i, s) {
                                             return s.indexOf(v) === i;
                                         });
                                     }
                                 }
                                 else {
-                                    newRow_1[t._column] = t._relationIDs[0];
+                                    newRow[t._column] = t._relationIDs[0];
+                                }
+                                if (t._action === "set") {
+                                    oldRelations = oldRelations.filter(function (item) {
+                                        return t._relationIDs.indexOf(item) === -1;
+                                    });
+                                }
+                                else {
+                                    oldRelations = [];
                                 }
                                 break;
                             case "delete":
                                 if (isArrayRelation) {
                                     t._relationIDs.forEach(function (relId) {
-                                        var loc = newRow_1[t._column].indexOf(relId);
+                                        var loc = newRow[t._column].indexOf(relId);
                                         if (loc !== -1)
-                                            newRow_1[t._column].splice(loc, 1);
+                                            newRow[t._column].splice(loc, 1);
                                     });
                                 }
                                 else {
-                                    newRow_1[t._column] = "";
+                                    newRow[t._column] = "";
                                 }
                                 break;
                             case "drop":
-                                newRow_1[t._column] = isArrayRelation ? [] : undefined;
+                                newRow[t._column] = isArrayRelation ? [] : undefined;
                                 break;
                         }
-                        var updateRow_1 = function (newRow, callBack) {
-                            t._db.table(relationTable).query("upsert", newRow, true).exec().then(function () {
-                                lie_ts_1.setFast(callBack);
-                            });
+                        var updateRow = function (newRow, callBack) {
+                            t._db.table(relationTable).query("upsert", newRow, true).exec().then(callBack);
                         };
-                        var removeOldRelations_1 = function (callBack) {
-                            var ptr = oldRelations_1.length;
-                            var nextRelation = function () {
-                                if (ptr < oldRelations_1.length) {
-                                    t._db.table(relationTable).query("select").where([relationPK, "=", oldRelations_1[ptr]]).exec().then(function (relateRows) {
+                        var removeOldRelations = function (callBack) {
+                            index_1.NanoSQLInstance.chain(oldRelations.map(function (oldRelID) {
+                                return function (nextRelation) {
+                                    t._db.table(relationTable).query("select").where([relationPK, "=", oldRelID]).exec().then(function (relateRows) {
                                         if (!relateRows.length) {
-                                            ptr++;
                                             nextRelation();
                                             return;
                                         }
                                         var modifyRow = index_1._assign(relateRows[0]);
                                         if (Array.isArray(modifyRow[mapTo])) {
-                                            var idx = modifyRow[mapTo].indexOf(rowData_1[pk]);
+                                            var idx = modifyRow[mapTo].indexOf(rowData[pk]);
                                             if (idx !== -1) {
                                                 modifyRow[mapTo].splice(idx, 1);
                                             }
@@ -349,30 +351,25 @@ var _NanoSQLORMQuery = (function () {
                                         else {
                                             modifyRow[mapTo] = "";
                                         }
-                                        updateRow_1(modifyRow, function () {
-                                            ptr++;
+                                        updateRow(modifyRow, function () {
                                             nextRelation();
                                         });
                                     });
-                                }
-                                else {
-                                    callBack();
-                                }
-                            };
-                            nextRelation();
+                                };
+                            }))(function () {
+                                callBack();
+                            });
                         };
-                        t._db.table(t._tableName).query("upsert", newRow_1, true).exec().then(function () {
+                        t._db.table(t._tableName).query("upsert", newRow, true).exec().then(function () {
                             if (mapTo) {
                                 switch (t._action) {
                                     case "set":
                                     case "add":
-                                        removeOldRelations_1(function () {
-                                            var ptr = 0;
-                                            var nextRelation = function () {
-                                                if (ptr < t._relationIDs.length) {
-                                                    t._db.table(relationTable).query("select").where([relationPK, "=", t._relationIDs[ptr]]).exec().then(function (relateRows) {
+                                        removeOldRelations(function () {
+                                            index_1.NanoSQLInstance.chain(t._relationIDs.map(function (relID) {
+                                                return function (nextRelation) {
+                                                    t._db.table(relationTable).query("select").where([relationPK, "=", relID]).exec().then(function (relateRows) {
                                                         if (!relateRows.length) {
-                                                            ptr++;
                                                             nextRelation();
                                                             return;
                                                         }
@@ -382,52 +379,37 @@ var _NanoSQLORMQuery = (function () {
                                                         if (mapToIsArray === "array") {
                                                             if (!Array.isArray(modifyRow[mapTo]))
                                                                 modifyRow[mapTo] = [];
-                                                            modifyRow[mapTo].push(rowData_1[pk]);
+                                                            modifyRow[mapTo].push(rowData[pk]);
                                                             modifyRow[mapTo] = modifyRow[mapTo].filter(function (v, i, s) {
                                                                 return s.indexOf(v) === i;
                                                             });
-                                                            updateRow_1(modifyRow, function () {
-                                                                ptr++;
+                                                            updateRow(modifyRow, function () {
                                                                 nextRelation();
                                                             });
                                                         }
                                                         else {
-                                                            modifyRow[mapTo] = rowData_1[pk];
-                                                            updateRow_1(modifyRow, function () {
-                                                                ptr++;
+                                                            modifyRow[mapTo] = rowData[pk];
+                                                            updateRow(modifyRow, function () {
                                                                 nextRelation();
                                                             });
                                                         }
                                                     });
-                                                }
-                                                else {
-                                                    ptr0++;
-                                                    nextRow();
-                                                }
-                                            };
-                                            nextRelation();
+                                                };
+                                            }))(nextRow);
                                         });
                                         break;
                                     case "delete":
                                     case "drop":
-                                        removeOldRelations_1(function () {
-                                            ptr0++;
-                                            nextRow();
-                                        });
+                                        removeOldRelations(nextRow);
                                         break;
                                 }
                             }
                             else {
-                                ptr0++;
                                 nextRow();
                             }
                         });
-                    }
-                    else {
-                        res(rows.length);
-                    }
-                };
-                nextRow();
+                    };
+                }))(res);
             });
         });
     };
