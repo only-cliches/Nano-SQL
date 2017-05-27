@@ -15,7 +15,7 @@ Read: ~100 records/ms
 
 ## [0.8.61] 5-27-2017
 - Fixed some ORM issues, the ORM system is a much more stable feature now.
-- Promise.chain method was not chaining methods but running them all at once, causing big problems when sequential processing is needed.  Switched to a different chaining method.
+- Promise.chain method was not actually chaining methods but running them all at once, causing big problems when sequential processing is needed.  Switched to a different chaining method, helping to stabilize the history and ORM system more.
 
 ## [0.8.6] 5-25-2017
 - The NanoSQLInstance method `random16bits` is now public instead of private.
