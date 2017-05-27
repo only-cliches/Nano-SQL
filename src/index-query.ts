@@ -558,7 +558,7 @@ export class _NanoSQLORMQuery {
 
                         let oldRelations = [];
 
-                        if (newRow[t._column] !== undefined) oldRelations = newRow[t._column];
+                        if (newRow[t._column] !== undefined) oldRelations = _assign(newRow[t._column]);
                         if (!Array.isArray(oldRelations)) oldRelations = [oldRelations];
 
                         // Modify row
@@ -580,10 +580,7 @@ export class _NanoSQLORMQuery {
                                 } else {
                                     newRow[t._column] = t._relationIDs[0];
                                 }
-                                // get the relationIDs that need to be removed
-                                oldRelations = oldRelations.filter((relationID) => {
-                                    return t._relationIDs.indexOf(relationID) === -1;
-                                });
+
                                 break;
                             case "delete": // Remove given Ids from the relation
                                 if (isArrayRelation) {

@@ -281,7 +281,7 @@ var _NanoSQLORMQuery = (function () {
                         var newRow = index_1._assign(rowData);
                         var oldRelations = [];
                         if (newRow[t._column] !== undefined)
-                            oldRelations = newRow[t._column];
+                            oldRelations = index_1._assign(newRow[t._column]);
                         if (!Array.isArray(oldRelations))
                             oldRelations = [oldRelations];
                         switch (t._action) {
@@ -305,9 +305,6 @@ var _NanoSQLORMQuery = (function () {
                                 else {
                                     newRow[t._column] = t._relationIDs[0];
                                 }
-                                oldRelations = oldRelations.filter(function (relationID) {
-                                    return t._relationIDs.indexOf(relationID) === -1;
-                                });
                                 break;
                             case "delete":
                                 if (isArrayRelation) {
