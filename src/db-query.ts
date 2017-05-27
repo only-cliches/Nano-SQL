@@ -555,18 +555,37 @@ export class _NanoSQLQuery {
 
                         // Update ORM values attached to this row
                         if (t._db._store._tables[t._tableID]._relations.length) {
-                            t._db._store._tables[t._tableID]._relations.forEach((rel) => {
-                                if (rel._mapTo.length) {
-                                    let relatedPK = t._db._store._tables[NanoSQLInstance._hash(rel._table)]._pk;
-                                    let related = oldRow[rel._key] || [];
-                                    if (!Array.isArray(related)) related = [related];
-                                    t._db._parent.table(rel._table).updateORM("delete", rel._mapTo, [rowPK]).where([relatedPK, "IN", related]).exec().then(() => {
-                                        doHistory();
-                                    });
-                                } else {
-                                    doHistory();
-                                }
-                            });
+                            NanoSQLInstance.chain(t._db._store._tables[t._tableID]._relations.map((rel) => {
+                                return (nextRelation) => {
+                                    if (rel._mapTo.length) {
+                                        let relatedPK = t._db._store._tables[NanoSQLInstance._hash(rel._table)]._pk;
+                                        let related = oldRow[rel._key] || [];
+                                        if (!Array.isArray(related)) related = [related];
+                                        t._db._parent.table(rel._table).query("select").where([relatedPK, "IN", related]).exec().then(function(rows) {
+                                            NanoSQLInstance.chain(rows.map((row) => {
+                                                return (nextRow) => {
+                                                    let setRow = _assign(row);
+                                                    if (!setRow[rel._mapTo]) setRow[rel._mapTo] = rel._type === "array" ? [] : "";
+                                                    if (rel._type === "array") {
+                                                        let idx = setRow[rel._mapTo].indexOf(rowPK);
+                                                        if (idx === -1) {
+                                                            nextRow();
+                                                            return;
+                                                        } else {
+                                                            setRow[rel._mapTo].splice(idx, 1);
+                                                        }
+                                                    } else {
+                                                        setRow[rel._mapTo] = "";
+                                                    }
+                                                    t._db._parent.table(rel._table).query("upsert", setRow, true).exec().then(nextRow);
+                                                };
+                                            }))(nextRelation);
+                                        });
+                                    } else {
+                                        nextRelation();
+                                    }
+                                };
+                            }))(doHistory);
                         } else {
                             doHistory();
                         }

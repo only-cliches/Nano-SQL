@@ -389,20 +389,42 @@ var _NanoSQLQuery = (function () {
                         doRemove = true;
                         newRow = {};
                         if (t._db._store._tables[t._tableID]._relations.length) {
-                            t._db._store._tables[t._tableID]._relations.forEach(function (rel) {
-                                if (rel._mapTo.length) {
-                                    var relatedPK = t._db._store._tables[index_1.NanoSQLInstance._hash(rel._table)]._pk;
-                                    var related = oldRow[rel._key] || [];
-                                    if (!Array.isArray(related))
-                                        related = [related];
-                                    t._db._parent.table(rel._table).updateORM("delete", rel._mapTo, [rowPK]).where([relatedPK, "IN", related]).exec().then(function () {
-                                        doHistory();
-                                    });
-                                }
-                                else {
-                                    doHistory();
-                                }
-                            });
+                            index_1.NanoSQLInstance.chain(t._db._store._tables[t._tableID]._relations.map(function (rel) {
+                                return function (nextRelation) {
+                                    if (rel._mapTo.length) {
+                                        var relatedPK = t._db._store._tables[index_1.NanoSQLInstance._hash(rel._table)]._pk;
+                                        var related = oldRow[rel._key] || [];
+                                        if (!Array.isArray(related))
+                                            related = [related];
+                                        t._db._parent.table(rel._table).query("select").where([relatedPK, "IN", related]).exec().then(function (rows) {
+                                            index_1.NanoSQLInstance.chain(rows.map(function (row) {
+                                                return function (nextRow) {
+                                                    var setRow = index_1._assign(row);
+                                                    if (!setRow[rel._mapTo])
+                                                        setRow[rel._mapTo] = rel._type === "array" ? [] : "";
+                                                    if (rel._type === "array") {
+                                                        var idx = setRow[rel._mapTo].indexOf(rowPK);
+                                                        if (idx === -1) {
+                                                            nextRow();
+                                                            return;
+                                                        }
+                                                        else {
+                                                            setRow[rel._mapTo].splice(idx, 1);
+                                                        }
+                                                    }
+                                                    else {
+                                                        setRow[rel._mapTo] = "";
+                                                    }
+                                                    t._db._parent.table(rel._table).query("upsert", setRow, true).exec().then(nextRow);
+                                                };
+                                            }))(nextRelation);
+                                        });
+                                    }
+                                    else {
+                                        nextRelation();
+                                    }
+                                };
+                            }))(doHistory);
                         }
                         else {
                             doHistory();

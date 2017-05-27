@@ -14,7 +14,7 @@ Read: ~100 records/ms
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
 ## [0.8.61] 5-27-2017
-- Fixed another ORM issue involving many to many relationships.
+- Fixed some ORM issues, the ORM system is a much more stable feature now.
 - Promise.chain method was not chaining methods but running them all at once, causing big problems when sequential processing is needed.  Switched to a different chaining method.
 
 ## [0.8.6] 5-25-2017
