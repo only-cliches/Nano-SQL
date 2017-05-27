@@ -581,8 +581,8 @@ var _NanoSQL_Storage = (function () {
                 delete t._tables[ta]._rows[rowID];
             }
         }
-        lie_ts_1.Promise.all(deleteRowIDS.map(function (rowID) {
-            return new lie_ts_1.Promise(function (res, rej) {
+        index_1.NanoSQLInstance.chain(deleteRowIDS.map(function (rowID) {
+            return function (nextRow) {
                 if (transactionID) {
                     if (!t._transactionData[transactionID])
                         t._transactionData[transactionID] = {};
@@ -597,37 +597,34 @@ var _NanoSQL_Storage = (function () {
                 }
                 switch (t._mode) {
                     case 0:
-                        res();
+                        nextRow();
                         break;
                     case 1:
                         t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowID);
-                        res();
+                        nextRow();
                         break;
                     case 2:
                         localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                         localStorage.removeItem(tableName + "-" + String(rowID));
-                        res();
+                        nextRow();
                         break;
                     case 4:
                         if (transactionID) {
-                            res();
+                            nextRow();
                         }
                         else {
                             t._levelDBs[tableName].del(rowID, function () {
-                                res();
+                                nextRow();
                             });
                         }
                         break;
                     default:
-                        res();
+                        nextRow();
                 }
-            });
-        })).then(function () {
+            };
+        }))(function () {
             if (callBack)
                 callBack(true);
-        }).catch(function () {
-            if (callBack)
-                callBack(false);
         });
     };
     _NanoSQL_Storage.prototype._updateSecondaryIndex = function (newRow, tableID, callBack) {

@@ -211,8 +211,8 @@ var _NanoSQLORMQuery = (function () {
         var nextRow = function () {
             t._db.table(t._tableName).query("select").range(1, ptr).exec().then(function (rows) {
                 if (rows.length) {
-                    lie_ts_1.Promise.all(relations.map(function (r) {
-                        return new lie_ts_1.Promise(function (res, rej) {
+                    index_1.NanoSQLInstance.chain(relations.map(function (r) {
+                        return function (nextRelation) {
                             var ids;
                             if (rows[0][r.key] === undefined) {
                                 ids = r.type === "single" ? "" : [];
@@ -229,10 +229,10 @@ var _NanoSQLORMQuery = (function () {
                                 var activeIDs = childRows.length ? childRows.map(function (row) { return row[r.tablePK]; }) : [];
                                 return t._db.table(t._tableName).updateORM("set", r.key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
                             }).then(function () {
-                                res();
+                                nextRelation();
                             });
-                        });
-                    })).then(function () {
+                        };
+                    }))(function () {
                         ptr++;
                         nextRow();
                     });

@@ -1,5 +1,5 @@
 import { _NanoSQLDB } from "./db-index";
-import { Promise } from "lie-ts";
+import { Promise, setFast } from "lie-ts";
 import { _NanoSQLQuery, _NanoSQLORMQuery } from "./index-query";
 import { _NanoSQLTransactionQuery, _NanoSQLTransactionORMQuery } from "./index-transaction";
 
@@ -1092,16 +1092,19 @@ export class NanoSQLInstance {
                     },
                     () => {
 
-                        Promise.all(queries.map((quer) => {
-                            if (quer.type === "std") {
-                               return t.table(quer.table).query(quer.action, quer.actionArgs, true).tID(transactionID)._manualExec(quer.table, quer.query || []);
-                            } else {
-                                let ormQuery = t.table(quer.table).updateORM(quer.action, quer.column, quer.relationIDs).tID(transactionID);
-                                const where = quer.where;
-                                if ( where ) ormQuery.where(where);
-                                return ormQuery.exec();
-                            }
-                        })).then(() => {
+                        NanoSQLInstance.chain(queries.map((quer) => {
+                            return (nextQuery) => {
+                                if (quer.type === "std") {
+                                    t.table(quer.table).query(quer.action, quer.actionArgs, true).tID(transactionID)._manualExec(quer.table, quer.query || []).then(nextQuery);
+                                } else {
+                                    let ormQuery = t.table(quer.table).updateORM(quer.action, quer.column, quer.relationIDs).tID(transactionID);
+                                    const where = quer.where;
+                                    if ( where ) ormQuery.where(where);
+                                    ormQuery.exec().then(nextQuery);
+                                }
+                            };
+
+                        }))(() => {
                             t.backend._transaction("end", transactionID).then((result) => {
 
                                 t._transactionTables.forEach((table) => {
@@ -1343,7 +1346,8 @@ export class NanoSQLInstance {
                     callbacks[ptr]((result) => {
                         results.push(result);
                         ptr++;
-                        next();
+                        // Breaks up the call stack
+                        setFast(next);
                     });
                 } else {
                     complete(results);

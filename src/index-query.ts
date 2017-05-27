@@ -470,8 +470,8 @@ export class _NanoSQLORMQuery {
 
                 if (rows.length) {
                     // Loop through all ORM columns
-                    Promise.all(relations.map((r) => {
-                        return new Promise((res, rej) => {
+                    NanoSQLInstance.chain(relations.map((r) => {
+                        return (nextRelation) => {
 
                             let ids: any;
                             if (rows[0][r.key] === undefined) {
@@ -493,10 +493,10 @@ export class _NanoSQLORMQuery {
                                 // Restore activeIDs and their relationships in the current active row
                                 return t._db.table(t._tableName).updateORM("set", r.key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
                             }).then(() => {
-                                res();
+                                nextRelation();
                             });
-                        });
-                    })).then(() => {
+                        };
+                    }))(() => {
                         ptr++;
                         nextRow();
                     });

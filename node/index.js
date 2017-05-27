@@ -331,18 +331,20 @@ var NanoSQLInstance = (function () {
                         }
                     };
                 }, function () {
-                    lie_ts_1.Promise.all(queries.map(function (quer) {
-                        if (quer.type === "std") {
-                            return t.table(quer.table).query(quer.action, quer.actionArgs, true).tID(transactionID)._manualExec(quer.table, quer.query || []);
-                        }
-                        else {
-                            var ormQuery = t.table(quer.table).updateORM(quer.action, quer.column, quer.relationIDs).tID(transactionID);
-                            var where = quer.where;
-                            if (where)
-                                ormQuery.where(where);
-                            return ormQuery.exec();
-                        }
-                    })).then(function () {
+                    NanoSQLInstance.chain(queries.map(function (quer) {
+                        return function (nextQuery) {
+                            if (quer.type === "std") {
+                                t.table(quer.table).query(quer.action, quer.actionArgs, true).tID(transactionID)._manualExec(quer.table, quer.query || []).then(nextQuery);
+                            }
+                            else {
+                                var ormQuery = t.table(quer.table).updateORM(quer.action, quer.column, quer.relationIDs).tID(transactionID);
+                                var where = quer.where;
+                                if (where)
+                                    ormQuery.where(where);
+                                ormQuery.exec().then(nextQuery);
+                            }
+                        };
+                    }))(function () {
                         t.backend._transaction("end", transactionID).then(function (result) {
                             t._transactionTables.forEach(function (table) {
                                 if (table.indexOf("_") !== 0) {
@@ -497,7 +499,7 @@ var NanoSQLInstance = (function () {
                     callbacks[ptr](function (result) {
                         results.push(result);
                         ptr++;
-                        next();
+                        lie_ts_1.setFast(next);
                     });
                 }
                 else {

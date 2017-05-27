@@ -919,8 +919,8 @@ export class _NanoSQL_Storage {
             }
         }
 
-        Promise.all(deleteRowIDS.map((rowID) => {
-            return new Promise((res, rej) => {
+        NanoSQLInstance.chain(deleteRowIDS.map((rowID) => {
+            return (nextRow) => {
 
                 if (transactionID) {
                     if (!t._transactionData[transactionID]) t._transactionData[transactionID] = {};
@@ -936,36 +936,34 @@ export class _NanoSQL_Storage {
 
                 switch (t._mode) {
                     case 0:
-                        res();
+                        nextRow();
                     break;
                     case 1: // IndexedDB
                         t._indexedDB.transaction(tableName, "readwrite").objectStore(tableName).delete(rowID);
-                        res();
+                        nextRow();
                     break;
                     case 2: // Local Storage
                         localStorage.setItem(tableName, JSON.stringify(t._tables[ta]._index));
                         localStorage.removeItem(tableName + "-" + String(rowID));
-                        res();
+                        nextRow();
                     break;
                     /* NODE-START */
                     case 4: // Level Up
                         if (transactionID) {
-                            res();
+                            nextRow();
                         } else {
                             t._levelDBs[tableName].del(rowID, () => {
-                                res();
+                                nextRow();
                             });
                         }
                     break;
                     /* NODE-END */
                     default:
-                    res();
+                    nextRow();
                 }
-            });
-        })).then(() => {
+            };
+        }))(() => {
             if (callBack) callBack(true);
-        }).catch(() => {
-            if (callBack) callBack(false);
         });
     }
 
