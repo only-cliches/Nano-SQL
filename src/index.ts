@@ -1219,9 +1219,11 @@ export class NanoSQLInstance {
             });
         } else {
             return new Promise((res, rej) => {
-                Promise.chain(rows.map((row) => {
-                    return nSQL(table).query("upsert", row).exec();
-                })).then((rows) => {
+                NanoSQLInstance.chain(rows.map((row) => {
+                    return (nextRow) => {
+                        nSQL(table).query("upsert", row).exec().then(nextRow);
+                    };
+                }))((rows) => {
                     res(rows.map(r => r.shift()));
                 });
             });
@@ -1290,9 +1292,11 @@ export class NanoSQLInstance {
             });
         } else {
             return new Promise((res, rej) => {
-                Promise.chain(rowData.map((row) => {
-                    return nSQL(table).query("upsert", row).exec();
-                })).then((rows) => {
+                NanoSQLInstance.chain(rowData.map((row) => {
+                    return (nextRow) => {
+                        nSQL(table).query("upsert", row).exec().then(nextRow);
+                    };
+                }))((rows) => {
                     res(rows.map(r => r.shift()));
                 });
             });
@@ -1313,6 +1317,41 @@ export class NanoSQLInstance {
                 return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
             }
         }
+    }
+
+    /**
+     * Chain an array of functions to fire sequentially.
+     *
+     * @static
+     * @param {((next: (result?: any) => void) => void)[]} callbacks
+     * @returns {Promise<any>}
+     *
+     * @memberof NanoSQLInstance
+     */
+    public static chain(callbacks: ((next: (result?: any) => void) => void)[]): (complete: (results: any[]) => void) => void {
+
+        return (complete: (results: any[]) => void) => {
+            let results: any[] = [];
+            let ptr = 0;
+
+            if (!callbacks.length) {
+                complete([]);
+            }
+
+            const next = () => {
+                if (ptr < callbacks.length) {
+                    callbacks[ptr]((result) => {
+                        results.push(result);
+                        ptr++;
+                        next();
+                    });
+                } else {
+                    complete(results);
+                }
+            };
+            next();
+        };
+
     }
 
     /**

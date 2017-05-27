@@ -1145,11 +1145,11 @@ export class _NanoSQL_Storage {
                 startIndex++;
             }
             t._readArray(_str(1), histPoints, (historyPoints: IHistoryPoint[]) => {
-                Promise.chain(historyPoints.map((histPoint) => {
-                    return new Promise((res, rej) => {
+                NanoSQLInstance.chain(historyPoints.map((histPoint) => {
+                    return (nextHistPoint) => {
                         let tableName = t._tables[histPoint.tableID]._name;
-                        Promise.chain(histPoint.rowKeys.map((rowKey) => {
-                            return new Promise((res2, rej2) => {
+                        NanoSQLInstance.chain(histPoint.rowKeys.map((rowKey) => {
+                            return (nextRowKey) => {
                                 // Set this row history pointer to 0;
                                 t._read("_" + tableName + "_hist__meta", rowKey, (rows) => {
                                     rows[0] = _assign(rows[0]);
@@ -1159,20 +1159,20 @@ export class _NanoSQL_Storage {
                                         if (del) {
                                             t._delete("_" + tableName + "_hist__data", del, () => {
                                                 k++;
-                                                res2();
+                                                nextRowKey();
                                             });
                                         } else {
                                             k++;
-                                            res2();
+                                            nextRowKey();
                                         }
                                     });
                                 });
-                            });
-                        })).then(() => {
-                            t._delete(_str(1), histPoint.id, res);
+                            };
+                        }))(() => {
+                            t._delete(_str(1), histPoint.id, nextHistPoint);
                         });
-                    });
-                })).then(() => {
+                    };
+                }))(() => {
                     t._historyLength -= t._historyPoint;
                     t._historyLength++;
                     t._historyPoint = 0;

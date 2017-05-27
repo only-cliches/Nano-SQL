@@ -228,16 +228,16 @@ export class _NanoSQLDB implements NanoSQLBackend {
             const check = (t._store._historyLength - t._store._historyPoint);
             t._store._readArray(_str(1), t._store._historyPointIndex[check], (hps: IHistoryPoint[]) => {
                 // Loop through all history points
-                Promise.chain(hps.map((hp) => {
-                    return new Promise((res, rej) => {
+                NanoSQLInstance.chain(hps.map((hp) => {
+                    return (nextHP) => {
 
                         let tableID: number = hp.tableID;
                         let table = t._store._tables[tableID];
                         let rows: DBRow[] = [];
 
                         // Loop through all rows
-                        Promise.chain(hp.rowKeys.map((rowID: any) => {
-                            return new Promise((res2, rej2) => {
+                        NanoSQLInstance.chain(hp.rowKeys.map((rowID: any) => {
+                            return (nextRowKey) => {
 
                                 if (!results[tableID]) results[tableID] = { type: hp.type, rows: [], affectedPKS: hp.rowKeys };
                                 // Shift the row pointer
@@ -260,15 +260,15 @@ export class _NanoSQLDB implements NanoSQLBackend {
                                                 rows.push(newRow);
                                                 results[tableID].rows = results[tableID].rows.concat(rows);
                                                 i++;
-                                                res2();
+                                                nextRowKey();
                                             });
                                         });
                                     });
                                 });
-                            });
-                        })).then(res);
-                    });
-                })).then(() => {
+                            };
+                        }))(nextHP);
+                    };
+                }))(() => {
                     callBack(results);
                 });
             });

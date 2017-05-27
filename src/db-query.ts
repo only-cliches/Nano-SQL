@@ -354,11 +354,11 @@ export class _NanoSQLQuery {
                     } else { // combined where statements
                         let resultRows: DBRow[] = [];
                         let lastCommand = "";
-                        Promise.chain(whereArgs.map((wArg) => {
-                            return new Promise((res, rej) => {
+                        NanoSQLInstance.chain(whereArgs.map((wArg) => {
+                            return (nextWArg) => {
                                 if (wArg === "OR" || wArg === "AND") {
                                     lastCommand = wArg;
-                                    res();
+                                    nextWArg();
                                     return;
                                 }
                                 doFastWhere(wArg, (rows) => {
@@ -370,10 +370,10 @@ export class _NanoSQLQuery {
                                     } else {
                                         resultRows = resultRows.concat(rows);
                                     }
-                                    res();
+                                    nextWArg();
                                 });
-                            });
-                        })).then(() => {
+                            };
+                        }))(() => {
                             doQuery(resultRows);
                         });
                     }
