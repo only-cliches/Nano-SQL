@@ -536,7 +536,7 @@ export class _NanoSQLQuery {
                     let table = t._db._store._tables[t._tableID];
                     table._keys.forEach((k, i) => {
                         let def = table._defaults[i];
-                        if (!newRow[k] && def !== undefined) newRow[k] = def;
+                        if (newRow[k] === undefined && def !== undefined) newRow[k] = def;
                     });
                     doHistory();
                 break;

@@ -140,7 +140,7 @@ export interface DBRow {
 }
 
 export const _assign = (obj: any) => {
-    return JSON.parse(JSON.stringify(obj));
+    return Object.isFrozen(obj) ? JSON.parse(JSON.stringify(obj)) : obj;
 };
 
 export interface IActionViewMod {

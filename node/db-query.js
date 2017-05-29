@@ -372,7 +372,7 @@ var _NanoSQLQuery = (function () {
                     var table_1 = t._db._store._tables[t._tableID];
                     table_1._keys.forEach(function (k, i) {
                         var def = table_1._defaults[i];
-                        if (!newRow[k] && def !== undefined)
+                        if (newRow[k] === undefined && def !== undefined)
                             newRow[k] = def;
                     });
                     doHistory();
