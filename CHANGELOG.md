@@ -13,7 +13,7 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
-## [0.8.63]
+## [0.8.63] 5-30-2017
 - Fixed ORM issue with accidental duplication of references.
 
 ## [0.8.62] 5-29-2017
