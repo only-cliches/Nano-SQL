@@ -297,10 +297,10 @@ var _NanoSQLORMQuery = (function () {
                                     }
                                     else {
                                         newRow[t._column] = newRow[t._column].concat(t._relationIDs);
-                                        newRow[t._column] = newRow[t._column].filter(function (v, i, s) {
-                                            return s.indexOf(v) === i;
-                                        });
                                     }
+                                    newRow[t._column] = newRow[t._column].filter(function (v, i, s) {
+                                        return s.indexOf(v) === i;
+                                    });
                                 }
                                 else {
                                     newRow[t._column] = t._relationIDs[0];
