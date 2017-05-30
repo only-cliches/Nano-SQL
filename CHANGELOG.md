@@ -14,7 +14,7 @@ Read: ~100 records/ms
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
 ## [0.8.63]
-- Fixed ORM issue with accidental copying of references.
+- Fixed ORM issue with accidental duplication of references.
 
 ## [0.8.62] 5-29-2017
 - Fixed an issue with default row values not being set.

@@ -4,7 +4,7 @@ var lie_ts_1 = require("lie-ts");
 var index_query_1 = require("./index-query");
 var index_transaction_1 = require("./index-transaction");
 exports._assign = function (obj) {
-    return Object.isFrozen(obj) ? JSON.parse(JSON.stringify(obj)) : obj;
+    return JSON.parse(JSON.stringify(obj));
 };
 var NanoSQLInstance = (function () {
     function NanoSQLInstance() {
