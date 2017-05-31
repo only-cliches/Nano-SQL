@@ -15,6 +15,7 @@ Read: ~100 records/ms
 
 ## [0.8.7] 5-31-2017
 - Fixed an issue with combined where statements.
+- Fixed an issue causing the event objects not to populate in time.
 
 ## [0.8.63] 5-30-2017
 - Fixed ORM issue with accidental duplication of references.

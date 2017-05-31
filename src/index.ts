@@ -431,7 +431,7 @@ export class NanoSQLInstance {
     public on(actions: "change"|"delete"|"upsert"|"drop"|"select"|"error", callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance {
         let t = this;
         let l = t._selectedTable;
-        let i = 0;
+        let i = t._events.length;
         let a = actions.split(" ");
 
         if (!t._callbacks[l]) { // Handle the event handler being called before the database has connected

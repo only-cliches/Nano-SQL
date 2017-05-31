@@ -63,7 +63,7 @@ var NanoSQLInstance = (function () {
     NanoSQLInstance.prototype.on = function (actions, callBack) {
         var t = this;
         var l = t._selectedTable;
-        var i = 0;
+        var i = t._events.length;
         var a = actions.split(" ");
         if (!t._callbacks[l]) {
             t._callbacks[l] = {};
