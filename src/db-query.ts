@@ -1154,8 +1154,12 @@ export class _NanoSQLQuery {
 
         if (typeof conditions[0] !== "string") {
             let prevCmd: string;
+            let hasAnd = false;
+            let hasOr = false;
             return conditions.reduce((prev, cur, i) => {
-                if (!prev) return false;
+
+                if ((!prev && hasAnd) || (prev && hasOr)) return prev;
+
                 if (commands.indexOf(cur) !== -1) {
                     prevCmd = cur;
                     return prev;
@@ -1163,8 +1167,10 @@ export class _NanoSQLQuery {
                     let compare = t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
                     if (i === 0) return compare;
                     if (prevCmd === "AND") {
+                        hasAnd = true;
                         return prev && compare;
                     } else { // OR
+                        hasOr = true;
                         return prev || compare;
                     }
                 }

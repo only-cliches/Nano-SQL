@@ -879,9 +879,11 @@ var _NanoSQLQuery = (function () {
         };
         if (typeof conditions[0] !== "string") {
             var prevCmd_1;
+            var hasAnd_1 = false;
+            var hasOr_1 = false;
             return conditions.reduce(function (prev, cur, i) {
-                if (!prev)
-                    return false;
+                if ((!prev && hasAnd_1) || (prev && hasOr_1))
+                    return prev;
                 if (commands.indexOf(cur) !== -1) {
                     prevCmd_1 = cur;
                     return prev;
@@ -891,9 +893,11 @@ var _NanoSQLQuery = (function () {
                     if (i === 0)
                         return compare;
                     if (prevCmd_1 === "AND") {
+                        hasAnd_1 = true;
                         return prev && compare;
                     }
                     else {
+                        hasOr_1 = true;
                         return prev || compare;
                     }
                 }
