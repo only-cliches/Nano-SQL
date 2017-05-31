@@ -354,6 +354,7 @@ export class _NanoSQLQuery {
                     } else { // combined where statements
                         let resultRows: DBRow[] = [];
                         let lastCommand = "";
+
                         NanoSQLInstance.chain(whereArgs.map((wArg) => {
                             return (nextWArg) => {
                                 if (wArg === "OR" || wArg === "AND") {
@@ -380,9 +381,7 @@ export class _NanoSQLQuery {
                 } else { // Full table scan, what we're trying to avoid!
                     t._db._store._read(tableData._name, (row) => {
                         return row && t._where(row, whereArgs);
-                    }, (rows) => {
-                        doQuery(rows);
-                    });
+                    }, doQuery);
                 }
 
             } else if (t._getMod("range")) { // Range modifier
@@ -1156,6 +1155,7 @@ export class _NanoSQLQuery {
         if (typeof conditions[0] !== "string") {
             let prevCmd: string;
             return conditions.reduce((prev, cur, i) => {
+                if (!prev) return false;
                 if (commands.indexOf(cur) !== -1) {
                     prevCmd = cur;
                     return prev;

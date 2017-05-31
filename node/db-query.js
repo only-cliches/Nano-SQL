@@ -260,9 +260,7 @@ var _NanoSQLQuery = (function () {
                 else {
                     t._db._store._read(tableData._name, function (row) {
                         return row && t._where(row, whereArgs_1);
-                    }, function (rows) {
-                        doQuery(rows);
-                    });
+                    }, doQuery);
                 }
             }
             else if (t._getMod("range")) {
@@ -882,6 +880,8 @@ var _NanoSQLQuery = (function () {
         if (typeof conditions[0] !== "string") {
             var prevCmd_1;
             return conditions.reduce(function (prev, cur, i) {
+                if (!prev)
+                    return false;
                 if (commands.indexOf(cur) !== -1) {
                     prevCmd_1 = cur;
                     return prev;
