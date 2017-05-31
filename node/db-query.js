@@ -882,8 +882,10 @@ var _NanoSQLQuery = (function () {
             var hasAnd_1 = false;
             var hasOr_1 = false;
             return conditions.reduce(function (prev, cur, i) {
-                if ((!prev && hasAnd_1) || (prev && hasOr_1))
-                    return prev;
+                if (!prev && hasAnd_1)
+                    return false;
+                if (prev && hasOr_1)
+                    return true;
                 if (commands.indexOf(cur) !== -1) {
                     prevCmd_1 = cur;
                     return prev;

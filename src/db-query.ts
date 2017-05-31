@@ -1157,9 +1157,8 @@ export class _NanoSQLQuery {
             let hasAnd = false;
             let hasOr = false;
             return conditions.reduce((prev, cur, i) => {
-
-                if ((!prev && hasAnd) || (prev && hasOr)) return prev;
-
+                if (!prev && hasAnd) return false;
+                if (prev && hasOr) return true;
                 if (commands.indexOf(cur) !== -1) {
                     prevCmd = cur;
                     return prev;
