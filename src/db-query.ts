@@ -1257,6 +1257,10 @@ export class _NanoSQLQuery {
      * Compare two values together given a comparison value
      * returns 1 for false, 0 for true
      *
+     * 1 is false so we can stack the conditionals, we can run this function across many
+     * values in a row and add the results, if it's above zero we know at least one
+     * value returned false.
+     *
      * @internal
      * @param {*} val1
      * @param {string} compare
@@ -1279,17 +1283,18 @@ export class _NanoSQLQuery {
         let right = setValue(val1);
 
         switch (compare) {
-            case "=": return left === right ? 0 : 1;
-            case ">": return left > right ? 0 : 1;
-            case "<": return left < right ? 0 : 1;
-            case "<=": return left <= right ? 0 : 1;
-            case ">=": return left >= right ? 0 : 1;
-            case "IN": return right.indexOf(left) < 0 ? 1 : 0;
-            case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
-            case "REGEX": return left.search(right) < 0 ? 1 : 0;
-            case "LIKE": return left.indexOf(right) < 0 ? 1 : 0;
-            case "BETWEEN": return right[0] <= left && right[1] >= left ? 0 : 1;
-            case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
+            case "=": return left === right ?                              0 : 1;
+            case ">": return left > right ?                                0 : 1;
+            case "<": return left < right ?                                0 : 1;
+            case "<=": return left <= right ?                              0 : 1;
+            case ">=": return left >= right ?                              0 : 1;
+            case "IN": return right.indexOf(left) < 0 ?                    1 : 0;
+            case "NOT IN": return right.indexOf(left) < 0 ?                0 : 1;
+            case "REGEX": return left.search(right) < 0 ?                  1 : 0;
+            case "LIKE": return left.indexOf(right) < 0 ?                  1 : 0;
+            case "BETWEEN": return right[0] <= left && right[1] >= left ?  0 : 1;
+            case "HAVE": return (left || []).indexOf(right) < 0 ?          1 : 0;
+            case "NOT HAVE": return (left || []).indexOf(right) < 0 ?      0 : 1;
             default: return 1;
         }
     }
