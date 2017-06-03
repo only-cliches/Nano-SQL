@@ -1,4 +1,4 @@
-The most powerful little data store.
+The most powerful little database.
 
 <img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
 

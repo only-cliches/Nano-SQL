@@ -13,6 +13,10 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
+## [0.8.72] 6-3-2017
+- BREAKING CHANGE: `describe` queries have been reshaped and now also return the primary key and number of rows of the selected table.
+- Fixed an issue with ORM updates on deletes.
+
 ## [0.8.71] 6-1-2017
 - Added `NOT HAVE` where condition, to find records that don't have a specific value inside an array column.
 

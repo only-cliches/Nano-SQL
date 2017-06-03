@@ -106,7 +106,7 @@ var _NanoSQLQuery = (function () {
                 if (q.type === "select")
                     t._queryHash = index_1.NanoSQLInstance._hash(JSON.stringify(query.query));
             }
-            else if (["show tables", "describe"].indexOf(q.type) >= 0) {
+            else if (["show tables", "describe", "count"].indexOf(q.type) >= 0) {
                 simpleQuery.push(q);
             }
             else {
@@ -119,17 +119,14 @@ var _NanoSQLQuery = (function () {
                     query.onSuccess([{ tables: Object.keys(t._db._store._tables).map(function (ta) { return t._db._store._tables[ta]._name; }) }], "info", [], []);
                     break;
                 case "describe":
-                    var getTable_1;
-                    var tableName_1 = t._tableID;
-                    var rows = {};
-                    Object.keys(t._db._store._tables).forEach(function (ta) {
-                        if (parseInt(ta) === t._tableID) {
-                            getTable_1 = index_1._assign(t._db._store._models[ta]);
-                            tableName_1 = t._db._store._tables[ta]._name;
+                    query.onSuccess([
+                        {
+                            name: t._db._store._tables[t._tableID]._name,
+                            models: index_1._assign(t._db._store._models[t._tableID]),
+                            primaryKey: t._db._store._tables[t._tableID]._pk,
+                            count: t._db._store._tables[t._tableID]._index.length
                         }
-                    });
-                    rows[tableName_1] = getTable_1;
-                    query.onSuccess([rows], "info", [], []);
+                    ], "info", [], []);
                     break;
             }
         }
@@ -398,20 +395,20 @@ var _NanoSQLQuery = (function () {
                                             index_1.NanoSQLInstance.chain(rows.map(function (row) {
                                                 return function (nextRow) {
                                                     var setRow = index_1._assign(row);
-                                                    if (!setRow[rel._mapTo])
-                                                        setRow[rel._mapTo] = rel._type === "array" ? [] : "";
-                                                    if (rel._type === "array") {
-                                                        var idx = setRow[rel._mapTo].indexOf(rowPK);
-                                                        if (idx === -1) {
-                                                            nextRow();
-                                                            return;
+                                                    if (setRow[rel._mapTo]) {
+                                                        if (Array.isArray(setRow[rel._mapTo])) {
+                                                            var idx = setRow[rel._mapTo].indexOf(rowPK);
+                                                            if (idx === -1) {
+                                                                nextRow();
+                                                                return;
+                                                            }
+                                                            else {
+                                                                setRow[rel._mapTo].splice(idx, 1);
+                                                            }
                                                         }
                                                         else {
-                                                            setRow[rel._mapTo].splice(idx, 1);
+                                                            setRow[rel._mapTo] = "";
                                                         }
-                                                    }
-                                                    else {
-                                                        setRow[rel._mapTo] = "";
                                                     }
                                                     t._db._parent.table(rel._table).query("upsert", setRow, true).exec().then(nextRow);
                                                 };

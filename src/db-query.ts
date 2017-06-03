@@ -203,7 +203,7 @@ export class _NanoSQLQuery {
             if (["upsert", "select", "delete", "drop"].indexOf(q.type) >= 0) {
                 t._act = q; // Query Action
                 if (q.type === "select") t._queryHash = NanoSQLInstance._hash(JSON.stringify(query.query));
-            } else if (["show tables", "describe"].indexOf(q.type) >= 0) {
+            } else if (["show tables", "describe", "count"].indexOf(q.type) >= 0) {
                 simpleQuery.push(q);
             } else {
                 t._mod.push(q); // Query Modifiers
@@ -216,18 +216,14 @@ export class _NanoSQLQuery {
                     query.onSuccess([{tables: Object.keys(t._db._store._tables).map((ta) => t._db._store._tables[ta]._name)}], "info", [], []);
                 break;
                 case "describe":
-                    let getTable;
-                    let tableName = t._tableID;
-                    let rows = {};
-                    Object.keys(t._db._store._tables).forEach((ta) => {
-                        if (parseInt(ta) === t._tableID) {
-                            getTable = _assign(t._db._store._models[ta]);
-                            tableName = t._db._store._tables[ta]._name;
+                    query.onSuccess([
+                        {
+                            name: t._db._store._tables[t._tableID]._name,
+                            models: _assign(t._db._store._models[t._tableID]),
+                            primaryKey: t._db._store._tables[t._tableID]._pk,
+                            count: t._db._store._tables[t._tableID]._index.length
                         }
-                    });
-
-                    rows[tableName] = getTable;
-                    query.onSuccess([rows], "info", [], []);
+                    ], "info", [], []);
                 break;
             }
         } else {
@@ -564,17 +560,18 @@ export class _NanoSQLQuery {
                                             NanoSQLInstance.chain(rows.map((row) => {
                                                 return (nextRow) => {
                                                     let setRow = _assign(row);
-                                                    if (!setRow[rel._mapTo]) setRow[rel._mapTo] = rel._type === "array" ? [] : "";
-                                                    if (rel._type === "array") {
-                                                        let idx = setRow[rel._mapTo].indexOf(rowPK);
-                                                        if (idx === -1) {
-                                                            nextRow();
-                                                            return;
+                                                    if (setRow[rel._mapTo]) {
+                                                        if (Array.isArray(setRow[rel._mapTo])) {
+                                                            let idx = setRow[rel._mapTo].indexOf(rowPK);
+                                                            if (idx === -1) {
+                                                                nextRow();
+                                                                return;
+                                                            } else {
+                                                                setRow[rel._mapTo].splice(idx, 1);
+                                                            }
                                                         } else {
-                                                            setRow[rel._mapTo].splice(idx, 1);
+                                                            setRow[rel._mapTo] = "";
                                                         }
-                                                    } else {
-                                                        setRow[rel._mapTo] = "";
                                                     }
                                                     t._db._parent.table(rel._table).query("upsert", setRow, true).exec().then(nextRow);
                                                 };
