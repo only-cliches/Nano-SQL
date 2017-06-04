@@ -91,7 +91,7 @@ var _NanoSQLQuery = (function () {
             });
         });
     };
-    _NanoSQLQuery.prototype._manualExec = function (table, modifiers) {
+    _NanoSQLQuery.prototype.manualExec = function (table, modifiers) {
         var t = this;
         t._modifiers = modifiers;
         t._table = table;
@@ -103,11 +103,11 @@ var _NanoSQLQuery = (function () {
         if (t._db._hasEvents[_t]) {
             t._db._triggerEvents = (function () {
                 switch (t._action.type) {
-                    case "select": return [t._action.type];
+                    case "select": return ["*", t._action.type];
                     case "delete":
                     case "upsert":
-                    case "drop": return [t._action.type, "change"];
-                    default: return [];
+                    case "drop": return ["*", t._action.type, "change"];
+                    default: return ["*"];
                 }
             })();
         }
@@ -123,7 +123,7 @@ var _NanoSQLQuery = (function () {
             var _tEvent = function (data, callBack, type, changedRows, changedRowPKS, isError) {
                 if (t._db._hasEvents[_t]) {
                     t._db.triggerEvent({
-                        name: "error",
+                        name: t._action.type,
                         actionOrView: t._AV,
                         table: _t,
                         query: [t._action].concat(t._modifiers),

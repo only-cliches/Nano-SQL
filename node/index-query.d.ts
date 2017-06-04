@@ -28,7 +28,7 @@ export declare class _NanoSQLQuery {
     trieSearch(column: string, stringToSearch: string): _NanoSQLQuery;
     offset(args: number): _NanoSQLQuery;
     toCSV(headers?: boolean): Promise<string>;
-    _manualExec(table: string, modifiers: any[]): Promise<Array<Object | NanoSQLInstance>>;
+    manualExec(table: string, modifiers: any[]): Promise<Array<Object | NanoSQLInstance>>;
     exec(): Promise<Array<Object | NanoSQLInstance>>;
 }
 export declare class _NanoSQLORMQuery {

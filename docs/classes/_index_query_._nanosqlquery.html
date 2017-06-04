@@ -99,12 +99,12 @@
 						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#_manualexec" class="tsd-kind-icon">_manual<wbr>Exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#exec" class="tsd-kind-icon">exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#groupby" class="tsd-kind-icon">group<wbr>By</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#having" class="tsd-kind-icon">having</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#join" class="tsd-kind-icon">join</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#limit" class="tsd-kind-icon">limit</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#manualexec" class="tsd-kind-icon">manual<wbr>Exec</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#offset" class="tsd-kind-icon">offset</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#orderby" class="tsd-kind-icon">order<wbr>By</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_query_._nanosqlquery.html#orm" class="tsd-kind-icon">orm</a></li>
@@ -226,32 +226,6 @@
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Methods</h2>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
-					<a name="_manualexec" class="tsd-anchor"></a>
-					<h3>_manual<wbr>Exec</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">_manual<wbr>Exec<span class="tsd-signature-symbol">(</span>table<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, modifiers<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in index-query.ts:305</li>
-								</ul>
-							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>table: <span class="tsd-signature-type">string</span></h5>
-								</li>
-								<li>
-									<h5>modifiers: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
-						</li>
-					</ul>
-				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="exec" class="tsd-anchor"></a>
 					<h3>exec</h3>
@@ -445,6 +419,32 @@
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <a href="_index_query_._nanosqlquery.html" class="tsd-signature-type">_NanoSQLQuery</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="manualexec" class="tsd-anchor"></a>
+					<h3>manual<wbr>Exec</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">manual<wbr>Exec<span class="tsd-signature-symbol">(</span>table<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, modifiers<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in index-query.ts:305</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>table: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>modifiers: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Array</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">Object</span><span class="tsd-signature-symbol"> | </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">&gt;</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -802,9 +802,6 @@
 								<a href="_index_query_._nanosqlquery.html#_transactionid" class="tsd-kind-icon">_transactionID</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
-								<a href="_index_query_._nanosqlquery.html#_manualexec" class="tsd-kind-icon">_manual<wbr>Exec</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_query_._nanosqlquery.html#exec" class="tsd-kind-icon">exec</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
@@ -818,6 +815,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_query_._nanosqlquery.html#limit" class="tsd-kind-icon">limit</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_index_query_._nanosqlquery.html#manualexec" class="tsd-kind-icon">manual<wbr>Exec</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_query_._nanosqlquery.html#offset" class="tsd-kind-icon">offset</a>

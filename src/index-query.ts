@@ -302,7 +302,7 @@ export class _NanoSQLQuery {
         });
     }
 
-    public _manualExec(table: string, modifiers: any[]): Promise<Array<Object | NanoSQLInstance>> {
+    public manualExec(table: string, modifiers: any[]): Promise<Array<Object | NanoSQLInstance>> {
         let t = this;
         t._modifiers = modifiers;
         t._table = table;
@@ -333,11 +333,11 @@ export class _NanoSQLQuery {
         if (t._db._hasEvents[_t]) {  // Only calcluate events if there are listeners
             t._db._triggerEvents = (() => {
                 switch (t._action.type) {
-                    case "select": return [t._action.type];
+                    case "select": return ["*", t._action.type];
                     case "delete":
                     case "upsert":
-                    case "drop": return [t._action.type, "change"];
-                    default: return [];
+                    case "drop": return ["*", t._action.type, "change"];
+                    default: return ["*"];
                 }
             })();
         }
@@ -359,7 +359,7 @@ export class _NanoSQLQuery {
 
                 if (t._db._hasEvents[_t]) { // Only trigger events if there are listeners
                     t._db.triggerEvent({
-                        name: "error",
+                        name: t._action.type as any,
                         actionOrView: t._AV,
                         table: _t,
                         query: [t._action].concat(t._modifiers),

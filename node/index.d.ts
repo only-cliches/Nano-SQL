@@ -63,6 +63,7 @@ export interface IActionViewMod {
     (tableName: string, actionOrView: "Action" | "View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
 }
 export declare class NanoSQLInstance {
+    sTable: string;
     backend: NanoSQLBackend;
     data: any;
     _ormFns: {
@@ -77,7 +78,7 @@ export declare class NanoSQLInstance {
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(backend?: NanoSQLBackend): Promise<Object | string>;
-    on(actions: "change" | "delete" | "upsert" | "drop" | "select" | "error", callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;
+    on(actions: "*" | "change" | "delete" | "upsert" | "drop" | "select" | "error", callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;
     off(callBack: Function): NanoSQLInstance;
     private _refreshEventChecker();
     model(dataModel: Array<DataModel>): NanoSQLInstance;

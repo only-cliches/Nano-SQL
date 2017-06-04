@@ -113,6 +113,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#_triggerevents" class="tsd-kind-icon">_trigger<wbr>Events</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#backend" class="tsd-kind-icon">backend</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#data" class="tsd-kind-icon">data</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#stable" class="tsd-kind-icon">s<wbr>Table</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
@@ -467,6 +468,29 @@
 						<dl class="tsd-comment-tags">
 							<dt>type</dt>
 							<dd><p>{*}</p>
+							</dd>
+							<dt>memberof</dt>
+							<dd><p>NanoSQLInstance</p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="stable" class="tsd-anchor"></a>
+					<h3>s<wbr>Table</h3>
+					<div class="tsd-signature tsd-kind-icon">s<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:167</li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Holds the current selected table</p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>type</dt>
+							<dd><p>{string}</p>
 							</dd>
 							<dt>memberof</dt>
 							<dd><p>NanoSQLInstance</p>
@@ -1287,7 +1311,7 @@
 					<a name="on" class="tsd-anchor"></a>
 					<h3>on</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">on<span class="tsd-signature-symbol">(</span>actions<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"change"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"delete"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"upsert"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"drop"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"select"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"error"</span>, callBack<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></li>
+						<li class="tsd-signature tsd-kind-icon">on<span class="tsd-signature-symbol">(</span>actions<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"*"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"change"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"delete"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"upsert"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"drop"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"select"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"error"</span>, callBack<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -1309,7 +1333,7 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>actions: <span class="tsd-signature-type">"change"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"delete"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"upsert"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"drop"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"select"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"error"</span></h5>
+									<h5>actions: <span class="tsd-signature-type">"*"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"change"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"delete"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"upsert"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"drop"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"select"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"error"</span></h5>
 								</li>
 								<li>
 									<h5>callBack: <span class="tsd-signature-type">function</span></h5>
@@ -2014,6 +2038,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#data" class="tsd-kind-icon">data</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#stable" class="tsd-kind-icon">s<wbr>Table</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#actions" class="tsd-kind-icon">actions</a>
