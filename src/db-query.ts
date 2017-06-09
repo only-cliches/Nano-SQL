@@ -1150,26 +1150,46 @@ export class _NanoSQLQuery {
         };
 
         if (typeof conditions[0] !== "string") {
-            let prevCmd: string;
+
             let hasAnd = false;
-            let hasOr = false;
-            return conditions.reduce((prev, cur, i) => {
-                if (prev && hasOr) return true;
+            let checkWhere = conditions.map(function(cur, idx) {
                 if (commands.indexOf(cur) !== -1) {
-                    prevCmd = cur;
-                    return prev;
+                    if (cur === "AND") hasAnd = true;
+                    return cur;
                 } else {
-                    let compare = t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
-                    if (i === 0) return compare;
-                    if (prevCmd === "AND") {
-                        hasAnd = true;
-                        return prev && compare;
-                    } else { // OR
-                        hasOr = true;
-                        return prev || compare;
-                    }
+                    return t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
                 }
-            }, true);
+            });
+
+            checkWhere.forEach(function(cur, idx) {
+                if (cur === "OR") {
+                    checkWhere[idx] = checkWhere[idx - 1] || checkWhere[idx + 1];
+                    checkWhere[idx - 1] = undefined;
+                    checkWhere[idx + 1] = undefined;
+                }
+            });
+
+            checkWhere = checkWhere.filter(val => val !== undefined);
+
+            if (!hasAnd) { // All OR statements
+                return checkWhere.indexOf(true) !== -1;
+            } else {
+                let prevAnd = true;
+                return checkWhere.reduce(function(prev, cur, idx) {
+                    if (idx === 0) return cur;
+                    if (cur === "AND") {
+                        prevAnd = true;
+                        return prev;
+                    }
+                    if (prevAnd) {
+                        prevAnd = false;
+                        return prev && cur;
+                    } else {
+                        return prev || cur;
+                    }
+                }, true);
+            }
+
         } else {
             return t._compare(conditions[2], conditions[1], maybeGetLength(conditions[0])) === 0 ? true : false;
         }
@@ -1272,7 +1292,7 @@ export class _NanoSQLQuery {
         }
 
         const setValue = (val: any) => {
-            return (compare === "LIKE" && typeof val === "string") ? val.toLowerCase() : val;
+            return (compare === "LIKE") ? String(val || "").toLowerCase() : val;
         };
 
         let left = setValue(val2);

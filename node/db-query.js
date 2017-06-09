@@ -875,30 +875,46 @@ var _NanoSQLQuery = (function () {
             }
         };
         if (typeof conditions[0] !== "string") {
-            var prevCmd_1;
             var hasAnd_1 = false;
-            var hasOr_1 = false;
-            return conditions.reduce(function (prev, cur, i) {
-                if (prev && hasOr_1)
-                    return true;
+            var checkWhere_1 = conditions.map(function (cur, idx) {
                 if (commands.indexOf(cur) !== -1) {
-                    prevCmd_1 = cur;
-                    return prev;
+                    if (cur === "AND")
+                        hasAnd_1 = true;
+                    return cur;
                 }
                 else {
-                    var compare = t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
-                    if (i === 0)
-                        return compare;
-                    if (prevCmd_1 === "AND") {
-                        hasAnd_1 = true;
-                        return prev && compare;
+                    return t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
+                }
+            });
+            checkWhere_1.forEach(function (cur, idx) {
+                if (cur === "OR") {
+                    checkWhere_1[idx] = checkWhere_1[idx - 1] || checkWhere_1[idx + 1];
+                    checkWhere_1[idx - 1] = undefined;
+                    checkWhere_1[idx + 1] = undefined;
+                }
+            });
+            checkWhere_1 = checkWhere_1.filter(function (val) { return val !== undefined; });
+            if (!hasAnd_1) {
+                return checkWhere_1.indexOf(true) !== -1;
+            }
+            else {
+                var prevAnd_1 = true;
+                return checkWhere_1.reduce(function (prev, cur, idx) {
+                    if (idx === 0)
+                        return cur;
+                    if (cur === "AND") {
+                        prevAnd_1 = true;
+                        return prev;
+                    }
+                    if (prevAnd_1) {
+                        prevAnd_1 = false;
+                        return prev && cur;
                     }
                     else {
-                        hasOr_1 = true;
-                        return prev || compare;
+                        return prev || cur;
                     }
-                }
-            }, true);
+                }, true);
+            }
         }
         else {
             return t._compare(conditions[2], conditions[1], maybeGetLength(conditions[0])) === 0 ? true : false;
@@ -959,7 +975,7 @@ var _NanoSQLQuery = (function () {
             return ["=", ">=", "<="].indexOf(compare) !== -1 ? (val1 === val2 ? 0 : 1) : 1;
         }
         var setValue = function (val) {
-            return (compare === "LIKE" && typeof val === "string") ? val.toLowerCase() : val;
+            return (compare === "LIKE") ? String(val || "").toLowerCase() : val;
         };
         var left = setValue(val2);
         var right = setValue(val1);
