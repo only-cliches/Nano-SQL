@@ -1174,20 +1174,30 @@ export class _NanoSQLQuery {
             if (!hasAnd) { // All OR statements
                 return checkWhere.indexOf(true) !== -1;
             } else {
-                let prevAnd = true;
-                return checkWhere.reduce(function(prev, cur, idx) {
-                    if (idx === 0) return cur;
+                let reducing: number;
+                let prevAnd = false;
+                return checkWhere.reduce((prev, cur, idx) => {
+                    if (idx === 0) {
+                        prev.push(cur);
+                        reducing = prev.length - 1;
+                        return prev;
+                    }
                     if (cur === "AND") {
                         prevAnd = true;
+                        prev.push(cur);
                         return prev;
                     }
                     if (prevAnd) {
+                        prev.push(cur);
+                        reducing = prev.length - 1;
                         prevAnd = false;
-                        return prev && cur;
-                    } else {
-                        return prev || cur;
+                        return prev;
                     }
-                }, true);
+                    if (reducing !== undefined) {
+                        prev[reducing] = cur || prev[reducing];
+                    }
+                    return prev;
+                }, []).filter(val => val !== undefined).indexOf(false) === -1;
             }
 
         } else {

@@ -898,22 +898,30 @@ var _NanoSQLQuery = (function () {
                 return checkWhere_1.indexOf(true) !== -1;
             }
             else {
-                var prevAnd_1 = true;
+                var reducing_1;
+                var prevAnd_1 = false;
                 return checkWhere_1.reduce(function (prev, cur, idx) {
-                    if (idx === 0)
-                        return cur;
+                    if (idx === 0) {
+                        prev.push(cur);
+                        reducing_1 = prev.length - 1;
+                        return prev;
+                    }
                     if (cur === "AND") {
                         prevAnd_1 = true;
+                        prev.push(cur);
                         return prev;
                     }
                     if (prevAnd_1) {
+                        prev.push(cur);
+                        reducing_1 = prev.length - 1;
                         prevAnd_1 = false;
-                        return prev && cur;
+                        return prev;
                     }
-                    else {
-                        return prev || cur;
+                    if (reducing_1 !== undefined) {
+                        prev[reducing_1] = cur || prev[reducing_1];
                     }
-                }, true);
+                    return prev;
+                }, []).filter(function (val) { return val !== undefined; }).indexOf(false) === -1;
             }
         }
         else {
