@@ -731,7 +731,7 @@ export class _NanoSQL_Storage {
           })
         }
 
-        const dbFolder = t._dbPath + "/" + t._parent._databaseID
+        const dbFolder = t._dbPath + "/db_" + t._parent._databaseID
         let existing = true
         if (!global._fs.existsSync(dbFolder)) {
           global._fs.mkdirSync(dbFolder)
