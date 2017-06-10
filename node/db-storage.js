@@ -25,7 +25,7 @@ var _NanoSQL_Storage = (function () {
         t._persistent = false;
         t._utilityTable = {};
         t._historyPointIndex = {};
-        t._dbPath = "./";
+        t._dbPath = ".";
         t._mode = 0;
         t._parent = database;
         var size = 5;
@@ -388,7 +388,7 @@ var _NanoSQL_Storage = (function () {
                         }
                     });
                 };
-                var dbFolder_1 = t._dbPath + t._parent._databaseID;
+                var dbFolder_1 = t._dbPath + "/" + t._parent._databaseID;
                 var existing = true;
                 if (!global._fs.existsSync(dbFolder_1)) {
                     global._fs.mkdirSync(dbFolder_1);
