@@ -1,6 +1,6 @@
 {
     "name": "nano-sql",
-    "version": "0.8.91",
+    "version": "0.8.92",
     "description": "The most powerful little databse.",
     "main": "node/index-server.js",
     "browser": "node/index.js",
@@ -84,8 +84,10 @@
     "dependencies": {
         "leveldown": "^1.6.0",
         "levelup": "^1.3.5",
-        "lie-ts": "^3.1.6",
-        "prefix-trie-ts": "0.0.1"
+        "lie-ts": "^3.3.0",
+        "prefix-trie-ts": "0.0.1",
+        "prepack": "^0.2.3",
+        "prepack-webpack-plugin": "^1.1.0"
     },
     "contributors": [{
             "name": "Vikrant Pogula",

@@ -13,6 +13,9 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
+## [0.8.92] 6-14-2017
+- Updated to the newest version of Lie-TS, fixing an issue with MS Edge and IE.
+
 ## [0.8.91] 6-13-2017
 - Small size improvement.
 - Added two new config options to the default DB: `writeCache` and `readCache`.  Lets you adjust those values for LevelDB (in MB).
