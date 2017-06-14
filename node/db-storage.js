@@ -26,9 +26,10 @@ var _NanoSQL_Storage = (function () {
         t._utilityTable = {};
         t._historyPointIndex = {};
         t._dbPath = ".";
+        t._dbWriteCacheMB = 12;
+        t._dbReadCacheMB = 24;
         t._mode = 0;
         t._parent = database;
-        var size = 5;
         if (args._config.length) {
             t._persistent = args._config[0].persistent !== undefined
                 ? args._config[0].persistent
@@ -39,7 +40,6 @@ var _NanoSQL_Storage = (function () {
             t._storeMemory = args._config[0].memory !== undefined
                 ? args._config[0].memory
                 : true;
-            size = args._config[0].size || 5;
             t._mode =
                 {
                     IDB: 1,
@@ -56,6 +56,10 @@ var _NanoSQL_Storage = (function () {
                 t._parent._databaseID = String(args._config[0].id);
             if (args._config[0].dbPath)
                 t._dbPath = String(args._config[0].dbPath);
+            if (args._config[0].writeCache)
+                t._dbWriteCacheMB = parseFloat(args._config[0].writeCache);
+            if (args._config[0].readCache)
+                t._dbReadCacheMB = parseFloat(args._config[0].readCache);
         }
         var upgrading = false;
         var index = 0;
@@ -396,8 +400,8 @@ var _NanoSQL_Storage = (function () {
                 }
                 tables.forEach(function (table) {
                     t._levelDBs[table] = global._levelup(dbFolder_1 + "/" + table, {
-                        cacheSize: 24 * 1024 * 1024,
-                        writeBufferSize: 12 * 1024 * 1024
+                        cacheSize: t._dbReadCacheMB * 1024 * 1024,
+                        writeBufferSize: t._dbWriteCacheMB * 1024 * 1024
                     });
                 });
                 if (existing) {

@@ -192,14 +192,14 @@ var _NanoSQLORMQuery = (function () {
         }).map(function (m) {
             var tableName = m.type.replace("[]", "");
             return {
-                key: m.key,
-                tablePK: t._db._models[tableName].reduce(function (prev, cur) {
+                _key: m.key,
+                _tablePK: t._db._models[tableName].reduce(function (prev, cur) {
                     if (cur.props && cur.props.indexOf("pk") !== -1)
                         return cur.key;
                     return prev;
                 }, ""),
-                table: tableName,
-                type: m.type.indexOf("[]") === -1 ? "single" : "array"
+                _table: tableName,
+                _type: m.type.indexOf("[]") === -1 ? "single" : "array"
             };
         });
         var tablePK = t._db._models[t._tableName].reduce(function (prev, cur) {
@@ -214,20 +214,20 @@ var _NanoSQLORMQuery = (function () {
                     index_1.NanoSQLInstance.chain(relations.map(function (r) {
                         return function (nextRelation) {
                             var ids;
-                            if (rows[0][r.key] === undefined) {
-                                ids = r.type === "single" ? "" : [];
+                            if (rows[0][r._key] === undefined) {
+                                ids = r._type === "single" ? "" : [];
                             }
                             else {
-                                ids = index_1._assign(rows[0][r.key]);
+                                ids = index_1._assign(rows[0][r._key]);
                             }
-                            if (r.type === "single")
+                            if (r._type === "single")
                                 ids = [ids];
                             ids = ids.filter(function (v, i, s) {
                                 return s.indexOf(v) === i;
                             });
-                            t._db.table(r.table).query("select").where([r.tablePK, "IN", ids]).exec().then(function (childRows) {
-                                var activeIDs = childRows.length ? childRows.map(function (row) { return row[r.tablePK]; }) : [];
-                                return t._db.table(t._tableName).updateORM("set", r.key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
+                            t._db.table(r._table).query("select").where([r._tablePK, "IN", ids]).exec().then(function (childRows) {
+                                var activeIDs = childRows.length ? childRows.map(function (row) { return row[r._tablePK]; }) : [];
+                                return t._db.table(t._tableName).updateORM("set", r._key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
                             }).then(function () {
                                 nextRelation();
                             });

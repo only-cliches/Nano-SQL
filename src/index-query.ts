@@ -437,22 +437,22 @@ export class _NanoSQLORMQuery {
 
         // Build relationship information for this table's model.
         let relations: {
-            key: string;
-            tablePK: string;
-            table: string;
-            type: "single" | "array" | string;
+            _key: string;
+            _tablePK: string;
+            _table: string;
+            _type: "single" | "array" | string;
         }[] = t._db._models[t._tableName].filter((m) => {
             return t._db._tableNames.indexOf(m.type.replace("[]", "")) !== -1;
         }).map((m) => {
             let tableName = m.type.replace("[]", "");
             return {
-                key: m.key,
-                tablePK: t._db._models[tableName].reduce((prev, cur): string => {
+                _key: m.key,
+                _tablePK: t._db._models[tableName].reduce((prev, cur): string => {
                     if (cur.props && cur.props.indexOf("pk") !== -1) return cur.key;
                     return prev;
                 }, ""),
-                table: tableName,
-                type: m.type.indexOf("[]") === -1 ? "single" : "array"
+                _table: tableName,
+                _type: m.type.indexOf("[]") === -1 ? "single" : "array"
             };
         });
 
@@ -474,24 +474,24 @@ export class _NanoSQLORMQuery {
                         return (nextRelation) => {
 
                             let ids: any;
-                            if (rows[0][r.key] === undefined) {
-                                ids = r.type === "single" ? "" : [];
+                            if (rows[0][r._key] === undefined) {
+                                ids = r._type === "single" ? "" : [];
                             } else {
-                                ids = _assign(rows[0][r.key]);
+                                ids = _assign(rows[0][r._key]);
                             }
 
-                            if (r.type === "single") ids = [ids];
+                            if (r._type === "single") ids = [ids];
 
                             ids = ids.filter((v, i, s) => {
                                 return s.indexOf(v) === i;
                             });
 
                             // Query the ids to see if they exist
-                            t._db.table(r.table).query("select").where([r.tablePK, "IN", ids]).exec().then((childRows) => {
+                            t._db.table(r._table).query("select").where([r._tablePK, "IN", ids]).exec().then((childRows) => {
                                 // Build array of rows that still exist
-                                let activeIDs: any[] = childRows.length ? childRows.map(row => row[r.tablePK]) : [];
+                                let activeIDs: any[] = childRows.length ? childRows.map(row => row[r._tablePK]) : [];
                                 // Restore activeIDs and their relationships in the current active row
-                                return t._db.table(t._tableName).updateORM("set", r.key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
+                                return t._db.table(t._tableName).updateORM("set", r._key, activeIDs).where([tablePK, "=", rows[0][tablePK]]).exec();
                             }).then(() => {
                                 nextRelation();
                             });

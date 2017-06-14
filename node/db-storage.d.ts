@@ -13,7 +13,8 @@ export declare class _NanoSQL_Storage {
     _mode: any;
     _indexedDB: IDBDatabase;
     _parent: _NanoSQLDB;
-    _dbPath: string;
+    private _dbWriteCacheMB;
+    private _dbReadCacheMB;
     _tables: {
         [tableHash: number]: {
             _pk: string;
