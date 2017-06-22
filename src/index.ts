@@ -645,6 +645,9 @@ export class NanoSQLInstance {
             "=": "&#x3D;"
         };
         const t = typeof val;
+        if (t === "undefined" || val === null) {
+            return val;
+        }
         let types = (type: string, val: any) => {
             switch (type) {
                 case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, (s) => entityMap[s]);

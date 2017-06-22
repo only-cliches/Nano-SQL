@@ -142,8 +142,7 @@
                     props: ["trie"]
                 }, {
                     key: 'age',
-                    type: 'int',
-                    default: 0
+                    type: 'int'
                 }, {
                     key: 'balance',
                     type: 'float',
@@ -242,7 +241,7 @@
                         balance: 25.02,
                         postIDs: [0, 20, 5],
                         meta: {
-                            favorteColor: 'orange'
+                            favorteColor: {1: "orange"}
                         }
                     }, {
                         id: null,
@@ -251,15 +250,15 @@
                         balance: 25.02,
                         postIDs: [0, 5],
                         meta: {
-                            favorteColor: 'blue'
+                            favorteColor: {1: "blue"}
                         }
                     }, {
                         id: null,
                         name: 'jeb',
-                        age: 21,
+                        age: null,
                         balance: 22.02,
                         meta: {
-                            favorteColor: 'yellow'
+                            favorteColor: {1: "yellow"}
                         }
                     }, {
                         id: null,
@@ -268,7 +267,7 @@
                         balance: 25.02,
                         postIDs: [0, 20, 5],
                         meta: {
-                            favorteColor: 'blue'
+                            favorteColor: {1: "blue"}
                         }
                     }])
                 ]).then(function() {
@@ -288,7 +287,11 @@
                         nSQL("users").query("select").exec().then((rows) => {
                             console.log("Users2", rows);
                         });
-                    })
+                    });
+
+                    nSQL("users").query("select").where(["meta[favorteColor][1]", "=", "blue"]).exec().then((rows) => {
+                        console.log("NULL", rows);
+                    });
 
                     /*nSQL("orders")
                         .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])

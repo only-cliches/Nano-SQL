@@ -727,12 +727,8 @@ export class _NanoSQLQuery {
         let curMod, column, i, k, rows, obj, rowData, groups = {};
         const sortObj = (objA: DBRow, objB: DBRow, columns: {[key: string]: string}) => {
             return Object.keys(columns).reduce((prev, cur) => {
-                let A = objA[cur];
-                let B = objB[cur];
-                if (cur.split(".").pop() === "length") {
-                    A = objA[cur.replace(".length", "")].length;
-                    B = objB[cur.replace(".length", "")].length;
-                }
+                let A = this._resolveObjectPath(cur, objA);
+                let B = this._resolveObjectPath(cur, objB);
                 if (!prev) {
                     if (A === B) return 0;
                     return (A > B ? 1 : -1) * (columns[cur] === "desc" ? -1 : 1);
@@ -1125,6 +1121,25 @@ export class _NanoSQLQuery {
         remove();
     }
 
+    private _resolveObjectPath(pathQuery: string, object: any): any {
+        let val;
+        if (pathQuery.indexOf("[") !== -1 && pathQuery.indexOf("]") !== -1) {
+            let path: string[] = (pathQuery.match(/\[([^\]]+)\]/gm) || []).map(v => v.slice(1, -1));
+            path.unshift(pathQuery.slice(0, pathQuery.indexOf("[")));
+            const safeGet = (getPath: string[], object: any) => {
+                if (!getPath.length || !object) return object;
+                let topProp = getPath.shift();
+                return safeGet(getPath, object[topProp as string]);
+            };
+            val = safeGet(path, object);
+        } else {
+            val = object ? object[pathQuery.split(".").shift() as string] : object;
+        }
+
+        if (pathQuery.indexOf(".length") !== -1) return val && val.length ? val.length : 0;
+        return val;
+    }
+
     /**
      * Performs "where" filtering on a given table provided where conditions.
      *
@@ -1140,15 +1155,6 @@ export class _NanoSQLQuery {
         let t = this;
         const commands = ["AND", "OR"];
 
-        const maybeGetLength = (key: string) => {
-            if (key.indexOf(".length") !== -1) {
-                let value = row[key.replace(".length", "")];
-                return Array.isArray(value) ? value.length : 0;
-            } else {
-                return row[key];
-            }
-        };
-
         if (typeof conditions[0] !== "string") {
 
             let hasAnd = false;
@@ -1157,7 +1163,7 @@ export class _NanoSQLQuery {
                     if (cur === "AND") hasAnd = true;
                     return cur;
                 } else {
-                    return t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
+                    return t._compare(cur[2], cur[1], t._resolveObjectPath(cur[0], row)) === 0 ? true : false;
                 }
             });
 
@@ -1201,7 +1207,7 @@ export class _NanoSQLQuery {
             }
 
         } else {
-            return t._compare(conditions[2], conditions[1], maybeGetLength(conditions[0])) === 0 ? true : false;
+            return t._compare(conditions[2], conditions[1], t._resolveObjectPath(conditions[0], row)) === 0 ? true : false;
         }
     }
 
@@ -1297,16 +1303,23 @@ export class _NanoSQLQuery {
      */
     private _compare(val1: any, compare: string, val2: any): number {
 
-        if (val1 === undefined || val2 === undefined || val1 === null || val2 === null) {
-            return ["=", ">=", "<="].indexOf(compare) !== -1 ? (val1 === val2 ? 0 : 1) : 1;
-        }
-
         const setValue = (val: any) => {
             return (compare === "LIKE") ? String(val || "").toLowerCase() : val;
         };
 
         let left = setValue(val2);
         let right = setValue(val1);
+        if (right === "NULL" || right === "NOT NULL") {
+            if (compare === "=" || compare === "LIKE") {
+                if (right === "NULL") {
+                    return val2 === null || val2 === undefined ? 0 : 1;
+                } else {
+                    return val2 !== null && val2 !== undefined ? 0 : 1;
+                }
+            } else {
+                return 1;
+            }
+        }
 
         switch (compare) {
             case "=": return left === right ?                              0 : 1;

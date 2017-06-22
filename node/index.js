@@ -158,6 +158,9 @@ var NanoSQLInstance = (function () {
             "=": "&#x3D;"
         };
         var t = typeof val;
+        if (t === "undefined" || val === null) {
+            return val;
+        }
         var types = function (type, val) {
             switch (type) {
                 case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, function (s) { return entityMap[s]; });

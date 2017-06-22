@@ -500,6 +500,7 @@ var _NanoSQLQuery = (function () {
         return this._joinTable ? this._joinTable : this._tableID;
     };
     _NanoSQLQuery.prototype._select = function (queryRows, callBack) {
+        var _this = this;
         var t = this;
         if (t._db._queryCache[t._tableID][t._queryHash]) {
             callBack(t._db._queryCache[t._tableID][t._queryHash], "none", [], []);
@@ -509,12 +510,8 @@ var _NanoSQLQuery = (function () {
         var curMod, column, i, k, rows, obj, rowData, groups = {};
         var sortObj = function (objA, objB, columns) {
             return Object.keys(columns).reduce(function (prev, cur) {
-                var A = objA[cur];
-                var B = objB[cur];
-                if (cur.split(".").pop() === "length") {
-                    A = objA[cur.replace(".length", "")].length;
-                    B = objB[cur.replace(".length", "")].length;
-                }
+                var A = _this._resolveObjectPath(cur, objA);
+                var B = _this._resolveObjectPath(cur, objB);
                 if (!prev) {
                     if (A === B)
                         return 0;
@@ -862,18 +859,29 @@ var _NanoSQLQuery = (function () {
         };
         remove();
     };
+    _NanoSQLQuery.prototype._resolveObjectPath = function (pathQuery, object) {
+        var val;
+        if (pathQuery.indexOf("[") !== -1 && pathQuery.indexOf("]") !== -1) {
+            var path = (pathQuery.match(/\[([^\]]+)\]/gm) || []).map(function (v) { return v.slice(1, -1); });
+            path.unshift(pathQuery.slice(0, pathQuery.indexOf("[")));
+            var safeGet_1 = function (getPath, object) {
+                if (!getPath.length || !object)
+                    return object;
+                var topProp = getPath.shift();
+                return safeGet_1(getPath, object[topProp]);
+            };
+            val = safeGet_1(path, object);
+        }
+        else {
+            val = object ? object[pathQuery.split(".").shift()] : object;
+        }
+        if (pathQuery.indexOf(".length") !== -1)
+            return val && val.length ? val.length : 0;
+        return val;
+    };
     _NanoSQLQuery.prototype._where = function (row, conditions) {
         var t = this;
         var commands = ["AND", "OR"];
-        var maybeGetLength = function (key) {
-            if (key.indexOf(".length") !== -1) {
-                var value = row[key.replace(".length", "")];
-                return Array.isArray(value) ? value.length : 0;
-            }
-            else {
-                return row[key];
-            }
-        };
         if (typeof conditions[0] !== "string") {
             var hasAnd_1 = false;
             var checkWhere_1 = conditions.map(function (cur, idx) {
@@ -883,7 +891,7 @@ var _NanoSQLQuery = (function () {
                     return cur;
                 }
                 else {
-                    return t._compare(cur[2], cur[1], maybeGetLength(cur[0])) === 0 ? true : false;
+                    return t._compare(cur[2], cur[1], t._resolveObjectPath(cur[0], row)) === 0 ? true : false;
                 }
             });
             checkWhere_1.forEach(function (cur, idx) {
@@ -925,7 +933,7 @@ var _NanoSQLQuery = (function () {
             }
         }
         else {
-            return t._compare(conditions[2], conditions[1], maybeGetLength(conditions[0])) === 0 ? true : false;
+            return t._compare(conditions[2], conditions[1], t._resolveObjectPath(conditions[0], row)) === 0 ? true : false;
         }
     };
     _NanoSQLQuery.prototype._join = function (type, leftTableID, rightTableID, joinConditions, complete) {
@@ -979,14 +987,24 @@ var _NanoSQLQuery = (function () {
         });
     };
     _NanoSQLQuery.prototype._compare = function (val1, compare, val2) {
-        if (val1 === undefined || val2 === undefined || val1 === null || val2 === null) {
-            return ["=", ">=", "<="].indexOf(compare) !== -1 ? (val1 === val2 ? 0 : 1) : 1;
-        }
         var setValue = function (val) {
             return (compare === "LIKE") ? String(val || "").toLowerCase() : val;
         };
         var left = setValue(val2);
         var right = setValue(val1);
+        if (right === "NULL" || right === "NOT NULL") {
+            if (compare === "=" || compare === "LIKE") {
+                if (right === "NULL") {
+                    return val2 === null || val2 === undefined ? 0 : 1;
+                }
+                else {
+                    return val2 !== null && val2 !== undefined ? 0 : 1;
+                }
+            }
+            else {
+                return 1;
+            }
+        }
         switch (compare) {
             case "=": return left === right ? 0 : 1;
             case ">": return left > right ? 0 : 1;

@@ -13,6 +13,14 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
+## [0.9.0] 6-21-2017
+- Added "NULL" and "NOT NULL" as valid query values; example: `["column", "=", "NULL"]`.
+- Changed type casting system to allow null values into the database if no default is set.
+- `.length` queries now work on all columns that have a valid length property, example `string` and `safestr`.
+- Added bracket notation to where statements to let you check against sub propertys, example: `["meta[hairColor]", "LIKE", "blue"]`.
+- The bracket notation also works for `orderBy` and `groupBy` queries.
+- Bracket notation also works with `.length` queries: `["meta[postIDs].length", ">", 2]`.
+
 ## [0.8.92] 6-14-2017
 - Updated to the newest version of Lie-TS, fixing an issue with MS Edge and IE.
 
