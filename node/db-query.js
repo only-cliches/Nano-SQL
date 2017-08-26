@@ -988,7 +988,7 @@ var _NanoSQLQuery = (function () {
     };
     _NanoSQLQuery.prototype._compare = function (val1, compare, val2) {
         var setValue = function (val) {
-            return (compare === "LIKE") ? String(val || "").toLowerCase() : val;
+            return (compare === "LIKE" || compare === "NOT LIKE") ? String(val || "").toLowerCase() : val;
         };
         var left = setValue(val2);
         var right = setValue(val1);
@@ -1007,6 +1007,7 @@ var _NanoSQLQuery = (function () {
         }
         switch (compare) {
             case "=": return left === right ? 0 : 1;
+            case "!=": return left !== right ? 0 : 1;
             case ">": return left > right ? 0 : 1;
             case "<": return left < right ? 0 : 1;
             case "<=": return left <= right ? 0 : 1;
@@ -1015,6 +1016,7 @@ var _NanoSQLQuery = (function () {
             case "NOT IN": return right.indexOf(left) < 0 ? 0 : 1;
             case "REGEX": return left.search(right) < 0 ? 1 : 0;
             case "LIKE": return left.indexOf(right) < 0 ? 1 : 0;
+            case "NOT LIKE": return left.indexOf(right) > 0 ? 1 : 0;
             case "BETWEEN": return right[0] <= left && right[1] >= left ? 0 : 1;
             case "HAVE": return (left || []).indexOf(right) < 0 ? 1 : 0;
             case "NOT HAVE": return (left || []).indexOf(right) < 0 ? 0 : 1;

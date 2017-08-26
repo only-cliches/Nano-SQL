@@ -1304,13 +1304,13 @@ export class _NanoSQLQuery {
     private _compare(val1: any, compare: string, val2: any): number {
 
         const setValue = (val: any) => {
-            return (compare === "LIKE") ? String(val || "").toLowerCase() : val;
+            return (compare === "LIKE" || compare === "NOT LIKE") ? String(val || "").toLowerCase() : val;
         };
 
         let left = setValue(val2);
         let right = setValue(val1);
         if (right === "NULL" || right === "NOT NULL") {
-            if (compare === "=" || compare === "LIKE") {
+            if (compare === "=" || compare === "LIKE")  {
                 if (right === "NULL") {
                     return val2 === null || val2 === undefined ? 0 : 1;
                 } else {
@@ -1323,6 +1323,7 @@ export class _NanoSQLQuery {
 
         switch (compare) {
             case "=": return left === right ?                              0 : 1;
+            case "!=": return left !== right ?                             0 : 1;
             case ">": return left > right ?                                0 : 1;
             case "<": return left < right ?                                0 : 1;
             case "<=": return left <= right ?                              0 : 1;
@@ -1331,6 +1332,7 @@ export class _NanoSQLQuery {
             case "NOT IN": return right.indexOf(left) < 0 ?                0 : 1;
             case "REGEX": return left.search(right) < 0 ?                  1 : 0;
             case "LIKE": return left.indexOf(right) < 0 ?                  1 : 0;
+            case "NOT LIKE": return left.indexOf(right) > 0 ?              1 : 0;
             case "BETWEEN": return right[0] <= left && right[1] >= left ?  0 : 1;
             case "HAVE": return (left || []).indexOf(right) < 0 ?          1 : 0;
             case "NOT HAVE": return (left || []).indexOf(right) < 0 ?      0 : 1;

@@ -427,24 +427,26 @@ var _NanoSQL_Storage = (function () {
                         if (ptr3_1 < secondIdx.length) {
                             var key_1 = secondIdx[ptr3_1];
                             var idxTbl_1 = "_" + tableName + "_idx_" + key_1;
-                            var rowKey_1 = String(rows[rowPTR][key_1]).toLowerCase();
-                            t._read(idxTbl_1, rowKey_1, function (readRows) {
-                                var indexedRows = [rows[rowPTR][PK]];
-                                if (readRows.length && readRows[0].rowPK) {
-                                    indexedRows = indexedRows
-                                        .concat(readRows[0].rowPK)
-                                        .filter(function (item, pos) {
-                                        return indexedRows.indexOf(item) === pos;
+                            t._delete(idxTbl_1, "all", function () {
+                                var rowKey = String(rows[rowPTR][key_1]).toLowerCase();
+                                t._read(idxTbl_1, rowKey, function (readRows) {
+                                    var indexedRows = [rows[rowPTR][PK]];
+                                    if (readRows.length && readRows[0].rowPK) {
+                                        indexedRows = indexedRows
+                                            .concat(readRows[0].rowPK)
+                                            .filter(function (item, pos) {
+                                            return indexedRows.indexOf(item) === pos;
+                                        });
+                                    }
+                                    t._upsert(idxTbl_1, rowKey, {
+                                        id: rows[rowPTR][key_1],
+                                        rowPK: indexedRows
+                                    }, function () {
+                                        ptr3_1++;
+                                        lie_ts_1.setFast(step3_1);
                                     });
-                                }
-                                t._upsert(idxTbl_1, rowKey_1, {
-                                    id: rows[rowPTR][key_1],
-                                    rowPK: indexedRows
-                                }, function () {
-                                    ptr3_1++;
-                                    lie_ts_1.setFast(step3_1);
-                                });
-                            }, true);
+                                }, true);
+                            });
                         }
                         else {
                             rowPTR++;
@@ -650,14 +652,9 @@ var _NanoSQL_Storage = (function () {
                         nextRow();
                         break;
                     case 4:
-                        if (transactionID) {
+                        t._levelDBs[tableName].del(rowID, function () {
                             nextRow();
-                        }
-                        else {
-                            t._levelDBs[tableName].del(rowID, function () {
-                                nextRow();
-                            });
-                        }
+                        });
                         break;
                     default:
                         nextRow();

@@ -13,6 +13,9 @@ Read: ~100 records/ms
 - Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
 - Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
 
+## [0.9.1] 8-26-2017
+- Added "NOT LIKE" and "!=" comparisons for queries.  Not sure how I got by without using these for so long.
+
 ## [0.9.0] 6-21-2017
 - Added "NULL" and "NOT NULL" as valid query values; example: `["column", "=", "NULL"]`.
 - Changed type casting system to allow null values into the database if no default is set.

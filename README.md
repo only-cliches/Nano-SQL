@@ -6,7 +6,7 @@ The most powerful little database.
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 [![npm downloads](https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square)](https://www.npmjs.com/package/nano-sql)
-![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.8.53/dist/nano-sql.min.js?compression=gzip)
+![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.9.1/dist/nano-sql.min.js?compression=gzip)
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
@@ -216,6 +216,12 @@ nSQL("users").query("select").trieSearch("name","fr").exec()...
 
 // Select all users with the name "John".
 nSQL("users").query("select").where(["name","=","John"]).exec().then(function(rows, db) {...});
+
+// Get rows based on the internal property of an object in the row
+nSQL("users").query("select").where(["meta[eyeColor]", "=", "blue"]).exec().then(function(rows, db) {...});
+
+// Get all users with moe than 4 posts.
+nSQL("users").query("select").where(["posts.length", ">", 4]).exec().then(function(rows, db) {...});
 
 // Compound where statements, supports AND & OR
 nSQL("users").query("select").where([["name","=","John"],"AND",["age",">",25]]).exec().then(function(rows, db) {...});

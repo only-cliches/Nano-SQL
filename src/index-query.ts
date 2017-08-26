@@ -309,6 +309,39 @@ export class _NanoSQLQuery {
         return t.exec();
     }
 
+
+    /**
+     * Trigger events fired from the query.
+     *
+     * @private
+     * @param {string} table
+     * @param {object[]} data
+     * @param {Function} callBack
+     * @param {string} type
+     * @param {DBRow[]} changedRows
+     * @param {any[]} changedRowPKS
+     * @param {boolean} isError
+     * @memberof _NanoSQLQuery
+     */
+    private _triggerEvents(table: string, data: object[], callBack: Function, type: string, changedRows: DBRow[], changedRowPKS: any[], isError: boolean) {
+        let t = this;
+        if (t._db._hasEvents[table]) { // Only trigger events if there are listeners
+            t._db.triggerEvent({
+                name: t._action.type as any,
+                actionOrView: t._AV,
+                table: table,
+                query: [t._action].concat(t._modifiers),
+                time: new Date().getTime(),
+                result: data,
+                changeType: type,
+                changedRows: changedRows,
+                changedRowPKS: changedRowPKS
+            }, t._db._triggerEvents);
+        }
+
+        callBack(data, t._db);
+    }
+
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
@@ -325,7 +358,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public exec(): Promise<Array<Object | NanoSQLInstance>> {
+    public exec(): Promise<(object | NanoSQLInstance)[]> {
 
         let t = this;
 
@@ -342,7 +375,6 @@ export class _NanoSQLQuery {
             })();
         }
 
-
         return new Promise((res, rej) => {
 
             if (t._error) {
@@ -355,25 +387,6 @@ export class _NanoSQLQuery {
                 throw Error;
             }
 
-            const _tEvent = (data: Array<Object>, callBack: Function, type: string, changedRows: DBRow[], changedRowPKS: any[], isError: Boolean) => {
-
-                if (t._db._hasEvents[_t]) { // Only trigger events if there are listeners
-                    t._db.triggerEvent({
-                        name: t._action.type as any,
-                        actionOrView: t._AV,
-                        table: _t,
-                        query: [t._action].concat(t._modifiers),
-                        time: new Date().getTime(),
-                        result: data,
-                        changeType: type,
-                        changedRows: changedRows,
-                        changedRowPKS: changedRowPKS
-                    }, t._db._triggerEvents);
-                }
-
-                callBack(data, t._db);
-            };
-
             let execArgs: DBExec = {
                 table: _t,
                 transactionID: t._transactionID,
@@ -383,7 +396,7 @@ export class _NanoSQLQuery {
                     if (t._transactionID) {
                         res(rows, t._db);
                     } else {
-                        _tEvent(rows, res, type, affectedRows, affectedPKS, false);
+                        t._triggerEvents(_t, rows, res, type, affectedRows, affectedPKS, false);
                     }
                 },
                 onFail: (err: any) => {
@@ -391,7 +404,7 @@ export class _NanoSQLQuery {
                         res(err, t._db);
                     } else {
                         t._db._triggerEvents = ["error"];
-                        if (rej) _tEvent(err, rej, "error", [], [], true);
+                        if (rej) t._triggerEvents(_t, err, rej, "error", [], [], true);
                     }
                 }
             };

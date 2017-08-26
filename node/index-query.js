@@ -97,6 +97,23 @@ var _NanoSQLQuery = (function () {
         t._table = table;
         return t.exec();
     };
+    _NanoSQLQuery.prototype._triggerEvents = function (table, data, callBack, type, changedRows, changedRowPKS, isError) {
+        var t = this;
+        if (t._db._hasEvents[table]) {
+            t._db.triggerEvent({
+                name: t._action.type,
+                actionOrView: t._AV,
+                table: table,
+                query: [t._action].concat(t._modifiers),
+                time: new Date().getTime(),
+                result: data,
+                changeType: type,
+                changedRows: changedRows,
+                changedRowPKS: changedRowPKS
+            }, t._db._triggerEvents);
+        }
+        callBack(data, t._db);
+    };
     _NanoSQLQuery.prototype.exec = function () {
         var t = this;
         var _t = t._table;
@@ -120,22 +137,6 @@ var _NanoSQLQuery = (function () {
                 rej();
                 throw Error;
             }
-            var _tEvent = function (data, callBack, type, changedRows, changedRowPKS, isError) {
-                if (t._db._hasEvents[_t]) {
-                    t._db.triggerEvent({
-                        name: t._action.type,
-                        actionOrView: t._AV,
-                        table: _t,
-                        query: [t._action].concat(t._modifiers),
-                        time: new Date().getTime(),
-                        result: data,
-                        changeType: type,
-                        changedRows: changedRows,
-                        changedRowPKS: changedRowPKS
-                    }, t._db._triggerEvents);
-                }
-                callBack(data, t._db);
-            };
             var execArgs = {
                 table: _t,
                 transactionID: t._transactionID,
@@ -146,7 +147,7 @@ var _NanoSQLQuery = (function () {
                         res(rows, t._db);
                     }
                     else {
-                        _tEvent(rows, res, type, affectedRows, affectedPKS, false);
+                        t._triggerEvents(_t, rows, res, type, affectedRows, affectedPKS, false);
                     }
                 },
                 onFail: function (err) {
@@ -156,7 +157,7 @@ var _NanoSQLQuery = (function () {
                     else {
                         t._db._triggerEvents = ["error"];
                         if (rej)
-                            _tEvent(err, rej, "error", [], [], true);
+                            t._triggerEvents(_t, err, rej, "error", [], [], true);
                     }
                 }
             };

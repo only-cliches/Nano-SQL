@@ -380,6 +380,12 @@ nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"
 <span class="hljs-comment">// Select all users with the name "John".</span>
 nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).where([<span class="hljs-string">"name"</span>,<span class="hljs-string">"="</span>,<span class="hljs-string">"John"</span>]).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{...});
 
+<span class="hljs-comment">// Get rows based on the internal property of an object in the row</span>
+nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).where([<span class="hljs-string">"meta[eyeColor]"</span>, <span class="hljs-string">"="</span>, <span class="hljs-string">"blue"</span>]).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{...});
+
+<span class="hljs-comment">// Get all users with moe than 4 posts.</span>
+nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).where([<span class="hljs-string">"posts.length"</span>, <span class="hljs-string">"&gt;"</span>, <span class="hljs-number">4</span>]).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{...});
+
 <span class="hljs-comment">// Compound where statements, supports AND &amp; OR</span>
 nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).where([[<span class="hljs-string">"name"</span>,<span class="hljs-string">"="</span>,<span class="hljs-string">"John"</span>],<span class="hljs-string">"AND"</span>,[<span class="hljs-string">"age"</span>,<span class="hljs-string">"&gt;"</span>,<span class="hljs-number">25</span>]]).exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows, db</span>) </span>{...});
 
