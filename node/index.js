@@ -296,7 +296,8 @@ var NanoSQLInstance = (function () {
                 j = c.length;
                 while (j--) {
                     eventData.name = e;
-                    c[j](eventData, t);
+                    if (c[j])
+                        c[j](eventData, t);
                 }
             }
         }, 0);

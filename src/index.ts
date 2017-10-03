@@ -144,7 +144,13 @@ export const _assign = (obj: any) => {
 };
 
 export interface IActionViewMod {
-    (tableName: string, actionOrView: "Action"|"View", name: string, args: any, complete: (args: any) => void, error?: (errorMessage: string) => void): void;
+    (
+        tableName: string,
+        actionOrView: "Action"|"View",
+        name: string,
+        args: any,
+        complete: (args: any) => void, error?: (errorMessage: string) => void
+    ): void;
 }
 
 /**
@@ -1004,7 +1010,7 @@ export class NanoSQLInstance {
                 j = c.length;
                 while (j--) {
                     eventData.name = e;
-                    c[j](eventData, t);
+                    if (c[j]) c[j](eventData, t);
                 }
             }
         }, 0);
