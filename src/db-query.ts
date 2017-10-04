@@ -617,7 +617,7 @@ export class _NanoSQLQuery {
                 let table = t._db._store._tables[t._tableID];
                 t._db._invalidateCache(t._tableID, [], [], "");
                 t._db._store._readArray(table._name, updatedRowPKs, (rows) => {
-                    callBack([{msg: updatedRowPKs.length + " row(s) " + describe}], describe, rows, updatedRowPKs);
+                    callBack([{msg: updatedRowPKs.length + " row(s) " + describe, rows, updatedRowPKs}], describe, rows, updatedRowPKs);
                 });
 
             });
