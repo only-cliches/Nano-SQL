@@ -10,7 +10,7 @@ mkdir docs
 echo "Clean Completed..."
 
 #type declerations & node build
-bash ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "ES5" --rootDir  "./src" -module "commonjs" --outDir "./node"
+./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "ES5" --rootDir  "./src" -module "commonjs" --outDir "./node"
 
 echo "Node Build & Type Declarations Completed..."
 

@@ -440,7 +440,7 @@ var _NanoSQLQuery = (function () {
                 var table = t._db._store._tables[t._tableID];
                 t._db._invalidateCache(t._tableID, [], [], "");
                 t._db._store._readArray(table._name, updatedRowPKs, function (rows) {
-                    callBack([{ msg: updatedRowPKs.length + " row(s) " + describe }], describe, rows, updatedRowPKs);
+                    callBack([{ msg: updatedRowPKs.length + " row(s) " + describe, rows: rows, updatedRowPKs: updatedRowPKs }], describe, rows, updatedRowPKs);
                 });
             });
         }
