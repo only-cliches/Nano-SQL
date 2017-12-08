@@ -88,7 +88,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
     public setID(id: string) {
         this._id = id;
-        this._path = (this.path || "") + "/db_" + this._id;
+        this._path = (this.path || ".") + "/db_" + this._id;
         if (!global._fs.existsSync(this._path)) {
             global._fs.mkdirSync(this._path);
         }
