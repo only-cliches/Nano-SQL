@@ -1,5 +1,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 global._fs = require("fs");
+global._path = require("path");
 global._levelup = require("levelup");
 global._leveldown = require("leveldown");
 global._crypto = require("crypto");
