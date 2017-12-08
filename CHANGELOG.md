@@ -9,7 +9,7 @@ Read: ~100 records/ms
 - Write SQLite plugin.
 - Finish integration tests.
 
-## [1.0.0]
+## [1.0.0] 12-7-2017
 MANY BREAKING CHANGES, PLEASE READ THE MIGRATION GUIDE
 This build is intended to stabilize the library, increase performance and make it easy to extend in the future.  The API for v1.X.X releases will be very stable moving forward.
 *****

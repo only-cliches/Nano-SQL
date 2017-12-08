@@ -56,7 +56,7 @@ var _LevelStore = (function () {
     };
     _LevelStore.prototype.setID = function (id) {
         this._id = id;
-        this._path = this.path + "/db_" + this._id;
+        this._path = (this.path || "") + "/db_" + this._id;
         if (!global._fs.existsSync(this._path)) {
             global._fs.mkdirSync(this._path);
         }
