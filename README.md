@@ -12,11 +12,11 @@ The most powerful little database.
 
 <img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/quick-demo.gif" alt="Demo">
 
-NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM: all in a 15Kb package.   As a bonus, you also get the performance perks of ImmutableJS.
+NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM: all in an 18Kb package.  
 
 It's written to take advantage of trendy buzzwords like "isomorphic", "immutable", "NoSQL", "TypeScript" and "Kerbal Space Program".
 
-Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
+Persistence supports `Local Storage`, `Indexed DB`, `Indexed DB in a Web Worker`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
 * [Todo Example](https://some-sql.com/react-todo/)
 * [Draw Example](https://some-sql.com/react-draw/)
@@ -25,11 +25,9 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 
 ## Highlighted Features
 
-- **Easy `LevelDB` & `IndexedDB` support**.
-- Runs in Node, IE8+ & modern browsers.
+- **Easy `LevelDB`, `IndexedDB`, `WebSQL` support**.
+- Runs in Node, IE9+ & modern browsers.
 - Supports all common RDBMS queries.
-- Built in optomized **trie indexes**.
-- Queries return immutable rows.
 - Import and Export CSV/JSON.
 - **Simple & elegant undo/redo.**
 - Full Typescript support.
@@ -38,47 +36,33 @@ Persistence supports `Local Storage` and `Indexed DB` in the browser and `Level 
 - Fast secondary indexes.
 - Transactions support.
 - Full events system.
-- Just 15Kb Gzipped.
-
-## New Features
-
-- ORM support has been added! [ORM Docs](https://github.com/ClickSimply/Nano-SQL/wiki/ORM)
-- Integration tests now cover all standard SQL functions.
-- You can index a specific row with a `trie` structure for super fast string searching by putting `props: ["trie"]` in the data model.
-- Secondary indexes are now supported by putting `props: ["idx"]` in the data model.  Secondary indexes will slow down the write speed the more you have.
-- You can force all secondary indexes to build/rebuild by passing `rebuildIndexes: true` into the `.config()` object.
-- You can fast select a range for instant pagination queries with the new `.range(offset, limit)`.  This can be hundreds of times faster than using `.offset(x).limit(x)` but prevents you from using `.where()` statements.
-- There are two new data types for your primary keys, `timeId` and `timeIdms`.  They allow rows to be sorted by insert date easily.
-
-
+- Just 18Kb Gzipped.
 
 ## Browser Support
 
 ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
 --- | --- | --- | --- | --- | --- |
-Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 8+ ✔ |
+Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
 
 ### Oh Look, Another Data Store
 
 I spent a long time looking for an existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
 
-| Database                                                 | Events | TS  | Undo & Redo  | Immutable | RDBMS | IndexedDB | Node | Any Backend | Size |
-|----------------------------------------------------------|:------:|:---:|:------------:|:---------:|:-----:|:---------:|:----:|:-----------:|:----------:|
-| nanoSQL                                                  | ✓      | ✓   | ✓           | ✓         | ✓    | ✓         | ✓      | ✓          | 15         |
-| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕         | ✕    | ✕        | ✓      | ✕          | 2          |
-| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 5          |
-| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✓         | ✕    | ✕        | ✓      | ✕          | 16         |
-| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 19         |
-| [NeDB](https://github.com/louischatriot/nedb)            | ✕      | ✓   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 27  
-| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✕      | ✕          | 40         |
-| [PouchDB](https://github.com/pouchdb/pouchdb)            | ✓      | ✓   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 46         |
-| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕           | ✕         | ✓    | ✓        | ✓      | ✓          | 88         |
-| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕           | ✕         | ✓    | ✕        | ✓      | ✕          | 500        |
+| Database                                                 | Events | TS  | Undo & Redo  | ORM | RDBMS | IndexedDB | Node | Any Backend | Size |
+|----------------------------------------------------------|:------:|:---:|:------------:|:---:|:-----:|:---------:|:----:|:-----------:|:----------:|
+| nanoSQL                                                  | ✓      | ✓   | ✓           | ✓   | ✓    | ✓         | ✓     | ✓          | 18         |
+| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕   | ✕    | ✕        | ✓      | ✕          | 2          |
+| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 5          |
+| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✕   | ✕    | ✕        | ✓      | ✕          | 16         |
+| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 19         |
+| [NeDB](https://github.com/louischatriot/nedb)            | ✕      | ✓   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 27         |
+| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕           | ✕   | ✓    | ✓        | ✕      | ✕          | 40         |
+| [PouchDB](https://github.com/pouchdb/pouchdb)            | ✓      | ✓   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 46         |
+| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 88         |
+| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 500        |
 
 
 I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  nanoSQL is that.  
-
-
 
 ## Installation
 
@@ -93,7 +77,7 @@ import { nSQL } from "nano-sql";
 Using in node:
 
 ```js
-var nSQL = require("nano-sql").nSQL;
+const nSQL = require("nano-sql").nSQL;
 ```
 
 To use directly in the browser, just include the script file found inside the `dist` folder onto your page.
@@ -103,23 +87,36 @@ To use directly in the browser, just include the script file found inside the `d
 1 minute minimal quick start:
 
 ```js
+// Use an instance table to query and organize existing tables of data.
+nSQL([
+    {name: "bill", age: 20},
+    {name: "bob", age: 25},
+    {name: "jeb", age: 27}
+]).query("select", ["name", "MAX(age) AS age"]).exec().then((rows) => {
+    console.log(rows); // <= [{name: "jeb", age: 27}]
+    
+})
+
+
+// Or declare database models and store data in nanoSQL, using it as a self contained RDBMS
 nSQL('users') //  "users" is our table name.
 .model([ // Declare data model
     {key:'id',type:'int',props:['pk','ai']}, // pk == primary key, ai == auto incriment
-    {key:'name',type:'string'}
+    {key:'name',type:'string'},
+    {key:'age', type:'int'}
 ])
-.connect() // Init the data store for usage.
+.connect() // Init the data store for usage. (only need to do this once)
 .then(function(result, db) {
     // "db" holds the current nanoSQL var with the previous table still selected.
     return db.query('upsert',{ // Add a record
-        name:"Billy",
+        name:"bill", age: 20
     }).exec();
 })
 .then(function(result, db) {
     return db.query('select').exec(); // select all rows from the current active table
 })
 .then(function(result, db) {
-    console.log(result) // <= [{id:1,name:"Billy"}]
+    console.log(result) // <= [{id:1, name:"bill", age: 20}]
 })
 
 ```
@@ -135,14 +132,17 @@ First you declare your models, connect the db, then you execute queries.
 nSQL('users')// Table/Store Name, required to declare model and attach it to this store.
 .model([ // Data Model, required
     {key:'id',type:'uuid',props:['pk']}, // This has the primary key value
-    {key:'name',type:'string', default:"None"}, // This will cause inserts to always use "None" if no value is provided.
+    {key:'name',type:'string', default:"None"}, // The 'default' will cause inserts to always use "None" if no value is provided.
     {key:'age',type:'int', props: ["idx"]}, // secondary index
     {key: "eyeColor", type: "string", props:["trie"]}, // Index as trie
     {key:'balance',type:'float', default: 0},
     {key:'postIDs',type:'array'},
     {key:'meta',type:'map'}
 ])
-.config({persistent:true}) // With this enabled, the best storage engine will be auttomatically selected and all changes saved to it.  Works in browser AND nodeJS automatically.
+.config({
+    mode: "PERM", // With this enabled, the best storage engine will be auttomatically selected and all changes saved to it.  Works in browser AND nodeJS automatically.
+    history: true // allow the database to undo/redo changes on the fly. 
+}) 
 .actions([ // Optional
     {
         name:'add_new_user',
@@ -217,6 +217,9 @@ nSQL("users").query("select").trieSearch("name","fr").exec()...
 // Select all users with the name "John".
 nSQL("users").query("select").where(["name","=","John"]).exec().then(function(rows, db) {...});
 
+// Use a function for WHERE
+nSQL("users").query("select").where(row => row.age > 20).exec().exec().then(function(rows, db) {...});
+
 // Get rows based on the internal property of an object in the row
 nSQL("users").query("select").where(["meta[eyeColor]", "=", "blue"]).exec().then(function(rows, db) {...});
 
@@ -255,7 +258,7 @@ nSQL("users")
 .join({
     type:"left", // Supported join types are left, inner, right, cross and outer.
     table: "orders",
-    where: ["orders.userID","=","users.id"] // Compound WHERE statements with AND/OR don't work, just single ones do.
+    where: ["orders.userID", "=", "users.id"] // any valid WHERE statement works here
 }).exec().then(function(rows, db) {...})
 
 // Group By also works
@@ -297,16 +300,16 @@ The Undo/Redo system is enabled by default and it's easy to use.
 
 ```js
 // Roll the database back one query.
-nSQL().extend("<");
+nSQL().extend("hist", "<");
 
 // Roll it forward one query.
-nSQL().extend(">");
+nSQL().extend("hist", ">");
 
 // Delete all history points
-nSQL().extend("flush_history")
+nSQL().extend("hist", "clear")
 
 // Get the status of the history system
-nSQL().extend("?").then(function(status) {
+nSQL().extend("hist", "?").then(function(status) {
     console.log(status) // <= [0,0];
     // The array from the ? query gives you the length of the history in the first value and the current history reference point in the last.
     // If the length and point are zero, undo & redo will do nothing.
@@ -316,17 +319,7 @@ nSQL().extend("?").then(function(status) {
 
 ``` 
 
-Writes are a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by adjusting the config object before calling `connect()`.
-
-```js
-nSQL("table")
-.model([...])
-.views([...])
-
-nSQL()
-.config({history:false})
-.connect().then()...
-```
+Writes are quite a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by adjusting the config object before calling `connect()`.
 
 [Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
 

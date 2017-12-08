@@ -1,0 +1,215 @@
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+var utilities_1 = require("../utilities");
+var lie_ts_1 = require("lie-ts");
+var _NanoSQLQuery = (function () {
+    function _NanoSQLQuery(table, db, queryAction, queryArgs, actionOrView, bypassORMPurge) {
+        this._db = db;
+        this._AV = actionOrView || "";
+        this._query = {
+            table: table,
+            comments: [],
+            state: "pending",
+            queryID: new Date().getTime() + "-" + Math.round(Math.random() * 100),
+            action: queryAction,
+            actionArgs: queryArgs,
+            result: []
+        };
+        if (Array.isArray(this._query.table)) {
+            return;
+        }
+        var a = queryAction.toLowerCase();
+        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) > -1) {
+            var newArgs_1 = queryArgs || (a === "select" || a === "delete" ? [] : {});
+            if (["delete", "upsert"].indexOf(a) > -1 && !bypassORMPurge && this._db.relationColumns[this._db.sTable].length) {
+                var inputArgs = {};
+                this._db.relationColumns[this._db.sTable].forEach(function (column) {
+                    newArgs_1[column] = undefined;
+                });
+                newArgs_1 = inputArgs;
+            }
+            if (a === "upsert") {
+                var inputArgs_1 = {};
+                this._db._models[this._db.sTable].forEach(function (model) {
+                    if (newArgs_1[model.key] !== undefined) {
+                        inputArgs_1[model.key] = utilities_1.cast(model.type, newArgs_1[model.key]);
+                    }
+                });
+                newArgs_1 = inputArgs_1;
+            }
+            this._query.action = a;
+            this._query.actionArgs = queryArgs ? newArgs_1 : undefined;
+        }
+        else {
+            throw Error("No valid database action!");
+        }
+    }
+    _NanoSQLQuery.prototype.where = function (args) {
+        this._query.where = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.range = function (limit, offset) {
+        this._query.range = [limit, offset];
+        return this;
+    };
+    _NanoSQLQuery.prototype.orm = function (ormArgs) {
+        this._query.orm = ormArgs;
+        return this;
+    };
+    _NanoSQLQuery.prototype.orderBy = function (args) {
+        this._query.orderBy = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.groupBy = function (columns) {
+        this._query.groupBy = columns;
+        return this;
+    };
+    _NanoSQLQuery.prototype.having = function (args) {
+        if (!args.length || !Array.isArray(args)) {
+            this._error = "Having condition requires an array!";
+        }
+        this._query.having = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.join = function (args) {
+        if (Array.isArray(this._query.table)) {
+            throw Error("Can't JOIN with instance table!");
+        }
+        if (!args.table || !args.type) {
+            this._error = "Join command requires table and type arguments!";
+        }
+        this._query.join = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.limit = function (args) {
+        this._query.limit = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.trieSearch = function (column, stringToSearch) {
+        this._query.trie = { column: column, search: stringToSearch };
+        return this;
+    };
+    _NanoSQLQuery.prototype.comment = function (comment) {
+        this._query.comments.push(comment);
+        return this;
+    };
+    _NanoSQLQuery.prototype.extend = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        this._query.extend = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.offset = function (args) {
+        this._query.offset = args;
+        return this;
+    };
+    _NanoSQLQuery.prototype.toCSV = function (headers) {
+        var t = this;
+        return new lie_ts_1.Promise(function (res, rej) {
+            t.exec().then(function (json) {
+                var csv = [];
+                if (!json.length) {
+                    res("", t);
+                }
+                if (headers) {
+                    csv.push(Object.keys(json[0]).join(","));
+                }
+                json.forEach(function (row) {
+                    csv.push(Object.keys(row).map(function (k) {
+                        if (row[k] === null || row[k] === undefined) {
+                            return "";
+                        }
+                        return typeof row[k] === "object" ? '"' + JSON.stringify(row[k]).replace(/\"/g, '\'') + '"' : row[k];
+                    }).join(","));
+                });
+                res(csv.join("\n"), t);
+            });
+        });
+    };
+    _NanoSQLQuery.prototype.manualExec = function (query, complete) {
+        this._query = __assign({}, query, this._query);
+        return this.exec();
+    };
+    _NanoSQLQuery.prototype.exec = function () {
+        var _this = this;
+        var t = this;
+        return new lie_ts_1.Promise(function (res, rej) {
+            if (!t._db._plugins.length) {
+                t._error = "No plugins, nothing to do!";
+            }
+            if (t._error) {
+                rej(t._error);
+                return;
+            }
+            var rows = [];
+            new utilities_1.CHAIN(t._db._plugins.map(function (p, i) {
+                return function (nextP) {
+                    if (p.doExec) {
+                        p.doExec(_this._query, function (newQ) {
+                            _this._query = newQ || _this._query;
+                            nextP();
+                        });
+                    }
+                    else {
+                        nextP();
+                    }
+                };
+            })).then(function () {
+                if (Array.isArray(t._query.table)) {
+                    res(_this._query.result, _this._db);
+                    return;
+                }
+                var eventTypes = (function () {
+                    switch (t._query.action) {
+                        case "select": return [t._query.action];
+                        case "delete":
+                        case "upsert":
+                        case "drop": return [t._query.action, "change"];
+                        default: return [];
+                    }
+                })();
+                var hasLength = _this._query.result && _this._query.result.length;
+                var row = { affectedRowPKS: [], affectedRows: [] };
+                var event = {
+                    table: t._query.table,
+                    query: t._query,
+                    time: new Date().getTime(),
+                    result: rows,
+                    notes: [],
+                    types: eventTypes,
+                    actionOrView: t._AV,
+                    transactionID: t._query.transaction ? t._query.queryID : undefined,
+                    affectedRowPKS: hasLength ? (_this._query.result[0] || row).affectedRowPKS : [],
+                    affectedRows: hasLength ? (_this._query.result[0] || row).affectedRows : [],
+                };
+                res(_this._query.result, _this._db);
+                new utilities_1.CHAIN(t._db._plugins.map(function (p) {
+                    return function (nextP) {
+                        if (p.didExec) {
+                            p.didExec(event, function (newE) {
+                                event = newE;
+                                nextP();
+                            });
+                        }
+                        else {
+                            nextP();
+                        }
+                    };
+                })).then(function () {
+                    t._db.triggerEvent(event);
+                });
+            });
+        });
+    };
+    return _NanoSQLQuery;
+}());
+exports._NanoSQLQuery = _NanoSQLQuery;

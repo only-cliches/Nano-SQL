@@ -2,14 +2,14 @@ const path = require('path');
 const webpack = require("webpack");
 const PATHS = {
     app: path.join(__dirname, 'src'),
-    build: path.join(__dirname, 'dist')
+    build: path.join(__dirname, 'examples')
 };
+const nodeExternals = require('webpack-node-externals');
 
-var options = {
+const options = {
     entry: {
         'nano-sql': [path.join(__dirname, 'src', 'index.ts')]
     },
-    watch: false,
     output: {
         path: PATHS.build,
         filename: '[name].min.js',
@@ -17,7 +17,12 @@ var options = {
         umdNamedDefine: true
     },
     devServer: {
-        contentBase: "./examples"
+        historyApiFallback: true,
+        inline: false,
+        contentBase: "examples",
+    },
+    watchOptions: {
+        aggregateTimeout: 500,
     },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
@@ -29,13 +34,31 @@ var options = {
         Buffer: false,
         setImmediate: false
     },
-    plugins: [
-
-    ],
+    plugins: [],
     module: {
         loaders: [{
                 test: /\.ts$/,
                 loader: 'ts-loader'
+            },
+            {
+                test: /\.txt$/,
+                use: [
+                    {
+                        loader: 'raw-loader'
+                    },
+                    {
+                        loader: 'uglify-loader',
+                        options: {
+                            compress: {
+                                warnings: false,
+                                passes: 2
+                            },
+                            mangle: {
+                                toplevel: true
+                            }
+                        }
+                    }
+                ]
             },
             {
                 test: /\.ts$/,

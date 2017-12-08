@@ -19,7 +19,7 @@ export function initStore() {
             name: "add_todo",
             args: ["title:string"],
             call: (args, db) => {
-                return db.query("upsert",{
+                return db.query("upsert", {
                     title: args.title,
                     done: false,
                 }).exec();
@@ -40,8 +40,10 @@ export function initStore() {
                 return db.query("select").exec();
             }
         }
-    ])
+    ]);
 
-    return nSQL().config({persistent: true, id: "Todo-App"}).connect();
+    window["nSQL"] = nSQL;
+
+    return nSQL().config({id: "Todo-App", history: true, persistent: true}).connect();
 
 }

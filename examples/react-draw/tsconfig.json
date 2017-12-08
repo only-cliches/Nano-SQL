@@ -6,12 +6,10 @@
     "stripInternal":true,
     "removeComments":true,
     "jsx":"react",
-    "outFile":"./index.js"
+    "outFile":"index.js"
   },
   "files":[
       "./src/index.tsx"
   ],
-  "include":[
-      "some-sql"
-  ]
+  "include":[]
 }

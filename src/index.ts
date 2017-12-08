@@ -1,45 +1,11 @@
-import { _NanoSQLDB } from "./db-index";
 import { Promise, setFast } from "lie-ts";
-import { _NanoSQLQuery, _NanoSQLORMQuery } from "./index-query";
-import { _NanoSQLTransactionQuery, _NanoSQLTransactionORMQuery } from "./index-transaction";
-
-declare var global: any;
-
-export interface UUID extends String {
-
-}
-
-// tslint:disable-next-line
-export interface timeId extends String {
-
-}
-
-// tslint:disable-next-line
-export interface timeIdms extends String {
-
-}
-
-/**
- * Standard object placeholder with string key.
- *
- * @export
- * @interface StdObject
- * @template T
- */
-export interface StdObject<T> {
-    [key: string]: T;
-}
-
-/**
- * Custom functinos for the database.
- *
- * @export
- * @interface DBFunction
- */
-export interface DBFunction {
-    call: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[];
-    type: "aggregate"|"simple";
-}
+import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
+import { _NanoSQLORMQuery } from "./query/orm-query";
+import { _NanoSQLTransactionQuery } from "./query/transaction";
+import { ReallySmallEvents } from "really-small-events";
+import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery } from "./utilities";
+import { NanoSQLDefaultBackend } from "./database/index";
+import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
 /**
  * This is the format used for actions and views
@@ -49,9 +15,15 @@ export interface DBFunction {
  */
 export interface ActionOrView {
     name: string;
-    args?: Array<string>;
+    args?: string[];
     extend?: any;
     call: (args?: any, db?: NanoSQLInstance) => Promise<any>;
+}
+
+
+export interface NanoSQLFunction {
+    type: "A" | "S"; // aggregate or simple function
+    call: (rows: any[], complete: (result: any|any[]) => void, ...args: any[]) => void; // function call
 }
 
 /**
@@ -62,21 +34,9 @@ export interface ActionOrView {
  */
 export interface DataModel {
     key: string;
-    type: "string"|"int"|"float"|"array"|"map"|"bool"|"uuid"|"blob"|"timeId"|"timeIdms"|"safestr"|string;
+    type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid" | "blob" | "timeId" | "timeIdms" | "safestr" | "number" | "object" | "obj" | string;
     default?: any;
-    props?: Array<any>;
-}
-
-
-/**
- * Used to represent a single query command.
- *
- * @export
- * @interface QueryLine
- */
-export interface QueryLine {
-    type: string;
-    args?: any;
+    props?: any[];
 }
 
 /**
@@ -87,14 +47,15 @@ export interface QueryLine {
  */
 export interface DatabaseEvent {
     table: string;
-    query: QueryLine[];
+    query: IdbQuery;
     time: number;
+    notes: string[];
     result: any[];
-    name: "change"|"delete"|"upsert"|"drop"|"select"|"error";
+    types: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[];
     actionOrView: string;
-    changeType: string;
-    changedRows: DBRow[];
-    changedRowPKS: any[];
+    transactionID?: string;
+    affectedRowPKS?: any[];
+    affectedRows: DBRow[];
 }
 
 /**
@@ -108,7 +69,7 @@ export interface DatabaseEvent {
  * @interface JoinArgs
  */
 export interface JoinArgs {
-    type: "left"|"inner"|"right"|"cross"|"outer";
+    type: "left" | "inner" | "right" | "cross" | "outer";
     table: string;
     where?: Array<string>;
 }
@@ -120,13 +81,14 @@ export interface JoinArgs {
  * @interface ORMArgs
  */
 export interface ORMArgs {
-    key?: string;
+    key: string;
+    select?: string;
     offset?: number;
     limit?: number;
     orderBy?: {
-        [column: string]: "asc"|"desc";
+        [column: string]: "asc" | "desc";
     };
-    where?: any[]|any[][];
+    where?: (row: DBRow, idx: number) => boolean|any[];
 }
 
 /**
@@ -139,14 +101,12 @@ export interface DBRow {
     [key: string]: any;
 }
 
-export const _assign = (obj: any) => {
-    return JSON.parse(JSON.stringify(obj));
-};
+
 
 export interface IActionViewMod {
     (
         tableName: string,
-        actionOrView: "Action"|"View",
+        actionOrView: "Action" | "View",
         name: string,
         args: any,
         complete: (args: any) => void, error?: (errorMessage: string) => void
@@ -170,16 +130,15 @@ export class NanoSQLInstance {
      * @type {string}
      * @memberOf NanoSQLInstance
      */
-    public sTable: string;
+    public sTable: string|any[];
 
-    /**
-     * The backend currently being used
-     *
-     * @public
-     * @type {NanoSQLBackend}
-     * @memberOf NanoSQLInstance
-     */
-    public backend: NanoSQLBackend;
+    private _config: StdObject<any>;
+
+    public _plugins: NanoSQLPlugin[];
+
+    public static functions: {
+        [fnName: string]: NanoSQLFunction;
+    };
 
     /**
      * Misc placeholder that can be used by the dev.
@@ -189,14 +148,6 @@ export class NanoSQLInstance {
      */
     public data: any;
 
-    /**
-     * The callbacks for events
-     *
-     * @internal
-     * @type {StdObject<StdObject<Array<Function>>>}
-     * @memberOf NanoSQLInstance
-     */
-    private _callbacks: StdObject<StdObject<Array<Function>>>;
 
     /**
      * An array of possible events
@@ -205,7 +156,7 @@ export class NanoSQLInstance {
      * @type {Array<string>}
      * @memberOf NanoSQLInstance
      */
-    private _events: Array<string>;
+    private _events: string[];
 
     /**
      * Holds a map of the current views for this database.
@@ -214,7 +165,7 @@ export class NanoSQLInstance {
      * @type {StdObject<Array<ActionOrView>>}
      * @memberOf NanoSQLInstance
      */
-    private _views: StdObject<Array<ActionOrView>>;
+    private _views: StdObject<ActionOrView[]>;
 
     /**
      * Holds a map of the current actions for this database.
@@ -223,7 +174,7 @@ export class NanoSQLInstance {
      * @type {StdObject<Array<ActionOrView>>}
      * @memberOf NanoSQLInstance
      */
-    private _actions: StdObject<Array<ActionOrView>>;
+    private _actions: StdObject<ActionOrView[]>;
 
 
     /**
@@ -233,28 +184,7 @@ export class NanoSQLInstance {
      * @type {StdObject<Array<DataModel>>}
      * @memberOf NanoSQLInstance
      */
-    public _models: StdObject<Array<DataModel>>;
-
-
-    /**
-     * Stores the default ORM functions for each table.
-     *
-     * @public
-     *
-     * @memberof NanoSQLInstance
-     */
-    public _ormFns: {
-        [table: string]: (column: string, row: DBRow) => ORMArgs
-    };
-
-    /**
-     * An array containing a temporary list of events to trigger
-     *
-     * @internal
-     * @type {Array<"change"|"delete"|"upsert"|"drop"|"select"|"error">}
-     * @memberOf NanoSQLInstance
-     */
-    public _triggerEvents: Array<"change"|"delete"|"upsert"|"drop"|"select"|"error"|string>;
+    public _models: {[table: string]: DataModel[]};
 
     /**
      * Stores wether each table has events attached to it or not.
@@ -272,64 +202,8 @@ export class NanoSQLInstance {
      * @type {string}
      * @memberOf NanoSQLInstance
      */
-    public _activeAV: string|undefined;
+    public _activeAV: string | undefined;
 
-    /**
-     * Holds custom filters implimented by the user
-     *
-     * @private
-     *
-     * @memberOf NanoSQLInstance
-     */
-    private _functions: {
-        [key: string]:  DBFunction
-    };
-
-    /**
-     * Holds an array of custom commands, this is used if the custom() is used before we connect to the db.
-     *
-     * @internal
-     * @type {Array<Array<any>>}
-     * @memberOf NanoSQLInstance
-     */
-    private _preConnectExtend: Array<Array<any>>;
-
-    /**
-     * Holds an object containing the insert filters.
-     *
-     * @internal
-     *
-     * @memberOf NanoSQLInstance
-     */
-    private _rowFilters: {
-        [key: string]: (row: any) => any;
-    };
-
-    /**
-     * Lets you modify queries before they run on the database
-     *
-     * @internal
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public _queryMod: (args: DBExec, complete: (args: DBExec) => void) => void;
-
-    /**
-     * Holds a reference to the optional action/view modifier
-     *
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public _AVMod: IActionViewMod;
-
-    /**
-     * The current timezone offset of this system.
-     *
-     * @private
-     * @type {number}
-     * @memberOf NanoSQLInstance
-     */
-    private static _tzOffset: number;
 
     /**
      * Store an array of table names for ORM type casting.
@@ -340,14 +214,45 @@ export class NanoSQLInstance {
      */
     public _tableNames: string[];
 
+
     /**
-     * Store an array of updated tables to decide what tables to trigger a change on after the transaction.
+     * Stores the relations between tables.
      *
-     * @private
-     * @type {string[]}
-     * @memberOf NanoSQLInstance
+     * @type {({
+     *         [tableName: string]: { // Relations with this table
+     *             _table: string // other table
+     *             _key: string // this column
+     *             _mapTo: string // other column
+     *             _type: "array" | "single" // type of relation
+     *         }[];
+     *     })}
+     * @memberof NanoSQLInstance
      */
-    private _transactionTables: string[];
+    public relations: {
+        [tableName: string]: { // Relations with this table
+            toTable: string // other table
+            column: string // this column
+            toColumn: string // other column
+            type: "array" | "single" // type of relation,
+            toType: "array" | "single" | "" // type of relation this points to
+        }[];
+    };
+
+    /**
+     * Stores which columns are used for ORM stuff.
+     *
+     * @type {{
+     *         [tableName: string]: string[];
+     *     }}
+     * @memberof NanoSQLInstance
+     */
+    public relationColumns: {
+        [tableName: string]: string[];
+    };
+
+    private _callbacks: {
+        [table: string]: ReallySmallEvents;
+    };
 
     constructor() {
 
@@ -355,22 +260,14 @@ export class NanoSQLInstance {
         t._actions = {};
         t._views = {};
         t._models = {};
-        t._preConnectExtend = [];
-        t._transactionTables = [];
         t._events = ["*", "change", "delete", "upsert", "drop", "select", "error"];
 
-        t._callbacks = {};
-        t._ormFns = {};
         t._hasEvents = {};
-        t._callbacks["*"] = {};
         t._tableNames = [];
-        let i = t._events.length;
-        while (i--) {
-            t._callbacks["*"][t._events[i]] = [];
-        }
+        t._plugins = [];
 
-        t._functions = {};
-        t._rowFilters = {};
+        t._callbacks = {};
+        t._callbacks["*"] = new ReallySmallEvents();
     }
 
 
@@ -397,32 +294,107 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public connect(backend?: NanoSQLBackend): Promise<Object | string> {
+    public connect(): Promise<Object | string> {
         let t = this;
 
-        if (t.backend) {
-            return new Promise((res, rej) => {
-                rej();
-                throw Error();
-            });
-        }
-        t.backend = backend || new _NanoSQLDB();
         return new Promise((res, rej) => {
-            t.backend._connect({
-                _models: t._models,
-                _actions: t._actions,
-                _views: t._views,
-                _functions: t._functions,
-                _config: t._preConnectExtend,
-                _parent: this,
-                _onSuccess: (result: any) => {
-                    res(result, t);
-                },
-                _onFail: (rejected: any) => {
-                    if (rej) rej(rejected, t);
-                }
+
+            let connectArgs: DBConnect = {
+                models: t._models,
+                actions: t._actions,
+                views: t._views,
+                config: t._config,
+                parent: this,
+            };
+
+            // if history is enabled, turn on the built in history plugin
+            if (t._config && t._config.history) {
+                this.use(new _NanoSQLHistoryPlugin(t._config.historyMode));
+            }
+
+            // If the db mode is not set to disable, add default store to the end of the plugin chain
+            if (!t._config || t._config.mode !== false) {
+                this.use(new NanoSQLDefaultBackend());
+            }
+
+            new CHAIN(this._plugins.map((p) => {
+                return (nextP) => {
+                    if (p.willConnect) {
+                        p.willConnect(connectArgs, (newArgs) => {
+                            connectArgs = newArgs;
+                            nextP();
+                        });
+                    } else {
+                        nextP();
+                    }
+                };
+            })).then(() => {
+                this._models = connectArgs.models;
+                this._actions = connectArgs.actions;
+                this._views = connectArgs.views;
+                this._config = connectArgs.config;
+                this.relations = {};
+                this.relationColumns = {};
+
+                t._tableNames = Object.keys(this._models);
+
+                t._tableNames.forEach((table) => {
+
+                    let i = this._models[table].length;
+                    this.relations[table] = [];
+                    this.relationColumns[table] = [];
+
+                    while (i--) {
+                        const p = this._models[table][i];
+
+                        // Check for relations
+                        if (p.props && this._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
+                            let mapTo = "";
+                            p.props.forEach(p => {
+                                if (p.indexOf("ref=>") !== -1) mapTo = p.replace("ref=>", "");
+                            });
+
+                            this.relationColumns[table].push(p.key);
+
+                            this.relations[table].push({
+                                column: p.key,
+                                toTable: p.type.replace("[]", ""),
+                                toColumn: mapTo,
+                                type: p.type.indexOf("[]") === -1 ? "single" : "array",
+                                toType: mapTo ? Object.keys(this._models).reduce((prev, cur) => {
+                                    if (cur === p.type.replace("[]", "")) {
+                                        return this._models[cur].reduce((p, c) => {
+                                            if (c.key === mapTo) {
+                                                return c.type.indexOf("[]") !== -1 ? "array" : "single" as any;
+                                            }
+                                            return p;
+                                        }, "");
+                                    }
+                                    return prev;
+                                }, "") : ""
+                            });
+                        }
+                    }
+
+                });
+
+                new ALL(this._plugins.map((p) => {
+                    return (nextP) => {
+                        if (p.didConnect) {
+                            p.didConnect(connectArgs, () => {
+                                nextP();
+                            });
+                        } else {
+                            nextP();
+                        }
+                    };
+                })).then(res);
             });
         });
+    }
+
+    public use(plugin: NanoSQLPlugin): this {
+        return this._plugins.push(plugin), this;
     }
 
     /**
@@ -434,31 +406,28 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public on(actions: "*"|"change"|"delete"|"upsert"|"drop"|"select"|"error", callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance {
+    public on(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance {
         let t = this;
         let l = t.sTable;
         let i = t._events.length;
         let a = actions.split(" ");
 
+        if (Array.isArray(l)) return this;
+
         if (!t._callbacks[l]) { // Handle the event handler being called before the database has connected
-            t._callbacks[l] = {};
-            t._callbacks[l]["*"] = [];
-            while (i--) {
-                t._callbacks[l][t._events[i]] = [];
-            }
+            t._callbacks[l] = new ReallySmallEvents();
         }
 
         i = a.length;
         while (i--) {
             if (t._events.indexOf(a[i]) !== -1) {
-                t._callbacks[l][a[i]].push(callBack);
+                t._callbacks[l].on(a[i], callBack);
             }
         }
-        t._refreshEventChecker();
-        return t;
+        return t._refreshEventChecker();
     }
 
-	/**
+    /**
 	 * Remove a specific event handler from being triggered anymore.
 	 *
 	 * @param {Function} callBack
@@ -466,29 +435,33 @@ export class NanoSQLInstance {
 	 *
 	 * @memberOf NanoSQLInstance
 	 */
-    public off(callBack: Function): NanoSQLInstance {
+    public off(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance {
         let t = this;
-        for (let key in t._callbacks) {
-            for (let key2 in t._callbacks[key]) {
-                t._callbacks[key][key2] = t._callbacks[key][key2].filter((cBs) => {
-                    return cBs !== callBack;
-                });
+        let a = actions.split(" ");
+        let i = a.length;
+        let l = t.sTable;
+
+        if (Array.isArray(l)) return this;
+
+        while (i--) {
+            if (t._events.indexOf(a[i]) !== -1) {
+                t._callbacks[l].off(a[i], callBack);
             }
         }
-        t._refreshEventChecker();
-        return t;
+        return t._refreshEventChecker();
     }
 
     private _refreshEventChecker() {
         this._hasEvents = {};
         Object.keys(this._models).concat(["*"]).forEach((table) => {
             this._hasEvents[table] = this._events.reduce((prev, cur) => {
-                return prev + (this._callbacks[table] ? this._callbacks[table][cur].length : 0);
+                return prev + (this._callbacks[table] && this._callbacks[table].eventListeners[cur] ? this._callbacks[table].eventListeners[cur].length : 0);
             }, 0) > 0;
         });
+        return this;
     }
 
-	/**
+    /**
 	 * Declare the data model for the current selected table.
      *
      * Please reference the DataModel interface for how to impliment this, a quick example:
@@ -508,22 +481,20 @@ export class NanoSQLInstance {
     public model(dataModel: Array<DataModel>): NanoSQLInstance {
         let t = this;
         let l = t.sTable;
-        let i = t._events.length;
+
+        if (Array.isArray(l)) return this;
+
         if (!t._callbacks[l]) {
-            t._callbacks[l] = {};
-            t._callbacks[l]["*"] = [];
-            while (i--) {
-                t._callbacks[l][t._events[i]] = [];
-            }
+            t._callbacks[l] = new ReallySmallEvents();
         }
         t._models[l] = dataModel;
-        t._tableNames.push(l);
+        // t._tableNames.push(l);
         t._views[l] = [];
         t._actions[l] = [];
         return t;
     }
 
-	/**
+    /**
 	 * Declare the views for the current selected table.  Must be called before connect()
      *
      * Views are created like this:
@@ -575,7 +546,8 @@ export class NanoSQLInstance {
 	 *
 	 * @memberOf NanoSQLInstance
 	 */
-    public views(viewArray: Array<ActionOrView>): NanoSQLInstance {
+    public views(viewArray: ActionOrView[]): NanoSQLInstance {
+        if (Array.isArray(this.sTable)) return this;
         return this._views[this.sTable] = viewArray, this;
     }
 
@@ -595,104 +567,12 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public getView(viewName: string, viewArgs: any = {}): Promise<Array<any>|NanoSQLInstance> {
+    public getView(viewName: string, viewArgs: any = {}): Promise<Array<any> | NanoSQLInstance> {
+        if (Array.isArray(this.sTable)) return new Promise((res, rej) => rej());
         return this._doAV("View", this._views[this.sTable], viewName, viewArgs);
     }
 
     /**
-     * Take an action or view and it's args, then make sure the args comform to the types declared in the model.
-     *
-     * @public
-     * @param {Array<string>} argDeclarations
-     * @param {Object} args
-     * @returns {Object}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public cleanArgs(argDeclarations: Array<string>, args: StdObject<any>): StdObject<any> {
-        let t = this;
-        let l = t.sTable;
-        let a: StdObject<any> = {};
-        let i = argDeclarations.length ? argDeclarations.length : -1;
-        if (i > 0) {
-            while (i--) {
-                let k2: Array<string> = argDeclarations[i].split(":");
-                if (k2.length > 1) {
-                    a[k2[0]] = t._cast(k2[1], args[k2[0]] || null);
-                } else {
-                    a[k2[0]] = args[k2[0]] || null;
-                }
-            }
-        }
-
-        return a;
-    }
-
-    /**
-     * Cast variables to a specific type.
-     *
-     * @internal
-     * @param {string} type
-     * @param {*} val
-     * @returns {*}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    private _cast(type: string, val?: any): any {
-        let p = this;
-        const entityMap = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            "\"": "&quot;",
-            "'": "&#39;",
-            "/": "&#x2F;",
-            "`": "&#x60;",
-            "=": "&#x3D;"
-        };
-        const t = typeof val;
-        if (t === "undefined" || val === null) {
-            return val;
-        }
-        let types = (type: string, val: any) => {
-            switch (type) {
-                case "safestr": return types("string", val).replace(/[&<>"'`=\/]/g, (s) => entityMap[s]);
-                case "int": return (t !== "number" || val % 1 !== 0) ? parseInt(val || 0) : val;
-                case "float": return t !== "number" ? parseFloat(val || 0) : val;
-                case "any[]":
-                case "array": return Array.isArray(val) ? _assign(val || []) : [];
-                case "uuid":
-                case "timeId":
-                case "timeIdms":
-                case "string": return val === null ? "" : t !== "string" ? String(val) : val;
-                case "map": return t === "object" ? _assign(val || {}) : {};
-                case "bool": return val === true;
-                // case "any":
-                // case "blob": return val;
-            }
-
-            return val;
-        };
-
-        const newVal = types(type, val);
-
-        if (type.indexOf("[]") !== -1) {
-            const arrayOf = type.slice(0, type.lastIndexOf("[]"));
-            return (val || []).map((v) => {
-                return this._cast(arrayOf, v);
-            });
-        } else if (newVal !== undefined) {
-            if (["int", "float"].indexOf(type) !== -1) {
-                return isNaN(newVal) ? 0 : newVal;
-            } else {
-                return newVal;
-            }
-        }
-
-        return undefined;
-    }
-
-	/**
 	 * Declare the actions for the current selected table.  Must be called before connect()
      *
      * Actions are created like this:
@@ -743,6 +623,7 @@ export class NanoSQLInstance {
 	 * @memberOf NanoSQLInstance
 	 */
     public actions(actionArray: Array<ActionOrView>): NanoSQLInstance {
+        if (Array.isArray(this.sTable)) return this;
         return this._actions[this.sTable] = actionArray, this;
     }
 
@@ -762,7 +643,8 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public doAction(actionName: string, actionArgs: any): Promise<Array<DBRow>|NanoSQLInstance> {
+    public doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance> {
+        if (Array.isArray(this.sTable)) return new Promise((res, rej) => rej());
         return this._doAV("Action", this._actions[this.sTable], actionName, actionArgs);
     }
 
@@ -778,10 +660,10 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    private _doAV(AVType: "Action"|"View", AVList: ActionOrView[], AVName: string, AVargs: any): Promise<Array<DBRow>|NanoSQLInstance> {
-       let t = this;
+    private _doAV(AVType: "Action" | "View", AVList: ActionOrView[], AVName: string, AVargs: any): Promise<Array<DBRow> | NanoSQLInstance> {
+        let t = this;
 
-        let selAV: ActionOrView|null = AVList.reduce((prev, cur) => {
+        const selAV: ActionOrView | null = AVList.reduce((prev, cur) => {
             if (cur.name === AVName) return cur;
             return prev;
         }, null as any);
@@ -791,61 +673,9 @@ export class NanoSQLInstance {
         }
         t._activeAV = AVName;
 
-        let cleanArgs = selAV.args ? t.cleanArgs(selAV.args, AVargs) : {};
-
-        if (t._AVMod) {
-            return new Promise((res, rej) => {
-                t._AVMod(this.sTable, AVType, t._activeAV || "", cleanArgs, (args) => {
-                    selAV ? selAV.call(args, t).then((result) => {
-                        res(result, t);
-                    }) : false;
-                }, (err) => {
-                    rej(err);
-                });
-            });
-        } else {
-            return selAV.call(cleanArgs, t);
-        }
+        return selAV.call(selAV.args ? cleanArgs(selAV.args, AVargs) : {}, t);
     }
 
-    /**
-	 * Add a function to the usable list of functions for this database.  Must be called BEFORE connect().
-     *
-     * Functions can be used with any database on the attached store.
-     *
-     * Example:
-     *
-     * ```ts
-     * NanoSQL().newFunction('ADD',{ // Function is called "ADD"
-     *  type:"simple", // "aggregate" or "simple"
-     *  call:function(row:DBRow, args: string[], ptr: number[], prev: any) {
-     *      // arguments are passed in as an array in the args argument.
-     *      // ptr is an array that lets you know the length and position of the current query.
-     *      // ptr[0] is the current index, ptr[1] is the max index/length
-     *      // prev is only used for aggregate functions, lets  you pass an argument into the next function call.
-     *      let r = JSON.parse(JSON.stringify(row));
-     *      r.ADD = args.reduce((a, b) => parseFloat(a) + parseFloat(b));
-     *      return r;
-     *  }
-     * });
-     * ```
-     *
-     * Then to use it in a query:
-     * ```ts
-     * NanoSQL("users").query("select",["name","ADD(balance, 2)"]).exec();
-	 * ```
-     *
-     * Make sure the calculated value is add to the row(s) with the `useKey` argument, otherwise `AS` arguments won't work.
-     *
-     * @param {string} filterName
-     * @param {(rows: Array<Object>) => Array<Object>} filterFunction
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public newFunction(functionName: string, functionType: "aggregate"|"simple", filterFunction: (row: DBRow, args: string[], ptr: number[], prev?: any) => DBRow[]): NanoSQLInstance {
-        return this._functions[functionName] = {type: functionType, call: filterFunction}, this;
-    }
 
     /**
      * Start a query into the current selected table.
@@ -906,61 +736,11 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery {
+    public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery {
 
         let t = this;
-        let query = new _NanoSQLQuery(t.sTable, t, t._activeAV);
+        let query = new _NanoSQLQuery(t.sTable, t, action.toLowerCase(), args, t._activeAV, bypassORMPurge);
         t._activeAV = undefined;
-        const a = action.toLowerCase();
-        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) !== -1) {
-
-            let newArgs = args || (a === "select" || a === "delete" ? [] : {});
-            if (["upsert", "delete", "drop"].indexOf(a) !== -1) {
-                t._transactionTables.push(t.sTable);
-            }
-
-            // Purge ORM columns from the delete arguments
-            if (action === "delete" && !bypassORMPurge) {
-                let inputArgs = {};
-                t._models[t.sTable].forEach((model) => {
-                    if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
-                        newArgs[model.key] = undefined;
-                    }
-                });
-                newArgs = inputArgs;
-            }
-
-            if (action === "upsert") {
-
-                // Cast row types and remove columns that don't exist in the data model
-                let inputArgs = {};
-
-                t._models[t.sTable].forEach((model) => {
-                    if (!bypassORMPurge) {
-                        // Purge ORM columns
-                        if (t._tableNames.indexOf(model.type.replace("[]", "")) !== -1) {
-                            newArgs[model.key] = undefined;
-                        }
-                    }
-
-                    // Cast known columns and purge uknown columns
-                    if (newArgs[model.key] !== undefined) {
-                        let cast = t._cast(model.type, newArgs[model.key]);
-                        if (cast !== undefined) inputArgs[model.key] = cast;
-                    }
-                });
-
-                // Apply insert filters
-                if (t._rowFilters[t.sTable]) {
-                    inputArgs = t._rowFilters[t.sTable](inputArgs);
-                }
-
-                newArgs = inputArgs;
-            }
-            query._action = {type: a, args: newArgs};
-        } else {
-            throw Error;
-        }
         return query;
     }
 
@@ -974,20 +754,9 @@ export class NanoSQLInstance {
      *
      * @memberof NanoSQLInstance
      */
-    public updateORM(action: "add"|"delete"|"drop"|"rebuild"|"set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery {
+    public updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery {
+        if (Array.isArray(this.sTable)) return null as any;
         return new _NanoSQLORMQuery(this, this.sTable, action, column, relationIDs);
-    }
-
-    /**
-     * Add a default ORM query to a speicfic table.
-     *
-     * @param {(column: string) => ORMArgs} callBack
-     *
-     * @memberof NanoSQLInstance
-     */
-    public defaultORM(callBack: (column: string, parentRowData: DBRow[]) => ORMArgs): this {
-        this._ormFns[this.sTable] = callBack;
-        return this;
     }
 
     /**
@@ -997,23 +766,23 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public triggerEvent(eventData: DatabaseEvent, triggerEvents: Array<string>): void {
+    public triggerEvent(eventData: DatabaseEvent): NanoSQLInstance {
         let t = this;
-        setTimeout(() => {
-            let i = triggerEvents.length;
-            let j = 0;
-            let e: any;
+        setFast(() => {
             let c: Function[];
-            while (i--) {
-                e = triggerEvents[i];
-                c = t._callbacks[eventData.table][e].concat(t._callbacks[eventData.table]["*"]);
-                j = c.length;
-                while (j--) {
-                    eventData.name = e;
-                    if (c[j]) c[j](eventData, t);
+            eventData.types.forEach((type) => {
+                // trigger wildcard
+                t._callbacks["*"].trigger(type, eventData, t);
+                t._callbacks["*"].trigger("*", eventData, t);
+
+                // trigger specific table
+                if (eventData.table && t._callbacks[eventData.table]) {
+                    t._callbacks[eventData.table].trigger(type, eventData, t);
                 }
-            }
-        }, 0);
+            });
+
+        });
+        return t;
     }
 
     /**
@@ -1038,13 +807,17 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public default(replaceObj?: any): {[key: string]: any} {
+    public default(replaceObj?: any): { [key: string]: any } {
         let newObj = {};
         let t = this;
+        if (Array.isArray(t.sTable)) return {};
         t._models[t.sTable].forEach((m) => {
+            // set key to object argument or the default value in the data model
             newObj[m.key] = (replaceObj && replaceObj[m.key]) ? replaceObj[m.key] : m.default;
-            if (!newObj[m.key]) {
-                newObj[m.key] = t._cast(m.type, null); // Generate default value from type, eg int == 0
+
+            // Generate default value from type, eg int = 0, string = ""
+            if (newObj[m.key] === undefined) {
+                newObj[m.key] = cast(m.type, null);
             }
         });
         return newObj;
@@ -1064,75 +837,87 @@ export class NanoSQLInstance {
      */
     public doTransaction(initTransaction: (
         db: (table?: string) => {
-            query: (action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any) => _NanoSQLTransactionQuery;
-            updateORM: (action: "add"|"delete"|"drop"|"set", column?: string, relationIDs?: any[]) => _NanoSQLTransactionORMQuery|undefined;
+            query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => _NanoSQLTransactionQuery;
         }, complete: () => void) => void
     ): Promise<any> {
         let t = this;
-        let queries: {
-            type: "std"|"orm",
-            table: string;
-            action: any;
-            actionArgs?: any;
-            query?: any[];
-            column?: string;
-            relationIDs?: any[];
-            where?: any[];
-        }[] = [];
-        let transactionID = NanoSQLInstance.random16Bits();
+
+        let queries: IdbQuery[] = [];
+        let transactionID = random16Bits().toString(16);
 
         return new Promise((resolve, reject) => {
-            t.backend._transaction("start", transactionID).then(() => {
+            if (!t._plugins.length) {
+                reject("Nothing to do, no plugins!");
+                return;
+            }
+
+            new CHAIN(t._plugins.map(p => {
+
+                return (nextP) => {
+                    if (p.transactionBegin) {
+                        p.transactionBegin(transactionID, nextP);
+                    } else {
+                        nextP();
+                    }
+                };
+            })).then(() => {
+
+                if (Array.isArray(t.sTable)) return;
+
                 initTransaction(
                     (table?: string) => {
-                        let ta: string = table || t.sTable;
+                        let ta: string = table || t.sTable as any;
                         return {
-                            query: (action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any) => {
-                                return new _NanoSQLTransactionQuery(action, args, ta, queries);
-                            },
-                            updateORM: (action: "add"|"delete"|"drop"|"set"|"rebuild", column?: string, relationIDs?: any[]) => {
-                                if (action === "rebuild") {
-                                    return undefined;
-                                } else {
-                                    return new _NanoSQLTransactionORMQuery(queries, ta, action, column, relationIDs);
-                                }
+                            query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => {
+                                return new _NanoSQLTransactionQuery(action, args, ta, queries, transactionID);
                             }
                         };
                     },
                     () => {
 
-                        NanoSQLInstance.chain(queries.map((quer) => {
+                        let tables: string[] = [];
+
+
+                        new CHAIN(queries.map((quer) => {
                             return (nextQuery) => {
-                                if (quer.type === "std") {
-                                    t.table(quer.table).query(quer.action, quer.actionArgs, true).tID(transactionID).manualExec(quer.table, quer.query || []).then(nextQuery);
-                                } else {
-                                    let ormQuery = t.table(quer.table).updateORM(quer.action, quer.column, quer.relationIDs).tID(transactionID);
-                                    const where = quer.where;
-                                    if ( where ) ormQuery.where(where);
-                                    ormQuery.exec().then(nextQuery);
-                                }
+                                tables.push(quer.table as any);
+                                t.table(quer.table as any).query(quer.action as any, quer.actionArgs, true).manualExec({
+                                    ...quer,
+                                    transaction: true,
+                                    queryID: transactionID,
+                                    actionArgs: undefined
+                                }).then(nextQuery);
                             };
+                        })).then((results) => {
 
-                        }))(() => {
-                            t.backend._transaction("end", transactionID).then((result) => {
-
-                                t._transactionTables.forEach((table) => {
+                            new CHAIN(this._plugins.map(p => {
+                                return (nextP) => {
+                                    if (p.transactionEnd) {
+                                        p.transactionEnd(transactionID, nextP);
+                                    } else {
+                                        nextP();
+                                    }
+                                };
+                            })).then(() => {
+                                tables.filter((val, idx, self) => {
+                                    return self.indexOf(val) === idx;
+                                }).forEach((table) => {
                                     if (table.indexOf("_") !== 0) {
                                         t.triggerEvent({
+                                            query: queries[0],
                                             table: table,
-                                            query: [],
                                             time: new Date().getTime(),
-                                            result: [],
-                                            name: "change",
+                                            result: results,
+                                            types: ["transaction"],
                                             actionOrView: "",
-                                            changeType: "transaction",
-                                            changedRows: [],
-                                            changedRowPKS: []
-                                        }, ["change"]);
+                                            notes: [],
+                                            transactionID: transactionID,
+                                            affectedRowPKS: [],
+                                            affectedRows: []
+                                        });
                                     }
                                 });
-
-                                resolve(result);
+                                resolve(results);
                             });
                         });
                     }
@@ -1141,31 +926,6 @@ export class NanoSQLInstance {
         });
     }
 
-    /**
-     * Adds a query filter to every request.
-     *
-     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public queryFilter(callBack: (args: DBExec, complete: (args: DBExec) => void) => void): NanoSQLInstance {
-        this._queryMod = callBack;
-        return this;
-    }
-
-
-    /**
-     * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
-     *
-     * @param {IActionViewMod} filterFunc
-     * @returns
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public avFilter(filterFunc: IActionViewMod) {
-        this._AVMod = filterFunc;
-        return this;
-    }
 
     /**
      * Configure the database driver, must be called before the connect() method.
@@ -1175,10 +935,9 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public config(args: any): NanoSQLInstance {
-        let t = this;
-        if (!t.backend) t._preConnectExtend.push(args);
-        return t;
+    public config(args: StdObject<string>): NanoSQLInstance {
+        this._config = args;
+        return this;
     }
 
     /**
@@ -1189,17 +948,33 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public extend(...args: Array<any>): any|NanoSQLInstance {
+    public extend(...args: any[]): any | NanoSQLInstance {
         let t = this;
 
-        if (t.backend) { // Query Mode
-            if (t.backend._extend) {
-                args.unshift(t);
-                return t.backend._extend.apply(t.backend, args);
+        return new Promise((res, rej) => {
+            if (t._plugins.length) { // Query Mode
+                let newArgs = _assign(args);
+                let result: any[] = [];
+                new CHAIN(t._plugins.map((p) => {
+                    return (nextP) => {
+                        if (p.extend) {
+                            p.extend((nArgs, newResult) => {
+                                newArgs = nArgs;
+                                result = newResult;
+                                nextP();
+                            }, newArgs, result);
+                        } else {
+                            nextP();
+                        }
+                    };
+                })).then(() => {
+                    res(result);
+                });
             } else {
-                return undefined;
+                rej("No plugins!");
             }
-        }
+        });
+
     }
 
     /**
@@ -1222,6 +997,7 @@ export class NanoSQLInstance {
      */
     public loadJS(table: string, rows: Array<Object>, useTransaction: boolean = true): Promise<Array<Object>> {
         let t = this;
+
         if (useTransaction) {
             return t.doTransaction((db, complete) => {
                 rows.forEach((row) => {
@@ -1231,30 +1007,15 @@ export class NanoSQLInstance {
             });
         } else {
             return new Promise((res, rej) => {
-                NanoSQLInstance.chain(rows.map((row) => {
+                new CHAIN(rows.map((row) => {
                     return (nextRow) => {
                         nSQL(table).query("upsert", row).exec().then(nextRow);
                     };
-                }))((rows) => {
+                })).then((rows) => {
                     res(rows.map(r => r.shift()));
                 });
             });
         }
-    }
-
-    /**
-     * Adds a filter to rows going into the database, allows you to control the range and type of inputs.
-     *
-     * This function will be called on every upsert and you'll recieve the upsert data as it's being passed in.
-     *
-     * NanoSQL will apply the "default" row data to each column and type cast each column BEFORE calling this function.
-     *
-     * @param {(row: object) => object} callBack
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public rowFilter(callBack: (row: any) => any) {
-        return this._rowFilters[this.sTable] = callBack, this;
     }
 
     /**
@@ -1285,7 +1046,7 @@ export class NanoSQLInstance {
                     if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
                         // tslint:disable-next-line
                         row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
-                    // tslint:disable-next-line
+                        // tslint:disable-next-line
                     } else if (row[i].indexOf('"') === 0) {
                         row[i] = row[i].slice(1, row[i].length - 1);
                     }
@@ -1304,222 +1065,208 @@ export class NanoSQLInstance {
             });
         } else {
             return new Promise((res, rej) => {
-                NanoSQLInstance.chain(rowData.map((row) => {
+                new CHAIN(rowData.map((row) => {
                     return (nextRow) => {
                         nSQL(table).query("upsert", row).exec().then(nextRow);
                     };
-                }))((rows) => {
+                })).then((rows) => {
                     res(rows.map(r => r.shift()));
                 });
             });
         }
     }
-
-    public static random16Bits(): number {
-        if (typeof crypto === "undefined") {
-            return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
-        } else {
-            if (crypto.getRandomValues) { // Browser crypto
-                let buf = new Uint16Array(1);
-                crypto.getRandomValues(buf);
-                return buf[0];
-            } else if (global !== "undefined" && global._crypto.randomBytes) { // NodeJS crypto
-                return  global._crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
-            } else {
-                return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
-            }
-        }
-    }
-
-    /**
-     * Chain an array of functions to fire sequentially.
-     *
-     * @static
-     * @param {((next: (result?: any) => void) => void)[]} callbacks
-     * @returns {Promise<any>}
-     *
-     * @memberof NanoSQLInstance
-     */
-    public static chain(callbacks: ((next: (result?: any) => void) => void)[]): (complete: (results: any[]) => void) => void {
-
-        return (complete: (results: any[]) => void) => {
-            let results: any[] = [];
-            let ptr = 0;
-
-            if (!callbacks.length) {
-                complete([]);
-            }
-
-            const next = () => {
-                if (ptr < callbacks.length) {
-                    callbacks[ptr]((result) => {
-                        results.push(result);
-                        ptr++;
-                        // Breaks up the call stack
-                        setFast(next);
-                    });
-                } else {
-                    complete(results);
-                }
-            };
-            next();
-        };
-
-    }
-
-    /**
-     * Generate a unique, sortable time ID
-     *
-     * @static
-     * @returns {string}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public static timeid(ms?: boolean): string {
-        let t = this;
-        if (!t._tzOffset) {
-            t._tzOffset = new Date().getTimezoneOffset() * 60000; // In milliseconds
-        }
-        let time = Math.round((new Date().getTime() + t._tzOffset) / (ms ? 1 : 1000)).toString();
-        while (time.length < (ms ? 13 : 10)) {
-            time = "0" + time;
-        }
-        return time + "-" +  (t.random16Bits() + t.random16Bits()).toString(16);
-    }
-
-    /**
-     * RFC4122 compliant UUID v4, 9 randomly generated 16 bit numbers.
-     *
-     * @static
-     * @returns {string}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public static uuid(): string {
-        let r, s, b = "";
-        return [b, b, b, b, b, b, b, b, b].reduce((prev: string, cur: any, i: number): string => {
-            r = this.random16Bits();
-            s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
-            r = r.toString(16);
-            while (r.length < 4) r = "0" + r;
-            return prev + ([3, 4, 5, 6].indexOf(i) >= 0 ? "-" : b) + (s + r).slice(0, 4);
-        }, b);
-    }
-
-    /**
-     * Utility function for generating numerical hashes from strings.
-     *
-     * @internal
-     * @param {string} key
-     * @returns {number}
-     *
-     * @memberOf _NanoSQLDB
-     */
-    public static _hash(key: string): number {
-        return Math.abs(key.split("").reduce(function (prev, next, i) {
-            return ((prev << 5) + prev) + key.charCodeAt(i);
-        }, 0));
-    }
-
 }
 
-/**
- * This object is passed into a the database connect function to activate it.
- *
- * @export
- * @interface DBConnect
- */
+
 export interface DBConnect {
-    _models: StdObject<Array<DataModel>>;
-    _actions: StdObject<Array<ActionOrView>>;
-    _views: StdObject<Array<ActionOrView>>;
-    _functions: {
-        [key: string]:  DBFunction
-    };
-    _config: Array<any>;
-    _parent: NanoSQLInstance;
-    _onSuccess: Function;
-    _onFail?: Function;
+    models: StdObject<DataModel[]>;
+    actions: StdObject<ActionOrView[]>;
+    views: StdObject<ActionOrView[]>;
+    config: StdObject<string>;
+    parent: NanoSQLInstance;
 }
-
 /**
- * These variables are passed into the database execution function.
+ * The interface for plugins used by NanoSQL
+ * Current plugins include History and the default storage system.
  *
  * @export
- * @interface DBExec
+ * @interface NanoSQLPlugin
  */
-export interface DBExec {
-    table: string;
-    query: Array<QueryLine>;
-    viewOrAction: string;
-    transactionID: number;
-    onSuccess: (rows: Array<Object>, type: string, affectedRows: DBRow[], affectedPKS: any[]) => void;
-    onFail: (rows: Array<Object>) => void;
+export interface NanoSQLPlugin {
+    /**
+     * Called before database connection with all the connection arguments, including data models and what not.
+     * Lets you adjust the connect arguments, add tables, remove tables, adjust data models, etc.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    willConnect?: (connectArgs: DBConnect, next: (connectArgs: DBConnect) => void) => void;
+
+    /**
+     * Called after connection, changes tot he connectArgs won't have any affect on the database but can still be read.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    didConnect?: (connectArgs: DBConnect, next: () => void) => void;
+
+    /**
+     * Called when a query is sent through the system, once all plugins are called the query resullt is sent to the user.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    doExec?: (execArgs: IdbQuery, next: (execArgs: IdbQuery) => void) => void;
+
+    /**
+     * Called after the query is done, allows you to modify the event data before the event is emmited
+     *
+     * @memberof NanoSQLPlugin
+     */
+    didExec?: (event: DatabaseEvent, next: (event: DatabaseEvent) => void) => void;
+
+    /**
+     * Called before a transaction takes place.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    transactionBegin?: (id: string, next: () => void) => void;
+
+    /**
+     * Called after a transaction completes.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    transactionEnd?: (id: string, next: () => void) => void;
+
+    /**
+     * Generic for other misc functions, called when ".extend()" is used.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    extend?: (next: (args: any[], result: any[]) => void, args: any[], result: any[]) => void;
 }
 
-export interface NanoSQLBackend {
 
-    /**
-     * Inilitize the database for use, async so you can connect to remote stuff as needed.
-     *
-     * This is called by NanoSQL once to the DB driver once the developer calls "connect()".
-     *
-     * Models, Views, Actions, and added Filters are all sent in at once.  Once the "onSuccess" function is called the database should be ready to use.
-     *
-     * The "preCustom" var contains an array of calls made to the "custom" method before connect() was called.  All subsequent custom() calls will pass directly to the database "custom()" method.
-     *
-     * @param {DBConnect} connectArgs
-     *
-     * @memberOf NanoSQLBackend
-     */
-    _connect(connectArgs: DBConnect): void;
-
-    /**
-     * Executes a specific query on the database with a specific table
-     *
-     * This is called on "exec()" and all the query parameters are passed in as an array of Objects containing the query parameters.
-     *
-     * The syntax is pretty straightforward, for example a query like this: NanoSQL("users").query("select").exec() will turn into this:
-     * ```ts
-     * [{type:'select',args:undefined}]
-     * ```
-     *
-     * Let's say the person using the system gets crazy and does NanoSQL("users").query("select",['username']).orderBy({name:'desc'}).exec();
-     * Then you get this:
-     * ```ts
-     * [{type:'select',args:['username']},{type:"orderBy",args:{name:'desc}}]
-     * ```
-     *
-     * With that information and the table name you can create the query as needed, then return it through the onSuccess function.
-     *
-     * @param {DBExec} execArgs
-     *
-     * @memberOf NanoSQLBackend
-     */
-    _exec(execArgs: DBExec): void;
-
-    /**
-     * Optional extension for the database.
-     * The extend method for NanoSQL is just a passthrough to this method.
-     * An entirely different and new API can be built around this.
-     *
-     * @param {NanoSQLInstance} instance
-     * @param {...Array<any>} args
-     * @returns {*}
-     *
-     * @memberOf NanoSQLBackend
-     */
-    _extend?(instance: NanoSQLInstance, ...args: Array<any>): any;
-
-    /**
-     * Let the database driver know it needs to start or end a transaction
-     *
-     * @param {("start"|"end")} type
-     *
-     * @memberOf NanoSQLBackend
-     */
-    _transaction(type: "start"|"end", id: number): Promise<any[]>;
-}
+NanoSQLInstance.functions = {
+    COUNT: {
+        type: "A",
+        call: (rows, complete, column) => {
+            if (column && column !== "*") {
+                complete(rows.filter(r => objQuery(column, r)).length);
+            } else {
+                complete(rows.length);
+            }
+        }
+    },
+    MAX: {
+        type: "A",
+        call: (rows, complete, column) => {
+            if (rows.length) {
+                let max = objQuery(column, rows[0]) || 0;
+                rows.forEach(r => {
+                    const v = objQuery(column, r);
+                    if (objQuery(column, r) > max) {
+                        max = objQuery(column, r);
+                    }
+                });
+                complete(max);
+            } else {
+                complete(0);
+            }
+        }
+    },
+    MIN: {
+        type: "A",
+        call: (rows, complete, column) => {
+            if (rows.length) {
+                let min = objQuery(column, rows[0]) || 0;
+                rows.forEach(r => {
+                    const v = objQuery(column, r);
+                    if (v < min) {
+                        min = v;
+                    }
+                });
+                complete(min);
+            } else {
+                complete(0);
+            }
+        }
+    },
+    AVG: {
+        type: "A",
+        call: (rows, complete, column) => {
+            complete(rows.reduce((prev, cur) => prev + (objQuery(column, cur) || 0), 0) / rows.length);
+        }
+    },
+    SUM: {
+        type: "A",
+        call: (rows, complete, column) => {
+            complete(rows.reduce((prev, cur) => prev + (objQuery(column, cur) || 0), 0));
+        }
+    },
+    LOWER: {
+        type: "S",
+        call: (rows, complete, column) => {
+            complete(rows.map((r) => {
+                return String(objQuery(column, r)).toLowerCase();
+            }));
+        }
+    },
+    UPPER: {
+        type: "S",
+        call: (rows, complete, column) => {
+            complete(rows.map((r) => {
+                return String(objQuery(column, r)).toUpperCase();
+            }));
+        }
+    },
+    CAST: {
+        type: "S",
+        call: (rows, complete, column, type) => {
+            complete(rows.map((r) => {
+                return cast(type, objQuery(column, r));
+            }));
+        }
+    },
+    ABS: {
+        type: "S",
+        call: (rows, complete, column) => {
+            complete(rows.map((r) => {
+                return Math.abs(objQuery(column, r));
+            }));
+        }
+    },
+    CEIL: {
+        type: "S",
+        call: (rows, complete, column) => {
+            complete(rows.map((r) => {
+                return Math.ceil(objQuery(column, r));
+            }));
+        }
+    },
+    POW: {
+        type: "S",
+        call: (rows, complete, column, power) => {
+            complete(rows.map((r) => {
+                return Math.pow(objQuery(column, r), parseInt(power));
+            }));
+        }
+    },
+    ROUND: {
+        type: "S",
+        call: (rows, complete, column) => {
+            complete(rows.map((r) => {
+                return Math.round(objQuery(column, r));
+            }));
+        }
+    },
+    SQRT: {
+        type: "S",
+        call: (rows, complete, column) => {
+            complete(rows.map((r) => {
+                return Math.sqrt(objQuery(column, r));
+            }));
+        }
+    }
+};
 
 /**
  * @internal

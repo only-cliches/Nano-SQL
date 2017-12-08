@@ -11,7 +11,5 @@
   "files":[
       "./src/index.tsx"
   ],
-  "include":[
-      "some-sql"
-  ]
+  "include":[]
 }

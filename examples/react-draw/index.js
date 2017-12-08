@@ -27,7 +27,7 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
             { key: "size", type: "int" },
             { key: "path", type: "array" }
         ]);
-        return nano_sql_1.nSQL().config({ persistent: true, id: "Draw-App" }).connect();
+        return nano_sql_1.nSQL().config({ persistent: true, history: true, id: "Draw-App" }).connect();
     };
 });
 define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql", "jquery"], function (require, exports, react_1, React, ReactDOM, store_1, nano_sql_2, $) {
@@ -76,14 +76,14 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         DrawingApp.prototype.undo = function () {
             var _this = this;
-            nano_sql_2.nSQL().extend("<").then(function (result) {
+            nano_sql_2.nSQL().extend("hist", "<").then(function (result) {
                 if (result)
                     _this.drawFromStore();
             });
         };
         DrawingApp.prototype.redo = function () {
             var _this = this;
-            nano_sql_2.nSQL().extend(">").then(function (result) {
+            nano_sql_2.nSQL().extend("hist", ">").then(function (result) {
                 if (result)
                     _this.drawFromStore();
             });
@@ -96,8 +96,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         DrawingApp.prototype.updateComponent = function (e, db) {
             var t = this;
-            console.log(e);
-            nano_sql_2.nSQL().extend("?").then(function (historyArray) {
+            nano_sql_2.nSQL().extend("hist", "?").then(function (historyArray) {
                 t.setState(__assign({}, t.state, { redos: historyArray }));
             });
         };
@@ -143,7 +142,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             t.ctx.stroke();
         };
         DrawingApp.prototype.componentDidMount = function () {
-            var canvas = document.getElementById('DrawingContainer');
+            var canvas = document.getElementById("DrawingContainer");
             this.ctx = canvas.getContext("2d");
             this.drawFromStore();
             this.activateDrawingSurface(canvas);
@@ -154,11 +153,11 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             var h = cnvs.height;
             var flag = false, prevX = 0, currX = 0, prevY = 0, currY = 0, dot_flag = false;
             var offset = $("#DrawingContainer").offset();
-            $(window).on('resize', function () {
+            $(window).on("resize", function () {
                 offset = $("#DrawingContainer").offset();
             });
             var findxy = function (res, e) {
-                if (res == 'down') {
+                if (res === "down") {
                     prevX = currX;
                     prevY = currY;
                     currX = e.clientX - offset.left;
@@ -171,7 +170,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                         path: [{ x: currX, y: currY }]
                     };
                 }
-                if (res == 'up' || res == "out") {
+                if (res === "up" || res === "out") {
                     if (flag === true && t.currentPath.path.length) {
                         nano_sql_2.nSQL("paths").query("upsert", t.currentPath).exec();
                         if (t.state.canErase === false) {
@@ -180,7 +179,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                     }
                     flag = false;
                 }
-                if (res == 'move') {
+                if (res === "move") {
                     if (flag) {
                         prevX = currX;
                         prevY = currY;
@@ -191,25 +190,25 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                 }
             };
             var renderCursor = function (type, e) {
-                if (type == "out") {
+                if (type === "out") {
                     $(".cursor").css("opacity", 0);
                 }
                 else {
-                    $(".cursor").css("left", e.screenX - offset.left).css("top", e.screenY - offset.top - 30).css("opacity", 1);
+                    $(".cursor").css("left", e.screenX - offset.left).css("top", e.screenY - offset.top - 52).css("opacity", 1);
                 }
             };
             cnvs.addEventListener("mousemove", function (e) {
-                findxy('move', e);
+                findxy("move", e);
                 renderCursor("move", e);
             }, false);
             cnvs.addEventListener("mousedown", function (e) {
-                findxy('down', e);
+                findxy("down", e);
             }, false);
             cnvs.addEventListener("mouseup", function (e) {
-                findxy('up', e);
+                findxy("up", e);
             }, false);
             cnvs.addEventListener("mouseout", function (e) {
-                findxy('out', e);
+                findxy("out", e);
                 renderCursor("out", e);
             }, false);
         };

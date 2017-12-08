@@ -1,11 +1,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
-var index_1 = require("./index");
-exports._assign = index_1._assign;
-exports.NanoSQLInstance = index_1.NanoSQLInstance;
-exports.nSQL = index_1.nSQL;
-var index_query_1 = require("./index-query");
-exports._NanoSQLQuery = index_query_1._NanoSQLQuery;
 global._fs = require("fs");
 global._levelup = require("levelup");
 global._leveldown = require("leveldown");
 global._crypto = require("crypto");
+var index_1 = require("./index");
+exports.NanoSQLInstance = index_1.NanoSQLInstance;
+exports.nSQL = index_1.nSQL;
+var utilities_1 = require("./utilities");
+exports._assign = utilities_1._assign;

@@ -8,10 +8,30 @@ Read: ~100 records/ms
 - Write Cordova plugin.
 - Write SQLite plugin.
 - Finish integration tests.
-- Switch in memory indexes to a sorted BTrees.
-- Increase memory db write performance by just appending data to the rows, skipping a read before write.
-- Add a "revisions" mode to history.  Now history records can be set per row instead of database wide.
-- Add `revisionComment` function to standard queries allowing you to add information about each revision into the datastore.
+
+## [1.0.0]
+MANY BREAKING CHANGES, PLEASE READ THE MIGRATION GUIDE
+This build is intended to stabilize the library, increase performance and make it easy to extend in the future.  The API for v1.X.X releases will be very stable moving forward.
+*****
+- Complete rewrite of the database engine, ORM system, and history system.
+- History can now be database wide (default), table wide or row wide.
+- Implimemented new plugin system with lifecycle events of every query.
+- The new built in storage engine uses the new plugin system, allowing you to remove/adjust how queries are handled.
+- Completely removed the old custom backend system and added a new adapter system.
+- You can no longer run the built in memory db with persistence.
+- All database adapters now use a sorted B-Tree index to gaurantee consistency.
+- You can use instance tables with nSQL queries. ex: nSQL([{name: "Bill"}, {name: "Bob"}]).query("select")....
+- History is no longer enabled by default.
+- Added WebSQL support. Safari in iOS and macOS will use WebSQL by default.
+- Added support for running IndexedDB in a webworker.
+- Added new INTERSECT and NOT INTERSECT .where() comparators.  To check if any array values intersect with any values in an array of the database column.
+- .where() statements now accept a function, much like filter: `nSQL("table").query("select").where(row => row.age > 20).exec()`
+- Tables without a primary key are no longer supported, unless it's an instance table.
+- Added `loadCSV` method to automate importing CSVs into the database.
+
+
+## [0.9.3] 10-15-2017
+- Added changed rows property to database events.
 
 ## [0.9.2] 10-2-2017
 - Fixed a bug with the event system running into an error and preventing further errors from being fired.

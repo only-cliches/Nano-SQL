@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+      "target": "es5",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "stripInternal": true,
+      "removeComments": true,
+      "importHelpers": false,
+      "strictNullChecks": true,
+      "noImplicitAny": false,
+      "noImplicitReturns": true,
+      "noImplicitThis": true,
+      "noImplicitUseStrict": true
+  },
+  "include": ["./test.ts"]
+}

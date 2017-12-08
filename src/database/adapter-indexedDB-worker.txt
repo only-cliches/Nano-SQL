@@ -1,0 +1,123 @@
+function ALL(callbacks) {
+    this.go = function (complete) {
+        var ptr = 0;
+        if (!callbacks || !callbacks.length) {
+            complete([]);
+        }
+        callbacks.forEach(function (cb, i) {
+            cb(function () {
+                ptr++;
+                if (ptr === callbacks.length) {
+                    complete([]);
+                }
+            });
+        });
+    };
+}
+var IDBWorker = {
+    db: null,
+    store: function (table, type, open) {
+        var transaction = IDBWorker.db.transaction(table, type);
+        open(transaction, transaction.objectStore(table), function (act, args) {
+            return function () {
+                postMessage({ do: act, args: args });
+            };
+        });
+    },
+    init: function () {
+        addEventListener("message", function (e) {
+            var message = e.data;
+            if (IDBWorker[message.do]) {
+                IDBWorker[message.do](message.args);
+            }
+        }, false);
+    },
+    setup: function (args) {
+        var idb = indexedDB.open(args.id, 1);
+        var upgrading = false;
+        var idxes = {};
+        idb.onupgradeneeded = function (event) {
+            upgrading = true;
+            IDBWorker.db = event.target.result;
+            Object.keys(args.pkKeys).forEach(function (table) {
+                IDBWorker.db.createObjectStore(table, { keyPath: args.pkKeys[table] });
+                idxes[table] = [];
+            });
+        };
+        idb.onsuccess = function (event) {
+            IDBWorker.db = event.target.result;
+            if (!upgrading) {
+                var getIDBIndex_1 = function (tName, callBack) {
+                    var items = [];
+                    IDBWorker.store(tName, "readonly", function (transaction, store, msg) {
+                        var cursorRequest = store.openCursor();
+                        cursorRequest.onsuccess = function (evt) {
+                            var cursor = evt.target.result;
+                            if (cursor) {
+                                items.push(cursor.key);
+                                cursor.continue();
+                            }
+                        };
+                        transaction.oncomplete = function () {
+                            callBack(items);
+                        };
+                    });
+                };
+                new ALL(Object.keys(args.pkKeys).map(function (table) {
+                    return function (tDone) {
+                        getIDBIndex_1(table, function (index) {
+                            idxes[table] = index;
+                            tDone();
+                        });
+                    };
+                })).go(function () {
+                    postMessage({ do: "rdy", args: idxes });
+                });
+            }
+            else {
+                postMessage({ do: "rdy", args: idxes });
+            }
+        };
+    },
+    write: function (args) {
+        IDBWorker.store(args.table, "readwrite", function (transaction, store, msg) {
+            store.put(args.row);
+            transaction.oncomplete = msg("write_" + args.id, null);
+        });
+    },
+    read: function (args) {
+        IDBWorker.store(args.table, "readonly", function (transaction, store, msg) {
+            var singleReq = store.get(args.pk);
+            singleReq.onsuccess = function () {
+                postMessage({ do: "read_" + args.id, args: singleReq.result });
+            };
+        });
+    },
+    readRange: function (args) {
+        IDBWorker.store(args.table, "readonly", function (transaction, store, msg) {
+            var rows = [];
+            var cursorRequest = args.range.indexOf(undefined) === -1 ? store.openCursor(IDBKeyRange.bound(args.range[0], args.range[1])) : store.openCursor();
+            transaction.oncomplete = msg("readRange_" + args.id + "_done", rows);
+            cursorRequest.onsuccess = function (evt) {
+                var cursor = evt.target.result;
+                if (cursor) {
+                    rows.push(cursor.value);
+                    cursor.continue();
+                }
+            };
+        });
+    },
+    delete: function (args) {
+        IDBWorker.store(args.table, "readwrite", function (transaction, store, msg) {
+            transaction.oncomplete = msg("delete_" + args.id, true);
+            transaction.onerror = msg("delete_" + args.id, false);
+            if (args.pk === "_clear_") {
+                store.clear();
+            }
+            else {
+                store.delete(args.pk);
+            }
+        });
+    }
+};
+IDBWorker.init();

@@ -7,7 +7,7 @@ export interface Path {
     path: {
         x: number,
         y: number
-    }[]
+    }[];
 }
 
 
@@ -18,7 +18,7 @@ export const DrawStore = (): Promise<any> => {
         {key: "color", type: "string"},
         {key: "size", type: "int"},
         {key: "path", type: "array"}
-    ])
+    ]);
 
-    return nSQL().config({persistent: true, id: "Draw-App"}).connect();
-}
+    return nSQL().config({persistent: true, history: true, id: "Draw-App"}).connect();
+};

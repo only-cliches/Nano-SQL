@@ -106,7 +106,14 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     }
 
     public clearHist() {
-        nSQL().extend("flush_history");
+        nSQL().extend("hist", "clear").then(() => {
+            nSQL().extend("hist", "?").then((historyArray) => {
+                this.setState({
+                    ...this.state,
+                    redos: historyArray
+                });
+            });
+        });
     }
 
     public clearAll() {
@@ -118,20 +125,19 @@ class TodoApp extends Component<Nothing, TodoAppState> {
     }
 
     public undo(): void {
-        nSQL().extend("<");
+        nSQL().extend("hist", "<");
     }
 
     public redo(): void {
-        nSQL().extend(">");
+        nSQL().extend("hist", ">");
     }
 
     // Event handler for the db
     public updateComponent(e?: DatabaseEvent, db?: NanoSQLInstance): void {
-        let t = this;
 
-        nSQL("todos").getView("list_all_todos").then((rows: Array<ItodoItem>, db: NanoSQLInstance) => {
-            nSQL().extend("?").then((historyArray) => {
-                t.setState({
+        nSQL("todos").getView("list_all_todos").then((rows: ItodoItem[], db: NanoSQLInstance) => {
+            nSQL().extend("hist", "?").then((historyArray) => {
+                this.setState({
                     todos: rows,
                     redos: historyArray
                 });
@@ -152,7 +158,7 @@ class TodoApp extends Component<Nothing, TodoAppState> {
 
     // Ahhh, that feels nice.
     public shouldComponentUpdate(nextProps, nextState): boolean {
-        return this.state.todos !== nextState.todos;
+        return this.state.todos !== nextState.todos || this.state.redos !== this.state.redos;
     }
 
     public render(): JSX.Element {

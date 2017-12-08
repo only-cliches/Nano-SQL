@@ -8,6 +8,14 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 define("store", ["require", "exports", "nano-sql"], function (require, exports, nano_sql_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -45,7 +53,8 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
                 }
             }
         ]);
-        return nano_sql_1.nSQL().config({ persistent: true, id: "Todo-App" }).connect();
+        window["nSQL"] = nano_sql_1.nSQL;
+        return nano_sql_1.nSQL().config({ id: "Todo-App", history: true, persistent: true }).connect();
     }
     exports.initStore = initStore;
 });
@@ -128,7 +137,12 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             return _this;
         }
         TodoApp.prototype.clearHist = function () {
-            nano_sql_2.nSQL().extend("flush_history");
+            var _this = this;
+            nano_sql_2.nSQL().extend("hist", "clear").then(function () {
+                nano_sql_2.nSQL().extend("hist", "?").then(function (historyArray) {
+                    _this.setState(__assign({}, _this.state, { redos: historyArray }));
+                });
+            });
         };
         TodoApp.prototype.clearAll = function () {
             nano_sql_2.nSQL().extend("flush_db");
@@ -137,16 +151,16 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             nano_sql_2.nSQL("todos").doAction("mark_todo_done", { id: todoID });
         };
         TodoApp.prototype.undo = function () {
-            nano_sql_2.nSQL().extend("<");
+            nano_sql_2.nSQL().extend("hist", "<");
         };
         TodoApp.prototype.redo = function () {
-            nano_sql_2.nSQL().extend(">");
+            nano_sql_2.nSQL().extend("hist", ">");
         };
         TodoApp.prototype.updateComponent = function (e, db) {
-            var t = this;
+            var _this = this;
             nano_sql_2.nSQL("todos").getView("list_all_todos").then(function (rows, db) {
-                nano_sql_2.nSQL().extend("?").then(function (historyArray) {
-                    t.setState({
+                nano_sql_2.nSQL().extend("hist", "?").then(function (historyArray) {
+                    _this.setState({
                         todos: rows,
                         redos: historyArray
                     });
@@ -161,7 +175,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             nano_sql_2.nSQL("todos").off(this.updateComponent);
         };
         TodoApp.prototype.shouldComponentUpdate = function (nextProps, nextState) {
-            return this.state.todos !== nextState.todos;
+            return this.state.todos !== nextState.todos || this.state.redos !== this.state.redos;
         };
         TodoApp.prototype.render = function () {
             return (React.createElement("div", { className: "uk-container uk-container-small", style: { maxWidth: "400px" } },
