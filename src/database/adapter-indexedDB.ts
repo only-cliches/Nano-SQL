@@ -205,8 +205,12 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public read(table: string, pk: DBKey, callback: (row: DBRow) => void): void {
+    public read(table: string, pk: DBKey, callback: (row: any) => void): void {
         let queryID = uuid();
+        if (this._dbIndex[table].indexOf(pk) === -1) {
+            callback(null);
+            return;
+        }
 
         this._waitingCBs["read_" + queryID] = (args: DBRow) => {
             callback(args);

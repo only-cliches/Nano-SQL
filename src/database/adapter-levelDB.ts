@@ -171,7 +171,11 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public read(table: string, pk: DBKey, callback: (row: DBRow) => void): void {
+    public read(table: string, pk: DBKey, callback: (row: any) => void): void {
+        if (this._dbIndex[table].indexOf(pk) === -1) {
+            callback(null);
+            return;
+        }
         this._levelDBs[table].get(this._isPKnum[table] ? new Int64BE(pk as any).toBuffer() : pk, (err, row) => {
             if (err) {
                 throw Error(err);

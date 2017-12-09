@@ -519,7 +519,7 @@ export class _NanoSQLStorage {
                     this._adapter.read(table, q, result);
                 };
             })).then((rows) => {
-                callback(rows);
+                callback(rows.filter(r => r));
             });
             return;
         }
