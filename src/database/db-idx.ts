@@ -68,7 +68,7 @@ export class DatabaseIndex {
     }
 
     public indexOf(key: any): number {
-        return this._indexOf[String(key)] || -1;
+        return this._indexOf[String(key)] !== undefined ? this._indexOf[String(key)] : -1;
     }
 
     public remove(key: any): void {

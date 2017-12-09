@@ -24,7 +24,7 @@ export const equals = (a, b) => {
 
 
     let reference_equals = (a, b) => {
-        let object_references = [];
+        let object_references: any[] = [];
 
         return (reference_equals = _reference_equals)(a, b);
 

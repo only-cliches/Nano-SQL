@@ -48,11 +48,11 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
     */
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
         switch (args[0]) {
-            case "idx":
             case "idx.length":
+            case "idx":
                 const table = args[1];
                 if (Object.keys(this._store.tableInfo).indexOf(table) > -1) {
-                    this._store._adapter.getIndex(table, args[0] !== "idx", (idx) => {
+                    this._store._adapter.getIndex(table, args[0] !== "idx", (idx: any) => {
                         next(args, idx);
                     });
                 } else {

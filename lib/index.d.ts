@@ -1,6 +1,5 @@
 import { Promise } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
-import { _NanoSQLORMQuery } from "./query/orm-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { StdObject } from "./utilities";
 export interface ActionOrView {
@@ -89,7 +88,6 @@ export declare class NanoSQLInstance {
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     private _doAV(AVType, AVList, AVName, AVargs);
     query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery;
-    updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery;
     triggerEvent(eventData: DatabaseEvent): NanoSQLInstance;
     default(replaceObj?: any): {
         [key: string]: any;

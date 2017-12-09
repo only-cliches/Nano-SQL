@@ -9,6 +9,7 @@ export interface IdbQuery {
     transaction?: boolean;
     where?: (row: DBRow, idx: number) => boolean | any[];
     range?: number[];
+    ormSync?: string[];
     orm?: (string | ORMArgs)[];
     orderBy?: {
         [column: string]: "asc" | "desc";
@@ -47,6 +48,7 @@ export declare class _NanoSQLQuery {
     join(args: JoinArgs): _NanoSQLQuery;
     limit(args: number): _NanoSQLQuery;
     trieSearch(column: string, stringToSearch: string): _NanoSQLQuery;
+    ormSync(columns?: string[]): this;
     comment(comment: string): _NanoSQLQuery;
     extend(...args: any[]): _NanoSQLQuery;
     offset(args: number): _NanoSQLQuery;

@@ -137,12 +137,17 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         }
     }
 
-    public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, fromIdx?: number, toIdx?: number): void {
+    public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
         const keys = this._dbIndex[table].keys();
-        const ranges: number[] = [typeof fromIdx, typeof toIdx].indexOf("undefined") === -1 ? [fromIdx as any, toIdx as any] : [0, keys.length - 1];
+        const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
+        let ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
         if (!keys.length) {
             complete();
             return;
+        }
+
+        if (usePK && usefulValues) {
+            ranges = ranges.map(r => this._dbIndex[table].getLocation(r));
         }
 
         let idx = ranges[0];
@@ -187,12 +192,8 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         callback();
     }
 
-    public indexOfPK(table: string, pk: any, complete: (idx: number) => void) {
-        complete(this._dbIndex[table].getLocation(pk));
-    }
-
-    public getIndex(table: string, getIdx: boolean, complete: (index) => void): void {
-        complete(getIdx ? this._dbIndex[table].keys().length : this._dbIndex[table].keys());
+    public getIndex(table: string, getLength: boolean, complete: (index) => void): void {
+        complete(getLength ? this._dbIndex[table].keys().length : this._dbIndex[table].keys());
     }
 
     public destroy(complete: () => void) {

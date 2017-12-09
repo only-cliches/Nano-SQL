@@ -2,8 +2,8 @@
     "name": "nano-sql",
     "version": "1.0.0",
     "description": "The most powerful little databse.",
-    "main": "node/index-server.js",
-    "browser": "node/index.js",
+    "main": "lib/index-server.js",
+    "browser": "lib/index.js",
     "scripts": {
         "serve": "npm-run-all --parallel worker-watch main-watch",
         "main-watch": "webpack-dev-server",
@@ -15,7 +15,7 @@
         "type": "git",
         "url": "https://github.com/ClickSimply/Nano-SQL.git"
     },
-    "typings": "node/index.d.ts",
+    "typings": "lib/index.d.ts",
     "devDependencies": {
         "@types/chai": "^4.0.6",
         "@types/levelup": "0.0.30",

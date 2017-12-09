@@ -39,7 +39,7 @@ export interface NanoSQLStorageAdapter {
     makeTable(tableName: string, dataModels: DataModel[]): void;
 
     /**
-     * Set the database ID
+     * Set the database ID, called before connect() and makeTable() commands get called
      *
      * @param {string} id
      * @memberof NanoSQLStorageAdapter
@@ -56,8 +56,9 @@ export interface NanoSQLStorageAdapter {
     connect(complete: () => void): void;
 
     /**
-     * Write a single row the database backend.
+     * Write a single row to the database backend.
      * Primary key will be provided if it's known before the insert, otherwise it will be null and up to the database backend to make one.
+     * It's also intirely possible for a primary key to be provided for a non existent row, the backend should handle this gracefully.
      *
      * @param {string} table
      * @param {(DBKey|null)} pk
@@ -66,7 +67,7 @@ export interface NanoSQLStorageAdapter {
      * @param {boolean} skipReadBeforeWrite
      * @memberof NanoSQLStorageAdapter
      */
-    write(table: string, pk: DBKey|null, data: DBRow, complete: (finalRow: DBRow) => void, skipReadBeforeWrite: boolean): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, skipReadBeforeWrite: boolean): void;
 
     /**
      * Read a single row from the database
@@ -76,11 +77,14 @@ export interface NanoSQLStorageAdapter {
      * @param {(row: DBRow ) => void} callback
      * @memberof NanoSQLStorageAdapter
      */
-    read(table: string, pk: DBKey, callback: (row: DBRow ) => void): void;
+    read(table: string, pk: DBKey, callback: (row: DBRow) => void): void;
 
     /**
      * Read a range of primary keys from a given table.
      * Each row is read asyncrounosuly, so make sure the front end can incriment through the rows quickly.
+     *
+     * If pkRange is true, the from and to values will be primary keys.  Even if the provided keys don't exist, the backend should gracefully provide all keys between the two keys given.
+     * If pkRange is false, the from and to values will be numbers indicating a range of rows to get, regardless of the primary key values.
      *
      * @param {string} table
      * @param {(row: DBRow, idx: number, nextRow: () => void) => void} rowCallback
@@ -89,7 +93,7 @@ export interface NanoSQLStorageAdapter {
      * @param {DBKey} [to]
      * @memberof NanoSQLStorageAdapter
      */
-    rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, fromIdx?: number, toIdx?: number): void;
+    rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, pkRange?: boolean): void;
 
     /**
      * Delete a row from the backend given a table and primary key.
@@ -102,7 +106,7 @@ export interface NanoSQLStorageAdapter {
     delete(table: string, pk: DBKey, complete: () => void): void;
 
     /**
-     * Drop an entire table from the backend.
+     * Drop an entire table from the backend. (Delete all rows)
      *
      * @param {string} table
      * @param {() => void} complete
@@ -111,14 +115,13 @@ export interface NanoSQLStorageAdapter {
     drop(table: string, complete: () => void): void;
 
     /**
-     * Get the primary key index for a given table.
+     * Get the number of rows in a table or the table index;
      *
      * @param {string} table
-     * @param {boolean} getLength
-     * @param {(pks: any[]) => void} complete
+     * @param {(count: number) => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    getIndex(table: string, getLength: boolean, complete: (pks: any[]) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index: any[]|number) => void): void;
 
     /**
      * Completely delete/destroy the entire database.
@@ -127,18 +130,6 @@ export interface NanoSQLStorageAdapter {
      * @memberof NanoSQLStorageAdapter
      */
     destroy(complete: () => void);
-
-    /**
-     * Get the indexOf value of a primary key.
-     * If the primary key isn't present, this should return the indexOf value of the given value if it were
-     * inserted into the database index at it's sorted location.
-     *
-     * @param {string} table
-     * @param {*} pk
-     * @param {(idx: number) => void} complete
-     * @memberof NanoSQLStorageAdapter
-     */
-    indexOfPK(table: string, pk: any, complete: (idx: number) => void);
 }
 
 
@@ -152,7 +143,7 @@ export interface NanoSQLStorageAdapter {
 // tslint:disable-next-line
 export class _NanoSQLStorage {
 
-    public _mode: string|NanoSQLStorageAdapter; // mode or adapater the system uses.
+    public _mode: string | NanoSQLStorageAdapter; // mode or adapater the system uses.
 
     public _id: string; // database ID
 
@@ -173,7 +164,7 @@ export class _NanoSQLStorage {
     /**
      * Stores in memory Trie values to do Trie queries.
      *
-     * @private
+     * @internal
      * @type {{
      *         [tableName: string]: {
      *             [column: string]: Trie
@@ -202,7 +193,7 @@ export class _NanoSQLStorage {
     /**
      * Array of table names
      *
-     * @private
+     * @internal
      * @type {string[]}
      * @memberof _NanoSQLStorage
      */
@@ -243,7 +234,7 @@ export class _NanoSQLStorage {
     private _size: number;
 
     constructor(parent: NanoSQLInstance, args: {
-        mode: string|NanoSQLStorageAdapter; // pass in string or adapter class.
+        mode: string | NanoSQLStorageAdapter; // pass in string or adapter class.
         id: string; // id of database
         dbPath: string; // path (used by LevelDB)
         writeCache: number; // writeCache (used by LevelDB)
@@ -279,24 +270,24 @@ export class _NanoSQLStorage {
             switch (this._mode) {
                 case "IDB":
                     this._adapter = new _IndexedDBStore(false);
-                break;
+                    break;
                 case "IDB_WW":
                     this._adapter = new _IndexedDBStore(true);
-                break;
+                    break;
                 case "WSQL":
                     this._adapter = new _WebSQLStore(this._size);
-                break;
+                    break;
                 case "LS":
                     this._adapter = new _SyncStore(true);
-                break;
+                    break;
                 /* NODE-START */
                 case "LVL":
                     this._adapter = new _LevelStore(args.dbPath, args.writeCache, args.readCache);
-                break;
+                    break;
                 /* NODE-END */
                 case "TEMP":
                     this._adapter = new _SyncStore(false);
-                break;
+                    break;
             }
         } else {
             this._adapter = this._mode;
@@ -327,30 +318,30 @@ export class _NanoSQLStorage {
 
         this._adapter.connect(() => {
 
-                // populate trie data
-                new ALL(Object.keys(this._trieIndexes).map((table) => {
-                    return (tableDone) => {
-                        const trieColumns = this._trieIndexes[table];
-                        if (Object.keys(trieColumns).length) {
-                            this._read(table, (row, idx, toKeep) => {
-                                if (!row) {
-                                    toKeep(false);
-                                    return;
-                                }
-                                Object.keys(trieColumns).forEach((column) => {
-                                    if (row[column] !== undefined) {
-                                        this._trieIndexes[table][column].addWord(String(row[column]));
-                                    }
-                                });
+            // populate trie data
+            new ALL(Object.keys(this._trieIndexes).map((table) => {
+                return (tableDone) => {
+                    const trieColumns = this._trieIndexes[table];
+                    if (Object.keys(trieColumns).length) {
+                        this._read(table, (row, idx, toKeep) => {
+                            if (!row) {
                                 toKeep(false);
-                            }, tableDone);
-                        } else {
-                            tableDone();
-                        }
-                    };
-                })).then(() => {
-                    complete(this.models);
-                });
+                                return;
+                            }
+                            Object.keys(trieColumns).forEach((column) => {
+                                if (row[column] !== undefined) {
+                                    this._trieIndexes[table][column].addWord(String(row[column]));
+                                }
+                            });
+                            toKeep(false);
+                        }, tableDone);
+                    } else {
+                        tableDone();
+                    }
+                };
+            })).then(() => {
+                complete(this.models);
+            });
 
         });
     }
@@ -393,12 +384,12 @@ export class _NanoSQLStorage {
     /**
      * Turn any js variable into a 32 character long primary key for secondary index tables.
      *
-     * @private
+     * @internal
      * @param {*} value
      * @returns {(string|number)}
      * @memberof _NanoSQLStorage
      */
-    private _secondaryIndexKey(value: any): string|number {
+    private _secondaryIndexKey(value: any): string | number {
         if (isObject(value) || Array.isArray(value)) {
             return JSON.stringify(value).substr(0, 12);
         }
@@ -471,8 +462,7 @@ export class _NanoSQLStorage {
 
     /**
      * Get a range of rows from a given table.
-     * It's faster if the "from" and "to" values exist as primary keys on the table.
-     * Otherwise we'll have to do a BTree search to find where the range should be.
+     * The range is in limit/offset form where the from and to values are numbers indicating a range of rows to get.
      *
      * @param {string} table
      * @param {DBKey} from
@@ -480,7 +470,7 @@ export class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorage
      */
-    public _rangeRead(table: string, fromIdx: number, toIdx: number, complete: (rows: DBRow[]) => void) {
+    public _rangeReadIDX(table: string, fromIdx: number, toIdx: number, complete: (rows: DBRow[]) => void) {
 
         let rows: any[] = [];
         this._adapter.rangeRead(table, (row, idx, next) => {
@@ -492,6 +482,27 @@ export class _NanoSQLStorage {
     }
 
     /**
+     * Get a range fo rows from a given table.
+     * The range is provided as the rows between two primary key values.
+     *
+     * @param {string} table
+     * @param {*} fromPK
+     * @param {*} toPK
+     * @param {(rows: DBRow[]) => void} complete
+     * @memberof _NanoSQLStorage
+     */
+    public _rangeReadPKs(table: string, fromPK: any, toPK: any, complete: (rows: DBRow[]) => void) {
+
+        let rows: any[] = [];
+        this._adapter.rangeRead(table, (row, idx, next) => {
+            rows.push(row);
+            next();
+        }, () => {
+            complete(rows);
+        }, fromPK, toPK, true);
+    }
+
+    /**
      * Full table scan if a function is passed in OR read an array of primary keys.
      *
      * @param {string} table
@@ -500,7 +511,7 @@ export class _NanoSQLStorage {
      * @returns
      * @memberof _NanoSQLStorage
      */
-    public _read(table: string, query: (row: DBRow, idx: number, toKeep: (result: boolean) => void) => void, callback: (rows: DBRow[]) => void) {
+    public _read(table: string, query: (row: DBRow, idx: number, toKeep: (result: boolean) => void) => void|any[], callback: (rows: DBRow[]) => void) {
 
         if (Array.isArray(query)) { // select by array of primary keys
             new ALL(query.map((q) => {
@@ -539,7 +550,7 @@ export class _NanoSQLStorage {
      * @param {(rows: DBRow[] ) => void} callback
      * @memberof _NanoSQLStorage
      */
-    public _trieRead(table: string, column: string, search: string, callback: (rows: DBRow[] ) => void) {
+    public _trieRead(table: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
         const words = this._trieIndexes[table][column].getPrefix(search) as any[];
 
         new ALL(words.map((w) => {
@@ -554,7 +565,7 @@ export class _NanoSQLStorage {
     /**
      * Remove secondary index values of a specific row.
      *
-     * @private
+     * @internal
      * @param {string} table
      * @param {DBKey} pk
      * @param {DBRow} rowData
@@ -579,7 +590,7 @@ export class _NanoSQLStorage {
                         done();
                         return;
                     }
-                    let newRow = row ? Object.isFrozen(row) ? _assign(row) : row : {id: null, rows: []};
+                    let newRow = row ? Object.isFrozen(row) ? _assign(row) : row : { id: null, rows: [] };
                     newRow.rows.splice(i, 1);
                     newRow.rows.sort();
                     newRow.rows = removeDuplicates(newRow.rows);
@@ -592,7 +603,7 @@ export class _NanoSQLStorage {
     /**
      * Add secondary index values for a specific row.
      *
-     * @private
+     * @internal
      * @param {string} table
      * @param {DBKey} pk
      * @param {DBRow} rowData
@@ -611,7 +622,7 @@ export class _NanoSQLStorage {
 
                 const idxTable = "_" + table + "_idx_" + idx;
                 this._adapter.read(idxTable, column, (row) => {
-                    let indexRow: {id: DBKey, rows: any[]} = row ? Object.isFrozen(row) ? _assign(row) : row : {id: column, rows: []};
+                    let indexRow: { id: DBKey, rows: any[] } = row ? Object.isFrozen(row) ? _assign(row) : row : { id: column, rows: [] };
                     indexRow.rows.push(pk);
                     indexRow.rows.sort();
                     indexRow.rows = removeDuplicates(indexRow.rows);
@@ -646,16 +657,17 @@ export class _NanoSQLStorage {
 
             const setRow = {
                 ...oldRow,
-                ...newRow
+                ...newRow,
+                [this.tableInfo[table]._pk]: pk
             };
 
             const sameKeys = Object.keys(setRow).filter((key) => {
                 return setRow[key] === oldRow[key];
             });
 
-            this._clearSecondaryIndexes(table, oldRow[this.tableInfo[table]._pk], oldRow, sameKeys, () => {
-                this._setSecondaryIndexes(table, oldRow[this.tableInfo[table]._pk], setRow, sameKeys, () => {
-                    this._adapter.write(table, oldRow[this.tableInfo[table]._pk], setRow, complete, true);
+            this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
+                this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
+                    this._adapter.write(table, pk, setRow, complete, true);
                 });
             });
         }
@@ -683,7 +695,7 @@ export class _NanoSQLStorage {
                     });
                 });
             });
-       }
+        }
     }
 
     /**
@@ -710,7 +722,7 @@ export class _NanoSQLStorage {
     /**
      * Find secondary indexes and automatically generate an index table for each.
      *
-     * @private
+     * @internal
      * @param {StdObject<DataModel[]>} dataModels
      * @returns
      * @memberof NanoSQLStorage
@@ -727,8 +739,8 @@ export class _NanoSQLStorage {
                 if (model.props && (model.props.indexOf("idx") > -1 || model.props.indexOf("trie") > -1)) {
                     hasIDX = true;
                     dataModels["_" + table + "_idx_" + model.key] = [
-                        {key: "id", type: "string", props: ["pk"]},
-                        {key: "rows", type: "any[]"}
+                        { key: "id", type: "string", props: ["pk"] },
+                        { key: "rows", type: "any[]" }
                     ];
                 }
             });
@@ -743,7 +755,7 @@ export class _NanoSQLStorage {
     /**
      * Generate the data needed to manage each table in the database
      *
-     * @private
+     * @internal
      * @param {string} tableName
      * @param {DataModel[]} dataModels
      * @returns {string}

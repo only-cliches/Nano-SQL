@@ -11,6 +11,7 @@ export interface IdbQuery {
     transaction?: boolean;
     where?: (row: DBRow, idx: number) => boolean|any[];
     range?: number[];
+    ormSync?: string[];
     orm?: (string | ORMArgs)[];
     orderBy?: { [column: string]: "asc" | "desc" };
     groupBy?: { [column: string]: "asc" | "desc" };
@@ -59,13 +60,13 @@ export class _NanoSQLQuery {
             let newArgs = queryArgs || (a === "select" || a === "delete" ? [] : {});
 
             // Purge ORM columns from the delete arguments
-            if (["delete", "upsert"].indexOf(a) > -1 && !bypassORMPurge && this._db.relationColumns[this._db.sTable as string].length) {
+            /*if (["delete", "upsert"].indexOf(a) > -1 && !bypassORMPurge && this._db.relationColumns[this._db.sTable as string].length) {
                 let inputArgs = {};
                 this._db.relationColumns[this._db.sTable as string].forEach((column) => {
                     newArgs[column] = undefined;
                 });
                 newArgs = inputArgs;
-            }
+            }*/
 
             if (a === "upsert") {
 
@@ -263,6 +264,17 @@ export class _NanoSQLQuery {
      */
     public trieSearch(column: string, stringToSearch: string): _NanoSQLQuery {
         this._query.trie = {column: column, search: stringToSearch};
+        return this;
+    }
+
+    /**
+     * Track changes to the ORM system in this query.
+     *
+     * @returns
+     * @memberof _NanoSQLQuery
+     */
+    public ormSync(columns?: string[]) {
+        this._query.ormSync = columns || [];
         return this;
     }
 

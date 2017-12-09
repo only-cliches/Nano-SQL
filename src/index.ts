@@ -1,6 +1,6 @@
 import { Promise, setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
-import { _NanoSQLORMQuery } from "./query/orm-query";
+// import { _NanoSQLORMQuery } from "./query/orm-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
 import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery } from "./utilities";
@@ -754,10 +754,10 @@ export class NanoSQLInstance {
      *
      * @memberof NanoSQLInstance
      */
-    public updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery {
+    /*public updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery {
         if (Array.isArray(this.sTable)) return null as any;
         return new _NanoSQLORMQuery(this, this.sTable, action, column, relationIDs);
-    }
+    }*/
 
     /**
      * Trigger a database event

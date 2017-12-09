@@ -4,7 +4,7 @@
 rm -rf dist/*.*
 rm -rf *.d.ts
 rm -rf docs
-rm -rf node
+rm -rf lib
 # mkdir docs
 
 echo "Clean Completed..."
@@ -14,16 +14,16 @@ echo "Clean Completed..."
 echo "Worker Build Completed..."
 
 #type declerations & node build
-./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./node"
+./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
 
 #compile web worker and compress it
-cp src/database/adapter-indexedDB-worker.txt node/database/adapter-indexedDB-worker.txt
-./node_modules/.bin/uglifyjs --compress --mangle toplevel --output node/database/adapter-indexedDB-worker.txt  -- node/database/adapter-indexedDB-worker.txt
+cp src/database/adapter-indexedDB-worker.txt lib/database/adapter-indexedDB-worker.txt
+./node_modules/.bin/uglifyjs --compress --mangle toplevel --output lib/database/adapter-indexedDB-worker.txt  -- lib/database/adapter-indexedDB-worker.txt
 
 # Move the web worker TXT file into the JS file to prevent folks from having to setup a custom build environment for the TXT file.
-file=$(cat node/database/adapter-indexedDB-worker.txt);
-sed -i "s#require(\"./adapter-indexedDB-worker.txt\")#'${file//&/\\&}'#" node/database/adapter-indexedDB.js
-rm -rf node/database/*.txt;
+file=$(cat lib/database/adapter-indexedDB-worker.txt);
+sed -i "s#require(\"./adapter-indexedDB-worker.txt\")#'${file//&/\\&}'#" lib/database/adapter-indexedDB.js
+rm -rf lib/database/*.txt;
 
 echo "Node Build & Type Declarations Completed..."
 
@@ -37,7 +37,7 @@ echo "Browser Build Completed..."
 #touch docs/.nojekyll
 #echo "Docs Completed..."
 
-#examples
+#copy from examples into dist folder
 yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
 
 echo "Cleaning up..."

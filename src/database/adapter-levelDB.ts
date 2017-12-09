@@ -181,15 +181,16 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, fromIdx?: number, toIdx?: number): void {
+    public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
 
         const keys = this._dbIndex[table].keys();
-        const ranges: number[] = [typeof fromIdx, typeof toIdx].indexOf("undefined") === -1 ? [fromIdx as any, toIdx as any] : [0, keys.length - 1];
+        const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
+        const ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
 
         let rows: any[] = [];
 
-        const lower = keys[ranges[0]];
-        const higher = keys[ranges[1]];
+        const lower = usePK && usefulValues ? from : keys[ranges[0]];
+        const higher = usePK && usefulValues ? to : keys[ranges[1]];
 
         this._levelDBs[table]
         .createValueStream({
@@ -233,12 +234,8 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
     }
 
-    public getIndex(table: string, getIdx: boolean, complete: (index) => void): void {
-        complete(getIdx ? this._dbIndex[table].keys().length : this._dbIndex[table].keys());
-    }
-
-    public indexOfPK(table: string, pk: any, complete: (idx: number) => void) {
-        complete(this._dbIndex[table].getLocation(pk));
+    public getIndex(table: string, getLength: boolean, complete: (index) => void): void {
+        complete(getLength ? this._dbIndex[table].keys().length : this._dbIndex[table].keys());
     }
 
     public destroy(complete: () => void) {

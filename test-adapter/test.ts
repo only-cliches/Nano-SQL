@@ -122,6 +122,7 @@ export class TestAdapter {
         const adapter: NanoSQLStorageAdapter = new this.adapter(...this.args);
 
         let allRows: any[] = [];
+        let index: any[] = [];
         return new Promise((res, rej) => {
             adapter.setID("123");
             adapter.makeTable("test", [
@@ -136,6 +137,7 @@ export class TestAdapter {
                 for (let i = 0; i < 100; i++) {
                     allRows.push({id: i + 1, name: "Title " + (i + 1)});
                     titles.push("Title " + (i + 1));
+                    index.push(i + 1);
                 }
                 new CHAIN(titles.map((title, i) => {
                     return (done) => {
@@ -144,7 +146,7 @@ export class TestAdapter {
                 })).then(res);
             });
         }).then(() => {
-            // Select a range of primary keys
+            // Select a range of rows using a range of the index
             return new Promise((res, rej) => {
                 let rows: any[] = [];
                 adapter.rangeRead("test", (row, idx, next) => {
@@ -155,6 +157,19 @@ export class TestAdapter {
                     myConsole.assert(condition, "Select Range Test");
                     condition ? res() : rej();
                 }, 10, 20);
+            });
+        }).then(() => {
+            // Select a range of rows given a lower and upper limit primary key
+            return new Promise((res, rej) => {
+                let rows: any[] = [];
+                adapter.rangeRead("test", (row, idx, next) => {
+                    rows.push(row);
+                    next();
+                }, () => {
+                    const condition = equals(rows, allRows.filter(r => r.id > 9 && r.id < 21));
+                    myConsole.assert(condition, "Select Range Test (Primary Key)");
+                    condition ? res() : rej();
+                }, 10, 20, true);
             });
         }).then(() => {
             // Select entire table
@@ -168,6 +183,24 @@ export class TestAdapter {
                     myConsole.assert(condition, "Select Entire Table Test");
                     condition ? res() : rej();
                 }, undefined, undefined);
+            });
+        }).then(() => {
+            // Select index
+            return new Promise((res, rej) => {
+                adapter.getIndex("test", false, (idx) => {
+                    const condition = equals(idx, index);
+                    myConsole.assert(condition, "Select Index Test");
+                    condition ? res() : rej();
+                });
+            });
+        }).then(() => {
+            // Select index length
+            return new Promise((res, rej) => {
+                adapter.getIndex("test", true, (idx) => {
+                    const condition = idx === 100;
+                    myConsole.assert(condition, "Select Index Length Test");
+                    condition ? res() : rej();
+                });
             });
         }).then(() => {
             return new Promise((res, rej) => {

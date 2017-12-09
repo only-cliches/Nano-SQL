@@ -17,7 +17,7 @@ export class _NanoSQLStorageQuery {
     /**
      * The Query object used for this query.
      *
-     * @private
+     * @internal
      * @type {IdbQuery}
      * @memberof _NanoSQLStorageQuery
      */
@@ -26,7 +26,7 @@ export class _NanoSQLStorageQuery {
     /**
      * Wether an instance table is being used or not.
      *
-     * @private
+     * @internal
      * @type {boolean}
      * @memberof _NanoSQLStorageQuery
      */
@@ -82,7 +82,7 @@ export class _NanoSQLStorageQuery {
     /**
      * Retreive the selected rows for this query, works for instance tables and standard ones.
      *
-     * @private
+     * @internal
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorageQuery
      */
@@ -99,7 +99,7 @@ export class _NanoSQLStorageQuery {
     /**
      * Initilze a SELECT query.
      *
-     * @private
+     * @internal
      * @param {(q: IdbQuery) => void} next
      * @returns
      * @memberof _NanoSQLStorageQuery
@@ -139,7 +139,7 @@ export class _NanoSQLStorageQuery {
     /**
      * Initilize an UPSERT query.
      *
-     * @private
+     * @internal
      * @param {(q: IdbQuery) => void} next
      * @returns
      * @memberof _NanoSQLStorageQuery
@@ -167,17 +167,17 @@ export class _NanoSQLStorageQuery {
         if (this._query.where) { // has where statement, select rows then modify them
 
             this._getRows((rows) => {
-                rows = rows.filter(r => r);
+                // rows = rows.filter(r => r);
 
                 if (rows.length) {
                     new CHAIN(rows.map((r) => {
                         return (rowDone) => {
-                            this._store._write(this._query.table as any, r[pk], r, this._query.actionArgs || null, rowDone);
+                            this._store._write(this._query.table as any, r[pk], r, this._query.actionArgs || {}, rowDone);
                         };
                     })).then((rows) => {
                         let result = [].concat.apply([], rows);
                         this._store._cache[this._query.table as any] = {};
-                        this._query.result = [{ msg: rows.length + " row(s) modfied.", affectedRowPKS: result.map(r => r[pk]), affectedRows: result  }];
+                        this._query.result = [{ msg: rows.length + " row(s) modfied.", affectedRowPKS: result.map(r => r[pk]), affectedRows: result }];
                         next(this._query);
                     });
                 } else {
@@ -189,17 +189,33 @@ export class _NanoSQLStorageQuery {
         } else { // no where statement, perform direct upsert
             let row = this._query.actionArgs || {};
             this._store._cache[this._query.table as any] = {};
-            this._store._write(this._query.table as any, row[pk], null, row, (result) => {
-                this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
-                next(this._query);
-            });
+            const write = (oldRow: any) => {
+                this._store._write(this._query.table as any, row[pk], oldRow, row, (result) => {
+                    this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
+                    next(this._query);
+                });
+            };
+
+            if (row[pk] !== undefined) {
+                this._store._read(this._query.table as any, [row[pk]] as any, (rows) => {
+                    if (rows.length) {
+                        write(rows[0]);
+                    } else {
+                        write(null);
+                    }
+                });
+            } else {
+                write(null);
+            }
+
+
         }
     }
 
     /**
      * Initilize a DELETE query.
      *
-     * @private
+     * @internal
      * @param {(q: IdbQuery) => void} next
      * @returns
      * @memberof _NanoSQLStorageQuery
@@ -250,7 +266,7 @@ export class _NanoSQLStorageQuery {
     /**
      * Initilize a DROP query.
      *
-     * @private
+     * @internal
      * @param {(q: IdbQuery) => void} next
      * @returns
      * @memberof _NanoSQLStorageQuery
@@ -275,7 +291,7 @@ export class _NanoSQLStorageQuery {
         if (this._query.transaction) {
             doDrop([]);
         } else {
-            this._store._rangeRead(this._query.table as string, undefined as any, undefined as any, doDrop);
+            this._store._rangeReadIDX(this._query.table as string, undefined as any, undefined as any, doDrop);
         }
 
     }
@@ -294,7 +310,7 @@ export class _MutateSelection {
     /**
      * Keep track of the columns to Group By
      *
-     * @private
+     * @internal
      * @type {string[]}
      * @memberof _MutateSelection
      */
@@ -304,7 +320,7 @@ export class _MutateSelection {
     /**
      * Keep track of the GroupBy Keys for applying functions.
      *
-     * @private
+     * @internal
      * @type {{
      *         [groupKey: string]: any[];
      *     }}
@@ -324,7 +340,7 @@ export class _MutateSelection {
     /**
      * Peform a join command.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @param {(rows: DBRow[]) => void} complete
      * @returns {void}
@@ -366,7 +382,7 @@ export class _MutateSelection {
     /**
      * Generate a unique group by key given a group by object and a row.
      *
-     * @private
+     * @internal
      * @param {string[]} columns
      * @param {*} row
      * @returns {string}
@@ -386,7 +402,7 @@ export class _MutateSelection {
     /**
      * Perform the Group By mutation.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @returns {any[]}
      * @memberof _MutateSelection
@@ -415,7 +431,7 @@ export class _MutateSelection {
     /**
      * Perform HAVING mutation.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @returns {any[]}
      * @memberof _MutateSelection
@@ -429,7 +445,7 @@ export class _MutateSelection {
     /**
      * Perform the orderBy mutation.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @returns {any[]}
      * @memberof _MutateSelection
@@ -443,7 +459,7 @@ export class _MutateSelection {
     /**
      * Perform the Offset mutation.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @returns {any[]}
      * @memberof _MutateSelection
@@ -457,7 +473,7 @@ export class _MutateSelection {
     /**
      * Perform the limit mutation.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @returns {any[]}
      * @memberof _MutateSelection
@@ -471,7 +487,7 @@ export class _MutateSelection {
     /**
      * Cache relationships between tables to reduce ORM query cost.
      *
-     * @private
+     * @internal
      * @type {{
      *         [key: string]: any[];
      *     }}
@@ -484,7 +500,7 @@ export class _MutateSelection {
     /**
      * Add ORM values to rows based on query.
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _MutateSelection
@@ -577,7 +593,7 @@ export class _MutateSelection {
     /**
      * Performs the actual JOIN mutation, including the O^2 select query to check all rows against every other row.
      *
-     * @private
+     * @internal
      * @param {("left" | "inner" | "right" | "cross" | "outer")} type
      * @param {string} leftTable
      * @param {string} rightTable
@@ -664,7 +680,7 @@ export class _MutateSelection {
     /**
      * Get the sort direction for two objects given the objects, columns and resolve paths.
      *
-     * @private
+     * @internal
      * @param {*} objA
      * @param {*} objB
      * @param {{ [key: string]: string }} columns
@@ -688,7 +704,7 @@ export class _MutateSelection {
     /**
      * Apply AS, functions and Group By
      *
-     * @private
+     * @internal
      * @param {DBRow[]} rows
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _MutateSelection
@@ -959,7 +975,7 @@ export class _RowSelection {
      * Handles compound WHERE statements, combining their results.
      * Works as long as every WHERE statement is selecting against a primary key or secondary index.
      *
-     * @private
+     * @internal
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _RowSelection
      */
@@ -999,7 +1015,7 @@ export class _RowSelection {
      * Much faster SELECT by primary key or secondary index.
      * Accepts a single WHERE statement, no compound statements allowed.
      *
-     * @private
+     * @internal
      * @param {any[]} where
      * @param {(rows: DBRow[]) => void} callback
      * @returns
@@ -1011,30 +1027,14 @@ export class _RowSelection {
             let secondaryIndexKey = where[0] === this.s.tableInfo[this.q.table as any]._pk ? "" : where[0];
             if (secondaryIndexKey) {
                 const idxTable = "_" + this.q.table + "_idx_" + secondaryIndexKey;
-                new ALL(where[2].map((i) => {
-                    return (done) => {
-                        this.s._adapter.indexOfPK(idxTable, i, (idx) => {
-                            done(idx);
-                        });
-                    };
-                })).then((ranges) => {
-                    this.s._rangeRead(idxTable, ranges[0], ranges[1], (rows) => {
-                        const keys = [].concat.apply([], rows);
-                        this.s._read(this.q.table as any, keys, callback);
-                    });
+                this.s._rangeReadPKs(idxTable, where[2][0], where[2][1], (rows) => {
+                    const keys = [].concat.apply([], rows);
+                    this.s._read(this.q.table as any, keys, callback);
                 });
 
             } else {
-                new ALL(where[2].map((i) => {
-                    return (done) => {
-                        this.s._adapter.indexOfPK(this.q.table as any, i, (idx) => {
-                            done(idx);
-                        });
-                    };
-                })).then((ranges) => {
-                    this.s._rangeRead(this.q.table as any, ranges[0], ranges[1], (rows) => {
-                        callback(rows);
-                    });
+                this.s._rangeReadPKs(this.q.table as any, where[2][0], where[2][1], (rows) => {
+                    callback(rows);
                 });
             }
             return;
@@ -1068,7 +1068,7 @@ export class _RowSelection {
      * Select rows within a numerical range using limit and offset values.
      * Negative limit values will start the range from the bottom of the table.
      *
-     * @private
+     * @internal
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _RowSelection
      */
@@ -1076,30 +1076,17 @@ export class _RowSelection {
     private _selectByRange(callback: (rows: DBRow[]) => void) {
         if (this.q.range) {
             const r: any[] = this.q.range;
-            this.s._adapter.getIndex(this.q.table as any, false, (pks) => {
-                const fromIdx = r[0] > 0 ? r[1] : pks.length + r[0] - r[1];
-                const from = pks[fromIdx];
+            this.s._adapter.getIndex(this.q.table as any, true, (count: number) => {
+                const fromIdx = r[0] > 0 ? r[1] : count + r[0] - r[1];
 
-                if (!from) {
-                    callback([]);
-                    return;
+                let toIdx = fromIdx;
+                let counter = Math.abs(r[0]) - 1;
+
+                while (counter--) {
+                    toIdx++;
                 }
 
-                if (Math.abs(r[0]) === 1) {
-                    this.s._read(this.q.table as any, [from] as any, callback);
-                } else {
-                    let toIdx = fromIdx;
-                    let counter = Math.abs(r[0]) - 1;
-
-                    while (counter-- && pks[toIdx]) {
-                        toIdx++;
-                    }
-                    let to = pks[toIdx];
-
-                    this.s._rangeRead(this.q.table as any, fromIdx, toIdx, callback);
-                }
-
-
+                this.s._rangeReadIDX(this.q.table as any, fromIdx, toIdx, callback);
             });
         } else {
             callback([]);
@@ -1109,7 +1096,7 @@ export class _RowSelection {
     /**
      * Select rows based on a Trie Query.
      *
-     * @private
+     * @internal
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _RowSelection
      */
@@ -1125,7 +1112,7 @@ export class _RowSelection {
     /**
      * Do a full table scan, checking every row against the WHERE statement.
      *
-     * @private
+     * @internal
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _RowSelection
      */
@@ -1139,7 +1126,7 @@ export class _RowSelection {
      * Checks if a single WHERE statement ["row", "=", value] uses a primary key or secondary index as it's row.
      * If so, we can use a much faster SELECT method.
      *
-     * @private
+     * @internal
      * @param {any[]} wArgs
      * @returns {number}
      * @memberof _RowSelection

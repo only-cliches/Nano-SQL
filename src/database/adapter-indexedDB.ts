@@ -9,8 +9,6 @@ const _evalContext = (source: string, context: {[key: string]: any}) => {
     return compiled.apply(context, Object.keys(context).map(c => context[c]));
 };
 
-const IDBWorker = require("./adapter-indexedDB-worker.txt");
-
 /**
  * Handles IndexedDB with and without web workers.
  * Uses blob worker OR eval()s the worker and uses it inline.
@@ -44,6 +42,8 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     private _useWorker: boolean;
 
+    private _worker = require("./adapter-indexedDB-worker.txt");
+
     constructor(useWorker: boolean) {
         this._pkKey = {};
         this._pkType = {};
@@ -59,7 +59,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             // blob webworker, doesn't use an external file!
             // not supported by IE and Edge with IndexedDB, like at all.
 
-            this._w = new Worker(window.URL.createObjectURL(new Blob([IDBWorker])));
+            this._w = new Worker(window.URL.createObjectURL(new Blob([this._worker])));
             this._w.addEventListener("message", (e: MessageEvent) => {
                 this._handleWWMessage(e.data.do, e.data.args);
             });
@@ -72,7 +72,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             let listeners: any[] = [];
 
             // emulate worker behavior
-            _evalContext(IDBWorker, {
+            _evalContext(this._worker, {
                 postMessage: (msg: any) => {
                     this._handleWWMessage(msg.do, msg.args);
                 },
@@ -221,9 +221,10 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, fromIdx?: number, toIdx?: number): void {
+    public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
         const keys = this._dbIndex[table].keys();
-        const ranges: number[] = [typeof fromIdx, typeof toIdx].indexOf("undefined") === -1 ? [fromIdx as any, toIdx as any] : [0, keys.length - 1];
+        const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
+        let ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
 
         if (!keys.length) {
             complete();
@@ -268,7 +269,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             args: {
                 table: table,
                 id: queryID,
-                range: ranges.map(r => keys[r])
+                range: usePK && usefulValues ? ranges : ranges.map(r => keys[r])
             }
         });
     }
@@ -291,16 +292,10 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
                 pk: "_clear_"
             }
         });
-
-
     }
 
-    public indexOfPK(table: string, pk: any, complete: (idx: number) => void) {
-        complete(this._dbIndex[table].getLocation(pk));
-    }
-
-    public getIndex(table: string, getIdx: boolean, complete: (index) => void): void {
-        complete(getIdx ? this._dbIndex[table].keys().length : this._dbIndex[table].keys());
+    public getIndex(table: string, getLength: boolean, complete: (index) => void): void {
+        complete(getLength ? this._dbIndex[table].keys().length : this._dbIndex[table].keys());
     }
 
     public destroy(complete: () => void) {

@@ -8,6 +8,7 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _w;
     private _waitingCBs;
     private _useWorker;
+    private _worker;
     constructor(useWorker: boolean);
     connect(complete: () => void): void;
     setID(id: string): void;
@@ -16,9 +17,8 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, skipReadBeforeWrite: any): void;
     delete(table: string, pk: DBKey, complete: () => void): void;
     read(table: string, pk: DBKey, callback: (row: DBRow) => void): void;
-    rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, fromIdx?: number, toIdx?: number): void;
+    rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;
     drop(table: string, callback: () => void): void;
-    indexOfPK(table: string, pk: any, complete: (idx: number) => void): void;
-    getIndex(table: string, getIdx: boolean, complete: (index) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index) => void): void;
     destroy(complete: () => void): void;
 }
