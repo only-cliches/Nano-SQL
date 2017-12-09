@@ -20,6 +20,10 @@ interface HistoryRowMeta {
     histPtr: number;
 }
 
+// const hist = "_hist";
+// const histPtr = "_hist_ptr";
+
+const strs = ["_hist", "_hist_ptr"];
 
 /**
  * New History Plugin
@@ -127,8 +131,8 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
         // database/linear mode. all undo/redo is tracked across the entire database.  Default behavior
         if (this.historyModeArgs === "database" || !this.historyModeArgs) {
-            historyTables["_hist"] = historyTable;
-            historyTables["_hist_ptr"] = historyTablePointer;
+            historyTables[strs[0]] = historyTable;
+            historyTables[strs[1]] = historyTablePointer;
             // table/row mode, undo/redo is tracked either per row OR per table
         } else if (this.historyModeArgs !== "database" || isNotString) {
 

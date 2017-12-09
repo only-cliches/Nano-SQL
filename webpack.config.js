@@ -71,13 +71,11 @@ const options = {
 switch (process.env.NODE_ENV) {
     case "production":
         options['plugins'].push(new webpack.optimize.UglifyJsPlugin({
-            compress: {
-                warnings: false,
-                passes: 5
-            },
-            mangle: {
-                props: { regex: new RegExp(/^_|Promise/) }
-            }
+            mangle: true
+            /*mangle: {
+                props: { regex: new RegExp(/^_|Promise/) },
+                except: ['wood']
+            }*/
         }));
         break;
 }
