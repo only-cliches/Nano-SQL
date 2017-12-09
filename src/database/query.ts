@@ -112,7 +112,7 @@ export class _NanoSQLStorageQuery {
         }));
 
         // Query cache for the win!
-        if (!this._isInstanceTable && this._store._doCache && this._store._cache[this._query.table as any][queryHash]) {
+        if (!this._isInstanceTable && this._store._doCache && this._store._cache[this._query.table as any] && this._store._cache[this._query.table as any][queryHash]) {
             this._query.result = this._store._cache[this._query.table as any][queryHash];
             next(this._query);
             return;

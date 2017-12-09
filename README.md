@@ -6,7 +6,6 @@ The most powerful little database.
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 [![npm downloads](https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square)](https://www.npmjs.com/package/nano-sql)
-![gzip size](http://img.badgesize.io/https://unpkg.com/nano-sql@0.9.1/dist/nano-sql.min.js?compression=gzip)
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
@@ -21,7 +20,7 @@ Persistence supports `Local Storage`, `Indexed DB`, `Indexed DB in a Web Worker`
 * [Todo Example](https://some-sql.com/react-todo/)
 * [Draw Example](https://some-sql.com/react-draw/)
 
-[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+[Documentation](https://docs.nanosql.io/)
 
 ## Highlighted Features
 
@@ -66,7 +65,9 @@ I needed something small, efficient, strongly typed at runtime, optionally persi
 
 ## Installation
 
-`npm i nano-sql --save`
+```sh
+npm i nano-sql --save
+```
 
 Using in typescript project:
 
@@ -121,7 +122,7 @@ nSQL('users') //  "users" is our table name.
 
 ```
 
-[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+[Documentation](https://docs.nanosql.io/)
 
 ## Detailed Usage
 First you declare your models, connect the db, then you execute queries.
@@ -196,7 +197,7 @@ nSQL().connect().then(function(result, db) {
 
 ```
 
-[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+[Documentation](https://docs.nanosql.io/)
 
 Some examples of queries you can do.
 
@@ -290,9 +291,9 @@ nSQL("users")
 
 nanoSQL is built on top of NoSQL systems so there are several performance optimizations you can take advantage of for super fast queries.
 
-[Performance Docs](https://github.com/ClickSimply/Nano-SQL/wiki/4.-Default-Store#performance-considerations)
+[Performance Docs](https://docs.nanosql.io//4.-Default-Store#performance-considerations)
 
-[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+[Documentation](https://docs.nanosql.io/)
 
 ## History
 
@@ -321,7 +322,7 @@ nSQL().extend("hist", "?").then(function(status) {
 
 Writes are quite a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by adjusting the config object before calling `connect()`.
 
-[Documentation](https://github.com/ClickSimply/Nano-SQL/wiki)
+[Documentation](https://docs.nanosql.io/)
 
 # Contributing
 
