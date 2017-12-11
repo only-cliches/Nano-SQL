@@ -26,7 +26,7 @@ describe("Data Integrity", () => {
                                 posts: [1, 2, 3]
                             }], "Runtime type casting failed!");
                         done();
-                    } catch(e) {
+                    } catch (e) {
                         done(e);
                     }
                 });

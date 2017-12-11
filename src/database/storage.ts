@@ -121,7 +121,7 @@ export interface NanoSQLStorageAdapter {
      * @param {(count: number) => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    getIndex(table: string, getLength: boolean, complete: (index: any[]|number) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index: any[] | number) => void): void;
 
     /**
      * Completely delete/destroy the entire database.
@@ -233,6 +233,66 @@ export class _NanoSQLStorage {
 
     private _size: number;
 
+    /**
+ * Given a table, keep track of all ORM references pointing FROM that table.
+ *
+ * @type {({
+ *         [tableName: string]: { // Relations with this table
+ *             _table: string // other table
+ *             _key: string // this column
+ *             _mapTo: string // other column
+ *             _type: "array" | "single" // type of relation
+ *         }[];
+ *     })}
+ * @memberof NanoSQLInstance
+ */
+    public _relFromTable: {
+        [tableName: string]: {
+            [thisColmn: string]: { // Relations with this table
+                _toTable: string // other table
+                _toColumn: string // other column
+                _toType: "array" | "single" // other column type
+                _thisType: "array" | "single" // type of relation,
+            };
+        }
+    };
+
+
+    /**
+     * Given a table, keep track of all ORM references pointing TO that table.
+     *
+     * @type {({
+     *         [tableName: string]: {
+     *             thisColumn: string;
+     *             fromTable: string;
+     *             fromColumn: string;
+     *             fromType: "array" | "single"
+     *         }[]
+     *     })}
+     * @memberof NanoSQLInstance
+     */
+    public _relToTable: {
+        [tableName: string]: {
+            _thisColumn: string;
+            _thisType: "array" | "single";
+            _fromTable: string;
+            _fromColumn: string;
+            _fromType: "array" | "single";
+        }[]
+    };
+
+    /**
+     * Stores which columns are used for ORM stuff.
+     *
+     * @type {{
+     *         [tableName: string]: string[];
+     *     }}
+     * @memberof NanoSQLInstance
+     */
+    public _relationColumns: {
+        [tableName: string]: string[];
+    };
+
     constructor(parent: NanoSQLInstance, args: {
         mode: string | NanoSQLStorageAdapter; // pass in string or adapter class.
         id: string; // id of database
@@ -314,6 +374,55 @@ export class _NanoSQLStorage {
 
         this._tableNames.forEach((table) => {
             this._newTable(table, dataModels[table]);
+        });
+
+        this._relFromTable = {};
+        this._relToTable = {};
+        this._relationColumns = {};
+
+        this._tableNames.forEach((table) => {
+
+            let i = this.models[table].length;
+            this._relFromTable[table] = {};
+            this._relationColumns[table] = [];
+            this._relToTable[table] = [];
+
+            while (i--) {
+                const p = this.models[table][i];
+
+                // Check for relations
+                if (p.props && this._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
+                    let mapTo = "";
+                    p.props.forEach(p => {
+                        if (p.indexOf("ref=>") !== -1) mapTo = p.replace("ref=>", "");
+                    });
+
+                    if (mapTo) {
+                        this._relationColumns[table].push(p.key);
+
+                        this._relFromTable[table][p.key] = {
+                            _toTable: p.type.replace("[]", ""),
+                            _toColumn: mapTo.replace("[]", ""),
+                            _toType: mapTo.indexOf("[]") === -1 ? "single" : "array",
+                            _thisType: p.type.indexOf("[]") === -1 ? "single" : "array"
+                        };
+                    }
+                }
+            }
+
+        });
+
+        Object.keys(this._relFromTable).forEach((table) => {
+            Object.keys(this._relFromTable[table]).forEach((column) => {
+                const rel = this._relFromTable[table][column];
+                this._relToTable[rel._toTable].push({
+                    _thisColumn: rel._toColumn,
+                    _thisType: rel._toType,
+                    _fromTable: table,
+                    _fromColumn: column,
+                    _fromType: rel._thisType
+                });
+            });
         });
 
         this._adapter.connect(() => {
@@ -511,7 +620,7 @@ export class _NanoSQLStorage {
      * @returns
      * @memberof _NanoSQLStorage
      */
-    public _read(table: string, query: (row: DBRow, idx: number, toKeep: (result: boolean) => void) => void|any[], callback: (rows: DBRow[]) => void) {
+    public _read(table: string, query: (row: DBRow, idx: number, toKeep: (result: boolean) => void) => void | any[], callback: (rows: DBRow[]) => void) {
 
         if (Array.isArray(query)) { // select by array of primary keys
             new ALL(query.map((q) => {

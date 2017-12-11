@@ -3,6 +3,7 @@ import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
 import { _NanoSQLStorage } from "./storage";
 import { _NanoSQLStorageQuery } from "./query";
+import { ALL } from "../utilities";
 
 declare var global: any;
 
@@ -46,6 +47,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         next();
     }
     */
+
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
         switch (args[0]) {
             case "idx.length":
@@ -60,9 +62,30 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 }
             break;
             case "rebuild_idx":
-                this._store.rebuildIndexes(args[1], (time) => {
-                    next(args, [time]);
-                });
+                if (args[1]) {
+                    this._store.rebuildIndexes(args[1], (time) => {
+                        next(args, [time]);
+                    });
+                } else {
+                    new ALL(Object.keys(this._store.tableInfo).map((table) => {
+                        return (done) => {
+                            this._store.rebuildIndexes(table, done);
+                        };
+                    })).then((times) => {
+                        next(args, times);
+                    });
+                }
+
+            break;
+            case "clear_cache":
+                if (args[1]) {
+                    this._store._cache[args[1]] = {};
+                } else {
+                    Object.keys(this._store.tableInfo).forEach((table) => {
+                        this._store._cache[table] = {};
+                    });
+                }
+                next(args, args[1] || Object.keys(this._store.tableInfo));
             break;
             default:
                 next(args, result);

@@ -9,8 +9,8 @@ Read: ~100 records/ms
 - Write SQLite plugin.
 - Finish integration tests.
 
-## [1.0.0] 12-7-2017
-MANY BREAKING CHANGES, PLEASE READ THE MIGRATION GUIDE
+## [1.0.0] 12-10-2017
+MANY BREAKING CHANGES, PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)
 This build is intended to stabilize the library, increase performance and make it easy to extend in the future.  The API for v1.X.X releases will be very stable moving forward.
 *****
 - Complete rewrite of the database engine, ORM system, and history system.
@@ -22,13 +22,17 @@ This build is intended to stabilize the library, increase performance and make i
 - All database adapters now use a sorted B-Tree index to gaurantee consistency.
 - You can use instance tables with nSQL queries. ex: nSQL([{name: "Bill"}, {name: "Bob"}]).query("select")....
 - History is no longer enabled by default.
-- Added WebSQL support. Safari in iOS and macOS will use WebSQL by default.
+- Added WebSQL support. Safari in iOS/macOS will use WebSQL by default.
 - Added support for running IndexedDB in a webworker.
 - Added new INTERSECT and NOT INTERSECT .where() comparators.  To check if any array values intersect with any values in an array of the database column.
 - .where() statements now accept a function, much like filter: `nSQL("table").query("select").where(row => row.age > 20).exec()`
 - Tables without a primary key are no longer supported, unless it's an instance table.
 - Added `loadCSV` method to automate importing CSVs into the database.
-
+- You can now get the version of NanoSQL being used with `nSQL().version`.
+- Database versions will now be tracked to make automatic migration changes in the future.
+- `updateORM` query has been removed entirely.
+- ORM updates now happen along side `upsert`, `delete` and `drop` queries.
+- ORM updates are more consistent and way more performant.
 
 ## [0.9.3] 10-15-2017
 - Added changed rows property to database events.

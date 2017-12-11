@@ -20,10 +20,8 @@ interface HistoryRowMeta {
     histPtr: number;
 }
 
-// const hist = "_hist";
-// const histPtr = "_hist_ptr";
-
-const strs = ["_hist", "_hist_ptr"];
+// uglifyJS workaround
+const strs = ["_hist", "_hist_ptr", "_id"];
 
 /**
  * New History Plugin
@@ -501,8 +499,8 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             this.parent.table("_" + table + "__hist_rows").query("select").where(["_id", "IN", getRows]).exec().then((resultRows: any[]) => {
                 const rObj = {};
                 resultRows.forEach((row) => {
-                    rObj[row._id] = Object.isFrozen(row) ? _assign(row) : row;
-                    delete rObj[row._id]._id;
+                    rObj[row[strs[2]]] = Object.isFrozen(row) ? _assign(row) : row;
+                    delete rObj[row[strs[2]]][strs[2]];
                 });
                 complete([{
                     pointer: rows[0].histRows.length - rows[0].histPtr - 1,

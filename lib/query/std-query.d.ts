@@ -34,7 +34,7 @@ export declare class _NanoSQLQuery {
     _error: string;
     _AV: string;
     private _query;
-    constructor(table: string | any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string, bypassORMPurge?: boolean);
+    constructor(table: string | any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string, bypassORM?: boolean);
     where(args: any[] | any): _NanoSQLQuery;
     range(limit: number, offset: number): _NanoSQLQuery;
     orm(ormArgs?: (string | ORMArgs)[]): _NanoSQLQuery;
@@ -48,7 +48,6 @@ export declare class _NanoSQLQuery {
     join(args: JoinArgs): _NanoSQLQuery;
     limit(args: number): _NanoSQLQuery;
     trieSearch(column: string, stringToSearch: string): _NanoSQLQuery;
-    ormSync(columns?: string[]): this;
     comment(comment: string): _NanoSQLQuery;
     extend(...args: any[]): _NanoSQLQuery;
     offset(args: number): _NanoSQLQuery;

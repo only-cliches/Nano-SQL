@@ -55,24 +55,14 @@ export declare class NanoSQLInstance {
     sTable: string | any[];
     private _config;
     _plugins: NanoSQLPlugin[];
+    version: number;
+    _instanceBackend: NanoSQLPlugin;
     static functions: {
         [fnName: string]: NanoSQLFunction;
     };
     data: any;
     _hasEvents: StdObject<boolean>;
     _tableNames: string[];
-    relations: {
-        [tableName: string]: {
-            toTable: string;
-            column: string;
-            toColumn: string;
-            type: "array" | "single";
-            toType: "array" | "single" | "";
-        }[];
-    };
-    relationColumns: {
-        [tableName: string]: string[];
-    };
     private _callbacks;
     constructor();
     table(table?: string): NanoSQLInstance;

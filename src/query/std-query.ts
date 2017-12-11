@@ -37,7 +37,7 @@ export class _NanoSQLQuery {
 
     private _query: IdbQuery;
 
-    constructor(table: string|any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string, bypassORMPurge?: boolean) {
+    constructor(table: string|any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string, bypassORM?: boolean) {
         this._db = db;
         this._AV = actionOrView || "";
         this._query = {
@@ -59,13 +59,12 @@ export class _NanoSQLQuery {
 
             let newArgs = queryArgs || (a === "select" || a === "delete" ? [] : {});
 
-            // Purge ORM columns from the delete arguments
-            /*if (["delete", "upsert"].indexOf(a) > -1 && !bypassORMPurge && this._db.relationColumns[this._db.sTable as string].length) {
-                let inputArgs = {};
+            /*
+            // Purge ORM columns from the delete and upsert arguments
+            if (["delete", "upsert"].indexOf(a) > -1 && !bypassORM && this._db.relationColumns[this._db.sTable as string].length) {
                 this._db.relationColumns[this._db.sTable as string].forEach((column) => {
                     newArgs[column] = undefined;
                 });
-                newArgs = inputArgs;
             }*/
 
             if (a === "upsert") {
@@ -268,17 +267,6 @@ export class _NanoSQLQuery {
     }
 
     /**
-     * Track changes to the ORM system in this query.
-     *
-     * @returns
-     * @memberof _NanoSQLQuery
-     */
-    public ormSync(columns?: string[]) {
-        this._query.ormSync = columns || [];
-        return this;
-    }
-
-    /**
      * If this query results in revision(s) being generated, this will add a comment to those revisions.
      *
      * @param {object} comment
@@ -398,6 +386,15 @@ export class _NanoSQLQuery {
         let t = this;
 
         return new Promise((res, rej) => {
+
+            if (Array.isArray(this._query.table)) {
+                if (this._db._instanceBackend.doExec) {
+                    this._db._instanceBackend.doExec(this._query, (q) => {
+                        res(q.result);
+                    });
+                }
+                return;
+            }
 
             if (!t._db._plugins.length) {
                 t._error = "No plugins, nothing to do!";

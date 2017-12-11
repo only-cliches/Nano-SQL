@@ -4,6 +4,8 @@ export declare class _NanoSQLStorageQuery {
     private _store;
     constructor(_store: _NanoSQLStorage);
     doQuery(query: IdbQuery, next: (q: IdbQuery) => void): void;
+    private _updateORMRows(relation, fromPKs, add, primaryKey, complete);
+    private _syncORM(type, oldRows, newRows, complete);
 }
 export declare class _MutateSelection {
     q: IdbQuery;

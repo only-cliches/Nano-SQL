@@ -45,6 +45,28 @@ export declare class _NanoSQLStorage {
     };
     _nsql: NanoSQLInstance;
     private _size;
+    _relFromTable: {
+        [tableName: string]: {
+            [thisColmn: string]: {
+                _toTable: string;
+                _toColumn: string;
+                _toType: "array" | "single";
+                _thisType: "array" | "single";
+            };
+        };
+    };
+    _relToTable: {
+        [tableName: string]: {
+            _thisColumn: string;
+            _thisType: "array" | "single";
+            _fromTable: string;
+            _fromColumn: string;
+            _fromType: "array" | "single";
+        }[];
+    };
+    _relationColumns: {
+        [tableName: string]: string[];
+    };
     constructor(parent: NanoSQLInstance, args: {
         mode: string | NanoSQLStorageAdapter;
         id: string;

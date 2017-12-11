@@ -1,6 +1,5 @@
 import { Promise, setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
-// import { _NanoSQLORMQuery } from "./query/orm-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
 import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery } from "./utilities";
@@ -136,6 +135,10 @@ export class NanoSQLInstance {
 
     public _plugins: NanoSQLPlugin[];
 
+    public version: number = 1;
+
+    public _instanceBackend: NanoSQLPlugin;
+
     public static functions: {
         [fnName: string]: NanoSQLFunction;
     };
@@ -214,42 +217,6 @@ export class NanoSQLInstance {
      */
     public _tableNames: string[];
 
-
-    /**
-     * Stores the relations between tables.
-     *
-     * @type {({
-     *         [tableName: string]: { // Relations with this table
-     *             _table: string // other table
-     *             _key: string // this column
-     *             _mapTo: string // other column
-     *             _type: "array" | "single" // type of relation
-     *         }[];
-     *     })}
-     * @memberof NanoSQLInstance
-     */
-    public relations: {
-        [tableName: string]: { // Relations with this table
-            toTable: string // other table
-            column: string // this column
-            toColumn: string // other column
-            type: "array" | "single" // type of relation,
-            toType: "array" | "single" | "" // type of relation this points to
-        }[];
-    };
-
-    /**
-     * Stores which columns are used for ORM stuff.
-     *
-     * @type {{
-     *         [tableName: string]: string[];
-     *     }}
-     * @memberof NanoSQLInstance
-     */
-    public relationColumns: {
-        [tableName: string]: string[];
-    };
-
     private _callbacks: {
         [table: string]: ReallySmallEvents;
     };
@@ -268,6 +235,23 @@ export class NanoSQLInstance {
 
         t._callbacks = {};
         t._callbacks["*"] = new ReallySmallEvents();
+        t._instanceBackend = new NanoSQLDefaultBackend();
+        const instanceConnectArgs: DBConnect = {
+            models: {},
+            actions: {},
+            views: {},
+            config: {},
+            parent: this
+        };
+        if (t._instanceBackend.willConnect) {
+            t._instanceBackend.willConnect(instanceConnectArgs, () => {
+                if (t._instanceBackend.didConnect) {
+                    t._instanceBackend.didConnect(instanceConnectArgs, () => {
+
+                    });
+                }
+            });
+        }
     }
 
 
@@ -307,6 +291,11 @@ export class NanoSQLInstance {
                 parent: this,
             };
 
+            connectArgs.models["_util"] = [
+                {key: "key", type: "string", props: ["pk", "ai"]},
+                {key: "value", type: "any"}
+            ];
+
             // if history is enabled, turn on the built in history plugin
             if (t._config && t._config.history) {
                 this.use(new _NanoSQLHistoryPlugin(t._config.historyMode));
@@ -333,62 +322,42 @@ export class NanoSQLInstance {
                 this._actions = connectArgs.actions;
                 this._views = connectArgs.views;
                 this._config = connectArgs.config;
-                this.relations = {};
-                this.relationColumns = {};
 
                 t._tableNames = Object.keys(this._models);
 
-                t._tableNames.forEach((table) => {
+                const oldTable: any = this.sTable;
 
-                    let i = this._models[table].length;
-                    this.relations[table] = [];
-                    this.relationColumns[table] = [];
+                const completeConnect = () => {
+                    this.table(oldTable as any);
+                    new ALL(this._plugins.map((p) => {
+                        return (nextP) => {
+                            if (p.didConnect) {
+                                p.didConnect(connectArgs, () => {
+                                    nextP();
+                                });
+                            } else {
+                                nextP();
+                            }
+                        };
+                    })).then(() => {
+                        res(this.table);
+                    });
+                };
 
-                    while (i--) {
-                        const p = this._models[table][i];
-
-                        // Check for relations
-                        if (p.props && this._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
-                            let mapTo = "";
-                            p.props.forEach(p => {
-                                if (p.indexOf("ref=>") !== -1) mapTo = p.replace("ref=>", "");
+                this.table("_util").query("select").where(["key", "=", "version"]).exec().then((rows) => {
+                    if (!rows.length) {
+                        // new database or an old one that needs indexes rebuilt
+                        this.table("_util").query("upsert", {key: "version", value: this.version}).exec().then(() => {
+                            this.extend("rebuild_idx").then(() => {
+                                completeConnect();
                             });
-
-                            this.relationColumns[table].push(p.key);
-
-                            this.relations[table].push({
-                                column: p.key,
-                                toTable: p.type.replace("[]", ""),
-                                toColumn: mapTo,
-                                type: p.type.indexOf("[]") === -1 ? "single" : "array",
-                                toType: mapTo ? Object.keys(this._models).reduce((prev, cur) => {
-                                    if (cur === p.type.replace("[]", "")) {
-                                        return this._models[cur].reduce((p, c) => {
-                                            if (c.key === mapTo) {
-                                                return c.type.indexOf("[]") !== -1 ? "array" : "single" as any;
-                                            }
-                                            return p;
-                                        }, "");
-                                    }
-                                    return prev;
-                                }, "") : ""
-                            });
-                        }
+                        });
+                    } else {
+                        // future migration messes go here
+                        completeConnect();
                     }
-
                 });
 
-                new ALL(this._plugins.map((p) => {
-                    return (nextP) => {
-                        if (p.didConnect) {
-                            p.didConnect(connectArgs, () => {
-                                nextP();
-                            });
-                        } else {
-                            nextP();
-                        }
-                    };
-                })).then(res);
             });
         });
     }
@@ -743,21 +712,6 @@ export class NanoSQLInstance {
         t._activeAV = undefined;
         return query;
     }
-
-    /**
-     * Update relational ORM data.
-     *
-     * @param {("add"|"delete"|"drop"|"rebuild"|"set")} action
-     * @param {string} column
-     * @param {any[]} [relationIDs]
-     * @returns
-     *
-     * @memberof NanoSQLInstance
-     */
-    /*public updateORM(action: "add" | "delete" | "drop" | "rebuild" | "set", column?: string, relationIDs?: any[]): _NanoSQLORMQuery {
-        if (Array.isArray(this.sTable)) return null as any;
-        return new _NanoSQLORMQuery(this, this.sTable, action, column, relationIDs);
-    }*/
 
     /**
      * Trigger a database event
