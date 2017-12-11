@@ -182,6 +182,22 @@ export class NanoSQLInstance {
      */
     private _actions: StdObject<ActionOrView[]>;
 
+    /**
+     * Holds a reference to the optional action/view modifier
+     *
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public _AVMod: IActionViewMod;
+
+    /**
+     * Lets you modify queries before they run on the database
+     *
+     * @internal
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public _queryMod: (args: IdbQuery, complete: (args: IdbQuery) => void) => void;
 
     /**
      * A map containing the models
@@ -299,6 +315,8 @@ export class NanoSQLInstance {
                 {key: "value", type: "any"}
             ];
 
+            this._plugins = [];
+
             // if history is enabled, turn on the built in history plugin
             if (t._config && t._config.history) {
                 this.use(new _NanoSQLHistoryPlugin(t._config.historyMode));
@@ -363,6 +381,19 @@ export class NanoSQLInstance {
 
             });
         });
+    }
+
+        /**
+     * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
+     *
+     * @param {IActionViewMod} filterFunc
+     * @returns
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public avFilter(filterFunc: IActionViewMod) {
+        this._AVMod = filterFunc;
+        return this;
     }
 
     public use(plugin: NanoSQLPlugin): this {
@@ -621,6 +652,18 @@ export class NanoSQLInstance {
     }
 
     /**
+     * Adds a query filter to every request.
+     *
+     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public queryFilter(callBack: (args: IdbQuery, complete: (args: IdbQuery) => void) => void): NanoSQLInstance {
+        this._queryMod = callBack;
+        return this;
+    }
+
+    /**
      * Internal function to fire action/views.
      *
      * @private
@@ -645,7 +688,19 @@ export class NanoSQLInstance {
         }
         t._activeAV = AVName;
 
-        return selAV.call(selAV.args ? cleanArgs(selAV.args, AVargs) : {}, t);
+        if (t._AVMod) {
+            return new Promise((res, rej) => {
+                t._AVMod(this.sTable as any, AVType, t._activeAV || "", cleanArgs, (args) => {
+                    selAV ? selAV.call(args, t).then((result) => {
+                        res(result, t);
+                    }) : false;
+                }, (err) => {
+                    rej(err);
+                });
+            });
+        } else {
+            return selAV.call(selAV.args ? cleanArgs(selAV.args, AVargs) : {}, t);
+        }
     }
 
 
@@ -708,10 +763,10 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery {
+    public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery {
 
         let t = this;
-        let query = new _NanoSQLQuery(t.sTable, t, action.toLowerCase(), args, t._activeAV, bypassORMPurge);
+        let query = new _NanoSQLQuery(t.sTable, t, action.toLowerCase(), args, t._activeAV);
         t._activeAV = undefined;
         return query;
     }
@@ -838,7 +893,7 @@ export class NanoSQLInstance {
                         new CHAIN(queries.map((quer) => {
                             return (nextQuery) => {
                                 tables.push(quer.table as any);
-                                t.table(quer.table as any).query(quer.action as any, quer.actionArgs, true).manualExec({
+                                t.table(quer.table as any).query(quer.action as any, quer.actionArgs).manualExec({
                                     ...quer,
                                     transaction: true,
                                     queryID: transactionID,

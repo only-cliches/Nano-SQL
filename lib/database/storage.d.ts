@@ -55,6 +55,14 @@ export declare class _NanoSQLStorage {
             };
         };
     };
+    _columnsAreTables: {
+        [tableName: string]: {
+            [thisColmn: string]: {
+                _toTable: string;
+                _thisType: "array" | "single";
+            };
+        };
+    };
     _relToTable: {
         [tableName: string]: {
             _thisColumn: string;

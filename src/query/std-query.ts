@@ -3,13 +3,13 @@ import { CHAIN, _assign, StdObject, uuid, cast } from "../utilities";
 import { Promise, setFast } from "lie-ts";
 
 export interface IdbQuery {
-    table: string|any[];
+    table: string | any[];
     action: string;
     actionArgs: any;
     state: string;
     queryID?: string;
     transaction?: boolean;
-    where?: (row: DBRow, idx: number) => boolean|any[];
+    where?: (row: DBRow, idx: number) => boolean | any[];
     range?: number[];
     ormSync?: string[];
     orm?: (string | ORMArgs)[];
@@ -19,7 +19,7 @@ export interface IdbQuery {
     join?: JoinArgs;
     limit?: number;
     offset?: number;
-    trie?: {column: string, search: string};
+    trie?: { column: string, search: string };
     comments: string[];
     extend?: any[];
     result: DBRow[];
@@ -37,7 +37,7 @@ export class _NanoSQLQuery {
 
     private _query: IdbQuery;
 
-    constructor(table: string|any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string, bypassORM?: boolean) {
+    constructor(table: string | any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string) {
         this._db = db;
         this._AV = actionOrView || "";
         this._query = {
@@ -108,7 +108,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    public where(args: any[]|any): _NanoSQLQuery {
+    public where(args: any[] | any): _NanoSQLQuery {
         this._query.where = args;
         return this;
     }
@@ -227,7 +227,7 @@ export class _NanoSQLQuery {
      */
     public join(args: JoinArgs): _NanoSQLQuery {
         if (Array.isArray(this._query.table)) {
-            throw Error ("Can't JOIN with instance table!");
+            throw Error("Can't JOIN with instance table!");
         }
         if (!args.table || !args.type) {
             this._error = "Join command requires table and type arguments!";
@@ -262,7 +262,7 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     public trieSearch(column: string, stringToSearch: string): _NanoSQLQuery {
-        this._query.trie = {column: column, search: stringToSearch};
+        this._query.trie = { column: column, search: stringToSearch };
         return this;
     }
 
@@ -341,7 +341,7 @@ export class _NanoSQLQuery {
                             return "";
                         }
                         // tslint:disable-next-line
-                        return typeof row[k] === "object" ? '"' + JSON.stringify(row[k]).replace(/\"/g,'\'') + '"' : row[k]; 
+                        return typeof row[k] === "object" ? '"' + JSON.stringify(row[k]).replace(/\"/g, '\'') + '"' : row[k];
                     }).join(","));
                 });
                 res(csv.join("\n"), t);
@@ -357,7 +357,7 @@ export class _NanoSQLQuery {
      * @returns {Promise<any>}
      * @memberof _NanoSQLQuery
      */
-    public manualExec(query: IdbQuery, complete?: (err: any, result: any[]) => void): Promise<any> {
+    public manualExec(query: IdbQuery): Promise<any> {
         this._query = {
             ...query,
             ...this._query
@@ -408,51 +408,13 @@ export class _NanoSQLQuery {
 
             let rows: any[] = [];
 
-            new CHAIN(t._db._plugins.map((p, i) => {
-                return (nextP) => {
-                    if (p.doExec) {
-                        p.doExec(this._query, (newQ) => {
-                            this._query = newQ || this._query;
-                            nextP();
-                        });
-                    } else {
-                        nextP();
-                    }
-                };
-            })).then(() => {
+            const runQuery = () => {
 
-                const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
-                    switch (t._query.action) {
-                        case "select": return [t._query.action];
-                        case "delete":
-                        case "upsert":
-                        case "drop": return [t._query.action, "change"];
-                        default: return [] as any[];
-                    }
-                })();
-                const hasLength = this._query.result && this._query.result.length;
-                const row = { affectedRowPKS: [], affectedRows: []};
-
-                let event: DatabaseEvent = {
-                    table: t._query.table as string,
-                    query: t._query,
-                    time: new Date().getTime(),
-                    result: rows,
-                    notes: [],
-                    types: eventTypes,
-                    actionOrView: t._AV,
-                    transactionID: t._query.transaction ? t._query.queryID : undefined,
-                    affectedRowPKS: hasLength ? (this._query.result[0] || row).affectedRowPKS : [],
-                    affectedRows: hasLength ? (this._query.result[0] || row).affectedRows : [],
-                };
-
-                res(this._query.result, this._db);
-
-                new CHAIN(t._db._plugins.map((p) => {
+                new CHAIN(t._db._plugins.map((p, i) => {
                     return (nextP) => {
-                        if (p.didExec) {
-                            p.didExec(event, (newE) => {
-                                event = newE;
+                        if (p.doExec) {
+                            p.doExec(this._query, (newQ) => {
+                                this._query = newQ || this._query;
                                 nextP();
                             });
                         } else {
@@ -460,10 +422,61 @@ export class _NanoSQLQuery {
                         }
                     };
                 })).then(() => {
-                    t._db.triggerEvent(event);
-                });
 
-            });
+                    const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
+                        switch (t._query.action) {
+                            case "select": return [t._query.action];
+                            case "delete":
+                            case "upsert":
+                            case "drop": return [t._query.action, "change"];
+                            default: return [] as any[];
+                        }
+                    })();
+                    const hasLength = this._query.result && this._query.result.length;
+                    const row = { affectedRowPKS: [], affectedRows: [] };
+
+                    let event: DatabaseEvent = {
+                        table: t._query.table as string,
+                        query: t._query,
+                        time: new Date().getTime(),
+                        result: rows,
+                        notes: [],
+                        types: eventTypes,
+                        actionOrView: t._AV,
+                        transactionID: t._query.transaction ? t._query.queryID : undefined,
+                        affectedRowPKS: hasLength ? (this._query.result[0] || row).affectedRowPKS : [],
+                        affectedRows: hasLength ? (this._query.result[0] || row).affectedRows : [],
+                    };
+
+                    res(this._query.result, this._db);
+
+                    new CHAIN(t._db._plugins.map((p) => {
+                        return (nextP) => {
+                            if (p.didExec) {
+                                p.didExec(event, (newE) => {
+                                    event = newE;
+                                    nextP();
+                                });
+                            } else {
+                                nextP();
+                            }
+                        };
+                    })).then(() => {
+                        t._db.triggerEvent(event);
+                    });
+
+                });
+            };
+
+            if (this._db._queryMod) {
+                this._db._queryMod(this._query, (newQ) => {
+                    this._query = newQ;
+                    runQuery();
+                });
+            } else {
+                runQuery();
+            }
+
         });
     }
 }

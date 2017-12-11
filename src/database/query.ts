@@ -143,30 +143,39 @@ export class _NanoSQLStorageQuery {
         _fromColumn: string;
         _fromType: "array" | "single";
     }, fromPKs: any[], add: boolean, primaryKey: any, complete: () => void) {
-        this._store._nsql.table(relation._fromTable).query("select").where([this._store.tableInfo[relation._fromTable]._pk, "IN", fromPKs]).exec().then((rows) => {
+
+        const fromPk = this._store.tableInfo[relation._fromTable]._pk;
+
+        this._store._read(relation._fromTable, fromPKs as any, (rows) => {
             new ALL(rows.map((row) => {
                 return (rowDone) => {
-                    row = Object.isFrozen(row) ? _assign(row) : row;
+                    let newRow = Object.isFrozen(row) ? _assign(row) : row;
 
                     if (relation._fromType === "array") {
-                        row[relation._fromColumn] = row[relation._fromColumn] || [];
+                        newRow[relation._fromColumn] = newRow[relation._fromColumn] || [];
+                        const idxOf = newRow[relation._fromColumn].indexOf(primaryKey);
                         if (add) { // add
-                            row[relation._fromColumn].push(primaryKey);
+                            if (idxOf === -1) {
+                                newRow[relation._fromColumn].push(primaryKey);
+                            } else {
+                                rowDone();
+                            }
                         } else { // remove
-                            const idxOf = row[relation._fromColumn].indexOf(primaryKey);
                             if (idxOf !== -1) {
-                                row[relation._fromColumn].splice(idxOf, 1);
+                                newRow[relation._fromColumn].splice(idxOf, 1);
+                            } else {
+                                rowDone();
                             }
                         }
-                        row[relation._fromColumn].sort();
+                        newRow[relation._fromColumn].sort();
                     } else {
                         if (add) { // add
-                            row[relation._fromColumn] = primaryKey;
+                            newRow[relation._fromColumn] = primaryKey;
                         } else { // remove
-                            row[relation._fromColumn] = undefined;
+                            newRow[relation._fromColumn] = null;
                         }
                     }
-                    this._store._nsql.table(relation._fromTable).query("upsert", row).exec().then(rowDone);
+                    this._store._nsql.table(relation._fromTable).query("upsert", newRow).comment("ORM Update").exec().then(rowDone);
                 };
             })).then(complete);
         });
@@ -175,6 +184,11 @@ export class _NanoSQLStorageQuery {
     private _syncORM(type: "del"|"add", oldRows: DBRow[], newRows: DBRow[], complete: () => void) {
 
         const useRelations = this._store._relToTable[this._query.table as string];
+
+        if (this._query.comments.indexOf("ORM Update") !== -1) {
+            complete();
+            return;
+        }
 
         if (!useRelations || !useRelations.length) {
             complete();
@@ -193,6 +207,9 @@ export class _NanoSQLStorageQuery {
 
                         const equals = (val1, val2) => {
                             if (Array.isArray(val1) && Array.isArray(val2)) {
+                                if (val1.length !== val2.length) {
+                                    return false;
+                                }
                                 return val1.filter((v, i) => v !== val2[i]).length > 0;
                             } else {
                                 return val1 === val2;
@@ -207,6 +224,7 @@ export class _NanoSQLStorageQuery {
                             break;
                             case "add":
                                 const primaryKey = newRows[idx][this._store.tableInfo[this._query.table as any]._pk];
+
                                 // possibly update existing relation
                                 // if adding oldRows[idx] is possibly undefined (if theres no previouse row record)
                                 if (oldRows[idx]) {
@@ -216,10 +234,8 @@ export class _NanoSQLStorageQuery {
                                         relationDone();
                                     } else {
                                         if (relation._thisType === "array") {
-
                                             const addIds = (newRows[idx][relation._thisColumn] || []).filter(v => (oldRows[idx][relation._thisColumn] || []).indexOf(v) === -1);
                                             const removeIds = (oldRows[idx][relation._thisColumn] || []).filter(v => (newRows[idx][relation._thisColumn] || []).indexOf(v) === -1);
-
                                             new ALL([addIds, removeIds].map((list, i) => {
                                                 return (done) => {
                                                     this._updateORMRows(relation, list, i === 0, primaryKey, done);
@@ -230,7 +246,7 @@ export class _NanoSQLStorageQuery {
 
                                             const addRelation = () => {
                                                 // add new relation
-                                                if (newRows[idx][relation._thisColumn] !== undefined) {
+                                                if (newRows[idx][relation._thisColumn] !== null && newRows[idx][relation._thisColumn] !== undefined) {
                                                     this._updateORMRows(relation, [newRows[idx][relation._thisColumn]], true, primaryKey, relationDone);
                                                 } else {
                                                     // no new relation
@@ -239,7 +255,7 @@ export class _NanoSQLStorageQuery {
                                             };
 
                                             // remove old connection
-                                            if (oldRows[idx][relation._thisColumn] !== undefined) {
+                                            if (oldRows[idx][relation._thisColumn] !== null && oldRows[idx][relation._thisColumn] !== undefined) {
                                                 this._updateORMRows(relation, [oldRows[idx][relation._thisColumn]], false, primaryKey, addRelation);
                                             } else {
                                                 // no old connection, just add the new one
@@ -645,7 +661,7 @@ export class _MutateSelection {
                             ormResult();
                             return;
                         }
-                        const relateData = this.s._relFromTable[this.q.table as string][orm.key];
+                        const relateData = this.s._columnsAreTables[this.q.table as string][orm.key];
 
                         if (relateData) {
                             this.s._nsql.table(relateData._toTable).query("select").where([this.s.tableInfo[relateData._toTable]._pk, relateData._thisType === "array" ? "IN" : "=", row[orm.key]]).exec().then((rows) => {
@@ -666,7 +682,7 @@ export class _MutateSelection {
                                     if (!rows.filter(r => r).length) {
                                         row[orm.key] = relateData._thisType === "array" ? [] : undefined;
                                     } else {
-                                        row[orm.key] = relateData._thisType === "array" ? rows.filter(r => r) : rows[0];
+                                        row[orm.key] = relateData._thisType === "array" ? rows : rows[0];
                                     }
                                     ormResult();
                                 });

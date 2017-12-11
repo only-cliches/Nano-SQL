@@ -287,14 +287,6 @@ nSQL("users")
 
 ```
 
-## Performance
-
-nanoSQL is built on top of NoSQL systems so there are several performance optimizations you can take advantage of for super fast queries.
-
-[Performance Docs](https://docs.nanosql.io//4.-Default-Store#performance-considerations)
-
-[Documentation](https://docs.nanosql.io/)
-
 ## History
 
 The Undo/Redo system is enabled by default and it's easy to use.

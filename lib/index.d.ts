@@ -61,12 +61,14 @@ export declare class NanoSQLInstance {
         [fnName: string]: NanoSQLFunction;
     };
     data: any;
+    _AVMod: IActionViewMod;
     _hasEvents: StdObject<boolean>;
     _tableNames: string[];
     private _callbacks;
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(): Promise<Object | string>;
+    avFilter(filterFunc: IActionViewMod): this;
     use(plugin: NanoSQLPlugin): this;
     on(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;
     off(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;
@@ -76,8 +78,9 @@ export declare class NanoSQLInstance {
     getView(viewName: string, viewArgs?: any): Promise<Array<any> | NanoSQLInstance>;
     actions(actionArray: Array<ActionOrView>): NanoSQLInstance;
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
+    queryFilter(callBack: (args: IdbQuery, complete: (args: IdbQuery) => void) => void): NanoSQLInstance;
     private _doAV(AVType, AVList, AVName, AVargs);
-    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any, bypassORMPurge?: boolean): _NanoSQLQuery;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
     triggerEvent(eventData: DatabaseEvent): NanoSQLInstance;
     default(replaceObj?: any): {
         [key: string]: any;

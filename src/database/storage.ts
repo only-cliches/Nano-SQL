@@ -234,24 +234,47 @@ export class _NanoSQLStorage {
     private _size: number;
 
     /**
- * Given a table, keep track of all ORM references pointing FROM that table.
- *
- * @type {({
- *         [tableName: string]: { // Relations with this table
- *             _table: string // other table
- *             _key: string // this column
- *             _mapTo: string // other column
- *             _type: "array" | "single" // type of relation
- *         }[];
- *     })}
- * @memberof NanoSQLInstance
- */
+     * Given a table, keep track of all ORM references pointing FROM that table.
+     *
+     * @type {({
+     *         [tableName: string]: { // Relations with this table
+     *             _table: string // other table
+     *             _key: string // this column
+     *             _mapTo: string // other column
+     *             _type: "array" | "single" // type of relation
+     *         }[];
+     *     })}
+     * @memberof NanoSQLInstance
+     */
     public _relFromTable: {
         [tableName: string]: {
             [thisColmn: string]: { // Relations with this table
                 _toTable: string // other table
                 _toColumn: string // other column
                 _toType: "array" | "single" // other column type
+                _thisType: "array" | "single" // type of relation,
+            };
+        }
+    };
+
+
+    /**
+     * Used by the .orm() queries to find what records to get.
+     * 
+     * @type {({
+     *         [tableName: string]: {
+     *             [thisColmn: string]: { // Relations with this table
+     *                 _toTable: string // other table
+     *                 _thisType: "array" | "single" // type of relation,
+     *             };
+     *         }
+     *     })}
+     * @memberof _NanoSQLStorage
+     */
+    public _columnsAreTables: {
+        [tableName: string]: {
+            [thisColmn: string]: { // Relations with this table
+                _toTable: string // other table
                 _thisType: "array" | "single" // type of relation,
             };
         }
@@ -379,6 +402,7 @@ export class _NanoSQLStorage {
         this._relFromTable = {};
         this._relToTable = {};
         this._relationColumns = {};
+        this._columnsAreTables = {};
 
         this._tableNames.forEach((table) => {
 
@@ -386,27 +410,39 @@ export class _NanoSQLStorage {
             this._relFromTable[table] = {};
             this._relationColumns[table] = [];
             this._relToTable[table] = [];
+            this._columnsAreTables[table] = {};
 
             while (i--) {
                 const p = this.models[table][i];
 
                 // Check for relations
-                if (p.props && this._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
+                if (this._tableNames.indexOf(p.type.replace("[]", "")) !== -1) {
                     let mapTo = "";
-                    p.props.forEach(p => {
-                        if (p.indexOf("ref=>") !== -1) mapTo = p.replace("ref=>", "");
-                    });
 
-                    if (mapTo) {
-                        this._relationColumns[table].push(p.key);
 
-                        this._relFromTable[table][p.key] = {
-                            _toTable: p.type.replace("[]", ""),
-                            _toColumn: mapTo.replace("[]", ""),
-                            _toType: mapTo.indexOf("[]") === -1 ? "single" : "array",
-                            _thisType: p.type.indexOf("[]") === -1 ? "single" : "array"
-                        };
+                    this._columnsAreTables[table][p.key] = {
+                        _toTable: p.type.replace("[]", ""),
+                        _thisType: p.type.indexOf("[]") === -1 ? "single" : "array"
+                    };
+
+                    if (p.props) {
+                        p.props.forEach(p => {
+                            if (p.indexOf("ref=>") !== -1) mapTo = p.replace("ref=>", "");
+                        });
+
+                        if (mapTo) {
+                            this._relationColumns[table].push(p.key);
+
+                            this._relFromTable[table][p.key] = {
+                                _toTable: p.type.replace("[]", ""),
+                                _toColumn: mapTo.replace("[]", ""),
+                                _toType: mapTo.indexOf("[]") === -1 ? "single" : "array",
+                                _thisType: p.type.indexOf("[]") === -1 ? "single" : "array"
+                            };
+                        }
                     }
+
+
                 }
             }
 

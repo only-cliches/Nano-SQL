@@ -7,7 +7,7 @@ Read: ~100 records/ms
 - Test and improve performance of LevelDB on the server.
 - Write Cordova plugin.
 - Write SQLite plugin.
-- Finish integration tests.
+- Finish integration tests for history.
 
 ## [1.0.0] 12-10-2017
 MANY BREAKING CHANGES, PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)
@@ -33,6 +33,7 @@ This build is intended to stabilize the library, increase performance and make i
 - `updateORM` query has been removed entirely.
 - ORM updates now happen along side `upsert`, `delete` and `drop` queries.
 - ORM updates are more consistent and way more performant.
+- Added a large number of integration tests.
 
 ## [0.9.3] 10-15-2017
 - Added changed rows property to database events.
