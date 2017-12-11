@@ -387,10 +387,11 @@ export class _NanoSQLQuery {
 
         return new Promise((res, rej) => {
 
+            // handle instance queries
             if (Array.isArray(this._query.table)) {
                 if (this._db._instanceBackend.doExec) {
                     this._db._instanceBackend.doExec(this._query, (q) => {
-                        res(q.result);
+                        res(q.result, this._db);
                     });
                 }
                 return;
@@ -401,7 +402,7 @@ export class _NanoSQLQuery {
             }
 
             if (t._error) {
-                rej(t._error);
+                rej(t._error, this._db);
                 return;
             }
 
@@ -419,14 +420,6 @@ export class _NanoSQLQuery {
                     }
                 };
             })).then(() => {
-
-
-
-                // instance databases do not cause events to emit
-                if (Array.isArray(t._query.table)) {
-                    res(this._query.result, this._db);
-                    return;
-                }
 
                 const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
                     switch (t._query.action) {

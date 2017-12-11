@@ -343,7 +343,7 @@ export class NanoSQLInstance {
                             }
                         };
                     })).then(() => {
-                        res(this.table);
+                        res(t._tableNames, t);
                     });
                 };
 

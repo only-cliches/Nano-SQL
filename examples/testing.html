@@ -1,13 +1,449 @@
 <html>
 
 <head>
-    <script src="/nano-sql.min.js"></script>
+    <script src="nano-sql.min.js"></script>
     <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.4.3/alasql.min.js"></script>-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
 </head>
 
 <body>
+    <button onclick="doWrite()">write</button>
+    <script>
+        function makeid() {
+            var text = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+            for (var i = 0; i < 10; i++)
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+            return text;
+        }
+
+        function doWrite() {
+         /*   
+            var mybase = new alasql.Database();
+            mybase.exec(`CREATE TABLE users (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                name TEXT,
+                pass TEXT,
+                email TEXT
+            )`);
+
+            start = new Date().getTime();
+            let i = 0;
+            const w = () => {
+                if (i < 1000) {
+                    mybase.exec("INSERT INTO users (name, pass, email) VALUES (?, ?, ?)", [makeid(), makeid(), makeid()], () => {
+                        i++;
+                        w();
+                    });
+                } else {
+                    console.log("WRITE", (new Date().getTime() - start))
+                    start = new Date().getTime();
+                    mybase.exec("SELECT * FROM users", [], (rows) => {
+                        console.log("READ", (new Date().getTime() - start))
+                        console.log(rows);
+                    })
+                }
+
+            }
+            w();*/
+
+
+            var db = new NanoSQLInstance();
+            db.table("users")
+                .model([{
+                    key: "id",
+                    type: "int",
+                    props: ["pk", "ai"]
+                }, {
+                    key: "name",
+                    type: "string"
+                }, {
+                    key: "pass",
+                    type: 'string'
+                }, {
+                    key: "email",
+                    type: "string"
+                }])
+                // .config({ memory: false, persistent: true, history: false })
+                .connect().then(function() {
+                    var start = 0;
+                    // db.table("users").beginTransaction();
+                    db.doTransaction(function(tDB, compvare) {
+                        start = new Date().getTime();
+                        for (var i = 0; i < 1000; i++) {
+                            tDB("users")
+                                .query("upsert", {
+                                    name: makeid(),
+                                    pass: makeid(),
+                                    email: makeid()
+                                }).exec()
+                        }
+                        compvare();
+                    }).then(function() {
+                        console.log("WRITE", (new Date().getTime() - start))
+                        start = new Date().getTime();
+                        db.table("users").query("select").exec().then(function(rows) {
+                            console.log("READ", (new Date().getTime() - start))
+                            console.log(rows.length);
+                        })
+                    });
+
+
+                });
+        }
+    </script>
+    <script>
+        /* This file used to run tests and play with the lib */
+
+        /*
+                    nSQL('users') // <= Table Name
+                    .model([ // <= create table model before you can use it
+                        {key:'id',type:'int',props:['pk','ai']},
+                        {key:'name',type:'string'},
+                    ])
+                    .connect()
+                    .then(function() {
+                        this.query('upsert',{id:null,name:'Scott'}).exec() // <= drop in some data
+                        .then(function(response) {
+                            return this.query('select').exec(); // <= Select entire table
+                        })
+                        .then(function(response) {
+                            console.log(response) // <= [{id:1,name:'Scott'}]
+                            return this.query('select').toCSV(); //<= convert the table to CSV
+                        })
+                        .then(function(response) {
+                            console.log(response); //<= 1,"Scott"
+                        })
+                    });
+        */
+
+
+        /*
+
+                    //spec for dbs like MySQL:
+                    var mySQL = new mySQLDriver({
+                        address:'localhost',
+                        user:'username',
+                        pass:'password',
+                        db:'dbname';
+                    });
+
+                    //Mysql Index View
+                    {
+                        name: 'get_user_by_name',
+                        args: ['name:string'],
+                        extend: {
+                            mysql-index:['name:asc','age']
+                        },
+                        call: function(args, db) {
+                            return db.query('select').where(['name','=',args.name]).exec();
+                        }
+                    },
+                    
+                    //Declare models, actions, and views
+
+                    nSQL().connect(mySQL).then(function() {
+                        //database ready
+                    })            
+                    
+                    for(var i = 0; i < 10; i++) {
+                        console.log(nSQLInstance.uuid().replace(/-/g,"").match(/.{1,4}/g).map((v) => {
+                            return parseInt(v,16);
+                        }));
+                    }
+*/
+
+        nSQL('users') //Table/Store Name
+            .model([ //Data Model
+                {
+                    key: 'id',
+                    type: 'int',
+                    props: ['pk', "ai"]
+                }, {
+                    key: 'name',
+                    type: 'string',
+                    default: "none",
+                    props: ["trie"]
+                }, {
+                    key: 'age',
+                    type: 'int'
+                }, {
+                    key: 'balance',
+                    type: 'float',
+                    default: 0.0
+                }, {
+                    key: 'orderIDs',
+                    type: 'orders[]',
+                    props: ["ref=>user"]
+                }, {
+                    key: 'meta',
+                    type: 'map',
+                    default: {}
+                }
+            ])
+            .views([ //Cached views to show specific data
+                {
+                    name: 'get_user_by_name',
+                    args: ['name:string'],
+                    call: function(args, db) {
+                        return db.query('select').where(['name', '=', args.name]).exec();
+                    }
+                }, {
+                    name: 'list_all_users',
+                    args: ['page:int'],
+                    call: function(args, db) {
+                        return db.query('select', ['id', 'name']).exec();
+                    }
+                }
+            ])
+            .actions([ //Cached actions to update specific data
+                {
+                    name: 'clearPostIDs',
+                    args: ['name:string'],
+                    call: function(args, db) {
+                        return db.query('upsert', {
+                            postIDs: []
+                        }).where(["name", "=", args.name]).exec();
+                    }
+                }, {
+                    name: 'login',
+                    args: ['username:string', 'password:string'],
+                    call: function(args, db) {
+                        return db.query('select', ['id']).where([
+                            ['username', '=', args.username], 'and', ['password', '=', args.password]
+                        ]).exec();
+                    }
+                }
+            ])
+
+        nSQL([
+            {name: "billy"},
+            {name: "scotty"},
+            {name: "joey"},
+            {name: "hey"}
+        ]).query("select").exec().then((rows) => {
+            console.log(rows);
+        });
+
+        nSQL("orders").model([{
+                key: 'id',
+                type: 'int',
+                props: ['pk', 'ai']
+            }, {
+                key: 'title',
+                type: 'string'
+            }, {
+                key: 'total',
+                type: 'float'
+            }, {
+                key: 'user',
+                type: 'users',
+                props: ["ref=>orderIDs"]
+            }])
+            .config({
+                // mode: "PERM",
+                // history: true,
+                // rebuildIndexes: true
+                // memory: false
+            })
+            .connect().then(function(result, db) {
+                console.log(db);
+                // nSQL().extend("one", "arg", "here");
+                Promise.all([
+                     nSQL()
+                     .loadJS("orders", [{
+                         id: null,
+                         title: "Test",
+                         total: 200,
+                         user: 2
+                     }, {
+                         id: null,
+                         title: "Test 2",
+                         total: 200,
+                         user: 2
+                     }, {
+                         id: null,
+                         title: "Test 3",
+                         total: 600,
+                         user: 5
+                     }]),
+                     nSQL()
+                     .loadJS('users', [{
+                         id: null,
+                         name: 'jeb',
+                         age: 28,
+                         balance: 25.02,
+                         orderIDs: [1, 20, 5],
+                         meta: {
+                             favorteColor: {1: "orange"}
+                         }
+                     }, {
+                         id: null,
+                         name: 'bob',
+                         age: 25,
+                         balance: 25.02,
+                         orderIDs: [2, 3],
+                         meta: {
+                             favorteColor: {1: "orange"}
+                         }
+                     }, {
+                         id: null,
+                         name: 'jeb',
+                         age: null,
+                         balance: 22.02,
+                         meta: {
+                             favorteColor: {1: "yellow"}
+                         }
+                     }, {
+                         id: null,
+                         name: 'scott',
+                         age: 21,
+                         balance: 25.02,
+                         orderIDs: [0, 20, 5],
+                         meta: {
+                             favorteColor: {1: "blue"}
+                         }
+                     }])
+                 ])
+                // new Promise(function(res) {res()})
+                    .then(function() {
+/*
+                        console.time("NANO");
+                        nSQL([{a:1,b:10}, {a:2,b:20}, {a:1,b:30}])
+                            .query("select", ["a", "SUM(b) AS b"])
+                            .groupBy({a: "asc"})
+                            .exec().then((rows1) => {
+                                console.timeEnd("NANO");
+                                console.time("ALA");
+                                var data = [{a:1,b:10}, {a:2,b:20}, {a:1,b:30}];
+                                const rows = alasql('SELECT a, SUM(b) AS b FROM ? GROUP BY a',[data]);
+                                console.timeEnd("ALA");
+                                console.log(rows, rows1);
+                            })
+*/
+
+                        console.time("READ");
+                        nSQL("users")
+                            .query("select")
+                            // .trieSearch("name", "je")
+                            // .where(["age", "=", "NULL"])
+                            // .orm(["orderIDs"])
+                            /*.join({
+                                type: "cross",
+                                table: "users",
+                                where: ["orders.user", "=", "users.id"]
+                            })*/
+                            .groupBy({"orders.title": "asc"})
+                            .exec().then(function(rows, db) {
+                                console.timeEnd("READ");
+                            });
+                        /*nSQL("orders").updateORM("rebuild").exec().then(() => {
+                            return nSQL("users").updateORM("rebuild").exec();
+                            //return new Promise(res => res());
+                        }).then(() => {
+                            nSQL("orders").query("select").exec().then((rows) => {
+                                console.log("Orders", rows);
+                            });
+                            nSQL("users").query("select").exec().then((users) => {
+                                console.log("Users", users);
+                            });
+                            return nSQL("orders").query("devare").where(["id", "=", 1]).exec();
+                        }).then(() => {
+                            nSQL("users").query("select").exec().then((rows) => {
+                                console.log("Users2", rows);
+                            });
+                        });
+
+                        nSQL("users").query("select").where(["meta[favorteColor][1]", "=", "blue"]).exec().then((rows) => {
+                            console.log("NULL", rows);
+                        });
+
+                        /*nSQL("orders")
+                            .query("select", ["orders.userID", "MAX(orders.total) AS orderAVG", "COUNT(*)"])
+                            .join({
+                                type: "left",
+                                table: "users",
+                                where: ["orders.userID", "=", "users.id"]
+                            })
+                            .groupBy({
+                                "orders.userID": "asc"
+                            })
+                            .orderBy({
+                                "orders.id": "asc",
+                                "users.age": "desc"
+                            })
+                            .exec().then(function(rows) {
+                                console.log("JOIN", rows);
+                            });
+                        nSQL("users").query("select", ["name", "age", "COUNT(*)"]).groupBy({
+                                age: "asc"
+                            }).exec()
+                            .then(function(result, db) {
+                                console.log("GROUP", result);
+                                return db.doAction("clearPostIDs", {
+                                    name: "scott"
+                                });
+                            })
+                            .then(function(result, db) {
+                                console.log(result);
+                                return db.query('select').orderBy({
+                                    name: 'desc'
+                                }).where([
+                                    ['age', '>', 25], 'or', ['id', '>', 2]
+                                ]).exec();
+                                // return db.query('devare').where(["age", ">", 21]).exec();
+                            })
+                            .then(function(result, db) {
+                                console.log(result);
+                                db.query('select').orderBy({
+                                    name: 'asc'
+                                }).exec().then(function(result2) {
+                                    console.log('immuTest: ' + (result === result2));
+                                });
+                                db.query("select")
+                                    .join({
+                                        type: "inner",
+                                        table: "orders",
+                                        where: ["users.id", "=", "orders.user"]
+                                    }).exec().then((rows) => {
+                                        console.log("JOIN", rows);
+                                    })
+
+                                return db.query('select').toCSV(true);
+                            })
+                            .then(function(result) {
+                                console.log(result);
+                            });*/
+                    });
+            });
+
+
+
+        /*
+
+        // New transaction API
+        nSQL().beginTransaction().then((db, endTransaction) => {
+
+            db().quey().exec();
+            db().ormQuery().exec();
+            db().query().exec();
+            
+            endTransaction();
+        }).then((results: DBResults[]) => {
+
+        });
+
+        // revisions API
+
+        nSQL().config({historyMode:"revisions"}).connect()...
+
+        nSQL().extend("Revision", "table", "primarykey", "<"||">"||"?"||revisionID).then(...)
+
+        */
+    </script>
+    Everything is in the console, not much to see here just a scratchpad to test queries with.
 </body>
 
 </html>
