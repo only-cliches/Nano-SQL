@@ -6,6 +6,9 @@ import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
+// uglifyJS fix
+const str = ["_util"];
+
 /**
  * This is the format used for actions and views
  *
@@ -291,7 +294,7 @@ export class NanoSQLInstance {
                 parent: this,
             };
 
-            connectArgs.models["_util"] = [
+            connectArgs.models[str[0]] = [
                 {key: "key", type: "string", props: ["pk", "ai"]},
                 {key: "value", type: "any"}
             ];
