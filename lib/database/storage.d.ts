@@ -43,6 +43,11 @@ export declare class _NanoSQLStorage {
             [queryHash: number]: any[];
         };
     };
+    _cacheKeys: {
+        [table: string]: {
+            [queryHash: number]: any;
+        };
+    };
     _nsql: NanoSQLInstance;
     private _size;
     _relFromTable: {

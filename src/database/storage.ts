@@ -224,6 +224,22 @@ export class _NanoSQLStorage {
     };
 
     /**
+     * The primary keys in each cache.
+     *
+     * @type {{
+     *         [table: string]: {
+     *             [queryHash: number]: {[primaryKey: any]: boolean};
+     *         }
+     *     }}
+     * @memberof _NanoSQLStorage
+     */
+    public _cacheKeys: {
+        [table: string]: {
+            [queryHash: number]: any;
+        }
+    };
+
+    /**
      * Parent instance of NanoSQL
      *
      * @type {NanoSQLInstance}
@@ -260,7 +276,7 @@ export class _NanoSQLStorage {
 
     /**
      * Used by the .orm() queries to find what records to get.
-     * 
+     *
      * @type {({
      *         [tableName: string]: {
      *             [thisColmn: string]: { // Relations with this table
@@ -338,6 +354,7 @@ export class _NanoSQLStorage {
         this._tableNames = [];
         this._doCache = args.cache || true;
         this._cache = {};
+        this._cacheKeys = {};
 
         if (typeof this._mode === "string") {
             const detect = this._detectStorageMethod();
@@ -920,6 +937,7 @@ export class _NanoSQLStorage {
         };
 
         this._cache[tableName] = {};
+        this._cacheKeys[tableName] = {};
 
         this._trieIndexes[tableName] = {};
 

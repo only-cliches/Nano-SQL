@@ -1,6 +1,6 @@
 {
     "name": "nano-sql",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "The most powerful little databse.",
     "main": "lib/index-server.js",
     "browser": "lib/index.js",
@@ -16,6 +16,7 @@
         "url": "https://github.com/ClickSimply/Nano-SQL.git"
     },
     "typings": "lib/index.d.ts",
+    "homepage": "https://nanosql.io/",
     "devDependencies": {
         "@types/chai": "^4.0.6",
         "@types/levelup": "0.0.30",

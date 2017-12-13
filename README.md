@@ -43,6 +43,19 @@ Persistence supports `Local Storage`, `Indexed DB`, `Indexed DB in a Web Worker`
 --- | --- | --- | --- | --- | --- |
 Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
 
+## Database Support
+
+NanoSQL can save data to several different places, depending on the browser or environment it's being ran in.
+
+1. **Included In The Box**
+    - Level DB
+    - Indexed DB
+    - WebSQL
+    - Local Storage
+
+2. **[SQLite in NodeJS](https://github.com/ClickSimply/Nano-SQLite3)**
+3. **SQLite in Cordova (Coming Soon)**
+
 ### Oh Look, Another Data Store
 
 I spent a long time looking for an existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:

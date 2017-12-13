@@ -96,6 +96,35 @@ export class _NanoSQLStorageQuery {
         }
     }
 
+    private _hash: string;
+
+    private _invalidateCache(pks: any[]): void {
+        if (!this._store._doCache) {
+            return;
+        }
+        Object.keys(this._store._cacheKeys[this._query.table as any]).forEach((hash) => {
+            let i = pks.length;
+            let valid = true;
+            while (i-- && valid) {
+                if (this._store._cacheKeys[this._query.table as any][hash][pks[i]]) {
+                    delete this._store._cache[this._query.table as any][hash];
+                    delete this._store._cacheKeys[this._query.table as any][hash];
+                    valid = false;
+                }
+            }
+        });
+    }
+
+    private _setCache(rows: any[]) {
+        this._store._cache[this._query.table as any][this._hash] = rows;
+
+        // store primary keys for this cache, used for cache invalidation
+        this._store._cacheKeys[this._query.table as any][this._hash] = {};
+        rows.forEach((r) => {
+            this._store._cacheKeys[this._query.table as any][this._hash][r[this._store.tableInfo[this._query.table as any]._pk]] = true;
+        });
+    }
+
     /**
      * Initilze a SELECT query.
      *
@@ -106,28 +135,30 @@ export class _NanoSQLStorageQuery {
      */
     private _select(next: (q: IdbQuery) => void) {
 
-        const queryHash = hash(JSON.stringify({
+        this._hash = hash(JSON.stringify({
             ...this._query,
             queryID: null
         }));
 
+        const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
+
         // Query cache for the win!
-        if (!this._isInstanceTable && this._store._doCache && this._store._cache[this._query.table as any] && this._store._cache[this._query.table as any][queryHash]) {
-            this._query.result = this._store._cache[this._query.table as any][queryHash];
+        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+            this._query.result = this._store._cache[this._query.table as any][this._hash];
             next(this._query);
             return;
         }
 
         this._getRows((rows) => {
-            const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
+
             // No query arguments, we can skip the whole mutation selection class
             if (!["having", "orderBy", "offset", "limit", "actionArgs", "groupBy", "orm", "join"].filter(k => this._query[k]).length) {
-                if (canCache) this._store._cache[this._query.table as any][queryHash] = rows;
+                if (canCache) this._setCache(rows);
                 this._query.result = rows;
                 next(this._query);
             } else {
                 new _MutateSelection(this._query, this._store)._executeQueryArguments(rows, (resultRows) => {
-                    if (canCache) this._store._cache[this._query.table as any][queryHash] = resultRows;
+                    if (canCache) this._setCache(rows);
                     this._query.result = resultRows;
                     next(this._query);
                 });
@@ -321,9 +352,10 @@ export class _NanoSQLStorageQuery {
                         };
                     })).then((newRows: DBRow[]) => {
                         // any changes to this table invalidates the cache
-                        this._store._cache[this._query.table as any] = {};
+                        const pks = newRows.map(r => r[pk]);
+                        this._invalidateCache(pks);
 
-                        this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: newRows.map(r => r[pk]), affectedRows: newRows }];
+                        this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
                             next(this._query);
                         });
@@ -335,10 +367,12 @@ export class _NanoSQLStorageQuery {
             });
 
         } else { // no where statement, perform direct upsert
+
             let row = this._query.actionArgs || {};
             this._store._cache[this._query.table as any] = {};
             const write = (oldRow: any) => {
                 this._store._write(this._query.table as any, row[pk], oldRow, row, (result) => {
+                    this._invalidateCache([result[pk]]);
                     this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
                     this._syncORM("add", [oldRow].filter(r => r), [result], () => {
                         next(this._query);
@@ -400,9 +434,10 @@ export class _NanoSQLStorageQuery {
                     })).then((affectedRows) => {
                         // any changes to this table invalidate the cache
                         this._store._cache[this._query.table as any] = {};
+                        const pks = rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
+                        this._invalidateCache(pks);
 
-
-                        this._query.result = [{ msg: rows.length + " row(s) deleted.", affectedRowPKS: rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]), affectedRows: rows }];
+                        this._query.result = [{ msg: rows.length + " row(s) deleted.", affectedRowPKS: pks, affectedRows: rows }];
                         this._syncORM("del", rows, [], () => {
                             next(this._query);
                         });
@@ -435,6 +470,8 @@ export class _NanoSQLStorageQuery {
 
         this._store._rangeReadIDX(this._query.table as string, undefined as any, undefined as any, (rows) => {
             this._store._cache[this._query.table as any] = {};
+            this._store._cacheKeys[this._query.table as any] = {};
+
             this._store._drop(this._query.table as any, () => {
                 this._query.result = [{ msg: "'" + this._query.table as any + "' table dropped.", affectedRowPKS: rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]), affectedRows: rows }];
                 this._syncORM("del", rows, [], () => {
