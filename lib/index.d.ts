@@ -89,7 +89,9 @@ export declare class NanoSQLInstance {
     doTransaction(initTransaction: (db: (table?: string) => {
         query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => _NanoSQLTransactionQuery;
     }, complete: () => void) => void): Promise<any>;
-    config(args: StdObject<string>): NanoSQLInstance;
+    config(args: {
+        [key: string]: any;
+    }): NanoSQLInstance;
     extend(...args: any[]): any | NanoSQLInstance;
     loadJS(table: string, rows: Array<Object>, useTransaction?: boolean): Promise<Array<Object>>;
     loadCSV(table: string, csv: string, useTransaction?: boolean): Promise<Array<Object>>;

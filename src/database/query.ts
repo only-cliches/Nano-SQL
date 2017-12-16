@@ -1,5 +1,5 @@
 import { IdbQuery } from "../query/std-query";
-import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs } from "../index";
+import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
 import { ALL, CHAIN, _assign, hash, deepFreeze, objQuery, uuid, } from "../utilities";
 
@@ -206,7 +206,7 @@ export class _NanoSQLStorageQuery {
                             newRow[relation._fromColumn] = null;
                         }
                     }
-                    this._store._nsql.table(relation._fromTable).query("upsert", newRow).comment("ORM Update").exec().then(rowDone);
+                    this._store._nsql.query("upsert", newRow).comment("ORM Update").manualExec({table: relation._fromTable}).then(rowDone);
                 };
             })).then(complete);
         });
@@ -701,8 +701,8 @@ export class _MutateSelection {
                         const relateData = this.s._columnsAreTables[this.q.table as string][orm.key];
 
                         if (relateData) {
-                            this.s._nsql.table(relateData._toTable).query("select").where([this.s.tableInfo[relateData._toTable]._pk, relateData._thisType === "array" ? "IN" : "=", row[orm.key]]).exec().then((rows) => {
-                                const q = this.s._nsql.table(rows).query("select", orm.select);
+                            this.s._nsql.query("select").where([this.s.tableInfo[relateData._toTable]._pk, relateData._thisType === "array" ? "IN" : "=", row[orm.key]]).manualExec({table: relateData._toTable}).then((rows) => {
+                                const q = nSQL().query("select", orm.select);
                                 if (orm.where) {
                                     q.where(orm.where);
                                 }
@@ -715,7 +715,7 @@ export class _MutateSelection {
                                 if (orm.orderBy) {
                                     q.orderBy(orm.orderBy);
                                 }
-                                q.exec().then((result) => {
+                                q.manualExec({table: rows}).then((result) => {
                                     if (!rows.filter(r => r).length) {
                                         row[orm.key] = relateData._thisType === "array" ? [] : undefined;
                                     } else {

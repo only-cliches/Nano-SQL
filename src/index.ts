@@ -346,10 +346,7 @@ export class NanoSQLInstance {
 
                 t._tableNames = Object.keys(this._models);
 
-                const oldTable: any = this.sTable;
-
                 const completeConnect = () => {
-                    this.table(oldTable as any);
                     new ALL(this._plugins.map((p) => {
                         return (nextP) => {
                             if (p.didConnect) {
@@ -365,10 +362,10 @@ export class NanoSQLInstance {
                     });
                 };
 
-                this.table("_util").query("select").where(["key", "=", "version"]).exec().then((rows) => {
+                this.query("select").where(["key", "=", "version"]).manualExec({table: "_util"}).then((rows) => {
                     if (!rows.length) {
                         // new database or an old one that needs indexes rebuilt
-                        this.table("_util").query("upsert", {key: "version", value: this.version}).exec().then(() => {
+                        this.query("upsert", {key: "version", value: this.version}).manualExec({table: "_util"}).then(() => {
                             this.extend("rebuild_idx").then(() => {
                                 completeConnect();
                             });
@@ -903,11 +900,11 @@ export class NanoSQLInstance {
                         new CHAIN(queries.map((quer) => {
                             return (nextQuery) => {
                                 tables.push(quer.table as any);
-                                t.table(quer.table as any).query(quer.action as any, quer.actionArgs).manualExec({
+                                t.query(quer.action as any, quer.actionArgs).manualExec({
                                     ...quer,
+                                    table: quer.table,
                                     transaction: true,
                                     queryID: transactionID,
-                                    actionArgs: undefined
                                 }).then(nextQuery);
                             };
                         })).then((results) => {
@@ -957,7 +954,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public config(args: StdObject<string>): NanoSQLInstance {
+    public config(args: {[key: string]: any}): NanoSQLInstance {
         this._config = args;
         return this;
     }
@@ -1031,7 +1028,7 @@ export class NanoSQLInstance {
             return new Promise((res, rej) => {
                 new CHAIN(rows.map((row) => {
                     return (nextRow) => {
-                        nSQL(table).query("upsert", row).exec().then(nextRow);
+                        nSQL("table").query("upsert", row).manualExec({table: table}).then(nextRow);
                     };
                 })).then((rows) => {
                     res(rows.map(r => r.shift()));
@@ -1089,7 +1086,7 @@ export class NanoSQLInstance {
             return new Promise((res, rej) => {
                 new CHAIN(rowData.map((row) => {
                     return (nextRow) => {
-                        nSQL(table).query("upsert", row).exec().then(nextRow);
+                        nSQL().query("upsert", row).manualExec({table: table}).then(nextRow);
                     };
                 })).then((rows) => {
                     res(rows.map(r => r.shift()));

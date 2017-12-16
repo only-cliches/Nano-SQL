@@ -54,7 +54,7 @@ NanoSQL can save data to several different places, depending on the browser or e
     - Local Storage
 
 2. **[SQLite in NodeJS](https://github.com/ClickSimply/Nano-SQLite3)**
-3. **SQLite in Cordova (Coming Soon)**
+3. **[SQLite in Cordova](https://github.com/ClickSimply/cordova-Nano-SQLite)**
 
 ### Oh Look, Another Data Store
 

@@ -1,10 +1,14 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow } from "../index";
 import { Promise } from "lie-ts";
-export interface IdbQuery {
+export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
     action: string;
     actionArgs: any;
     state: string;
+    result: DBRow[];
+    comments: string[];
+}
+export interface IdbQueryBase {
     queryID?: string;
     transaction?: boolean;
     where?: (row: DBRow, idx: number) => boolean | any[];
@@ -25,9 +29,15 @@ export interface IdbQuery {
         column: string;
         search: string;
     };
-    comments: string[];
     extend?: any[];
-    result: DBRow[];
+}
+export interface IdbQueryExec extends IdbQueryBase {
+    table?: string | any[];
+    action?: string;
+    actionArgs?: any;
+    state?: string;
+    comments?: string[];
+    result?: DBRow[];
 }
 export declare class _NanoSQLQuery {
     private _db;
@@ -52,6 +62,6 @@ export declare class _NanoSQLQuery {
     extend(...args: any[]): _NanoSQLQuery;
     offset(args: number): _NanoSQLQuery;
     toCSV(headers?: boolean): Promise<string>;
-    manualExec(query: IdbQuery): Promise<any>;
+    manualExec(query: IdbQueryExec): Promise<any>;
     exec(): Promise<(object | NanoSQLInstance)[]>;
 }

@@ -2,11 +2,16 @@ import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../ind
 import { CHAIN, _assign, StdObject, uuid, cast } from "../utilities";
 import { Promise, setFast } from "lie-ts";
 
-export interface IdbQuery {
+export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
     action: string;
     actionArgs: any;
     state: string;
+    result: DBRow[];
+    comments: string[];
+}
+
+export interface IdbQueryBase {
     queryID?: string;
     transaction?: boolean;
     where?: (row: DBRow, idx: number) => boolean | any[];
@@ -20,9 +25,16 @@ export interface IdbQuery {
     limit?: number;
     offset?: number;
     trie?: { column: string, search: string };
-    comments: string[];
     extend?: any[];
-    result: DBRow[];
+}
+
+export interface IdbQueryExec extends IdbQueryBase {
+    table?: string | any[];
+    action?: string;
+    actionArgs?: any;
+    state?: string;
+    comments?: string[];
+    result?: DBRow[];
 }
 
 
@@ -49,43 +61,6 @@ export class _NanoSQLQuery {
             actionArgs: queryArgs,
             result: []
         };
-
-        if (Array.isArray(this._query.table)) {
-            return;
-        }
-
-        const a = queryAction.toLowerCase();
-        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) > -1) {
-
-            let newArgs = queryArgs || (a === "select" || a === "delete" ? [] : {});
-
-            /*
-            // Purge ORM columns from the delete and upsert arguments
-            if (["delete", "upsert"].indexOf(a) > -1 && !bypassORM && this._db.relationColumns[this._db.sTable as string].length) {
-                this._db.relationColumns[this._db.sTable as string].forEach((column) => {
-                    newArgs[column] = undefined;
-                });
-            }*/
-
-            if (a === "upsert") {
-
-                // Cast row types and remove columns that don't exist in the data model
-                let inputArgs = {};
-
-                this._db._models[this._db.sTable as string].forEach((model) => {
-                    // Cast known columns and purge uknown columns
-                    if (newArgs[model.key] !== undefined) {
-                        inputArgs[model.key] = cast(model.type, newArgs[model.key]);
-                    }
-                });
-                newArgs = inputArgs;
-            }
-
-            this._query.action = a;
-            this._query.actionArgs = queryArgs ? newArgs : undefined;
-        } else {
-            throw Error("No valid database action!");
-        }
     }
 
     /**
@@ -357,10 +332,10 @@ export class _NanoSQLQuery {
      * @returns {Promise<any>}
      * @memberof _NanoSQLQuery
      */
-    public manualExec(query: IdbQuery): Promise<any> {
+    public manualExec(query: IdbQueryExec): Promise<any> {
         this._query = {
-            ...query,
-            ...this._query
+            ...this._query,
+            ...query
         };
         return this.exec();
     }
@@ -384,6 +359,39 @@ export class _NanoSQLQuery {
     public exec(): Promise<(object | NanoSQLInstance)[]> {
 
         let t = this;
+
+        const a = this._query.action.toLowerCase();
+        if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) > -1) {
+
+            let newArgs = this._query.actionArgs || (a === "select" || a === "delete" ? [] : {});
+
+            /*
+            // Purge ORM columns from the delete and upsert arguments
+            if (["delete", "upsert"].indexOf(a) > -1 && !bypassORM && this._db.relationColumns[this._db.sTable as string].length) {
+                this._db.relationColumns[this._db.sTable as string].forEach((column) => {
+                    newArgs[column] = undefined;
+                });
+            }*/
+
+            if (a === "upsert") {
+
+                // Cast row types and remove columns that don't exist in the data model
+                let inputArgs = {};
+
+                this._db._models[this._query.table as string].forEach((model) => {
+                    // Cast known columns and purge uknown columns
+                    if (newArgs[model.key] !== undefined) {
+                        inputArgs[model.key] = cast(model.type, newArgs[model.key]);
+                    }
+                });
+                newArgs = inputArgs;
+            }
+
+            this._query.action = a;
+            this._query.actionArgs = this._query.actionArgs ? newArgs : undefined;
+        } else {
+            throw Error("No valid database action!");
+        }
 
         return new Promise((res, rej) => {
 

@@ -171,15 +171,17 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         if (!histTable) { // row mode
             complete();
         } else {
-            this.parent.table(histTable + "_ptr").query("select").exec().then((rows: HistoryTablePointer[]) => {
+            this.parent.query("select").manualExec({
+                table: histTable + "_ptr"
+            }).then((rows: HistoryTablePointer[]) => {
                 if (rows.length) { // already has a pointer
                     complete();
                 } else { // needs one
-                    this.parent.table(histTable + "_ptr").query("upsert", {
+                    this.parent.query("upsert", {
                         id: timeid(true),
                         table: table,
                         ptr: 0 // empty table
-                    }).exec().then(complete);
+                    }).manualExec({table: histTable + "_ptr"}).then(complete);
                 }
             });
         }
@@ -206,15 +208,17 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         };
 
         if (!this.historyModes) { // global mode
-            this.parent.table("_hist_ptr").query("select").exec().then((rows: HistoryTablePointer[]) => {
+            this.parent.query("select").manualExec({
+                table: "_hist_ptr"
+            }).then((rows: HistoryTablePointer[]) => {
                 if (rows.length) {
                     finishSetup();
                 } else {
-                    this.parent.table("_hist_ptr").query("upsert", {
+                    this.parent.query("upsert", {
                         id: timeid(true),
                         table: "",
                         ptr: 0
-                    }).exec().then(finishSetup);
+                    }).manualExec({table: "_hist_ptr"}).then(finishSetup);
                 }
             });
         } else {
@@ -239,7 +243,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
         new ALL(rowPKs.map((pk) => {
             return (rowDone) => {
-                this.parent.table(rowIDXTable).query("select").where(["id", "=", pk]).exec().then((rows: HistoryRowMeta[]) => {
+                this.parent.query("select").where(["id", "=", pk]).manualExec({table: rowIDXTable}).then((rows: HistoryRowMeta[]) => {
 
                     if (!rows.length) {
                         rowDone();
@@ -262,10 +266,10 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                         return;
                     }
 
-                    this.parent.table(rowIDXTable).query("upsert", histRowIDX).comment("History Purge").where(["id", "=", pk]).exec().then(() => {
-                        this.parent.table(rowHistTable).query("delete").comment("History Purge").where(["_id", "IN", delIDs]).exec().then(() => {
+                    this.parent.query("upsert", histRowIDX).comment("History Purge").where(["id", "=", pk]).manualExec({table: rowIDXTable}).then(() => {
+                        this.parent.query("delete").comment("History Purge").where(["_id", "IN", delIDs]).manualExec({table: rowHistTable}).then(() => {
                             if (clearAll) {
-                                this.parent.table(table).query("select").where([this._tablePkKeys[table], "=", pk]).exec().then((existingRow: any) => {
+                                this.parent.query("select").where([this._tablePkKeys[table], "=", pk]).manualExec({table: table}).then((existingRow: any) => {
                                     this._unshiftSingleRow(table, ["change"], pk, existingRow[0], false, rowDone);
                                 });
                             } else {
@@ -280,15 +284,15 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
     private _purgeTableHistory(table: string, complete: () => void, clearAll?: boolean) {
 
-        this.parent.table(table + "_ptr").query("select").exec().then((rows: HistoryTablePointer[]) => {
+        this.parent.query("select").manualExec({table: table + "_ptr"}).then((rows: HistoryTablePointer[]) => {
             let row = Object.isFrozen(rows[0]) ? _assign(rows[0]) : rows[0];
 
             if (clearAll || row.ptr > 0) {
-                let histQ = this.parent.table(table).query("select");
+                let histQ = this.parent.query("select");
                 if (!clearAll) {
                     histQ.range(row.ptr * -1, 0);
                 }
-                histQ.exec().then((histTableRows: HistoryDataTable[]) => {
+                histQ.manualExec({table: table}).then((histTableRows: HistoryDataTable[]) => {
 
                     if (!histTableRows.length) {
                         complete();
@@ -305,9 +309,9 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                             this._purgeRowHistory(ta, purgeRows[ta], tableDone, clearAll);
                         };
                     })).then(() => {
-                        this.parent.table(table).query("delete").comment("History Purge").where(["id", "IN", histTableRows.map(r => r.id)]).exec().then(() => {
+                        this.parent.query("delete").comment("History Purge").where(["id", "IN", histTableRows.map(r => r.id)]).manualExec({table: table}).then(() => {
                             row.ptr = 0;
-                            this.parent.table(table + "_ptr").query("upsert", row).comment("History Purge").where(["id", "=", row.id]).exec().then(complete);
+                            this.parent.query("upsert", row).comment("History Purge").where(["id", "=", row.id]).manualExec({table: table + "_ptr"}).then(complete);
                         });
                     });
                 });
@@ -381,11 +385,11 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                             this._tableKeys[event.table as string][pk] = true;
 
                             this._unshiftSingleRow(event.table, event.types, pk, row, true, (id) => {
-                                this.parent.table("_" + event.table + "__hist_idx").query("upsert", {
+                                this.parent.query("upsert", {
                                     id: pk,
                                     histRows: [id, -1],
                                     histPtr: 0
-                                }).exec().then(() => {
+                                }).manualExec({table: "_" + event.table + "__hist_idx"}).then(() => {
                                     rowDone(pk);
                                 });
                             });
@@ -408,11 +412,11 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             complete(event);
         } else {
 
-            this.parent.table(histTable).query("upsert", {
+            this.parent.query("upsert", {
                 id: timeid(true),
                 table: event.table,
                 keys: histRowIDs
-            }).exec().then(() => {
+            }).manualExec({table: histTable}).then(() => {
                 complete(event);
             });
         }
@@ -426,10 +430,10 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
         const adjustHistoryIDX = (appendID: any) => {
             // adjust the history pointer table with the new row id
-            this.parent.table(rowHistTable).query("select").where(["id", "=", rowPK]).exec().then((rows: HistoryRowMeta[]) => {
+            this.parent.query("select").where(["id", "=", rowPK]).manualExec({table: rowHistTable}).then((rows: HistoryRowMeta[]) => {
                 let histRowIDX = Object.isFrozen(rows[0]) ? _assign(rows[0]) : rows[0];
                 histRowIDX.histRows.unshift(appendID);
-                this.parent.table(rowHistTable).query("upsert", histRowIDX).where(["id", "=", rowPK]).exec().then(() => {
+                this.parent.query("upsert", histRowIDX).where(["id", "=", rowPK]).manualExec({table: rowHistTable}).then(() => {
                     complete(appendID);
                 });
             });
@@ -440,10 +444,10 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             adjustHistoryIDX(-1);
         } else {
             // add row to history table
-            this.parent.table("_" + table + "__hist_rows").query("upsert", {
+            this.parent.query("upsert", {
                 _id: id,
                 ...row
-            }).exec().then(() => {
+            }).manualExec({table: "_" + table + "__hist_rows"}).then(() => {
                 if (skipIDX) {
                     complete(id);
                     return;
@@ -494,9 +498,9 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
     // only works when given a specific row
     private _getRevisionHistory(table: string, rowPK: any, complete: (data: any[]) => void) {
         const rowHistTable = "_" + table + "__hist_idx";
-        this.parent.table(rowHistTable).query("select").where(["id", "=", rowPK]).exec().then((rows: HistoryRowMeta[]) => {
+        this.parent.query("select").where(["id", "=", rowPK]).manualExec({table: rowHistTable}).then((rows: HistoryRowMeta[]) => {
             const getRows = rows[0].histRows.filter(id => id !== -1);
-            this.parent.table("_" + table + "__hist_rows").query("select").where(["_id", "IN", getRows]).exec().then((resultRows: any[]) => {
+            this.parent.query("select").where(["_id", "IN", getRows]).manualExec({table: "_" + table + "__hist_rows"}).then((resultRows: any[]) => {
                 const rObj = {};
                 resultRows.forEach((row) => {
                     rObj[row[strs[2]]] = Object.isFrozen(row) ? _assign(row) : row;
@@ -512,7 +516,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
     private _getTableHistory(table: string, complete: (result: [number, number]) => void) {
         this.parent.extend("idx.length", table).then((len: number) => {
-            this.parent.table(table + "_ptr").query("select").exec().then((rows: HistoryTablePointer[]) => {
+            this.parent.query("select").manualExec({table: table + "_ptr"}).then((rows: HistoryTablePointer[]) => {
                 if (!rows.length) {
                     complete([0, 0]);
                     return;
@@ -538,7 +542,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                 throw Error("Need a row primary key to query this history!");
             }
             const rowHistTable = "_" + table + "__hist_idx";
-            this.parent.table(rowHistTable).query("select").where(["id", "=", rowPK]).exec().then((rows: HistoryRowMeta[]) => {
+            this.parent.query("select").where(["id", "=", rowPK]).manualExec({table: rowHistTable}).then((rows: HistoryRowMeta[]) => {
                 let histRowIDX = rows[0];
                 complete([histRowIDX.histRows.length, histRowIDX.histRows.length - histRowIDX.histPtr - 1]);
             });
@@ -552,7 +556,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
     private _shiftTableHistory(direction: "<" | ">", table: string, complete: (didAnything: boolean) => void) {
 
-        this.parent.table(table + "_ptr").query("select").exec().then((rows: HistoryTablePointer[]) => {
+        this.parent.query("select").manualExec({table: table + "_ptr"}).then((rows: HistoryTablePointer[]) => {
             let rowPtr: HistoryTablePointer = _assign(rows[0]);
             rowPtr.ptr += direction === "<" ? 1 : -1;
 
@@ -565,9 +569,9 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                     complete(false);
                     return;
                 }
-                this.parent.table(table).query("select").range(-1, direction === "<" ? rows[0].ptr : rowPtr.ptr).exec().then((rows: HistoryDataTable[]) => {
+                this.parent.query("select").range(-1, direction === "<" ? rows[0].ptr : rowPtr.ptr).manualExec({table: table}).then((rows: HistoryDataTable[]) => {
 
-                    this.parent.table(table + "_ptr").query("upsert", rowPtr).exec().then(() => {
+                    this.parent.query("upsert", rowPtr).manualExec({table: table + "_ptr"}).then(() => {
                         new ALL(rows[0].keys.map((pk) => {
                             return (nextRow) => {
                                 this._shiftRowHistory(direction, rows[0].table, pk, nextRow);
@@ -584,12 +588,12 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
     private _shiftRowHistory(direction: "<" | ">", table: string, PK: any, complete: (didAnything: boolean) => void) {
 
         const updateIDX = (meta: HistoryRowMeta) => {
-            this.parent.table(`_${table}__hist_idx`).query("upsert", meta).where([this._tablePkKeys[table], "=", PK]).exec().then(() => {
+            this.parent.query("upsert", meta).where([this._tablePkKeys[table], "=", PK]).manualExec({table: `_${table}__hist_idx`}).then(() => {
                 complete(true);
             });
         };
 
-        this.parent.table(`_${table}__hist_idx`).query("select").where([this._tablePkKeys[table], "=", PK]).exec().then((rows: HistoryRowMeta[]) => {
+        this.parent.query("select").where([this._tablePkKeys[table], "=", PK]).manualExec({table: `_${table}__hist_idx`}).then((rows: HistoryRowMeta[]) => {
             let rowIDX: HistoryRowMeta = _assign(rows[0]);
             rowIDX.histPtr += direction === "<" ? 1 : -1;
 
@@ -603,14 +607,14 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             const historyPK = rowIDX.histRows[rowIDX.histPtr];
 
             if (historyPK === -1) { // row has been deleted
-                this.parent.table(table).query("delete").comment("History Write").where([this._tablePkKeys[table], "=", PK]).exec().then(() => {
+                this.parent.query("delete").comment("History Write").where([this._tablePkKeys[table], "=", PK]).manualExec({table: table}).then(() => {
                     updateIDX(rowIDX);
                 });
             } else { // row has been added or modified
                 // pull the history's copy of the row
-                this.parent.table(`_${table}__hist_rows`).query("select").where(["_id", "=", historyPK]).exec().then((rows: any[]) => {
+                this.parent.query("select").where(["_id", "=", historyPK]).manualExec({table: `_${table}__hist_rows`}).then((rows: any[]) => {
                     // overwrite the row in the database
-                    this.parent.table(table).query("upsert", rows[0]).comment("History Write").exec().then(() => {
+                    this.parent.query("upsert", rows[0]).comment("History Write").manualExec({table: table}).then(() => {
                         updateIDX(rowIDX);
                     });
                 });

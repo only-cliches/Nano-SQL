@@ -9,6 +9,11 @@ Read: ~100 records/ms
 - Write SQLite plugin.
 - Finish integration tests for history.
 
+## [1.0.3] 12-15-2017
+- Updated all history and ORM queries to keep them from changing the table pointer set by the user.
+- Added NanoSQL Cordova plugin to readme.
+- Fixed `.manualExec()` method and query to work correctly.
+
 ## [1.0.2] 12-15-2017
 - Added public `getConfig()` method that allows you to read the config parameters.
 - Updated to a hashing function that is 3x faster.
