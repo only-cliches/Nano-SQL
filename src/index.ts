@@ -383,6 +383,16 @@ export class NanoSQLInstance {
         });
     }
 
+    /**
+     * Grab a copy of the database config object.
+     *
+     * @returns
+     * @memberof NanoSQLInstance
+     */
+    public getConfig() {
+        return _assign(this._config || {});
+    }
+
         /**
      * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
      *

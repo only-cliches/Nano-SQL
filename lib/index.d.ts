@@ -68,6 +68,7 @@ export declare class NanoSQLInstance {
     constructor();
     table(table?: string): NanoSQLInstance;
     connect(): Promise<Object | string>;
+    getConfig(): any;
     avFilter(filterFunc: IActionViewMod): this;
     use(plugin: NanoSQLPlugin): this;
     on(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;

@@ -9,10 +9,13 @@ Read: ~100 records/ms
 - Write SQLite plugin.
 - Finish integration tests for history.
 
+## [1.0.2] 12-15-2017
+- Added public `getConfig()` method that allows you to read the config parameters.
+- Updated to a hashing function that is 3x faster.
+
 ## [1.0.1] 12-12-2017
 - Moved adapter tests to their [own git repository](https://github.com/ClickSimply/NanoSQL-Adapter-Test).
 - Added selective cache invalidation.  Now the cache will store the primary keys for each select statement, then only invalidate the cache when that primary key is affected in some way.
-
 
 ## [1.0.0] 12-10-2017
 MANY BREAKING CHANGES, PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)

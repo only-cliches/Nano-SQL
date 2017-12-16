@@ -155,10 +155,13 @@ export const uuid = (): string => {
 };
 
 // A quick and dirty hashing function, turns a string into a md5 style hash.
-export const hash = (key: string): string => {
-    return (Math.abs(key.split("").reduce((prev, next, i) => {
-        return ((prev << 5) + prev) + key.charCodeAt(i);
-    }, 0))).toString(16);
+// stolen from https://github.com/darkskyapp/string-hash
+export const hash = (str: string): string => {
+    let hash = 5381, i = str.length;
+    while (i) {
+        hash = (hash * 33) ^ str.charCodeAt(--i);
+    }
+    return (hash >>> 0).toString(16);
 };
 
 // Generate a row ID given the primary key type.
@@ -180,7 +183,7 @@ export const generateID = (primaryKeyType: string, incrimentValue?: number): any
 // Clean the arguments from an object given an array of arguments and their types.
 export const cleanArgs = (argDeclarations: string[], args: StdObject<any>): StdObject<any> => {
     let a: StdObject<any> = {};
-    let i = argDeclarations.length || -1;
+    let i = argDeclarations.length;
     while (i--) {
         let k2: string[] = argDeclarations[i].split(":");
         if (k2.length > 1) {
@@ -336,20 +339,20 @@ export const removeDuplicates = (arr: any[]): any[] => {
     if (!arr.length) return [];
     let newarr = [arr[0]];
     for (let i = 1; i < arr.length; i++) {
-       if (arr[i] !== arr[i - 1]) newarr.push(arr[i]);
+        if (arr[i] !== arr[i - 1]) newarr.push(arr[i]);
     }
     return newarr;
 };
 
 /**
- * Recursively freeze a javascript object to preven it from being modified.
+ * Recursively freeze a javascript object to prevent it from being modified.
  *
  * @param {*} obj
  * @returns
  */
 export const deepFreeze = (obj: any) => {
 
-    Object.getOwnPropertyNames(obj).forEach((name) => {
+    Object.getOwnPropertyNames(obj || {}).forEach((name) => {
         const prop = obj[name];
         if (typeof prop === "object" && prop !== null) {
             obj[name] = deepFreeze(prop);

@@ -24,7 +24,7 @@ export declare const isAndroid: boolean;
 export declare const random16Bits: () => number;
 export declare const timeid: (ms?: boolean | undefined) => string;
 export declare const uuid: () => string;
-export declare const hash: (key: string) => string;
+export declare const hash: (str: string) => string;
 export declare const generateID: (primaryKeyType: string, incrimentValue?: number | undefined) => any;
 export declare const cleanArgs: (argDeclarations: string[], args: StdObject<any>) => StdObject<any>;
 export declare const isObject: (val: any) => boolean;
