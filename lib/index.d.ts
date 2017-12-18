@@ -80,6 +80,7 @@ export declare class NanoSQLInstance {
     actions(actionArray: Array<ActionOrView>): NanoSQLInstance;
     doAction(actionName: string, actionArgs: any): Promise<Array<DBRow> | NanoSQLInstance>;
     queryFilter(callBack: (args: IdbQuery, complete: (args: IdbQuery) => void) => void): NanoSQLInstance;
+    private _avCleanArgs(args, argsObj);
     private _doAV(AVType, AVList, AVName, AVargs);
     query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
     triggerEvent(eventData: DatabaseEvent): NanoSQLInstance;

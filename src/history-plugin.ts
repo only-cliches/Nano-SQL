@@ -569,6 +569,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                     complete(false);
                     return;
                 }
+
                 this.parent.query("select").range(-1, direction === "<" ? rows[0].ptr : rowPtr.ptr).manualExec({table: table}).then((rows: HistoryDataTable[]) => {
 
                     this.parent.query("upsert", rowPtr).manualExec({table: table + "_ptr"}).then(() => {

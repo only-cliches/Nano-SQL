@@ -1231,7 +1231,6 @@ export class _RowSelection {
                 while (counter--) {
                     toIdx++;
                 }
-
                 this.s._rangeReadIDX(this.q.table as any, fromIdx, toIdx, callback);
             });
         } else {

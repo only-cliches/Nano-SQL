@@ -108,7 +108,6 @@ nSQL([
     {name: "jeb", age: 27}
 ]).query("select", ["name", "MAX(age) AS age"]).exec().then((rows) => {
     console.log(rows); // <= [{name: "jeb", age: 27}]
-    
 })
 
 

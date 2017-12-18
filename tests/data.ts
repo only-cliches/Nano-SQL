@@ -1,9 +1,10 @@
 import { nSQL, NanoSQLInstance } from "../src/index";
 
-export const usersDB = (dataModel: any[], ready: (nSQL: NanoSQLInstance) => void) => {
+export const usersDB = (dataModel: any[], ready: (nSQL: NanoSQLInstance) => void, enableHistory?: boolean) => {
     const n = new NanoSQLInstance();
     n.table("users")
     .model(dataModel)
+    .config({history: enableHistory})
     .connect().then(() => {
         ready(n);
     });

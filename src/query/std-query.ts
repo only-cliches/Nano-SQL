@@ -365,14 +365,6 @@ export class _NanoSQLQuery {
 
             let newArgs = this._query.actionArgs || (a === "select" || a === "delete" ? [] : {});
 
-            /*
-            // Purge ORM columns from the delete and upsert arguments
-            if (["delete", "upsert"].indexOf(a) > -1 && !bypassORM && this._db.relationColumns[this._db.sTable as string].length) {
-                this._db.relationColumns[this._db.sTable as string].forEach((column) => {
-                    newArgs[column] = undefined;
-                });
-            }*/
-
             if (a === "upsert") {
 
                 // Cast row types and remove columns that don't exist in the data model

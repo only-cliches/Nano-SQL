@@ -9,6 +9,10 @@ Read: ~100 records/ms
 - Write SQLite plugin.
 - Finish integration tests for history.
 
+## [1.0.4] 12-17-2017
+- Added table types to action/view arguments.  You can now use table names as a type in action/view arguments to cast an argument to a specific table's data model.
+- Fixed a bug with avFilter function.
+
 ## [1.0.3] 12-15-2017
 - Updated all history and ORM queries to keep them from changing the table pointer set by the user.
 - Added NanoSQL Cordova plugin to readme.

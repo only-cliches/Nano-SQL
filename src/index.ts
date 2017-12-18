@@ -670,6 +670,56 @@ export class NanoSQLInstance {
         return this;
     }
 
+
+    /**
+     * Performs the same action as the cleanArgs function, except it uses data models so that if a table name is
+     * passed in as a type, that argument will be treated as a row type and force casted accordingly.
+     *
+     * @private
+     * @param {string[]} args
+     * @param {{[key: string]: any}} argsObj
+     * @returns {{[key: string]: any}}
+     * @memberof NanoSQLInstance
+     */
+    private _avCleanArgs(args: string[], argsObj: {[key: string]: any}): {[key: string]: any} {
+        let newObj: any = {};
+
+        const castTable = (rowData: any, argType: string): any => {
+            if (argType.indexOf("[]") !== -1) { // array of rows
+                const arrayOf = argType.slice(0, argType.lastIndexOf("[]"));
+                return (rowData || []).map((v) => {
+                    return castTable(v, arrayOf);
+                });
+            } else {
+                let newRow: any = {};
+                this._models[argType].forEach((model) => {
+                    newRow[model.key] = cast(model.type, rowData[model.key]);
+                });
+                return newRow;
+            }
+        };
+
+        (args || []).forEach((arg) => {
+            const argDetail = arg.split(":");
+            if (argDetail.length === 1 && argsObj[arg] !== undefined) { // no type casting
+                newObj[arg] = argsObj[arg];
+            } else {
+                const argKey = argDetail[0];
+                const argType = argDetail[1];
+                // table type
+                if (Object.keys(this._models).indexOf(argType.replace(/\[\]/g, "")) !== -1) {
+                    const rowData = argsObj[argKey] || (argType.indexOf("[]") !== -1 ? [] : {});
+                    newObj[argKey] = castTable(rowData, argType);
+                // other type
+                } else {
+                    newObj[argKey] = cast(argType, argsObj[argKey]);
+                }
+            }
+        });
+
+        return newObj;
+    }
+
     /**
      * Internal function to fire action/views.
      *
@@ -697,10 +747,8 @@ export class NanoSQLInstance {
 
         if (t._AVMod) {
             return new Promise((res, rej) => {
-                t._AVMod(this.sTable as any, AVType, t._activeAV || "", cleanArgs, (args) => {
-                    selAV ? selAV.call(args, t).then((result) => {
-                        res(result, t);
-                    }) : false;
+                t._AVMod(this.sTable as any, AVType, t._activeAV || "", AVargs, (args) => {
+                    selAV.call(selAV.args ? cleanArgs(selAV.args, args) : {}, t).then(res).catch(rej);
                 }, (err) => {
                     rej(err);
                 });
@@ -1028,7 +1076,7 @@ export class NanoSQLInstance {
             return new Promise((res, rej) => {
                 new CHAIN(rows.map((row) => {
                     return (nextRow) => {
-                        nSQL("table").query("upsert", row).manualExec({table: table}).then(nextRow);
+                        nSQL().query("upsert", row).manualExec({table: table}).then(nextRow);
                     };
                 })).then((rows) => {
                     res(rows.map(r => r.shift()));
