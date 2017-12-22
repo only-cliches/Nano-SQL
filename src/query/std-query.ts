@@ -1,6 +1,5 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../index";
-import { CHAIN, _assign, StdObject, uuid, cast } from "../utilities";
-import { Promise, setFast } from "lie-ts";
+import { CHAIN, _assign, StdObject, uuid, cast, Promise } from "../utilities";
 
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
@@ -297,7 +296,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public toCSV(headers?: boolean): Promise<string> {
+    public toCSV(headers?: boolean): any {
         let t = this;
         return new Promise((res, rej) => {
 
@@ -356,7 +355,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public exec(): Promise<(object | NanoSQLInstance)[]> {
+    public exec(): any {
 
         let t = this;
 
@@ -435,36 +434,37 @@ export class _NanoSQLQuery {
                     const hasLength = this._query.result && this._query.result.length;
                     const row = { affectedRowPKS: [], affectedRows: [] };
 
-                    let event: DatabaseEvent = {
-                        table: t._query.table as string,
-                        query: t._query,
-                        time: new Date().getTime(),
-                        result: rows,
-                        notes: [],
-                        types: eventTypes,
-                        actionOrView: t._AV,
-                        transactionID: t._query.transaction ? t._query.queryID : undefined,
-                        affectedRowPKS: hasLength ? (this._query.result[0] || row).affectedRowPKS : [],
-                        affectedRows: hasLength ? (this._query.result[0] || row).affectedRows : [],
-                    };
+                    res(this._query.result);
 
-                    res(this._query.result, this._db);
-
-                    new CHAIN(t._db._plugins.map((p) => {
-                        return (nextP) => {
-                            if (p.didExec) {
-                                p.didExec(event, (newE) => {
-                                    event = newE;
-                                    nextP();
-                                });
-                            } else {
-                                nextP();
-                            }
+                    if ((this._db._hasEvents["*"] || this._db._hasEvents[this._query.table as string]) && this._db.pluginsDoHasExec) {
+                        let event: DatabaseEvent = {
+                            table: t._query.table as string,
+                            query: t._query,
+                            time: new Date().getTime(),
+                            result: rows,
+                            notes: [],
+                            types: eventTypes,
+                            actionOrView: t._AV,
+                            transactionID: t._query.transaction ? t._query.queryID : undefined,
+                            affectedRowPKS: hasLength ? (this._query.result[0] || row).affectedRowPKS : [],
+                            affectedRows: hasLength ? (this._query.result[0] || row).affectedRows : [],
                         };
-                    })).then(() => {
-                        t._db.triggerEvent(event);
-                    });
 
+                        new CHAIN(t._db._plugins.map((p) => {
+                            return (nextP) => {
+                                if (p.didExec) {
+                                    p.didExec(event, (newE) => {
+                                        event = newE;
+                                        nextP();
+                                    });
+                                } else {
+                                    nextP();
+                                }
+                            };
+                        })).then(() => {
+                            t._db.triggerEvent(event);
+                        });
+                    }
                 });
             };
 

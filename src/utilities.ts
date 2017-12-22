@@ -1,4 +1,7 @@
-import { Promise, setFast } from "lie-ts";
+import { Promise as PR, setFast } from "lie-ts";
+export const Promise = (() => {
+    return typeof window !== "undefined" && window["Promise"] ? window["Promise"] : typeof global !== "undefined" && global["Promise"] ? global["Promise"] : PR;
+})();
 
 declare var global: any;
 
@@ -60,7 +63,7 @@ export class CHAIN {
                     results.push(result);
                     ptr++;
                     // Breaks up the call stack
-                    setFast(next);
+                    Promise.resolve().then(next);
                 });
             } else {
                 complete(results);

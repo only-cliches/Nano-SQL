@@ -2,7 +2,7 @@
 
 <head>
     <script src="nano-sql.min.js"></script>
-    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.4.3/alasql.min.js"></script>-->
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.4.3/alasql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
 </head>
 
@@ -20,7 +20,7 @@
         }
 
         function doWrite() {
-         /*   
+/*
             var mybase = new alasql.Database();
             mybase.exec(`CREATE TABLE users (
                 id INT PRIMARY KEY AUTO_INCREMENT,
@@ -29,7 +29,7 @@
                 email TEXT
             )`);
 
-            start = new Date().getTime();
+            var start = new Date().getTime();
             let i = 0;
             const w = () => {
                 if (i < 1000) {
@@ -47,51 +47,73 @@
                 }
 
             }
-            w();*/
+            w();
 
-
-            var db = new NanoSQLInstance();
-            db.table("users")
+*/
+            function runTest(complete) {
+                var db = new NanoSQLInstance();
+                db.table("users")
                 .model([{
                     key: "id",
                     type: "int",
                     props: ["pk", "ai"]
                 }, {
                     key: "name",
-                    type: "string"
+                    type: "any"
                 }, {
                     key: "pass",
-                    type: 'string'
+                    type: 'any'
                 }, {
                     key: "email",
-                    type: "string"
+                    type: "any"
                 }])
-                // .config({ memory: false, persistent: true, history: false })
                 .connect().then(function() {
-                    var start = 0;
-                    // db.table("users").beginTransaction();
-                    db.doTransaction(function(tDB, compvare) {
-                        start = new Date().getTime();
-                        for (var i = 0; i < 1000; i++) {
-                            tDB("users")
-                                .query("upsert", {
-                                    name: makeid(),
-                                    pass: makeid(),
-                                    email: makeid()
-                                }).exec()
+                    var start = new Date().getTime();
+                    let i = 0;
+                    const w = () => {
+                        if (i < 100) {
+                            db.query("upsert", {
+                                name: makeid(),
+                                pass: makeid(),
+                                email: makeid()
+                            }).exec().then(() => {
+                                i++;
+                                w();
+                            });
+                        } else {
+                            complete((new Date().getTime() - start));
+                            //console.log("WRITE", (new Date().getTime() - start))
+                            /*start = new Date().getTime();
+                            db.table("users").query("select").exec().then(function(rows) {
+                                console.log("READ", (new Date().getTime() - start))
+                                console.log(rows.length);
+                            })*/
                         }
-                        compvare();
-                    }).then(function() {
-                        console.log("WRITE", (new Date().getTime() - start))
-                        start = new Date().getTime();
-                        db.table("users").query("select").exec().then(function(rows) {
-                            console.log("READ", (new Date().getTime() - start))
-                            console.log(rows.length);
-                        })
-                    });
 
-
+                    }
+                    w();
                 });
+            }
+
+            let k = 0;
+            let results = [];
+
+            function nextTest() {
+                if (k < 100) {
+                    runTest(function(result) {
+                        console.log(k + ": " + result)
+                        results.push(result);
+                        k++;
+                        nextTest();
+                    })
+                } else {
+                    console.log("AVG:" + results.reduce((prev, cur) => {
+                        return prev + cur;
+                    }, 0) / results.length);
+                }
+            }
+
+            nextTest();
         }
     </script>
     <script>

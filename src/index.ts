@@ -1,8 +1,8 @@
-import { Promise, setFast } from "lie-ts";
+import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery } from "./utilities";
+import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery, Promise } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
@@ -226,6 +226,8 @@ export class NanoSQLInstance {
      */
     public _activeAV: string | undefined;
 
+    public pluginsDoHasExec: boolean;
+
 
     /**
      * Store an array of table names for ORM type casting.
@@ -315,7 +317,7 @@ export class NanoSQLInstance {
                 {key: "value", type: "any"}
             ];
 
-            this._plugins = [];
+            // this._plugins = [];
 
             // if history is enabled, turn on the built in history plugin
             if (t._config && t._config.history) {
@@ -344,6 +346,12 @@ export class NanoSQLInstance {
                 this._views = connectArgs.views;
                 this._config = connectArgs.config;
 
+                this._plugins.forEach((plugin) => {
+                    if (plugin.didExec) {
+                        this.pluginsDoHasExec = true;
+                    }
+                });
+
                 t._tableNames = Object.keys(this._models);
 
                 const completeConnect = () => {
@@ -358,7 +366,7 @@ export class NanoSQLInstance {
                             }
                         };
                     })).then(() => {
-                        res(t._tableNames, t);
+                        res(t._tableNames);
                     });
                 };
 
@@ -835,20 +843,22 @@ export class NanoSQLInstance {
      */
     public triggerEvent(eventData: DatabaseEvent): NanoSQLInstance {
         let t = this;
-        setFast(() => {
-            let c: Function[];
-            eventData.types.forEach((type) => {
-                // trigger wildcard
-                t._callbacks["*"].trigger(type, eventData, t);
-                t._callbacks["*"].trigger("*", eventData, t);
+        if (t._hasEvents["*"] || t._hasEvents[eventData.table]) {
+            setFast(() => {
+                let c: Function[];
+                eventData.types.forEach((type) => {
+                    // trigger wildcard
+                    t._callbacks["*"].trigger(type, eventData, t);
+                    t._callbacks["*"].trigger("*", eventData, t);
 
-                // trigger specific table
-                if (eventData.table && t._callbacks[eventData.table]) {
-                    t._callbacks[eventData.table].trigger(type, eventData, t);
-                }
+                    // trigger specific table
+                    if (eventData.table && t._callbacks[eventData.table]) {
+                        t._callbacks[eventData.table].trigger(type, eventData, t);
+                    }
+                });
             });
+        }
 
-        });
         return t;
     }
 

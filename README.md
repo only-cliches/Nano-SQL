@@ -1,4 +1,4 @@
-The most powerful little database.
+Super flexible database/datastore for the client, server & mobile devices.
 
 <img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
 
@@ -119,16 +119,15 @@ nSQL('users') //  "users" is our table name.
     {key:'age', type:'int'}
 ])
 .connect() // Init the data store for usage. (only need to do this once)
-.then(function(result, db) {
-    // "db" holds the current nanoSQL var with the previous table still selected.
-    return db.query('upsert',{ // Add a record
+.then(function(result) {
+    return nSQL().query('upsert',{ // Add a record
         name:"bill", age: 20
     }).exec();
 })
-.then(function(result, db) {
-    return db.query('select').exec(); // select all rows from the current active table
+.then(function(result) {
+    return nSQL().query('select').exec(); // select all rows from the current active table
 })
-.then(function(result, db) {
+.then(function(result) {
     console.log(result) // <= [{id:1, name:"bill", age: 20}]
 })
 
@@ -188,9 +187,9 @@ nSQL('users')// Table/Store Name, required to declare model and attach it to thi
 
 ```js
 // Initializes the db.
-nSQL().connect().then(function(result, db) {
+nSQL().connect().then(function(result) {
     // DB ready to use.
-    db.doAction('add_new_user',{user:{
+    nSQL().doAction('add_new_user',{user:{
         id:null,
         name:'jim',
         age:30,
@@ -199,10 +198,10 @@ nSQL().connect().then(function(result, db) {
         meta:{
             favorteColor:'blue'
         }
-    }}).then(function(result, db) {
+    }}).then(function(result) {
         console.log(result) //  <- "1 Row(s) upserted"
-        return db.getView('list_all_users');
-    }).then(function(result, db) {
+        return nSQL().getView('list_all_users');
+    }).then(function(result) {
         console.log(result) //  <- single object array containing the row we inserted.
     });
 });
@@ -256,7 +255,7 @@ nSQL("users")
 .query("select",["id", "name AS username", "age"])
 .where([["name","=","John"],"AND",["age",">",25]]) // Where statements can't use AS aliases
 .orderBy({username:"desc",age:"asc"}) // But order by does!
-.exec().then(function(rows, db) {})
+.exec().then(function(rows) {})
 
 ```
 
@@ -272,7 +271,7 @@ nSQL("users")
     type:"left", // Supported join types are left, inner, right, cross and outer.
     table: "orders",
     where: ["orders.userID", "=", "users.id"] // any valid WHERE statement works here
-}).exec().then(function(rows, db) {...})
+}).exec().then(function(rows) {...})
 
 // Group By also works
 nSQL("users")
@@ -280,7 +279,7 @@ nSQL("users")
 .groupBy({favoriteColor:"asc", eyeColor:"desc"}) // Multiple group bys aren't a problem!
 .having(["users" ,">", 2]) // Having uses the same syntax as WHERE, but runs after the GROUP BY command.
 .orderBy({users:"desc"})
-.exec().then(function(rows, db) {...})
+.exec().then(function(rows) {...})
 
 // Look mah, I used every feature!
 nSQL("users")
@@ -295,7 +294,7 @@ nSQL("users")
 .having(["Total", ">", 100])
 .orderBy({Total:"desc"})
 .limit(20)
-.exec().then(function(rows, db) {...})
+.exec().then(function(rows) {...})
 
 ```
 

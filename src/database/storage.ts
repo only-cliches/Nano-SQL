@@ -162,6 +162,14 @@ export class _NanoSQLStorage {
     };
 
     /**
+     * Wether ORM values exist in the data models or not.
+     *
+     * @type {boolean}
+     * @memberof _NanoSQLStorage
+     */
+    public _hasORM: boolean;
+
+    /**
      * Stores in memory Trie values to do Trie queries.
      *
      * @internal
@@ -448,6 +456,7 @@ export class _NanoSQLStorage {
                         });
 
                         if (mapTo) {
+                            this._hasORM = true;
                             this._relationColumns[table].push(p.key);
 
                             this._relFromTable[table][p.key] = {
@@ -809,9 +818,14 @@ export class _NanoSQLStorage {
         if (!oldRow) { // new row
 
             this._adapter.write(table, pk, newRow, (row) => {
-                this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
+                if (this.tableInfo[table]._secondaryIndexes.length) {
+                    this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
+                        complete(row);
+                    });
+                } else {
                     complete(row);
-                });
+                }
+
             }, true);
 
 
@@ -827,11 +841,15 @@ export class _NanoSQLStorage {
                 return setRow[key] === oldRow[key];
             });
 
-            this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
-                this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
-                    this._adapter.write(table, pk, setRow, complete, true);
+            if (this.tableInfo[table]._secondaryIndexes.length) {
+                this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
+                    this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
+                        this._adapter.write(table, pk, setRow, complete, true);
+                    });
                 });
-            });
+            } else {
+                this._adapter.write(table, pk, setRow, complete, true);
+            }
         }
     }
 

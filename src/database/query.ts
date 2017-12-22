@@ -175,6 +175,7 @@ export class _NanoSQLStorageQuery {
         _fromType: "array" | "single";
     }, fromPKs: any[], add: boolean, primaryKey: any, complete: () => void) {
 
+
         const fromPk = this._store.tableInfo[relation._fromTable]._pk;
 
         this._store._read(relation._fromTable, fromPKs as any, (rows) => {
@@ -213,6 +214,11 @@ export class _NanoSQLStorageQuery {
     }
 
     private _syncORM(type: "del"|"add", oldRows: DBRow[], newRows: DBRow[], complete: () => void) {
+
+        if (!this._store._hasORM) {
+            complete();
+            return;
+        }
 
         const useRelations = this._store._relToTable[this._query.table as string];
 

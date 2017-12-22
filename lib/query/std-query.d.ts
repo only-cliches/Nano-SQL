@@ -1,5 +1,4 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow } from "../index";
-import { Promise } from "lie-ts";
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
     action: string;
@@ -61,7 +60,7 @@ export declare class _NanoSQLQuery {
     comment(comment: string): _NanoSQLQuery;
     extend(...args: any[]): _NanoSQLQuery;
     offset(args: number): _NanoSQLQuery;
-    toCSV(headers?: boolean): Promise<string>;
+    toCSV(headers?: boolean): any;
     manualExec(query: IdbQueryExec): Promise<any>;
-    exec(): Promise<(object | NanoSQLInstance)[]>;
+    exec(): any;
 }

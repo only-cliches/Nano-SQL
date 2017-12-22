@@ -1,4 +1,3 @@
-import { Promise } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { StdObject } from "./utilities";
@@ -63,6 +62,7 @@ export declare class NanoSQLInstance {
     data: any;
     _AVMod: IActionViewMod;
     _hasEvents: StdObject<boolean>;
+    pluginsDoHasExec: boolean;
     _tableNames: string[];
     private _callbacks;
     constructor();

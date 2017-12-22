@@ -1,13 +1,15 @@
 # Change Log
 
 ## TODO
-Recent benchmarks with LevelDB on a low end laptop:
-Write:  ~2 record/ms 
-Read: ~100 records/ms
-- Test and improve performance of LevelDB on the server.
-- Write Cordova plugin.
-- Write SQLite plugin.
 - Finish integration tests for history.
+
+## [1.0.5] 12-21-2017
+BREAKING CHANGE, PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)
+- This release is focused on performance, 2 - 4x increase in query speed should be seen most of the time.
+- Promise lib now only polyfills, otherwise the native browser/NodeJS Promise implimentation is used.  Benchmarks show a double in query performance from this one change...
+- Removed secondary index queries on upsert if there are none.
+- Added conditional to skip event logic if it's not needed.
+- Simple Write test: Before: ~140ms, After: ~35ms
 
 ## [1.0.4] 12-17-2017
 - Added table types to action/view arguments.  You can now use table names as a type in action/view arguments to cast an argument to a specific table's data model.

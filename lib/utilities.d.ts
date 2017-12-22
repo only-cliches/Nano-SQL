@@ -1,3 +1,4 @@
+export declare const Promise: any;
 export interface StdObject<T> {
     [key: string]: T;
 }

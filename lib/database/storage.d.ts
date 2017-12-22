@@ -34,6 +34,7 @@ export declare class _NanoSQLStorage {
             _defaults: any[];
         };
     };
+    _hasORM: boolean;
     models: {
         [tableName: string]: DataModel[];
     };
