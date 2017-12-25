@@ -75,6 +75,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
 
                 const hasLength = self._query.result && self._query.result.length;
 
+
                 let event: DatabaseEvent = {
                     table: self._query.table as string,
                     query: self._query,

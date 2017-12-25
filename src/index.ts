@@ -6,6 +6,8 @@ import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, P
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
+const VERSION = 1.11;
+
 // uglifyJS fix
 const str = ["_util"];
 
@@ -426,7 +428,7 @@ export class NanoSQLInstance {
                         updateVersion(true);
                     } else {
 
-                        if (rows[0].value < 1.06) {
+                        if (rows[0].value < VERSION) {
                             updateVersion(false);
                         } else {
                             // future migration messes go here
@@ -483,8 +485,6 @@ export class NanoSQLInstance {
 
         if (Array.isArray(l)) return this;
 
-        this.hasAnyEvents = true;
-
         if (!t._callbacks[l]) { // Handle the event handler being called before the database has connected
             t._callbacks[l] = new ReallySmallEvents();
         }
@@ -495,6 +495,7 @@ export class NanoSQLInstance {
                 t._callbacks[l].on(a[i], callBack);
             }
         }
+
         return t._refreshEventChecker();
     }
 
@@ -524,10 +525,16 @@ export class NanoSQLInstance {
 
     private _refreshEventChecker() {
         this._hasEvents = {};
-        Object.keys(this._models).concat(["*"]).forEach((table) => {
+        Object.keys(this._callbacks).concat(["*"]).forEach((table) => {
             this._hasEvents[table] = this._events.reduce((prev, cur) => {
                 return prev + (this._callbacks[table] && this._callbacks[table].eventListeners[cur] ? this._callbacks[table].eventListeners[cur].length : 0);
             }, 0) > 0;
+        });
+
+        this.hasAnyEvents = false;
+
+        Object.keys(this._hasEvents).forEach((key) => {
+            this.hasAnyEvents = this.hasAnyEvents || this._hasEvents[key];
         });
 
         return this;
@@ -851,6 +858,7 @@ export class NanoSQLInstance {
      */
     public triggerEvent(eventData: DatabaseEvent): NanoSQLInstance {
         let t = this;
+
         if (t._hasEvents["*"] || t._hasEvents[eventData.table]) {
             setFast(() => {
                 let c: Function[];

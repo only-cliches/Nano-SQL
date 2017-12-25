@@ -3,6 +3,10 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.1] 12-25-2017
+- Fixed bug with event system.
+- Added integration test for event system.
+
 ## [1.1.0] 12-25-2017
 - Over 2x write and read performance in this update.
 - Updated promise library to get better setImediate polyfill.
