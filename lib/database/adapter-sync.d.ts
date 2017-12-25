@@ -1,5 +1,12 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow } from "./storage";
 import { DataModel } from "../index";
+/**
+ * Handles all available syncronous versions of storage (memory and localstorage)
+ *
+ * @export
+ * @class _SyncStore
+ * @implements {NanoSQLStorageAdapter}
+ */
 export declare class _SyncStore implements NanoSQLStorageAdapter {
     private _rows;
     private _pkKey;

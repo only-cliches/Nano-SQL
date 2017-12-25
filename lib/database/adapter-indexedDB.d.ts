@@ -1,5 +1,13 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow } from "./storage";
 import { DataModel } from "../index";
+/**
+ * Handles IndexedDB with and without web workers.
+ * Uses blob worker OR eval()s the worker and uses it inline.
+ *
+ * @export
+ * @class _IndexedDBStore
+ * @implements {NanoSQLStorageAdapter}
+ */
 export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _pkKey;
     private _pkType;

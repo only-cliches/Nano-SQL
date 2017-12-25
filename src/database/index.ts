@@ -3,7 +3,7 @@ import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
 import { _NanoSQLStorage } from "./storage";
 import { _NanoSQLStorageQuery } from "./query";
-import { ALL } from "../utilities";
+import { fastALL } from "../utilities";
 
 declare var global: any;
 
@@ -13,8 +13,12 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
     public parent: NanoSQLInstance;
 
-    constructor() {
+    private _queryPool: _NanoSQLStorageQuery[];
+    private _queryPtr: number;
 
+    constructor() {
+        this._queryPool = [];
+        this._queryPtr = 0;
     }
 
     public willConnect(connectArgs: DBConnect, next: (connectArgs: DBConnect) => void): void {
@@ -24,6 +28,10 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         this._store = new _NanoSQLStorage(connectArgs.parent, {
             ...connectArgs.config,
         } as any);
+
+        for (let i = 0; i < 100; i++) {
+            this._queryPool.push(new _NanoSQLStorageQuery(this._store));
+        }
 
         this._store.init(connectArgs.models, (newModels) => {
             connectArgs.models = {
@@ -36,7 +44,11 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
     public doExec(execArgs: IdbQuery, next: (execArgs: IdbQuery) => void): void {
         execArgs.state = "complete";
-        new _NanoSQLStorageQuery(this._store).doQuery(execArgs, next);
+        this._queryPtr++;
+        if (this._queryPtr > this._queryPool.length - 1) {
+            this._queryPtr = 0;
+        }
+        this._queryPool[this._queryPtr].doQuery(execArgs, next);
     }
 
     /*public transactionBegin(id: string, next: () => void): void {
@@ -67,11 +79,9 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         next(args, [time]);
                     });
                 } else {
-                    new ALL(Object.keys(this._store.tableInfo).map((table) => {
-                        return (done) => {
-                            this._store.rebuildIndexes(table, done);
-                        };
-                    })).then((times) => {
+                    fastALL(Object.keys(this._store.tableInfo), (table, i, done) => {
+                        this._store.rebuildIndexes(table, done);
+                    }).then((times) => {
                         next(args, times);
                     });
                 }

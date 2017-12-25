@@ -1,8 +1,35 @@
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
-import { ALL, CHAIN, _assign, hash, deepFreeze, objQuery, uuid, } from "../utilities";
+import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN } from "../utilities";
 
+
+const queryObj = {
+    select: (self: _NanoSQLStorageQuery, next) => {
+        self._select(next);
+    },
+    upsert: (self: _NanoSQLStorageQuery, next) => {
+        self._upsert(next);
+    },
+    delete: (self: _NanoSQLStorageQuery, next) => {
+        self._delete(next);
+    },
+    drop: (self: _NanoSQLStorageQuery, next) => {
+        self._drop(next);
+    },
+    "show tables": (self: _NanoSQLStorageQuery, next) => {
+        self._query.result = Object.keys(self._store.tableInfo) as any[];
+        next(self._query);
+    },
+    describe: (self: _NanoSQLStorageQuery, next) => {
+        if (typeof self._query.table !== "string") {
+            next(self._query);
+            return;
+        }
+        self._query.result = _assign(self._store.models[self._query.table]);
+        next(self._query);
+    },
+};
 
 /**
  * A new Storage Query class is inilitized for every query, performing the actions
@@ -21,7 +48,7 @@ export class _NanoSQLStorageQuery {
      * @type {IdbQuery}
      * @memberof _NanoSQLStorageQuery
      */
-    private _query: IdbQuery;
+    public _query: IdbQuery;
 
     /**
      * Wether an instance table is being used or not.
@@ -33,7 +60,7 @@ export class _NanoSQLStorageQuery {
     private _isInstanceTable: boolean;
 
     constructor(
-        private _store: _NanoSQLStorage
+        public _store: _NanoSQLStorage
     ) {
 
     }
@@ -51,32 +78,7 @@ export class _NanoSQLStorageQuery {
         this._query = query;
         this._isInstanceTable = Array.isArray(query.table);
 
-        switch (query.action) {
-            case "select":
-                this._select(next);
-                break;
-            case "upsert":
-                this._upsert(next);
-                break;
-            case "delete":
-                this._delete(next);
-                break;
-            case "drop":
-                this._drop(next);
-                break;
-            case "show tables":
-                this._query.result = Object.keys(this._store.tableInfo) as any[];
-                next(this._query);
-                break;
-            case "describe":
-                if (typeof this._query.table !== "string") {
-                    next(this._query);
-                    return;
-                }
-                this._query.result = _assign(this._store.models[this._query.table]);
-                next(this._query);
-                break;
-        }
+        queryObj[query.action](this, next);
     }
 
     /**
@@ -133,7 +135,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    private _select(next: (q: IdbQuery) => void) {
+    public _select(next: (q: IdbQuery) => void) {
 
         this._hash = hash(JSON.stringify({
             ...this._query,
@@ -179,41 +181,39 @@ export class _NanoSQLStorageQuery {
         const fromPk = this._store.tableInfo[relation._fromTable]._pk;
 
         this._store._read(relation._fromTable, fromPKs as any, (rows) => {
-            new ALL(rows.map((row) => {
-                return (rowDone) => {
-                    let newRow = Object.isFrozen(row) ? _assign(row) : row;
+            fastALL(rows, (row, i, rowDone) => {
+                let newRow = Object.isFrozen(row) ? _assign(row) : row;
 
-                    if (relation._fromType === "array") {
-                        newRow[relation._fromColumn] = newRow[relation._fromColumn] || [];
-                        const idxOf = newRow[relation._fromColumn].indexOf(primaryKey);
-                        if (add) { // add
-                            if (idxOf === -1) {
-                                newRow[relation._fromColumn].push(primaryKey);
-                            } else {
-                                rowDone();
-                            }
-                        } else { // remove
-                            if (idxOf !== -1) {
-                                newRow[relation._fromColumn].splice(idxOf, 1);
-                            } else {
-                                rowDone();
-                            }
+                if (relation._fromType === "array") {
+                    newRow[relation._fromColumn] = newRow[relation._fromColumn] || [];
+                    const idxOf = newRow[relation._fromColumn].indexOf(primaryKey);
+                    if (add) { // add
+                        if (idxOf === -1) {
+                            newRow[relation._fromColumn].push(primaryKey);
+                        } else {
+                            rowDone();
                         }
-                        newRow[relation._fromColumn].sort();
-                    } else {
-                        if (add) { // add
-                            newRow[relation._fromColumn] = primaryKey;
-                        } else { // remove
-                            newRow[relation._fromColumn] = null;
+                    } else { // remove
+                        if (idxOf !== -1) {
+                            newRow[relation._fromColumn].splice(idxOf, 1);
+                        } else {
+                            rowDone();
                         }
                     }
-                    this._store._nsql.query("upsert", newRow).comment("ORM Update").manualExec({table: relation._fromTable}).then(rowDone);
-                };
-            })).then(complete);
+                    newRow[relation._fromColumn].sort();
+                } else {
+                    if (add) { // add
+                        newRow[relation._fromColumn] = primaryKey;
+                    } else { // remove
+                        newRow[relation._fromColumn] = null;
+                    }
+                }
+                this._store._nsql.query("upsert", newRow).comment("ORM Update").manualExec({ table: relation._fromTable }).then(rowDone);
+            }).then(complete);
         });
     }
 
-    private _syncORM(type: "del"|"add", oldRows: DBRow[], newRows: DBRow[], complete: () => void) {
+    private _syncORM(type: "del" | "add", oldRows: DBRow[], newRows: DBRow[], complete: () => void) {
 
         if (!this._store._hasORM) {
             complete();
@@ -236,87 +236,79 @@ export class _NanoSQLStorageQuery {
         let cnt = Math.max(oldRows.length, newRows.length);
         let arra: any[] = [];
         while (cnt--) arra.push(" ");
-        new CHAIN(arra.map((v, idx) => {
-            return (rowDone) => {
+        fastCHAIN(arra, (v, idx, rowDone) => {
+            fastALL(useRelations, (relation, k, relationDone) => {
 
-                new ALL(useRelations.map((relation) => {
-                    return (relationDone) => {
 
-                        const equals = (val1, val2) => {
-                            if (Array.isArray(val1) && Array.isArray(val2)) {
-                                if (val1.length !== val2.length) {
-                                    return false;
-                                }
-                                return val1.filter((v, i) => v !== val2[i]).length > 0;
-                            } else {
-                                return val1 === val2;
-                            }
-                        };
-
-                        switch (type) {
-                            case "del":
-                                const delPrimarykey = oldRows[idx][this._store.tableInfo[this._query.table as any]._pk];
-                                const updateIDs = relation._thisType === "array" ? (oldRows[idx][relation._thisColumn] || []) : ([oldRows[idx][relation._thisColumn]].filter(v => v));
-                                this._updateORMRows(relation, updateIDs, false, delPrimarykey, relationDone);
-                            break;
-                            case "add":
-                                const primaryKey = newRows[idx][this._store.tableInfo[this._query.table as any]._pk];
-
-                                // possibly update existing relation
-                                // if adding oldRows[idx] is possibly undefined (if theres no previouse row record)
-                                if (oldRows[idx]) {
-                                    // previouse record exists
-                                    if (equals(oldRows[idx][relation._thisColumn], newRows[idx][relation._thisColumn])) {
-                                        // no update needed
-                                        relationDone();
-                                    } else {
-                                        if (relation._thisType === "array") {
-                                            const addIds = (newRows[idx][relation._thisColumn] || []).filter(v => (oldRows[idx][relation._thisColumn] || []).indexOf(v) === -1);
-                                            const removeIds = (oldRows[idx][relation._thisColumn] || []).filter(v => (newRows[idx][relation._thisColumn] || []).indexOf(v) === -1);
-                                            new ALL([addIds, removeIds].map((list, i) => {
-                                                return (done) => {
-                                                    this._updateORMRows(relation, list, i === 0, primaryKey, done);
-                                                };
-                                            })).then(relationDone);
-
-                                        } else {
-
-                                            const addRelation = () => {
-                                                // add new relation
-                                                if (newRows[idx][relation._thisColumn] !== null && newRows[idx][relation._thisColumn] !== undefined) {
-                                                    this._updateORMRows(relation, [newRows[idx][relation._thisColumn]], true, primaryKey, relationDone);
-                                                } else {
-                                                    // no new relation
-                                                    relationDone();
-                                                }
-                                            };
-
-                                            // remove old connection
-                                            if (oldRows[idx][relation._thisColumn] !== null && oldRows[idx][relation._thisColumn] !== undefined) {
-                                                this._updateORMRows(relation, [oldRows[idx][relation._thisColumn]], false, primaryKey, addRelation);
-                                            } else {
-                                                // no old connection, just add the new one
-                                                addRelation();
-                                            }
-
-                                        }
-                                    }
-                                } else { // new relation
-                                    const valuesToAdd = relation._thisType === "array" ? (newRows[idx][relation._thisColumn] || []) : ([newRows[idx][relation._thisColumn]].filter(v => v));
-                                    if (valuesToAdd && valuesToAdd.length) {
-                                        this._updateORMRows(relation, valuesToAdd, true, primaryKey, relationDone);
-                                    } else {
-                                        relationDone();
-                                    }
-                                }
-                            break;
+                const equals = (val1, val2) => {
+                    if (Array.isArray(val1) && Array.isArray(val2)) {
+                        if (val1.length !== val2.length) {
+                            return false;
                         }
-                    };
-                })).then(rowDone);
-            };
-        })).then(complete);
+                        return val1.filter((v, i) => v !== val2[i]).length > 0;
+                    } else {
+                        return val1 === val2;
+                    }
+                };
 
+                switch (type) {
+                    case "del":
+                        const delPrimarykey = oldRows[idx][this._store.tableInfo[this._query.table as any]._pk];
+                        const updateIDs = relation._thisType === "array" ? (oldRows[idx][relation._thisColumn] || []) : ([oldRows[idx][relation._thisColumn]].filter(v => v));
+                        this._updateORMRows(relation, updateIDs, false, delPrimarykey, relationDone);
+                        break;
+                    case "add":
+                        const primaryKey = newRows[idx][this._store.tableInfo[this._query.table as any]._pk];
 
+                        // possibly update existing relation
+                        // if adding oldRows[idx] is possibly undefined (if theres no previouse row record)
+                        if (oldRows[idx]) {
+                            // previouse record exists
+                            if (equals(oldRows[idx][relation._thisColumn], newRows[idx][relation._thisColumn])) {
+                                // no update needed
+                                relationDone();
+                            } else {
+                                if (relation._thisType === "array") {
+                                    const addIds = (newRows[idx][relation._thisColumn] || []).filter(v => (oldRows[idx][relation._thisColumn] || []).indexOf(v) === -1);
+                                    const removeIds = (oldRows[idx][relation._thisColumn] || []).filter(v => (newRows[idx][relation._thisColumn] || []).indexOf(v) === -1);
+                                    fastALL([addIds, removeIds], (list, i, done) => {
+                                        this._updateORMRows(relation, list, i === 0, primaryKey, done);
+                                    }).then(relationDone);
+
+                                } else {
+
+                                    const addRelation = () => {
+                                        // add new relation
+                                        if (newRows[idx][relation._thisColumn] !== null && newRows[idx][relation._thisColumn] !== undefined) {
+                                            this._updateORMRows(relation, [newRows[idx][relation._thisColumn]], true, primaryKey, relationDone);
+                                        } else {
+                                            // no new relation
+                                            relationDone();
+                                        }
+                                    };
+
+                                    // remove old connection
+                                    if (oldRows[idx][relation._thisColumn] !== null && oldRows[idx][relation._thisColumn] !== undefined) {
+                                        this._updateORMRows(relation, [oldRows[idx][relation._thisColumn]], false, primaryKey, addRelation);
+                                    } else {
+                                        // no old connection, just add the new one
+                                        addRelation();
+                                    }
+
+                                }
+                            }
+                        } else { // new relation
+                            const valuesToAdd = relation._thisType === "array" ? (newRows[idx][relation._thisColumn] || []) : ([newRows[idx][relation._thisColumn]].filter(v => v));
+                            if (valuesToAdd && valuesToAdd.length) {
+                                this._updateORMRows(relation, valuesToAdd, true, primaryKey, relationDone);
+                            } else {
+                                relationDone();
+                            }
+                        }
+                        break;
+                }
+            }).then(rowDone);
+        }).then(complete);
     }
 
     /**
@@ -327,7 +319,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    private _upsert(next: (q: IdbQuery) => void) {
+    public _upsert(next: (q: IdbQuery) => void) {
 
         const pk = this._store.tableInfo[this._query.table as any]._pk;
 
@@ -352,11 +344,9 @@ export class _NanoSQLStorageQuery {
             this._getRows((rows) => {
 
                 if (rows.length) {
-                    new CHAIN(rows.map((r) => {
-                        return (rowDone) => {
-                            this._store._write(this._query.table as any, r[pk], r, this._query.actionArgs || {}, rowDone);
-                        };
-                    })).then((newRows: DBRow[]) => {
+                    fastCHAIN(rows, (r, i, rowDone) => {
+                        this._store._write(this._query.table as any, r[pk], r, this._query.actionArgs || {}, rowDone);
+                    }).then((newRows: DBRow[]) => {
                         // any changes to this table invalidates the cache
                         const pks = newRows.map(r => r[pk]);
                         this._invalidateCache(pks);
@@ -378,11 +368,14 @@ export class _NanoSQLStorageQuery {
             this._store._cache[this._query.table as any] = {};
             const write = (oldRow: any) => {
                 this._store._write(this._query.table as any, row[pk], oldRow, row, (result) => {
-                    this._invalidateCache([result[pk]]);
                     this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
-                    this._syncORM("add", [oldRow].filter(r => r), [result], () => {
+                    if (this._store._hasORM) {
+                        this._syncORM("add", [oldRow].filter(r => r), [result], () => {
+                            next(this._query);
+                        });
+                    } else {
                         next(this._query);
-                    });
+                    }
                 });
             };
 
@@ -410,7 +403,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    private _delete(next: (q: IdbQuery) => void) {
+    public _delete(next: (q: IdbQuery) => void) {
 
         if (this._isInstanceTable) {
             if (this._query.where) {
@@ -433,11 +426,9 @@ export class _NanoSQLStorageQuery {
 
                 rows = rows.filter(r => r);
                 if (rows.length) {
-                    new ALL(rows.map((r) => {
-                        return (done) => {
-                            this._store._delete(this._query.table as any, r[this._store.tableInfo[this._query.table as any]._pk], done);
-                        };
-                    })).then((affectedRows) => {
+                    fastALL(rows, (r, i, done) => {
+                        this._store._delete(this._query.table as any, r[this._store.tableInfo[this._query.table as any]._pk], done);
+                    }).then((affectedRows) => {
                         // any changes to this table invalidate the cache
                         this._store._cache[this._query.table as any] = {};
                         const pks = rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
@@ -467,7 +458,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    private _drop(next: (q: IdbQuery) => void) {
+    public _drop(next: (q: IdbQuery) => void) {
         if (this._isInstanceTable) {
             this._query.result = [];
             next(this._query);
@@ -695,50 +686,48 @@ export class _MutateSelection {
             return o as ORMArgs;
         }) : [];
 
-        new ALL(rows.map((row) => {
+        fastALL(rows, (row, i, rowResult) => {
             row = Object.isFrozen(row) ? _assign(row) : row;
-            return (rowResult) => {
-                new ALL(ormQueries.map((orm) => {
-                    return (ormResult) => {
-                        if (!row[orm.key] || !row[orm.key].length) {
-                            ormResult();
-                            return;
-                        }
-                        const relateData = this.s._columnsAreTables[this.q.table as string][orm.key];
 
-                        if (relateData) {
-                            this.s._nsql.query("select").where([this.s.tableInfo[relateData._toTable]._pk, relateData._thisType === "array" ? "IN" : "=", row[orm.key]]).manualExec({table: relateData._toTable}).then((rows) => {
-                                const q = nSQL().query("select", orm.select);
-                                if (orm.where) {
-                                    q.where(orm.where);
-                                }
-                                if (orm.limit !== undefined) {
-                                    q.limit(orm.limit);
-                                }
-                                if (orm.offset !== undefined) {
-                                    q.offset(orm.offset);
-                                }
-                                if (orm.orderBy) {
-                                    q.orderBy(orm.orderBy);
-                                }
-                                q.manualExec({table: rows}).then((result) => {
-                                    if (!rows.filter(r => r).length) {
-                                        row[orm.key] = relateData._thisType === "array" ? [] : undefined;
-                                    } else {
-                                        row[orm.key] = relateData._thisType === "array" ? rows : rows[0];
-                                    }
-                                    ormResult();
-                                });
-                            });
-                        } else {
-                            ormResult();
+            fastALL(ormQueries, (orm, k, ormResult) => {
+
+                if (!row[orm.key] || !row[orm.key].length) {
+                    ormResult();
+                    return;
+                }
+                const relateData = this.s._columnsAreTables[this.q.table as string][orm.key];
+
+                if (relateData) {
+                    this.s._nsql.query("select").where([this.s.tableInfo[relateData._toTable]._pk, relateData._thisType === "array" ? "IN" : "=", row[orm.key]]).manualExec({ table: relateData._toTable }).then((rows) => {
+                        const q = nSQL().query("select", orm.select);
+                        if (orm.where) {
+                            q.where(orm.where);
                         }
-                    };
-                })).then(() => {
-                    rowResult(row);
-                });
-            };
-        })).then(complete);
+                        if (orm.limit !== undefined) {
+                            q.limit(orm.limit);
+                        }
+                        if (orm.offset !== undefined) {
+                            q.offset(orm.offset);
+                        }
+                        if (orm.orderBy) {
+                            q.orderBy(orm.orderBy);
+                        }
+                        q.manualExec({ table: rows }).then((result) => {
+                            if (!rows.filter(r => r).length) {
+                                row[orm.key] = relateData._thisType === "array" ? [] : undefined;
+                            } else {
+                                row[orm.key] = relateData._thisType === "array" ? result.reverse() : result[0];
+                            }
+                            ormResult();
+                        });
+                    });
+                } else {
+                    ormResult();
+                }
+            }).then(() => {
+                rowResult(row);
+            });
+        }).then(complete);
 
     }
 
@@ -763,12 +752,6 @@ export class _MutateSelection {
         const firstTableData = t.s.tableInfo[type === R ? rightTable : leftTable];
         const seconTableData = t.s.tableInfo[type === R ? leftTable : rightTable];
 
-        const pad = (num, size: number) => {
-            let s = num + "";
-            while (s.length < size) s = "0" + s;
-            return s;
-        };
-
         const doJoinRows = (leftRow: any, rightRow: any) => {
             return [firstTableData, seconTableData].reduce((prev, cur, i) => {
                 cur._keys.forEach((k) => {
@@ -781,12 +764,14 @@ export class _MutateSelection {
         let joinTable: any[] = [];
 
         const rightKey: string = joinConditions && joinConditions._right ? joinConditions._right.split(".").pop() || "" : "";
-        const usedSecondTableRows: any[] = [];
+        const usedSecondTableRows: any = {};
+        let secondRowCache: any[] = [];
 
         // O^2, YAY!
         t.s._read(firstTableData._name, (firstRow, idx, keep) => {
             let hasOneRelation = false;
             t.s._read(seconTableData._name, (secondRow, idx2, keep2) => {
+
                 if (!joinConditions || type === C) { // no conditional to check OR cross join, always add
                     joinTable.push(doJoinRows(firstRow, secondRow));
                     hasOneRelation = true;
@@ -796,9 +781,11 @@ export class _MutateSelection {
                         [seconTableData._name]: secondRow
                     }, [joinConditions._left, joinConditions._check, type === R ? firstRow[rightKey] : secondRow[rightKey]], 0);
                     if (willJoinRows) {
-                        if (type === O) usedSecondTableRows.push(idx2);
+                        if (type === O) usedSecondTableRows[idx2] = true;
                         joinTable.push(doJoinRows(firstRow, secondRow));
                         hasOneRelation = true;
+                    } else {
+                        if (type === O) secondRowCache[idx2] = secondRow;
                     }
                 }
                 keep2(false);
@@ -815,14 +802,14 @@ export class _MutateSelection {
 
             // full outer join, add the secondary rows that haven't been added yet
             if (type === O) {
-                t.s._read(seconTableData._name, (secondRow, idx, keep) => {
-                    if (usedSecondTableRows.indexOf(idx) === -1) {
-                        joinTable.push(doJoinRows(null, secondRow));
-                    }
-                    keep(false);
-                }, () => {
-                    complete(joinTable);
-                });
+                const addRows = secondRowCache.filter((val, i) => !usedSecondTableRows[i]);
+                let i = 0;
+                while (i < addRows.length) {
+                    joinTable.push(doJoinRows(null, addRows[i]));
+                    i++;
+                }
+                complete(joinTable);
+
             } else {
                 complete(joinTable);
             }
@@ -905,24 +892,22 @@ export class _MutateSelection {
                 };
             });
 
-            new ALL(columnSelection.map((column) => {
-                return (columnDone) => {
+            fastALL(columnSelection, (column, j, columnDone) => {
+
                     if (column.indexOf("(") > -1) { // function exists
 
                         const fnArgs: string[] = (column.match(/\(.*\)/g) || [""])[0].replace(/\(|\)/g, "").split(",").map(v => v.trim());
 
                         if (this._sortGroups && hasAggregateFun) { // group by exists with aggregate function
-                            new ALL(Object.keys(this._sortGroups).map((k) => {
+                            fastALL(Object.keys(this._sortGroups), (k, l, fnDone) => {
                                 if (!fnGroupByResults[k]) {
                                     fnGroupByResults[k] = {};
                                 }
-                                return (fnDone) => {
                                     columnData[column].fn.call(rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1), (result) => {
                                         fnGroupByResults[k][columnData[column].key] = result;
                                         fnDone();
                                     }, ...fnArgs);
-                                };
-                            })).then(columnDone);
+                            }).then(columnDone);
                         } else { // no group by
                             columnData[column].fn.call(rows, (result) => {
                                 functionResults[columnData[column].key] = result;
@@ -933,8 +918,7 @@ export class _MutateSelection {
                     } else {
                         columnDone(); // no function
                     }
-                };
-            })).then(() => {
+            }).then(() => {
 
                 // time to rebuild row results
 
@@ -1138,26 +1122,24 @@ export class _RowSelection {
         } else if (this.q.where) { // compound where
             let resultRows: DBRow[] = [];
             let lastCommand = "";
-            new CHAIN((this.q.where as any).map((wArg) => {
-                return (nextWArg) => {
-                    if (wArg === "OR" || wArg === "AND") {
-                        lastCommand = wArg;
-                        nextWArg();
-                        return;
+            fastCHAIN((this.q.where as any), (wArg, i, nextWArg) => {
+                if (wArg === "OR" || wArg === "AND") {
+                    lastCommand = wArg;
+                    nextWArg();
+                    return;
+                }
+                this._selectRowsByIndex(wArg, (rows) => {
+                    if (lastCommand === "AND") {
+                        let idx = rows.map((r) => r[this.s.tableInfo[this.q.table as any]._pk]);
+                        resultRows = resultRows.filter((row) => {
+                            return idx.indexOf(row[this.s.tableInfo[this.q.table as any]._pk]) !== -1;
+                        });
+                    } else {
+                        resultRows.concat(rows);
                     }
-                    this._selectRowsByIndex(wArg, (rows) => {
-                        if (lastCommand === "AND") {
-                            let idx = rows.map((r) => r[this.s.tableInfo[this.q.table as any]._pk]);
-                            resultRows = resultRows.filter((row) => {
-                                return idx.indexOf(row[this.s.tableInfo[this.q.table as any]._pk]) !== -1;
-                            });
-                        } else {
-                            resultRows.concat(rows);
-                        }
-                        nextWArg();
-                    });
-                };
-            })).then(() => {
+                    nextWArg();
+                });
+            }).then(() => {
                 callback(resultRows);
             });
         }
@@ -1206,11 +1188,9 @@ export class _RowSelection {
         if (where[0] === this.s.tableInfo[this.q.table as any]._pk) { // primary key select
             this.s._read(this.q.table as any, keys as any, callback);
         } else { // secondary index select
-            new ALL(keys.map((idx) => {
-                return (complete) => {
-                    this.s._secondaryIndexRead(this.q.table as any, where[0], idx, complete);
-                };
-            })).then((rows) => {
+            fastALL(keys, (idx, i, complete) => {
+                this.s._secondaryIndexRead(this.q.table as any, where[0], idx, complete);
+            }).then((rows) => {
                 callback([].concat.apply([], rows));
             });
         }

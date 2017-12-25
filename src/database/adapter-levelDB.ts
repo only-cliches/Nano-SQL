@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, ALL, CHAIN, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 import { LevelUp } from "levelup";
 import { Int64BE } from "int64-buffer";
@@ -9,9 +9,9 @@ import { Int64BE } from "int64-buffer";
 declare var global: any;
 
 const deleteFolderRecursive = (path) => {
-    if ( global._fs.existsSync(path) ) {
+    if (global._fs.existsSync(path)) {
         global._fs.readdirSync(path).forEach((file) => {
-          const curPath = path + "/" + file;
+            const curPath = path + "/" + file;
             if (global._fs.statSync(curPath).isDirectory()) { // recurse
                 deleteFolderRecursive(curPath);
             } else { // delete file
@@ -19,8 +19,8 @@ const deleteFolderRecursive = (path) => {
             }
         });
         global._fs.rmdirSync(path);
-      }
-  };
+    }
+};
 
 /**
  * Handles Level DB storage.
@@ -69,21 +69,19 @@ export class _LevelStore implements NanoSQLStorageAdapter {
     }
 
     public connect(complete: () => void) {
-        new ALL(Object.keys(this._dbIndex).map((table) => {
-            return (done) => {
-                let pks: any[] = [];
-                this._levelDBs[table].createKeyStream()
-                    .on("data", (data) => {
-                        pks.push(this._isPKnum[table] ? new Int64BE(data).toNumber() : data);
-                    })
-                    .on("end", () => {
-                        if (pks.length) {
-                            this._dbIndex[table].set(pks);
-                        }
-                        done();
-                    });
-            };
-        })).then(complete);
+        fastALL(Object.keys(this._dbIndex), (table, i, done) => {
+            let pks: any[] = [];
+            this._levelDBs[table].createKeyStream()
+                .on("data", (data) => {
+                    pks.push(this._isPKnum[table] ? new Int64BE(data).toNumber() : data);
+                })
+                .on("end", () => {
+                    if (pks.length) {
+                        this._dbIndex[table].set(pks);
+                    }
+                    done();
+                });
+        }).then(complete);
     }
 
     public setID(id: string) {
@@ -197,38 +195,36 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         const higher = usePK && usefulValues ? to : keys[ranges[1]];
 
         this._levelDBs[table]
-        .createValueStream({
-            gte: this._isPKnum[table] ? new Int64BE(lower as any).toBuffer() : lower,
-            lte: this._isPKnum[table] ? new Int64BE(higher as any).toBuffer() : higher
-        })
-        .on("data", (data) => {
-            rows.push(JSON.parse(data));
-        })
-        .on("end", () => {
-            let idx = ranges[0] || 0;
-            let i = 0;
-            const getRow = () => {
-                if (i < rows.length) {
-                    rowCallback(rows[i], idx, () => {
-                        idx++;
-                        i++;
-                        i > 200 ? setFast(getRow) : getRow(); // handle maximum call stack error
-                    });
-                } else {
-                    complete();
-                }
-            };
-            getRow();
-        });
+            .createValueStream({
+                gte: this._isPKnum[table] ? new Int64BE(lower as any).toBuffer() : lower,
+                lte: this._isPKnum[table] ? new Int64BE(higher as any).toBuffer() : higher
+            })
+            .on("data", (data) => {
+                rows.push(JSON.parse(data));
+            })
+            .on("end", () => {
+                let idx = ranges[0] || 0;
+                let i = 0;
+                const getRow = () => {
+                    if (i < rows.length) {
+                        rowCallback(rows[i], idx, () => {
+                            idx++;
+                            i++;
+                            i > 1000 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
     }
 
     public drop(table: string, callback: () => void): void {
 
-        new ALL(this._dbIndex[table].keys().map((pk) => {
-            return (done) => {
-                this._levelDBs[table].del(pk, done);
-            };
-        })).then(() => {
+        fastALL(this._dbIndex[table].keys(), (pk, i, done) => {
+            this._levelDBs[table].del(pk, done);
+        }).then(() => {
             let idx = new DatabaseIndex();
             idx.doAI = this._dbIndex[table].doAI;
             this._dbIndex[table] = idx;
@@ -243,13 +239,11 @@ export class _LevelStore implements NanoSQLStorageAdapter {
     }
 
     public destroy(complete: () => void) {
-        new ALL(Object.keys(this._dbIndex).map((table) => {
-            return (done) => {
-                this.drop(table, () => {
-                    this._levelDBs[table].close(done);
-                });
-            };
-        })).then(() => {
+        fastALL(Object.keys(this._dbIndex), (table, i , done) => {
+            this.drop(table, () => {
+                this._levelDBs[table].close(done);
+            });
+        }).then(() => {
             deleteFolderRecursive(this._path);
             complete();
         });

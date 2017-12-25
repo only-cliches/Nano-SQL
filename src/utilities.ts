@@ -108,6 +108,69 @@ export class ALL {
     }
 }
 
+
+export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any> => {
+    return new Promise((res, rej) => {
+        if (!items || !items.length) {
+            res([]);
+            return;
+        }
+        let results: any[] = [];
+        const step = () => {
+            if (results.length < items.length) {
+                callback(items[results.length], results.length, (result) => {
+                    results.push(result);
+                    results.length < 100 ? step() : setFast(step);
+                });
+            } else {
+                res(results);
+            }
+        };
+        step();
+    });
+};
+
+export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void): Promise<any> => {
+    return new Promise((res, rej) => {
+        if (!items || !items.length) {
+            res([]);
+            return;
+        }
+        let i = items.length;
+        let results: any[] = [];
+        while (i--) {
+            callback(items[i], i, (result) => {
+                results.push(result);
+                if (results.length === items.length) {
+                    res(results);
+                }
+            });
+        }
+    });
+};
+
+/*
+export const ALL = (callbacks: ((result: (result?: any) => void) => void)[]) => {
+    return new Promise((res, rej) => {
+        let results: any[] = [];
+        let ptr = 0;
+
+        if (!callbacks || !callbacks.length) {
+            res([]);
+        }
+
+        callbacks.forEach((cb, i) => {
+            cb((response) => {
+                results[i] = response;
+                ptr++;
+                if (ptr === callbacks.length) {
+                    res(results);
+                }
+            });
+        });
+    });
+};*/
+
 const ua = typeof window === "undefined" ? "" : navigator.userAgent;
 // Detects iOS device OR Safari running on desktop
 export const isSafari: boolean = ua.length === 0 ? false : (/^((?!chrome|android).)*safari/i.test(ua)) || (/iPad|iPhone|iPod/.test(ua) && !window["MSStream"]);
@@ -167,20 +230,16 @@ export const hash = (str: string): string => {
     return (hash >>> 0).toString(16);
 };
 
+const idTypes = {
+    "int": (value) => value,
+    "uuid": uuid,
+    "timeId": () => timeid(),
+    "timeIdms": () => timeid(true)
+};
+
 // Generate a row ID given the primary key type.
 export const generateID = (primaryKeyType: string, incrimentValue?: number): any => {
-
-    switch (primaryKeyType) {
-        case "int":
-            return incrimentValue || 1;
-        case "uuid":
-            return uuid();
-        case "timeId":
-            return timeid();
-        case "timeIdms":
-            return timeid(true);
-    }
-    return "";
+    return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : "";
 };
 
 // Clean the arguments from an object given an array of arguments and their types.
@@ -218,6 +277,13 @@ export const isObject = (val: any): boolean => {
  */
 export const cast = (type: string, val?: any): any => {
 
+    if (type === "any" || type === "blob") return val;
+
+    const t = typeof val;
+    if (t === "undefined" || val === null) {
+        return val;
+    }
+
     const entityMap = {
         "&": "&amp;",
         "<": "&lt;",
@@ -228,10 +294,7 @@ export const cast = (type: string, val?: any): any => {
         "`": "&#x60;",
         "=": "&#x3D;"
     };
-    const t = typeof val;
-    if (t === "undefined" || val === null) {
-        return val;
-    }
+
     const types = (type: string, val: any) => {
         switch (type) {
             case "safestr": return types("string", val).replace(/[&<>"'`=\/]/gmi, (s) => entityMap[s]);

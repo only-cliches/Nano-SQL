@@ -3,13 +3,21 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.0] 12-25-2017
+- Over 2x write and read performance in this update.
+- Updated promise library to get better setImediate polyfill.
+- ALL and CHAIN methods now return a real Promise.
+- ALL and CHAIN methods rewritten to improve performance.
+- Several more performance improvements.
+- Simple write test for 100 rows: Before: ~35ms, After: ~15ms
+
 ## [1.0.5] 12-21-2017
 BREAKING CHANGE, PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)
 - This release is focused on performance, 2 - 4x increase in query speed should be seen most of the time.
 - Promise lib now only polyfills, otherwise the native browser/NodeJS Promise implimentation is used.  Benchmarks show a double in query performance from this one change...
 - Removed secondary index queries on upsert if there are none.
 - Added conditional to skip event logic if it's not needed.
-- Simple Write test: Before: ~140ms, After: ~35ms
+- Simple write test for 100 rows: Before: ~140ms, After: ~35ms
 
 ## [1.0.4] 12-17-2017
 - Added table types to action/view arguments.  You can now use table names as a type in action/view arguments to cast an argument to a specific table's data model.

@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, ALL, CHAIN, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 const _evalContext = (source: string, context: {[key: string]: any}) => {
@@ -251,7 +251,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
                     rowCallback(rows[i], idx, () => {
                         idx++;
                         i++;
-                        i > 200 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        i > 1000 ? setFast(getRow) : getRow(); // handle maximum call stack error
                     });
                 } else {
                     complete();
@@ -303,10 +303,8 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
     }
 
     public destroy(complete: () => void) {
-        new ALL(Object.keys(this._dbIndex).map((table) => {
-            return (done) => {
-                this.drop(table, done);
-            };
-        })).then(complete);
+        fastALL(Object.keys(this._dbIndex), (table, i, done) => {
+            this.drop(table, done);
+        }).then(complete);
     }
 }

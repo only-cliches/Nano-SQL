@@ -1,4 +1,4 @@
-import { StdObject, hash, ALL, CHAIN, deepFreeze, uuid, timeid, _assign, generateID, binarySearch, isAndroid } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, binarySearch, isAndroid } from "../utilities";
 
 /**
  * Optimized in memory index used for each table.

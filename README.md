@@ -300,7 +300,18 @@ nSQL("users")
 
 ## History
 
-The Undo/Redo system is enabled by default and it's easy to use.
+The Undo/Redo system is super easy to use.  First, enable it in the config object.
+
+```js
+nSQL("table")
+.model([...])
+.config({
+    history: true
+})
+.connect().then....
+```
+
+Then use it!  Every query that changes row data will be tracked as a history point.
 
 ```js
 // Roll the database back one query.

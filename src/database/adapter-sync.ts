@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, ALL, CHAIN, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 
@@ -84,6 +84,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
             throw new Error("Can't add a row without a primary key!");
         }
 
+
         if (this._dbIndex[table].indexOf(pk) === -1) {
 
             this._dbIndex[table].add(pk);
@@ -102,6 +103,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
             localStorage.setItem(this._id + "*" + table + "__" + pk, JSON.stringify(r));
             complete(r);
         } else {
+
             const r = {
                 ...(skipReadBeforeWrite ? {} : this._rows[table][pk as any]),
                 ...data,
@@ -109,6 +111,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
             };
             this._rows[table][pk as any] = deepFreeze(r);
             complete(r);
+
         }
     }
 
@@ -156,7 +159,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         const rowDone = () => {
             idx++;
             i++;
-            i > 200 ? setFast(getRow) : getRow(); // handle maximum call stack error
+            i > 1000 ? setFast(getRow) : getRow(); // handle maximum call stack error
         };
 
         const getRow = () => {
@@ -197,10 +200,8 @@ export class _SyncStore implements NanoSQLStorageAdapter {
     }
 
     public destroy(complete: () => void) {
-        new ALL(Object.keys(this._dbIndex).map((table) => {
-            return (done) => {
-                this.drop(table, done);
-            };
-        })).then(complete);
+        fastALL(Object.keys(this._dbIndex), (table, i, done) => {
+            this.drop(table, done);
+        }).then(complete);
     }
 }

@@ -2,7 +2,7 @@ import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, CHAIN, ALL, random16Bits, cast, cleanArgs, objQuery, Promise } from "./utilities";
+import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
@@ -25,7 +25,7 @@ export interface ActionOrView {
 
 export interface NanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
-    call: (rows: any[], complete: (result: any|any[]) => void, ...args: any[]) => void; // function call
+    call: (rows: any[], complete: (result: any | any[]) => void, ...args: any[]) => void; // function call
 }
 
 /**
@@ -90,7 +90,7 @@ export interface ORMArgs {
     orderBy?: {
         [column: string]: "asc" | "desc";
     };
-    where?: (row: DBRow, idx: number) => boolean|any[];
+    where?: (row: DBRow, idx: number) => boolean | any[];
 }
 
 /**
@@ -132,15 +132,21 @@ export class NanoSQLInstance {
      * @type {string}
      * @memberOf NanoSQLInstance
      */
-    public sTable: string|any[];
+    public sTable: string | any[];
 
     private _config: StdObject<any>;
 
     public _plugins: NanoSQLPlugin[];
 
-    public version: number = 1;
+    public version: number = 1.06;
 
     public _instanceBackend: NanoSQLPlugin;
+
+
+    // Incase you don't need truly random numbers,
+    // this will generate a cache of random numbers and loop between them.
+    public _randoms: string[];
+    public _randomPtr: number;
 
     public static functions: {
         [fnName: string]: NanoSQLFunction;
@@ -206,7 +212,7 @@ export class NanoSQLInstance {
      * @type {StdObject<Array<DataModel>>}
      * @memberOf NanoSQLInstance
      */
-    public _models: {[table: string]: DataModel[]};
+    public _models: { [table: string]: DataModel[] };
 
     /**
      * Stores wether each table has events attached to it or not.
@@ -218,6 +224,14 @@ export class NanoSQLInstance {
     public _hasEvents: StdObject<boolean>;
 
     /**
+     * Stores wether the event system needs to be active at all.
+     *
+     * @type {boolean}
+     * @memberof NanoSQLInstance
+     */
+    public hasAnyEvents: boolean;
+
+    /**
      * The current action or view being triggered.
      *
      * @internal
@@ -227,6 +241,9 @@ export class NanoSQLInstance {
     public _activeAV: string | undefined;
 
     public pluginsDoHasExec: boolean;
+
+    private _queryPool: _NanoSQLQuery[];
+    private _queryPtr: number;
 
 
     /**
@@ -254,6 +271,16 @@ export class NanoSQLInstance {
         t._tableNames = [];
         t._plugins = [];
 
+        t._randoms = [];
+        t._queryPool = [];
+        t._queryPtr = 0;
+        t._randomPtr = 0;
+        t.hasAnyEvents = false;
+        for (let i = 0; i < 100; i++) {
+            t._randoms.push(random16Bits().toString(16));
+            t._queryPool.push(new _NanoSQLQuery(t));
+        }
+
         t._callbacks = {};
         t._callbacks["*"] = new ReallySmallEvents();
         t._instanceBackend = new NanoSQLDefaultBackend();
@@ -273,6 +300,22 @@ export class NanoSQLInstance {
                 }
             });
         }
+    }
+
+    /**
+     * nanoSQL generates 50 random 16 bit strings on every launch.
+     * If you don't need true randomness you can use this function to get a psudorandom 16 bit string.
+     * Performance is orders of a magnitude faster since no random number generator is needed.
+     *
+     * @returns {string}
+     * @memberof NanoSQLInstance
+     */
+    public fastRand(): string {
+        this._randomPtr++;
+        if (this._randomPtr >= this._randoms.length) {
+            this._randomPtr = 0;
+        }
+        return this._randoms[this._randomPtr];
     }
 
 
@@ -313,11 +356,11 @@ export class NanoSQLInstance {
             };
 
             connectArgs.models[str[0]] = [
-                {key: "key", type: "string", props: ["pk", "ai"]},
-                {key: "value", type: "any"}
+                { key: "key", type: "string", props: ["pk", "ai"] },
+                { key: "value", type: "any" }
             ];
 
-            // this._plugins = [];
+            this._plugins = [];
 
             // if history is enabled, turn on the built in history plugin
             if (t._config && t._config.history) {
@@ -328,19 +371,16 @@ export class NanoSQLInstance {
             if (!t._config || t._config.mode !== false) {
                 this.use(new NanoSQLDefaultBackend());
             }
-
-            new CHAIN(this._plugins.map((p) => {
-                return (nextP) => {
-                    if (p.willConnect) {
-                        p.willConnect(connectArgs, (newArgs) => {
-                            connectArgs = newArgs;
-                            nextP();
-                        });
-                    } else {
+            fastCHAIN(this._plugins, (p, i, nextP) => {
+                if (p.willConnect) {
+                    p.willConnect(connectArgs, (newArgs) => {
+                        connectArgs = newArgs;
                         nextP();
-                    }
-                };
-            })).then(() => {
+                    });
+                } else {
+                    nextP();
+                }
+            }).then(() => {
                 this._models = connectArgs.models;
                 this._actions = connectArgs.actions;
                 this._views = connectArgs.views;
@@ -355,32 +395,43 @@ export class NanoSQLInstance {
                 t._tableNames = Object.keys(this._models);
 
                 const completeConnect = () => {
-                    new ALL(this._plugins.map((p) => {
-                        return (nextP) => {
-                            if (p.didConnect) {
-                                p.didConnect(connectArgs, () => {
-                                    nextP();
-                                });
-                            } else {
+                    fastALL(this._plugins, (p, i, nextP) => {
+                        if (p.didConnect) {
+                            p.didConnect(connectArgs, () => {
                                 nextP();
-                            }
-                        };
-                    })).then(() => {
+                            });
+                        } else {
+                            nextP();
+                        }
+                    }).then(() => {
                         res(t._tableNames);
                     });
                 };
 
-                this.query("select").where(["key", "=", "version"]).manualExec({table: "_util"}).then((rows) => {
-                    if (!rows.length) {
-                        // new database or an old one that needs indexes rebuilt
-                        this.query("upsert", {key: "version", value: this.version}).manualExec({table: "_util"}).then(() => {
+                const updateVersion = (rebuildIDX: boolean) => {
+                    this.query("upsert", { key: "version", value: this.version }).manualExec({ table: "_util" }).then(() => {
+                        if (rebuildIDX) {
                             this.extend("rebuild_idx").then(() => {
                                 completeConnect();
                             });
-                        });
+                        } else {
+                            completeConnect();
+                        }
+                    });
+                };
+
+                this.query("select").where(["key", "=", "version"]).manualExec({ table: "_util" }).then((rows) => {
+                    if (!rows.length) {
+                        // new database or an old one that needs indexes rebuilt
+                        updateVersion(true);
                     } else {
-                        // future migration messes go here
-                        completeConnect();
+
+                        if (rows[0].value < 1.06) {
+                            updateVersion(false);
+                        } else {
+                            // future migration messes go here
+                            completeConnect();
+                        }
                     }
                 });
 
@@ -398,7 +449,7 @@ export class NanoSQLInstance {
         return _assign(this._config || {});
     }
 
-        /**
+    /**
      * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
      *
      * @param {IActionViewMod} filterFunc
@@ -431,6 +482,8 @@ export class NanoSQLInstance {
         let a = actions.split(" ");
 
         if (Array.isArray(l)) return this;
+
+        this.hasAnyEvents = true;
 
         if (!t._callbacks[l]) { // Handle the event handler being called before the database has connected
             t._callbacks[l] = new ReallySmallEvents();
@@ -476,6 +529,7 @@ export class NanoSQLInstance {
                 return prev + (this._callbacks[table] && this._callbacks[table].eventListeners[cur] ? this._callbacks[table].eventListeners[cur].length : 0);
             }, 0) > 0;
         });
+
         return this;
     }
 
@@ -678,56 +732,6 @@ export class NanoSQLInstance {
         return this;
     }
 
-
-    /**
-     * Performs the same action as the cleanArgs function, except it uses data models so that if a table name is
-     * passed in as a type, that argument will be treated as a row type and force casted accordingly.
-     *
-     * @private
-     * @param {string[]} args
-     * @param {{[key: string]: any}} argsObj
-     * @returns {{[key: string]: any}}
-     * @memberof NanoSQLInstance
-     */
-    private _avCleanArgs(args: string[], argsObj: {[key: string]: any}): {[key: string]: any} {
-        let newObj: any = {};
-
-        const castTable = (rowData: any, argType: string): any => {
-            if (argType.indexOf("[]") !== -1) { // array of rows
-                const arrayOf = argType.slice(0, argType.lastIndexOf("[]"));
-                return (rowData || []).map((v) => {
-                    return castTable(v, arrayOf);
-                });
-            } else {
-                let newRow: any = {};
-                this._models[argType].forEach((model) => {
-                    newRow[model.key] = cast(model.type, rowData[model.key]);
-                });
-                return newRow;
-            }
-        };
-
-        (args || []).forEach((arg) => {
-            const argDetail = arg.split(":");
-            if (argDetail.length === 1 && argsObj[arg] !== undefined) { // no type casting
-                newObj[arg] = argsObj[arg];
-            } else {
-                const argKey = argDetail[0];
-                const argType = argDetail[1];
-                // table type
-                if (Object.keys(this._models).indexOf(argType.replace(/\[\]/g, "")) !== -1) {
-                    const rowData = argsObj[argKey] || (argType.indexOf("[]") !== -1 ? [] : {});
-                    newObj[argKey] = castTable(rowData, argType);
-                // other type
-                } else {
-                    newObj[argKey] = cast(argType, argsObj[argKey]);
-                }
-            }
-        });
-
-        return newObj;
-    }
-
     /**
      * Internal function to fire action/views.
      *
@@ -829,9 +833,13 @@ export class NanoSQLInstance {
     public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery {
 
         let t = this;
-        let query = new _NanoSQLQuery(t.sTable, t, action.toLowerCase(), args, t._activeAV);
+        t._queryPtr++;
+        if (t._queryPtr > t._queryPool.length - 1) {
+            t._queryPtr = 0;
+        }
+        const av = t._activeAV;
         t._activeAV = undefined;
-        return query;
+        return t._queryPool[t._queryPtr].set(t.sTable, action.toLowerCase(), args, av);
     }
 
     /**
@@ -928,16 +936,13 @@ export class NanoSQLInstance {
                 return;
             }
 
-            new CHAIN(t._plugins.map(p => {
-
-                return (nextP) => {
-                    if (p.transactionBegin) {
-                        p.transactionBegin(transactionID, nextP);
-                    } else {
-                        nextP();
-                    }
-                };
-            })).then(() => {
+            fastCHAIN(t._plugins, (p, i, nextP) => {
+                if (p.transactionBegin) {
+                    p.transactionBegin(transactionID, nextP);
+                } else {
+                    nextP();
+                }
+            }).then(() => {
 
                 if (Array.isArray(t.sTable)) return;
 
@@ -954,28 +959,23 @@ export class NanoSQLInstance {
 
                         let tables: string[] = [];
 
+                        fastCHAIN(queries, (quer, i, nextQuery) => {
+                            tables.push(quer.table as any);
+                            t.query(quer.action as any, quer.actionArgs).manualExec({
+                                ...quer,
+                                table: quer.table,
+                                transaction: true,
+                                queryID: transactionID,
+                            }).then(nextQuery);
+                        }).then((results) => {
 
-                        new CHAIN(queries.map((quer) => {
-                            return (nextQuery) => {
-                                tables.push(quer.table as any);
-                                t.query(quer.action as any, quer.actionArgs).manualExec({
-                                    ...quer,
-                                    table: quer.table,
-                                    transaction: true,
-                                    queryID: transactionID,
-                                }).then(nextQuery);
-                            };
-                        })).then((results) => {
-
-                            new CHAIN(this._plugins.map(p => {
-                                return (nextP) => {
-                                    if (p.transactionEnd) {
-                                        p.transactionEnd(transactionID, nextP);
-                                    } else {
-                                        nextP();
-                                    }
-                                };
-                            })).then(() => {
+                            fastCHAIN(this._plugins, (p, i, nextP) => {
+                                if (p.transactionEnd) {
+                                    p.transactionEnd(transactionID, nextP);
+                                } else {
+                                    nextP();
+                                }
+                            }).then(() => {
                                 tables.filter((val, idx, self) => {
                                     return self.indexOf(val) === idx;
                                 }).forEach((table) => {
@@ -1012,7 +1012,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public config(args: {[key: string]: any}): NanoSQLInstance {
+    public config(args: { [key: string]: any }): NanoSQLInstance {
         this._config = args;
         return this;
     }
@@ -1032,19 +1032,17 @@ export class NanoSQLInstance {
             if (t._plugins.length) { // Query Mode
                 let newArgs = _assign(args);
                 let result: any[] = [];
-                new CHAIN(t._plugins.map((p) => {
-                    return (nextP) => {
-                        if (p.extend) {
-                            p.extend((nArgs, newResult) => {
-                                newArgs = nArgs;
-                                result = newResult;
-                                nextP();
-                            }, newArgs, result);
-                        } else {
+                fastCHAIN(t._plugins, (p, i, nextP) => {
+                    if (p.extend) {
+                        p.extend((nArgs, newResult) => {
+                            newArgs = nArgs;
+                            result = newResult;
                             nextP();
-                        }
-                    };
-                })).then(() => {
+                        }, newArgs, result);
+                    } else {
+                        nextP();
+                    }
+                }).then(() => {
                     res(result);
                 });
             } else {
@@ -1084,11 +1082,9 @@ export class NanoSQLInstance {
             });
         } else {
             return new Promise((res, rej) => {
-                new CHAIN(rows.map((row) => {
-                    return (nextRow) => {
-                        nSQL().query("upsert", row).manualExec({table: table}).then(nextRow);
-                    };
-                })).then((rows) => {
+                fastCHAIN(rows, (row, i, nextRow) => {
+                    nSQL().query("upsert", row).manualExec({ table: table }).then(nextRow);
+                }).then((rows) => {
                     res(rows.map(r => r.shift()));
                 });
             });
@@ -1142,11 +1138,9 @@ export class NanoSQLInstance {
             });
         } else {
             return new Promise((res, rej) => {
-                new CHAIN(rowData.map((row) => {
-                    return (nextRow) => {
-                        nSQL().query("upsert", row).manualExec({table: table}).then(nextRow);
-                    };
-                })).then((rows) => {
+                fastCHAIN(rowData, (row, i, nextRow) => {
+                    nSQL().query("upsert", row).manualExec({ table: table }).then(nextRow);
+                }).then((rows) => {
                     res(rows.map(r => r.shift()));
                 });
             });

@@ -4,7 +4,6 @@
         "module": "commonjs",
         "moduleResolution": "node",
         "stripInternal": true,
-        "removeComments": true,
         "importHelpers": false,
         "strictNullChecks": true,
         "noImplicitAny": false,

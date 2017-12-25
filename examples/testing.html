@@ -7,7 +7,8 @@
 </head>
 
 <body>
-    <button onclick="doWrite()">write</button>
+    <button onclick="testNanoSQL()">Test nanoSQL</button>
+    <button onclick="testAlaSQL()">Test alaSQL</button>
     <script>
         function makeid() {
             var text = "";
@@ -19,81 +20,40 @@
             return text;
         }
 
-        function doWrite() {
-/*
-            var mybase = new alasql.Database();
-            mybase.exec(`CREATE TABLE users (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                name TEXT,
-                pass TEXT,
-                email TEXT
-            )`);
-
-            var start = new Date().getTime();
-            let i = 0;
-            const w = () => {
-                if (i < 1000) {
-                    mybase.exec("INSERT INTO users (name, pass, email) VALUES (?, ?, ?)", [makeid(), makeid(), makeid()], () => {
-                        i++;
-                        w();
-                    });
-                } else {
-                    console.log("WRITE", (new Date().getTime() - start))
-                    start = new Date().getTime();
-                    mybase.exec("SELECT * FROM users", [], (rows) => {
-                        console.log("READ", (new Date().getTime() - start))
-                        console.log(rows);
-                    })
-                }
-
-            }
-            w();
-
-*/
+        function testAlaSQL() {
+            console.log("Creating 100 in memory databases, writing 100 random rows to each.")
             function runTest(complete) {
-                var db = new NanoSQLInstance();
-                db.table("users")
-                .model([{
-                    key: "id",
-                    type: "int",
-                    props: ["pk", "ai"]
-                }, {
-                    key: "name",
-                    type: "any"
-                }, {
-                    key: "pass",
-                    type: 'any'
-                }, {
-                    key: "email",
-                    type: "any"
-                }])
-                .connect().then(function() {
-                    var start = new Date().getTime();
-                    let i = 0;
-                    const w = () => {
-                        if (i < 100) {
-                            db.query("upsert", {
-                                name: makeid(),
-                                pass: makeid(),
-                                email: makeid()
-                            }).exec().then(() => {
-                                i++;
-                                w();
-                            });
-                        } else {
-                            complete((new Date().getTime() - start));
-                            //console.log("WRITE", (new Date().getTime() - start))
-                            /*start = new Date().getTime();
-                            db.table("users").query("select").exec().then(function(rows) {
-                                console.log("READ", (new Date().getTime() - start))
-                                console.log(rows.length);
-                            })*/
-                        }
 
+                var mybase = new alasql.Database();
+                mybase.exec(`CREATE TABLE users (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    name TEXT,
+                    pass TEXT,
+                    email TEXT
+                )`);
+
+
+                let i = 0;
+                var start = Date.now();
+                const w = () => {
+                    if (i < 100) {
+                        mybase.exec(`INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [makeid(), makeid(), makeid()], () => {
+                            i++;
+                            Promise.resolve().then(w);
+                        });
+                    } else {
+
+                        // start = Date.now();
+                        // mybase.exec("UPDATE users SET name=? WHERE id BETWEEN 10 AND 30", [makeid()], (rows) => {
+                            // console.log("READ", (Date.now() - start))
+                            complete(Date.now() - start);
+                        // })
                     }
-                    w();
-                });
+
+                }
+                w();
             }
+
 
             let k = 0;
             let results = [];
@@ -104,7 +64,78 @@
                         console.log(k + ": " + result)
                         results.push(result);
                         k++;
-                        nextTest();
+                        Promise.resolve().then(nextTest);
+                    })
+                } else {
+                    console.log("AVG:" + results.reduce((prev, cur) => {
+                        return prev + cur;
+                    }, 0) / results.length);
+                }
+            }
+
+            nextTest();
+        }
+
+        function testNanoSQL() {
+            console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+            function runTest(complete) {
+
+                var db = new NanoSQLInstance();
+                db.table("users")
+                    .model([{
+                        key: "id",
+                        type: "int",
+                        props: ["pk", "ai"]
+                    }, {
+                        key: "name",
+                        type: "any"
+                    }, {
+                        key: "pass",
+                        type: 'any'
+                    }, {
+                        key: "email",
+                        type: "any"
+                    }])
+                    .config({cache: false})
+                    .connect().then(function() {
+                        var start = Date.now();
+                        let i = 0;
+                        const w = () => {
+                            if (i < 100) {
+                                db.query("upsert", {
+                                    name: makeid(),
+                                    pass: makeid(),
+                                    email: makeid()
+                                }).exec().then(() => {
+                                    i++;
+                                    Promise.resolve().then(w);
+                                    // setTimeout(w, 10);
+                                });
+                            } else {
+                                // start = Date.now();
+                                // db.table("users").query("upsert", {name: makeid()}).where(["id", "BETWEEN", [10, 30]]).exec().then(() => {
+                                    complete((Date.now() - start));
+                                // });
+                                //console.log("WRITE", (new Date().getTime() - start))
+                            }
+
+                        }
+                        w();
+                    });
+            }
+            // runTest((time) => { console.log(time) });
+            // return;
+
+            let k = 0;
+            let results = [];
+
+            function nextTest() {
+                if (k < 100) {
+                    runTest(function(result) {
+                        console.log(k + ": " + result)
+                        results.push(result);
+                        k++;
+                        Promise.resolve().then(nextTest);
                     })
                 } else {
                     console.log("AVG:" + results.reduce((prev, cur) => {
@@ -240,12 +271,15 @@
                 }
             ])
 
-        nSQL([
-            {name: "billy"},
-            {name: "scotty"},
-            {name: "joey"},
-            {name: "hey"}
-        ]).query("select").exec().then((rows) => {
+        nSQL([{
+            name: "billy"
+        }, {
+            name: "scotty"
+        }, {
+            name: "joey"
+        }, {
+            name: "hey"
+        }]).query("select").exec().then((rows) => {
             console.log(rows);
         });
 
@@ -274,77 +308,85 @@
                 console.log(db);
                 // nSQL().extend("one", "arg", "here");
                 Promise.all([
-                     nSQL()
-                     .loadJS("orders", [{
-                         id: null,
-                         title: "Test",
-                         total: 200,
-                         user: 2
-                     }, {
-                         id: null,
-                         title: "Test 2",
-                         total: 200,
-                         user: 2
-                     }, {
-                         id: null,
-                         title: "Test 3",
-                         total: 600,
-                         user: 5
-                     }]),
-                     nSQL()
-                     .loadJS('users', [{
-                         id: null,
-                         name: 'jeb',
-                         age: 28,
-                         balance: 25.02,
-                         orderIDs: [1, 20, 5],
-                         meta: {
-                             favorteColor: {1: "orange"}
-                         }
-                     }, {
-                         id: null,
-                         name: 'bob',
-                         age: 25,
-                         balance: 25.02,
-                         orderIDs: [2, 3],
-                         meta: {
-                             favorteColor: {1: "orange"}
-                         }
-                     }, {
-                         id: null,
-                         name: 'jeb',
-                         age: null,
-                         balance: 22.02,
-                         meta: {
-                             favorteColor: {1: "yellow"}
-                         }
-                     }, {
-                         id: null,
-                         name: 'scott',
-                         age: 21,
-                         balance: 25.02,
-                         orderIDs: [0, 20, 5],
-                         meta: {
-                             favorteColor: {1: "blue"}
-                         }
-                     }])
-                 ])
-                // new Promise(function(res) {res()})
+                        nSQL()
+                        .loadJS("orders", [{
+                            id: null,
+                            title: "Test",
+                            total: 200,
+                            user: 2
+                        }, {
+                            id: null,
+                            title: "Test 2",
+                            total: 200,
+                            user: 2
+                        }, {
+                            id: null,
+                            title: "Test 3",
+                            total: 600,
+                            user: 5
+                        }]),
+                        nSQL()
+                        .loadJS('users', [{
+                            id: null,
+                            name: 'jeb',
+                            age: 28,
+                            balance: 25.02,
+                            orderIDs: [1, 20, 5],
+                            meta: {
+                                favorteColor: {
+                                    1: "orange"
+                                }
+                            }
+                        }, {
+                            id: null,
+                            name: 'bob',
+                            age: 25,
+                            balance: 25.02,
+                            orderIDs: [2, 3],
+                            meta: {
+                                favorteColor: {
+                                    1: "orange"
+                                }
+                            }
+                        }, {
+                            id: null,
+                            name: 'jeb',
+                            age: null,
+                            balance: 22.02,
+                            meta: {
+                                favorteColor: {
+                                    1: "yellow"
+                                }
+                            }
+                        }, {
+                            id: null,
+                            name: 'scott',
+                            age: 21,
+                            balance: 25.02,
+                            orderIDs: [0, 20, 5],
+                            meta: {
+                                favorteColor: {
+                                    1: "blue"
+                                }
+                            }
+                        }])
+                    ])
+                    // new Promise(function(res) {res()})
                     .then(function() {
-/*
-                        console.time("NANO");
-                        nSQL([{a:1,b:10}, {a:2,b:20}, {a:1,b:30}])
-                            .query("select", ["a", "SUM(b) AS b"])
-                            .groupBy({a: "asc"})
-                            .exec().then((rows1) => {
-                                console.timeEnd("NANO");
-                                console.time("ALA");
-                                var data = [{a:1,b:10}, {a:2,b:20}, {a:1,b:30}];
-                                const rows = alasql('SELECT a, SUM(b) AS b FROM ? GROUP BY a',[data]);
-                                console.timeEnd("ALA");
-                                console.log(rows, rows1);
-                            })
-*/
+                        /*
+                                                console.time("NANO");
+                                                nSQL([{a:1,b:10}, {a:2,b:20}, {a:1,b:30}])
+                                                    .query("select", ["a", "SUM(b) AS b"])
+                                                    .groupBy({a: "asc"})
+                                                    .exec().then((rows1) => {
+                                                        console.timeEnd("NANO");
+                                                        console.time("ALA");
+                                                        var data = [{a:1,b:10}, {a:2,b:20}, {a:1,b:30}];
+                                                        const rows = alasql('SELECT a, SUM(b) AS b FROM ? GROUP BY a',[data]);
+                                                        console.timeEnd("ALA");
+                                                        console.log(rows, rows1);
+                                                    })
+                        */
 
                         console.time("READ");
                         nSQL("users")
@@ -357,7 +399,9 @@
                                 table: "users",
                                 where: ["orders.user", "=", "users.id"]
                             })*/
-                            .groupBy({"orders.title": "asc"})
+                            .groupBy({
+                                "orders.title": "asc"
+                            })
                             .exec().then(function(rows, db) {
                                 console.timeEnd("READ");
                             });

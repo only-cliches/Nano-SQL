@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, ALL, CHAIN, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, isAndroid } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, isAndroid } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 
@@ -48,8 +48,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
     public connect(complete: () => void) {
         this._db = window.openDatabase(this._id, "1.0", this._id, this._size || isAndroid ? 5000000 : 1);
 
-        new ALL(Object.keys(this._pkKey).map((table) => {
-            return (nextKey) => {
+        fastALL(Object.keys(this._pkKey), (table, i, nextKey) => {
                 this._sql(true, `CREATE TABLE IF NOT EXISTS ${table} (id BLOB PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
                     this._sql(false, `SELECT id FROM ${table}`, [], (result) => {
                         let idx: any[] = [];
@@ -62,10 +61,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                         nextKey();
                     });
                 });
-            };
-        })).then(() => {
-            complete();
-        });
+        }).then(complete);
     }
 
     /**
@@ -219,7 +215,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                     rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
                         idx++;
                         i++;
-                        i > 200 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        i > 1000 ? setFast(getRow) : getRow(); // handle maximum call stack error
                     });
                 } else {
                     complete();
@@ -245,10 +241,8 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
     }
 
     public destroy(complete: () => void) {
-        new ALL(Object.keys(this._dbIndex).map((table) => {
-            return (done) => {
+        fastALL(Object.keys(this._dbIndex), (table, i, done) => {
                 this.drop(table, done);
-            };
-        })).then(complete);
+        }).then(complete);
     }
 }

@@ -1,5 +1,5 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../index";
-import { CHAIN, _assign, StdObject, uuid, cast, Promise } from "../utilities";
+import { _assign, StdObject, uuid, cast, Promise, timeid, fastCHAIN, fastALL } from "../utilities";
 
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
@@ -36,30 +36,105 @@ export interface IdbQueryExec extends IdbQueryBase {
     result?: DBRow[];
 }
 
+const blankRow = { affectedRowPKS: [], affectedRows: [] };
+
+
+const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
+
+    if (self._db._plugins.length === 1 && !self._db.hasAnyEvents) {
+        // fast query path, only used if there's a single plugin and no event listeners
+        (self._db._plugins[0] as any).doExec(self._query, (newQ) => {
+            self._query = newQ;
+            complete(self._query.result);
+        });
+    } else {
+        fastCHAIN(self._db._plugins, (p, i, nextP) => {
+            if (p.doExec) {
+                p.doExec(self._query, (newQ) => {
+                    self._query = newQ || self._query;
+                    nextP();
+                });
+            } else {
+                nextP();
+            }
+        }).then(() => {
+
+            complete(self._query.result);
+
+            if (self._db.hasAnyEvents || self._db.pluginsDoHasExec) {
+
+                const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
+                    switch (self._query.action) {
+                        case "select": return [self._query.action];
+                        case "delete":
+                        case "upsert":
+                        case "drop": return [self._query.action, "change"];
+                        default: return [] as any[];
+                    }
+                })();
+
+                const hasLength = self._query.result && self._query.result.length;
+
+                let event: DatabaseEvent = {
+                    table: self._query.table as string,
+                    query: self._query,
+                    time: Date.now(),
+                    result: self._query.result,
+                    notes: [],
+                    types: eventTypes,
+                    actionOrView: self._AV,
+                    transactionID: self._query.transaction ? self._query.queryID : undefined,
+                    affectedRowPKS: hasLength ? (self._query.result[0] || blankRow).affectedRowPKS : [],
+                    affectedRows: hasLength ? (self._query.result[0] || blankRow).affectedRows : [],
+                };
+
+                fastCHAIN(self._db._plugins, (p, i, nextP) => {
+                    if (p.didExec) {
+                        p.didExec(event, (newE) => {
+                            event = newE;
+                            nextP();
+                        });
+                    } else {
+                        nextP();
+                    }
+                }).then(() => {
+                    self._db.triggerEvent(event);
+                });
+            }
+        });
+    }
+};
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
 
-    private _db: NanoSQLInstance;
+    public _db: NanoSQLInstance;
 
     public _error: string;
 
     public _AV: string;
 
-    private _query: IdbQuery;
+    public _query: IdbQuery;
 
-    constructor(table: string | any[], db: NanoSQLInstance, queryAction: string, queryArgs?: any, actionOrView?: string) {
+    public static execMap: any;
+
+    constructor(db: NanoSQLInstance) {
         this._db = db;
+    }
+
+    public set(table: string | any[], queryAction: string, queryArgs?: any, actionOrView?: string) {
+
         this._AV = actionOrView || "";
         this._query = {
             table: table,
             comments: [],
             state: "pending",
-            queryID: new Date().getTime() + "-" + Math.round(Math.random() * 100),
+            queryID: Date.now() + "." + this._db.fastRand(),
             action: queryAction,
             actionArgs: queryArgs,
             result: []
         };
+        return this;
     }
 
     /**
@@ -301,6 +376,7 @@ export class _NanoSQLQuery {
         return new Promise((res, rej) => {
 
             t.exec().then((json: any[]) => {
+
                 let csv: string[] = [];
                 if (!json.length) {
                     res("", t);
@@ -368,13 +444,14 @@ export class _NanoSQLQuery {
 
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
-
-                this._db._models[this._query.table as string].forEach((model) => {
-                    // Cast known columns and purge uknown columns
-                    if (newArgs[model.key] !== undefined) {
-                        inputArgs[model.key] = cast(model.type, newArgs[model.key]);
+                const models = this._db._models[this._query.table as string];
+                let k = 0;
+                while (k < models.length) {
+                    if (newArgs[models[k].key] !== undefined) {
+                        inputArgs[models[k].key] = cast(models[k].type, newArgs[models[k].key]);
                     }
-                });
+                    k++;
+                }
                 newArgs = inputArgs;
             }
 
@@ -390,7 +467,7 @@ export class _NanoSQLQuery {
             if (Array.isArray(this._query.table)) {
                 if (this._db._instanceBackend.doExec) {
                     this._db._instanceBackend.doExec(this._query, (q) => {
-                        res(q.result, this._db);
+                        res(q.result);
                     });
                 }
                 return;
@@ -405,76 +482,14 @@ export class _NanoSQLQuery {
                 return;
             }
 
-            let rows: any[] = [];
-
-            const runQuery = () => {
-
-                new CHAIN(t._db._plugins.map((p, i) => {
-                    return (nextP) => {
-                        if (p.doExec) {
-                            p.doExec(this._query, (newQ) => {
-                                this._query = newQ || this._query;
-                                nextP();
-                            });
-                        } else {
-                            nextP();
-                        }
-                    };
-                })).then(() => {
-
-                    const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
-                        switch (t._query.action) {
-                            case "select": return [t._query.action];
-                            case "delete":
-                            case "upsert":
-                            case "drop": return [t._query.action, "change"];
-                            default: return [] as any[];
-                        }
-                    })();
-                    const hasLength = this._query.result && this._query.result.length;
-                    const row = { affectedRowPKS: [], affectedRows: [] };
-
-                    res(this._query.result);
-
-                    if ((this._db._hasEvents["*"] || this._db._hasEvents[this._query.table as string]) && this._db.pluginsDoHasExec) {
-                        let event: DatabaseEvent = {
-                            table: t._query.table as string,
-                            query: t._query,
-                            time: new Date().getTime(),
-                            result: rows,
-                            notes: [],
-                            types: eventTypes,
-                            actionOrView: t._AV,
-                            transactionID: t._query.transaction ? t._query.queryID : undefined,
-                            affectedRowPKS: hasLength ? (this._query.result[0] || row).affectedRowPKS : [],
-                            affectedRows: hasLength ? (this._query.result[0] || row).affectedRows : [],
-                        };
-
-                        new CHAIN(t._db._plugins.map((p) => {
-                            return (nextP) => {
-                                if (p.didExec) {
-                                    p.didExec(event, (newE) => {
-                                        event = newE;
-                                        nextP();
-                                    });
-                                } else {
-                                    nextP();
-                                }
-                            };
-                        })).then(() => {
-                            t._db.triggerEvent(event);
-                        });
-                    }
-                });
-            };
 
             if (this._db._queryMod) {
                 this._db._queryMod(this._query, (newQ) => {
                     this._query = newQ;
-                    runQuery();
+                    runQuery(this, res);
                 });
             } else {
-                runQuery();
+                runQuery(this, res);
             }
 
         });

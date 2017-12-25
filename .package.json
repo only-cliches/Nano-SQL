@@ -105,24 +105,6 @@
   },
   "contributors": [
     {
-      "name": "Jesús Ignacio Ortíz Beltrán",
-      "email": null,
-      "url": "https://github.com/Jesuso",
-      "contributions": 2,
-      "additions": 16438,
-      "deletions": 14927,
-      "hireable": true
-    },
-    {
-      "name": "Scott Lott",
-      "email": null,
-      "url": "https://github.com/ClickSimply",
-      "contributions": 202,
-      "additions": 304772,
-      "deletions": 140403,
-      "hireable": true
-    },
-    {
       "name": "Vikrant Pogula",
       "email": null,
       "url": "https://github.com/vikrantpogula",
@@ -130,6 +112,15 @@
       "additions": 1681,
       "deletions": 1355,
       "hireable": null
+    },
+    {
+      "name": "Scott Lott",
+      "email": null,
+      "url": "https://github.com/ClickSimply",
+      "contributions": 178,
+      "additions": 170884,
+      "deletions": 95451,
+      "hireable": false
     }
   ]
 }

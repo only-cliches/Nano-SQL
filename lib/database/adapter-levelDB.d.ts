@@ -1,5 +1,12 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow } from "./storage";
 import { DataModel } from "../index";
+/**
+ * Handles Level DB storage.
+ *
+ * @export
+ * @class _LevelStore
+ * @implements {NanoSQLStorageAdapter}
+ */
 export declare class _LevelStore implements NanoSQLStorageAdapter {
     path: string;
     writeCache: number;
