@@ -3,8 +3,10 @@
 ## TODO
 - Finish integration tests for history.
 
+
 ## [1.1.3] 12-26-2017
 - Wrote a [React HOC](https://www.npmjs.com/package/nano-sql-react) and refactored todo example using it.
+- `window["nano-sql"]` is now exposed as an entry point.
 
 ## [1.1.2] 12-25-2017
 - Removed minify settings to fix history bug.

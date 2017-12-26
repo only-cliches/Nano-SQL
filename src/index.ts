@@ -1355,3 +1355,10 @@ let _NanoSQLStatic = new NanoSQLInstance();
 export const nSQL = (setTablePointer?: string) => {
     return _NanoSQLStatic.table(setTablePointer);
 };
+
+if (typeof window !== "undefined") {
+    window["nano-sql"] = {
+        nSQL: nSQL,
+        NanoSQLInstance: NanoSQLInstance
+    };
+}

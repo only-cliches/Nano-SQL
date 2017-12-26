@@ -34,7 +34,9 @@ const options = {
         Buffer: false,
         setImmediate: false
     },
-    plugins: [],
+    plugins: [
+
+    ],
     module: {
         loaders: [{
                 test: /\.ts$/,
@@ -42,8 +44,7 @@ const options = {
             },
             {
                 test: /\.txt$/,
-                use: [
-                    {
+                use: [{
                         loader: 'raw-loader'
                     },
                     {
