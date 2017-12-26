@@ -54,7 +54,7 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
             }
         ]);
         window["nSQL"] = nano_sql_1.nSQL;
-        return nano_sql_1.nSQL().config({ id: "Todo-App", history: true, persistent: false }).connect();
+        return nano_sql_1.nSQL().config({ id: "Todo-App", history: true, mode: "PERM" }).connect();
     }
     exports.initStore = initStore;
 });

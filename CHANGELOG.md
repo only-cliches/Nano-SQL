@@ -3,6 +3,9 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.2] 12-25-2017
+- Removed minify settings to fix history bug.
+
 ## [1.1.1] 12-25-2017
 - Fixed bug with event system.
 - Added integration test for event system.

@@ -1,0 +1,74 @@
+<html>
+
+<head>
+    <script src="nano-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/16.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom.production.min.js"></script>
+</head>
+
+<body>
+
+</body>
+
+<footer>
+    <script>
+class App extends React.Component {
+
+    constructor() {
+        super();
+        this.state = {
+            message: "Loading"
+        };
+        this.updateMessage = this.updateMessage.bind(this);
+    }
+
+    componentWillMount() {
+        nSQL("message").on("change", this.updateMessage);
+    }
+
+    componentWillUnmount() {
+        nSQL("message").off("change", this.updateMessage);
+    }
+
+    updateMessage() {
+        nSQL("message").query("select").exec().then((rows) => {
+            if (!rows.length) return;
+            this.setState({
+                message: rows[0].message
+            });
+        });
+    }
+
+    shouldComponentUpdate(nextProps, nextState) {
+        return this.state.message !== nextState.message;
+    }
+
+
+    render() {
+        return React.createElement("div", null, " Random String: ", this.state.message);
+    }
+}
+
+const randomString = () => {
+    return Math.round(Math.random() * 10000).toString(16);
+}
+
+nSQL("message")
+.model([
+    {key: "id",type: "int",props: ["pk", "ai"]},
+    {key: "message",type: "string"}
+])
+.connect().then(() => {
+    ReactDOM.render(React.createElement(App, null), document.body);
+    setInterval(() => {
+        // Because we're using nanoSQL's event system we don't have to worry about updating these changes to the UI!
+        nSQL("message").query("upsert", {
+            id: 1,
+            message: randomString()
+        }).exec();
+    }, 500);
+});
+    </script>
+</footer>
+
+</html>

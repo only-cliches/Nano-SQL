@@ -17,8 +17,7 @@ It's written to take advantage of trendy buzzwords like "isomorphic", "immutable
 
 Persistence supports `Local Storage`, `Indexed DB`, `Indexed DB in a Web Worker`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
-* [Todo Example](https://nanosql.io/react-todo/)
-* [Draw Example](https://nanosql.io/react-draw/)
+## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue)
 
 [Documentation](https://docs.nanosql.io/)
 

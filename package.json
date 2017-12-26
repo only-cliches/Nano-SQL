@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "The most powerful little databse.",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",
@@ -93,6 +93,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
+    "express": "^4.16.2",
     "int64-buffer": "^0.1.10",
     "leveldown": "^2.1.1",
     "levelup": "^2.0.1",

@@ -76,7 +76,7 @@ switch (process.env.NODE_ENV) {
                 passes: 2
             },
             mangle: {
-                props: { regex: new RegExp(/^_|Promise/) }
+                // props: { regex: new RegExp(/^_|Promise/) }
             }
         }));
         break;
