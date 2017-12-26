@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "nano-sql": "^0.6.1",
+    "nano-sql": "^1.1.2",
+    "nano-sql-react": "git+https://github.com/ClickSimply/Nano-SQL-React.git",
     "react": "^15.4.1",
     "react-dom": "^15.4.1"
   },

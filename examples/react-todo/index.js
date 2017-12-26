@@ -8,14 +8,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 define("store", ["require", "exports", "nano-sql"], function (require, exports, nano_sql_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -54,38 +46,58 @@ define("store", ["require", "exports", "nano-sql"], function (require, exports, 
             }
         ]);
         window["nSQL"] = nano_sql_1.nSQL;
-        return nano_sql_1.nSQL().config({ id: "Todo-App", history: true, mode: "PERM" }).connect();
+        return nano_sql_1.nSQL().config({ id: "Todo-App", history: true }).connect();
     }
     exports.initStore = initStore;
 });
-define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql"], function (require, exports, react_1, React, ReactDOM, store_1, nano_sql_2) {
+define("component.table", ["require", "exports", "react", "react", "nano-sql"], function (require, exports, react_1, React, nano_sql_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Done = {
         textDecoration: "line-through"
     };
-    var TodoTable = function (props) {
-        var noTodos = React.createElement("span", null);
-        if (!props.todos.length) {
-            noTodos = React.createElement("h3", { className: "uk-text-center" },
-                "No todos yet!",
-                React.createElement("br", null),
-                React.createElement("br", null));
+    var TodoTable = (function (_super) {
+        __extends(TodoTable, _super);
+        function TodoTable(p) {
+            var _this = _super.call(this, p) || this;
+            _this.markDone = _this.markDone.bind(_this);
+            return _this;
         }
-        return (React.createElement("div", null,
-            React.createElement("table", { className: "uk-table uk-table-striped uk-table-hover" },
+        TodoTable.prototype.markDone = function (todoID) {
+            nano_sql_2.nSQL("todos").doAction("mark_todo_done", { id: todoID });
+        };
+        TodoTable.onChange = function (event, complete) {
+            nano_sql_2.nSQL("todos").getView("list_all_todos").then(complete);
+        };
+        TodoTable.prototype.render = function () {
+            var _this = this;
+            var noTodos;
+            if (!this.props.nSQLdata || !this.props.nSQLdata.length) {
+                noTodos = React.createElement("h3", { className: "uk-text-center" },
+                    "No todos yet!",
+                    React.createElement("br", null),
+                    React.createElement("br", null));
+            }
+            return (React.createElement("div", null, noTodos ? noTodos : React.createElement("table", { className: "uk-table uk-table-striped uk-table-hover" },
                 React.createElement("thead", null,
                     React.createElement("tr", null,
                         React.createElement("th", null, "Title"),
                         React.createElement("th", { className: "uk-table-shrink" }, "Done"))),
-                React.createElement("tbody", null, props.todos.map(function (todo) {
+                React.createElement("tbody", null, this.props.nSQLdata.map(function (todo) {
                     return React.createElement("tr", null,
                         React.createElement("td", { style: todo.done ? Done : {} }, todo.title),
                         React.createElement("td", null,
-                            React.createElement("input", { className: "uk-checkbox uk-padding-small", type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, onChange: function () { return todo.done ? null : props.markDone(todo.id); } })));
-                }))),
-            noTodos));
-    };
+                            React.createElement("input", { className: "uk-checkbox uk-padding-small", type: "checkbox", checked: todo.done ? true : false, disabled: todo.done, onChange: function () { return todo.done ? null : _this.markDone(todo.id); } })));
+                })))));
+        };
+        TodoTable.tables = ["todos"];
+        return TodoTable;
+    }(react_1.PureComponent));
+    exports.TodoTable = TodoTable;
+});
+define("component.form", ["require", "exports", "react", "react", "nano-sql"], function (require, exports, react_2, React, nano_sql_3) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var TodoForm = (function (_super) {
         __extends(TodoForm, _super);
         function TodoForm() {
@@ -100,7 +112,7 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
             event.preventDefault();
             if (!this.state.value.length)
                 return;
-            nano_sql_2.nSQL("todos").doAction("add_todo", { title: this.state.value }).then(function () {
+            nano_sql_3.nSQL("todos").doAction("add_todo", { title: this.state.value }).then(function () {
                 _this.setState({
                     value: ""
                 });
@@ -119,86 +131,72 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
                 React.createElement("input", { placeholder: "New Todo Title", className: "uk-input", type: "text", value: this.state.value, onChange: this.updateTitle })));
         };
         return TodoForm;
-    }(react_1.PureComponent));
+    }(react_2.PureComponent));
+    exports.TodoForm = TodoForm;
+});
+define("component.buttons", ["require", "exports", "react", "react", "nano-sql"], function (require, exports, react_3, React, nano_sql_4) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var TodoButtons = (function (_super) {
+        __extends(TodoButtons, _super);
+        function TodoButtons(p) {
+            return _super.call(this, p) || this;
+        }
+        TodoButtons.prototype.undo = function () {
+            nano_sql_4.nSQL().extend("hist", "<");
+        };
+        TodoButtons.prototype.redo = function () {
+            nano_sql_4.nSQL().extend("hist", ">");
+        };
+        TodoButtons.onChange = function (event, complete) {
+            nano_sql_4.nSQL("todos").extend("hist", "?").then(complete);
+        };
+        TodoButtons.prototype.render = function () {
+            if (!this.props.nSQLdata) {
+                return React.createElement("div", null);
+            }
+            return (React.createElement("div", { style: {
+                    float: "right",
+                    position: "relative",
+                    top: "-59px",
+                    marginBottom: "-40px"
+                } },
+                React.createElement("button", { disabled: this.props.nSQLdata[1] === 0, onClick: this.undo, className: "uk-button uk-button-default uk-button-small" }, "Undo"),
+                React.createElement("button", { disabled: this.props.nSQLdata[0] === 0 || this.props.nSQLdata[0] === this.props.nSQLdata[1], onClick: this.redo, className: "uk-button uk-button-default uk-button-small" }, "Redo")));
+        };
+        TodoButtons.tables = ["todos"];
+        return TodoButtons;
+    }(react_3.PureComponent));
+    exports.TodoButtons = TodoButtons;
+});
+define("index", ["require", "exports", "react", "react", "react-dom", "store", "nano-sql-react", "component.table", "component.form", "component.buttons"], function (require, exports, react_4, React, ReactDOM, store_1, nano_sql_react_1, component_table_1, component_form_1, component_buttons_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     var TodoApp = (function (_super) {
         __extends(TodoApp, _super);
         function TodoApp() {
             var _this = _super.call(this) || this;
-            _this.state = {
-                todos: [],
-                redos: [0, 0]
-            };
-            _this.updateComponent = _this.updateComponent.bind(_this);
-            _this.markDone = _this.markDone.bind(_this);
-            _this.undo = _this.undo.bind(_this);
-            _this.redo = _this.redo.bind(_this);
-            _this.clearHist = _this.clearHist.bind(_this);
-            _this.clearAll = _this.clearAll.bind(_this);
+            _this.todoTableHOC = nano_sql_react_1.bindNSQL(component_table_1.TodoTable, {
+                tables: component_table_1.TodoTable.tables,
+                onChange: component_table_1.TodoTable.onChange
+            });
+            _this.todoButtonHOC = nano_sql_react_1.bindNSQL(component_buttons_1.TodoButtons, {
+                tables: component_buttons_1.TodoButtons.tables,
+                onChange: component_buttons_1.TodoButtons.onChange
+            });
             return _this;
         }
-        TodoApp.prototype.clearHist = function () {
-            var _this = this;
-            nano_sql_2.nSQL().extend("hist", "clear").then(function () {
-                nano_sql_2.nSQL().extend("hist", "?").then(function (historyArray) {
-                    _this.setState(__assign({}, _this.state, { redos: historyArray }));
-                });
-            });
-        };
-        TodoApp.prototype.clearAll = function () {
-            nano_sql_2.nSQL().extend("flush_db");
-        };
-        TodoApp.prototype.markDone = function (todoID) {
-            nano_sql_2.nSQL("todos").doAction("mark_todo_done", { id: todoID });
-        };
-        TodoApp.prototype.undo = function () {
-            nano_sql_2.nSQL().extend("hist", "<");
-        };
-        TodoApp.prototype.redo = function () {
-            nano_sql_2.nSQL().extend("hist", ">");
-        };
-        TodoApp.prototype.updateComponent = function (e, db) {
-            var _this = this;
-            nano_sql_2.nSQL("todos").getView("list_all_todos").then(function (rows, db) {
-                nano_sql_2.nSQL().extend("hist", "?").then(function (historyArray) {
-                    _this.setState({
-                        todos: rows,
-                        redos: historyArray
-                    });
-                });
-            });
-        };
-        TodoApp.prototype.componentWillMount = function () {
-            nano_sql_2.nSQL("todos").on("change", this.updateComponent);
-            this.updateComponent();
-        };
-        TodoApp.prototype.componentWillUnmount = function () {
-            nano_sql_2.nSQL("todos").off(this.updateComponent);
-        };
-        TodoApp.prototype.shouldComponentUpdate = function (nextProps, nextState) {
-            return this.state.todos !== nextState.todos || this.state.redos !== this.state.redos;
-        };
         TodoApp.prototype.render = function () {
             return (React.createElement("div", { className: "uk-container uk-container-small", style: { maxWidth: "400px" } },
                 React.createElement("br", null),
                 React.createElement("h3", { style: { marginTop: "0px" }, className: "uk-heading-divider" }, "Todos"),
-                React.createElement("div", { style: {
-                        float: "right",
-                        position: "relative",
-                        top: "-59px",
-                        marginBottom: "-40px"
-                    } },
-                    React.createElement("button", { disabled: this.state.redos[1] === 0, onClick: this.undo, className: "uk-button uk-button-default uk-button-small" }, "Undo"),
-                    React.createElement("button", { disabled: this.state.redos[0] === 0 || this.state.redos[0] === this.state.redos[1], onClick: this.redo, className: "uk-button uk-button-default uk-button-small" }, "Redo")),
-                React.createElement(TodoForm, null),
-                React.createElement(TodoTable, { markDone: this.markDone, todos: this.state.todos }),
-                React.createElement("button", { disabled: this.state.redos[0] === 0 && this.state.redos[0] === 0, onClick: this.clearHist, className: "uk-button uk-button-default uk-button-small" }, "Clear History"),
-                React.createElement("button", { onClick: this.clearAll, className: "uk-button uk-button-default uk-button-small" }, "Clear Everything"),
-                React.createElement("br", null),
-                React.createElement("br", null),
+                React.createElement(this.todoButtonHOC, null),
+                React.createElement(component_form_1.TodoForm, null),
+                React.createElement(this.todoTableHOC, null),
                 React.createElement("a", { href: "https://github.com/ClickSimply/Some-SQL/tree/master/examples/react-todo", target: "_blank" }, "View Source")));
         };
         return TodoApp;
-    }(react_1.Component));
+    }(react_4.PureComponent));
     store_1.initStore().then(function () {
         ReactDOM.render(React.createElement(TodoApp, null), document.body);
     });

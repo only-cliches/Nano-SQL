@@ -44,6 +44,6 @@ export function initStore() {
 
     window["nSQL"] = nSQL;
 
-    return nSQL().config({id: "Todo-App", history: true, persistent: true}).connect();
+    return nSQL().config({id: "Todo-App", history: true}).connect();
 
 }
