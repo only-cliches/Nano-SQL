@@ -13,9 +13,7 @@ Super flexible database/datastore for the client, server & mobile devices.
 
 NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM: all in an 18Kb package.  
 
-It's written to take advantage of trendy buzzwords like "isomorphic", "immutable", "NoSQL", "TypeScript" and "Kerbal Space Program".
-
-Persistence supports `Local Storage`, `Indexed DB`, `Indexed DB in a Web Worker`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
+Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
 ## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue)
 
@@ -47,6 +45,7 @@ Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
 NanoSQL can save data to several different places, depending on the browser or environment it's being ran in.
 
 1. **Included In The Box**
+    - Memory
     - Level DB
     - Indexed DB
     - WebSQL
@@ -72,8 +71,6 @@ I spent a long time looking for an existing solution that would do everything I 
 | [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 88         |
 | [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 500        |
 
-
-I needed something small, efficient, strongly typed at runtime, optionally persistent, made working with immutable data automagical, could even be extended to use MySQL, SQLite and Cassandra in the future, and works with TypeScript.  nanoSQL is that.  
 
 ## Installation
 
@@ -219,35 +216,35 @@ nSQL("users").on("change", function(dbEvent) { ... });
 nSQL("*").on("change", function(dbEvent) { ... });
 
 // Get all rows, only provide the "name" column.
-nSQL("users").query("select",["name"]).exec().then(function(rows, db) {...});
+nSQL("users").query("select",["name"]).exec().then(function(rows) {...});
 
 // find all users who's name begins with "fr".
 // must have props: ["trie"] on the name column in the data model.
 nSQL("users").query("select").trieSearch("name","fr").exec()...
 
 // Select all users with the name "John".
-nSQL("users").query("select").where(["name","=","John"]).exec().then(function(rows, db) {...});
+nSQL("users").query("select").where(["name","=","John"]).exec().then(function(rows) {...});
 
 // Use a function for WHERE
-nSQL("users").query("select").where(row => row.age > 20).exec().exec().then(function(rows, db) {...});
+nSQL("users").query("select").where(row => row.age > 20).exec().exec().then(function(rows) {...});
 
 // Get rows based on the internal property of an object in the row
-nSQL("users").query("select").where(["meta[eyeColor]", "=", "blue"]).exec().then(function(rows, db) {...});
+nSQL("users").query("select").where(["meta[eyeColor]", "=", "blue"]).exec().then(function(rows) {...});
 
 // Get all users with moe than 4 posts.
-nSQL("users").query("select").where(["posts.length", ">", 4]).exec().then(function(rows, db) {...});
+nSQL("users").query("select").where(["posts.length", ">", 4]).exec().then(function(rows) {...});
 
 // Compound where statements, supports AND & OR
-nSQL("users").query("select").where([["name","=","John"],"AND",["age",">",25]]).exec().then(function(rows, db) {...});
+nSQL("users").query("select").where([["name","=","John"],"AND",["age",">",25]]).exec().then(function(rows) {...});
 
 // Order results by name ascending, then age descending.
-nSQL("users").query("select").orderBy({name:"asc",age:"desc"}).exec().then(function(rows, db) {...});
+nSQL("users").query("select").orderBy({name:"asc",age:"desc"}).exec().then(function(rows) {...});
 
 // Limit and offset are easy to use as well
-nSQL("users").query("select").limit(10).offset(100).exec().then(function(rows, db) {...});
+nSQL("users").query("select").limit(10).offset(100).exec().then(function(rows) {...});
 
 // AS and aggregate functions also work.
-nSQL("users").query("select",["COUNT(*) AS totalUsers"]).exec().then(function(rows, db) {...});
+nSQL("users").query("select",["COUNT(*) AS totalUsers"]).exec().then(function(rows) {...});
 
 // Mix and match as you like
 nSQL("users")
