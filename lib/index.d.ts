@@ -110,6 +110,7 @@ export declare class NanoSQLInstance {
     _plugins: NanoSQLPlugin[];
     version: number;
     _instanceBackend: NanoSQLPlugin;
+    isConnected: boolean;
     _randoms: string[];
     _randomPtr: number;
     static functions: {

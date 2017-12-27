@@ -6,7 +6,7 @@ import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, P
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
-const VERSION = 1.11;
+const VERSION = 1.14;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -140,9 +140,11 @@ export class NanoSQLInstance {
 
     public _plugins: NanoSQLPlugin[];
 
-    public version: number = 1.06;
+    public version: number = VERSION;
 
     public _instanceBackend: NanoSQLPlugin;
+
+    public isConnected: boolean;
 
 
     // Incase you don't need truly random numbers,
@@ -406,6 +408,7 @@ export class NanoSQLInstance {
                             nextP();
                         }
                     }).then(() => {
+                        this.isConnected = true;
                         res(t._tableNames);
                     });
                 };

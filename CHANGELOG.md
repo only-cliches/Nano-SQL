@@ -3,6 +3,9 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.4] 12-26-2017
+- Wrote a [Vue Mixin](https://www.npmjs.com/package/nano-sql-vue).
+- Added `.isConnected` property needed by Vue Mixin.
 
 ## [1.1.3] 12-26-2017
 - Wrote a [React HOC](https://www.npmjs.com/package/nano-sql-react) and refactored todo example using it.
