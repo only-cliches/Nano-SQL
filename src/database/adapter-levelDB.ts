@@ -3,8 +3,6 @@ import { DataModel } from "../index";
 import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
-import { LevelUp } from "levelup";
-import { Int64BE } from "int64-buffer";
 
 declare var global: any;
 
@@ -53,7 +51,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
     private _path: string;
 
     private _levelDBs: {
-        [key: string]: LevelUp
+        [key: string]: any;
     };
 
     constructor(
@@ -73,7 +71,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             let pks: any[] = [];
             this._levelDBs[table].createKeyStream()
                 .on("data", (data) => {
-                    pks.push(this._isPKnum[table] ? new Int64BE(data).toNumber() : data);
+                    pks.push(this._isPKnum[table] ? new global._Int64BE(data).toNumber() : data);
                 })
                 .on("end", () => {
                     if (pks.length) {
@@ -137,7 +135,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
                 ...r
             };
 
-            this._levelDBs[table].put(this._isPKnum[table] ? new Int64BE(pk as any).toBuffer() : pk, JSON.stringify(r), (err) => {
+            this._levelDBs[table].put(this._isPKnum[table] ? new global._Int64BE(pk as any).toBuffer() : pk, JSON.stringify(r), (err) => {
                 if (err) {
                     throw Error(err);
                 } else {
@@ -160,7 +158,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         if (idx !== -1) {
             this._dbIndex[table].remove(pk);
         }
-        this._levelDBs[table].del(this._isPKnum[table] ? new Int64BE(pk as any).toBuffer() : pk, (err) => {
+        this._levelDBs[table].del(this._isPKnum[table] ? new global._Int64BE(pk as any).toBuffer() : pk, (err) => {
             if (err) {
                 throw Error(err);
             } else {
@@ -174,7 +172,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             callback(null);
             return;
         }
-        this._levelDBs[table].get(this._isPKnum[table] ? new Int64BE(pk as any).toBuffer() : pk, (err, row) => {
+        this._levelDBs[table].get(this._isPKnum[table] ? new global._Int64BE(pk as any).toBuffer() : pk, (err, row) => {
             if (err) {
                 throw Error(err);
             } else {
@@ -196,8 +194,8 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
         this._levelDBs[table]
             .createValueStream({
-                gte: this._isPKnum[table] ? new Int64BE(lower as any).toBuffer() : lower,
-                lte: this._isPKnum[table] ? new Int64BE(higher as any).toBuffer() : higher
+                gte: this._isPKnum[table] ? new global._Int64BE(lower as any).toBuffer() : lower,
+                lte: this._isPKnum[table] ? new global._Int64BE(higher as any).toBuffer() : higher
             })
             .on("data", (data) => {
                 rows.push(JSON.parse(data));
