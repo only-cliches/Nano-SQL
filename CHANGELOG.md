@@ -5,7 +5,7 @@
 
 
 ## [1.1.5] 12-27-2017
-- If you were using webpack/browserify with nanoSQL then your bundler was smelling a nodejs specific dependency and bloating your bundle by several hundred kilobytes... for no reason (sorry about that).  The lib has been adjusted to resolve this.
+- If you were using webpack/browserify with nanoSQL then your bundler was smelling a nodejs specific dependency and bloating your bundle by about a hundred kilobytes... for no reason (sorry about that).  The lib has been adjusted to resolve this.
 
 ## [1.1.4] 12-26-2017
 - Wrote a [Vue Mixin](https://www.npmjs.com/package/nano-sql-vue).
