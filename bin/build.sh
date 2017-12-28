@@ -15,6 +15,7 @@ echo "Worker Build Completed..."
 
 #type declerations & node build
 ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
+./node_modules/.bin/tsc src/database/adapter-levelDB.ts --stripInternal -d --moduleResolution "node" -t "es5" --module "commonjs" --noResolve --outDir ./lib/database
 
 #compile web worker and compress it
 cp src/database/adapter-indexedDB-worker.txt lib/database/adapter-indexedDB-worker.txt

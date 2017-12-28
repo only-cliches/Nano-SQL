@@ -6,9 +6,8 @@ import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
 
-/* NODE-START */
-import { _LevelStore } from "./adapter-levelDB";
-/* NODE-END */
+const broquire = require("broquire")(require);
+const _LevelStore = broquire("./adapter-levelDB")._LevelStore;
 
 export interface DBRow {
     [key: string]: any;

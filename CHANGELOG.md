@@ -3,6 +3,10 @@
 ## TODO
 - Finish integration tests for history.
 
+
+## [1.1.5] 12-27-2017
+- If you were using webpack/browserify with nanoSQL then your bundler was smelling the levelDB dependency and bloating your bundle by several hundred kilobytes... for no reason.  The lib has been adjusted to resolve this.
+
 ## [1.1.4] 12-26-2017
 - Wrote a [Vue Mixin](https://www.npmjs.com/package/nano-sql-vue).
 - Added `.isConnected` property needed by Vue Mixin.
