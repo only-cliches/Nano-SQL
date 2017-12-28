@@ -93,7 +93,6 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "broquire": "^1.0.0",
     "express": "^4.16.2",
     "int64-buffer": "^0.1.10",
     "leveldown": "^2.1.1",
