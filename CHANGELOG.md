@@ -3,6 +3,9 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.7] 12-31-2017
+- Fixed nodejs dependency issue.
+
 ## [1.1.6] 12-31-2017
 - Added `.onConnected()` method.  You can pass a callback that will either get called right away if the database is already connected or it'll get called once the database connects.
 - Added `.rawDump()` method, kicks out the contents of all database tables and their rows.

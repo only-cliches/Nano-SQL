@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Super flexible database/datastore for the client, server & mobile devices.",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",
@@ -39,7 +39,8 @@
     "uglify-loader": "^2.0.0",
     "webpack": "^3.10.0",
     "webpack-node-externals": "^1.6.0",
-    "webpack-strip-block": "^0.2.0"
+    "webpack-strip-block": "^0.2.0",
+    "raw-loader": "^0.5.1"
   },
   "keywords": [
     "database",
@@ -98,7 +99,6 @@
     "levelup": "^2.0.1",
     "lie-ts": "^3.7.0",
     "prefix-trie-ts": "0.0.3",
-    "raw-loader": "^0.5.1",
     "really-small-events": "^1.1.0"
   },
   "contributors": [
