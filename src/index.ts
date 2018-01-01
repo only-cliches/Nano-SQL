@@ -6,7 +6,7 @@ import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, P
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
-const VERSION = 1.15;
+const VERSION = 1.16;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -259,6 +259,8 @@ export class NanoSQLInstance {
      */
     public _tableNames: string[];
 
+    private _onConnectedCallBacks: any[] = [];
+
     private _callbacks: {
         [table: string]: ReallySmallEvents;
     };
@@ -375,6 +377,7 @@ export class NanoSQLInstance {
             if (!t._config || t._config.mode !== false) {
                 this.use(new NanoSQLDefaultBackend());
             }
+
             fastCHAIN(this._plugins, (p, i, nextP) => {
                 if (p.willConnect) {
                     p.willConnect(connectArgs, (newArgs) => {
@@ -409,6 +412,9 @@ export class NanoSQLInstance {
                         }
                     }).then(() => {
                         this.isConnected = true;
+                        if (this._onConnectedCallBacks.length) {
+                            this._onConnectedCallBacks.forEach(cb => cb());
+                        }
                         res(t._tableNames);
                     });
                 };
@@ -852,6 +858,14 @@ export class NanoSQLInstance {
         return t._queryPool[t._queryPtr].set(t.sTable, action.toLowerCase(), args, av);
     }
 
+    public onConnected(callback: () => void) {
+        if (this.isConnected) {
+            callback();
+        } else {
+            this._onConnectedCallBacks.push(callback);
+        }
+    }
+
     /**
      * Trigger a database event
      *
@@ -917,6 +931,58 @@ export class NanoSQLInstance {
             }
         });
         return newObj;
+    }
+
+
+    /**
+     * Get the raw contents of the database, provides all tables.
+     * 
+     * Optionally pass in the tables to export.  If no tables are provided then all tables will be dumped.
+     * 
+     * @returns 
+     * @memberof NanoSQLInstance
+     */
+    public rawDump(tables?: string[]) {
+        return new Promise((res, rej) => {
+            let result = {};
+            fastCHAIN(this._plugins, (plugin: NanoSQLPlugin, i, next) => {
+                if (plugin.dumpTables) {
+                    plugin.dumpTables(tables).then((tables) => {
+                        result = {
+                            ...result,
+                            ...tables
+                        };
+                        next(result);
+                    })
+                } else {
+                    next();
+                }
+            }).then(() => {
+                res(result);
+            });
+        });
+    }
+
+    /**
+     * Import table data directly into the datatabase.
+     * Signifincatly faster than .loadJS but doesn't do type checking, indexing or anything else fancy.
+     * 
+     * @param {{[table: string]: DBRow[]}} tables 
+     * @returns 
+     * @memberof NanoSQLInstance
+     */
+    public rawImport(tables: {[table: string]: DBRow[]}): Promise<any> {
+        return new Promise((res, rej) => {
+            fastCHAIN(this._plugins, (plugin: NanoSQLPlugin, i, next) => {
+                if (plugin.importTables) {
+                    plugin.importTables(tables).then(next)
+                } else {
+                    next();
+                }
+            }).then(() => {
+                res();
+            });
+        });
     }
 
     /**
@@ -1217,6 +1283,21 @@ export interface NanoSQLPlugin {
      * @memberof NanoSQLPlugin
      */
     transactionEnd?: (id: string, next: () => void) => void;
+
+    /**
+     * Dump the raw contents of all database tables.
+     * Optionally provide a list of tables to export, if nothing is provided then all tables should be dumped.
+     * 
+     * @memberof NanoSQLPlugin
+     */
+    dumpTables?: (tables?: string[]) => Promise<{[tableName: string]: DBRow[]}>;
+
+    /**
+     * Import tables directly into the database without any type checking, indexing or anything else fancy.
+     * 
+     * @memberof NanoSQLPlugin
+     */
+    importTables?: (tables: {[tableName: string]: DBRow[]}) => Promise<any>;
 
     /**
      * Generic for other misc functions, called when ".extend()" is used.

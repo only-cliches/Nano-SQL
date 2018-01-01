@@ -3,7 +3,7 @@ import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
 import { _NanoSQLStorage } from "./storage";
 import { _NanoSQLStorageQuery } from "./query";
-import { fastALL } from "../utilities";
+import { fastALL, Promise } from "../utilities";
 
 declare var global: any;
 
@@ -59,6 +59,35 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         next();
     }
     */
+
+    public dumpTables(tables?: string[]) {
+        return new Promise((res, rej) => {
+            let dump = {};
+            let exportTables = tables && tables.length ? tables : Object.keys(this._store.tableInfo);
+            fastALL(exportTables, (table, i, done) => {
+                dump[table] = [];
+                this._store._adapter.rangeRead(table, (r, idx, rowDone) => {
+                    dump[table].push(r);
+                    rowDone();
+                }, done);
+            }).then(() => {
+                res(dump);
+            });
+        });
+    }
+
+    public importTables(tables) {
+        return new Promise((res, rej) => {
+            fastALL(Object.keys(tables), (tableName, i, done) => {
+                const pkKey = this._store.tableInfo[tableName]._pk;
+                fastALL(tables[tableName], (row, i, done) => {
+                    this._store._adapter.write(tableName, row[pkKey], row, done, true);
+                }).then(done);
+            }).then(() => {
+                res();
+            });
+        });
+    }
 
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
         switch (args[0]) {
