@@ -3,6 +3,9 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.8] 1-5-2018
+- The npm package `marked` was in package-lock.json, has since been removed.
+
 ## [1.1.7] 12-31-2017
 - Fixed nodejs dependency issue.
 
