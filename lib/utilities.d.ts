@@ -16,30 +16,6 @@ export interface timeId extends String {
 export interface timeIdms extends String {
 }
 export declare const _assign: (obj: any) => any;
-/**
- * Chain a set of async functions together, calling each as the previous one finishes.
- * Once the final one is done, pass the result.
- *
- * @export
- * @class CHAIN
- */
-export declare class CHAIN {
-    callbacks: ((next: (result?: any) => void) => void)[];
-    constructor(callbacks: ((next: (result?: any) => void) => void)[]);
-    then(complete: (results: any[]) => void): void;
-}
-/**
- * Call a set of async functions all at once.
- * Completes once every async function is done, returning the results in the order the functions were called in.
- *
- * @export
- * @class ALL
- */
-export declare class ALL {
-    callbacks: ((result: (result?: any) => void) => void)[];
-    constructor(callbacks: ((result: (result?: any) => void) => void)[]);
-    then(complete: (results: any[]) => void): void;
-}
 export declare const fastCHAIN: (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void) => Promise<any>;
 export declare const fastALL: (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void) => Promise<any>;
 export declare const isSafari: boolean;

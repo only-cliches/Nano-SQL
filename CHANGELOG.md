@@ -3,6 +3,12 @@
 ## TODO
 - Finish integration tests for history.
 
+## [1.1.9] 1-7-2018
+- Added safety checks on data model creation.
+- ReadME updates.
+- Removed depreciated `CHAIN` and `ALL` classes.  Use `fastCHAIN` and `fastALL` instead.
+- Added `groupBy` option to ORM queries.
+
 ## [1.1.8] 1-5-2018
 - The npm package `marked` was in package-lock.json, has since been removed.
 
@@ -23,7 +29,7 @@
 
 ## [1.1.3] 12-26-2017
 - Wrote a [React HOC](https://www.npmjs.com/package/nano-sql-react) and refactored todo example using it.
-- `window["nano-sql"]` is now exposed as an entry point.np
+- `window["nano-sql"]` is now exposed as an entry point.
 
 ## [1.1.2] 12-25-2017
 - Removed minify settings to fix history bug.

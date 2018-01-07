@@ -6,7 +6,7 @@ import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, P
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
-const VERSION = 1.18;
+const VERSION = 1.19;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -86,10 +86,13 @@ export interface JoinArgs {
  */
 export interface ORMArgs {
     key: string;
-    select?: string;
+    select?: string[];
     offset?: number;
     limit?: number;
     orderBy?: {
+        [column: string]: "asc" | "desc";
+    };
+    groupBy?: {
         [column: string]: "asc" | "desc";
     };
     where?: (row: DBRow, idx: number) => boolean | any[];
@@ -566,7 +569,7 @@ export class NanoSQLInstance {
 	 *
 	 * @memberOf NanoSQLInstance
 	 */
-    public model(dataModel: Array<DataModel>): NanoSQLInstance {
+    public model(dataModel: DataModel[]): NanoSQLInstance {
         let t = this;
         let l = t.sTable;
 
@@ -575,8 +578,17 @@ export class NanoSQLInstance {
         if (!t._callbacks[l]) {
             t._callbacks[l] = new ReallySmallEvents();
         }
+        // validate table name and data model
+        const types = ["string", "safestr", "timeId", "timeIdms", "uuid", "int", "float", "number", "array", "map", "bool", "blob", "any"];
+        if (types.indexOf(l.replace(/\W/gmi, "")) !== -1 || l.indexOf("_") === 0 || l.match(/[\(\)\]\[\.]/g) !== null) {
+            throw Error("Invalid Table Name! https://docs.nanosql.io/setup/data-models");
+        }
+        (dataModel || []).forEach((model) => {
+            if (model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
+                throw Error("Invalid Data Model! https://docs.nanosql.io/setup/data-models");
+            }
+        });
         t._models[l] = dataModel;
-        // t._tableNames.push(l);
         t._views[l] = [];
         t._actions[l] = [];
         return t;

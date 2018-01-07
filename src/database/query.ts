@@ -208,7 +208,7 @@ export class _NanoSQLStorageQuery {
                         newRow[relation._fromColumn] = null;
                     }
                 }
-                this._store._nsql.query("upsert", newRow).comment("ORM Update").manualExec({ table: relation._fromTable }).then(rowDone);
+                this._store._nsql.query("upsert", newRow).comment("_orm_skip").manualExec({ table: relation._fromTable }).then(rowDone);
             }).then(complete);
         });
     }
@@ -222,7 +222,7 @@ export class _NanoSQLStorageQuery {
 
         const useRelations = this._store._relToTable[this._query.table as string];
 
-        if (this._query.comments.indexOf("ORM Update") !== -1) {
+        if (this._query.comments.indexOf("_orm_skip") !== -1) {
             complete();
             return;
         }
@@ -531,6 +531,7 @@ export class _MutateSelection {
      */
     private _join(rows: DBRow[], complete: (rows: DBRow[]) => void): void {
         if (!this.q.join) {
+            complete(rows);
             return;
         }
 
@@ -711,6 +712,9 @@ export class _MutateSelection {
                         }
                         if (orm.orderBy) {
                             q.orderBy(orm.orderBy);
+                        }
+                        if (orm.groupBy) {
+                            q.groupBy(orm.groupBy);
                         }
                         q.manualExec({ table: rows }).then((result) => {
                             if (!rows.filter(r => r).length) {

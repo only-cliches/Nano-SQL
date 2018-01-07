@@ -70,10 +70,13 @@ export interface JoinArgs {
  */
 export interface ORMArgs {
     key: string;
-    select?: string;
+    select?: string[];
     offset?: number;
     limit?: number;
     orderBy?: {
+        [column: string]: "asc" | "desc";
+    };
+    groupBy?: {
         [column: string]: "asc" | "desc";
     };
     where?: (row: DBRow, idx: number) => boolean | any[];
@@ -242,7 +245,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    model(dataModel: Array<DataModel>): NanoSQLInstance;
+    model(dataModel: DataModel[]): NanoSQLInstance;
     /**
      * Declare the views for the current selected table.  Must be called before connect()
      *

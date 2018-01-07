@@ -15,7 +15,7 @@ NanoSQL is the smallest and quickest way to get SQL power into your app. You get
 
 Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
-## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue)
+## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
 
 [Documentation](https://docs.nanosql.io/)
 
@@ -30,7 +30,6 @@ Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser,
 - **Runtime type casting.**
 - **Complete ORM support.**
 - Fast secondary indexes.
-- Transactions support.
 - Full events system.
 - Just 18Kb Gzipped.
 
@@ -56,21 +55,18 @@ NanoSQL can save data to several different places, depending on the browser or e
 
 ### Oh Look, Another Data Store
 
-I spent a long time looking for an existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
+I looked for existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
 
-| Database                                                 | Events | TS  | Undo & Redo  | ORM | RDBMS | IndexedDB | Node | Any Backend | Size |
-|----------------------------------------------------------|:------:|:---:|:------------:|:---:|:-----:|:---------:|:----:|:-----------:|:----------:|
-| nanoSQL                                                  | ✓      | ✓   | ✓           | ✓   | ✓    | ✓         | ✓     | ✓          | 18         |
-| [Redux](https://github.com/reactjs/redux)                | ✓      | ✓   | ✕           | ✕   | ✕    | ✕        | ✓      | ✕          | 2          |
-| [TaffyDB](https://github.com/typicaljoe/taffydb)         | ✓      | ✕   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 5          |
-| [ImmutableJS](https://github.com/facebook/immutable-js/) | ✕      | ✓   | ✕           | ✕   | ✕    | ✕        | ✓      | ✕          | 16         |
-| [LokiJS](https://github.com/techfort/LokiJS)             | ✓      | ✓   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 19         |
-| [NeDB](https://github.com/louischatriot/nedb)            | ✕      | ✓   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 27         |
-| [Lovefield](https://github.com/google/lovefield)         | ✓      | ✓   | ✕           | ✕   | ✓    | ✓        | ✕      | ✕          | 40         |
-| [PouchDB](https://github.com/pouchdb/pouchdb)            | ✓      | ✓   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 46         |
-| [AlaSQL](https://github.com/agershun/alasql)             | ✕      | ✕   | ✕           | ✕   | ✓    | ✓        | ✓      | ✓          | 88         |
-| [SQL.js](https://github.com/kripken/sql.js/)             | ✕      | ✓   | ✕           | ✕   | ✓    | ✕        | ✓      | ✕          | 500        |
-
+|           | nanoSQL | Redux | TaffyDB | Immutable | LokiJS | NeDB | LoveField | PouchDB | alaSQL | SQL.js |
+|-----------|---------|-------|---------|-----------|--------|------|-----------|---------|--------|--------|
+| Events    | ✓       | ✓     | ✓       | ✕         | ✓      | ✕    | ✓         | ✓       | ✕      | ✕      |
+| Typescript| ✓       | ✓     | ✕       | ✓         | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      |
+| Undo/Redo | ✓       | ✕     | ✕       | ✕         | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
+| ORM       | ✓       | ✕     | ✕       | ✕         | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
+| RDBMS     | ✓       | ✕     | ✓       | ✕         | ✓      | ✓    | ✓         | ✓       | ✓      | ✓      |
+| IndexedDB | ✓       | ✕     | ✕       | ✕         | ✓      | ✕    | ✓         | ✓       | ✓      | ✕      |
+| Node      | ✓       | ✓     | ✓       | ✓         | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      |
+| Size (kb) | 18      | 2      | 5       | 16        | 19      | 27   | 40         | 46      | 88     | 500    |
 
 ## Installation
 
@@ -78,19 +74,23 @@ I spent a long time looking for an existing solution that would do everything I 
 npm i nano-sql --save
 ```
 
-Using in typescript project:
+Using in Typescript/Babel project:
 
 ```js
 import { nSQL } from "nano-sql";
 ```
 
-Using in node:
+Using in Node:
 
 ```js
 const nSQL = require("nano-sql").nSQL;
 ```
 
-To use directly in the browser, just include the script file found inside the `dist` folder onto your page.
+To use directly in the browser, drop the tag below into your `<head>`.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.1.8/dist/nano-sql.min.js"></script>
+```
 
 ## Simple Usage
 

@@ -34,81 +34,6 @@ export const _assign = (obj: any) => {
     return obj ? JSON.parse(JSON.stringify(obj)) : null;
 };
 
-/**
- * Chain a set of async functions together, calling each as the previous one finishes.
- * Once the final one is done, pass the result.
- *
- * @export
- * @class CHAIN
- */
-export class CHAIN {
-
-    constructor(
-        public callbacks: ((next: (result?: any) => void) => void)[]
-    ) {
-
-    }
-
-    public then(complete: (results: any[]) => void) {
-        let results: any[] = [];
-        let ptr = 0;
-
-        if (!this.callbacks || !this.callbacks.length) {
-            complete([]);
-        }
-
-        const next = () => {
-            if (ptr < this.callbacks.length) {
-                this.callbacks[ptr]((result) => {
-                    results.push(result);
-                    ptr++;
-                    // Breaks up the call stack
-                    Promise.resolve().then(next);
-                });
-            } else {
-                complete(results);
-            }
-        };
-        next();
-    }
-}
-
-/**
- * Call a set of async functions all at once.
- * Completes once every async function is done, returning the results in the order the functions were called in.
- *
- * @export
- * @class ALL
- */
-export class ALL {
-
-    constructor(
-        public callbacks: ((result: (result?: any) => void) => void)[]
-    ) {
-
-    }
-
-    public then(complete: (results: any[]) => void) {
-        let results: any[] = [];
-        let ptr = 0;
-
-        if (!this.callbacks || !this.callbacks.length) {
-            complete([]);
-        }
-
-        this.callbacks.forEach((cb, i) => {
-            cb((response) => {
-                results[i] = response;
-                ptr++;
-                if (ptr === this.callbacks.length) {
-                    complete(results);
-                }
-            });
-        });
-    }
-}
-
-
 export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
@@ -120,7 +45,7 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
             if (results.length < items.length) {
                 callback(items[results.length], results.length, (result) => {
                     results.push(result);
-                    results.length < 100 ? step() : setFast(step);
+                    setFast(step);
                 });
             } else {
                 res(results);
@@ -149,27 +74,6 @@ export const fastALL = (items: any[], callback: (item: any, i: number, done: (re
     });
 };
 
-/*
-export const ALL = (callbacks: ((result: (result?: any) => void) => void)[]) => {
-    return new Promise((res, rej) => {
-        let results: any[] = [];
-        let ptr = 0;
-
-        if (!callbacks || !callbacks.length) {
-            res([]);
-        }
-
-        callbacks.forEach((cb, i) => {
-            cb((response) => {
-                results[i] = response;
-                ptr++;
-                if (ptr === callbacks.length) {
-                    res(results);
-                }
-            });
-        });
-    });
-};*/
 
 const ua = typeof window === "undefined" ? "" : navigator.userAgent;
 // Detects iOS device OR Safari running on desktop
@@ -433,6 +337,7 @@ export const deepFreeze = (obj: any) => {
 let objectPathCache: {
     [pathQuery: string]: string[];
 } = {};
+
 /**
  * Take an object and a string like "value.length" or "val[length]" and safely get that value in the object.
  *
@@ -450,7 +355,7 @@ export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boole
 
     const cacheKey = pathQuery + (ignoreFirstPath ? "1" : "0");
 
-    // cached path arrays, skips the expensive regex on subsequent identical path requests.
+    // cached path arrays, skips subsequent identical path requests.
     let path: string[] = objectPathCache[cacheKey] || [];
     if (path.length) {
         return safeGet(path, 0, object);

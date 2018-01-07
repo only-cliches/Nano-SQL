@@ -9,14 +9,16 @@ rm -rf lib
 
 echo "Clean Completed..."
 
+#compile web worker
 ./node_modules/.bin/tsc --removeComments -t "es5" --out "./src/database/adapter-indexedDB-worker.txt" ./src/database/adapter-indexedDB-worker.ts
-
-echo "Worker Build Completed..."
 
 #type declerations & node build
 ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
 
-#compile web worker and compress it
+echo "Node Build & Type Declarations Completed..."
+
+
+# compress and move web worker where it's needed
 cp src/database/adapter-indexedDB-worker.txt lib/database/adapter-indexedDB-worker.txt
 ./node_modules/.bin/uglifyjs --compress --mangle toplevel --output lib/database/adapter-indexedDB-worker.txt  -- lib/database/adapter-indexedDB-worker.txt
 
@@ -25,7 +27,9 @@ file=$(cat lib/database/adapter-indexedDB-worker.txt);
 sed -i "s#require(\"./adapter-indexedDB-worker.txt\")#'${file//&/\\&}'#" lib/database/adapter-indexedDB.js
 rm -rf lib/database/*.txt;
 
-echo "Node Build & Type Declarations Completed..."
+echo "Worker Build Completed..."
+
+
 
 #browser build
 export NODE_ENV=production && ./node_modules/.bin/webpack --display-modules
