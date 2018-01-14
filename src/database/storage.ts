@@ -619,7 +619,7 @@ export class _NanoSQLStorage {
      */
     public _secondaryIndexRead(table: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
         this._adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
-            if (row !== undefined) {
+            if (row !== undefined && row !== null) {
                 this._read(table, (row["rows"] || []), callback);
             } else {
                 callback([]);
@@ -774,7 +774,7 @@ export class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     private _setSecondaryIndexes(table: string, pk: DBKey, rowData: DBRow, skipColumns: string[], complete: () => void) {
-        fastALL(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
+        fastCHAIN(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
 
                 const column = this._secondaryIndexKey(rowData[idx]) as any;
                 if (this._trieIndexes[table][idx]) {
