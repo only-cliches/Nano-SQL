@@ -1,9 +1,9 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
-import { _NanoSQLStorage } from "./storage";
 import { _NanoSQLStorageQuery } from "./query";
 import { fastALL, Promise } from "../utilities";
+import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 
 declare var global: any;
 
@@ -91,6 +91,21 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
         switch (args[0]) {
+            case "transfer":
+                const nSQLi = new NanoSQLInstance();
+                Object.keys(this.parent._models).forEach((table) => {
+                    nSQLi.table(table).model(this.parent._models[table]);
+                })
+                nSQLi
+                .config({mode: args[1]})
+                .connect().then(() => {
+                    this.parent.rawDump().then((data) => {
+                        nSQLi.rawImport(data).then(() => {
+                            next(args, []);
+                        });
+                    });
+                });
+            break;
             case "idx.length":
             case "idx":
                 const table = args[1];

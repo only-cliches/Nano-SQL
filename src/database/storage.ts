@@ -534,15 +534,15 @@ export class _NanoSQLStorage {
             const secondIndexes = this.tableInfo[ta]._secondaryIndexes;
             fastALL(secondIndexes, (column, j, idxDone) => {
                 const idxTable = "_" + ta + "_idx_" + column;
+                this._drop(idxTable, idxDone);
+            }).then(() => {
                 const pk = this.tableInfo[ta]._pk;
-                this._drop(idxTable, () => {
-                    this._read(ta, (row, idx, done) => {
-                        this._setSecondaryIndexes(ta, row[pk], row, [], () => {
-                            done(false);
-                        });
-                    }, idxDone);
-                });
-            }).then(tableDone);
+                this._read(ta, (row, idx, done) => {
+                    this._setSecondaryIndexes(ta, row[pk], row, [], () => {
+                        done(false);
+                    });
+                }, tableDone);
+            });
         }).then(() => {
             complete(new Date().getTime() - start);
         });
@@ -783,7 +783,7 @@ export class _NanoSQLStorage {
 
                 const idxTable = "_" + table + "_idx_" + idx;
                 this._adapter.read(idxTable, column, (row) => {
-                    let indexRow: { id: DBKey, rows: any[] } = row ? Object.isFrozen(row) ? _assign(row) : row : { id: column, rows: [] };
+                    let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
                     indexRow.rows.push(pk);
                     indexRow.rows.sort();
                     indexRow.rows = removeDuplicates(indexRow.rows);
