@@ -91,7 +91,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
         switch (args[0]) {
-            case "transfer":
+            case "clone":
                 const nSQLi = new NanoSQLInstance();
                 Object.keys(this.parent._models).forEach((table) => {
                     nSQLi.table(table).model(this.parent._models[table]);

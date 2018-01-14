@@ -2,6 +2,16 @@
 
 ## TODO
 - Finish integration tests for history.
+- Write Google Cloud Storage adapter for backups.
+- Write MySQL adapter.
+- Add function to list all actions and/or views.
+- Add function invalidate cache.
+
+## [1.2.0] 1-14-2018
+- Fixed secondary index rebuild doing redudant work.
+- Fixed seconday index read issue.
+- Added new `.extend("clone")` that lets you copy all data from the current adapter being used to another one.
+- Fixed an issue with a LevelDB dependency.
 
 ## [1.1.9] 1-7-2018
 - Added safety checks on data model creation.

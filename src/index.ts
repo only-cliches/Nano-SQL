@@ -285,7 +285,7 @@ export class NanoSQLInstance {
         t._queryPtr = 0;
         t._randomPtr = 0;
         t.hasAnyEvents = false;
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 200; i++) {
             t._randoms.push(random16Bits().toString(16));
             t._queryPool.push(new _NanoSQLQuery(t));
         }

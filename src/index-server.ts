@@ -4,7 +4,7 @@ global._path = require("path");
 global._levelup = require("levelup");
 global._leveldown = require("leveldown");
 global._crypto = require("crypto");
-global._Int64BE = require("int64-buffer");
+global._Int64BE = require("int64-buffer").Uint64BE;
 
 import {
     ActionOrView,
