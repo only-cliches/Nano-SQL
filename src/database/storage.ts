@@ -774,7 +774,7 @@ export class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     private _setSecondaryIndexes(table: string, pk: DBKey, rowData: DBRow, skipColumns: string[], complete: () => void) {
-        fastCHAIN(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
+        fastALL(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
 
                 const column = this._secondaryIndexKey(rowData[idx]) as any;
                 if (this._trieIndexes[table][idx]) {
