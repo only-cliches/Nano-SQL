@@ -2,10 +2,15 @@
 
 ## TODO
 - Finish integration tests for history.
-- Write Google Cloud Storage adapter for backups.
 - Write MySQL adapter.
 - Add function to list all actions and/or views.
 - Add function invalidate cache.
+- Add secondary write adpater.
+- Add Elastic Search option.
+
+## [1.2.1]
+- Added new optional `batchRead` method to adapaters, handles parallel key requests on the same table.
+- Fixed secondary index range query issue.
 
 ## [1.2.0] 1-14-2018
 - Fixed secondary index rebuild doing redudant work.

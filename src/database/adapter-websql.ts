@@ -176,6 +176,17 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         });
     }
 
+    public batchRead(table: string, pks: any[], callback: (rows: any[]) => void) {
+        this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${pks.join(", ")}) ORDER BY id`, [], (result) => {
+            let i = result.rows.length;
+            let rows: any[] = [];
+            while (i--) {
+                rows.unshift(JSON.parse(result.rows.item(i).data));
+            }
+            callback(rows);
+        });
+    }
+
     public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
         const keys = this._dbIndex[table].keys();
         const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;

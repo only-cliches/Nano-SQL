@@ -6,7 +6,7 @@ import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, P
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 
-const VERSION = 1.20;
+const VERSION = 1.21;
 
 // uglifyJS fix
 const str = ["_util"];

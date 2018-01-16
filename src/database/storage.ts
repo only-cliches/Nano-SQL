@@ -53,7 +53,7 @@ export interface NanoSQLStorageAdapter {
      * @param {() => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    connect(complete: () => void): void;
+    connect(complete: () => void, error?: (err: Error) => void): void;
 
     /**
      * Write a single row to the database backend.
@@ -67,7 +67,7 @@ export interface NanoSQLStorageAdapter {
      * @param {boolean} skipReadBeforeWrite
      * @memberof NanoSQLStorageAdapter
      */
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, skipReadBeforeWrite: boolean): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, skipReadBeforeWrite: boolean, error?: (err: Error) => void): void;
 
     /**
      * Read a single row from the database
@@ -77,7 +77,20 @@ export interface NanoSQLStorageAdapter {
      * @param {(row: DBRow ) => void} callback
      * @memberof NanoSQLStorageAdapter
      */
-    read(table: string, pk: DBKey, callback: (row: DBRow) => void): void;
+    read(table: string, pk: DBKey, callback: (row: DBRow) => void, error?: (err: Error) => void): void;
+
+
+    /**
+     * Given an arbitrary list of primary keys and a table, get all primary keys.
+     * This method is optional, if it isn't provided then .read() will be called in parallel to perform these kinds of queries.
+     * 
+     * @param {string} table 
+     * @param {DBKey[]} pks 
+     * @param {(rows: DBRow[]) => void} callback 
+     * @param {(err: Error) => void} [error] 
+     * @memberof NanoSQLStorageAdapter
+     */
+    batchRead?(table: string, pks: DBKey[], callback: (rows: DBRow[]) => void, error?: (err: Error) => void): void;
 
     /**
      * Read a range of primary keys from a given table.
@@ -93,7 +106,7 @@ export interface NanoSQLStorageAdapter {
      * @param {DBKey} [to]
      * @memberof NanoSQLStorageAdapter
      */
-    rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, pkRange?: boolean): void;
+    rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, pkRange?: boolean, error?: (err: Error) => void): void;
 
     /**
      * Delete a row from the backend given a table and primary key.
@@ -103,7 +116,7 @@ export interface NanoSQLStorageAdapter {
      * @param {() => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    delete(table: string, pk: DBKey, complete: () => void): void;
+    delete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void;
 
     /**
      * Drop an entire table from the backend. (Delete all rows)
@@ -112,7 +125,7 @@ export interface NanoSQLStorageAdapter {
      * @param {() => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    drop(table: string, complete: () => void): void;
+    drop(table: string, complete: () => void, error?: (err: Error) => void): void;
 
     /**
      * Get the number of rows in a table or the table index;
@@ -121,7 +134,7 @@ export interface NanoSQLStorageAdapter {
      * @param {(count: number) => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    getIndex(table: string, getLength: boolean, complete: (index: any[] | number) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index: any[] | number) => void, error?: (err: Error) => void): void;
 
     /**
      * Completely delete/destroy the entire database.
@@ -129,7 +142,7 @@ export interface NanoSQLStorageAdapter {
      * @param {() => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    destroy(complete: () => void);
+    destroy(complete: () => void, error?: (err: Error) => void);
 }
 
 
@@ -629,7 +642,8 @@ export class _NanoSQLStorage {
 
     /**
      * Get a range of rows from a given table.
-     * The range is in limit/offset form where the from and to values are numbers indicating a range of rows to get.
+     * If usePKs is false the range is in limit/offset form where the from and to values are numbers indicating a range of rows to get.
+     * Otherwise the from and to values should be primary key values to get everything in between.
      *
      * @param {string} table
      * @param {DBKey} from
@@ -637,7 +651,7 @@ export class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorage
      */
-    public _rangeReadIDX(table: string, fromIdx: number, toIdx: number, complete: (rows: DBRow[]) => void) {
+    public _rangeRead(table: string, from: any, to: any, usePKs: boolean, complete: (rows: DBRow[]) => void) {
 
         let rows: any[] = [];
         this._adapter.rangeRead(table, (row, idx, next) => {
@@ -645,28 +659,7 @@ export class _NanoSQLStorage {
             next();
         }, () => {
             complete(rows);
-        }, fromIdx, toIdx);
-    }
-
-    /**
-     * Get a range fo rows from a given table.
-     * The range is provided as the rows between two primary key values.
-     *
-     * @param {string} table
-     * @param {*} fromPK
-     * @param {*} toPK
-     * @param {(rows: DBRow[]) => void} complete
-     * @memberof _NanoSQLStorage
-     */
-    public _rangeReadPKs(table: string, fromPK: any, toPK: any, complete: (rows: DBRow[]) => void) {
-
-        let rows: any[] = [];
-        this._adapter.rangeRead(table, (row, idx, next) => {
-            rows.push(row);
-            next();
-        }, () => {
-            complete(rows);
-        }, fromPK, toPK, true);
+        }, from, to, usePKs);
     }
 
     /**
@@ -681,16 +674,23 @@ export class _NanoSQLStorage {
     public _read(table: string, query: (row: DBRow, idx: number, toKeep: (result: boolean) => void) => void | any[], callback: (rows: DBRow[]) => void) {
 
         if (Array.isArray(query)) { // select by array of primary keys
-            fastALL(query, (q, i, result) => {
-                this._adapter.read(table, q, result);
-            }).then((rows) => {
-                callback(rows.filter(r => r));
-            });
+            
+            if (this._adapter.batchRead) {
+                this._adapter.batchRead(table, query as any, callback);
+            } else {
+                // possibly (but not always) slower fallback
+                fastALL(query, (q, i, result) => {
+                    this._adapter.read(table, q, result);
+                }).then((rows) => {
+                    callback(rows.filter(r => r));
+                });
+            }
+
             return;
         }
 
         let rows: any[] = [];
-
+        // full table scan
         if (typeof query === "function") { // iterate through entire db, returning rows that return true on the function
             this._adapter.rangeRead(table, (row, idx, nextRow) => {
                 query(row, idx, (keep) => {

@@ -465,7 +465,7 @@ export class _NanoSQLStorageQuery {
             return;
         }
 
-        this._store._rangeReadIDX(this._query.table as string, undefined as any, undefined as any, (rows) => {
+        this._store._rangeRead(this._query.table as string, undefined as any, undefined as any, false, (rows) => {
             this._store._cache[this._query.table as any] = {};
             this._store._cacheKeys[this._query.table as any] = {};
 
@@ -1165,13 +1165,17 @@ export class _RowSelection {
             let secondaryIndexKey = where[0] === this.s.tableInfo[this.q.table as any]._pk ? "" : where[0];
             if (secondaryIndexKey) {
                 const idxTable = "_" + this.q.table + "_idx_" + secondaryIndexKey;
-                this.s._rangeReadPKs(idxTable, where[2][0], where[2][1], (rows) => {
-                    const keys = [].concat.apply([], rows);
-                    this.s._read(this.q.table as any, keys, callback);
+                this.s._rangeRead(idxTable, where[2][0], where[2][1], true, (rows: {id: any, rows: any[]}[]) => {
+                    let keys: any[] = [];
+                    let i = rows.length;
+                    while (i--) {
+                        keys = keys.concat(rows[i].rows);
+                    }
+                    this.s._read(this.q.table as any, keys as any, callback);
                 });
 
             } else {
-                this.s._rangeReadPKs(this.q.table as any, where[2][0], where[2][1], (rows) => {
+                this.s._rangeRead(this.q.table as any, where[2][0], true, where[2][1], (rows) => {
                     callback(rows);
                 });
             }
@@ -1221,7 +1225,7 @@ export class _RowSelection {
                 while (counter--) {
                     toIdx++;
                 }
-                this.s._rangeReadIDX(this.q.table as any, fromIdx, toIdx, callback);
+                this.s._rangeRead(this.q.table as any, fromIdx, toIdx, false, callback);
             });
         } else {
             callback([]);
