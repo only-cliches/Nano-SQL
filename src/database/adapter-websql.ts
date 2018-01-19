@@ -177,7 +177,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
     }
 
     public batchRead(table: string, pks: any[], callback: (rows: any[]) => void) {
-        this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${pks.join(", ")}) ORDER BY id`, [], (result) => {
+        this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${pks.map(p => "?").join(", ")}) ORDER BY id`, pks.map(k => typeof k === "string" ? `'${k}'` : k), (result) => {
             let i = result.rows.length;
             let rows: any[] = [];
             while (i--) {
@@ -214,12 +214,12 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                 getKeys.push(t ? keys[startIDX] : `"${keys[startIDX]}"`);
                 startIDX++;
             }
-            stmnt += ` WHERE id IN (${getKeys.join(", ")})`;
+            stmnt += ` WHERE id IN (${getKeys.map(k => "?").join(", ")})`;
         }
 
         stmnt += " ORDER BY id";
 
-        this._sql(false, stmnt, [], (result) => {
+        this._sql(false, stmnt, getKeys.map(k => typeof k === "string" ? `'${k}'` : k), (result) => {
             let i = 0;
             const getRow = () => {
                 if (result.rows.length > i) {

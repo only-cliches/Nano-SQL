@@ -300,6 +300,7 @@ export declare class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     init(dataModels: StdObject<DataModel[]>, complete: (newModels: StdObject<DataModel[]>) => void): void;
+    _invalidateCache(table: string, pks: any[]): void;
     /**
      * Rebuild secondary indexes of a given table.
      * Pass "_ALL_" as table to rebuild all indexes.

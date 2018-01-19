@@ -530,6 +530,23 @@ export class _NanoSQLStorage {
         });
     }
 
+    public _invalidateCache(table: string, pks: any[]): void {
+        if (!this._doCache) {
+            return;
+        }
+        Object.keys(this._cacheKeys[table]).forEach((hash) => {
+            let i = pks.length;
+            let valid = true;
+            while (i-- && valid) {
+                if (this._cacheKeys[table][hash][pks[i]]) {
+                    delete this._cache[table][hash];
+                    delete this._cacheKeys[table][hash];
+                    valid = false;
+                }
+            }
+        });
+    }
+
     /**
      * Rebuild secondary indexes of a given table.
      * Pass "_ALL_" as table to rebuild all indexes.

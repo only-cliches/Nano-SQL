@@ -37,9 +37,9 @@ export NODE_ENV=production && ./node_modules/.bin/webpack --display-modules
 echo "Browser Build Completed..."
 
 #docs 
-#./node_modules/.bin/typedoc --out docs . --target ES5 --exclude node_modules --excludeExternals --excludePrivate
-#touch docs/.nojekyll
-#echo "Docs Completed..."
+./node_modules/.bin/typedoc --out docs . --target ES5 --exclude node_modules --excludeExternals --excludePrivate
+touch docs/.nojekyll
+echo "Docs Completed..."
 
 #copy from examples into dist folder
 yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js

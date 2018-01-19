@@ -100,23 +100,6 @@ export class _NanoSQLStorageQuery {
 
     private _hash: string;
 
-    private _invalidateCache(pks: any[]): void {
-        if (!this._store._doCache) {
-            return;
-        }
-        Object.keys(this._store._cacheKeys[this._query.table as any]).forEach((hash) => {
-            let i = pks.length;
-            let valid = true;
-            while (i-- && valid) {
-                if (this._store._cacheKeys[this._query.table as any][hash][pks[i]]) {
-                    delete this._store._cache[this._query.table as any][hash];
-                    delete this._store._cacheKeys[this._query.table as any][hash];
-                    valid = false;
-                }
-            }
-        });
-    }
-
     private _setCache(rows: any[]) {
         this._store._cache[this._query.table as any][this._hash] = rows;
 
@@ -349,7 +332,7 @@ export class _NanoSQLStorageQuery {
                     }).then((newRows: DBRow[]) => {
                         // any changes to this table invalidates the cache
                         const pks = newRows.map(r => r[pk]);
-                        this._invalidateCache(pks);
+                        this._store._invalidateCache(this._query.table as string, pks);
 
                         this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
@@ -432,7 +415,7 @@ export class _NanoSQLStorageQuery {
                         // any changes to this table invalidate the cache
                         this._store._cache[this._query.table as any] = {};
                         const pks = rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
-                        this._invalidateCache(pks);
+                        this._store._invalidateCache(this._query.table as string, pks);
 
                         this._query.result = [{ msg: rows.length + " row(s) deleted.", affectedRowPKS: pks, affectedRows: rows }];
                         this._syncORM("del", rows, [], () => {
@@ -1175,7 +1158,7 @@ export class _RowSelection {
                 });
 
             } else {
-                this.s._rangeRead(this.q.table as any, where[2][0], true, where[2][1], (rows) => {
+                this.s._rangeRead(this.q.table as any, where[2][0], where[2][1], true, (rows) => {
                     callback(rows);
                 });
             }

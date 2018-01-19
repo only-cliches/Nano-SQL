@@ -8,9 +8,11 @@
 - Add secondary write adpater.
 - Add Elastic Search option.
 
-## [1.2.1]
+## [1.2.1] 1-19-2018
 - Added new optional `batchRead` method to adapaters, handles parallel key requests on the same table.
 - Fixed secondary index range query issue.
+- `.extend("clone")` copies over one table at a time now instead of all at once.
+- Added `batchRead` method to WebSQL. Fixed bug with WebSQL string based primary keys.
 
 ## [1.2.0] 1-14-2018
 - Fixed secondary index rebuild doing redudant work.

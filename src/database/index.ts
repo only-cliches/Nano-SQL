@@ -2,7 +2,7 @@ import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
 import { _NanoSQLStorageQuery } from "./query";
-import { fastALL, Promise } from "../utilities";
+import { fastALL, Promise, fastCHAIN } from "../utilities";
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 
 declare var global: any;
@@ -97,12 +97,21 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     nSQLi.table(table).model(this.parent._models[table]);
                 })
                 nSQLi
-                .config({mode: args[1]})
+                .config({
+                    id: this._store._id,
+                    mode: args[1]
+                })
                 .connect().then(() => {
-                    this.parent.rawDump().then((data) => {
-                        nSQLi.rawImport(data).then(() => {
-                            next(args, []);
-                        });
+                    let i = 0;
+                    fastCHAIN(Object.keys(this.parent._models), (table, i, done) => {
+                        console.log(`Importing ${table}...`);
+                        this.parent.rawDump([table])
+                        .then((data) => {
+                            return nSQLi.rawImport(data)
+                        })
+                        .then(done);
+                    }).then(() => {
+                        next(args, []);
                     });
                 });
             break;
@@ -132,11 +141,15 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
             break;
             case "clear_cache":
-                if (args[1]) {
+                if (args[1] && args[2]) { // invalidate rows on a table
+                    this._store._invalidateCache(args[1], args[2]);
+                } else if (args[1]) { // invalidate whole table
                     this._store._cache[args[1]] = {};
-                } else {
+                    this._store._cacheKeys[args[1]] = {};
+                } else { // invalidate all tables
                     Object.keys(this._store.tableInfo).forEach((table) => {
                         this._store._cache[table] = {};
+                        this._store._cacheKeys[table] = {};
                     });
                 }
                 next(args, args[1] || Object.keys(this._store.tableInfo));
