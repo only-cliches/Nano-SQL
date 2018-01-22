@@ -23,7 +23,7 @@ describe("Primary Keys", () => {
             nSQL.loadJS("users", ExampleUsers.map(u => {return {...u, id: undefined}; })).then(() => {
                 nSQL.table("users").query("select").exec().then((rows) => {
                     try {
-                        expect(rows[0].id).to.match(/\w{12}-\w{4}-\w{4}-\w{4}-\w{12}/, "UUID not generated correctly");
+                        expect(rows[0].id).to.match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{8}/, "UUID not generated correctly");
                         done();
                     } catch (e) {
                         done(e);

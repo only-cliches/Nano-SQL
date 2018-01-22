@@ -7,6 +7,9 @@
 - Add secondary write adpater.
 - Add Elastic Search option.
 
+## [1.2.3] 1-22-2018
+- Fixed an issue with the primary keyless implementation.
+
 ## [1.2.2] 1-22-2018
 - Added Google Cloud Datastore adapter to readme.
 - Fixed issue with `.extend("clone")`.

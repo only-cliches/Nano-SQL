@@ -288,6 +288,7 @@ export class NanoSQLInstance {
         t._hasEvents = {};
         t._tableNames = [];
         t._plugins = [];
+        t.hasPK = {};
 
         t._randoms = [];
         t._queryPool = [];
@@ -434,7 +435,6 @@ export class NanoSQLInstance {
                 const updateVersion = (rebuildIDX: boolean) => {
                     this.query("upsert", { key: "version", value: this.version }).manualExec({ table: "_util" }).then(() => {
                         if (rebuildIDX) {
-                            console.log("Rebuilding Secondary Indexes...");
                             this.extend("rebuild_idx").then(() => {
                                 completeConnect();
                             });
@@ -607,6 +607,8 @@ export class NanoSQLInstance {
                 }
             });
         }
+
+        this.hasPK[l] = hasPK;
 
         if (!hasPK) {
             dataModel.push({key: "_id_", type: "uuid", props: ["pk"]})
