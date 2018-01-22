@@ -1,6 +1,7 @@
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { StdObject } from "./utilities";
+import { NanoSQLStorageAdapter } from "./database/storage";
 /**
  * This is the format used for actions and views
  *
@@ -134,6 +135,15 @@ export declare class NanoSQLInstance {
      */
     _AVMod: IActionViewMod;
     /**
+     * Holds wether each table has a primary key or not
+     *
+     * @type {{[table: string]: boolean}}
+     * @memberof NanoSQLInstance
+     */
+    hasPK: {
+        [table: string]: boolean;
+    };
+    /**
      * Stores wether each table has events attached to it or not.
      *
      * @public
@@ -245,7 +255,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    model(dataModel: DataModel[]): NanoSQLInstance;
+    model(dataModel: DataModel[], props?: any[], ignoreSanityCheck?: boolean): NanoSQLInstance;
     /**
      * Declare the views for the current selected table.  Must be called before connect()
      *
@@ -543,6 +553,19 @@ export declare class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     config(args: {
+        id?: string | number;
+        cache?: boolean;
+        mode?: string | NanoSQLStorageAdapter;
+        history?: boolean;
+        hostoryMode?: string | {
+            [table: string]: string;
+        };
+        secondaryAdapters?: {
+            adapter: NanoSQLStorageAdapter;
+            waitForWrites?: boolean;
+            doSlowReads?: boolean;
+            doFastReads?: boolean;
+        }[];
         [key: string]: any;
     }): NanoSQLInstance;
     /**

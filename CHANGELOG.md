@@ -4,9 +4,16 @@
 - Finish integration tests for history.
 - Write MySQL adapter.
 - Add function to list all actions and/or views.
-- Add function invalidate cache.
 - Add secondary write adpater.
 - Add Elastic Search option.
+
+## [1.2.2] 1-22-2018
+- Added Google Cloud Datastore adapter to readme.
+- Fixed issue with `.extend("clone")`.
+- We support tables without primary keys again (yay!).
+- Secondary indexes better support range queries with number columns.
+- UUID format was incorrect, fixed now.
+- Updated dependencies.
 
 ## [1.2.1] 1-19-2018
 - Added new optional `batchRead` method to adapaters, handles parallel key requests on the same table.

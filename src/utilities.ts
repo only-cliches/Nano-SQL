@@ -115,12 +115,12 @@ export const timeid = (ms?: boolean): string => {
 // Generates a valid V4 UUID.
 export const uuid = (): string => {
     let r, s, b = "";
-    return [b, b, b, b, b, b, b, b, b].reduce((prev: string, cur: any, i: number): string => {
+    return [b, b, b, b, b, b, b, b].reduce((prev: string, cur: any, i: number): string => {
         r = random16Bits();
-        s = (i === 4 ? i : (i === 5 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
+        s = (i === 3 ? 4 : (i === 4 ? (r % 16 & 0x3 | 0x8).toString(16) : b));
         r = r.toString(16);
         while (r.length < 4) r = "0" + r;
-        return prev + ([3, 4, 5, 6].indexOf(i) > -1 ? "-" : b) + (s + r).slice(0, 4);
+        return prev + ([2, 3, 4, 5].indexOf(i) > -1 ? "-" : b) + (s + r).slice(0, 4);
     }, b);
 };
 

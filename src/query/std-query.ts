@@ -45,7 +45,12 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
         // fast query path, only used if there's a single plugin and no event listeners
         (self._db._plugins[0] as any).doExec(self._query, (newQ) => {
             self._query = newQ;
-            complete(self._query.result);
+            if (self._db.hasPK[self._query.table as string]) {
+                complete(self._query.result);
+            } else {
+                complete(self._query.result.map(r => ({...r, _id_: undefined})));
+            }
+            
         });
     } else {
         fastCHAIN(self._db._plugins, (p, i, nextP) => {
@@ -59,7 +64,11 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
             }
         }).then(() => {
 
-            complete(self._query.result);
+            if (self._db.hasPK[self._query.table as string]) {
+                complete(self._query.result);
+            } else {
+                complete(self._query.result.map(r => ({...r, _id_: undefined})));
+            }
 
             if (self._db.hasAnyEvents || self._db.pluginsDoHasExec) {
 

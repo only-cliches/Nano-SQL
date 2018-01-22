@@ -5,8 +5,9 @@ import { ReallySmallEvents } from "really-small-events";
 import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
+import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.21;
+const VERSION = 1.22;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -202,6 +203,14 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public _AVMod: IActionViewMod;
+
+    /**
+     * Holds wether each table has a primary key or not
+     * 
+     * @type {{[table: string]: boolean}}
+     * @memberof NanoSQLInstance
+     */
+    public hasPK: {[table: string]: boolean};
 
     /**
      * Lets you modify queries before they run on the database
@@ -425,6 +434,7 @@ export class NanoSQLInstance {
                 const updateVersion = (rebuildIDX: boolean) => {
                     this.query("upsert", { key: "version", value: this.version }).manualExec({ table: "_util" }).then(() => {
                         if (rebuildIDX) {
+                            console.log("Rebuilding Secondary Indexes...");
                             this.extend("rebuild_idx").then(() => {
                                 completeConnect();
                             });
@@ -440,10 +450,11 @@ export class NanoSQLInstance {
                         updateVersion(true);
                     } else {
 
-                        if (rows[0].value < VERSION) {
+                        if (rows[0].value <= 1.21) { // secondary indexes need to be rebuilt after 1.21
+                            updateVersion(true);
+                        } else if (rows[0].value < VERSION) {
                             updateVersion(false);
                         } else {
-                            // future migration messes go here
                             completeConnect();
                         }
                     }
@@ -569,7 +580,7 @@ export class NanoSQLInstance {
 	 *
 	 * @memberOf NanoSQLInstance
 	 */
-    public model(dataModel: DataModel[]): NanoSQLInstance {
+    public model(dataModel: DataModel[], props?: any[], ignoreSanityCheck?: boolean): NanoSQLInstance {
         let t = this;
         let l = t.sTable;
 
@@ -578,16 +589,29 @@ export class NanoSQLInstance {
         if (!t._callbacks[l]) {
             t._callbacks[l] = new ReallySmallEvents();
         }
-        // validate table name and data model
-        const types = ["string", "safestr", "timeId", "timeIdms", "uuid", "int", "float", "number", "array", "map", "bool", "blob", "any"];
-        if (types.indexOf(l.replace(/\W/gmi, "")) !== -1 || l.indexOf("_") === 0 || l.match(/[\(\)\]\[\.]/g) !== null) {
-            throw Error("Invalid Table Name! https://docs.nanosql.io/setup/data-models");
-        }
-        (dataModel || []).forEach((model) => {
-            if (model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
-                throw Error("Invalid Data Model! https://docs.nanosql.io/setup/data-models");
+
+        let hasPK = false;
+
+        if (!ignoreSanityCheck) {
+            // validate table name and data model
+            const types = ["string", "safestr", "timeId", "timeIdms", "uuid", "int", "float", "number", "array", "map", "bool", "blob", "any"];
+            if (types.indexOf(l.replace(/\W/gmi, "")) !== -1 || l.indexOf("_") === 0 || l.match(/[\(\)\]\[\.]/g) !== null) {
+                throw Error("Invalid Table Name! https://docs.nanosql.io/setup/data-models");
             }
-        });
+            (dataModel || []).forEach((model) => {
+                if (model.props && model.props.indexOf("pk") !== -1) {
+                    hasPK = true;
+                }
+                if (model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
+                    throw Error("Invalid Data Model! https://docs.nanosql.io/setup/data-models");
+                }
+            });
+        }
+
+        if (!hasPK) {
+            dataModel.push({key: "_id_", type: "uuid", props: ["pk"]})
+        }
+
         t._models[l] = dataModel;
         t._views[l] = [];
         t._actions[l] = [];
@@ -1101,7 +1125,20 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public config(args: { [key: string]: any }): NanoSQLInstance {
+    public config(args: { 
+        id?: string|number;
+        cache?: boolean;
+        mode?: string | NanoSQLStorageAdapter;
+        history?: boolean;
+        hostoryMode?: string | {[table: string]: string};
+        secondaryAdapters?: {
+            adapter: NanoSQLStorageAdapter, // the adapter to use
+            waitForWrites?: boolean; // should we wait until writes are succesful to return write promises?
+            doSlowReads?: boolean; // shoud we send unoptimized reads to this adapter?
+            doFastReads?: boolean; // should we send optimized reads to this adapter?
+        }[];
+        [key: string]: any 
+    }): NanoSQLInstance {
         this._config = args;
         return this;
     }

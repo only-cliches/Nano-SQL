@@ -50,8 +50,9 @@ NanoSQL can save data to several different places, depending on the browser or e
     - WebSQL
     - Local Storage
 
-2. **[SQLite in NodeJS](https://github.com/ClickSimply/Nano-SQLite3)**
-3. **[SQLite in Cordova](https://github.com/ClickSimply/cordova-Nano-SQLite)**
+2. **[SQLite (NodeJS)](https://github.com/ClickSimply/Nano-SQLite3)**
+3. **[SQLite (Cordova)](https://github.com/ClickSimply/cordova-Nano-SQLite)**
+4. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
 
 ### Oh Look, Another Data Store
 
@@ -89,7 +90,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.1.8/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.2.2/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage
@@ -330,9 +331,12 @@ nSQL().extend("hist", "?").then(function(status) {
 
 ``` 
 
-Writes are quite a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by adjusting the config object before calling `connect()`.
+Writes are quite a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by not calling `history` in the config object.
 
-[Documentation](https://docs.nanosql.io/)
+# Help
+
+## [Documentation](https://docs.nanosql.io/)
+## [Github Issues](https://github.com/ClickSimply/Nano-SQL/issues)
 
 # Contributing
 

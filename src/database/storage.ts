@@ -79,19 +79,6 @@ export interface NanoSQLStorageAdapter {
      */
     read(table: string, pk: DBKey, callback: (row: DBRow) => void, error?: (err: Error) => void): void;
 
-
-    /**
-     * Given an arbitrary list of primary keys and a table, get all primary keys.
-     * This method is optional, if it isn't provided then .read() will be called in parallel to perform these kinds of queries.
-     * 
-     * @param {string} table 
-     * @param {DBKey[]} pks 
-     * @param {(rows: DBRow[]) => void} callback 
-     * @param {(err: Error) => void} [error] 
-     * @memberof NanoSQLStorageAdapter
-     */
-    batchRead?(table: string, pks: DBKey[], callback: (rows: DBRow[]) => void, error?: (err: Error) => void): void;
-
     /**
      * Read a range of primary keys from a given table.
      * Each row is read asyncrounosuly, so make sure the front end can incriment through the rows quickly.
@@ -137,12 +124,49 @@ export interface NanoSQLStorageAdapter {
     getIndex(table: string, getLength: boolean, complete: (index: any[] | number) => void, error?: (err: Error) => void): void;
 
     /**
-     * Completely delete/destroy the entire database.
+     * Completely delete/destroy the entire database. (Used by testing system)
      *
      * @param {() => void} complete
      * @memberof NanoSQLStorageAdapter
      */
-    destroy(complete: () => void, error?: (err: Error) => void);
+    destroy(complete: () => void, error?: (err: Error) => void): void;
+
+    // Optional methods
+
+    /**
+     * Given an arbitrary list of primary keys and a table, get all primary keys.
+     * This method is optional, if it isn't provided then .read() will be called in parallel to perform these kinds of queries.
+     * 
+     * @param {string} table 
+     * @param {DBKey[]} pks 
+     * @param {(rows: DBRow[]) => void} callback 
+     * @param {(err: Error) => void} [error] 
+     * @memberof NanoSQLStorageAdapter
+     */
+    batchRead?(table: string, pks: DBKey[], callback: (rows: DBRow[]) => void, error?: (err: Error) => void): void;
+    
+    /**
+     * If a where statement is sent to nanoSQL that can't be optimized and requires a full table scan, this query can be sent
+     * to the data store adapter to perform the conditional checks instead.
+     * 
+     * This method is optional and should only be usd if you can cover all conditions in the _compare method found inside the query.ts file.
+     * The default behavior for unoptimized reads is to grab the whole table and check each row for the conditional statements.
+     * If you use this method it should return results much faster than the default beavhior can.
+     * 
+     * @param {string} table 
+     * @param {any[]} where 
+     * @param {(rows: DBRow[]) => void} rowCallback 
+     * @memberof NanoSQLStorageAdapter
+     */
+    whereRead?(table: string, where: any[], rowCallback: (rows: DBRow[]) => void): void;
+
+    /**
+     * Called by the system after the adapter connects to allow access to the parent nanosql instance.
+     * 
+     * @param {NanoSQLInstance} nSQL 
+     * @memberof NanoSQLStorageAdapter
+     */
+    setNSQL?(nSQL: NanoSQLInstance): void;
 }
 
 
@@ -503,6 +527,10 @@ export class _NanoSQLStorage {
         });
 
         this._adapter.connect(() => {
+
+            if (this._adapter.setNSQL) {
+                this._adapter.setNSQL(this._nsql);
+            }
 
             // populate trie data
             fastALL(Object.keys(this._trieIndexes), (table, i, tableDone) => {
@@ -924,7 +952,7 @@ export class _NanoSQLStorage {
                 if (model.props && (model.props.indexOf("idx") > -1 || model.props.indexOf("trie") > -1)) {
                     hasIDX = true;
                     dataModels["_" + table + "_idx_" + model.key] = [
-                        { key: "id", type: "string", props: ["pk"] },
+                        { key: "id", type: ["number", "float", "int"].indexOf(model.type) !== -1 ? model.type : "string", props: ["pk"] },
                         { key: "rows", type: "any[]" }
                     ];
                 }

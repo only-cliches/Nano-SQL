@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Super flexible database/datastore for the client, server & mobile devices.",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",
