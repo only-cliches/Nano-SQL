@@ -7,6 +7,9 @@
 - Add secondary write adpater.
 - Add Elastic Search option.
 
+## [1.2.4]
+- Fixed an issue with secondary index rebuild process.
+
 ## [1.2.3] 1-22-2018
 - Fixed an issue with the primary keyless implementation.
 

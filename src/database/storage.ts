@@ -596,6 +596,10 @@ export class _NanoSQLStorage {
             }).then(() => {
                 const pk = this.tableInfo[ta]._pk;
                 this._read(ta, (row, idx, done) => {
+                    if (!row[pk]) {
+                        done(false);
+                        return;
+                    }
                     this._setSecondaryIndexes(ta, row[pk], row, [], () => {
                         done(false);
                     });
