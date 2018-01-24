@@ -826,6 +826,10 @@ export class _NanoSQLStorage {
         fastALL(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
 
                 const column = this._secondaryIndexKey(rowData[idx]) as any;
+                if (!column) {
+                    done();
+                    return;
+                }
                 if (this._trieIndexes[table][idx]) {
                     this._trieIndexes[table][idx].addWord(String(rowData[idx]));
                 }
