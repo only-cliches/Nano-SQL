@@ -63,6 +63,21 @@ export declare class _RowSelection {
      * @memberof _RowSelection
      */
     getRows(callback: (rows: DBRow[]) => void): void;
+    /**
+     * Given a compound where statement like [[value, =, key], AND, [something, =, something]]
+     * Check if first where conditions are primary key/ secondary index followed by unoptimized/unindexed conditions
+     *
+     * In this case we can grab the primary key/secondary index query from the database and do a faster query on the smaller result set.
+     *
+     * Returns 0 if this isn't a suboptimized where condition.
+     * Returns the index of the where array where the AND splits between optimized and unoptimized conditions otherwise.
+     *
+     * @private
+     * @param {any[]} wArgs
+     * @returns {number}
+     * @memberof _RowSelection
+     */
+    private _isSubOptimizedWhere(wArgs);
 }
 /**
  * Select rows from an instance table. Supports RANGE and WHERE statements.

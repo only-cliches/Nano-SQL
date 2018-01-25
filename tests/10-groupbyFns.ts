@@ -1,4 +1,4 @@
-import { nSQL } from "../src/index";
+import { NanoSQLInstance } from "../src/index";
 import { expect, assert } from "chai";
 import "mocha";
 import { usersDB, ExampleUsers, ExampleDataModel } from "./data";

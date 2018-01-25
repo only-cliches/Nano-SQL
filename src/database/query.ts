@@ -1037,12 +1037,6 @@ export class _RowSelection {
      */
     public getRows(callback: (rows: DBRow[]) => void) {
 
-        // join command requires n^2 scan that gets taken care of in join logic.
-        if (this.q.join) {
-            callback([]);
-            return;
-        }
-
         if (this.q.join && this.q.orm) {
             throw new Error("Cannot do a JOIN and ORM command at the same time!");
         }
@@ -1051,29 +1045,33 @@ export class _RowSelection {
             throw new Error("Can only have ONE of Trie, Range or Where!");
         }
 
-        if (this.q.trie && this.q.trie.column && this.q.trie.search) { // trie search, nice and fast.
+        // join command requires n^2 scan that gets taken care of in join logic.
+        if (this.q.join) {
+            callback([]);
+            return;
+        }
+
+        // trie search, nice and fast.
+        if (this.q.trie && this.q.trie.column && this.q.trie.search) { 
             this._selectByTrie(callback);
             return;
         }
 
-        if (this.q.range && this.q.range.length) { // range select, very fast
+        // range select, very fast
+        if (this.q.range && this.q.range.length) { 
             this._selectByRange(callback);
             return;
         }
 
-        if (!this.q.where || !this.q.where.length) { // no where statement, read whole db :(
+        // no where statement, read whole db :(
+        // OR
+        // where statement is function, still gotta read the whole db.
+        if ((!this.q.where || !this.q.where.length) || !Array.isArray(this.q.where)) { 
             this._fullTableScan(callback);
             return;
         }
 
-        if (!Array.isArray(this.q.where)) { // where statement is function, read every row and filter results :(
-            this._fullTableScan((rows) => {
-                callback(rows.filter(this.q.where as any));
-            });
-            return;
-        }
-
-        // where statement possibly contains primary key and secondary key queries, do faster search if possible.
+        // where statement possibly contains only primary key and secondary key queries, do faster search if possible.
         let doFastRead = false;
         if (typeof this.q.where[0] === "string") { // Single WHERE
             doFastRead = this._isOptimizedWhere(this.q.where) === 0;
@@ -1085,7 +1083,19 @@ export class _RowSelection {
         }
 
         if (doFastRead) { // can go straight to primary or secondary keys, wee!
-            this._selectByKeys(callback);
+            this._selectByKeys(this.q.where, callback);
+            return;
+        }
+    
+        // if compound where statement includes primary key/secondary index queries followed by AND with other conditions.
+        // grabs the section of data related to the optimized read, then full table scans the result.
+        const whereSlice = this._isSubOptimizedWhere(this.q.where);
+        if (whereSlice > 0) {
+            let fastWhere: any[] = this.q.where.slice(0, whereSlice);
+            let slowWhere: any[] = this.q.where.slice(whereSlice + 1);
+            this._selectByKeys(fastWhere, (rows) => {
+                callback(rows.filter((r, i) => _where(r, slowWhere, i)));
+            });
             return;
         }
 
@@ -1102,14 +1112,14 @@ export class _RowSelection {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _RowSelection
      */
-    private _selectByKeys(callback: (rows: DBRow[]) => void) {
+    private _selectByKeys(where: any[], callback: (rows: DBRow[]) => void) {
 
-        if (this.q.where && typeof this.q.where[0] === "string") { // single where
-            this._selectRowsByIndex(this.q.where as any, callback);
-        } else if (this.q.where) { // compound where
+        if (where && typeof where[0] === "string") { // single where
+            this._selectRowsByIndex(where as any, callback);
+        } else if (where) { // compound where
             let resultRows: DBRow[] = [];
             let lastCommand = "";
-            fastCHAIN((this.q.where as any), (wArg, i, nextWArg) => {
+            fastCHAIN((where as any), (wArg, i, nextWArg) => {
                 if (wArg === "OR" || wArg === "AND") {
                     lastCommand = wArg;
                     nextWArg();
@@ -1122,7 +1132,7 @@ export class _RowSelection {
                             return idx.indexOf(row[this.s.tableInfo[this.q.table as any]._pk]) !== -1;
                         });
                     } else {
-                        resultRows.concat(rows);
+                        resultRows = resultRows.concat(rows);
                     }
                     nextWArg();
                 });
@@ -1239,9 +1249,62 @@ export class _RowSelection {
      * @memberof _RowSelection
      */
     private _fullTableScan(callback: (rows: DBRow[]) => void) {
+        const hasWhere = this.q.where !== undefined;
+        const fnWhere = hasWhere && !Array.isArray(this.q.where);
+        const arrWhere = hasWhere && Array.isArray(this.q.where);
+
         this.s._read(this.q.table as any, (row, i, keep) => {
-            keep(this.q.where ? Array.isArray(this.q.where) ? _where(row, this.q.where as any || [], i || 0) : (this.q.where as any)(row, i) : true);
+            if (!hasWhere) {
+                keep(true);
+                return;
+            }
+            if (fnWhere) {
+                keep((this.q.where as any)(row, i));
+                return;
+            }
+            if (arrWhere) {
+                keep(_where(row, this.q.where as any, i));
+            }
         }, callback);
+    }
+
+
+    /**
+     * Given a compound where statement like [[value, =, key], AND, [something, =, something]]
+     * Check if first where conditions are primary key/ secondary index followed by unoptimized/unindexed conditions
+     * 
+     * In this case we can grab the primary key/secondary index query from the database and do a faster query on the smaller result set.
+     * 
+     * Returns 0 if this isn't a suboptimized where condition.
+     * Returns the index of the where array where the AND splits between optimized and unoptimized conditions otherwise.
+     * 
+     * @private
+     * @param {any[]} wArgs 
+     * @returns {number} 
+     * @memberof _RowSelection
+     */
+    private _isSubOptimizedWhere(wArgs: any[]): number {
+        if (typeof wArgs[0] === "string") { // not compound where
+            return 0;
+        }
+
+        if (this._isOptimizedWhere(wArgs[0])) { // at least first value is optimized
+            // last primary key/secondary index condition MUST be followed by AND
+            let lastCheck: number = 0;
+            let includesSlowWhere: boolean = false;
+            wArgs.forEach((wArgs, i) => {
+                if (i % 2 === 0) {
+                    if (this._isOptimizedWhere(wArgs[i]) && wArgs[i + 1]) {
+                        lastCheck = i + 1;
+                    }
+                }
+            });
+            // AND must follow the last secondary index/primary key condition
+            if (wArgs[lastCheck] !== "AND") return 0;
+
+            return lastCheck;
+        } 
+        return 0;
     }
 
     /**

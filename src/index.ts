@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.22;
+const VERSION = 1.24;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -378,8 +378,6 @@ export class NanoSQLInstance {
                 { key: "key", type: "string", props: ["pk", "ai"] },
                 { key: "value", type: "any" }
             ];
-
-            this._plugins = [];
 
             // if history is enabled, turn on the built in history plugin
             if (t._config && t._config.history) {

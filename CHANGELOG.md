@@ -2,13 +2,16 @@
 
 ## TODO
 - Finish integration tests for history.
-- Write MySQL adapter.
 - Add function to list all actions and/or views.
 - Add secondary write adpater.
 - Add Elastic Search option.
 
-## [1.2.4]
+
+## [1.2.4] 1-25-2018
 - Fixed an issue with secondary index rebuild process.
+- Fixed an issue with plugin initialization.
+- Added primary key/secondary index `.where()` optimization to search within a result set.
+- Better optmimized the select statement read path.
 
 ## [1.2.3] 1-22-2018
 - Fixed an issue with the primary keyless implementation.
