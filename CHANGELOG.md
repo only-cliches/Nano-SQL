@@ -2,10 +2,11 @@
 
 ## TODO
 - Finish integration tests for history.
-- Add function to list all actions and/or views.
 - Add secondary write adpater.
 - Add Elastic Search option.
 
+## [1.2.5] 1-28-2018
+- Added methods to access views and actions for a given table.
 
 ## [1.2.4] 1-25-2018
 - Fixed an issue with secondary index rebuild process.

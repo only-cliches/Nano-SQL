@@ -202,6 +202,28 @@ export declare class NanoSQLInstance {
      */
     connect(): Promise<Object | string>;
     /**
+     * Get all actions for a given table
+     *
+     * @param {string} table
+     * @returns
+     * @memberof NanoSQLInstance
+     */
+    getActions(table: string): {
+        name: string;
+        args: string[] | undefined;
+    }[];
+    /**
+     * Get all views for a given table
+     *
+     * @param {string} table
+     * @returns
+     * @memberof NanoSQLInstance
+     */
+    getViews(table: string): {
+        name: string;
+        args: string[] | undefined;
+    }[];
+    /**
      * Grab a copy of the database config object.
      *
      * @returns

@@ -463,6 +463,38 @@ export class NanoSQLInstance {
     }
 
     /**
+     * Get all actions for a given table
+     * 
+     * @param {string} table 
+     * @returns 
+     * @memberof NanoSQLInstance
+     */
+    public getActions(table: string) {
+        return this._actions[table].map((a) => {
+            return {
+                name: a.name,
+                args: a.args
+            }
+        })
+    }
+
+    /**
+     * Get all views for a given table
+     * 
+     * @param {string} table 
+     * @returns 
+     * @memberof NanoSQLInstance
+     */
+    public getViews(table: string) {
+        return this._views[table].map((a) => {
+            return {
+                name: a.name,
+                args: a.args
+            }
+        })
+    }
+
+    /**
      * Grab a copy of the database config object.
      *
      * @returns
