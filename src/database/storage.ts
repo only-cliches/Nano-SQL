@@ -195,6 +195,14 @@ export class _NanoSQLStorage {
             _trieColumns: string[] // trie columns
             _keys: string[] // array of columns
             _defaults: any[] // array of default values
+            _views: { // views present on this table
+                [table: string]: {
+                    pkColumn: string;
+                    mode: string; // GHOST or LIVE
+                    columns: {thisColumn: string, otherColumn: string}[]
+                }
+            }
+            _viewTables: {table: string, column: string}[] // other tables we need to check when rows are updated on this table
         }
     };
 
@@ -205,6 +213,15 @@ export class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     public _hasORM: boolean;
+
+
+    /**
+     * Wether views exist the data model or not.
+     * 
+     * @type {boolean}
+     * @memberof _NanoSQLStorage
+     */
+    public _hasViews: boolean;
 
     /**
      * Stores in memory Trie values to do Trie queries.
@@ -469,7 +486,18 @@ export class _NanoSQLStorage {
         this._columnsAreTables = {};
 
         this._tableNames.forEach((table) => {
+            // finish views data
+            // gets a list of tables that need to be checked on each row update of this table
+            this.tableInfo[table]._viewTables = Object.keys(this.tableInfo).reduce((prev, cur) => {
+                if (cur === table) return prev;
+                let vTables = Object.keys(this.tableInfo[cur]._views);
+                if (vTables.indexOf(table) !== -1) {
+                    prev.push({table: cur, column: this.tableInfo[cur]._views[table].pkColumn});
+                }
+                return prev;
+            }, [] as any[]);
 
+            // finish ORM and other stuff
             let i = this.models[table].length;
             this._relFromTable[table] = {};
             this._relationColumns[table] = [];
@@ -993,6 +1021,8 @@ export class _NanoSQLStorage {
             _secondaryIndexes: [],
             _trieColumns: [],
             _name: tableName,
+            _views: {},
+            _viewTables: []
         };
 
         this._cache[tableName] = {};
@@ -1009,22 +1039,58 @@ export class _NanoSQLStorage {
             this.tableInfo[tableName]._keys.unshift(p.key);
             this.tableInfo[tableName]._defaults[i] = p.default;
 
-            // Check for primary key
-            if (p.props && p.props.indexOf("pk") > -1) {
-                this.tableInfo[tableName]._pk = p.key;
-                this.tableInfo[tableName]._pkType = p.type;
+            if (p.props && p.props.length) {
+
+                let is2ndIndex = false;
+
+                p.props.forEach((prop) => {
+                    if (prop.indexOf("from=>") !== -1) {
+                        this._hasViews = true;
+                        let table = p.type;
+                        if (prop !== "from=>GHOST" && prop !== "from=>LIVE") {
+                            // prop is "from=>table.column"
+                            table = prop.replace("from=>", "").split(".").shift();
+                        }
+
+                        if (!this.tableInfo[tableName]._views[table]) {
+                            this.tableInfo[tableName]._views[table] = {
+                                pkColumn: "",
+                                mode: "",
+                                columns: []
+                            }
+                        }
+                        if (prop === "from=>GHOST" || prop === "from=>LIVE") {
+                            is2ndIndex = true;
+                            this.tableInfo[tableName]._views[table].pkColumn = p.key;
+                            this.tableInfo[tableName]._views[table].mode = prop.replace("from=>", "");
+                        } else {
+                            this.tableInfo[tableName]._views[table].columns.push({
+                                thisColumn: p.key,
+                                otherColumn: prop.replace("from=>", "").split(".").pop()
+                            });
+                        }
+                    }
+                });
+
+                // Check for primary key
+                if (p.props.indexOf("pk") > -1) {
+                    this.tableInfo[tableName]._pk = p.key;
+                    this.tableInfo[tableName]._pkType = p.type;
+                }
+
+                // Check for secondary indexes
+                if ((p.props.indexOf("idx") > -1 || p.props.indexOf("trie") > -1) || is2ndIndex) {
+                    this.tableInfo[tableName]._secondaryIndexes.push(p.key);
+                }
+
+                // Check for trie indexes
+                if (p.props.indexOf("trie") >= 0) {
+                    this.tableInfo[tableName]._trieColumns.push(p.key);
+                    this._trieIndexes[tableName][p.key] = new Trie([]);
+                }
             }
 
-            // Check for secondary indexes
-            if (p.props && (p.props.indexOf("idx") > -1 || p.props.indexOf("trie") > -1)) {
-                this.tableInfo[tableName]._secondaryIndexes.push(p.key);
-            }
 
-            // Check for trie indexes
-            if (p.props && p.props.indexOf("trie") >= 0) {
-                this.tableInfo[tableName]._trieColumns.push(p.key);
-                this._trieIndexes[tableName][p.key] = new Trie([]);
-            }
         }
 
         return tableName;

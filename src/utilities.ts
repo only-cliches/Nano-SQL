@@ -56,22 +56,13 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
 };
 
 export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void): Promise<any> => {
-    return new Promise((res, rej) => {
-        if (!items || !items.length) {
-            res([]);
-            return;
-        }
-        let i = items.length;
-        let results: any[] = [];
-        while (i--) {
-            callback(items[i], i, (result) => {
-                results.push(result);
-                if (results.length === items.length) {
-                    res(results);
-                }
+    return Promise.all((items || []).map((item, i) => {
+        return new Promise((res, rej) => {
+            callback(item, i, (result) => {
+                res(result);
             });
-        }
-    });
+        });
+    }));
 };
 
 

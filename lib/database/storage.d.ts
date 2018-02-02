@@ -161,6 +161,20 @@ export declare class _NanoSQLStorage {
             _trieColumns: string[];
             _keys: string[];
             _defaults: any[];
+            _views: {
+                [table: string]: {
+                    pkColumn: string;
+                    mode: string;
+                    columns: {
+                        thisColumn: string;
+                        otherColumn: string;
+                    }[];
+                };
+            };
+            _viewTables: {
+                table: string;
+                column: string;
+            }[];
         };
     };
     /**
@@ -170,6 +184,13 @@ export declare class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     _hasORM: boolean;
+    /**
+     * Wether views exist the data model or not.
+     *
+     * @type {boolean}
+     * @memberof _NanoSQLStorage
+     */
+    _hasViews: boolean;
     /**
      * Stores a copy of all the data models
      *

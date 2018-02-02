@@ -501,6 +501,41 @@
 
         });
 
+        // denormalized view API
+        // ["from=>GHOST"] will copy changes over and leave the record in place if the related record is deleted.
+        // ["from=>LIVE"] will copy changes over and set the fields to undefined if related record is deleted.
+        
+        nSQL("Users")
+        .model([...])
+        .from({
+            calcMsgs: (table: string, done:(value) => void, ...args ) => {
+
+            }
+        })
+        nSQL("table")
+        .model([...])
+        .from({
+            calcAnalytics: (table: string, done:(newRow) => void, row ) => {
+
+            }
+        })
+
+        // update reference in only denormalized columns
+        nSQL("table").query("updateFrom", columns?[]).where(...).exec().then(() => {
+
+        })
+        // call from fn to modify/update any column in row results
+        nSQL("table").query("updateFrom", "calcAnalytics()").where(...).exec().then(() => {
+
+        })
+
+        nSQL("table").model([
+            {key: "id", type: "int", props: ["pk", "ai"]},
+            {key: "username", type: "string", props: ["from=>Users.username"]},
+            {key: "userID", type: "Users", props: ["from=>GHOST"]} // also secondary index
+            {key: "unreadMsgs", type: "int", props: ["from=>Users.calcMsgs(id, userID)"]}
+        ])
+
         // revisions API
 
         nSQL().config({historyMode:"revisions"}).connect()...

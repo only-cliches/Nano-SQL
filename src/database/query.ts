@@ -294,6 +294,149 @@ export class _NanoSQLStorageQuery {
         }).then(complete);
     }
 
+
+    /**
+     * For each updated row, update view columns from remote records that are related.
+     * 
+     * @private
+     * @param {any[]} rows 
+     * @param {() => void} complete 
+     * @returns 
+     * @memberof _NanoSQLStorageQuery
+     */
+    private _updateRowViews(newRowData: any, existingRow: any, complete: (updatedRowData: any) => void) {
+        if (!this._store._hasViews) {
+            complete(newRowData);
+            return;
+        }
+
+        // nothing to update
+        if (newRowData === null || newRowData === undefined) {
+            complete(newRowData || {});
+            return;
+        }
+
+        fastALL(Object.keys(this._store.tableInfo[this._query.table as any]._views), (table, i, done) => {
+            const pk = this._store.tableInfo[this._query.table as any]._views[table].pkColumn;
+
+            // reference/pk column isn't being updated.
+            if (newRowData[pk] === undefined) {
+                done();
+                return;
+            }
+
+            // no changes in reference, skip query and upate
+            if (newRowData[pk] === existingRow[pk]) { 
+                done();
+                return;
+            }
+
+            // remove reference
+            if (newRowData[pk] === null) {
+                this._store.tableInfo[this._query.table as any]._views[table].columns.forEach((col) => {
+                    newRowData[col.thisColumn] = null;
+                });
+                done();
+                return;
+            }
+            // get reference record and copy everything over
+            this._store._read(table, [newRowData[pk]] as any, (refRows: any[]) => {
+                // record doesn't exist
+                if (!refRows.length && this._store.tableInfo[this._query.table as any]._views[table].mode === "LIVE") { 
+                    this._store.tableInfo[this._query.table as any]._views[table].columns.forEach((col) => {
+                        newRowData[col.thisColumn] = null;
+                    });
+                    done();
+                    return;
+                }
+                // record exists, copy over data
+                this._store.tableInfo[this._query.table as any]._views[table].columns.forEach((col) => {
+                    newRowData[col.thisColumn] = refRows[0][col.otherColumn];
+                });
+                done();
+            })
+        }).then(() => {
+            complete(newRowData);
+        });
+    }   
+
+
+    /**
+     * Go to tables that have views pointing to this one, and update their records.
+     * 
+     * @private
+     * @param {any[]} updatedRows 
+     * @param {() => void} complete 
+     * @memberof _NanoSQLStorageQuery
+     */
+    private _updateRemoteViews(updatedRows: any[], doDel: boolean, complete: () => void) {
+
+        const pk = this._store.tableInfo[this._query.table as any]._pk;
+
+        // for every updated row    
+        fastALL(updatedRows, (row, i, done) => {
+            
+            // scan all related tables for records attached
+            fastALL(this._store.tableInfo[this._query.table as any]._viewTables, (view, i, rowDone) => {
+                // delete with echo mode, skip removing records
+                if (doDel && this._store.tableInfo[view.table]._views[this._query.table as any].mode === "GHOST") {
+                    rowDone();
+                    return;
+                }
+                this._store._secondaryIndexRead(view.table, view.column, row[pk], (relatedRows: any[]) => {
+                    // nothing to update
+                    if (!relatedRows.length) {
+                        rowDone();
+                        return;
+                    }
+
+                    const columns = this._store.tableInfo[view.table]._views[this._query.table as any].columns;
+                    const relPK = this._store.tableInfo[view.table]._views[this._query.table as any].pkColumn;
+                    // update the records
+                    fastALL(relatedRows, (rRow, j, rDone) => {
+                        let i = columns.length;
+                        let doUpdate = false;
+                        if (doDel) {
+                            if (this._store.tableInfo[view.table]._views[this._query.table as any].mode === "LIVE") {
+                                doUpdate = true;
+                                rRow[relPK] = null;
+                                while (i--) {
+                                    rRow[columns[i].otherColumn] = null;
+                                }
+                            }
+                        } else {
+                            while (i--) {
+                                if (rRow[columns[i].otherColumn] !== row[columns[i].thisColumn]) {
+                                    rRow[columns[i].otherColumn] = row[columns[i].thisColumn];
+                                    doUpdate = true;
+                                }
+                            }
+                        }
+
+                        if (!doUpdate) {
+                            rDone();
+                            return;
+                        }
+
+                        const rPk = this._store.tableInfo[view.table]._pk;
+                        this._store._adapter.write(view.table, rRow[rPk], rRow, rDone, true);
+                    }).then(rowDone);
+                });
+            }).then(done);
+        }).then(complete);
+    }
+
+    private _doAfterQuery(newRows: any[], doDel: boolean, next: (q: IdbQuery) => void) {
+        // no views at all OR this table doesn't have any views pointing to it.
+        if (!this._store._hasViews || !this._store.tableInfo[this._query.table as any]._viewTables.length) {
+            next(this._query);
+            return;
+        }
+        this._updateRemoteViews(newRows, doDel, () => {
+            next(this._query);
+        })
+    }
+
     /**
      * Initilize an UPSERT query.
      *
@@ -328,7 +471,9 @@ export class _NanoSQLStorageQuery {
 
                 if (rows.length) {
                     fastCHAIN(rows, (r, i, rowDone) => {
-                        this._store._write(this._query.table as any, r[pk], r, this._query.actionArgs || {}, rowDone);
+                        this._updateRowViews(this._query.actionArgs || {}, r, (updatedColumns) => {
+                            this._store._write(this._query.table as any, r[pk], r, updatedColumns, rowDone);
+                        });
                     }).then((newRows: DBRow[]) => {
                         // any changes to this table invalidates the cache
                         const pks = newRows.map(r => r[pk]);
@@ -336,7 +481,7 @@ export class _NanoSQLStorageQuery {
 
                         this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
-                            next(this._query);
+                            this._doAfterQuery(newRows, false, next);
                         });
                     });
                 } else {
@@ -350,15 +495,17 @@ export class _NanoSQLStorageQuery {
             let row = this._query.actionArgs || {};
             this._store._cache[this._query.table as any] = {};
             const write = (oldRow: any) => {
-                this._store._write(this._query.table as any, row[pk], oldRow, row, (result) => {
-                    this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
-                    if (this._store._hasORM) {
-                        this._syncORM("add", [oldRow].filter(r => r), [result], () => {
-                            next(this._query);
-                        });
-                    } else {
-                        next(this._query);
-                    }
+                this._updateRowViews(row, oldRow, (updatedColumns) => {
+                    this._store._write(this._query.table as any, row[pk], oldRow, updatedColumns, (result) => {
+                        this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
+                        if (this._store._hasORM) {
+                            this._syncORM("add", [oldRow].filter(r => r), [result], () => {
+                                this._doAfterQuery([result], false, next);
+                            });
+                        } else {
+                            this._doAfterQuery([result], false, next);
+                        }
+                    });
                 });
             };
 
@@ -419,7 +566,7 @@ export class _NanoSQLStorageQuery {
 
                         this._query.result = [{ msg: rows.length + " row(s) deleted.", affectedRowPKS: pks, affectedRows: rows }];
                         this._syncORM("del", rows, [], () => {
-                            next(this._query);
+                            this._doAfterQuery(rows, true, next);
                         });
                     });
                 } else {
@@ -455,7 +602,7 @@ export class _NanoSQLStorageQuery {
             this._store._drop(this._query.table as any, () => {
                 this._query.result = [{ msg: "'" + this._query.table as any + "' table dropped.", affectedRowPKS: rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]), affectedRows: rows }];
                 this._syncORM("del", rows, [], () => {
-                    next(this._query);
+                    this._doAfterQuery(rows, true, next);
                 });
             });
         });
@@ -703,7 +850,7 @@ export class _MutateSelection {
                             if (!rows.filter(r => r).length) {
                                 row[orm.key] = relateData._thisType === "array" ? [] : undefined;
                             } else {
-                                row[orm.key] = relateData._thisType === "array" ? result.reverse() : result[0];
+                                row[orm.key] = relateData._thisType === "array" ? result : result[0];
                             }
                             ormResult();
                         });

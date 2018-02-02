@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.24;
+const VERSION = 1.26;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -1160,7 +1160,7 @@ export class NanoSQLInstance {
     public config(args: { 
         id?: string|number;
         cache?: boolean;
-        mode?: string | NanoSQLStorageAdapter;
+        mode?: string | NanoSQLStorageAdapter | boolean;
         history?: boolean;
         hostoryMode?: string | {[table: string]: string};
         secondaryAdapters?: {

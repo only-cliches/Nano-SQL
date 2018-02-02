@@ -577,7 +577,7 @@ export declare class NanoSQLInstance {
     config(args: {
         id?: string | number;
         cache?: boolean;
-        mode?: string | NanoSQLStorageAdapter;
+        mode?: string | NanoSQLStorageAdapter | boolean;
         history?: boolean;
         hostoryMode?: string | {
             [table: string]: string;

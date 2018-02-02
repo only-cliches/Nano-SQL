@@ -23,6 +23,26 @@ export declare class _NanoSQLStorageQuery {
     private _setCache(rows);
     private _updateORMRows(relation, fromPKs, add, primaryKey, complete);
     private _syncORM(type, oldRows, newRows, complete);
+    /**
+     * For each updated row, update view columns from remote records that are related.
+     *
+     * @private
+     * @param {any[]} rows
+     * @param {() => void} complete
+     * @returns
+     * @memberof _NanoSQLStorageQuery
+     */
+    private _updateRowViews(newRowData, existingRow, complete);
+    /**
+     * Go to tables that have views pointing to this one, and update their records.
+     *
+     * @private
+     * @param {any[]} updatedRows
+     * @param {() => void} complete
+     * @memberof _NanoSQLStorageQuery
+     */
+    private _updateRemoteViews(updatedRows, doDel, complete);
+    private _doAfterQuery(newRows, doDel, next);
 }
 /**
  * Takes a selection of rows and applys modifiers like orderBy, join and others to the rows.

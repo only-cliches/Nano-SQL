@@ -4,6 +4,11 @@
 - Finish integration tests for history.
 - Add secondary write adpater.
 - Add Elastic Search option.
+- Add Denormalized view feature (copy column data over)
+
+## [1.2.6] 1-29-2018
+- Started work for adding denormilzed view feature.
+- Updated fastALL to use `Promise.all`.
 
 ## [1.2.5] 1-28-2018
 - Added methods to access views and actions for a given table.
