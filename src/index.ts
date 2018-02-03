@@ -622,6 +622,8 @@ export class NanoSQLInstance {
 
         let hasPK = false;
 
+
+
         if (!ignoreSanityCheck) {
             // validate table name and data model
             const types = ["string", "safestr", "timeId", "timeIdms", "uuid", "int", "float", "number", "array", "map", "bool", "blob", "any"];
@@ -629,14 +631,17 @@ export class NanoSQLInstance {
                 throw Error("Invalid Table Name! https://docs.nanosql.io/setup/data-models");
             }
             (dataModel || []).forEach((model) => {
-                if (model.props && model.props.indexOf("pk") !== -1) {
-                    hasPK = true;
-                }
                 if (model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
                     throw Error("Invalid Data Model! https://docs.nanosql.io/setup/data-models");
                 }
             });
         }
+
+        (dataModel || []).forEach((model) => {
+            if (model.props && model.props.indexOf("pk") !== -1) {
+                hasPK = true;
+            }
+        });
 
         this.hasPK[l] = hasPK;
 

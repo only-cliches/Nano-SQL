@@ -6,6 +6,9 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.2.8] 2-2-2018
+- Fixed issue with primary key detection.
+
 ## [1.2.7] 2-2-2018
 - Fixed an issue with optimized reads.
 
