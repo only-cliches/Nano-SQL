@@ -24,6 +24,7 @@ export interface IdbQueryBase {
     join?: JoinArgs;
     limit?: number;
     offset?: number;
+    on?: any[];
     trie?: {
         column: string;
         search: string;
@@ -77,6 +78,14 @@ export declare class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     range(limit: number, offset: number): _NanoSQLQuery;
+    /**
+     * When using "from" features specific what primary keys to update.
+     *
+     * @param {any[]} primaryKeys
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
+    on(primaryKeys: any[]): _NanoSQLQuery;
     /**
      * Trigge ORM queries for all result rows.
      *

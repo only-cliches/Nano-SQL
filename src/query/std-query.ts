@@ -23,6 +23,7 @@ export interface IdbQueryBase {
     join?: JoinArgs;
     limit?: number;
     offset?: number;
+    on?: any[];
     trie?: { column: string, search: string };
     extend?: any[];
 }
@@ -183,6 +184,18 @@ export class _NanoSQLQuery {
      */
     public range(limit: number, offset: number): _NanoSQLQuery {
         this._query.range = [limit, offset];
+        return this;
+    }
+
+    /**
+     * When using "from" features specific what primary keys to update.
+     * 
+     * @param {any[]} primaryKeys 
+     * @returns {_NanoSQLQuery} 
+     * @memberof _NanoSQLQuery
+     */
+    public on(primaryKeys: any[]): _NanoSQLQuery {
+        this._query.on = primaryKeys;
         return this;
     }
 

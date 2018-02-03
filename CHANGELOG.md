@@ -6,6 +6,9 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.2.7] 2-2-2018
+- Fixed an issue with optimized reads.
+
 ## [1.2.6] 1-29-2018
 - Started work for adding denormilzed view feature.
 - Updated fastALL to use `Promise.all`.

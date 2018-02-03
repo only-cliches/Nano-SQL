@@ -1435,7 +1435,7 @@ export class _RowSelection {
             return 0;
         }
 
-        if (this._isOptimizedWhere(wArgs[0])) { // at least first value is optimized
+        if (this._isOptimizedWhere(wArgs[0]) === 0) { // at least first value is optimized
             // last primary key/secondary index condition MUST be followed by AND
             let lastCheck: number = 0;
             let includesSlowWhere: boolean = false;
