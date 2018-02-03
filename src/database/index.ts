@@ -115,6 +115,9 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     });
                 });
             break;
+            case "get_adapter":
+                next(args, [this._store._adapter]);
+            break;
             case "idx.length":
             case "idx":
                 const table = args[1];

@@ -6,6 +6,9 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.2.9] 2-3-2018
+- Added storage adapter passthrough.  Can be used with `.extend("get_adapter")`.
+
 ## [1.2.8] 2-2-2018
 - Fixed issue with primary key detection.
 
