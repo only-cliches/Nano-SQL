@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.26;
+const VERSION = 1.30;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -1246,7 +1246,7 @@ export class NanoSQLInstance {
         } else {
             return new Promise((res, rej) => {
                 fastCHAIN(rows, (row, i, nextRow) => {
-                    nSQL().query("upsert", row).manualExec({ table: table }).then(nextRow);
+                    this.query("upsert", row).manualExec({ table: table }).then(nextRow);
                 }).then((rows) => {
                     res(rows.map(r => r.shift()));
                 });
@@ -1302,7 +1302,7 @@ export class NanoSQLInstance {
         } else {
             return new Promise((res, rej) => {
                 fastCHAIN(rowData, (row, i, nextRow) => {
-                    nSQL().query("upsert", row).manualExec({ table: table }).then(nextRow);
+                    this.query("upsert", row).manualExec({ table: table }).then(nextRow);
                 }).then((rows) => {
                     res(rows.map(r => r.shift()));
                 });

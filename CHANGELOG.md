@@ -6,6 +6,9 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.3.0] 2-4-2018
+- Fixed an issue with scoping on loadJS and loadCSV
+
 ## [1.2.9] 2-3-2018
 - Added storage adapter passthrough.  Can be used with `.extend("get_adapter")`.
 
