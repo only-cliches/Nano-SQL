@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.30;
+const VERSION = 1.31;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -271,6 +271,19 @@ export class NanoSQLInstance {
      */
     public _tableNames: string[];
 
+
+    /**
+     * Stores wether {key: "*", type: "*"} is in the data model
+     * 
+     * @type {{
+     *         [tableName: string]: boolean;
+     *     }}
+     * @memberof NanoSQLInstance
+     */
+    public skipPurge: {
+        [tableName: string]: boolean;
+    }
+
     private _onConnectedCallBacks: any[] = [];
 
     private _callbacks: {
@@ -289,6 +302,7 @@ export class NanoSQLInstance {
         t._tableNames = [];
         t._plugins = [];
         t.hasPK = {};
+        t.skipPurge = {};
 
         t._randoms = [];
         t._queryPool = [];
@@ -403,6 +417,18 @@ export class NanoSQLInstance {
                 this._actions = connectArgs.actions;
                 this._views = connectArgs.views;
                 this._config = connectArgs.config;
+
+                Object.keys(this._models).forEach((table) => {
+                    let hasWild = false;
+                    this._models[table] = this._models[table].filter((model) => {
+                        if (model.key === "*" && model.type === "*") {
+                            hasWild = true;
+                            return false;
+                        }
+                        return true;
+                    });
+                    this.skipPurge[table] = hasWild;
+                });
 
                 this._plugins.forEach((plugin) => {
                     if (plugin.didExec) {

@@ -128,11 +128,11 @@ export class _NanoSQLStorageQuery {
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
 
         // Query cache for the win!
-        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+        /*if (canCache && this._store._cache[this._query.table as any][this._hash]) {
             this._query.result = this._store._cache[this._query.table as any][this._hash];
             next(this._query);
             return;
-        }
+        }*/
 
         this._getRows((rows) => {
 

@@ -468,6 +468,7 @@ export class _NanoSQLQuery {
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
                 const models = this._db._models[this._query.table as string];
+
                 let k = 0;
                 while (k < models.length) {
                     if (newArgs[models[k].key] !== undefined) {
@@ -475,6 +476,16 @@ export class _NanoSQLQuery {
                     }
                     k++;
                 }
+
+                // insert wildcard columns
+                if (this._db.skipPurge[this._query.table as string]) {
+                    const modelColumns = models.map(m => m.key);
+                    const columns = Object.keys(newArgs).filter(c => modelColumns.indexOf(c) === -1); // wildcard columns
+                    columns.forEach((col) => {
+                        inputArgs[col] = newArgs[col];
+                    })
+                }
+
                 newArgs = inputArgs;
             }
 

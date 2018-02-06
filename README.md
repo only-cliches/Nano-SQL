@@ -52,7 +52,8 @@ NanoSQL can save data to several different places, depending on the browser or e
 
 2. **[SQLite (NodeJS)](https://github.com/ClickSimply/Nano-SQLite3)**
 3. **[SQLite (Cordova)](https://github.com/ClickSimply/cordova-Nano-SQLite)**
-4. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
+4. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
+5. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
 
 ### Oh Look, Another Data Store
 

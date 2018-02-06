@@ -169,6 +169,17 @@ export declare class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     _tableNames: string[];
+    /**
+     * Stores wether {key: "*", type: "*"} is in the data model
+     *
+     * @type {{
+     *         [tableName: string]: boolean;
+     *     }}
+     * @memberof NanoSQLInstance
+     */
+    skipPurge: {
+        [tableName: string]: boolean;
+    };
     private _onConnectedCallBacks;
     private _callbacks;
     constructor();
