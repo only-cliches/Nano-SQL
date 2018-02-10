@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.31;
+const VERSION = 1.32;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -258,9 +258,6 @@ export class NanoSQLInstance {
 
     public pluginsDoHasExec: boolean;
 
-    private _queryPool: _NanoSQLQuery[];
-    private _queryPtr: number;
-
 
     /**
      * Store an array of table names for ORM type casting.
@@ -305,14 +302,14 @@ export class NanoSQLInstance {
         t.skipPurge = {};
 
         t._randoms = [];
-        t._queryPool = [];
-        t._queryPtr = 0;
+        // t._queryPool = [];
+        // t._queryPtr = 0;
         t._randomPtr = 0;
         t.hasAnyEvents = false;
-        for (let i = 0; i < 200; i++) {
+        /*for (let i = 0; i < 200; i++) {
             t._randoms.push(random16Bits().toString(16));
             t._queryPool.push(new _NanoSQLQuery(t));
-        }
+        }*/
 
         t._callbacks = {};
         t._callbacks["*"] = new ReallySmallEvents();
@@ -947,14 +944,18 @@ export class NanoSQLInstance {
      */
     public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery {
 
-        let t = this;
+        /*let t = this;
         t._queryPtr++;
         if (t._queryPtr > t._queryPool.length - 1) {
             t._queryPtr = 0;
         }
         const av = t._activeAV;
         t._activeAV = undefined;
-        return t._queryPool[t._queryPtr].set(t.sTable, action.toLowerCase(), args, av);
+        return t._queryPool[t._queryPtr].set(t.sTable, action.toLowerCase(), args, av);*/
+        let t = this;
+        const av = t._activeAV;
+        t._activeAV = undefined;
+        return new _NanoSQLQuery(this).set(this.sTable, action, args, av);
     }
 
     public onConnected(callback: () => void) {

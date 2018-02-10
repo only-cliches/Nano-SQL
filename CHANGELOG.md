@@ -7,6 +7,10 @@
 - Add Denormalized view feature (copy column data over)
 - Add wildcard column `{key: "*", type: "*"}` that disables column sanitization.
 
+## [1.3.2] 2-9-2018
+- Removed the query pool feature for now for better stability.
+- Fixed issue with WebSQL batch and range reads.
+
 ## [1.3.1] 2-6-2018
 - Added Redis to supported database adapters.
 

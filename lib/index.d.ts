@@ -159,8 +159,6 @@ export declare class NanoSQLInstance {
      */
     hasAnyEvents: boolean;
     pluginsDoHasExec: boolean;
-    private _queryPool;
-    private _queryPtr;
     /**
      * Store an array of table names for ORM type casting.
      *
