@@ -67,7 +67,7 @@ export interface NanoSQLStorageAdapter {
      * @param {boolean} skipReadBeforeWrite
      * @memberof NanoSQLStorageAdapter
      */
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, skipReadBeforeWrite: boolean, error?: (err: Error) => void): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void;
 
     /**
      * Read a single row from the database
@@ -834,7 +834,7 @@ export class _NanoSQLStorage {
                 newRow.rows.splice(i, 1);
                 newRow.rows.sort();
                 newRow.rows = removeDuplicates(newRow.rows);
-                this._adapter.write(idxTable, newRow.id, newRow, done, true);
+                this._adapter.write(idxTable, newRow.id, newRow, done);
             });
         }).then(complete);
     }
@@ -868,7 +868,7 @@ export class _NanoSQLStorage {
                     indexRow.rows.push(pk);
                     indexRow.rows.sort();
                     indexRow.rows = removeDuplicates(indexRow.rows);
-                    this._adapter.write(idxTable, column, indexRow, done, true);
+                    this._adapter.write(idxTable, column, indexRow, done);
                 });
         }).then(complete);
     }
@@ -897,7 +897,7 @@ export class _NanoSQLStorage {
                     complete(row);
                 }
 
-            }, true);
+            });
 
 
         } else { // existing row
@@ -915,11 +915,11 @@ export class _NanoSQLStorage {
             if (this.tableInfo[table]._secondaryIndexes.length) {
                 this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
                     this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
-                        this._adapter.write(table, pk, setRow, complete, true);
+                        this._adapter.write(table, pk, setRow, complete);
                     });
                 });
             } else {
-                this._adapter.write(table, pk, setRow, complete, true);
+                this._adapter.write(table, pk, setRow, complete);
             }
         }
     }

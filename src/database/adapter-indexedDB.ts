@@ -135,7 +135,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, skipReadBeforeWrite): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
 
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
@@ -158,29 +158,14 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             complete(r);
         };
 
-        const w = (oldData: any) => {
-            r = {
-                ...oldData,
-                ...r
-            };
-
-            this._w.postMessage({
-                do: "write",
-                args: {
-                    table: table,
-                    id: queryID,
-                    row: r
-                }
-            });
-        };
-
-        if (skipReadBeforeWrite) {
-            w({});
-        } else {
-            this.read(table, pk, (row) => {
-                w(row);
-            });
-        }
+        this._w.postMessage({
+            do: "write",
+            args: {
+                table: table,
+                id: queryID,
+                row: r
+            }
+        });
     }
 
     public delete(table: string, pk: DBKey, complete: () => void): void {

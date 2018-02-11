@@ -76,7 +76,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, skipReadBeforeWrite: boolean): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
 
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
@@ -96,7 +96,6 @@ export class _SyncStore implements NanoSQLStorageAdapter {
 
         if (this._ls) {
             const r = {
-                ...(skipReadBeforeWrite ? {} : JSON.parse(localStorage.getItem(this._id + "*" + table + "__" + pk) || "{}")),
                 ...data,
                 [this._pkKey[table]]: pk,
             };
@@ -105,7 +104,6 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         } else {
 
             const r = {
-                ...(skipReadBeforeWrite ? {} : this._rows[table][pk as any]),
                 ...data,
                 [this._pkKey[table]]: pk,
             };

@@ -112,7 +112,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         }
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, skipReadBeforeWrite: boolean): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
 
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
@@ -135,24 +135,15 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                 complete(r);
             });
         } else {
-            const w = (oldData: any) => {
-                const r = {
-                    ...oldData,
-                    ...data,
-                    [this._pkKey[table]]: pk,
-                };
-                this._sql(true, `UPDATE ${this._chkTable(table)} SET data = ? WHERE id = ?`, [JSON.stringify(r), pk], () => {
-                    complete(r);
-                });
-            };
 
-            if (skipReadBeforeWrite) {
-                w({});
-            } else {
-                this.read(table, pk as any, (row) => {
-                    w(row);
-                });
-            }
+            const r = {
+                ...data,
+                [this._pkKey[table]]: pk,
+            };
+            this._sql(true, `UPDATE ${this._chkTable(table)} SET data = ? WHERE id = ?`, [JSON.stringify(r), pk], () => {
+                complete(r);
+            });
+
         }
     }
 

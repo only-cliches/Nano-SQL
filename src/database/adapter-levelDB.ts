@@ -112,7 +112,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, skipReadBeforeWrite: boolean): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
 
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
@@ -129,28 +129,14 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             [this._pkKey[table]]: pk,
         };
 
-        const w = (oldData: any) => {
-            r = {
-                ...oldData,
-                ...r
-            };
+        this._levelDBs[table].put(this._isPKnum[table] ? new global._Int64BE(pk as any).toBuffer() : pk, JSON.stringify(r), (err) => {
+            if (err) {
+                throw Error(err);
+            } else {
+                complete(r);
+            }
+        });
 
-            this._levelDBs[table].put(this._isPKnum[table] ? new global._Int64BE(pk as any).toBuffer() : pk, JSON.stringify(r), (err) => {
-                if (err) {
-                    throw Error(err);
-                } else {
-                    complete(r);
-                }
-            });
-        };
-
-        if (skipReadBeforeWrite) {
-            w({});
-        } else {
-            this.read(table, pk, (row) => {
-                w(row);
-            });
-        }
     }
 
     public delete(table: string, pk: DBKey, complete: () => void): void {

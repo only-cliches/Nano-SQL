@@ -234,6 +234,9 @@
                     key: 'meta',
                     type: 'map',
                     default: {}
+                }, {
+                    key: "*",
+                    type: "*"
                 }
             ])
             .views([ //Cached views to show specific data
@@ -270,18 +273,6 @@
                     }
                 }
             ])
-
-        nSQL([{
-            name: "billy"
-        }, {
-            name: "scotty"
-        }, {
-            name: "joey"
-        }, {
-            name: "hey"
-        }]).query("select").exec().then((rows) => {
-            console.log(rows);
-        });
 
         nSQL("orders").model([{
                 key: 'id',
@@ -331,6 +322,7 @@
                             name: 'jeb',
                             age: 28,
                             balance: 25.02,
+                            somethingElse: [1, 2, 3],
                             orderIDs: [1, 20, 5],
                             meta: {
                                 favorteColor: {
@@ -390,7 +382,7 @@
 
                         console.time("READ");
                         nSQL("users")
-                            .query("select")
+                            .query("select", ["name", "somethingElse"])
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])
                             // .orm(["orderIDs"])
@@ -398,11 +390,12 @@
                                 type: "cross",
                                 table: "users",
                                 where: ["orders.user", "=", "users.id"]
-                            })*/
+                            })
                             .groupBy({
                                 "orders.title": "asc"
-                            })
+                            })*/
                             .exec().then(function(rows, db) {
+                                console.log(rows);
                                 console.timeEnd("READ");
                             });
                         /*nSQL("orders").updateORM("rebuild").exec().then(() => {
@@ -507,21 +500,21 @@
         
         nSQL("Users")
         .model([...])
-        .from({
+        .fromColumn({
             calcMsgs: (table: string, existingValue, done:(newValue) => void, ...args ) => {
 
             }
         })
         nSQL("table")
         .model([...])
-        .from({
+        .fromRow({
             calcAnalytics: (table: string, existingRow, done:(newRow) => void, ...args ) => {
 
             }
         })
 
         // update reference in only denormalized columns
-        nSQL("table").query("updateFrom", columns?[]).where(...).exec().then(() => {
+        nSQL("table").query("updateFromColumn", columns?[]).where(...).exec().then(() => {
 
         })
         // call from fn to update all found rows

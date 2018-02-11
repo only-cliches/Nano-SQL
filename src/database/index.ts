@@ -81,7 +81,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             fastALL(Object.keys(tables), (tableName, i, done) => {
                 const pkKey = this._store.tableInfo[tableName]._pk;
                 fastALL(tables[tableName], (row, i, done) => {
-                    this._store._adapter.write(tableName, row[pkKey], row, done, true);
+                    this._store._adapter.write(tableName, row[pkKey], row, done);
                 }).then(done);
             }).then(() => {
                 res();

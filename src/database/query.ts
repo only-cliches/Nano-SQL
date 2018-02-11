@@ -419,7 +419,7 @@ export class _NanoSQLStorageQuery {
                         }
 
                         const rPk = this._store.tableInfo[view.table]._pk;
-                        this._store._adapter.write(view.table, rRow[rPk], rRow, rDone, true);
+                        this._store._adapter.write(view.table, rRow[rPk], rRow, rDone);
                     }).then(rowDone);
                 });
             }).then(done);
@@ -1238,8 +1238,8 @@ export class _RowSelection {
         // grabs the section of data related to the optimized read, then full table scans the result.
         const whereSlice = this._isSubOptimizedWhere(this.q.where);
         if (whereSlice > 0) {
-            let fastWhere: any[] = this.q.where.slice(0, whereSlice);
-            let slowWhere: any[] = this.q.where.slice(whereSlice + 1);
+            const fastWhere: any[] = this.q.where.slice(0, whereSlice);
+            const slowWhere: any[] = this.q.where.slice(whereSlice + 1);
             this._selectByKeys(fastWhere, (rows) => {
                 callback(rows.filter((r, i) => _where(r, slowWhere, i)));
             });

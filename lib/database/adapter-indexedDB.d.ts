@@ -22,7 +22,7 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     setID(id: string): void;
     private _handleWWMessage(action, args);
     makeTable(tableName: string, dataModels: DataModel[]): void;
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, skipReadBeforeWrite: any): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void;
     delete(table: string, pk: DBKey, complete: () => void): void;
     read(table: string, pk: DBKey, callback: (row: any) => void): void;
     rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;

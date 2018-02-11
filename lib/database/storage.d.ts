@@ -51,7 +51,7 @@ export interface NanoSQLStorageAdapter {
      * @param {boolean} skipReadBeforeWrite
      * @memberof NanoSQLStorageAdapter
      */
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, skipReadBeforeWrite: boolean, error?: (err: Error) => void): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void;
     /**
      * Read a single row from the database
      *
