@@ -6,8 +6,11 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.3.4] 2-13-2018
+- Fixed issue with `.extend("clone"...)`.
+
 ## [1.3.3] 2-11-2018
-- Removed unnessisary argument from database adapter implimentation.
+- Removed unnecessary argument from database adapter implimentation.
 - Working on new readme.
 - Working on denormalization features.
 - Added wildcard column `{key: "*", type: "*"}` that disables column sanitization.

@@ -534,8 +534,6 @@ export class _NanoSQLStorage {
                             };
                         }
                     }
-
-
                 }
             }
 

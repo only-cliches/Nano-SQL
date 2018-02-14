@@ -322,7 +322,7 @@
                             name: 'jeb',
                             age: 28,
                             balance: 25.02,
-                            somethingElse: [1, 2, 3],
+                            somethingElse: () => {return "Hello!"},
                             orderIDs: [1, 20, 5],
                             meta: {
                                 favorteColor: {
@@ -382,7 +382,7 @@
 
                         console.time("READ");
                         nSQL("users")
-                            .query("select", ["name", "somethingElse"])
+                            .query("select")
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])
                             // .orm(["orderIDs"])
@@ -394,8 +394,9 @@
                             .groupBy({
                                 "orders.title": "asc"
                             })*/
+                            .where(["somethingElse", "!=", "NULL"])
                             .exec().then(function(rows, db) {
-                                console.log(rows);
+                                console.log(rows[0].somethingElse());
                                 console.timeEnd("READ");
                             });
                         /*nSQL("orders").updateORM("rebuild").exec().then(() => {

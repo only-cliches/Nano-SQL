@@ -210,7 +210,7 @@ export class NanoSQLInstance {
      * @type {{[table: string]: boolean}}
      * @memberof NanoSQLInstance
      */
-    public hasPK: {[table: string]: boolean};
+    public hasPK: { [table: string]: boolean };
 
     /**
      * Lets you modify queries before they run on the database
@@ -645,8 +645,6 @@ export class NanoSQLInstance {
 
         let hasPK = false;
 
-
-
         if (!ignoreSanityCheck) {
             // validate table name and data model
             const types = ["string", "safestr", "timeId", "timeIdms", "uuid", "int", "float", "number", "array", "map", "bool", "blob", "any"];
@@ -669,7 +667,7 @@ export class NanoSQLInstance {
         this.hasPK[l] = hasPK;
 
         if (!hasPK) {
-            dataModel.push({key: "_id_", type: "uuid", props: ["pk"]})
+            dataModel.push({ key: "_id_", type: "uuid", props: ["pk"] })
         }
 
         t._models[l] = dataModel;
@@ -1071,7 +1069,7 @@ export class NanoSQLInstance {
      * @returns 
      * @memberof NanoSQLInstance
      */
-    public rawImport(tables: {[table: string]: DBRow[]}): Promise<any> {
+    public rawImport(tables: { [table: string]: DBRow[] }): Promise<any> {
         return new Promise((res, rej) => {
             fastCHAIN(this._plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.importTables) {
@@ -1189,19 +1187,19 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public config(args: { 
-        id?: string|number;
+    public config(args: {
+        id?: string | number;
         cache?: boolean;
         mode?: string | NanoSQLStorageAdapter | boolean;
         history?: boolean;
-        hostoryMode?: string | {[table: string]: string};
+        hostoryMode?: string | { [table: string]: string };
         secondaryAdapters?: {
             adapter: NanoSQLStorageAdapter, // the adapter to use
             waitForWrites?: boolean; // should we wait until writes are succesful to return write promises?
             doSlowReads?: boolean; // shoud we send unoptimized reads to this adapter?
             doFastReads?: boolean; // should we send optimized reads to this adapter?
         }[];
-        [key: string]: any 
+        [key: string]: any
     }): NanoSQLInstance {
         this._config = args;
         return this;
@@ -1220,7 +1218,7 @@ export class NanoSQLInstance {
 
         return new Promise((res, rej) => {
             if (t._plugins.length) { // Query Mode
-                let newArgs = _assign(args);
+                let newArgs = args;
                 let result: any[] = [];
                 fastCHAIN(t._plugins, (p, i, nextP) => {
                     if (p.extend) {
@@ -1403,14 +1401,14 @@ export interface NanoSQLPlugin {
      * 
      * @memberof NanoSQLPlugin
      */
-    dumpTables?: (tables?: string[]) => Promise<{[tableName: string]: DBRow[]}>;
+    dumpTables?: (tables?: string[]) => Promise<{ [tableName: string]: DBRow[] }>;
 
     /**
      * Import tables directly into the database without any type checking, indexing or anything else fancy.
      * 
      * @memberof NanoSQLPlugin
      */
-    importTables?: (tables: {[tableName: string]: DBRow[]}) => Promise<any>;
+    importTables?: (tables: { [tableName: string]: DBRow[] }) => Promise<any>;
 
     /**
      * Generic for other misc functions, called when ".extend()" is used.
