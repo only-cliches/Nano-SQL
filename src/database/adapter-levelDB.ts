@@ -55,9 +55,9 @@ export class _LevelStore implements NanoSQLStorageAdapter {
     };
 
     constructor(
-        public path: string,
-        public writeCache: number,
-        public readCache: number
+        public path?: string,
+        public writeCache?: number,
+        public readCache?: number
     ) {
         this._pkKey = {};
         this._pkType = {};
@@ -80,6 +80,14 @@ export class _LevelStore implements NanoSQLStorageAdapter {
                     done();
                 });
         }).then(complete);
+    }
+
+    public disconnect(complete: () => void) {
+        fastALL(Object.keys(this._dbIndex), (table, i , done) => {
+            this._levelDBs[table].close(done);
+        }).then(() => {
+            complete();
+        });
     }
 
     public setID(id: string) {

@@ -1,11 +1,10 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
-import { DataModel, NanoSQLInstance } from "../index";
+import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
 import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates } from "../utilities";
 import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
-
 /* NODE-START */
 import { _LevelStore } from "./adapter-levelDB";
 /* NODE-END */
@@ -54,6 +53,15 @@ export interface NanoSQLStorageAdapter {
      * @memberof NanoSQLStorageAdapter
      */
     connect(complete: () => void, error?: (err: Error) => void): void;
+
+    /**
+     * Called to disconnect the database and do any clean up that's needed
+     * 
+     * @param {() => void} complete 
+     * @param {(err: Error) => void} [error] 
+     * @memberof NanoSQLStorageAdapter
+     */
+    disconnect?(complete: () => void, error?: (err: Error) => void): void;
 
     /**
      * Write a single row to the database backend.
@@ -170,6 +178,13 @@ export interface NanoSQLStorageAdapter {
 }
 
 
+export interface NanoStorageArgs extends NanoSQLConfig {
+    dbPath?: string; // path (used by LevelDB)
+    writeCache?: number; // writeCache (used by LevelDB)
+    readCache?: number; // read cache (used by LevelDB)
+    size?: number; // size of WebSQL database
+}
+
 /**
  * Holds the general abstractions to connect the query module to the storage adapters.
  * Takes care of indexing, tries, secondary indexes and adapter management.
@@ -184,7 +199,7 @@ export class _NanoSQLStorage {
 
     public _id: string; // database ID
 
-    public _adapter: NanoSQLStorageAdapter; // The storage adapter used by the system.
+    // public _adapter: NanoSQLStorageAdapter; // The storage adapter used by the system.
 
     public tableInfo: {
         [tableName: string]: {
@@ -394,22 +409,16 @@ export class _NanoSQLStorage {
         [tableName: string]: string[];
     };
 
-    constructor(parent: NanoSQLInstance, args: {
-        mode: string | NanoSQLStorageAdapter; // pass in string or adapter class.
-        id: string; // id of database
-        dbPath: string; // path (used by LevelDB)
-        writeCache: number; // writeCache (used by LevelDB)
-        persistent: boolean; // depreciated, but still need to support it for now!
-        readCache: number; // read cache (used by LevelDB)
-        cache: boolean; // wether to cache select queries or not
-        size: number; // size of WebSQL database
-    }) {
+    public adapters: NanoSQLBackupAdapter[];
+
+    constructor(parent: NanoSQLInstance, args: NanoStorageArgs) {
 
         this._nsql = parent;
-        this._mode = args.persistent ? "PERM" : args.mode || "TEMP";
-        this._id = args.id;
-        this._size = args.size;
+        this._mode = args.persistent ? "PERM" : args.mode || "TEMP" as any;
+        this._id = args.id as any;
+        this._size = args.size || 5;
 
+        this.adapters = [];
         this.models = {};
         this.tableInfo = {};
         this._trieIndexes = {};
@@ -417,6 +426,11 @@ export class _NanoSQLStorage {
         this._doCache = args.cache || true;
         this._cache = {};
         this._cacheKeys = {};
+
+        this.adapters[0] = {
+            adapter: null as any,
+            waitForWrites: true
+        };
 
         if (typeof this._mode === "string") {
             if (this._mode === "PERM") {
@@ -433,29 +447,45 @@ export class _NanoSQLStorage {
 
             switch (this._mode) {
                 case "IDB":
-                    this._adapter = new _IndexedDBStore(false);
+                    this.adapters[0].adapter = new _IndexedDBStore(false);
                     break;
                 case "IDB_WW":
-                    this._adapter = new _IndexedDBStore(true);
+                    this.adapters[0].adapter = new _IndexedDBStore(true);
                     break;
                 case "WSQL":
-                    this._adapter = new _WebSQLStore(this._size);
+                    this.adapters[0].adapter = new _WebSQLStore(this._size);
                     break;
                 case "LS":
-                    this._adapter = new _SyncStore(true);
+                    this.adapters[0].adapter = new _SyncStore(true);
                     break;
                 /* NODE-START */
                 case "LVL":
-                    this._adapter = new _LevelStore(args.dbPath, args.writeCache, args.readCache);
+                    this.adapters[0].adapter = new _LevelStore(args.dbPath, args.writeCache, args.readCache);
                     break;
                 /* NODE-END */
                 case "TEMP":
-                    this._adapter = new _SyncStore(false);
+                    this.adapters[0].adapter = new _SyncStore(false);
                     break;
             }
         } else {
-            this._adapter = this._mode;
+            this.adapters[0].adapter = this._mode;
         }
+/*
+        this._fastReadAdapter = this.adapters[0].adapter;
+        this._slowReadAdapter = this.adapters[0].adapter;
+
+        if (args.secondaryAdapters && args.secondaryAdapters.length) {
+            this.adapters = this.adapters.concat(args.secondaryAdapters);
+            this.adapters.forEach((a, i) => {
+                if (i === 0) return;
+                if(a.doFastReads) {
+                    this._fastReadAdapter = a.adapter;
+                }
+                if (a.doSlowReads) {
+                    this._slowReadAdapter = a.adapter;
+                }
+            })
+        }*/
     }
 
     /**
@@ -470,11 +500,13 @@ export class _NanoSQLStorage {
             this._id = hash(JSON.stringify(dataModels)).toString();
         }
 
-        this._adapter.setID(this._id);
-
         this.models = this._createSecondaryIndexTables(dataModels);
 
         this._tableNames = Object.keys(this.models);
+
+        this.adapters.forEach((a) => {
+            a.adapter.setID(this._id);
+        })
 
         this._tableNames.forEach((table) => {
             this._newTable(table, dataModels[table]);
@@ -552,11 +584,14 @@ export class _NanoSQLStorage {
             });
         });
 
-        this._adapter.connect(() => {
-
-            if (this._adapter.setNSQL) {
-                this._adapter.setNSQL(this._nsql);
-            }
+        fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
+            a.adapter.connect(() => {
+                if (a.adapter.setNSQL) {
+                    a.adapter.setNSQL(this._nsql);
+                }
+                done();
+            })
+        }).then(() => {
 
             // populate trie data
             fastALL(Object.keys(this._trieIndexes), (table, i, tableDone) => {
@@ -621,15 +656,47 @@ export class _NanoSQLStorage {
                 this._drop(idxTable, idxDone);
             }).then(() => {
                 const pk = this.tableInfo[ta]._pk;
+                let indexGroups: {
+                    [secondIndex: string]: {
+                        [group: string]: any[] // rows
+                    }
+                } = {};
+                secondIndexes.forEach((column) => {
+                    indexGroups[column] = {};
+                });
+
                 this._read(ta, (row, idx, done) => {
                     if (!row[pk]) {
                         done(false);
                         return;
                     }
-                    this._setSecondaryIndexes(ta, row[pk], row, [], () => {
-                        done(false);
+                    secondIndexes.forEach((column) => {
+                        if (!row[column]) {
+                            return;
+                        }
+                        if(!indexGroups[column][row[column]]) {
+                            indexGroups[column][row[column]] = [];
+                        }
+                        indexGroups[column][row[column]].push(row[pk]);
                     });
-                }, tableDone);
+                    done(false);
+
+                    /*this._setSecondaryIndexes(ta, row[pk], row, [], () => {
+                        done(false);
+                    });*/
+                }, () => {
+                    fastALL(secondIndexes, (item, i, done) => {
+                        const idxTable = "_" + ta + "_idx_" + item;
+                        fastALL(Object.keys(indexGroups[item]), (rowKey, i, next) => {
+                            this.adapterWrite(idxTable, rowKey, {
+                                id: rowKey,
+                                rows: indexGroups[item][rowKey].sort()
+                            }, next);
+                        }).then(done);
+                    }).then(() => {
+                        tableDone();
+                    })
+                });
             });
         }).then(() => {
             complete(new Date().getTime() - start);
@@ -706,7 +773,7 @@ export class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     public _secondaryIndexRead(table: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
-        this._adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
+        this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
             if (row !== undefined && row !== null) {
                 this._read(table, (row["rows"] || []), callback);
             } else {
@@ -729,7 +796,7 @@ export class _NanoSQLStorage {
     public _rangeRead(table: string, from: any, to: any, usePKs: boolean, complete: (rows: DBRow[]) => void) {
 
         let rows: any[] = [];
-        this._adapter.rangeRead(table, (row, idx, next) => {
+        this.adapters[0].adapter.rangeRead(table, (row, idx, next) => {
             rows.push(row);
             next();
         }, () => {
@@ -750,12 +817,13 @@ export class _NanoSQLStorage {
 
         if (Array.isArray(query)) { // select by array of primary keys
             
-            if (this._adapter.batchRead) {
-                this._adapter.batchRead(table, query as any, callback);
+            const batchRead = this.adapters[0].adapter.batchRead;
+            if (batchRead) {
+                batchRead.apply(this.adapters[0].adapter, [table, query as any, callback]);
             } else {
                 // possibly (but not always) slower fallback
                 fastALL(query, (q, i, result) => {
-                    this._adapter.read(table, q, result);
+                    this.adapters[0].adapter.read(table, q, result);
                 }).then((rows) => {
                     callback(rows.filter(r => r));
                 });
@@ -767,7 +835,7 @@ export class _NanoSQLStorage {
         let rows: any[] = [];
         // full table scan
         if (typeof query === "function") { // iterate through entire db, returning rows that return true on the function
-            this._adapter.rangeRead(table, (row, idx, nextRow) => {
+            this.adapters[0].adapter.rangeRead(table, (row, idx, nextRow) => {
                 query(row, idx, (keep) => {
                     if (keep) {
                         rows.push(row);
@@ -818,7 +886,7 @@ export class _NanoSQLStorage {
             const column = this._secondaryIndexKey(rowData[idx]) as any;
 
             const idxTable = "_" + table + "_idx_" + idx;
-            this._adapter.read(idxTable, column, (row) => {
+            this.adapters[0].adapter.read(idxTable, column, (row) => {
                 if (!row) {
                     done();
                     return;
@@ -832,7 +900,7 @@ export class _NanoSQLStorage {
                 newRow.rows.splice(i, 1);
                 newRow.rows.sort();
                 newRow.rows = removeDuplicates(newRow.rows);
-                this._adapter.write(idxTable, newRow.id, newRow, done);
+                this.adapterWrite(idxTable, newRow.id, newRow, done);
             });
         }).then(complete);
     }
@@ -861,12 +929,12 @@ export class _NanoSQLStorage {
                 }
 
                 const idxTable = "_" + table + "_idx_" + idx;
-                this._adapter.read(idxTable, column, (row) => {
+                this.adapters[0].adapter.read(idxTable, column, (row) => {
                     let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
                     indexRow.rows.push(pk);
                     indexRow.rows.sort();
                     indexRow.rows = removeDuplicates(indexRow.rows);
-                    this._adapter.write(idxTable, column, indexRow, done);
+                    this.adapterWrite(idxTable, column, indexRow, done);
                 });
         }).then(complete);
     }
@@ -885,7 +953,7 @@ export class _NanoSQLStorage {
 
         if (!oldRow) { // new row
 
-            this._adapter.write(table, pk, newRow, (row) => {
+            this.adapterWrite(table, pk, newRow, (row) => {
 
                 if (this.tableInfo[table]._secondaryIndexes.length) {
                     this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
@@ -913,11 +981,11 @@ export class _NanoSQLStorage {
             if (this.tableInfo[table]._secondaryIndexes.length) {
                 this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
                     this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
-                        this._adapter.write(table, pk, setRow, complete);
+                        this.adapterWrite(table, pk, setRow, complete);
                     });
                 });
             } else {
-                this._adapter.write(table, pk, setRow, complete);
+                this.adapterWrite(table, pk, setRow, complete);
             }
         }
     }
@@ -936,10 +1004,10 @@ export class _NanoSQLStorage {
         } else {
 
             // update secondary indexes
-            this._adapter.read(table, pk, (row) => {
+            this.adapters[0].adapter.read(table, pk, (row) => {
                 this._clearSecondaryIndexes(table, pk, row, [], () => {
                     // do the delete
-                    this._adapter.delete(table, pk, () => {
+                    this.adapterDelete(table, pk, () => {
                         complete(row);
                     });
                 });
@@ -956,13 +1024,13 @@ export class _NanoSQLStorage {
      */
     public _drop(table: string, complete: () => void) {
         fastALL(this.tableInfo[table]._secondaryIndexes, (idx, i, done) => {
-            this._adapter.drop("_" + table + "_idx_" + idx, done);
+            this.adapterDrop("_" + table + "_idx_" + idx, done);
         }).then(() => {
             this._trieIndexes[table] = {};
             this.tableInfo[table]._trieColumns.forEach((co) => {
                 this._trieIndexes[table][co] = new Trie([]);
             });
-            this._adapter.drop(table, complete);
+            this.adapterDrop(table, complete);
         });
     }
 
@@ -1028,7 +1096,12 @@ export class _NanoSQLStorage {
 
         this._trieIndexes[tableName] = {};
 
-        this._adapter.makeTable(tableName, dataModels);
+
+
+        this.adapters.forEach((a) => {
+            a.adapter.makeTable(tableName, dataModels);
+        });
+
 
         // Discover primary keys for each table
         let i = this.models[tableName].length;
@@ -1087,10 +1160,62 @@ export class _NanoSQLStorage {
                     this._trieIndexes[tableName][p.key] = new Trie([]);
                 }
             }
-
-
         }
 
         return tableName;
+    }
+
+
+    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void):void {
+        let result: any;
+        fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
+            if (a.waitForWrites) {
+                a.adapter.write(table, pk, data, (row) => {
+                    result = row;
+                    done();
+                })
+            } else {
+                done();
+                a.adapter.write(table, pk, data, (row) => {})
+            }
+        }).then(() => {
+            complete(result);
+        }).catch((err) => {
+            if (error) error(err);
+        })
+    }
+
+    public adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void {
+        fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
+            if (a.waitForWrites) {
+                a.adapter.delete(table, pk, () => {
+                    done();
+                })
+            } else {
+                done();
+                a.adapter.delete(table, pk, () => {})
+            }
+        }).then(() => {
+            complete();
+        }).catch((err) => {
+            if (error) error(err);
+        })
+    }
+
+    public adapterDrop(table: string, complete: () => void, error?: (err: Error) => void): void {
+        fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
+            if (a.waitForWrites) {
+                a.adapter.drop(table, () => {
+                    done();
+                })
+            } else {
+                done();
+                a.adapter.drop(table, () => {})
+            }
+        }).then(() => {
+            complete();
+        }).catch((err) => {
+            if (error) error(err);
+        })
     }
 }

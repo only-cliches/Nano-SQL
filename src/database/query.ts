@@ -419,7 +419,7 @@ export class _NanoSQLStorageQuery {
                         }
 
                         const rPk = this._store.tableInfo[view.table]._pk;
-                        this._store._adapter.write(view.table, rRow[rPk], rRow, rDone);
+                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone);
                     }).then(rowDone);
                 });
             }).then(done);
@@ -1356,7 +1356,7 @@ export class _RowSelection {
     private _selectByRange(callback: (rows: DBRow[]) => void) {
         if (this.q.range) {
             const r: any[] = this.q.range;
-            this.s._adapter.getIndex(this.q.table as any, true, (count: number) => {
+            this.s.adapters[0].adapter.getIndex(this.q.table as any, true, (count: number) => {
                 const fromIdx = r[0] > 0 ? r[1] : count + r[0] - r[1];
 
                 let toIdx = fromIdx;
@@ -1439,9 +1439,9 @@ export class _RowSelection {
             // last primary key/secondary index condition MUST be followed by AND
             let lastCheck: number = 0;
             let includesSlowWhere: boolean = false;
-            wArgs.forEach((wArgs, i) => {
+            wArgs.forEach((wArg, i) => {
                 if (i % 2 === 0) {
-                    if (this._isOptimizedWhere(wArgs[i]) && wArgs[i + 1]) {
+                    if (this._isOptimizedWhere(wArg) === 0 && wArgs[i + 1]) {
                         lastCheck = i + 1;
                     }
                 }

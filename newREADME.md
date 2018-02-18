@@ -9,29 +9,24 @@ NoSQL Everywhere
 
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
-NanoSQL is a universal database abstraction layer to make running noSQL a breaze.
+NanoSQL is a database abstraction layer that: 
+1. Makes running noSQL a breeze anywhere and
+2. Lets you scale faster by moving query logic to your application server
 
-## Features
-NanoSQL is the result of the realization that most noSQL databases share enough features that a common abstraction layer could be used without significant loss of features or performance.  Every feature in nanoSQL works with every database it supports.  At the same time if you had a client side library with identical API many performance advantages could be had with very little work.
-- Imagine pulling in a result set from your server and doing sorting & searching purely client side.  
-- Imagine caching database rows into a client side cache that behaves identically to your server database.
-- Imagine having the power of RDBMS with the speed and scalability of noSQL.
-- Imagine being able to jump between databases as your needs grow without reprogramming your whole server.
-
-#### Identical API Everywhere
+### Identical API Everywhere
 Develope your application with a simple database like LevelDB, then deploy into production with Redis, Google Cloud Datastore, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  Data is always portable, transferring between different database adapters is trivial.
 
-#### Automate NoSQL Housekeeping
+### Automate NoSQL Housekeeping
 NanoSQL includes a full ORM system, secondary indexes and denormalization helpers to make high performance data modeling simple and easy.
 
-#### Not Only NoSQL 
-Classical RDBMS queries like aggregate functions, joins and group by's are also supported.
+### Not Only NoSQL 
+Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
 
-#### Flexible Data Models
+### Flexible Data Models
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and forced type casting where you need it.
 
-#### Other Cool Things
-Built in undo/redo, typescript support, full event system, CSV/JSON import & export, runs in every browser back to IE9+
+### Other Cool Things
+Built in undo/redo, automatic live backups, typescript support, full event system, CSV/JSON import & export, runs in every browser back to IE9+
 
 ## Installation
 
@@ -78,7 +73,7 @@ nSQL('users') //  "users" is our table name.
     {key:'id',type:'uuid',props:['pk']}, // pk == primary key,
     {key:'name',type:'string'}, // name column, string
     {key:'age', type:'int'}, // age column, integer
-    {key: "*", type: "*"} // allow any other columns
+    {key: "*", type: "*"} // allow any other columns of any type
 ])
 .connect() // Init the data store for usage. (only need to do this once)
 .then((result) => {

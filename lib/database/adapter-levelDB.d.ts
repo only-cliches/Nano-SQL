@@ -8,9 +8,9 @@ import { DataModel } from "../index";
  * @implements {NanoSQLStorageAdapter}
  */
 export declare class _LevelStore implements NanoSQLStorageAdapter {
-    path: string;
-    writeCache: number;
-    readCache: number;
+    path: string | undefined;
+    writeCache: number | undefined;
+    readCache: number | undefined;
     private _pkKey;
     private _pkType;
     private _isPKnum;
@@ -18,8 +18,9 @@ export declare class _LevelStore implements NanoSQLStorageAdapter {
     private _id;
     private _path;
     private _levelDBs;
-    constructor(path: string, writeCache: number, readCache: number);
+    constructor(path?: string | undefined, writeCache?: number | undefined, readCache?: number | undefined);
     connect(complete: () => void): void;
+    disconnect(complete: () => void): void;
     setID(id: string): void;
     makeTable(tableName: string, dataModels: DataModel[]): void;
     write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void;

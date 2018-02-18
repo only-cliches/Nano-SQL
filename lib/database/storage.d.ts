@@ -1,4 +1,4 @@
-import { DataModel, NanoSQLInstance } from "../index";
+import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
 import { StdObject } from "../utilities";
 export interface DBRow {
     [key: string]: any;
@@ -39,6 +39,14 @@ export interface NanoSQLStorageAdapter {
      * @memberof NanoSQLStorageAdapter
      */
     connect(complete: () => void, error?: (err: Error) => void): void;
+    /**
+     * Called to disconnect the database and do any clean up that's needed
+     *
+     * @param {() => void} complete
+     * @param {(err: Error) => void} [error]
+     * @memberof NanoSQLStorageAdapter
+     */
+    disconnect?(complete: () => void, error?: (err: Error) => void): void;
     /**
      * Write a single row to the database backend.
      * Primary key will be provided if it's known before the insert, otherwise it will be null and up to the database backend to make one.
@@ -141,6 +149,12 @@ export interface NanoSQLStorageAdapter {
      */
     setNSQL?(nSQL: NanoSQLInstance): void;
 }
+export interface NanoStorageArgs extends NanoSQLConfig {
+    dbPath?: string;
+    writeCache?: number;
+    readCache?: number;
+    size?: number;
+}
 /**
  * Holds the general abstractions to connect the query module to the storage adapters.
  * Takes care of indexing, tries, secondary indexes and adapter management.
@@ -151,7 +165,6 @@ export interface NanoSQLStorageAdapter {
 export declare class _NanoSQLStorage {
     _mode: string | NanoSQLStorageAdapter;
     _id: string;
-    _adapter: NanoSQLStorageAdapter;
     tableInfo: {
         [tableName: string]: {
             _pk: string;
@@ -324,16 +337,8 @@ export declare class _NanoSQLStorage {
     _relationColumns: {
         [tableName: string]: string[];
     };
-    constructor(parent: NanoSQLInstance, args: {
-        mode: string | NanoSQLStorageAdapter;
-        id: string;
-        dbPath: string;
-        writeCache: number;
-        persistent: boolean;
-        readCache: number;
-        cache: boolean;
-        size: number;
-    });
+    adapters: NanoSQLBackupAdapter[];
+    constructor(parent: NanoSQLInstance, args: NanoStorageArgs);
     /**
      * Initilize the storage adapter and get ready to rumble!
      *
@@ -428,4 +433,7 @@ export declare class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     _drop(table: string, complete: () => void): void;
+    adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void;
+    adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void;
+    adapterDrop(table: string, complete: () => void, error?: (err: Error) => void): void;
 }

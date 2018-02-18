@@ -29,9 +29,9 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             ...connectArgs.config,
         } as any);
 
-        for (let i = 0; i < 100; i++) {
+        /*for (let i = 0; i < 100; i++) {
             this._queryPool.push(new _NanoSQLStorageQuery(this._store));
-        }
+        }*/
 
         this._store.init(connectArgs.models, (newModels) => {
             connectArgs.models = {
@@ -44,11 +44,11 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
     public doExec(execArgs: IdbQuery, next: (execArgs: IdbQuery) => void): void {
         execArgs.state = "complete";
-        this._queryPtr++;
+        /*this._queryPtr++;
         if (this._queryPtr > this._queryPool.length - 1) {
             this._queryPtr = 0;
-        }
-        this._queryPool[this._queryPtr].doQuery(execArgs, next);
+        }*/
+        new _NanoSQLStorageQuery(this._store).doQuery(execArgs, next);
     }
 
     /*public transactionBegin(id: string, next: () => void): void {
@@ -66,7 +66,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             let exportTables = tables && tables.length ? tables : Object.keys(this._store.tableInfo);
             fastALL(exportTables, (table, i, done) => {
                 dump[table] = [];
-                this._store._adapter.rangeRead(table, (r, idx, rowDone) => {
+                this._store.adapters[0].adapter.rangeRead(table, (r, idx, rowDone) => {
                     dump[table].push(r);
                     rowDone();
                 }, done);
@@ -81,7 +81,11 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             fastALL(Object.keys(tables), (tableName, i, done) => {
                 const pkKey = this._store.tableInfo[tableName]._pk;
                 fastALL(tables[tableName], (row, i, done) => {
-                    this._store._adapter.write(tableName, row[pkKey], row, done);
+                    if (row[pkKey]) {
+                        this._store.adapters[0].adapter.write(tableName, row[pkKey], row, done);
+                    } else {
+                        done();
+                    }
                 }).then(done);
             }).then(() => {
                 res();
@@ -116,13 +120,18 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 });
             break;
             case "get_adapter":
-                next(args, [this._store._adapter]);
+                if (!args[1]) {
+                    next(args, [this._store.adapters[0].adapter]);
+                } else {
+                    next(args, [this._store.adapters[args[1]].adapter]);
+                }
+                
             break;
             case "idx.length":
             case "idx":
                 const table = args[1];
                 if (Object.keys(this._store.tableInfo).indexOf(table) > -1) {
-                    this._store._adapter.getIndex(table, args[0] !== "idx", (idx: any) => {
+                    this._store.adapters[0].adapter.getIndex(table, args[0] !== "idx", (idx: any) => {
                         next(args, idx);
                     });
                 } else {

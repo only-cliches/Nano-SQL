@@ -12,6 +12,21 @@ const VERSION = 1.32;
 // uglifyJS fix
 const str = ["_util"];
 
+export interface NanoSQLBackupAdapter {
+    adapter: NanoSQLStorageAdapter, // the adapter to use
+    waitForWrites?: boolean; // should we wait until writes are succesful to return write promises?
+}
+
+export interface NanoSQLConfig {
+    id?: string | number;
+    cache?: boolean;
+    mode?: string | NanoSQLStorageAdapter | boolean;
+    history?: boolean;
+    hostoryMode?: string | { [table: string]: string };
+    secondaryAdapters?: NanoSQLBackupAdapter[];
+    [key: string]: any
+}
+
 /**
  * This is the format used for actions and views
  *
@@ -524,7 +539,7 @@ export class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     public getConfig() {
-        return _assign(this._config || {});
+        return this._config;
     }
 
     /**
@@ -1187,20 +1202,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public config(args: {
-        id?: string | number;
-        cache?: boolean;
-        mode?: string | NanoSQLStorageAdapter | boolean;
-        history?: boolean;
-        hostoryMode?: string | { [table: string]: string };
-        secondaryAdapters?: {
-            adapter: NanoSQLStorageAdapter, // the adapter to use
-            waitForWrites?: boolean; // should we wait until writes are succesful to return write promises?
-            doSlowReads?: boolean; // shoud we send unoptimized reads to this adapter?
-            doFastReads?: boolean; // should we send optimized reads to this adapter?
-        }[];
-        [key: string]: any
-    }): NanoSQLInstance {
+    public config(args: NanoSQLConfig): NanoSQLInstance {
         this._config = args;
         return this;
     }

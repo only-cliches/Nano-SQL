@@ -2,6 +2,21 @@ import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { StdObject } from "./utilities";
 import { NanoSQLStorageAdapter } from "./database/storage";
+export interface NanoSQLBackupAdapter {
+    adapter: NanoSQLStorageAdapter;
+    waitForWrites?: boolean;
+}
+export interface NanoSQLConfig {
+    id?: string | number;
+    cache?: boolean;
+    mode?: string | NanoSQLStorageAdapter | boolean;
+    history?: boolean;
+    hostoryMode?: string | {
+        [table: string]: string;
+    };
+    secondaryAdapters?: NanoSQLBackupAdapter[];
+    [key: string]: any;
+}
 /**
  * This is the format used for actions and views
  *
@@ -238,7 +253,7 @@ export declare class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    getConfig(): any;
+    getConfig(): StdObject<any>;
     /**
      * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
      *
@@ -583,22 +598,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    config(args: {
-        id?: string | number;
-        cache?: boolean;
-        mode?: string | NanoSQLStorageAdapter | boolean;
-        history?: boolean;
-        hostoryMode?: string | {
-            [table: string]: string;
-        };
-        secondaryAdapters?: {
-            adapter: NanoSQLStorageAdapter;
-            waitForWrites?: boolean;
-            doSlowReads?: boolean;
-            doFastReads?: boolean;
-        }[];
-        [key: string]: any;
-    }): NanoSQLInstance;
+    config(args: NanoSQLConfig): NanoSQLInstance;
     /**
      * Perform a custom action supported by the database driver.
      *
