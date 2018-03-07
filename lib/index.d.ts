@@ -227,7 +227,7 @@ export declare class NanoSQLInstance {
     connect(): Promise<Object | string>;
     /**
      * Get all actions for a given table
-     *
+     * =
      * @param {string} table
      * @returns
      * @memberof NanoSQLInstance

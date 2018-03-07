@@ -99,7 +99,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 const nSQLi = new NanoSQLInstance();
                 Object.keys(this.parent._models).forEach((table) => {
                     nSQLi.table(table).model(this.parent._models[table], [], true);
-                })
+                });
                 nSQLi
                 .config({
                     id: this._store._id,
@@ -111,7 +111,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         console.log(`Importing ${table}...`);
                         this.parent.rawDump([table])
                         .then((data) => {
-                            return nSQLi.rawImport(data)
+                            return nSQLi.rawImport(data);
                         })
                         .then(done);
                     }).then(() => {
@@ -125,7 +125,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 } else {
                     next(args, [this._store.adapters[args[1]].adapter]);
                 }
-                
+
             break;
             case "idx.length":
             case "idx":

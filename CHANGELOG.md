@@ -5,6 +5,9 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.3.6] 3-6-2018
+- Fixed an issue with event triggering.
+
 ## [1.3.5] 2-17-2018
 - Fixed an issue with sub optimized queries.
 - Added optional disconnect method to adapters.

@@ -13,7 +13,7 @@ const VERSION = 1.32;
 const str = ["_util"];
 
 export interface NanoSQLBackupAdapter {
-    adapter: NanoSQLStorageAdapter, // the adapter to use
+    adapter: NanoSQLStorageAdapter; // the adapter to use
     waitForWrites?: boolean; // should we wait until writes are succesful to return write promises?
 }
 
@@ -24,7 +24,7 @@ export interface NanoSQLConfig {
     history?: boolean;
     hostoryMode?: string | { [table: string]: string };
     secondaryAdapters?: NanoSQLBackupAdapter[];
-    [key: string]: any
+    [key: string]: any;
 }
 
 /**
@@ -221,7 +221,7 @@ export class NanoSQLInstance {
 
     /**
      * Holds wether each table has a primary key or not
-     * 
+     *
      * @type {{[table: string]: boolean}}
      * @memberof NanoSQLInstance
      */
@@ -286,7 +286,7 @@ export class NanoSQLInstance {
 
     /**
      * Stores wether {key: "*", type: "*"} is in the data model
-     * 
+     *
      * @type {{
      *         [tableName: string]: boolean;
      *     }}
@@ -294,7 +294,7 @@ export class NanoSQLInstance {
      */
     public skipPurge: {
         [tableName: string]: boolean;
-    }
+    };
 
     private _onConnectedCallBacks: any[] = [];
 
@@ -502,9 +502,9 @@ export class NanoSQLInstance {
 
     /**
      * Get all actions for a given table
-     * 
-     * @param {string} table 
-     * @returns 
+     * =
+     * @param {string} table
+     * @returns
      * @memberof NanoSQLInstance
      */
     public getActions(table: string) {
@@ -512,15 +512,15 @@ export class NanoSQLInstance {
             return {
                 name: a.name,
                 args: a.args
-            }
-        })
+            };
+        });
     }
 
     /**
      * Get all views for a given table
-     * 
-     * @param {string} table 
-     * @returns 
+     *
+     * @param {string} table
+     * @returns
      * @memberof NanoSQLInstance
      */
     public getViews(table: string) {
@@ -528,8 +528,8 @@ export class NanoSQLInstance {
             return {
                 name: a.name,
                 args: a.args
-            }
-        })
+            };
+        });
     }
 
     /**
@@ -682,7 +682,7 @@ export class NanoSQLInstance {
         this.hasPK[l] = hasPK;
 
         if (!hasPK) {
-            dataModel.push({ key: "_id_", type: "uuid", props: ["pk"] })
+            dataModel.push({ key: "_id_", type: "uuid", props: ["pk"] });
         }
 
         t._models[l] = dataModel;
@@ -990,6 +990,7 @@ export class NanoSQLInstance {
         let t = this;
 
         if (t._hasEvents["*"] || t._hasEvents[eventData.table]) {
+            if (eventData.table === "*") return this;
             setFast(() => {
                 let c: Function[];
                 eventData.types.forEach((type) => {
@@ -1049,10 +1050,10 @@ export class NanoSQLInstance {
 
     /**
      * Get the raw contents of the database, provides all tables.
-     * 
+     *
      * Optionally pass in the tables to export.  If no tables are provided then all tables will be dumped.
-     * 
-     * @returns 
+     *
+     * @returns
      * @memberof NanoSQLInstance
      */
     public rawDump(tables?: string[]) {
@@ -1066,7 +1067,7 @@ export class NanoSQLInstance {
                             ...tables
                         };
                         next(result);
-                    })
+                    });
                 } else {
                     next();
                 }
@@ -1079,16 +1080,16 @@ export class NanoSQLInstance {
     /**
      * Import table data directly into the datatabase.
      * Signifincatly faster than .loadJS but doesn't do type checking, indexing or anything else fancy.
-     * 
-     * @param {{[table: string]: DBRow[]}} tables 
-     * @returns 
+     *
+     * @param {{[table: string]: DBRow[]}} tables
+     * @returns
      * @memberof NanoSQLInstance
      */
     public rawImport(tables: { [table: string]: DBRow[] }): Promise<any> {
         return new Promise((res, rej) => {
             fastCHAIN(this._plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.importTables) {
-                    plugin.importTables(tables).then(next)
+                    plugin.importTables(tables).then(next);
                 } else {
                     next();
                 }
@@ -1400,14 +1401,14 @@ export interface NanoSQLPlugin {
     /**
      * Dump the raw contents of all database tables.
      * Optionally provide a list of tables to export, if nothing is provided then all tables should be dumped.
-     * 
+     *
      * @memberof NanoSQLPlugin
      */
     dumpTables?: (tables?: string[]) => Promise<{ [tableName: string]: DBRow[] }>;
 
     /**
      * Import tables directly into the database without any type checking, indexing or anything else fancy.
-     * 
+     *
      * @memberof NanoSQLPlugin
      */
     importTables?: (tables: { [tableName: string]: DBRow[] }) => Promise<any>;

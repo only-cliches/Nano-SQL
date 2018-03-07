@@ -297,11 +297,11 @@ export class _NanoSQLStorageQuery {
 
     /**
      * For each updated row, update view columns from remote records that are related.
-     * 
+     *
      * @private
-     * @param {any[]} rows 
-     * @param {() => void} complete 
-     * @returns 
+     * @param {any[]} rows
+     * @param {() => void} complete
+     * @returns
      * @memberof _NanoSQLStorageQuery
      */
     private _updateRowViews(newRowData: any, existingRow: any, complete: (updatedRowData: any) => void) {
@@ -326,7 +326,7 @@ export class _NanoSQLStorageQuery {
             }
 
             // no changes in reference, skip query and upate
-            if (newRowData[pk] === existingRow[pk]) { 
+            if (newRowData[pk] === existingRow[pk]) {
                 done();
                 return;
             }
@@ -342,7 +342,7 @@ export class _NanoSQLStorageQuery {
             // get reference record and copy everything over
             this._store._read(table, [newRowData[pk]] as any, (refRows: any[]) => {
                 // record doesn't exist
-                if (!refRows.length && this._store.tableInfo[this._query.table as any]._views[table].mode === "LIVE") { 
+                if (!refRows.length && this._store.tableInfo[this._query.table as any]._views[table].mode === "LIVE") {
                     this._store.tableInfo[this._query.table as any]._views[table].columns.forEach((col) => {
                         newRowData[col.thisColumn] = null;
                     });
@@ -354,28 +354,28 @@ export class _NanoSQLStorageQuery {
                     newRowData[col.thisColumn] = refRows[0][col.otherColumn];
                 });
                 done();
-            })
+            });
         }).then(() => {
             complete(newRowData);
         });
-    }   
+    }
 
 
     /**
      * Go to tables that have views pointing to this one, and update their records.
-     * 
+     *
      * @private
-     * @param {any[]} updatedRows 
-     * @param {() => void} complete 
+     * @param {any[]} updatedRows
+     * @param {() => void} complete
      * @memberof _NanoSQLStorageQuery
      */
     private _updateRemoteViews(updatedRows: any[], doDel: boolean, complete: () => void) {
 
         const pk = this._store.tableInfo[this._query.table as any]._pk;
 
-        // for every updated row    
+        // for every updated row
         fastALL(updatedRows, (row, i, done) => {
-            
+
             // scan all related tables for records attached
             fastALL(this._store.tableInfo[this._query.table as any]._viewTables, (view, i, rowDone) => {
                 // delete with echo mode, skip removing records
@@ -434,7 +434,7 @@ export class _NanoSQLStorageQuery {
         }
         this._updateRemoteViews(newRows, doDel, () => {
             next(this._query);
-        })
+        });
     }
 
     /**
@@ -1199,13 +1199,13 @@ export class _RowSelection {
         }
 
         // trie search, nice and fast.
-        if (this.q.trie && this.q.trie.column && this.q.trie.search) { 
+        if (this.q.trie && this.q.trie.column && this.q.trie.search) {
             this._selectByTrie(callback);
             return;
         }
 
         // range select, very fast
-        if (this.q.range && this.q.range.length) { 
+        if (this.q.range && this.q.range.length) {
             this._selectByRange(callback);
             return;
         }
@@ -1213,7 +1213,7 @@ export class _RowSelection {
         // no where statement, read whole db :(
         // OR
         // where statement is function, still gotta read the whole db.
-        if ((!this.q.where || !this.q.where.length) || !Array.isArray(this.q.where)) { 
+        if ((!this.q.where || !this.q.where.length) || !Array.isArray(this.q.where)) {
             this._fullTableScan(callback);
             return;
         }
@@ -1233,7 +1233,7 @@ export class _RowSelection {
             this._selectByKeys(this.q.where, callback);
             return;
         }
-    
+
         // if compound where statement includes primary key/secondary index queries followed by AND with other conditions.
         // grabs the section of data related to the optimized read, then full table scans the result.
         const whereSlice = this._isSubOptimizedWhere(this.q.where);
@@ -1419,15 +1419,15 @@ export class _RowSelection {
     /**
      * Given a compound where statement like [[value, =, key], AND, [something, =, something]]
      * Check if first where conditions are primary key/ secondary index followed by unoptimized/unindexed conditions
-     * 
+     *
      * In this case we can grab the primary key/secondary index query from the database and do a faster query on the smaller result set.
-     * 
+     *
      * Returns 0 if this isn't a suboptimized where condition.
      * Returns the index of the where array where the AND splits between optimized and unoptimized conditions otherwise.
-     * 
+     *
      * @private
-     * @param {any[]} wArgs 
-     * @returns {number} 
+     * @param {any[]} wArgs
+     * @returns {number}
      * @memberof _RowSelection
      */
     private _isSubOptimizedWhere(wArgs: any[]): number {
@@ -1450,7 +1450,7 @@ export class _RowSelection {
             if (wArgs[lastCheck] !== "AND") return 0;
 
             return lastCheck;
-        } 
+        }
         return 0;
     }
 

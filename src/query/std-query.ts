@@ -51,7 +51,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
             } else {
                 complete(self._query.result.map(r => ({...r, _id_: undefined})));
             }
-            
+
         });
     } else {
         fastCHAIN(self._db._plugins, (p, i, nextP) => {
@@ -189,9 +189,9 @@ export class _NanoSQLQuery {
 
     /**
      * When using "from" features specific what primary keys to update.
-     * 
-     * @param {any[]} primaryKeys 
-     * @returns {_NanoSQLQuery} 
+     *
+     * @param {any[]} primaryKeys
+     * @returns {_NanoSQLQuery}
      * @memberof _NanoSQLQuery
      */
     public on(primaryKeys: any[]): _NanoSQLQuery {
@@ -456,6 +456,8 @@ export class _NanoSQLQuery {
      */
     public exec(): any {
 
+        if (this._query.table === "*") return;
+
         let t = this;
 
         const a = this._query.action.toLowerCase();
@@ -483,7 +485,7 @@ export class _NanoSQLQuery {
                     const columns = Object.keys(newArgs).filter(c => modelColumns.indexOf(c) === -1); // wildcard columns
                     columns.forEach((col) => {
                         inputArgs[col] = newArgs[col];
-                    })
+                    });
                 }
 
                 newArgs = inputArgs;
