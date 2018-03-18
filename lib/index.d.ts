@@ -193,9 +193,33 @@ export declare class NanoSQLInstance {
     skipPurge: {
         [tableName: string]: boolean;
     };
+    tablePKs: {
+        [table: string]: any;
+    };
     private _onConnectedCallBacks;
     private _callbacks;
+    toColRules: {
+        [table: string]: {
+            [column: string]: string[];
+        };
+    };
+    toRowFns: {
+        [table: string]: {
+            [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void;
+        };
+    };
+    toColFns: {
+        [table: string]: {
+            [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void;
+        };
+    };
     constructor();
+    toColumn(columnFns: {
+        [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void;
+    }): this;
+    toRow(columnFns: {
+        [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void;
+    }): this;
     /**
      * nanoSQL generates 50 random 16 bit strings on every launch.
      * If you don't need true randomness you can use this function to get a psudorandom 16 bit string.

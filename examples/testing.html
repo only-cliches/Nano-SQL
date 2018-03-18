@@ -239,6 +239,12 @@
                     type: "*"
                 }
             ])
+            .toRow({
+                setBalance: (primaryKey, existingRow, done) => {
+                    existingRow.balance = 200;
+                    done(existingRow);	
+                }
+            })
             .views([ //Cached views to show specific data
                 {
                     name: 'get_user_by_name',
@@ -379,7 +385,11 @@
                                                         console.log(rows, rows1);
                                                     })
                         */
-
+                        nSQL("users").query("toRow", "setBalance()").on([6]).exec().then(() => {
+                            nSQL("users").query("select").where(["id", "=", 6]).exec().then((rows) => {
+                                console.log("toRow", rows);
+                            })
+                        })
                         console.time("READ");
                         nSQL("users")
                             .query("select")

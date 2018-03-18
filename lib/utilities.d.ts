@@ -17,6 +17,7 @@ export interface timeIdms extends String {
 }
 export declare const _assign: (obj: any) => any;
 export declare const fastCHAIN: (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void) => Promise<any>;
+export declare const fastRACE: (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void) => Promise<any>;
 export declare const fastALL: (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void) => Promise<any>;
 export declare const isSafari: boolean;
 export declare const isMSBrowser: boolean;

@@ -55,6 +55,26 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
     });
 };
 
+export const fastRACE = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any> => {
+    return new Promise((res, rej) => {
+        if (!items || !items.length) {
+            res([]);
+            return;
+        }
+        let counter = 0;
+        const step = () => {
+            if (counter < items.length) {
+                callback(items[counter], counter, (result) => {
+                    res(result);
+                });
+                counter++;
+                step();
+            }
+        };
+        step();
+    });
+};
+
 export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void): Promise<any> => {
     return Promise.all((items || []).map((item, i) => {
         return new Promise((res, rej) => {

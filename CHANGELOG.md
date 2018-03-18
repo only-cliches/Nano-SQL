@@ -5,6 +5,10 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+
+## [1.3.7] 3-18-2018
+- Added aggregate denormalization features.
+
 ## [1.3.6] 3-6-2018
 - Fixed an issue with event triggering.
 

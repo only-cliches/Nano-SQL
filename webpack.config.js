@@ -5,6 +5,7 @@ const PATHS = {
     build: path.join(__dirname, 'examples')
 };
 const nodeExternals = require('webpack-node-externals');
+const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 const options = {
     entry: {
@@ -38,26 +39,15 @@ const options = {
 
     ],
     module: {
-        loaders: [{
+        rules: [{
                 test: /\.ts$/,
                 loader: 'ts-loader'
             },
             {
                 test: /\.txt$/,
-                use: [{
-                        loader: 'raw-loader'
-                    },
+                use: [
                     {
-                        loader: 'uglify-loader',
-                        options: {
-                            compress: {
-                                warnings: false,
-                                passes: 2
-                            },
-                            mangle: {
-                                toplevel: true
-                            }
-                        }
+                        loader: 'raw-loader'
                     }
                 ]
             },
@@ -71,15 +61,21 @@ const options = {
 
 switch (process.env.NODE_ENV) {
     case "production":
-        options['plugins'].push(new webpack.optimize.UglifyJsPlugin({
-            compress: {
-                warnings: false,
-                passes: 2
-            },
-            mangle: {
-                // props: { regex: new RegExp(/^_|Promise/) }
-            }
-        }));
+        options.optimization = {
+            minimizer: [
+                new UglifyJSPlugin({
+                    uglifyOptions: {
+                        compress: {
+                            warnings: false,
+                            passes: 2
+                        },
+                        mangle: {
+                            // props: { regex: new RegExp(/^_|Promise/) }
+                        }
+                    }
+                })
+            ]
+        };
         break;
 }
 

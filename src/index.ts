@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.32;
+const VERSION = 1.37;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -296,11 +296,22 @@ export class NanoSQLInstance {
         [tableName: string]: boolean;
     };
 
+    public tablePKs: {[table: string]: any};
+
     private _onConnectedCallBacks: any[] = [];
 
     private _callbacks: {
         [table: string]: ReallySmallEvents;
     };
+
+    public toColRules: {
+        [table: string]: {
+            [column: string]: string[];
+        }
+    };
+
+    public toRowFns: {[table: string]: {[fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void } };
+    public toColFns: {[table: string]: {[fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void } };
 
     constructor() {
 
@@ -315,16 +326,20 @@ export class NanoSQLInstance {
         t._plugins = [];
         t.hasPK = {};
         t.skipPurge = {};
+        t.toRowFns = {};
+        t.tablePKs = {};
+        t.toColFns = {};
+        t.toColRules = {};
 
         t._randoms = [];
         // t._queryPool = [];
         // t._queryPtr = 0;
         t._randomPtr = 0;
         t.hasAnyEvents = false;
-        /*for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 200; i++) {
             t._randoms.push(random16Bits().toString(16));
-            t._queryPool.push(new _NanoSQLQuery(t));
-        }*/
+            // t._queryPool.push(new _NanoSQLQuery(t));
+        }
 
         t._callbacks = {};
         t._callbacks["*"] = new ReallySmallEvents();
@@ -345,6 +360,22 @@ export class NanoSQLInstance {
                 }
             });
         }
+    }
+
+    public toColumn(columnFns: {[fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void}) {
+        if (!this.toColFns[this.sTable as string]) {
+            this.toColFns[this.sTable as string] = {};
+        }
+        this.toColFns[this.sTable as string] = columnFns;
+        return this;
+    }
+
+    public toRow(columnFns: {[fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void}) {
+        if (!this.toRowFns[this.sTable as string]) {
+            this.toRowFns[this.sTable as string] = {};
+        }
+        this.toRowFns[this.sTable as string] = columnFns;
+        return this;
     }
 
     /**
@@ -650,7 +681,7 @@ export class NanoSQLInstance {
 	 */
     public model(dataModel: DataModel[], props?: any[], ignoreSanityCheck?: boolean): NanoSQLInstance {
         let t = this;
-        let l = t.sTable;
+        let l: string = t.sTable as string;
 
         if (Array.isArray(l)) return this;
 
@@ -673,8 +704,22 @@ export class NanoSQLInstance {
             });
         }
 
+        t.toColRules[l] = {};
+
         (dataModel || []).forEach((model) => {
+
+            if (model.props) {
+                model.props.forEach((prop) => {
+                    if (prop.indexOf("from=>") !== -1 && prop.indexOf("()") !== -1) {
+                        const fnName = prop.replace("from=>", "").split("(").shift();
+                        const fnArgs = prop.replace("from=>", "").split("(").pop().replace(")", "").split(",").map(c => c.trim());
+                        t.toColRules[l][model.key] = [fnName].concat(fnArgs);
+                    }
+                });
+            }
+
             if (model.props && model.props.indexOf("pk") !== -1) {
+                this.tablePKs[l] = model.key;
                 hasPK = true;
             }
         });
@@ -682,6 +727,7 @@ export class NanoSQLInstance {
         this.hasPK[l] = hasPK;
 
         if (!hasPK) {
+            this.tablePKs[l] = "_id_";
             dataModel.push({ key: "_id_", type: "uuid", props: ["pk"] });
         }
 
