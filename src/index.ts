@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.37;
+const VERSION = 1.38;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -243,7 +243,7 @@ export class NanoSQLInstance {
      * @type {StdObject<Array<DataModel>>}
      * @memberOf NanoSQLInstance
      */
-    public _models: { [table: string]: DataModel[] };
+    public dataModels: { [table: string]: DataModel[] };
 
     /**
      * Stores wether each table has events attached to it or not.
@@ -318,7 +318,7 @@ export class NanoSQLInstance {
         let t = this;
         t._actions = {};
         t._views = {};
-        t._models = {};
+        t.dataModels = {};
         t._events = ["*", "change", "delete", "upsert", "drop", "select", "error"];
 
         t._hasEvents = {};
@@ -424,7 +424,7 @@ export class NanoSQLInstance {
         return new Promise((res, rej) => {
 
             let connectArgs: DBConnect = {
-                models: t._models,
+                models: t.dataModels,
                 actions: t._actions,
                 views: t._views,
                 config: t._config,
@@ -456,14 +456,14 @@ export class NanoSQLInstance {
                     nextP();
                 }
             }).then(() => {
-                this._models = connectArgs.models;
+                this.dataModels = connectArgs.models;
                 this._actions = connectArgs.actions;
                 this._views = connectArgs.views;
                 this._config = connectArgs.config;
 
-                Object.keys(this._models).forEach((table) => {
+                Object.keys(this.dataModels).forEach((table) => {
                     let hasWild = false;
-                    this._models[table] = this._models[table].filter((model) => {
+                    this.dataModels[table] = this.dataModels[table].filter((model) => {
                         if (model.key === "*" && model.type === "*") {
                             hasWild = true;
                             return false;
@@ -479,7 +479,7 @@ export class NanoSQLInstance {
                     }
                 });
 
-                t._tableNames = Object.keys(this._models);
+                t._tableNames = Object.keys(this.dataModels);
 
                 const completeConnect = () => {
                     fastALL(this._plugins, (p, i, nextP) => {
@@ -731,7 +731,7 @@ export class NanoSQLInstance {
             dataModel.push({ key: "_id_", type: "uuid", props: ["pk"] });
         }
 
-        t._models[l] = dataModel;
+        t.dataModels[l] = dataModel;
         t._views[l] = [];
         t._actions[l] = [];
         return t;
@@ -1081,7 +1081,7 @@ export class NanoSQLInstance {
         let newObj = {};
         let t = this;
         if (Array.isArray(t.sTable)) return {};
-        t._models[t.sTable].forEach((m) => {
+        t.dataModels[t.sTable].forEach((m) => {
             // set key to object argument or the default value in the data model
             newObj[m.key] = (replaceObj && replaceObj[m.key]) ? replaceObj[m.key] : m.default;
 

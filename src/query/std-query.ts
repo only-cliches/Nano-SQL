@@ -554,7 +554,7 @@ export class _NanoSQLQuery {
 
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};
-                const models = this._db._models[this._query.table as string];
+                const models = this._db.dataModels[this._query.table as string];
 
                 let k = 0;
                 while (k < models.length) {

@@ -97,8 +97,8 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         switch (args[0]) {
             case "clone":
                 const nSQLi = new NanoSQLInstance();
-                Object.keys(this.parent._models).forEach((table) => {
-                    nSQLi.table(table).model(this.parent._models[table], [], true);
+                Object.keys(this.parent.dataModels).forEach((table) => {
+                    nSQLi.table(table).model(this.parent.dataModels[table], [], true);
                 });
                 nSQLi
                 .config({
@@ -107,7 +107,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 })
                 .connect().then(() => {
                     let i = 0;
-                    fastCHAIN(Object.keys(this.parent._models), (table, i, done) => {
+                    fastCHAIN(Object.keys(this.parent.dataModels), (table, i, done) => {
                         console.log(`Importing ${table}...`);
                         this.parent.rawDump([table])
                         .then((data) => {

@@ -5,6 +5,8 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.3.8] 3-29-2018
+- Added way to access data models for each table.
 
 ## [1.3.7] 3-18-2018
 - Added aggregate denormalization features.
