@@ -663,7 +663,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    loadCSV(table: string, csv: string, useTransaction?: boolean): Promise<Array<Object>>;
+    loadCSV(table: string, csv: string, useTransaction?: boolean, rowFilter?: (row: any) => any): Promise<Array<Object>>;
 }
 export interface DBConnect {
     models: StdObject<DataModel[]>;

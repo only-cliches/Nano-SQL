@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.38;
+const VERSION = 1.39;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -296,7 +296,7 @@ export class NanoSQLInstance {
         [tableName: string]: boolean;
     };
 
-    public tablePKs: {[table: string]: any};
+    public tablePKs: { [table: string]: any };
 
     private _onConnectedCallBacks: any[] = [];
 
@@ -310,8 +310,8 @@ export class NanoSQLInstance {
         }
     };
 
-    public toRowFns: {[table: string]: {[fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void } };
-    public toColFns: {[table: string]: {[fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void } };
+    public toRowFns: { [table: string]: { [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void } };
+    public toColFns: { [table: string]: { [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void } };
 
     constructor() {
 
@@ -362,7 +362,7 @@ export class NanoSQLInstance {
         }
     }
 
-    public toColumn(columnFns: {[fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void}) {
+    public toColumn(columnFns: { [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void }) {
         if (!this.toColFns[this.sTable as string]) {
             this.toColFns[this.sTable as string] = {};
         }
@@ -370,7 +370,7 @@ export class NanoSQLInstance {
         return this;
     }
 
-    public toRow(columnFns: {[fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void}) {
+    public toRow(columnFns: { [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void }) {
         if (!this.toRowFns[this.sTable as string]) {
             this.toRowFns[this.sTable as string] = {};
         }
@@ -1340,7 +1340,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadCSV(table: string, csv: string, useTransaction: boolean = true): Promise<Array<Object>> {
+    public loadCSV(table: string, csv: string, useTransaction: boolean = true, rowFilter?: (row: any) => any): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
 
@@ -1350,7 +1350,33 @@ export class NanoSQLInstance {
                 return undefined;
             } else {
                 let record: StdObject<any> = {};
-                let row = v.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+                let row = v.match(/(,)|(["|\[|\{].*?["|\]|\}]|[^",\s]+)(?=\s*,|\s*$)/g) || [];
+
+                let fits = false;
+                if (row[0] === ",") {
+                    row.unshift("");
+                }
+
+                while (!fits) {
+                    let doBreak = false;
+                    row.forEach((val, i) => {
+                        if (doBreak) return;
+                        if (val === ",") {
+                            if (typeof row[i + 1] === "undefined" || row[i + 1] === ",") {
+                                doBreak = true;
+                                row.splice(i + 1, 0, "");
+                            }
+                        }
+                    });
+                    if (!doBreak) {
+                        fits = true;
+                    } else {
+                        break;
+                    }
+                }
+
+                row = row.filter((v, i) => i % 2 === 0);
+
                 let i = fields.length;
                 while (i--) {
                     if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
@@ -1361,6 +1387,9 @@ export class NanoSQLInstance {
                         row[i] = row[i].slice(1, row[i].length - 1);
                     }
                     record[fields[i]] = row[i];
+                }
+                if (rowFilter) {
+                    return rowFilter(record);
                 }
                 return record;
             }

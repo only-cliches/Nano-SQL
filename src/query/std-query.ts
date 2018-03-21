@@ -1,5 +1,5 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../index";
-import { _assign, StdObject, uuid, cast, Promise, timeid, fastCHAIN, fastALL } from "../utilities";
+import { _assign, StdObject, uuid, cast, Promise, timeid, fastCHAIN, fastALL, hash } from "../utilities";
 
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
@@ -24,6 +24,7 @@ export interface IdbQueryBase {
     limit?: number;
     offset?: number;
     on?: any[];
+    debounce?: number;
     trie?: { column: string, search: string };
     extend?: any[];
 }
@@ -49,7 +50,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
             if (self._db.hasPK[self._query.table as string]) {
                 complete(self._query.result);
             } else {
-                complete(self._query.result.map(r => ({...r, _id_: undefined})));
+                complete(self._query.result.map(r => ({ ...r, _id_: undefined })));
             }
 
         });
@@ -68,7 +69,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
             if (self._db.hasPK[self._query.table as string]) {
                 complete(self._query.result);
             } else {
-                complete(self._query.result.map(r => ({...r, _id_: undefined})));
+                complete(self._query.result.map(r => ({ ...r, _id_: undefined })));
             }
 
             if (self._db.hasAnyEvents || self._db.pluginsDoHasExec) {
@@ -115,6 +116,10 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
         });
     }
 };
+
+let debounceTimers: {
+    [key: string]: any;
+} = {};
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -196,6 +201,17 @@ export class _NanoSQLQuery {
      */
     public on(primaryKeys: any[]): _NanoSQLQuery {
         this._query.on = primaryKeys;
+        return this;
+    }
+
+    /**
+     * Debounce aggregate function calls.
+     *
+     * @param {number} ammt
+     * @memberof _NanoSQLQuery
+     */
+    public debounce(ms?: number): _NanoSQLQuery {
+        this._query.debounce = ms || 250;
         return this;
     }
 
@@ -437,6 +453,92 @@ export class _NanoSQLQuery {
         return this.exec();
     }
 
+    public denormalizationQuery(action: string) {
+        return new Promise((res, rej) => {
+
+            switch (action) {
+                case "tocolumn":
+                    let fnsToRun: {
+                        [column: string]: any[];
+                    } = {};
+                    if (this._query.actionArgs && this._query.actionArgs.length) {
+                        Object.keys(this._db.toColRules[this._query.table as string]).filter(c => this._query.actionArgs.indexOf(c) !== -1).forEach((col) => {
+                            fnsToRun[col] = this._db.toColRules[this._query.table as string][col];
+                        });
+                    } else {
+                        fnsToRun = this._db.toColRules[this._query.table as string];
+                    }
+
+                    this._query.action = "select";
+                    this._query.actionArgs = undefined;
+                    const columns = Object.keys(fnsToRun);
+
+                    runQuery(this, (rows) => {
+                        fastALL(rows, (row, i, done) => {
+                            if (Object.isFrozen(row)) {
+                                row = _assign(row);
+                            }
+                            columns.forEach((col) => {
+                                const fn = this._db.toColFns[this._query.table as string][fnsToRun[col][0]];
+                                if (!fn) {
+                                    return;
+                                }
+                                fn.apply(null, [row[col], (newValue) => {
+                                    row[col] = newValue;
+                                }].concat(fnsToRun[col].filter((v, i) => i > 0).map(c => row[c])));
+                            });
+                            this._db.query("upsert", row).manualExec({ table: this._query.table }).then(done).catch(done);
+                        }).then(() => {
+                            res({ msg: `${rows.length} rows modified` });
+                        });
+                    });
+                    break;
+                case "torow":
+
+                    const fnKey = (this._query.actionArgs || "").replace("()", "");
+
+                    if (this._db.toRowFns[this._query.table as string] && this._db.toRowFns[this._query.table as string][fnKey]) {
+
+                        const fn: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void = this._db.toRowFns[this._query.table as string][fnKey];
+                        const PK = this._db.tablePKs[this._query.table as string];
+
+                        if (this._query.on && this._query.on.length) {
+                            fastALL(this._query.on, (pk, i, done) => {
+                                fn(pk, {}, (newRow) => {
+                                    newRow[PK] = pk;
+                                    this._db.query("upsert", newRow).manualExec({ table: this._query.table }).then(done).catch(done);
+                                });
+                            }).then(() => {
+                                res([{ msg: `${(this._query.on || []).length} rows modified or added.` }]);
+                            });
+                            return;
+                        }
+
+                        this._query.action = "select";
+                        this._query.actionArgs = undefined;
+
+                        runQuery(this, (rows) => {
+                            fastALL(rows, (row, i, done) => {
+                                if (Object.isFrozen(row)) {
+                                    row = _assign(row);
+                                }
+                                fn(row[PK], row, (newRow) => {
+                                    newRow[PK] = row[PK];
+                                    this._db.query("upsert", newRow).manualExec({ table: this._query.table }).then(done).catch(done);
+                                });
+                            }).then(() => {
+                                res({ msg: `${rows.length} rows modified` });
+                            });
+                        });
+                    } else {
+                        rej(`No function ${this._query.actionArgs} found to perform updates!`);
+                        return;
+                    }
+                    break;
+            }
+        });
+    }
+
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
@@ -462,88 +564,18 @@ export class _NanoSQLQuery {
         const a = this._query.action.toLowerCase();
 
         if (["tocolumn", "torow"].indexOf(a) > -1) {
-
-            return new Promise((res, rej) => {
-                switch (a) {
-                    case "tocolumn":
-                        let fnsToRun: {
-                            [column: string]: any[];
-                        } = {};
-                        if (this._query.actionArgs && this._query.actionArgs.length) {
-                            Object.keys(this._db.toColRules[this._query.table as string]).filter(c => this._query.actionArgs.indexOf(c) !== -1).forEach((col) => {
-                                fnsToRun[col] = this._db.toColRules[this._query.table as string][col];
-                            });
-                        } else {
-                            fnsToRun = this._db.toColRules[this._query.table as string];
-                        }
-
-                        this._query.action = "select";
-                        const columns = Object.keys(fnsToRun);
-
-                        runQuery(this, (rows) => {
-                            fastALL(rows, (row, i, done) => {
-                                if (Object.isFrozen(row)) {
-                                    row = _assign(row);
-                                }
-                                columns.forEach((col) => {
-                                    const fn = this._db.toColFns[this._query.table as string][fnsToRun[col][0]];
-                                    if (!fn) {
-                                        return;
-                                    }
-                                    fn.apply(null, [row[col], (newValue) => {
-                                        row[col] = newValue;
-                                    }].concat(fnsToRun[col].filter((v, i) => i > 0).map(c => row[c])));
-                                });
-                                this._db.query("upsert", row).manualExec({table: this._query.table}).then(done).catch(done);
-                            }).then(() => {
-                                res({msg: `${rows.length} rows modified`});
-                            });
-                        });
-                    break;
-                    case "torow":
-
-                        const fnKey = (this._query.actionArgs || "").replace("()", "");
-
-                        if (this._db.toRowFns[this._query.table as string] && this._db.toRowFns[this._query.table as string][fnKey]) {
-
-                            const fn: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void = this._db.toRowFns[this._query.table as string][fnKey];
-                            const PK = this._db.tablePKs[this._query.table as string];
-
-                            if (this._query.on && this._query.on.length) {
-                                fastALL(this._query.on, (pk, i, done) => {
-                                    fn(pk, {}, (newRow) => {
-                                        newRow[PK] = pk;
-                                        this._db.query("upsert", newRow).manualExec({table: this._query.table}).then(done).catch(done);
-                                    });
-                                }).then(() => {
-                                    res([{msg: `${(this._query.on || []).length} rows modified or added.`}]);
-                                });
-                                return;
-                            }
-
-                            this._query.action = "select";
-                            this._query.actionArgs = undefined;
-
-                            runQuery(this, (rows) => {
-                                fastALL(rows, (row, i, done) => {
-                                    if (Object.isFrozen(row)) {
-                                        row = _assign(row);
-                                    }
-                                    fn(row[PK], row, (newRow) => {
-                                        newRow[PK] = row[PK];
-                                        this._db.query("upsert", newRow).manualExec({table: this._query.table}).then(done).catch(done);
-                                    });
-                                }).then(() => {
-                                    res({msg: `${rows.length} rows modified`});
-                                });
-                            });
-                        } else {
-                            rej(`No function ${this._query.actionArgs} found to perform updates!`);
-                            return;
-                        }
-                    break;
-                }
-            });
+            if (this._query.debounce) {
+                const denormalizationKey = hash(JSON.stringify([this._query.table, a, this._query.actionArgs, this._query.on, this._query.where].filter(r => r)));
+                return new Promise((res, rej) => {
+                    if (debounceTimers[denormalizationKey]) {
+                        clearTimeout(debounceTimers[denormalizationKey]);
+                    }
+                    debounceTimers[denormalizationKey] = setTimeout(() => {
+                        this.denormalizationQuery(a).then(res);
+                    }, this._query.debounce);
+                });
+            }
+            return this.denormalizationQuery(a);
         }
 
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) > -1) {

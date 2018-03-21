@@ -25,6 +25,7 @@ export interface IdbQueryBase {
     limit?: number;
     offset?: number;
     on?: any[];
+    debounce?: number;
     trie?: {
         column: string;
         search: string;
@@ -86,6 +87,13 @@ export declare class _NanoSQLQuery {
      * @memberof _NanoSQLQuery
      */
     on(primaryKeys: any[]): _NanoSQLQuery;
+    /**
+     * Debounce aggregate function calls.
+     *
+     * @param {number} ammt
+     * @memberof _NanoSQLQuery
+     */
+    debounce(ms?: number): _NanoSQLQuery;
     /**
      * Trigge ORM queries for all result rows.
      *
@@ -242,6 +250,7 @@ export declare class _NanoSQLQuery {
      * @memberof _NanoSQLQuery
      */
     manualExec(query: IdbQueryExec): Promise<any>;
+    denormalizationQuery(action: string): any;
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.

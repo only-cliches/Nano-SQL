@@ -5,7 +5,12 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
-## [1.3.8] 3-29-2018
+## [1.3.9] 3-20-2018
+- Added ability to debounce denormalization calculations.
+- CSVs are handled much better now.
+- Added optional `filter` function argument to `.loadCSV` method, lets you adjust the rows after they've been parsed from the CSV and before they're put into the db.
+
+## [1.3.8] 3-19-2018
 - Added way to access data models for each table.
 
 ## [1.3.7] 3-18-2018

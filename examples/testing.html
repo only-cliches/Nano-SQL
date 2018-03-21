@@ -385,7 +385,9 @@
                                                         console.log(rows, rows1);
                                                     })
                         */
-                        nSQL("users").query("toRow", "setBalance()").on([6]).exec().then(() => {
+                        console.time("TEST DEBOUNCE");
+                        nSQL("users").query("toRow", "setBalance()").on([6]).debounce().exec().then(() => {
+                            console.timeEnd("TEST DEBOUNCE");
                             nSQL("users").query("select").where(["id", "=", 6]).exec().then((rows) => {
                                 console.log("toRow", rows);
                             })
