@@ -474,20 +474,23 @@ export class _NanoSQLQuery {
                     const columns = Object.keys(fnsToRun);
 
                     runQuery(this, (rows) => {
-                        fastALL(rows, (row, i, done) => {
+                        fastCHAIN(rows, (row, i, done) => {
                             if (Object.isFrozen(row)) {
                                 row = _assign(row);
                             }
-                            columns.forEach((col) => {
+                            fastALL(columns, (col, i, next) => {
                                 const fn = this._db.toColFns[this._query.table as string][fnsToRun[col][0]];
                                 if (!fn) {
+                                    next();
                                     return;
                                 }
                                 fn.apply(null, [row[col], (newValue) => {
                                     row[col] = newValue;
+                                    next();
                                 }].concat(fnsToRun[col].filter((v, i) => i > 0).map(c => row[c])));
+                            }).then(() => {
+                                this._db.query("upsert", row).manualExec({ table: this._query.table }).then(done).catch(done);
                             });
-                            this._db.query("upsert", row).manualExec({ table: this._query.table }).then(done).catch(done);
                         }).then(() => {
                             res({ msg: `${rows.length} rows modified` });
                         });

@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.39;
+const VERSION = 1.40;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -710,7 +710,7 @@ export class NanoSQLInstance {
 
             if (model.props) {
                 model.props.forEach((prop) => {
-                    if (prop.indexOf("from=>") !== -1 && prop.indexOf("()") !== -1) {
+                    if (prop.indexOf("from=>") !== -1 && prop.indexOf("(") !== -1) {
                         const fnName = prop.replace("from=>", "").split("(").shift();
                         const fnArgs = prop.replace("from=>", "").split("(").pop().replace(")", "").split(",").map(c => c.trim());
                         t.toColRules[l][model.key] = [fnName].concat(fnArgs);
@@ -1001,7 +1001,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery {
+    public query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe" | "toColumn" | "toRow", args?: any): _NanoSQLQuery {
 
         /*let t = this;
         t._queryPtr++;

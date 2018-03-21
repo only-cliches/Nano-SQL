@@ -1074,6 +1074,17 @@ export class _MutateSelection {
                     return newRow;
                 };
 
+                if (!rows.length && hasAggregateFun) {
+                    let oneRow = [{}];
+                    Object.keys(columnData).forEach((fnName) => {
+                        if (typeof functionResults[columnData[fnName].key] !== "undefined") {
+                            oneRow[0][fnName] = functionResults[columnData[fnName].key];
+                        }
+                    });
+                    complete(oneRow);
+                    return;
+                }
+
                 if (this._sortGroups && hasAggregateFun) { // group by with aggregate
                     let newRows: any[] = [];
                     Object.keys(this._sortGroups).forEach((k) => {
