@@ -544,7 +544,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any): _NanoSQLQuery;
+    query(action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe" | "toColumn" | "toRow", args?: any): _NanoSQLQuery;
     onConnected(callback: () => void): void;
     /**
      * Trigger a database event

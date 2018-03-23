@@ -5,7 +5,7 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
-## [1.4.0] 3-21-2018
+## [1.4.0] 3-23-2018
 - Fixed denormalization `toColumn` bug.
 - Fixed aggregate functions returning nothing if there are no result rows.
 
