@@ -5,6 +5,14 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.1] 4-5-2018
+- Added `onProgress` function to `loadCSV` and `loadJS` methods.
+- Trie objects are populated much faster now on connect.
+- A few minor performance and code optimizations.
+- Typedoc now works with newest version of Typescript!  Joyously restored Typedocs.
+- Updated all dependencies.
+- Cleaned up comments a bunch since they're visible in Typedocs again.
+
 ## [1.4.0] 3-23-2018
 - Fixed denormalization `toColumn` bug.
 - Fixed aggregate functions returning nothing if there are no result rows.

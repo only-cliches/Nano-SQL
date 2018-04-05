@@ -36,7 +36,17 @@ const options = {
         setImmediate: false
     },
     plugins: [
-
+        /*new UglifyJSPlugin({
+            uglifyOptions: {
+                compress: {
+                    warnings: false,
+                    passes: 2
+                },
+                mangle: {
+                    properties: { regex: new RegExp(/^_|Promise/) }
+                }
+            }
+        })*/
     ],
     module: {
         rules: [{
@@ -61,7 +71,7 @@ const options = {
 
 switch (process.env.NODE_ENV) {
     case "production":
-        options.optimization = {
+        /*options.optimization = {
             minimizer: [
                 new UglifyJSPlugin({
                     uglifyOptions: {
@@ -70,12 +80,12 @@ switch (process.env.NODE_ENV) {
                             passes: 2
                         },
                         mangle: {
-                            // props: { regex: new RegExp(/^_|Promise/) }
+                            props: { regex: new RegExp(/^_|Promise/) }
                         }
                     }
                 })
             ]
-        };
+        };*/
         break;
 }
 

@@ -550,12 +550,42 @@
             {key: "unreadMsgs", type: "int", props: ["from=>Users.calcMsgs(id, userID)"]}
         ])
 
-        // revisions API
+        // New search implimentation
+        1. Simple english tokenizer (allow custom tokenizers to be imported) https://github.com/jedp/porter-stemmer
+        2. Create inverted index tables, each row is:
+            A. Primary key of the word/token
+            B. value is an array of related rows: {id: rowID, idx: 20, column: "title"} or {id: rowID, i: 20, c: "title"}
+        3. Use Bitap to query the word list for matches
+        4. Optional https://www.wordsapi.com/ to get thesaurus matches
 
-        nSQL().config({historyMode:"revisions"}).connect()...
+        API:
+        nSQL("table")
+        .model([
+            {key: "id", type: "uuid", props: ["pk"]},
+            {key: "text", type: "string", props: ["search:3"]} // "search" tells the system to index this column for .search() queries :3 is optional default weight
+        ])
+        .config({
+            thesaurusAPIKey: "1234",
+            maxPatternLength: 32, // used by Bitap
+            tokenizer: (table: string, column: string, value: string) => {
 
-        nSQL().extend("Revision", "table", "primarykey", "<"||">"||"?"||revisionID).then(...)
-
+            }
+        }) 
+        nSQL("table").query("select").where(...).search(
+            "ALL", // "ALL" or "ANY"
+            ["term1", "term2", "multi word term"],  // array of terms to match against
+            { // all optional
+                minScore: 0.7, // minimum score to return,
+                returnTrie: false, // also do trie search
+                weightColumn: false OR "my_column", // false to not return weight column, otherwise set the column to return weight in
+                thesaurus: true, // use thesaurus api endpoint to get similar words/terms
+                columns: ["title:1", "body:5"] // only search these columns (defaults to all) optionally specify a weight for this search
+            }).exec().then..
+        
+        nSQL().extend("rebuild_search", 
+            false, // perform batch updates or not.  false = slower but good for large data sets, true = fast but uses way more memory
+            "table" // if undefined then rebuilds all tables, or rebuilds the provided one
+            ).then...
         */
     </script>
     Everything is in the console, not much to see here just a scratchpad to test queries with.

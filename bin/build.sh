@@ -5,7 +5,7 @@ rm -rf dist/*.*
 rm -rf *.d.ts
 rm -rf docs
 rm -rf lib
-# mkdir docs
+mkdir docs
 
 echo "Clean Completed..."
 
@@ -29,17 +29,15 @@ rm -rf lib/database/*.txt;
 
 echo "Worker Build Completed..."
 
-
-
 #browser build
 export NODE_ENV=production && ./node_modules/.bin/webpack --display-modules
 
 echo "Browser Build Completed..."
 
 #docs 
-#./node_modules/.bin/typedoc --out docs . --target ES5 --exclude node_modules --excludeExternals --excludePrivate
-#touch docs/.nojekyll
-#echo "Docs Completed..."
+./node_modules/.bin/typedoc --out docs --includes src --target ES5 --exclude node_modules --excludeExternals --excludePrivate
+touch docs/.nojekyll
+echo "Docs Completed..."
 
 #copy from examples into dist folder
 yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js

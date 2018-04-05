@@ -217,7 +217,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                     rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
                         idx++;
                         i++;
-                        i > 1000 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
                     });
                 } else {
                     complete();

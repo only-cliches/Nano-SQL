@@ -30,11 +30,24 @@ export interface timeIdms extends String {
 
 }
 
+/**
+ * Object.assign, but better.
+ *
+ * @param {*} obj
+ * @returns
+ */
 export const _assign = (obj: any) => {
     return obj ? JSON.parse(JSON.stringify(obj)) : null;
 };
 
-export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any> => {
+/**
+ * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
+ *
+ * @param {any[]} items
+ * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
+ * @returns {Promise<any[]>}
+ */
+export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any[]> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
             res([]);
@@ -55,17 +68,28 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
     });
 };
 
-export const fastRACE = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any> => {
+/**
+ * Quickly and efficiently fire asyncrounous operations in parallel, returns once any operation completes.
+ *
+ * @param {any[]} items
+ * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
+ * @returns {Promise<any[]>}
+ */
+export const fastRACE = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any[]> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
             res([]);
             return;
         }
+        let resolved = false;
         let counter = 0;
         const step = () => {
             if (counter < items.length) {
                 callback(items[counter], counter, (result) => {
-                    res(result);
+                    if (!resolved) {
+                        resolved = true;
+                        res([result]);
+                    }
                 });
                 counter++;
                 step();
@@ -75,7 +99,14 @@ export const fastRACE = (items: any[], callback: (item: any, i: number, next: (r
     });
 };
 
-export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void): Promise<any> => {
+/**
+ * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
+ *
+ * @param {any[]} items
+ * @param {(item: any, i: number, done: (result?: any) => void) => void} callback
+ * @returns {Promise<any[]>}
+ */
+export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void): Promise<any[]> => {
     return Promise.all((items || []).map((item, i) => {
         return new Promise((res, rej) => {
             callback(item, i, (result) => {
@@ -93,10 +124,14 @@ export const isSafari: boolean = ua.length === 0 ? false : (/^((?!chrome|android
 // Detect Edge or Internet Explorer
 export const isMSBrowser: boolean = ua.length === 0 ? false : ua.indexOf("MSIE ") > 0 || ua.indexOf("Trident/") > 0 || ua.indexOf("Edge/") > 0;
 
-// detect Android
+// Detect Android Device
 export const isAndroid = /Android/.test(ua);
 
-// Generate a random 16 bit number using strongest crypto available.
+/**
+ * Generate a random 16 bit number using strongest crypto available.
+ *
+ * @returns {number}
+ */
 export const random16Bits = (): number => {
     if (typeof crypto === "undefined") {
         return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
@@ -105,7 +140,7 @@ export const random16Bits = (): number => {
             let buf = new Uint16Array(1);
             crypto.getRandomValues(buf);
             return buf[0];
-        } else if (global !== "undefined" && global._crypto.randomBytes) { // NodeJS crypto
+        } else if (typeof global !== "undefined" && global._crypto.randomBytes) { // NodeJS crypto
             return global._crypto.randomBytes(2).reduce((prev: number, cur: number) => cur * prev);
         } else {
             return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
@@ -113,7 +148,12 @@ export const random16Bits = (): number => {
     }
 };
 
-// Generate a TimeID for use in the database.
+/**
+ * Generate a TimeID for use in the database.
+ *
+ * @param {boolean} [ms]
+ * @returns {string}
+ */
 export const timeid = (ms?: boolean): string => {
     let time = Math.round((new Date().getTime()) / (ms ? 1 : 1000)).toString();
     while (time.length < (ms ? 13 : 10)) {
@@ -123,7 +163,11 @@ export const timeid = (ms?: boolean): string => {
 };
 
 
-// Generates a valid V4 UUID.
+/**
+ * Generates a valid V4 UUID using the strongest crypto available.
+ *
+ * @returns {string}
+ */
 export const uuid = (): string => {
     let r, s, b = "";
     return [b, b, b, b, b, b, b, b].reduce((prev: string, cur: any, i: number): string => {
@@ -135,8 +179,20 @@ export const uuid = (): string => {
     }, b);
 };
 
-// A quick and dirty hashing function, turns a string into a md5 style hash.
-// stolen from https://github.com/darkskyapp/string-hash
+const idTypes = {
+    "int": (value) => value,
+    "uuid": uuid,
+    "timeId": () => timeid(),
+    "timeIdms": () => timeid(true)
+};
+
+/**
+ * A quick and dirty hashing function, turns a string into a md5 style hash.
+ * stolen from https://github.com/darkskyapp/string-hash
+ *
+ * @param {string} str
+ * @returns {string}
+ */
 export const hash = (str: string): string => {
     let hash = 5381, i = str.length;
     while (i) {
@@ -145,19 +201,24 @@ export const hash = (str: string): string => {
     return (hash >>> 0).toString(16);
 };
 
-const idTypes = {
-    "int": (value) => value,
-    "uuid": uuid,
-    "timeId": () => timeid(),
-    "timeIdms": () => timeid(true)
-};
-
-// Generate a row ID given the primary key type.
+/**
+ * Generate a row ID given the primary key type.
+ *
+ * @param {string} primaryKeyType
+ * @param {number} [incrimentValue]
+ * @returns {*}
+ */
 export const generateID = (primaryKeyType: string, incrimentValue?: number): any => {
     return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : "";
 };
 
-// Clean the arguments from an object given an array of arguments and their types.
+/**
+ * Clean the arguments from an object given an array of arguments and their types.
+ *
+ * @param {string[]} argDeclarations
+ * @param {StdObject<any>} args
+ * @returns {StdObject<any>}
+ */
 export const cleanArgs = (argDeclarations: string[], args: StdObject<any>): StdObject<any> => {
     let a: StdObject<any> = {};
     let i = argDeclarations.length;
@@ -350,7 +411,7 @@ let objectPathCache: {
 } = {};
 
 /**
- * Take an object and a string like "value.length" or "val[length]" and safely get that value in the object.
+ * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
  * @param {string} pathQuery
  * @param {*} object

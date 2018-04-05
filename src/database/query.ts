@@ -1008,7 +1008,7 @@ export class _MutateSelection {
             } = {};
 
             columnSelection.forEach((column) => {
-                if (column.indexOf("(") === -1) {
+                if (column.indexOf("(") === -1) { // no functions
                     return;
                 }
                 const fnName: string = (column.match(/^.*\(/g) || [""])[0].replace(/\(|\)/g, "").toUpperCase();

@@ -56,9 +56,9 @@ export interface NanoSQLStorageAdapter {
 
     /**
      * Called to disconnect the database and do any clean up that's needed
-     * 
-     * @param {() => void} complete 
-     * @param {(err: Error) => void} [error] 
+     *
+     * @param {() => void} complete
+     * @param {(err: Error) => void} [error]
      * @memberof NanoSQLStorageAdapter
      */
     disconnect?(complete: () => void, error?: (err: Error) => void): void;
@@ -144,34 +144,34 @@ export interface NanoSQLStorageAdapter {
     /**
      * Given an arbitrary list of primary keys and a table, get all primary keys.
      * This method is optional, if it isn't provided then .read() will be called in parallel to perform these kinds of queries.
-     * 
-     * @param {string} table 
-     * @param {DBKey[]} pks 
-     * @param {(rows: DBRow[]) => void} callback 
-     * @param {(err: Error) => void} [error] 
+     *
+     * @param {string} table
+     * @param {DBKey[]} pks
+     * @param {(rows: DBRow[]) => void} callback
+     * @param {(err: Error) => void} [error]
      * @memberof NanoSQLStorageAdapter
      */
     batchRead?(table: string, pks: DBKey[], callback: (rows: DBRow[]) => void, error?: (err: Error) => void): void;
-    
+
     /**
      * If a where statement is sent to nanoSQL that can't be optimized and requires a full table scan, this query can be sent
      * to the data store adapter to perform the conditional checks instead.
-     * 
+     *
      * This method is optional and should only be usd if you can cover all conditions in the _compare method found inside the query.ts file.
      * The default behavior for unoptimized reads is to grab the whole table and check each row for the conditional statements.
      * If you use this method it should return results much faster than the default beavhior can.
-     * 
-     * @param {string} table 
-     * @param {any[]} where 
-     * @param {(rows: DBRow[]) => void} rowCallback 
+     *
+     * @param {string} table
+     * @param {any[]} where
+     * @param {(rows: DBRow[]) => void} rowCallback
      * @memberof NanoSQLStorageAdapter
      */
     whereRead?(table: string, where: any[], rowCallback: (rows: DBRow[]) => void): void;
 
     /**
      * Called by the system after the adapter connects to allow access to the parent nanosql instance.
-     * 
-     * @param {NanoSQLInstance} nSQL 
+     *
+     * @param {NanoSQLInstance} nSQL
      * @memberof NanoSQLStorageAdapter
      */
     setNSQL?(nSQL: NanoSQLInstance): void;
@@ -214,10 +214,10 @@ export class _NanoSQLStorage {
                 [table: string]: {
                     pkColumn: string;
                     mode: string; // GHOST or LIVE
-                    columns: {thisColumn: string, otherColumn: string}[]
+                    columns: { thisColumn: string, otherColumn: string }[]
                 }
             }
-            _viewTables: {table: string, column: string}[] // other tables we need to check when rows are updated on this table
+            _viewTables: { table: string, column: string }[] // other tables we need to check when rows are updated on this table
         }
     };
 
@@ -232,7 +232,7 @@ export class _NanoSQLStorage {
 
     /**
      * Wether views exist the data model or not.
-     * 
+     *
      * @type {boolean}
      * @memberof _NanoSQLStorage
      */
@@ -434,15 +434,14 @@ export class _NanoSQLStorage {
 
         if (typeof this._mode === "string") {
             if (this._mode === "PERM") {
-                const detect = this._detectStorageMethod();
-                const modes = {
+                /*const modes = {
                     IDB: "Indexed DB",
                     IDB_WW: "Indexed DB (Web Worker)",
                     WSQL: "WebSQL",
                     LS: "Local Storage",
                     TEMP: "memory"
-                };
-                this._mode = detect || this._mode;
+                };*/
+                this._mode = this._detectStorageMethod() || this._mode;
             }
 
             switch (this._mode) {
@@ -470,22 +469,22 @@ export class _NanoSQLStorage {
         } else {
             this.adapters[0].adapter = this._mode;
         }
-/*
-        this._fastReadAdapter = this.adapters[0].adapter;
-        this._slowReadAdapter = this.adapters[0].adapter;
+        /*
+                this._fastReadAdapter = this.adapters[0].adapter;
+                this._slowReadAdapter = this.adapters[0].adapter;
 
-        if (args.secondaryAdapters && args.secondaryAdapters.length) {
-            this.adapters = this.adapters.concat(args.secondaryAdapters);
-            this.adapters.forEach((a, i) => {
-                if (i === 0) return;
-                if(a.doFastReads) {
-                    this._fastReadAdapter = a.adapter;
-                }
-                if (a.doSlowReads) {
-                    this._slowReadAdapter = a.adapter;
-                }
-            })
-        }*/
+                if (args.secondaryAdapters && args.secondaryAdapters.length) {
+                    this.adapters = this.adapters.concat(args.secondaryAdapters);
+                    this.adapters.forEach((a, i) => {
+                        if (i === 0) return;
+                        if(a.doFastReads) {
+                            this._fastReadAdapter = a.adapter;
+                        }
+                        if (a.doSlowReads) {
+                            this._slowReadAdapter = a.adapter;
+                        }
+                    })
+                }*/
     }
 
     /**
@@ -506,7 +505,7 @@ export class _NanoSQLStorage {
 
         this.adapters.forEach((a) => {
             a.adapter.setID(this._id);
-        })
+        });
 
         this._tableNames.forEach((table) => {
             this._newTable(table, dataModels[table]);
@@ -524,7 +523,7 @@ export class _NanoSQLStorage {
                 if (cur === table) return prev;
                 let vTables = Object.keys(this.tableInfo[cur]._views);
                 if (vTables.indexOf(table) !== -1) {
-                    prev.push({table: cur, column: this.tableInfo[cur]._views[table].pkColumn});
+                    prev.push({ table: cur, column: this.tableInfo[cur]._views[table].pkColumn });
                 }
                 return prev;
             }, [] as any[]);
@@ -590,25 +589,22 @@ export class _NanoSQLStorage {
                     a.adapter.setNSQL(this._nsql);
                 }
                 done();
-            })
+            });
         }).then(() => {
 
             // populate trie data
             fastALL(Object.keys(this._trieIndexes), (table, i, tableDone) => {
                 const trieColumns = this._trieIndexes[table];
                 if (Object.keys(trieColumns).length) {
-                    this._read(table, (row, idx, toKeep) => {
-                        if (!row) {
-                            toKeep(false);
-                            return;
-                        }
-                        Object.keys(trieColumns).forEach((column) => {
-                            if (row[column] !== undefined) {
-                                this._trieIndexes[table][column].addWord(String(row[column]));
-                            }
+                    fastALL(Object.keys(trieColumns), (column, ii, nextColumn) => {
+                        const idxTable = "_" + table + "_idx_" + column;
+                        this.adapters[0].adapter.getIndex(idxTable, false, (index: any[]) => {
+                            index.forEach((value) => {
+                                this._trieIndexes[table][column].addWord(String(value));
+                            });
+                            nextColumn();
                         });
-                        toKeep(false);
-                    }, tableDone);
+                    }).then(tableDone);
                 } else {
                     tableDone();
                 }
@@ -674,7 +670,7 @@ export class _NanoSQLStorage {
                         if (!row[column]) {
                             return;
                         }
-                        if(!indexGroups[column][row[column]]) {
+                        if (!indexGroups[column][row[column]]) {
                             indexGroups[column][row[column]] = [];
                         }
                         indexGroups[column][row[column]].push(row[pk]);
@@ -695,7 +691,7 @@ export class _NanoSQLStorage {
                         }).then(done);
                     }).then(() => {
                         tableDone();
-                    })
+                    });
                 });
             });
         }).then(() => {
@@ -729,38 +725,44 @@ export class _NanoSQLStorage {
      */
     public _detectStorageMethod(): string {
 
-        if (typeof window === "undefined") { // NodeJS
+        // NodeJS
+        if (typeof window === "undefined") {
             return "LVL";
-        } else { // Browser
-            if (isSafari) { // Safari always gets WebSQL (mobile and desktop)
-                return "WSQL";
-            }
+        }
 
-            if (isMSBrowser) { // IE and Edge don't support Indexed DB web workers, and may not support indexed db at all.
-                return typeof indexedDB !== "undefined" ? "IDB" : "LS";
-            }
+        // Browser
 
-            // everyone else (FF + Chrome)
-            // check for support for indexed db, web workers and blob
-            if ([typeof Worker, typeof Blob, typeof indexedDB].indexOf("undefined") === -1 && window.URL && window.URL.createObjectURL) {
-                try {
-                    const w = new Worker(window.URL.createObjectURL(new Blob(["var t = 't';"])));
-                    w.postMessage("");
-                    w.terminate();
-                    const idbID = "1234";
-                    indexedDB.open(idbID, 1);
-                    indexedDB.deleteDatabase(idbID);
-                    return "IDB_WW";
-                } catch (e) { // worker, blob, or indexed DB failed
-                    if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
-                        return "IDB";
-                    }
+        // Safari / iOS always gets WebSQL (mobile and desktop)
+        if (isSafari) {
+            return "WSQL";
+        }
+
+        // IE and Edge don't support Indexed DB web workers, and may not support indexed db at all.
+        if (isMSBrowser) {
+            return typeof indexedDB !== "undefined" ? "IDB" : "LS";
+        }
+
+        // everyone else (FF + Chrome)
+        // check for support for indexed db, web workers and blob
+        if ([typeof Worker, typeof Blob, typeof indexedDB].indexOf("undefined") === -1 && window.URL && window.URL.createObjectURL) {
+            try {
+                const w = new Worker(window.URL.createObjectURL(new Blob(["var t = 't';"])));
+                w.postMessage("");
+                w.terminate();
+                const idbID = "1234";
+                indexedDB.open(idbID, 1);
+                indexedDB.deleteDatabase(idbID);
+                return "IDB_WW";
+            } catch (e) { // worker, blob, or indexed DB failed
+                if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
+                    return "IDB";
                 }
             }
-
-            // nothing else works, we gotta do local storage. :(
-            return "LS";
         }
+
+        // nothing else works, we gotta do local storage. :(
+        return "LS";
+
     }
 
     /**
@@ -816,7 +818,7 @@ export class _NanoSQLStorage {
     public _read(table: string, query: (row: DBRow, idx: number, toKeep: (result: boolean) => void) => void | any[], callback: (rows: DBRow[]) => void) {
 
         if (Array.isArray(query)) { // select by array of primary keys
-            
+
             const batchRead = this.adapters[0].adapter.batchRead;
             if (batchRead) {
                 batchRead.apply(this.adapters[0].adapter, [table, query as any, callback]);
@@ -919,23 +921,23 @@ export class _NanoSQLStorage {
     private _setSecondaryIndexes(table: string, pk: DBKey, rowData: DBRow, skipColumns: string[], complete: () => void) {
         fastALL(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
 
-                const column = this._secondaryIndexKey(rowData[idx]) as any;
-                if (!column) {
-                    done();
-                    return;
-                }
-                if (this._trieIndexes[table][idx]) {
-                    this._trieIndexes[table][idx].addWord(String(rowData[idx]));
-                }
+            const column = this._secondaryIndexKey(rowData[idx]) as any;
+            if (!column) {
+                done();
+                return;
+            }
+            if (this._trieIndexes[table][idx]) {
+                this._trieIndexes[table][idx].addWord(String(rowData[idx]));
+            }
 
-                const idxTable = "_" + table + "_idx_" + idx;
-                this.adapters[0].adapter.read(idxTable, column, (row) => {
-                    let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
-                    indexRow.rows.push(pk);
-                    indexRow.rows.sort();
-                    indexRow.rows = removeDuplicates(indexRow.rows);
-                    this.adapterWrite(idxTable, column, indexRow, done);
-                });
+            const idxTable = "_" + table + "_idx_" + idx;
+            this.adapters[0].adapter.read(idxTable, column, (row) => {
+                let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
+                indexRow.rows.push(pk);
+                indexRow.rows.sort();
+                indexRow.rows = removeDuplicates(indexRow.rows);
+                this.adapterWrite(idxTable, column, indexRow, done);
+            });
         }).then(complete);
     }
 
@@ -1128,7 +1130,7 @@ export class _NanoSQLStorage {
                                 pkColumn: "",
                                 mode: "",
                                 columns: []
-                            }
+                            };
                         }
                         if (prop === "from=>GHOST" || prop === "from=>LIVE") {
                             is2ndIndex = true;
@@ -1166,23 +1168,23 @@ export class _NanoSQLStorage {
     }
 
 
-    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void):void {
+    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void {
         let result: any;
         fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
             if (a.waitForWrites) {
                 a.adapter.write(table, pk, data, (row) => {
                     result = row;
                     done();
-                })
+                });
             } else {
                 done();
-                a.adapter.write(table, pk, data, (row) => {})
+                a.adapter.write(table, pk, data, (row) => { });
             }
         }).then(() => {
             complete(result);
         }).catch((err) => {
             if (error) error(err);
-        })
+        });
     }
 
     public adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void {
@@ -1190,16 +1192,16 @@ export class _NanoSQLStorage {
             if (a.waitForWrites) {
                 a.adapter.delete(table, pk, () => {
                     done();
-                })
+                });
             } else {
                 done();
-                a.adapter.delete(table, pk, () => {})
+                a.adapter.delete(table, pk, () => { });
             }
         }).then(() => {
             complete();
         }).catch((err) => {
             if (error) error(err);
-        })
+        });
     }
 
     public adapterDrop(table: string, complete: () => void, error?: (err: Error) => void): void {
@@ -1207,15 +1209,15 @@ export class _NanoSQLStorage {
             if (a.waitForWrites) {
                 a.adapter.drop(table, () => {
                     done();
-                })
+                });
             } else {
                 done();
-                a.adapter.drop(table, () => {})
+                a.adapter.drop(table, () => { });
             }
         }).then(() => {
             complete();
         }).catch((err) => {
             if (error) error(err);
-        })
+        });
     }
 }

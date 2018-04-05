@@ -126,12 +126,18 @@ export declare class NanoSQLInstance {
      */
     sTable: string | any[];
     private _config;
-    _plugins: NanoSQLPlugin[];
+    plugins: NanoSQLPlugin[];
     version: number;
-    _instanceBackend: NanoSQLPlugin;
+    /**
+     * Holds the plugin / adapter used by instance queries.
+     *
+     * @type {NanoSQLPlugin}
+     * @memberof NanoSQLInstance
+     */
+    iB: NanoSQLPlugin;
     isConnected: boolean;
-    _randoms: string[];
-    _randomPtr: number;
+    private _randoms;
+    private _randomPtr;
     static functions: {
         [fnName: string]: NanoSQLFunction;
     };
@@ -148,7 +154,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    _AVMod: IActionViewMod;
+    private _AVMod;
     /**
      * Holds wether each table has a primary key or not
      *
@@ -165,7 +171,7 @@ export declare class NanoSQLInstance {
      * @type {StdObject<boolean>}
      * @memberOf NanoSQLInstance
      */
-    _hasEvents: StdObject<boolean>;
+    private _hasEvents;
     /**
      * Stores wether the event system needs to be active at all.
      *
@@ -173,7 +179,7 @@ export declare class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     hasAnyEvents: boolean;
-    pluginsDoHasExec: boolean;
+    pluginHasDidExec: boolean;
     /**
      * Store an array of table names for ORM type casting.
      *
@@ -181,7 +187,7 @@ export declare class NanoSQLInstance {
      * @type {string[]}
      * @memberof NanoSQLInstance
      */
-    _tableNames: string[];
+    tableNames: string[];
     /**
      * Stores wether {key: "*", type: "*"} is in the data model
      *
@@ -237,7 +243,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    table(table?: string): NanoSQLInstance;
+    table(table?: string | any[]): NanoSQLInstance;
     /**
      * Inits the backend database for use.
      *
@@ -650,7 +656,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    loadJS(table: string, rows: Array<Object>, useTransaction?: boolean): Promise<Array<Object>>;
+    loadJS(table: string, rows: Array<any>, useTransaction?: boolean, onProgress?: (percent: number) => void): Promise<Array<any>>;
     /**
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
      *
@@ -663,7 +669,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    loadCSV(table: string, csv: string, useTransaction?: boolean, rowFilter?: (row: any) => any): Promise<Array<Object>>;
+    loadCSV(table: string, csv: string, useTransaction?: boolean, rowFilter?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>>;
 }
 export interface DBConnect {
     models: StdObject<DataModel[]>;
@@ -688,7 +694,7 @@ export interface NanoSQLPlugin {
      */
     willConnect?: (connectArgs: DBConnect, next: (connectArgs: DBConnect) => void) => void;
     /**
-     * Called after connection, changes tot he connectArgs won't have any affect on the database but can still be read.
+     * Called after connection, changes to the connectArgs won't have any affect on the database but can still be read.
      *
      * @memberof NanoSQLPlugin
      */
@@ -741,4 +747,4 @@ export interface NanoSQLPlugin {
      */
     extend?: (next: (args: any[], result: any[]) => void, args: any[], result: any[]) => void;
 }
-export declare const nSQL: (setTablePointer?: string | undefined) => NanoSQLInstance;
+export declare const nSQL: (setTablePointer?: string | any[] | undefined) => NanoSQLInstance;

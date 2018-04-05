@@ -46,8 +46,7 @@ export declare class _NanoSQLQuery {
     _AV: string;
     _query: IdbQuery;
     static execMap: any;
-    constructor(db: NanoSQLInstance);
-    set(table: string | any[], queryAction: string, queryArgs?: any, actionOrView?: string): this;
+    constructor(db: NanoSQLInstance, table: string | any[], queryAction: string, queryArgs?: any, actionOrView?: string);
     /**
      * Used to select specific rows based on a set of conditions.
      * You can pass in a single array with a conditional statement or an array of arrays seperated by "and", "or" for compound selects.
@@ -127,7 +126,7 @@ export declare class _NanoSQLQuery {
      * Example:
      *
      * ```ts
-     * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
+     * nSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
      * ```
      *
      * This will provide a list of all favorite colors and how many each of them are in the db.
@@ -154,7 +153,7 @@ export declare class _NanoSQLQuery {
      * Example:
      *
      * ```ts
-     *  NanoSQL("orders")
+     *  nSQL("orders")
      *  .query("select", ["orders.id","orders.title","users.name"])
      *  .where(["orders.status","=","complete"])
      *  .orderBy({"orders.date":"asc"})
@@ -201,14 +200,21 @@ export declare class _NanoSQLQuery {
      */
     trieSearch(column: string, stringToSearch: string): _NanoSQLQuery;
     /**
-     * If this query results in revision(s) being generated, this will add a comment to those revisions.
+     * Pass comments along with the query.
+     * These comments will be emitted along with the other query datay by the event system, useful for tracking queries.
      *
-     * @param {object} comment
+     * @param {string} comment
      * @returns {_NanoSQLQuery}
-     *
      * @memberof _NanoSQLQuery
      */
     comment(comment: string): _NanoSQLQuery;
+    /**
+     * Perform custom actions supported by plugins.
+     *
+     * @param {...any[]} args
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
     extend(...args: any[]): _NanoSQLQuery;
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
@@ -227,7 +233,7 @@ export declare class _NanoSQLQuery {
      * Export the current query to a CSV file, use in place of "exec()";
      *
      * Example:
-     * NanoSQL("users").query("select").toCSV(true).then(function(csv, db) {
+     * nSQL("users").query("select").toCSV(true).then(function(csv, db) {
      *   console.log(csv);
      *   // Returns something like:
      *   id,name,pass,postIDs
@@ -250,16 +256,22 @@ export declare class _NanoSQLQuery {
      * @memberof _NanoSQLQuery
      */
     manualExec(query: IdbQueryExec): Promise<any>;
+    /**
+     * Handle denormalization requests.
+     *
+     * @param {string} action
+     * @returns
+     * @memberof _NanoSQLQuery
+     */
     denormalizationQuery(action: string): any;
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
-     * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
      * Example:
-     * NanoSQL("users").query("select").exec().then(function(rows, db) {
+     * nSQL("users").query("select").exec().then(function(rows) {
      *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
-     *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
-     * }).then(function(rows, db) {
+     *     return nSQL().query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
+     * }).then(function(rows) {
      *  ...
      * })...
      *

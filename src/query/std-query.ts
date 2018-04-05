@@ -43,9 +43,9 @@ const blankRow = { affectedRowPKS: [], affectedRows: [] };
 
 const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
 
-    if (self._db._plugins.length === 1 && !self._db.hasAnyEvents) {
+    if (self._db.plugins.length === 1 && !self._db.hasAnyEvents) {
         // fast query path, only used if there's a single plugin and no event listeners
-        (self._db._plugins[0] as any).doExec(self._query, (newQ) => {
+        (self._db.plugins[0] as any).doExec(self._query, (newQ) => {
             self._query = newQ;
             if (self._db.hasPK[self._query.table as string]) {
                 complete(self._query.result);
@@ -55,7 +55,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
 
         });
     } else {
-        fastCHAIN(self._db._plugins, (p, i, nextP) => {
+        fastCHAIN(self._db.plugins, (p, i, nextP) => {
             if (p.doExec) {
                 p.doExec(self._query, (newQ) => {
                     self._query = newQ || self._query;
@@ -72,7 +72,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
                 complete(self._query.result.map(r => ({ ...r, _id_: undefined })));
             }
 
-            if (self._db.hasAnyEvents || self._db.pluginsDoHasExec) {
+            if (self._db.hasAnyEvents || self._db.pluginHasDidExec) {
 
                 const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
                     switch (self._query.action) {
@@ -100,7 +100,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
                     affectedRows: hasLength ? (self._query.result[0] || blankRow).affectedRows : [],
                 };
 
-                fastCHAIN(self._db._plugins, (p, i, nextP) => {
+                fastCHAIN(self._db.plugins, (p, i, nextP) => {
                     if (p.didExec) {
                         p.didExec(event, (newE) => {
                             event = newE;
@@ -134,11 +134,8 @@ export class _NanoSQLQuery {
 
     public static execMap: any;
 
-    constructor(db: NanoSQLInstance) {
+    constructor(db: NanoSQLInstance, table: string | any[], queryAction: string, queryArgs?: any, actionOrView?: string) {
         this._db = db;
-    }
-
-    public set(table: string | any[], queryAction: string, queryArgs?: any, actionOrView?: string) {
 
         this._AV = actionOrView || "";
         this._query = {
@@ -150,7 +147,6 @@ export class _NanoSQLQuery {
             actionArgs: queryArgs,
             result: []
         };
-        return this;
     }
 
     /**
@@ -254,7 +250,7 @@ export class _NanoSQLQuery {
      * Example:
      *
      * ```ts
-     * NanoSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
+     * nSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
      * ```
      *
      * This will provide a list of all favorite colors and how many each of them are in the db.
@@ -290,7 +286,7 @@ export class _NanoSQLQuery {
      * Example:
      *
      * ```ts
-     *  NanoSQL("orders")
+     *  nSQL("orders")
      *  .query("select", ["orders.id","orders.title","users.name"])
      *  .where(["orders.status","=","complete"])
      *  .orderBy({"orders.date":"asc"})
@@ -355,25 +351,30 @@ export class _NanoSQLQuery {
     }
 
     /**
-     * If this query results in revision(s) being generated, this will add a comment to those revisions.
+     * Pass comments along with the query.
+     * These comments will be emitted along with the other query datay by the event system, useful for tracking queries.
      *
-     * @param {object} comment
+     * @param {string} comment
      * @returns {_NanoSQLQuery}
-     *
      * @memberof _NanoSQLQuery
      */
-    /*public revisionComment(comment: {[key: string]: any}): _NanoSQLQuery {
-        return this._addCmd("comment", comment);
-    }*/
     public comment(comment: string): _NanoSQLQuery {
         this._query.comments.push(comment);
         return this;
     }
 
+    /**
+     * Perform custom actions supported by plugins.
+     *
+     * @param {...any[]} args
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
     public extend(...args: any[]): _NanoSQLQuery {
         this._query.extend = args;
         return this;
     }
+
     /**
      * Offsets the results by a specific amount from the beginning.  Example:
      *
@@ -396,7 +397,7 @@ export class _NanoSQLQuery {
      * Export the current query to a CSV file, use in place of "exec()";
      *
      * Example:
-     * NanoSQL("users").query("select").toCSV(true).then(function(csv, db) {
+     * nSQL("users").query("select").toCSV(true).then(function(csv, db) {
      *   console.log(csv);
      *   // Returns something like:
      *   id,name,pass,postIDs
@@ -453,6 +454,13 @@ export class _NanoSQLQuery {
         return this.exec();
     }
 
+    /**
+     * Handle denormalization requests.
+     *
+     * @param {string} action
+     * @returns
+     * @memberof _NanoSQLQuery
+     */
     public denormalizationQuery(action: string) {
         return new Promise((res, rej) => {
 
@@ -544,13 +552,12 @@ export class _NanoSQLQuery {
 
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
-     * The second argument of the promise is always the NanoSQL variable, allowing you to chain commands.
      *
      * Example:
-     * NanoSQL("users").query("select").exec().then(function(rows, db) {
+     * nSQL("users").query("select").exec().then(function(rows) {
      *     console.log(rows) // <= [{id:1,username:"Scott",password:"1234"},{id:2,username:"Jeb",password:"1234"}]
-     *     return db.query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
-     * }).then(function(rows, db) {
+     *     return nSQL().query("upsert",{password:"something more secure"}).where(["id","=",1]).exec();
+     * }).then(function(rows) {
      *  ...
      * })...
      *
@@ -621,15 +628,15 @@ export class _NanoSQLQuery {
 
             // handle instance queries
             if (Array.isArray(this._query.table)) {
-                if (this._db._instanceBackend.doExec) {
-                    this._db._instanceBackend.doExec(this._query, (q) => {
+                if (this._db.iB.doExec) {
+                    this._db.iB.doExec(this._query, (q) => {
                         res(q.result);
                     });
                 }
                 return;
             }
 
-            if (!t._db._plugins.length) {
+            if (!t._db.plugins.length) {
                 t._error = "No plugins, nothing to do!";
             }
 
@@ -639,8 +646,8 @@ export class _NanoSQLQuery {
             }
 
 
-            if (this._db._queryMod) {
-                this._db._queryMod(this._query, (newQ) => {
+            if (this._db.queryMod) {
+                this._db.queryMod(this._query, (newQ) => {
                     this._query = newQ;
                     runQuery(this, res);
                 });

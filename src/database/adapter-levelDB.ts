@@ -202,7 +202,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
                         rowCallback(rows[i], idx, () => {
                             idx++;
                             i++;
-                            i > 1000 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
                         });
                     } else {
                         complete();
@@ -222,7 +222,6 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             this._dbIndex[table] = idx;
             callback();
         });
-
 
     }
 

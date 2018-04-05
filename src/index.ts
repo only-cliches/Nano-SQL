@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.40;
+const VERSION = 1.41;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -157,19 +157,25 @@ export class NanoSQLInstance {
 
     private _config: StdObject<any>;
 
-    public _plugins: NanoSQLPlugin[];
+    public plugins: NanoSQLPlugin[];
 
     public version: number = VERSION;
 
-    public _instanceBackend: NanoSQLPlugin;
+    /**
+     * Holds the plugin / adapter used by instance queries.
+     *
+     * @type {NanoSQLPlugin}
+     * @memberof NanoSQLInstance
+     */
+    public iB: NanoSQLPlugin;
 
     public isConnected: boolean;
 
 
     // Incase you don't need truly random numbers,
     // this will generate a cache of random numbers and loop between them.
-    public _randoms: string[];
-    public _randomPtr: number;
+    private _randoms: string[];
+    private _randomPtr: number;
 
     public static functions: {
         [fnName: string]: NanoSQLFunction;
@@ -217,7 +223,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public _AVMod: IActionViewMod;
+    private _AVMod: IActionViewMod;
 
     /**
      * Holds wether each table has a primary key or not
@@ -234,7 +240,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public _queryMod: (args: IdbQuery, complete: (args: IdbQuery) => void) => void;
+    public queryMod: (args: IdbQuery, complete: (args: IdbQuery) => void) => void;
 
     /**
      * A map containing the models
@@ -252,7 +258,7 @@ export class NanoSQLInstance {
      * @type {StdObject<boolean>}
      * @memberOf NanoSQLInstance
      */
-    public _hasEvents: StdObject<boolean>;
+    private _hasEvents: StdObject<boolean>;
 
     /**
      * Stores wether the event system needs to be active at all.
@@ -269,9 +275,9 @@ export class NanoSQLInstance {
      * @type {string}
      * @memberOf NanoSQLInstance
      */
-    public _activeAV: string | undefined;
+    private _activeAV: string | undefined;
 
-    public pluginsDoHasExec: boolean;
+    public pluginHasDidExec: boolean;
 
 
     /**
@@ -281,7 +287,7 @@ export class NanoSQLInstance {
      * @type {string[]}
      * @memberof NanoSQLInstance
      */
-    public _tableNames: string[];
+    public tableNames: string[];
 
 
     /**
@@ -322,8 +328,8 @@ export class NanoSQLInstance {
         t._events = ["*", "change", "delete", "upsert", "drop", "select", "error"];
 
         t._hasEvents = {};
-        t._tableNames = [];
-        t._plugins = [];
+        t.tableNames = [];
+        t.plugins = [];
         t.hasPK = {};
         t.skipPurge = {};
         t.toRowFns = {};
@@ -343,7 +349,7 @@ export class NanoSQLInstance {
 
         t._callbacks = {};
         t._callbacks["*"] = new ReallySmallEvents();
-        t._instanceBackend = new NanoSQLDefaultBackend();
+        t.iB = new NanoSQLDefaultBackend();
         const instanceConnectArgs: DBConnect = {
             models: {},
             actions: {},
@@ -351,10 +357,10 @@ export class NanoSQLInstance {
             config: {},
             parent: this
         };
-        if (t._instanceBackend.willConnect) {
-            t._instanceBackend.willConnect(instanceConnectArgs, () => {
-                if (t._instanceBackend.didConnect) {
-                    t._instanceBackend.didConnect(instanceConnectArgs, () => {
+        if (t.iB.willConnect) {
+            t.iB.willConnect(instanceConnectArgs, () => {
+                if (t.iB.didConnect) {
+                    t.iB.didConnect(instanceConnectArgs, () => {
 
                     });
                 }
@@ -403,7 +409,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public table(table?: string): NanoSQLInstance {
+    public table(table?: string|any[]): NanoSQLInstance {
         if (table) this.sTable = table;
         return this;
     }
@@ -446,7 +452,7 @@ export class NanoSQLInstance {
                 this.use(new NanoSQLDefaultBackend());
             }
 
-            fastCHAIN(this._plugins, (p, i, nextP) => {
+            fastCHAIN(this.plugins, (p, i, nextP) => {
                 if (p.willConnect) {
                     p.willConnect(connectArgs, (newArgs) => {
                         connectArgs = newArgs;
@@ -473,16 +479,16 @@ export class NanoSQLInstance {
                     this.skipPurge[table] = hasWild;
                 });
 
-                this._plugins.forEach((plugin) => {
+                this.plugins.forEach((plugin) => {
                     if (plugin.didExec) {
-                        this.pluginsDoHasExec = true;
+                        this.pluginHasDidExec = true;
                     }
                 });
 
-                t._tableNames = Object.keys(this.dataModels);
+                t.tableNames = Object.keys(this.dataModels);
 
                 const completeConnect = () => {
-                    fastALL(this._plugins, (p, i, nextP) => {
+                    fastALL(this.plugins, (p, i, nextP) => {
                         if (p.didConnect) {
                             p.didConnect(connectArgs, () => {
                                 nextP();
@@ -495,7 +501,7 @@ export class NanoSQLInstance {
                         if (this._onConnectedCallBacks.length) {
                             this._onConnectedCallBacks.forEach(cb => cb());
                         }
-                        res(t._tableNames);
+                        res(t.tableNames);
                     });
                 };
 
@@ -587,7 +593,7 @@ export class NanoSQLInstance {
     }
 
     public use(plugin: NanoSQLPlugin): this {
-        return this._plugins.push(plugin), this;
+        return this.plugins.push(plugin), this;
     }
 
     /**
@@ -899,7 +905,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public queryFilter(callBack: (args: IdbQuery, complete: (args: IdbQuery) => void) => void): NanoSQLInstance {
-        this._queryMod = callBack;
+        this.queryMod = callBack;
         return this;
     }
 
@@ -1014,7 +1020,7 @@ export class NanoSQLInstance {
         let t = this;
         const av = t._activeAV;
         t._activeAV = undefined;
-        return new _NanoSQLQuery(this).set(this.sTable, action, args, av);
+        return new _NanoSQLQuery(this, this.sTable, action, args, av);
     }
 
     public onConnected(callback: () => void) {
@@ -1105,7 +1111,7 @@ export class NanoSQLInstance {
     public rawDump(tables?: string[]) {
         return new Promise((res, rej) => {
             let result = {};
-            fastCHAIN(this._plugins, (plugin: NanoSQLPlugin, i, next) => {
+            fastCHAIN(this.plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.dumpTables) {
                     plugin.dumpTables(tables).then((tables) => {
                         result = {
@@ -1133,7 +1139,7 @@ export class NanoSQLInstance {
      */
     public rawImport(tables: { [table: string]: DBRow[] }): Promise<any> {
         return new Promise((res, rej) => {
-            fastCHAIN(this._plugins, (plugin: NanoSQLPlugin, i, next) => {
+            fastCHAIN(this.plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.importTables) {
                     plugin.importTables(tables).then(next);
                 } else {
@@ -1168,12 +1174,12 @@ export class NanoSQLInstance {
         let transactionID = random16Bits().toString(16);
 
         return new Promise((resolve, reject) => {
-            if (!t._plugins.length) {
+            if (!t.plugins.length) {
                 reject("Nothing to do, no plugins!");
                 return;
             }
 
-            fastCHAIN(t._plugins, (p, i, nextP) => {
+            fastCHAIN(t.plugins, (p, i, nextP) => {
                 if (p.transactionBegin) {
                     p.transactionBegin(transactionID, nextP);
                 } else {
@@ -1206,7 +1212,7 @@ export class NanoSQLInstance {
                             }).then(nextQuery);
                         }).then((results) => {
 
-                            fastCHAIN(this._plugins, (p, i, nextP) => {
+                            fastCHAIN(this.plugins, (p, i, nextP) => {
                                 if (p.transactionEnd) {
                                     p.transactionEnd(transactionID, nextP);
                                 } else {
@@ -1266,10 +1272,10 @@ export class NanoSQLInstance {
         let t = this;
 
         return new Promise((res, rej) => {
-            if (t._plugins.length) { // Query Mode
+            if (t.plugins.length) { // Query Mode
                 let newArgs = args;
                 let result: any[] = [];
-                fastCHAIN(t._plugins, (p, i, nextP) => {
+                fastCHAIN(t.plugins, (p, i, nextP) => {
                     if (p.extend) {
                         p.extend((nArgs, newResult) => {
                             newArgs = nArgs;
@@ -1307,7 +1313,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadJS(table: string, rows: Array<Object>, useTransaction: boolean = true): Promise<Array<Object>> {
+    public loadJS(table: string, rows: Array<any>, useTransaction?: boolean, onProgress?: (percent: number) => void): Promise<Array<any>> {
         let t = this;
 
         if (useTransaction) {
@@ -1320,6 +1326,7 @@ export class NanoSQLInstance {
         } else {
             return new Promise((res, rej) => {
                 fastCHAIN(rows, (row, i, nextRow) => {
+                    if (onProgress) onProgress(Math.round(((i + 1) / rows.length) * 10000) / 100);
                     this.query("upsert", row).manualExec({ table: table }).then(nextRow);
                 }).then((rows) => {
                     res(rows.map(r => r.shift()));
@@ -1340,7 +1347,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadCSV(table: string, csv: string, useTransaction: boolean = true, rowFilter?: (row: any) => any): Promise<Array<Object>> {
+    public loadCSV(table: string, csv: string, useTransaction?: boolean, rowFilter?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>> {
         let t = this;
         let fields: Array<string> = [];
 
@@ -1405,6 +1412,7 @@ export class NanoSQLInstance {
         } else {
             return new Promise((res, rej) => {
                 fastCHAIN(rowData, (row, i, nextRow) => {
+                    if (onProgress) onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
                     this.query("upsert", row).manualExec({ table: table }).then(nextRow);
                 }).then((rows) => {
                     res(rows.map(r => r.shift()));
@@ -1439,7 +1447,7 @@ export interface NanoSQLPlugin {
     willConnect?: (connectArgs: DBConnect, next: (connectArgs: DBConnect) => void) => void;
 
     /**
-     * Called after connection, changes tot he connectArgs won't have any affect on the database but can still be read.
+     * Called after connection, changes to the connectArgs won't have any affect on the database but can still be read.
      *
      * @memberof NanoSQLPlugin
      */
@@ -1625,7 +1633,7 @@ NanoSQLInstance.functions = {
  */
 let _NanoSQLStatic = new NanoSQLInstance();
 
-export const nSQL = (setTablePointer?: string) => {
+export const nSQL = (setTablePointer?: string|any[]) => {
     return _NanoSQLStatic.table(setTablePointer);
 };
 
