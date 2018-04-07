@@ -1,7 +1,7 @@
 import { Trie } from "prefix-trie-ts";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance, DatabaseEvent, DataModel } from "./index";
 import { IdbQuery } from "./query/std-query";
-import { _assign, fastALL, timeid } from "./utilities";
+import { _assign, fastALL, timeid, intersect } from "./utilities";
 
 interface HistoryDataTable {
     id: any;
@@ -88,7 +88,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             // only add history for public tables
             if (table.indexOf("_") !== 0) {
                 let histModel: DataModel[] = _assign(connectArgs.models[table]).map((model) => {
-                    if (model.props && model.props.indexOf("pk") !== -1) {
+                    if (model.props && intersect(["pk", "pk()"], model.props)) {
                         this._tablePkKeys[table] = model.key;
                         this._tablePkTypes[table] = model.type;
                         this._tableKeys[table] = {};
@@ -99,14 +99,14 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                 });
 
                 // add new primary key used by the history system
-                histModel.unshift({ key: "_id", type: "timeIdms", props: ["pk"] });
+                histModel.unshift({ key: "_id", type: "timeIdms", props: ["pk()"] });
 
                 // Holds old or new row data
                 historyTables["_" + table + "__hist_rows"] = histModel;
 
                 // holds where in the row history we are
                 historyTables["_" + table + "__hist_idx"] = [
-                    { key: "id", type: this._tablePkTypes[table], props: ["pk"] }, // same exact primary key as related row
+                    { key: "id", type: this._tablePkTypes[table], props: ["pk()"] }, // same exact primary key as related row
                     { key: "histRows", type: `timeIdms[]` }, // primary keys from _table__hist
                     { key: "histPtr", type: "number" } // where in the above array we are.
                 ];
@@ -117,13 +117,13 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         const isNotString = typeof this.historyModeArgs !== "string";
 
         const historyTable = [
-            { key: "id", type: "timeIdms", props: ["pk"] },
+            { key: "id", type: "timeIdms", props: ["pk()"] },
             { key: "table", type: "string" },
             { key: "keys", type: "any[]" }
         ];
 
         const historyTablePointer = [ // this table will only have one row, the pointer of the above row that is active
-            { key: "id", type: "timeIdms", props: ["pk"] },
+            { key: "id", type: "timeIdms", props: ["pk()"] },
             { key: "ptr", type: "int" }
         ];
 
@@ -553,6 +553,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             rowPtr.ptr += direction === "<" ? 1 : -1;
 
             if (rowPtr.ptr < 0) rowPtr.ptr = 0;
+
             this.parent.extend("idx.length", table).then((len: number) => {
                 if (rowPtr.ptr > len) {
                     rowPtr.ptr = len;

@@ -14,7 +14,7 @@ export interface Path {
 export const DrawStore = (): Promise<any> => {
     nSQL("paths")
     .model([
-        {key: "id", type: "int", props: ["pk", "ai"]},
+        {key: "id", type: "int", props: ["pk()", "ai()"]},
         {key: "color", type: "string"},
         {key: "size", type: "int"},
         {key: "path", type: "array"}

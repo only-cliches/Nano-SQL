@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, intersect } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 
@@ -58,12 +58,12 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         this._dbIndex[tableName] = new DatabaseIndex();
 
         dataModels.forEach((d) => {
-            if (d.props && d.props.indexOf("pk") > -1) {
+            if (d.props && intersect(["pk", "pk()"], d.props)) {
                 this._pkType[tableName] = d.type;
                 this._pkKey[tableName] = d.key;
             }
 
-            if (d.props && d.props.indexOf("ai") > -1 && d.props.indexOf("pk") > -1 && d.type === "int") {
+            if (d.props && intersect(["pk", "pk()"], d.props) && intersect(["ai", "ai()"], d.props) && d.type === "int") {
                 this._dbIndex[tableName].doAI = true;
             }
 

@@ -63,6 +63,14 @@ export declare const random16Bits: () => number;
  */
 export declare const timeid: (ms?: boolean | undefined) => string;
 /**
+ * See if two arrays intersect.
+ *
+ * @param {any[]} arr1
+ * @param {any[]} arr2
+ * @returns {boolean}
+ */
+export declare const intersect: (arr1: any[], arr2: any[]) => boolean;
+/**
  * Generates a valid V4 UUID using the strongest crypto available.
  *
  * @returns {string}
@@ -108,7 +116,7 @@ export declare const isObject: (val: any) => boolean;
  */
 export declare const cast: (type: string, val?: any) => any;
 /**
- * Insert a value into a given array, efficiently gaurantees records are sorted on insert.
+ * Insert a value into a sorted array, efficiently gaurantees records are sorted on insert.
  *
  * @param {any[]} arr
  * @param {*} value

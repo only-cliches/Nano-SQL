@@ -5,6 +5,14 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.2] 4-7-2018
+- Fixed minifaction of IndexedDB web worker in build.
+- Better performance on range selects.
+- Added `.disconnect()` method.
+- Table scan `.where()` conditions are much faster now.
+- Fixed for React Native compability.
+- Adjusting the props API: `"pk"` is now `"pk()"`, `"ai"` is now `"ai()"`, etc..
+
 ## [1.4.1] 4-5-2018
 - Added `onProgress` function to `loadCSV` and `loadJS` methods.
 - Trie objects are populated much faster now on connect.

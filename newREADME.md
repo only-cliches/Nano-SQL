@@ -112,7 +112,7 @@ nSQL('users') //  "users" is our table name.
 ```
 
 ## Advanced Document Search
-Have lots of data that needs searching?  Many elements have been taken from Apache Solr/ElasticSearch, streamlined and implimented in nanoSQL.  Just let nanoSQL know what columns need to be indexed and it takes everything from there.
+Have lots of data that needs searching?  Many concepts have been taken from Apache Solr/ElasticSearch, streamlined and implimented in nanoSQL.  Just let nanoSQL know what columns need to be indexed and it takes everything from there.
 
 ## ORM (Object Relation Mapping)
 Just because we're running no-SQL doesn't mean we can't have relationships.
@@ -130,7 +130,7 @@ NanoSQL can keep track of changes to your data so you can scrub back and forth t
 NanoSQL can optionally write to any number of databases at the same time.  This allows you to have always accurate, in place backups of your data.
 
 ## Events
-Wantt to know when something is happening?  Just ask!
+Want to know when something is happening?  Just ask!
 
 
 [Documentation](https://docs.nanosql.io/)

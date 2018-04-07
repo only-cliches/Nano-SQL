@@ -74,15 +74,7 @@ export declare class _MutateSelection {
 export declare class _RowSelection {
     q: IdbQuery;
     s: _NanoSQLStorage;
-    constructor(q: IdbQuery, s: _NanoSQLStorage);
-    /**
-     * Discovers the fastest possible SELECT method, then uses it.
-     *
-     * @param {(rows: DBRow[]) => void} callback
-     * @returns
-     * @memberof _RowSelection
-     */
-    getRows(callback: (rows: DBRow[]) => void): void;
+    constructor(q: IdbQuery, s: _NanoSQLStorage, callback: (rows: DBRow[]) => void);
     /**
      * Given a compound where statement like [[value, =, key], AND, [something, =, something]]
      * Check if first where conditions are primary key/ secondary index followed by unoptimized/unindexed conditions

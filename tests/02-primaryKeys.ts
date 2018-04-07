@@ -19,7 +19,7 @@ describe("Primary Keys", () => {
         });
     });
     it("UUID primary keys should auto generate.", (done: MochaDone) => {
-        usersDB(ExampleDataModel.map(r => r.key !== "id" ? r : {key: "id", type: "uuid", props: ["pk"]}), (nSQL) => {
+        usersDB(ExampleDataModel.map(r => r.key !== "id" ? r : {key: "id", type: "uuid", props: ["pk()"]}), (nSQL) => {
             nSQL.loadJS("users", ExampleUsers.map(u => {return {...u, id: undefined}; })).then(() => {
                 nSQL.table("users").query("select").exec().then((rows) => {
                     try {
@@ -34,7 +34,7 @@ describe("Primary Keys", () => {
     });
 
     it("timeId primary keys should auto generate", (done: MochaDone) => {
-        usersDB(ExampleDataModel.map(r => r.key !== "id" ? r : {key: "id", type: "timeId", props: ["pk"]}), (nSQL) => {
+        usersDB(ExampleDataModel.map(r => r.key !== "id" ? r : {key: "id", type: "timeId", props: ["pk()"]}), (nSQL) => {
             nSQL.loadJS("users", ExampleUsers.map(u => {return {...u, id: undefined}; })).then(() => {
                 nSQL.table("users").query("select").exec().then((rows) => {
                     try {
@@ -48,7 +48,7 @@ describe("Primary Keys", () => {
         });
     });
     it("timeIdms primary keys should auto generate", (done: MochaDone) => {
-        usersDB(ExampleDataModel.map(r => r.key !== "id" ? r : {key: "id", type: "timeIdms", props: ["pk"]}), (nSQL) => {
+        usersDB(ExampleDataModel.map(r => r.key !== "id" ? r : {key: "id", type: "timeIdms", props: ["pk()"]}), (nSQL) => {
             nSQL.loadJS("users", ExampleUsers.map(u => {return {...u, id: undefined}; })).then(() => {
                 nSQL.table("users").query("select").exec().then((rows) => {
                     try {

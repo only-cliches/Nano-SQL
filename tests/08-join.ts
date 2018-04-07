@@ -8,7 +8,7 @@ const joinTables = (ready: (nSQL: NanoSQLInstance) => void) => {
     n
     .table("users").model(ExampleDataModel)
     .table("posts").model([
-        {key: "id", type: "int", props: ["pk", "ai"]},
+        {key: "id", type: "int", props: ["pk()", "ai()"]},
         {key: "title", type: "string"},
         {key: "author", type: "int"}
     ])

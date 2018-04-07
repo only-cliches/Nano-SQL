@@ -36,17 +36,13 @@ const options = {
         setImmediate: false
     },
     plugins: [
-        /*new UglifyJSPlugin({
+        new UglifyJSPlugin({
             uglifyOptions: {
-                compress: {
-                    warnings: false,
-                    passes: 2
-                },
                 mangle: {
-                    properties: { regex: new RegExp(/^_|Promise/) }
+                    //properties: { regex: new RegExp(/^_|Promise/) }
                 }
             }
-        })*/
+        })
     ],
     module: {
         rules: [{

@@ -112,6 +112,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlplugin.html#transactionbegin" class="tsd-kind-icon">transaction<wbr>Begin</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlplugin.html#transactionend" class="tsd-kind-icon">transaction<wbr>End</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlplugin.html#willconnect" class="tsd-kind-icon">will<wbr>Connect</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlplugin.html#willdisconnect" class="tsd-kind-icon">will<wbr>Disconnect</a></li>
 							</ul>
 						</section>
 					</div>
@@ -125,7 +126,7 @@
 					<div class="tsd-signature tsd-kind-icon">did<wbr>Connect<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1454</li>
+							<li>Defined in index.ts:1477</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -145,7 +146,7 @@
 					<div class="tsd-signature tsd-kind-icon">did<wbr>Exec<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1468</li>
+							<li>Defined in index.ts:1498</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -165,7 +166,7 @@
 					<div class="tsd-signature tsd-kind-icon">do<wbr>Exec<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1461</li>
+							<li>Defined in index.ts:1491</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -185,7 +186,7 @@
 					<div class="tsd-signature tsd-kind-icon">dump<wbr>Tables<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1490</li>
+							<li>Defined in index.ts:1520</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -206,7 +207,7 @@
 					<div class="tsd-signature tsd-kind-icon">extend<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1504</li>
+							<li>Defined in index.ts:1534</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -226,7 +227,7 @@
 					<div class="tsd-signature tsd-kind-icon">import<wbr>Tables<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1497</li>
+							<li>Defined in index.ts:1527</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -246,7 +247,7 @@
 					<div class="tsd-signature tsd-kind-icon">transaction<wbr>Begin<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1475</li>
+							<li>Defined in index.ts:1505</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -266,7 +267,7 @@
 					<div class="tsd-signature tsd-kind-icon">transaction<wbr>End<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1482</li>
+							<li>Defined in index.ts:1512</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -286,13 +287,33 @@
 					<div class="tsd-signature tsd-kind-icon">will<wbr>Connect<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:1447</li>
+							<li>Defined in index.ts:1470</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
 							<p>Called before database connection with all the connection arguments, including data models and what not.
 							Lets you adjust the connect arguments, add tables, remove tables, adjust data models, etc.</p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>memberof</dt>
+							<dd><p>NanoSQLPlugin</p>
+							</dd>
+						</dl>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="willdisconnect" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> will<wbr>Disconnect</h3>
+					<div class="tsd-signature tsd-kind-icon">will<wbr>Disconnect<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:1484</li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p> Called when the user requests the database perform a disconnect action.</p>
 						</div>
 						<dl class="tsd-comment-tags">
 							<dt>memberof</dt>
@@ -389,6 +410,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.nanosqlplugin.html#willconnect" class="tsd-kind-icon">will<wbr>Connect</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlplugin.html#willdisconnect" class="tsd-kind-icon">will<wbr>Disconnect</a>
 							</li>
 						</ul>
 					</li>

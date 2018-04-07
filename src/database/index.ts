@@ -93,6 +93,16 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         });
     }
 
+    public willDisconnect(next) {
+        fastALL(this._store.adapters || [], (adapter: NanoSQLStorageAdapter, i, done) => {
+            if (adapter.disconnect) {
+                adapter.disconnect(done);
+            } else {
+                done();
+            }
+        }).then(next);
+    }
+
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
         switch (args[0]) {
             case "clone":

@@ -102,6 +102,7 @@
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#fastrace" class="tsd-kind-icon">fastRACE</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#generateid" class="tsd-kind-icon">generateID</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#hash" class="tsd-kind-icon">hash</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#intersect" class="tsd-kind-icon">intersect</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#isobject" class="tsd-kind-icon">is<wbr>Object</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#objquery" class="tsd-kind-icon">obj<wbr>Query</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#random16bits" class="tsd-kind-icon">random16<wbr>Bits</a></li>
@@ -178,7 +179,7 @@
 					<div class="tsd-signature tsd-kind-icon">object<wbr>Path<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:409</li>
+							<li>Defined in utilities.ts:423</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -193,7 +194,7 @@
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
 					<a name="ua" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> ua</h3>
-					<div class="tsd-signature tsd-kind-icon">ua<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;typeof window &#x3D;&#x3D;&#x3D; &quot;undefined&quot; ? &quot;&quot; : navigator.userAgent</span></div>
+					<div class="tsd-signature tsd-kind-icon">ua<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;typeof window &#x3D;&#x3D;&#x3D; &quot;undefined&quot; ? &quot;&quot; : (navigator.userAgent || &quot;&quot;)</span></div>
 					<aside class="tsd-sources">
 						<ul>
 							<li>Defined in utilities.ts:120</li>
@@ -241,7 +242,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:341</li>
+									<li>Defined in utilities.ts:355</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -278,7 +279,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:254</li>
+									<li>Defined in utilities.ts:266</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -309,7 +310,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:222</li>
+									<li>Defined in utilities.ts:234</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -340,7 +341,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:395</li>
+									<li>Defined in utilities.ts:409</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -587,7 +588,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:211</li>
+									<li>Defined in utilities.ts:223</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -618,7 +619,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:196</li>
+									<li>Defined in utilities.ts:208</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -638,6 +639,37 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
+					<a name="intersect" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> intersect</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
+						<li class="tsd-signature tsd-kind-icon">intersect<span class="tsd-signature-symbol">(</span>arr1<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, arr2<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in utilities.ts:172</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>See if two arrays intersect.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>arr1: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>arr2: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="isobject" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> is<wbr>Object</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -647,7 +679,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:243</li>
+									<li>Defined in utilities.ts:255</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -675,7 +707,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:421</li>
+									<li>Defined in utilities.ts:435</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -731,7 +763,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:380</li>
+									<li>Defined in utilities.ts:394</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -759,12 +791,12 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:323</li>
+									<li>Defined in utilities.ts:335</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Insert a value into a given array, efficiently gaurantees records are sorted on insert.</p>
+									<p>Insert a value into a sorted array, efficiently gaurantees records are sorted on insert.</p>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -824,7 +856,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:171</li>
+									<li>Defined in utilities.ts:183</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -845,7 +877,7 @@
 					<div class="tsd-signature tsd-kind-icon">id<wbr>Types<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:182</li>
+							<li>Defined in utilities.ts:194</li>
 						</ul>
 					</aside>
 					<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -854,7 +886,7 @@
 						<div class="tsd-signature tsd-kind-icon">uuid<span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type">uuid</a><span class="tsd-signature-symbol"> =&nbsp;uuid</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in utilities.ts:184</li>
+								<li>Defined in utilities.ts:196</li>
 							</ul>
 						</aside>
 					</section>
@@ -868,7 +900,7 @@
 							<li class="tsd-description">
 								<aside class="tsd-sources">
 									<ul>
-										<li>Defined in utilities.ts:183</li>
+										<li>Defined in utilities.ts:195</li>
 									</ul>
 								</aside>
 								<h4 class="tsd-parameters-title">Parameters</h4>
@@ -891,7 +923,7 @@
 							<li class="tsd-description">
 								<aside class="tsd-sources">
 									<ul>
-										<li>Defined in utilities.ts:185</li>
+										<li>Defined in utilities.ts:197</li>
 									</ul>
 								</aside>
 								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
@@ -908,7 +940,7 @@
 							<li class="tsd-description">
 								<aside class="tsd-sources">
 									<ul>
-										<li>Defined in utilities.ts:186</li>
+										<li>Defined in utilities.ts:198</li>
 									</ul>
 								</aside>
 								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
@@ -1002,6 +1034,9 @@
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="_utilities_.html#hash" class="tsd-kind-icon">hash</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module">
+						<a href="_utilities_.html#intersect" class="tsd-kind-icon">intersect</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="_utilities_.html#isobject" class="tsd-kind-icon">is<wbr>Object</a>

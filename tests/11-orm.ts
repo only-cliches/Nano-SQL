@@ -5,11 +5,11 @@ import { usersDB, ExampleUsers, ExampleDataModel } from "./data";
 
 const ormDataModels = {
     "users": [
-        {key: "id", type: "int", props: ["pk", "ai"]},
+        {key: "id", type: "int", props: ["pk()", "ai()"]},
         {key: "name", type: "string"}
     ],
     "posts": [
-        {key: "id", type: "int", props: ["pk", "ai"]},
+        {key: "id", type: "int", props: ["pk()", "ai()"]},
         {key: "title", type: "string"}
     ]
 };
@@ -19,10 +19,10 @@ describe("ORM System", () => {
     it("Related records should auto add.", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>author"] }
+            {key: "posts", type: "posts[]", props: ["orm(author)"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "author", type: "users", props: ["ref=>posts[]"]}
+            {key: "author", type: "users", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").query("upsert", {
@@ -48,10 +48,10 @@ describe("ORM System", () => {
     it("Related records should auto remove when updated.", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>author"] }
+            {key: "posts", type: "posts[]", props: ["orm(author)"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "author", type: "users", props: ["ref=>posts[]"]}
+            {key: "author", type: "users", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").query("upsert", {
@@ -82,10 +82,10 @@ describe("ORM System", () => {
     it("Related records should auto remove when updated (Other direction).", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>author"] }
+            {key: "posts", type: "posts[]", props: ["orm(author)"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "author", type: "users", props: ["ref=>posts[]"]}
+            {key: "author", type: "users", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").query("upsert", {
@@ -117,10 +117,10 @@ describe("ORM System", () => {
     it("Related records should auto remove when deleted.", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>author"] }
+            {key: "posts", type: "posts[]", props: ["orm(author)"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "author", type: "users", props: ["ref=>posts[]"]}
+            {key: "author", type: "users", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").query("upsert", {
@@ -149,10 +149,10 @@ describe("ORM System", () => {
     it("Many to Many relationships should remain in sync.", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>authors[]"] }
+            {key: "posts", type: "posts[]", props: ["orm(authors[])"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "authors", type: "users[]", props: ["ref=>posts[]"]}
+            {key: "authors", type: "users[]", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").loadJS("users", [
@@ -182,10 +182,10 @@ describe("ORM System", () => {
     it("Many to Many relationships should remain in sync when a delete happens.", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>authors[]"] }
+            {key: "posts", type: "posts[]", props: ["orm(authors[])"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "authors", type: "users[]", props: ["ref=>posts[]"]}
+            {key: "authors", type: "users[]", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").loadJS("users", [
@@ -217,10 +217,10 @@ describe("ORM System", () => {
     it("Many to Many relationships should remain in sync when a delete happens (other direction).", (done: MochaDone) => {
         const nSQL = new NanoSQLInstance();
         nSQL.table("users").model(ormDataModels.users.concat([
-            {key: "posts", type: "posts[]", props: ["ref=>authors[]"] }
+            {key: "posts", type: "posts[]", props: ["orm(authors[])"] }
         ]));
         nSQL.table("posts").model(ormDataModels.posts.concat([
-            {key: "authors", type: "users[]", props: ["ref=>posts[]"]}
+            {key: "authors", type: "users[]", props: ["orm(posts[])"]}
         ]));
         nSQL.connect().then(() => {
             return nSQL.table("users").loadJS("users", [

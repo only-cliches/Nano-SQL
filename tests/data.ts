@@ -11,10 +11,10 @@ export const usersDB = (dataModel: any[], ready: (nSQL: NanoSQLInstance) => void
 };
 
 export const ExampleDataModel = [
-    { key: "id", type: "int", props: ["pk", "ai"] },
+    { key: "id", type: "int", props: ["pk()", "ai()"] },
     { key: "age", type: "int" },
-    { key: "name", type: "string", props: ["idx"] },
-    { key: "email", type: "string", props: ["trie"] },
+    { key: "name", type: "string", props: ["idx()"] },
+    { key: "email", type: "string", props: ["trie()"] },
     { key: "meta", type: "map"},
     { key: "posts", type: "int[]"}
 ];

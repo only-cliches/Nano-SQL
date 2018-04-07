@@ -606,6 +606,13 @@ export declare class NanoSQLInstance {
         [table: string]: DBRow[];
     }): Promise<any>;
     /**
+     * Request disconnect from all databases.
+     *
+     * @returns
+     * @memberof NanoSQLInstance
+     */
+    disconnect(): Promise<any[]>;
+    /**
      * Executes a transaction against the database, batching all the queries together.
      *
      * @param {((
@@ -699,6 +706,12 @@ export interface NanoSQLPlugin {
      * @memberof NanoSQLPlugin
      */
     didConnect?: (connectArgs: DBConnect, next: () => void) => void;
+    /**
+     *  Called when the user requests the database perform a disconnect action.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    willDisconnect?: (next: () => void) => void;
     /**
      * Called when a query is sent through the system, once all plugins are called the query resullt is sent to the user.
      *

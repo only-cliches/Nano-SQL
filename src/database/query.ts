@@ -92,7 +92,7 @@ export class _NanoSQLStorageQuery {
         if (this._isInstanceTable) {
             new InstanceSelection(this._query).getRows(complete);
         } else {
-            new _RowSelection(this._query, this._store).getRows((rows) => {
+            new _RowSelection(this._query, this._store, (rows) => {
                 complete(rows.filter(r => r));
             });
         }
@@ -1182,18 +1182,9 @@ export class _RowSelection {
 
     constructor(
         public q: IdbQuery,
-        public s: _NanoSQLStorage
+        public s: _NanoSQLStorage,
+        callback: (rows: DBRow[]) => void
     ) {
-    }
-
-    /**
-     * Discovers the fastest possible SELECT method, then uses it.
-     *
-     * @param {(rows: DBRow[]) => void} callback
-     * @returns
-     * @memberof _RowSelection
-     */
-    public getRows(callback: (rows: DBRow[]) => void) {
 
         if (this.q.join && this.q.orm) {
             throw new Error("Cannot do a JOIN and ORM command at the same time!");
@@ -1229,7 +1220,7 @@ export class _RowSelection {
             return;
         }
 
-        // where statement possibly contains only primary key and secondary key queries, do faster search if possible.
+        // where statement possibly contains only primary key and secondary key queries, do faster query if possible.
         let doFastRead = false;
         if (typeof this.q.where[0] === "string") { // Single WHERE
             doFastRead = this._isOptimizedWhere(this.q.where) === 0;
@@ -1278,16 +1269,20 @@ export class _RowSelection {
             let resultRows: DBRow[] = [];
             let lastCommand = "";
             fastCHAIN((where as any), (wArg, i, nextWArg) => {
-                if (wArg === "OR" || wArg === "AND") {
+                if (typeof wArg === "string") {
                     lastCommand = wArg;
                     nextWArg();
                     return;
                 }
                 this._selectRowsByIndex(wArg, (rows) => {
                     if (lastCommand === "AND") {
-                        let idx = rows.map((r) => r[this.s.tableInfo[this.q.table as any]._pk]);
+                        let idx = {};
+                        let i = rows.length;
+                        while (i--) {
+                            idx[rows[i][this.s.tableInfo[this.q.table as any]._pk]] = true;
+                        }
                         resultRows = resultRows.filter((row) => {
-                            return idx.indexOf(row[this.s.tableInfo[this.q.table as any]._pk]) !== -1;
+                            return idx[row[this.s.tableInfo[this.q.table as any]._pk]];
                         });
                     } else {
                         resultRows = resultRows.concat(rows);
@@ -1367,17 +1362,22 @@ export class _RowSelection {
     private _selectByRange(callback: (rows: DBRow[]) => void) {
         if (this.q.range) {
             const r: any[] = this.q.range;
-            this.s.adapters[0].adapter.getIndex(this.q.table as any, true, (count: number) => {
-                const fromIdx = r[0] > 0 ? r[1] : count + r[0] - r[1];
+            if (r[0] > 0) { // positive limit value, we can send this straight to the adapter
+                this.s._rangeRead(this.q.table as any, r[1], r[1] + r[0], false, callback);
+            } else { // using negative limit value to get rows at the end of the database.
+                this.s.adapters[0].adapter.getIndex(this.q.table as any, true, (count: number) => {
+                    const fromIdx = r[0] > 0 ? r[1] : count + r[0] - r[1];
 
-                let toIdx = fromIdx;
-                let counter = Math.abs(r[0]) - 1;
+                    let toIdx = fromIdx;
+                    let counter = Math.abs(r[0]) - 1;
 
-                while (counter--) {
-                    toIdx++;
-                }
-                this.s._rangeRead(this.q.table as any, fromIdx, toIdx, false, callback);
-            });
+                    while (counter--) {
+                        toIdx++;
+                    }
+                    this.s._rangeRead(this.q.table as any, fromIdx, toIdx, false, callback);
+                });
+            }
+
         } else {
             callback([]);
         }
@@ -1408,20 +1408,18 @@ export class _RowSelection {
      */
     private _fullTableScan(callback: (rows: DBRow[]) => void) {
         const hasWhere = this.q.where !== undefined;
-        const fnWhere = hasWhere && !Array.isArray(this.q.where);
         const arrWhere = hasWhere && Array.isArray(this.q.where);
 
         this.s._read(this.q.table as any, (row, i, keep) => {
-            if (!hasWhere) {
+            if (!hasWhere) { // no where statement
                 keep(true);
                 return;
             }
-            if (fnWhere) {
-                keep((this.q.where as any)(row, i));
-                return;
-            }
-            if (arrWhere) {
+
+            if (arrWhere) { // where is array
                 keep(_where(row, this.q.where as any, i));
+            } else { // where is function
+                keep((this.q.where as any)(row, i));
             }
         }, callback);
     }
@@ -1449,7 +1447,6 @@ export class _RowSelection {
         if (this._isOptimizedWhere(wArgs[0]) === 0) { // at least first value is optimized
             // last primary key/secondary index condition MUST be followed by AND
             let lastCheck: number = 0;
-            let includesSlowWhere: boolean = false;
             wArgs.forEach((wArg, i) => {
                 if (i % 2 === 0) {
                     if (this._isOptimizedWhere(wArg) === 0 && wArgs[i + 1]) {
@@ -1550,26 +1547,38 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
     if (typeof where[0] !== "string") { // compound where statements
 
         let hasAnd = false;
-        let checkWhere = where.map(function (cur, idx) {
-            if (commands.indexOf(cur) !== -1) {
-                if (cur === "AND") hasAnd = true;
-                return cur;
+        // turn where statement into array of booleans and conditions
+        // [[id, "=", 1], "OR", ["this", "=", "that"]] => [true, "OR", false];
+        let checkWhere = where.map((wArg, idx) => {
+            if (commands.indexOf(wArg) !== -1) {
+                if (wArg === "AND") hasAnd = true;
+                return wArg;
             } else {
-                return _compare(cur[2], cur[1], cur[0] === "_IDX_" ? rowIDX : objQuery(cur[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
+                return _compare(wArg[2], wArg[1], objQuery(wArg[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
             }
         });
 
-        checkWhere.forEach(function (cur, idx) {
-            if (cur === "OR") {
+        // combine all OR statements into a single boolean of the surrounding booleans
+        // [true, "OR", false, "AND", true] => [undefined, true, undefined, "AND", true]
+        // [false, "OR", false, "AND", true] => [undefined, false, undefined, "AND", true];
+        checkWhere.forEach((wArg, idx) => {
+            if (wArg === "OR") {
                 checkWhere[idx] = checkWhere[idx - 1] || checkWhere[idx + 1];
                 checkWhere[idx - 1] = undefined;
                 checkWhere[idx + 1] = undefined;
             }
         });
 
-        checkWhere = checkWhere.filter(val => val !== undefined);
+        // remove the undefined elements from the above action
+        // [undefined, false, undefined, undefined, false, undefined, "AND", true] => [false, false, true]
+        // checkWhere = checkWhere.filter(val => val !== undefined && val !== "AND");
 
-        if (!hasAnd) { // All OR statements
+        // if there are any false bools in the array the row doesn't match.
+        return checkWhere.indexOf(false) === -1;
+
+        /*
+
+        if (!hasAnd) { // All OR statements, if there are zero true values then the row doesn't pass.
             return checkWhere.indexOf(true) !== -1;
         } else {
             let reducing: number;
@@ -1582,7 +1591,7 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
                 }
                 if (cur === "AND") {
                     prevAnd = true;
-                    prev.push(cur);
+                    // prev.push(cur);
                     return prev;
                 }
                 if (prevAnd) {
@@ -1595,11 +1604,11 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
                     prev[reducing] = cur || prev[reducing];
                 }
                 return prev;
-            }, []).filter(val => val !== undefined).indexOf(false) === -1;
-        }
+            }, []).indexOf(false) === -1;
+        }*/
 
     } else { // single where statement
-        return _compare(where[2], where[1], where[0] === "_IDX_" ? rowIDX : objQuery(where[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
+        return _compare(where[2], where[1], objQuery(where[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
     }
 };
 
@@ -1647,11 +1656,11 @@ const _compare = (val1: any, compare: string, val2: any): number => {
         // if column does not exist in given array
         case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0 ? 0 : 1;
         // regexp search the column
-        case "REGEX": return columnValue.match(givenValue) ? 0 : 1;
+        case "REGEX": return columnValue.match(givenValue).length ? 0 : 1;
         // if given value exists in column value
         case "LIKE": return columnValue.indexOf(givenValue) < 0 ? 1 : 0;
         // if given value does not exist in column value
-        case "NOT LIKE": return columnValue.indexOf(givenValue) > 0 ? 1 : 0;
+        case "NOT LIKE": return columnValue.indexOf(givenValue) >= 0 ? 1 : 0;
         // if the column value is between two given numbers
         case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue ? 0 : 1;
         // if single value exists in array column

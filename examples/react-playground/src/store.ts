@@ -14,7 +14,7 @@ export interface Path {
 export const DrawStore = (): Promise<any> => {
     SomeSQL("paths")
     .model([
-        {key: "id", type: "int", props: ["pk"]},
+        {key: "id", type: "int", props: ["pk()"]},
         {key: "color", type: "string"},
         {key: "size", type: "int"},
         {key: "path", type: "array"}

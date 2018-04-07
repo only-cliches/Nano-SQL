@@ -1,7 +1,7 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates } from "../utilities";
+import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates } from "../utilities";
 import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
@@ -550,7 +550,14 @@ export class _NanoSQLStorage {
 
                     if (p.props) {
                         p.props.forEach(p => {
-                            if (p.indexOf("ref=>") !== -1) mapTo = p.replace("ref=>", "");
+                            // old format ref=>column or ref=>column[]
+                            if (p.indexOf("ref=>") !== -1) {
+                                mapTo = p.replace("ref=>", "");
+                            }
+                            // new format orm(column) or orm(column[])
+                            if (p.indexOf("orm(") === 0) {
+                                mapTo = p.replace(/orm\((.*)\)/gmi, "$1");
+                            }
                         });
 
                         if (mapTo) {
@@ -1050,10 +1057,10 @@ export class _NanoSQLStorage {
             let hasPK = false;
             let hasIDX = false;
             dataModels[table].forEach((model) => {
-                if (model.props && model.props.indexOf("pk") > -1) {
+                if (model.props && intersect(["pk", "pk()"], model.props)) {
                     hasPK = true;
                 }
-                if (model.props && (model.props.indexOf("idx") > -1 || model.props.indexOf("trie") > -1)) {
+                if (model.props && intersect(["trie", "idx", "idx()", "trie()"], model.props)) {
                     hasIDX = true;
                     dataModels["_" + table + "_idx_" + model.key] = [
                         { key: "id", type: ["number", "float", "int"].indexOf(model.type) !== -1 ? model.type : "string", props: ["pk"] },
@@ -1146,18 +1153,18 @@ export class _NanoSQLStorage {
                 });
 
                 // Check for primary key
-                if (p.props.indexOf("pk") > -1) {
+                if (intersect(["pk", "pk()"], p.props)) {
                     this.tableInfo[tableName]._pk = p.key;
                     this.tableInfo[tableName]._pkType = p.type;
                 }
 
                 // Check for secondary indexes
-                if ((p.props.indexOf("idx") > -1 || p.props.indexOf("trie") > -1) || is2ndIndex) {
+                if (intersect(["trie", "idx", "idx()", "trie()"], p.props) || is2ndIndex) {
                     this.tableInfo[tableName]._secondaryIndexes.push(p.key);
                 }
 
                 // Check for trie indexes
-                if (p.props.indexOf("trie") >= 0) {
+                if (intersect(["trie", "trie()"], p.props)) {
                     this.tableInfo[tableName]._trieColumns.push(p.key);
                     this._trieIndexes[tableName][p.key] = new Trie([]);
                 }

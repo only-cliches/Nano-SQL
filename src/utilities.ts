@@ -117,7 +117,7 @@ export const fastALL = (items: any[], callback: (item: any, i: number, done: (re
 };
 
 
-const ua = typeof window === "undefined" ? "" : navigator.userAgent;
+const ua = typeof window === "undefined" ? "" : (navigator.userAgent || "");
 // Detects iOS device OR Safari running on desktop
 export const isSafari: boolean = ua.length === 0 ? false : (/^((?!chrome|android).)*safari/i.test(ua)) || (/iPad|iPhone|iPod/.test(ua) && !window["MSStream"]);
 
@@ -162,6 +162,18 @@ export const timeid = (ms?: boolean): string => {
     return time + "-" + (random16Bits() + random16Bits()).toString(16);
 };
 
+/**
+ * See if two arrays intersect.
+ *
+ * @param {any[]} arr1
+ * @param {any[]} arr2
+ * @returns {boolean}
+ */
+export const intersect = (arr1: any[], arr2: any[]): boolean => {
+    if (!arr1 || !arr2) return false;
+    if (!arr1.length || !arr2.length) return false;
+    return (arr1 || []).filter(item => (arr2 || []).indexOf(item) !== -1).length > 0;
+};
 
 /**
  * Generates a valid V4 UUID using the strongest crypto available.
@@ -312,7 +324,7 @@ export const cast = (type: string, val?: any): any => {
 };
 
 /**
- * Insert a value into a given array, efficiently gaurantees records are sorted on insert.
+ * Insert a value into a sorted array, efficiently gaurantees records are sorted on insert.
  *
  * @param {any[]} arr
  * @param {*} value
@@ -329,6 +341,8 @@ export const sortedInsert = (arr: any[], value: any, startVal?: number, endVal?:
         return arr;
     }
 };
+
+
 /**
  * Given a sorted array and a value, find where that value fits into the array.
  *
@@ -428,10 +442,11 @@ export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boole
     const cacheKey = pathQuery + (ignoreFirstPath ? "1" : "0");
 
     // cached path arrays, skips subsequent identical path requests.
-    let path: string[] = objectPathCache[cacheKey] || [];
-    if (path.length) {
-        return safeGet(path, 0, object);
+    if (objectPathCache[cacheKey]) {
+        return safeGet(objectPathCache[cacheKey], 0, object);
     }
+
+    let path: string[] = [];
 
     // need to turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
     path = pathQuery.indexOf("[") > -1 ?
@@ -448,5 +463,5 @@ export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boole
 
     objectPathCache[cacheKey] = path;
 
-    return safeGet(path, 0, object);
+    return safeGet(objectPathCache[cacheKey], 0, object);
 };

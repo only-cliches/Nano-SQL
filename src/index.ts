@@ -2,7 +2,7 @@ import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN } from "./utilities";
+import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN, intersect } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
@@ -438,7 +438,7 @@ export class NanoSQLInstance {
             };
 
             connectArgs.models[str[0]] = [
-                { key: "key", type: "string", props: ["pk", "ai"] },
+                { key: "key", type: "string", props: ["pk()", "ai()"] },
                 { key: "value", type: "any" }
             ];
 
@@ -716,15 +716,22 @@ export class NanoSQLInstance {
 
             if (model.props) {
                 model.props.forEach((prop) => {
+                    // old format: from=>fn(arg1, arg2);
                     if (prop.indexOf("from=>") !== -1 && prop.indexOf("(") !== -1) {
                         const fnName = prop.replace("from=>", "").split("(").shift();
                         const fnArgs = prop.replace("from=>", "").split("(").pop().replace(")", "").split(",").map(c => c.trim());
                         t.toColRules[l][model.key] = [fnName].concat(fnArgs);
                     }
+                    // new format: toColumn.fn(arg1, arg2);
+                    if (prop.indexOf("toColumn.") === 0) {
+                        const fnName = prop.replace(/toColumn\.(.*)\(.*\)/gmi, "$1");
+                        const fnArgs = prop.replace(/toColumn\..*\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
+                        t.toColRules[l][model.key] = [fnName].concat(fnArgs);
+                    }
                 });
             }
 
-            if (model.props && model.props.indexOf("pk") !== -1) {
+            if (model.props && intersect(["pk", "pk()"], model.props)) {
                 this.tablePKs[l] = model.key;
                 hasPK = true;
             }
@@ -734,7 +741,7 @@ export class NanoSQLInstance {
 
         if (!hasPK) {
             this.tablePKs[l] = "_id_";
-            dataModel.push({ key: "_id_", type: "uuid", props: ["pk"] });
+            dataModel.unshift({ key: "_id_", type: "uuid", props: ["pk()"] });
         }
 
         t.dataModels[l] = dataModel;
@@ -1152,6 +1159,22 @@ export class NanoSQLInstance {
     }
 
     /**
+     * Request disconnect from all databases.
+     *
+     * @returns
+     * @memberof NanoSQLInstance
+     */
+    public disconnect() {
+        return fastCHAIN(this.plugins, (plugin: NanoSQLPlugin, i, next) => {
+            if (plugin.willDisconnect) {
+                plugin.willDisconnect(next);
+            } else {
+                next();
+            }
+        });
+    }
+
+    /**
      * Executes a transaction against the database, batching all the queries together.
      *
      * @param {((
@@ -1452,6 +1475,13 @@ export interface NanoSQLPlugin {
      * @memberof NanoSQLPlugin
      */
     didConnect?: (connectArgs: DBConnect, next: () => void) => void;
+
+    /**
+     *  Called when the user requests the database perform a disconnect action.
+     *
+     * @memberof NanoSQLPlugin
+     */
+    willDisconnect?: (next: () => void) => void;
 
     /**
      * Called when a query is sent through the system, once all plugins are called the query resullt is sent to the user.

@@ -10,7 +10,7 @@ export function initStore() {
 
     nSQL("todos")
     .model([
-        {key: "id", type: "int", props: ["pk", "ai"]},
+        {key: "id", type: "int", props: ["pk()", "ai()"]},
         {key: "done", type: "bool", default: false},
         {key: "title", type: "string", default: ""}
     ])

@@ -385,13 +385,6 @@
                                                         console.log(rows, rows1);
                                                     })
                         */
-                        console.time("TEST DEBOUNCE");
-                        nSQL("users").query("toRow", "setBalance()").on([6]).debounce().exec().then(() => {
-                            console.timeEnd("TEST DEBOUNCE");
-                            nSQL("users").query("select").where(["id", "=", 6]).exec().then((rows) => {
-                                console.log("toRow", rows);
-                            })
-                        })
                         console.time("READ");
                         nSQL("users")
                             .query("select")
@@ -406,9 +399,10 @@
                             .groupBy({
                                 "orders.title": "asc"
                             })*/
-                            .where(["somethingElse", "!=", "NULL"])
+                            .where(["orderIDs", "HAVE", 0])
                             .exec().then(function(rows, db) {
-                                console.log(rows[0].somethingElse());
+                                console.log(rows);
+                                // console.log(rows[0].somethingElse());
                                 console.timeEnd("READ");
                             });
                         /*nSQL("orders").updateORM("rebuild").exec().then(() => {
@@ -543,11 +537,12 @@
             {key: "id", type: "int", props: ["pk", "ai"]},
             {key: "username", type: "string", props: ["from=>userID=>username"]},
             {key: "userID", type: "Users", props: ["from=>GHOST"]} // also secondary index
-
+            newFormat: {key: "userID", type: "Users", props: ["sync(_pk_, GHOST)"]}
             {key: "usernames", type: "string[]", props: ["from=>userID=>username"]},
+            newFormat: {key: "userID", type: "Users", props: ["sync(userID, username)"]}
             {key: "userID", type: "Users[]", props: ["from=>GHOST"]} // also secondary index
-
-            {key: "unreadMsgs", type: "int", props: ["from=>Users.calcMsgs(id, userID)"]}
+            newFormat: {key: "userID", type: "Users", props: ["sync(_pk_, GHOST)"]}
+            {key: "unreadMsgs", type: "int", props: ["toColumn.calcMsgs(id, userID)"]}
         ])
 
         // New search implimentation
