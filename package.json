@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "NoSQL Everywhere",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",
@@ -23,9 +23,6 @@
     "@types/node": "^9.6.1",
     "@types/websql": "0.0.27",
     "chai": "^4.1.2",
-    "chia": "0.0.1",
-    "esdoc": "^1.0.4",
-    "esdoc-standard-plugin": "^1.0.0",
     "http-server": "^0.11.1",
     "mocha": "^5.0.5",
     "mocha-testdata": "^1.2.0",
@@ -38,7 +35,10 @@
     "typescript": "2.8.1",
     "webpack": "^4.4.1",
     "webpack-node-externals": "^1.7.2",
-    "webpack-strip-block": "^0.2.0"
+    "webpack-strip-block": "^0.2.0",
+    "typedoc": "^0.11.1",
+    "uglify-js": "^3.3.17",
+    "webpack-cli": "^2.0.13"
   },
   "keywords": [
     "database",
@@ -98,10 +98,7 @@
     "levelup": "^2.0.2",
     "lie-ts": "^3.8.0",
     "prefix-trie-ts": "0.0.4",
-    "really-small-events": "^1.1.0",
-    "typedoc": "^0.11.1",
-    "uglify-js": "^3.3.17",
-    "webpack-cli": "^2.0.13"
+    "really-small-events": "^1.1.0"
   },
   "contributors": [
     {

@@ -129,6 +129,19 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     });
                 });
             break;
+            case "flush":
+                let tables: string[] = [];
+                if (!args[1]) {
+                    tables = this.parent.tableNames;
+                } else {
+                    tables = [args[1]];
+                }
+                fastCHAIN(tables, (table: string, i, next) => {
+                    this._store._drop(table, next);
+                }).then(() => {
+                    next(args, tables);
+                });
+            break;
             case "get_adapter":
                 if (!args[1]) {
                     next(args, [this._store.adapters[0].adapter]);

@@ -5,6 +5,10 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.3] 4-9-2018
+- Moved package.json dependencies into their appropriate sections.
+- Added a new `.extend("flush")` command to clear all contents of the database.
+
 ## [1.4.2] 4-7-2018
 - Fixed minifaction of IndexedDB web worker in build.
 - Better performance on range selects.
