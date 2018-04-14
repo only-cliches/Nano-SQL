@@ -99,14 +99,14 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
                 });
 
                 // add new primary key used by the history system
-                histModel.unshift({ key: "_id", type: "timeIdms", props: ["pk()"] });
+                histModel.unshift({ key: "_id", type: "timeIdms", props: ["pk"] });
 
                 // Holds old or new row data
                 historyTables["_" + table + "__hist_rows"] = histModel;
 
                 // holds where in the row history we are
                 historyTables["_" + table + "__hist_idx"] = [
-                    { key: "id", type: this._tablePkTypes[table], props: ["pk()"] }, // same exact primary key as related row
+                    { key: "id", type: this._tablePkTypes[table], props: ["pk"] }, // same exact primary key as related row
                     { key: "histRows", type: `timeIdms[]` }, // primary keys from _table__hist
                     { key: "histPtr", type: "number" } // where in the above array we are.
                 ];
@@ -117,13 +117,13 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         const isNotString = typeof this.historyModeArgs !== "string";
 
         const historyTable = [
-            { key: "id", type: "timeIdms", props: ["pk()"] },
+            { key: "id", type: "timeIdms", props: ["pk"] },
             { key: "table", type: "string" },
             { key: "keys", type: "any[]" }
         ];
 
         const historyTablePointer = [ // this table will only have one row, the pointer of the above row that is active
-            { key: "id", type: "timeIdms", props: ["pk()"] },
+            { key: "id", type: "timeIdms", props: ["pk"] },
             { key: "ptr", type: "int" }
         ];
 

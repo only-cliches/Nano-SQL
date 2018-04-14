@@ -5,6 +5,10 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.4] 4-14-2018
+- Fixed `.where()` statement bugs, added a bunch of test conditions to prevent this kind of thing from popping up again.
+- Fixed issue with `_util` table.
+
 ## [1.4.3] 4-9-2018
 - Moved package.json dependencies into their appropriate sections.
 - Added a new `.extend("flush")` command to clear all contents of the database.

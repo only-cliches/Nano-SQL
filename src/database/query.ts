@@ -1546,67 +1546,24 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
 
     if (typeof where[0] !== "string") { // compound where statements
 
-        let hasAnd = false;
-        // turn where statement into array of booleans and conditions
-        // [[id, "=", 1], "OR", ["this", "=", "that"]] => [true, "OR", false];
-        let checkWhere = where.map((wArg, idx) => {
-            if (commands.indexOf(wArg) !== -1) {
-                if (wArg === "AND") hasAnd = true;
-                return wArg;
-            } else {
-                return _compare(wArg[2], wArg[1], objQuery(wArg[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
-            }
-        });
+        let prevCondition: string;
 
-        // combine all OR statements into a single boolean of the surrounding booleans
-        // [true, "OR", false, "AND", true] => [undefined, true, undefined, "AND", true]
-        // [false, "OR", false, "AND", true] => [undefined, false, undefined, "AND", true];
-        checkWhere.forEach((wArg, idx) => {
-            if (wArg === "OR") {
-                checkWhere[idx] = checkWhere[idx - 1] || checkWhere[idx + 1];
-                checkWhere[idx - 1] = undefined;
-                checkWhere[idx + 1] = undefined;
-            }
-        });
+        return where.reduce((prev, wArg, idx) => {
 
-        // remove the undefined elements from the above action
-        // [undefined, false, undefined, undefined, false, undefined, "AND", true] => [false, false, true]
-        // checkWhere = checkWhere.filter(val => val !== undefined && val !== "AND");
-
-        // if there are any false bools in the array the row doesn't match.
-        return checkWhere.indexOf(false) === -1;
-
-        /*
-
-        if (!hasAnd) { // All OR statements, if there are zero true values then the row doesn't pass.
-            return checkWhere.indexOf(true) !== -1;
-        } else {
-            let reducing: number;
-            let prevAnd = false;
-            return checkWhere.reduce((prev, cur, idx) => {
-                if (idx === 0) {
-                    prev.push(cur);
-                    reducing = prev.length - 1;
-                    return prev;
-                }
-                if (cur === "AND") {
-                    prevAnd = true;
-                    // prev.push(cur);
-                    return prev;
-                }
-                if (prevAnd) {
-                    prev.push(cur);
-                    reducing = prev.length - 1;
-                    prevAnd = false;
-                    return prev;
-                }
-                if (reducing !== undefined) {
-                    prev[reducing] = cur || prev[reducing];
-                }
+            if (idx % 2 === 1) {
+                prevCondition = wArg;
                 return prev;
-            }, []).indexOf(false) === -1;
-        }*/
+            }
 
+            let compareResult: boolean = _compare(wArg[2], wArg[1], objQuery(wArg[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
+            if (idx === 0) return compareResult;
+
+            if (prevCondition === "AND") {
+                return prev && compareResult;
+            } else {
+                return prev || compareResult;
+            }
+        }, false);
     } else { // single where statement
         return _compare(where[2], where[1], objQuery(where[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
     }

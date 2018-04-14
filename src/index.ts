@@ -438,7 +438,7 @@ export class NanoSQLInstance {
             };
 
             connectArgs.models[str[0]] = [
-                { key: "key", type: "string", props: ["pk()", "ai()"] },
+                { key: "key", type: "string", props: ["pk", "ai"] },
                 { key: "value", type: "any" }
             ];
 
@@ -741,7 +741,7 @@ export class NanoSQLInstance {
 
         if (!hasPK) {
             this.tablePKs[l] = "_id_";
-            dataModel.unshift({ key: "_id_", type: "uuid", props: ["pk()"] });
+            dataModel.unshift({ key: "_id_", type: "uuid", props: ["pk"] });
         }
 
         t.dataModels[l] = dataModel;

@@ -22,22 +22,27 @@
 
         function testAlaSQL() {
             console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+
             function runTest(complete) {
 
                 var mybase = new alasql.Database();
-                mybase.exec(`CREATE TABLE users (
+                mybase.exec(
+                    `CREATE TABLE users (
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     name TEXT,
                     pass TEXT,
                     email TEXT
-                )`);
+                )`
+                );
 
 
                 let i = 0;
                 var start = Date.now();
                 const w = () => {
                     if (i < 100) {
-                        mybase.exec(`INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [makeid(), makeid(), makeid()], () => {
+                        mybase.exec(`INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [makeid(), makeid(),
+                            makeid()
+                        ], () => {
                             i++;
                             Promise.resolve().then(w);
                         });
@@ -45,8 +50,8 @@
 
                         // start = Date.now();
                         // mybase.exec("UPDATE users SET name=? WHERE id BETWEEN 10 AND 30", [makeid()], (rows) => {
-                            // console.log("READ", (Date.now() - start))
-                            complete(Date.now() - start);
+                        // console.log("READ", (Date.now() - start))
+                        complete(Date.now() - start);
                         // })
                     }
 
@@ -60,7 +65,7 @@
 
             function nextTest() {
                 if (k < 100) {
-                    runTest(function(result) {
+                    runTest(function (result) {
                         console.log(k + ": " + result)
                         results.push(result);
                         k++;
@@ -78,6 +83,7 @@
 
         function testNanoSQL() {
             console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+
             function runTest(complete) {
 
                 var db = new NanoSQLInstance();
@@ -96,8 +102,10 @@
                         key: "email",
                         type: "any"
                     }])
-                    .config({cache: false})
-                    .connect().then(function() {
+                    .config({
+                        cache: false
+                    })
+                    .connect().then(function () {
                         var start = Date.now();
                         let i = 0;
                         const w = () => {
@@ -114,7 +122,7 @@
                             } else {
                                 // start = Date.now();
                                 // db.table("users").query("upsert", {name: makeid()}).where(["id", "BETWEEN", [10, 30]]).exec().then(() => {
-                                    complete((Date.now() - start));
+                                complete((Date.now() - start));
                                 // });
                                 //console.log("WRITE", (new Date().getTime() - start))
                             }
@@ -131,7 +139,7 @@
 
             function nextTest() {
                 if (k < 100) {
-                    runTest(function(result) {
+                    runTest(function (result) {
                         console.log(k + ": " + result)
                         results.push(result);
                         k++;
@@ -149,7 +157,43 @@
     </script>
     <script>
         /* This file used to run tests and play with the lib */
-
+        nSQL([{
+                id: 1,
+                name: "Bill",
+                age: 20,
+                email: "bill@gmail.com",
+                meta: {
+                    value: 1
+                },
+                posts: [1, 3]
+            },
+            {
+                id: 2,
+                name: "Jeb",
+                age: 24,
+                email: "jeb@gmail.com",
+                meta: {
+                    value: 1
+                },
+                posts: [1]
+            },
+            {
+                id: 3,
+                name: "Bob",
+                age: 21,
+                email: "bob@gmail.com",
+                meta: {
+                    value: 1
+                },
+                posts: [1, 2, 3]
+            }
+        ]).query("select").where([
+            ["name", "=", "Bill"], "AND", ["age", "=", 20], "OR", ["email", "=", "jeb@gmail.com"]
+        ]).exec().then((rows) => {
+            const div = document.createElement("pre");
+            document.body.appendChild(div);
+            div.innerHTML = JSON.stringify(rows, null, 4);
+        })
         /*
                     nSQL('users') // <= Table Name
                     .model([ // <= create table model before you can use it
@@ -242,20 +286,20 @@
             .toRow({
                 setBalance: (primaryKey, existingRow, done) => {
                     existingRow.balance = 200;
-                    done(existingRow);	
+                    done(existingRow);
                 }
             })
             .views([ //Cached views to show specific data
                 {
                     name: 'get_user_by_name',
                     args: ['name:string'],
-                    call: function(args, db) {
+                    call: function (args, db) {
                         return db.query('select').where(['name', '=', args.name]).exec();
                     }
                 }, {
                     name: 'list_all_users',
                     args: ['page:int'],
-                    call: function(args, db) {
+                    call: function (args, db) {
                         return db.query('select', ['id', 'name']).exec();
                     }
                 }
@@ -264,7 +308,7 @@
                 {
                     name: 'clearPostIDs',
                     args: ['name:string'],
-                    call: function(args, db) {
+                    call: function (args, db) {
                         return db.query('upsert', {
                             postIDs: []
                         }).where(["name", "=", args.name]).exec();
@@ -272,7 +316,7 @@
                 }, {
                     name: 'login',
                     args: ['username:string', 'password:string'],
-                    call: function(args, db) {
+                    call: function (args, db) {
                         return db.query('select', ['id']).where([
                             ['username', '=', args.username], 'and', ['password', '=', args.password]
                         ]).exec();
@@ -301,7 +345,7 @@
                 // rebuildIndexes: true
                 // memory: false
             })
-            .connect().then(function(result, db) {
+            .connect().then(function (result, db) {
                 console.log(db);
                 // nSQL().extend("one", "arg", "here");
                 Promise.all([
@@ -328,7 +372,9 @@
                             name: 'jeb',
                             age: 28,
                             balance: 25.02,
-                            somethingElse: () => {return "Hello!"},
+                            somethingElse: () => {
+                                return "Hello!"
+                            },
                             orderIDs: [1, 20, 5],
                             meta: {
                                 favorteColor: {
@@ -370,7 +416,7 @@
                         }])
                     ])
                     // new Promise(function(res) {res()})
-                    .then(function() {
+                    .then(function () {
                         /*
                                                 console.time("NANO");
                                                 nSQL([{a:1,b:10}, {a:2,b:20}, {a:1,b:30}])
@@ -400,7 +446,7 @@
                                 "orders.title": "asc"
                             })*/
                             .where(["orderIDs", "HAVE", 0])
-                            .exec().then(function(rows, db) {
+                            .exec().then(function (rows, db) {
                                 console.log(rows);
                                 // console.log(rows[0].somethingElse());
                                 console.timeEnd("READ");

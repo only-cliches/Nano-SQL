@@ -1,1 +1,123 @@
-function o(r){this.go=function(t){var o=0;r&&r.length||t([]),r.forEach(function(e,n){e(function(){++o===r.length&&t([])})})}}var s={db:null,store:function(e,n,t){var o=s.db.transaction(e,n);t(o,o.objectStore(e),function(e,n){return function(){postMessage({do:e,args:n})}})},init:function(){addEventListener("message",function(e){var n=e.data;s[n.do]&&s[n.do](n.args)},!1)},setup:function(n){var e=indexedDB.open(n.id,1),t=!1,a={};e.onupgradeneeded=function(e){t=!0,s.db=e.target.result,Object.keys(n.pkKeys).forEach(function(e){s.db.createObjectStore(e,{keyPath:n.pkKeys[e]}),a[e]=[]})},e.onsuccess=function(e){if(s.db=e.target.result,t)postMessage({do:"rdy",args:a});else{new o(Object.keys(n.pkKeys).map(function(t){return function(n){var e,o,r;e=t,o=function(e){a[t]=e,n()},r=[],s.store(e,"readonly",function(e,n,t){n.openCursor().onsuccess=function(e){var n=e.target.result;n&&(r.push(n.key),n.continue())},e.oncomplete=function(){o(r)}})}})).go(function(){postMessage({do:"rdy",args:a})})}}},write:function(o){s.store(o.table,"readwrite",function(e,n,t){n.put(o.row),e.oncomplete=t("write_"+o.id,null)})},read:function(r){s.store(r.table,"readonly",function(e,n,t){var o=n.get(r.pk);o.onsuccess=function(){postMessage({do:"read_"+r.id,args:o.result})}})},readRange:function(a){s.store(a.table,"readonly",function(e,n,t){var o=[],r=-1===a.range.indexOf(void 0)?n.openCursor(IDBKeyRange.bound(a.range[0],a.range[1])):n.openCursor();e.oncomplete=t("readRange_"+a.id+"_done",o),r.onsuccess=function(e){var n=e.target.result;n&&(o.push(n.value),n.continue())}})},delete:function(o){s.store(o.table,"readwrite",function(e,n,t){e.oncomplete=t("delete_"+o.id,!0),e.onerror=t("delete_"+o.id,!1),"_clear_"===o.pk?n.clear():n.delete(o.pk)})}};s.init();
+function ALL(callbacks) {
+    this.go = function (complete) {
+        var ptr = 0;
+        if (!callbacks || !callbacks.length) {
+            complete([]);
+        }
+        callbacks.forEach(function (cb, i) {
+            cb(function () {
+                ptr++;
+                if (ptr === callbacks.length) {
+                    complete([]);
+                }
+            });
+        });
+    };
+}
+var IDBWorker = {
+    db: null,
+    store: function (table, type, open) {
+        var transaction = IDBWorker.db.transaction(table, type);
+        open(transaction, transaction.objectStore(table), function (act, args) {
+            return function () {
+                postMessage({ do: act, args: args });
+            };
+        });
+    },
+    init: function () {
+        addEventListener("message", function (e) {
+            var message = e.data;
+            if (IDBWorker[message.do]) {
+                IDBWorker[message.do](message.args);
+            }
+        }, false);
+    },
+    setup: function (args) {
+        var idb = indexedDB.open(args.id, 1);
+        var upgrading = false;
+        var idxes = {};
+        idb.onupgradeneeded = function (event) {
+            upgrading = true;
+            IDBWorker.db = event.target.result;
+            Object.keys(args.pkKeys).forEach(function (table) {
+                IDBWorker.db.createObjectStore(table, { keyPath: args.pkKeys[table] });
+                idxes[table] = [];
+            });
+        };
+        idb.onsuccess = function (event) {
+            IDBWorker.db = event.target.result;
+            if (!upgrading) {
+                var getIDBIndex_1 = function (tName, callBack) {
+                    var items = [];
+                    IDBWorker.store(tName, "readonly", function (transaction, store, msg) {
+                        var cursorRequest = store.openCursor();
+                        cursorRequest.onsuccess = function (evt) {
+                            var cursor = evt.target.result;
+                            if (cursor) {
+                                items.push(cursor.key);
+                                cursor.continue();
+                            }
+                        };
+                        transaction.oncomplete = function () {
+                            callBack(items);
+                        };
+                    });
+                };
+                new ALL(Object.keys(args.pkKeys).map(function (table) {
+                    return function (tDone) {
+                        getIDBIndex_1(table, function (index) {
+                            idxes[table] = index;
+                            tDone();
+                        });
+                    };
+                })).go(function () {
+                    postMessage({ do: "rdy", args: idxes });
+                });
+            }
+            else {
+                postMessage({ do: "rdy", args: idxes });
+            }
+        };
+    },
+    write: function (args) {
+        IDBWorker.store(args.table, "readwrite", function (transaction, store, msg) {
+            store.put(args.row);
+            transaction.oncomplete = msg("write_" + args.id, null);
+        });
+    },
+    read: function (args) {
+        IDBWorker.store(args.table, "readonly", function (transaction, store, msg) {
+            var singleReq = store.get(args.pk);
+            singleReq.onsuccess = function () {
+                postMessage({ do: "read_" + args.id, args: singleReq.result });
+            };
+        });
+    },
+    readRange: function (args) {
+        IDBWorker.store(args.table, "readonly", function (transaction, store, msg) {
+            var rows = [];
+            var cursorRequest = args.range.indexOf(undefined) === -1 ? store.openCursor(IDBKeyRange.bound(args.range[0], args.range[1])) : store.openCursor();
+            transaction.oncomplete = msg("readRange_" + args.id + "_done", rows);
+            cursorRequest.onsuccess = function (evt) {
+                var cursor = evt.target.result;
+                if (cursor) {
+                    rows.push(cursor.value);
+                    cursor.continue();
+                }
+            };
+        });
+    },
+    delete: function (args) {
+        IDBWorker.store(args.table, "readwrite", function (transaction, store, msg) {
+            transaction.oncomplete = msg("delete_" + args.id, true);
+            transaction.onerror = msg("delete_" + args.id, false);
+            if (args.pk === "_clear_") {
+                store.clear();
+            }
+            else {
+                store.delete(args.pk);
+            }
+        });
+    }
+};
+IDBWorker.init();
