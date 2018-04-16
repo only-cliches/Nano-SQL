@@ -71,7 +71,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             let pks: any[] = [];
             this._levelDBs[table].createKeyStream()
                 .on("data", (data) => {
-                    pks.push(this._isPKnum[table] ? new global._Int64BE(data).toNumber() : data);
+                    pks.push(this._isPKnum[table] ? new global._Int64BE(data.toString()).toNumber() : data.toString());
                 })
                 .on("end", () => {
                     if (pks.length) {

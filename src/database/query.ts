@@ -1915,9 +1915,11 @@ export class _RowSelection {
      */
     private _isOptimizedWhere(wArgs: any[]): number {
         const tableData = this.s.tableInfo[this.q.table as any];
-        if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1 || (wArgs[0].indexOf("search(") !== -1 && (wArgs[1] === "=" || wArgs[1].indexOf(">") !== -1 || wArgs[1].indexOf("<") !== -1))) {
-            // if (wArgs[0] === tableData._pk) {
-            if (wArgs[0] === tableData._pk || tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1 || wArgs[0].indexOf("search(") !== -1) {
+        const wQuery = wArgs[0] || "";
+        const wCondition = wArgs[1] || "";
+        if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1 || (wQuery.indexOf("search(") !== -1 && (wCondition === "=" || wCondition.indexOf(">") !== -1 || wCondition.indexOf("<") !== -1))) {
+            // if (wQuery === tableData._pk) {
+            if (wQuery === tableData._pk || tableData._secondaryIndexes.indexOf(wQuery) !== -1 || wQuery.indexOf("search(") !== -1) {
                 return 0;
             }
         }

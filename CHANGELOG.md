@@ -4,6 +4,10 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.7] 4-15-2018
+- Fixed issue with LevelDB and search feature.
+- Fixed issue with search feature and optimized query checking.
+
 ## [1.4.6] 4-15-2018
 - Fixed CSV Export and Import formating.
 - Restored `.rowFilter` feature.
