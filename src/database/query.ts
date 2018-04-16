@@ -1618,15 +1618,19 @@ export class _RowSelection {
                             }
                         }
 
-                        let docLength = 0;
-                        const wordLocs = Object.keys(reducedResults[rowPK]).map(w => {
-                            docLength = reducedResults[rowPK][w].l;
-                            return { word: tokenToTerm[w] || w, loc: reducedResults[rowPK][w].i };
-                        });
-                        const locations = wordLocs.reduce((p, c) => p + c.loc.length, 0);
                         if (!weights[rowPK]) {
                             weights[rowPK] = { weight: 0, locations: {} };
                         }
+
+                        let docLength = 0;
+                        const wordLocs = Object.keys(reducedResults[rowPK]).map(w => {
+                            docLength = reducedResults[rowPK][w].l;
+                            if (tokenToTerm[w]) {
+                                weights[rowPK].weight += 1;
+                            }
+                            return { word: tokenToTerm[w] || w, loc: reducedResults[rowPK][w].i };
+                        });
+                        const locations = wordLocs.reduce((p, c) => p + c.loc.length, 0);
 
                         weights[rowPK].weight += (locations / docLength) + parseInt(args[0]);
                         weights[rowPK].locations[col] = wordLocs;
