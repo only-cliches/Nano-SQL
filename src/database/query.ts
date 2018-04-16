@@ -1736,9 +1736,9 @@ export class _RowSelection {
                                 matches.loc.forEach((idx) => {
                                     const lev = levenshtein(rowCol[idx], matches.word);
                                     if (lev === 0) {
-                                        weights[rowPK].weight += 1;
+                                        weights[rowPK].weight += 10;
                                     } else {
-                                        weights[rowPK].weight += 1 / (lev * 5);
+                                        weights[rowPK].weight += 10 / (lev * 10);
                                     }
                                 });
                             });
