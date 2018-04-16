@@ -981,6 +981,8 @@ export class _NanoSQLStorage {
         // drop token and hash search cache
         let tablesToDrop: string[] = Object.keys(this.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_tokens_" + t);
         tablesToDrop = tablesToDrop.concat(Object.keys(this.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_" + t));
+        tablesToDrop = tablesToDrop.concat(Object.keys(this.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_fuzzy_" + t));
+
         // drop secondary indexes
         tablesToDrop = tablesToDrop.concat(this.tableInfo[table]._secondaryIndexes.map(t => "_" + table + "_idx_" + t));
 
@@ -1027,6 +1029,10 @@ export class _NanoSQLStorage {
                         if (prop.indexOf("search(") !== -1) {
                             hasSearch = true;
                             dataModels["_" + table + "_search_" + model.key] = [
+                                { key: "wrd", type: "string", props: ["pk"] },
+                                { key: "rows", type: "any[]" }
+                            ];
+                            dataModels["_" + table + "_search_fuzzy_" + model.key] = [
                                 { key: "wrd", type: "string", props: ["pk"] },
                                 { key: "rows", type: "any[]" }
                             ];

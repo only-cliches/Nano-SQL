@@ -35,7 +35,7 @@ export declare class _NanoSQLStorageQuery {
         w: string;
         i: number;
     }[];
-    private _clearFromSearchIndex(pk, complete);
+    private _clearFromSearchIndex(pk, rowData, complete);
     private _updateSearchIndex(pk, newRowData, complete);
     /**
      * For each updated row, update view columns from remote records that are related.

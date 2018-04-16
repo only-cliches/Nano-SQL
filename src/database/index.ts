@@ -169,6 +169,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 fastALL(rebuildTables, (table, i, done) => {
                     let tablesToDrop: string[] = Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_tokens_" + t);
                     tablesToDrop = tablesToDrop.concat(Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_" + t));
+                    tablesToDrop = tablesToDrop.concat(Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_fuzzy_" + t));
                     fastALL(tablesToDrop, (dropTable, i, dropDone) => {
                         this._store.adapterDrop(dropTable, dropDone);
                     }).then(() => {

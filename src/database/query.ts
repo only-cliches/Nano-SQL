@@ -4,6 +4,7 @@ import { _NanoSQLStorage, DBRow } from "./storage";
 import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect } from "../utilities";
 import * as metaphone from "metaphone";
 import * as stemmer from "stemmer";
+import * as fuzzy from "fuzzysearch";
 
 export interface SearchRowIndex {
     wrd: string;
@@ -319,7 +320,7 @@ export class _NanoSQLStorageQuery {
         return words.map((w, i) => ({ o: w, w, i }));
     }
 
-    private _clearFromSearchIndex(pk: any, complete: () => void): void {
+    private _clearFromSearchIndex(pk: any, rowData: any, complete: () => void): void {
         const table: string = this._query.table as string;
         const columns = Object.keys(this._store.tableInfo[table]._searchColumns);
         // No search indexes on this table OR
@@ -329,34 +330,49 @@ export class _NanoSQLStorageQuery {
             return;
         }
         const tokenTable = "_" + table + "_search_tokens_";
-        const searchTable = "_" + table + "_search_";
+        // const searchTable = "_" + table + "_search_";
         fastALL(columns, (col, i, next) => {
+
+            const tokens = this._tokenizer(col, rowData[col]);
+            let wordCache: { [token: string]: string } = {};
+            tokens.forEach((t) => {
+                wordCache[t.w] = t.o;
+            });
+
             // get token cache for this row and column
             this._store.adapters[0].adapter.read(tokenTable + col, pk, (row: { id: any, hash: string, tokens: { w: string, i: number }[] }) => {
                 if (!row) {
                     next();
                     return;
                 }
-                // reduce to a list of words to remove
-                let wordsToRemove: { [word: string]: boolean } = {};
-                row.tokens.forEach((token) => {
-                    if (!wordsToRemove[token.w]) {
-                        wordsToRemove[token.w] = true;
-                    }
-                });
-                // query those words and remove this row from them
-                fastALL(Object.keys(wordsToRemove), (word, j, done) => {
-                    this._store.adapters[0].adapter.read(searchTable + col, word, (wRow: SearchRowIndex) => {
-                        if (!wRow) {
+
+                fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next) => {
+                    // reduce to a list of words to remove
+                    let wordsToRemove: { [word: string]: boolean } = {};
+                    row.tokens.forEach((token) => {
+                        if (!wordsToRemove[token.w]) {
+                            if (l === 0) wordsToRemove[token.w] = true;
+                            if (l === 1) wordsToRemove[wordCache[token.w]] = true;
+                        }
+                    });
+                    // query those words and remove this row from them
+                    fastALL(Object.keys(wordsToRemove), (word, j, done) => {
+                        if (!word) {
                             done();
                             return;
                         }
-                        if (Object.isFrozen(wRow)) {
-                            wRow = _assign(wRow);
-                        }
-                        wRow.rows = wRow.rows.filter(r => r.id !== pk);
-                        this._store.adapterWrite(searchTable + col, word, wRow, done);
-                    });
+                        this._store.adapters[0].adapter.read("_" + table + tableSection + col, word, (wRow: SearchRowIndex) => {
+                            if (!wRow) {
+                                done();
+                                return;
+                            }
+                            if (Object.isFrozen(wRow)) {
+                                wRow = _assign(wRow);
+                            }
+                            wRow.rows = wRow.rows.filter(r => r.id !== pk);
+                            this._store.adapterWrite("_" + table + tableSection + col, word, wRow, done);
+                        });
+                    }).then(next);
                 }).then(() => {
                     // remove row hash and token cache
                     this._store.adapters[0].adapter.delete(tokenTable + col, pk, next);
@@ -394,9 +410,15 @@ export class _NanoSQLStorageQuery {
                     return;
                 }
 
-                const newTokens = this._tokenizer(col, newRowData[col]).map(o => ({w: o.w, i: o.i}));
+                let wordCache: { [token: string]: string } = {};
+
+                const newTokens = this._tokenizer(col, newRowData[col]);
                 const oldTokenIdx = existing.tokens.map(t => t.i + "-" + t.w);
                 const newTokenIdx = newTokens.map(t => t.i + "-" + t.w);
+
+                newTokens.forEach((token) => {
+                    wordCache[token.w] = token.o;
+                });
 
                 const addTokens = newTokenIdx.filter(i => oldTokenIdx.indexOf(i) === -1);
                 const removeTokens = oldTokenIdx.filter(i => newTokenIdx.indexOf(i) === -1);
@@ -412,35 +434,41 @@ export class _NanoSQLStorageQuery {
                         reduceWords[wToken.w].push(wToken);
                     });
                     fastALL(Object.keys(reduceWords), (word, k, nextWord) => {
-                        this._store.adapters[0].adapter.read("_" + table + "_search_" + col, word, (colRow: SearchRowIndex) => {
-                            let searchIndex: SearchRowIndex = colRow || { wrd: word, rows: [] };
-                            if (Object.isFrozen(searchIndex)) {
-                                searchIndex = _assign(searchIndex);
+                        fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next) => {
+                            if (!(l === 0 ? word : wordCache[word])) {
+                                next();
+                                return;
                             }
-                            switch (j) {
-                                case 0: // remove
-                                    searchIndex.rows.forEach((sRow, l) => {
-                                        if (sRow.id === pk) {
-                                            searchIndex.rows.splice(l, 1);
-                                        }
-                                    });
-                                    break;
-                                case 1: // add
-                                    searchIndex.rows.push({
-                                        id: pk,
-                                        i: reduceWords[word].map(w => w.i),
-                                        l: newTokens.length
-                                    });
-                                    break;
-                            }
-                            this._store.adapterWrite("_" + table + "_search_" + col, word, searchIndex, nextWord);
-                        });
+                            this._store.adapters[0].adapter.read("_" + table + tableSection + col, l === 0 ? word : wordCache[word], (colRow: SearchRowIndex) => {
+                                let searchIndex: SearchRowIndex = colRow || { wrd: word, rows: [] };
+                                if (Object.isFrozen(searchIndex)) {
+                                    searchIndex = _assign(searchIndex);
+                                }
+                                switch (j) {
+                                    case 0: // remove
+                                        searchIndex.rows.forEach((sRow, l) => {
+                                            if (sRow.id === pk) {
+                                                searchIndex.rows.splice(l, 1);
+                                            }
+                                        });
+                                        break;
+                                    case 1: // add
+                                        searchIndex.rows.push({
+                                            id: pk,
+                                            i: reduceWords[word].map(w => w.i),
+                                            l: newTokens.length
+                                        });
+                                        break;
+                                }
+                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next);
+                            });
+                        }).then(nextWord);
                     }).then(nextTokens);
                 }).then(() => {
                     this._store.adapterWrite(tokenTable + col, pk, {
                         id: pk,
                         hash: thisHash,
-                        tokens: newTokens
+                        tokens: newTokens.map(o => ({ w: o.w, i: o.i }))
                     }, next);
                 });
             });
@@ -713,7 +741,7 @@ export class _NanoSQLStorageQuery {
                 rows = rows.filter(r => r);
                 if (rows.length) {
                     fastALL(rows, (r, i, done) => {
-                        this._clearFromSearchIndex(r[this._store.tableInfo[this._query.table as any]._pk], () => {
+                        this._clearFromSearchIndex(r[this._store.tableInfo[this._query.table as any]._pk], r, () => {
                             this._store._delete(this._query.table as any, r[this._store.tableInfo[this._query.table as any]._pk], done);
                         });
                     }).then((affectedRows) => {
@@ -1477,14 +1505,14 @@ export class _RowSelection {
             let whereType = 0;
 
             if (where[1].indexOf(">") !== -1) {
-                whereType = parseFloat(where[1].replace(">", ""));
-            }
-            if (where[1].indexOf("<") !== -1) {
-                whereType = parseFloat(where[1].replace("<", "")) * -1;
+                whereType = parseFloat(where[1].replace(">", "")) + 0.0001;
+            } else if (where[1].indexOf("<") !== -1) {
+                whereType = (parseFloat(where[1].replace("<", "")) * -1) + 0.0001;
             }
 
             const columns: string[] = where[0].replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
-            let weights: { [rowPK: string]: { weight: number, locations: {[col: string]: {word: string, loc: number[]}[]} } } = {};
+            let weights: { [rowPK: string]: { weight: number, locations: { [col: string]: { word: string, loc: number[] }[] } } } = {};
+
             fastALL(columns, (col, i, nextCol) => {
                 // tokenize search terms
                 const searchTerms = this.qu._tokenizer(col, where[2]);
@@ -1495,28 +1523,86 @@ export class _RowSelection {
                     }
                 } = {};
 
-                let tokenToTerm: {[token: string]: string} = {};
+                let tokenToTerm: { [token: string]: string } = {};
+                let termToToken: { [term: string]: string } = {};
                 searchTerms.forEach((search) => {
                     tokenToTerm[search.w] = search.o;
+                    termToToken[search.o] = search.w;
                 });
 
+
                 // get all rows that have at least one search term
-                fastALL(searchTerms, (term: { w: string, i: number[] }, j, nextTerm) => {
-                    const indexTable = "_" + this.q.table + "_search_" + col;
-                    this.s.adapters[0].adapter.read(indexTable, term.w as any, (row: SearchRowIndex) => {
-                        if (!row) {
-                            nextTerm();
-                            return;
-                        }
-                        row.rows.forEach(r => {
-                            if (!reducedResults[r.id]) {
-                                reducedResults[r.id] = {};
+                fastALL(["_search_", "_search_fuzzy_"], (tableSection: string, j, nextTable) => {
+
+                    const indexTable = "_" + this.q.table + tableSection + col;
+
+                    switch (j) {
+                        case 0:
+                            fastALL(searchTerms, (term: { w: string, i: number[] }, j, nextTerm) => {
+                                this.s.adapters[0].adapter.read(indexTable, term.w as any, (row: SearchRowIndex) => {
+                                    if (!row) {
+                                        nextTerm();
+                                        return;
+                                    }
+                                    row.rows.forEach(r => {
+                                        if (!reducedResults[r.id]) {
+                                            reducedResults[r.id] = {};
+                                        }
+                                        reducedResults[r.id][term.w] = r;
+                                    });
+                                    nextTerm();
+                                });
+                            }).then(nextTable);
+                            break;
+                        case 1:
+                            if (whereType === 0) {
+                                nextTable();
+                                return;
                             }
-                            reducedResults[r.id][term.w] = r;
-                        });
-                        nextTerm();
-                    });
+                            this.s.adapters[0].adapter.getIndex(indexTable, false, (index: string[]) => {
+                                let wordsToGet: string[] = [];
+
+                                index.forEach((word) => {
+                                    searchTerms.forEach((term) => {
+                                        if (fuzzy(term.o, word)) {
+                                            wordsToGet.push(word);
+                                        }
+                                    });
+                                });
+
+                                fastALL(wordsToGet, (term: string, j, nextTerm) => {
+                                    this.s.adapters[0].adapter.read(indexTable, term as any, (row: SearchRowIndex) => {
+                                        if (!row) {
+                                            nextTerm();
+                                            return;
+                                        }
+
+                                        row.rows.forEach(r => {
+                                            let exists = false;
+                                            if (!reducedResults[r.id]) {
+                                                reducedResults[r.id] = {};
+                                            } else {
+                                                Object.keys(reducedResults[r.id]).forEach((rowPK) => {
+                                                    if (reducedResults[r.id][rowPK].i[0] === r.i[0]) {
+                                                        exists = true;
+                                                    }
+                                                });
+                                            }
+                                            if (!exists) {
+                                                const key = termToToken[term] || term;
+                                                reducedResults[r.id][key] = r;
+                                            }
+
+                                        });
+                                        nextTerm();
+                                    });
+                                }).then(nextTable);
+                            });
+                            break;
+                    }
+
                 }).then(() => {
+
                     // now get the weights and locations for each row
 
                     Object.keys(reducedResults).forEach((rowPK) => {
@@ -1526,10 +1612,11 @@ export class _RowSelection {
                                 return;
                             }
                         }
+
                         let docLength = 0;
                         const wordLocs = Object.keys(reducedResults[rowPK]).map(w => {
                             docLength = reducedResults[rowPK][w].l;
-                            return {word: tokenToTerm[w], loc: reducedResults[rowPK][w].i};
+                            return { word: tokenToTerm[w] || w, loc: reducedResults[rowPK][w].i };
                         });
                         const locations = wordLocs.reduce((p, c) => p + c.loc.length, 0);
                         if (!weights[rowPK]) {
@@ -1540,6 +1627,7 @@ export class _RowSelection {
                         weights[rowPK].locations[col] = wordLocs;
 
                         if (whereType !== 0) { // fuzzy term match
+
                             searchTerms.forEach((sTerm) => {
                                 // all instances of this term in this row/column
                                 let idxsTerm = reducedResults[rowPK][sTerm.w];

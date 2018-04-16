@@ -94,6 +94,7 @@
   "license": "MIT",
   "dependencies": {
     "bitap": "^1.0.1",
+    "fuzzysearch": "^1.0.3",
     "int64-buffer": "^0.1.10",
     "leveldown": "^3.0.0",
     "levelup": "^2.0.2",

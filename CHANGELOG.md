@@ -5,8 +5,9 @@
 - Add Denormalized view feature (copy column data over)
 
 ## [1.4.6] 4-15-2018
-- Fixed CSV Export issue.
+- Fixed CSV Export and Import formating.
 - Restored `.rowFilter` feature.
+- Added fuzzy search capability to elastic search features.
 
 ## [1.4.5] 4-15-2018
 - Fixed and restored query cache features.
