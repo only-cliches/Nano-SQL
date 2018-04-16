@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.45;
+const VERSION = 1.46;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -198,6 +198,8 @@ export class NanoSQLInstance {
      */
     public data: any;
 
+    public rowFilters: {[table: string]: (row: any) => any};
+
 
     /**
      * An array of possible events
@@ -345,6 +347,7 @@ export class NanoSQLInstance {
         t.tablePKs = {};
         t.toColFns = {};
         t.toColRules = {};
+        t.rowFilters = {};
 
         t._randoms = [];
         // t._queryPool = [];
@@ -375,6 +378,10 @@ export class NanoSQLInstance {
                 }
             });
         }
+    }
+
+    public rowFilter(callback: (row: any) => any) {
+        this.rowFilters[this.sTable as string] = callback;
     }
 
     public toColumn(columnFns: { [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void }) {
@@ -1383,7 +1390,7 @@ export class NanoSQLInstance {
         let t = this;
         let fields: Array<string> = [];
 
-        let rowData = csv.split("\n").map((v, k) => {
+        let rowData = csv.split(/\r?\n|\r|\t/gm).map((v, k) => {
             if (k === 0) {
                 fields = v.split(",");
                 return undefined;

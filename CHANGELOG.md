@@ -2,10 +2,13 @@
 
 ## TODO
 - Finish integration tests for history.
-- Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
-## [1.4.5]
+## [1.4.6] 4-15-2018
+- Fixed CSV Export issue.
+- Restored `.rowFilter` feature.
+
+## [1.4.5] 4-15-2018
 - Fixed and restored query cache features.
 - Added elastic search style feature, where rows can be indexed, words stemmed, and searches happen much faster.  Will add testing and documentation later as the feature is found to be stable.
 

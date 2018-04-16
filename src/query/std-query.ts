@@ -420,8 +420,20 @@ export class _NanoSQLQuery {
                 if (!json.length) {
                     res("", t);
                 }
+                let columnHeaders: string[] = [];
+                if (typeof this._query.table === "string") {
+                    columnHeaders = this._db.dataModels[this._query.table as string].map(k => k.key);
+                } else {
+                    json.forEach((json) => {
+                        let maybeHeaders = Object.keys(json[0]);
+                        if (maybeHeaders.length > columnHeaders.length) {
+                            columnHeaders = maybeHeaders;
+                        }
+                    });
+                }
+
                 if (headers) {
-                    csv.push(Object.keys(json[0]).join(","));
+                    csv.push(columnHeaders.join(","));
                 }
 
                 json.forEach((row) => {
@@ -433,7 +445,7 @@ export class _NanoSQLQuery {
                         return typeof row[k] === "object" ? '"' + JSON.stringify(row[k]).replace(/\"/g, '\'') + '"' : row[k];
                     }).join(","));
                 });
-                res(csv.join("\n"), t);
+                res(csv.join("\r\n"), t);
             });
         });
     }
@@ -593,6 +605,11 @@ export class _NanoSQLQuery {
             let newArgs = this._query.actionArgs || (a === "select" || a === "delete" ? [] : {});
 
             if (a === "upsert") {
+
+                // Do Row Filter
+                if (this._db.rowFilters[this._query.table as string]) {
+                    newArgs = this._db.rowFilters[this._query.table as string](newArgs);
+                }
 
                 // Cast row types and remove columns that don't exist in the data model
                 let inputArgs = {};

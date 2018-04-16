@@ -10,15 +10,15 @@ NoSQL Everywhere
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
 ## NanoSQL is a database abstraction layer that: 
-1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova).
+1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native).
 2. Lets you scale faster by moving query logic to your application server.
-3. Supports many advanced features like ORM, Map/Reduce, Indexing and Fuzzy Search.
+3. Supports many advanced features like ORM, Map/Reduce, Indexing and Search.
 
 ### Identical API Everywhere
 Develop your application with a simple database like LevelDB, then deploy into production with Redis, Google Cloud Datastore, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  All data is portable and all features are isomorphic; jumping between different databases and environments is trivial.
 
 ### Automate NoSQL Housekeeping
-NanoSQL includes a full ORM system, secondary indexes, events, Map/Reduce, fuzzy document search and denormalization helpers to make high performance data modeling simple and easy.
+NanoSQL includes a full ORM system, secondary indexes, events, Map/Reduce, document search and denormalization helpers to make high performance data modeling simple and easy.
 
 ### Not Only NoSQL 
 Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
@@ -27,7 +27,7 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and forced type casting where you need it.
 
 ### Other Cool Things
-Built in undo/redo, automatic live backups, typescript support, full event system, CSV/JSON import & export, and runs in every browser back to IE9
+Built in undo/redo, automatic live backups, typescript support, full event system, CSV/JSON import & export, and runs in every browser back to IE9!
 
 ## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
 
@@ -44,8 +44,10 @@ NanoSQL can save data to several different places, depending on the browser or e
 
 2. **[SQLite (NodeJS)](https://github.com/ClickSimply/Nano-SQLite3)**
 3. **[SQLite (Cordova)](https://github.com/ClickSimply/cordova-Nano-SQLite)**
-4. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
-5. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
+4. **[MySQL](#)**
+5. **[React Native](https://www.npmjs.com/package/nano-react-native)**
+6. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
+7. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
 
 ## Installation
 
@@ -68,7 +70,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.4.1/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.4.5/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

@@ -157,6 +157,9 @@ export declare class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     data: any;
+    rowFilters: {
+        [table: string]: (row: any) => any;
+    };
     /**
      * Holds a reference to the optional action/view modifier
      *
@@ -229,6 +232,7 @@ export declare class NanoSQLInstance {
         };
     };
     constructor();
+    rowFilter(callback: (row: any) => any): void;
     toColumn(columnFns: {
         [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void;
     }): this;
