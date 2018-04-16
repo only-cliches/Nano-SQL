@@ -5,6 +5,10 @@
 - Add Elastic Search option.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.5]
+- Fixed and restored query cache features.
+- Added elastic search style feature, where rows can be indexed, words stemmed, and searches happen much faster.  Will add testing and documentation later as the feature is found to be stable.
+
 ## [1.4.4] 4-14-2018
 - Fixed `.where()` statement bugs, added a bunch of test conditions to prevent this kind of thing from popping up again.
 - Fixed issue with `_util` table.

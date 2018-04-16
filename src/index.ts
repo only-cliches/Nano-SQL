@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.41;
+const VERSION = 1.45;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -24,6 +24,15 @@ export interface NanoSQLConfig {
     history?: boolean;
     hostoryMode?: string | { [table: string]: string };
     secondaryAdapters?: NanoSQLBackupAdapter[];
+    dbPath?: string; // path (used by LevelDB)
+    writeCache?: number; // writeCache (used by LevelDB)
+    readCache?: number; // read cache (used by LevelDB)
+    size?: number; // size of WebSQL database
+    tokenizer?: (table: string, column: string, args: string[], value: string) => {
+        o: string;
+        w: string;
+        i: number;
+    }[] | boolean;
     [key: string]: any;
 }
 
@@ -575,7 +584,7 @@ export class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    public getConfig() {
+    public getConfig(): NanoSQLConfig {
         return this._config;
     }
 

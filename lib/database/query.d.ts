@@ -1,5 +1,13 @@
 import { IdbQuery } from "../query/std-query";
 import { _NanoSQLStorage, DBRow } from "./storage";
+export interface SearchRowIndex {
+    wrd: string;
+    rows: {
+        id: any;
+        l: number;
+        i: number[];
+    }[];
+}
 /**
  * A new Storage Query class is inilitized for every query, performing the actions
  * against the storage class itself to get the desired outcome.
@@ -20,9 +28,15 @@ export declare class _NanoSQLStorageQuery {
      */
     doQuery(query: IdbQuery, next: (q: IdbQuery) => void): void;
     private _hash;
-    private _setCache(rows);
     private _updateORMRows(relation, fromPKs, add, primaryKey, complete);
     private _syncORM(type, oldRows, newRows, complete);
+    _tokenizer(column: string, value: string): {
+        o: string;
+        w: string;
+        i: number;
+    }[];
+    private _clearFromSearchIndex(pk, complete);
+    private _updateSearchIndex(pk, newRowData, complete);
     /**
      * For each updated row, update view columns from remote records that are related.
      *
@@ -72,9 +86,10 @@ export declare class _MutateSelection {
  * @class _RowSelection
  */
 export declare class _RowSelection {
+    qu: _NanoSQLStorageQuery;
     q: IdbQuery;
     s: _NanoSQLStorage;
-    constructor(q: IdbQuery, s: _NanoSQLStorage, callback: (rows: DBRow[]) => void);
+    constructor(qu: _NanoSQLStorageQuery, q: IdbQuery, s: _NanoSQLStorage, callback: (rows: DBRow[]) => void);
     /**
      * Given a compound where statement like [[value, =, key], AND, [something, =, something]]
      * Check if first where conditions are primary key/ secondary index followed by unoptimized/unindexed conditions

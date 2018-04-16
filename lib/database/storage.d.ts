@@ -149,12 +149,6 @@ export interface NanoSQLStorageAdapter {
      */
     setNSQL?(nSQL: NanoSQLInstance): void;
 }
-export interface NanoStorageArgs extends NanoSQLConfig {
-    dbPath?: string;
-    writeCache?: number;
-    readCache?: number;
-    size?: number;
-}
 /**
  * Holds the general abstractions to connect the query module to the storage adapters.
  * Takes care of indexing, tries, secondary indexes and adapter management.
@@ -171,6 +165,9 @@ export declare class _NanoSQLStorage {
             _pkType: string;
             _name: string;
             _secondaryIndexes: string[];
+            _searchColumns: {
+                [column: string]: string[];
+            };
             _trieColumns: string[];
             _keys: string[];
             _defaults: any[];
@@ -235,21 +232,6 @@ export declare class _NanoSQLStorage {
     _cache: {
         [table: string]: {
             [queryHash: number]: any[];
-        };
-    };
-    /**
-     * The primary keys in each cache.
-     *
-     * @type {{
-     *         [table: string]: {
-     *             [queryHash: number]: {[primaryKey: any]: boolean};
-     *         }
-     *     }}
-     * @memberof _NanoSQLStorage
-     */
-    _cacheKeys: {
-        [table: string]: {
-            [queryHash: number]: any;
         };
     };
     /**
@@ -338,7 +320,7 @@ export declare class _NanoSQLStorage {
         [tableName: string]: string[];
     };
     adapters: NanoSQLBackupAdapter[];
-    constructor(parent: NanoSQLInstance, args: NanoStorageArgs);
+    constructor(parent: NanoSQLInstance, args: NanoSQLConfig);
     /**
      * Initilize the storage adapter and get ready to rumble!
      *
@@ -347,7 +329,6 @@ export declare class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     init(dataModels: StdObject<DataModel[]>, complete: (newModels: StdObject<DataModel[]>) => void): void;
-    _invalidateCache(table: string, pks: any[]): void;
     /**
      * Rebuild secondary indexes of a given table.
      * Pass "_ALL_" as table to rebuild all indexes.

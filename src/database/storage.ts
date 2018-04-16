@@ -178,13 +178,6 @@ export interface NanoSQLStorageAdapter {
 }
 
 
-export interface NanoStorageArgs extends NanoSQLConfig {
-    dbPath?: string; // path (used by LevelDB)
-    writeCache?: number; // writeCache (used by LevelDB)
-    readCache?: number; // read cache (used by LevelDB)
-    size?: number; // size of WebSQL database
-}
-
 /**
  * Holds the general abstractions to connect the query module to the storage adapters.
  * Takes care of indexing, tries, secondary indexes and adapter management.
@@ -207,6 +200,9 @@ export class _NanoSQLStorage {
             _pkType: string // Primary Key Type
             _name: string // table name
             _secondaryIndexes: string[] // secondary index columns
+            _searchColumns: {
+                [column: string]: string[];
+            }
             _trieColumns: string[] // trie columns
             _keys: string[] // array of columns
             _defaults: any[] // array of default values
@@ -297,22 +293,6 @@ export class _NanoSQLStorage {
     public _cache: {
         [table: string]: {
             [queryHash: number]: any[];
-        }
-    };
-
-    /**
-     * The primary keys in each cache.
-     *
-     * @type {{
-     *         [table: string]: {
-     *             [queryHash: number]: {[primaryKey: any]: boolean};
-     *         }
-     *     }}
-     * @memberof _NanoSQLStorage
-     */
-    public _cacheKeys: {
-        [table: string]: {
-            [queryHash: number]: any;
         }
     };
 
@@ -411,7 +391,7 @@ export class _NanoSQLStorage {
 
     public adapters: NanoSQLBackupAdapter[];
 
-    constructor(parent: NanoSQLInstance, args: NanoStorageArgs) {
+    constructor(parent: NanoSQLInstance, args: NanoSQLConfig) {
 
         this._nsql = parent;
         this._mode = args.persistent ? "PERM" : args.mode || "TEMP" as any;
@@ -425,7 +405,6 @@ export class _NanoSQLStorage {
         this._tableNames = [];
         this._doCache = args.cache || true;
         this._cache = {};
-        this._cacheKeys = {};
 
         this.adapters[0] = {
             adapter: null as any,
@@ -469,22 +448,6 @@ export class _NanoSQLStorage {
         } else {
             this.adapters[0].adapter = this._mode;
         }
-        /*
-                this._fastReadAdapter = this.adapters[0].adapter;
-                this._slowReadAdapter = this.adapters[0].adapter;
-
-                if (args.secondaryAdapters && args.secondaryAdapters.length) {
-                    this.adapters = this.adapters.concat(args.secondaryAdapters);
-                    this.adapters.forEach((a, i) => {
-                        if (i === 0) return;
-                        if(a.doFastReads) {
-                            this._fastReadAdapter = a.adapter;
-                        }
-                        if (a.doSlowReads) {
-                            this._slowReadAdapter = a.adapter;
-                        }
-                    })
-                }*/
     }
 
     /**
@@ -499,7 +462,7 @@ export class _NanoSQLStorage {
             this._id = hash(JSON.stringify(dataModels)).toString();
         }
 
-        this.models = this._createSecondaryIndexTables(dataModels);
+        this.models = this._createIndexTables(dataModels);
 
         this._tableNames = Object.keys(this.models);
 
@@ -619,23 +582,6 @@ export class _NanoSQLStorage {
                 complete(this.models);
             });
 
-        });
-    }
-
-    public _invalidateCache(table: string, pks: any[]): void {
-        if (!this._doCache) {
-            return;
-        }
-        Object.keys(this._cacheKeys[table]).forEach((hash) => {
-            let i = pks.length;
-            let valid = true;
-            while (i-- && valid) {
-                if (this._cacheKeys[table][hash][pks[i]]) {
-                    delete this._cache[table][hash];
-                    delete this._cacheKeys[table][hash];
-                    valid = false;
-                }
-            }
         });
     }
 
@@ -1032,9 +978,16 @@ export class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     public _drop(table: string, complete: () => void) {
-        fastALL(this.tableInfo[table]._secondaryIndexes, (idx, i, done) => {
-            this.adapterDrop("_" + table + "_idx_" + idx, done);
+        // drop token and hash search cache
+        let tablesToDrop: string[] = Object.keys(this.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_tokens_" + t);
+        tablesToDrop = tablesToDrop.concat(Object.keys(this.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_" + t));
+        // drop secondary indexes
+        tablesToDrop = tablesToDrop.concat(this.tableInfo[table]._secondaryIndexes.map(t => "_" + table + "_idx_" + t));
+
+        fastALL(tablesToDrop, (table, i, done) => {
+            this.adapterDrop(table, done);
         }).then(() => {
+
             this._trieIndexes[table] = {};
             this.tableInfo[table]._trieColumns.forEach((co) => {
                 this._trieIndexes[table][co] = new Trie([]);
@@ -1051,25 +1004,43 @@ export class _NanoSQLStorage {
      * @returns
      * @memberof NanoSQLStorage
      */
-    private _createSecondaryIndexTables(dataModels: StdObject<DataModel[]>) {
+    private _createIndexTables(dataModels: StdObject<DataModel[]>) {
 
         Object.keys(dataModels).forEach((table) => {
-            let hasPK = false;
             let hasIDX = false;
+            let hasSearch = false;
+            let pkType: string = "";
             dataModels[table].forEach((model) => {
-                if (model.props && intersect(["pk", "pk()"], model.props)) {
-                    hasPK = true;
-                }
-                if (model.props && intersect(["trie", "idx", "idx()", "trie()"], model.props)) {
-                    hasIDX = true;
-                    dataModels["_" + table + "_idx_" + model.key] = [
-                        { key: "id", type: ["number", "float", "int"].indexOf(model.type) !== -1 ? model.type : "string", props: ["pk"] },
-                        { key: "rows", type: "any[]" }
-                    ];
+
+                if (model.props && model.props.length) {
+                    if (intersect(["pk", "pk()"], model.props)) {
+                        pkType = model.key;
+                    }
+                    if (intersect(["trie", "idx", "idx()", "trie()"], model.props)) {
+                        hasIDX = true;
+                        dataModels["_" + table + "_idx_" + model.key] = [
+                            { key: "id", type: ["number", "float", "int"].indexOf(model.type) !== -1 ? model.type : "string", props: ["pk"] },
+                            { key: "rows", type: "any[]" }
+                        ];
+                    }
+                    model.props.forEach((prop) => {
+                        if (prop.indexOf("search(") !== -1) {
+                            hasSearch = true;
+                            dataModels["_" + table + "_search_" + model.key] = [
+                                { key: "wrd", type: "string", props: ["pk"] },
+                                { key: "rows", type: "any[]" }
+                            ];
+                            dataModels["_" + table + "_search_tokens_" + model.key] = [
+                                { key: "id", type: pkType, props: ["pk"] },
+                                { key: "hash", type: "string"},
+                                { key: "tokens", type: "any[]" }
+                            ];
+                        }
+                    });
                 }
             });
-            if (hasIDX && !hasPK) {
-                throw new Error("Tables with secondary indexes must have a primary key!");
+            if ((hasIDX || hasSearch) && !pkType) {
+                throw new Error("Tables with secondary indexes or search() must have a primary key!");
             }
         });
 
@@ -1097,20 +1068,17 @@ export class _NanoSQLStorage {
             _trieColumns: [],
             _name: tableName,
             _views: {},
-            _viewTables: []
+            _viewTables: [],
+            _searchColumns: {}
         };
 
         this._cache[tableName] = {};
-        this._cacheKeys[tableName] = {};
 
         this._trieIndexes[tableName] = {};
-
-
 
         this.adapters.forEach((a) => {
             a.adapter.makeTable(tableName, dataModels);
         });
-
 
         // Discover primary keys for each table
         let i = this.models[tableName].length;
@@ -1149,6 +1117,10 @@ export class _NanoSQLStorage {
                                 otherColumn: prop.replace("from=>", "").split(".").pop()
                             });
                         }
+                    }
+
+                    if (prop.indexOf("search(") !== -1) {
+                        this.tableInfo[tableName]._searchColumns[p.key] = prop.replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
                     }
                 });
 

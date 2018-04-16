@@ -11,7 +11,7 @@ Super flexible database/datastore for the client, server & mobile devices.
 
 <img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/quick-demo.gif" alt="Demo">
 
-NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM: all in an 18Kb package.  
+NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM.  
 
 Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
@@ -31,7 +31,6 @@ Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser,
 - **Complete ORM support.**
 - Fast secondary indexes.
 - Full events system.
-- Just 18Kb Gzipped.
 
 ## Browser Support
 
@@ -68,7 +67,7 @@ I looked for existing solution that would do everything I needed and couldn't fi
 | RDBMS     | ✓       | ✕     | ✓       | ✕         | ✓      | ✓    | ✓         | ✓       | ✓      | ✓      |
 | IndexedDB | ✓       | ✕     | ✕       | ✕         | ✓      | ✕    | ✓         | ✓       | ✓      | ✕      |
 | Node      | ✓       | ✓     | ✓       | ✓         | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      |
-| Size (kb) | 18      | 2      | 5       | 16        | 19      | 27   | 40         | 46      | 88     | 500    |
+| Size (kb) | 25      | 2      | 5       | 16        | 19      | 27   | 40         | 46      | 88     | 500    |
 
 ## Installation
 

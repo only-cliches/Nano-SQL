@@ -87,11 +87,16 @@
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#cache" class="tsd-kind-icon">cache</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#dbpath" class="tsd-kind-icon">db<wbr>Path</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#history" class="tsd-kind-icon">history</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#hostorymode" class="tsd-kind-icon">hostory<wbr>Mode</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#id" class="tsd-kind-icon">id</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#mode" class="tsd-kind-icon">mode</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#readcache" class="tsd-kind-icon">read<wbr>Cache</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#secondaryadapters" class="tsd-kind-icon">secondary<wbr>Adapters</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#size" class="tsd-kind-icon">size</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#tokenizer" class="tsd-kind-icon">tokenizer</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#writecache" class="tsd-kind-icon">write<wbr>Cache</a></li>
 							</ul>
 						</section>
 					</div>
@@ -106,6 +111,16 @@
 					<aside class="tsd-sources">
 						<ul>
 							<li>Defined in index.ts:22</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="dbpath" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> db<wbr>Path</h3>
+					<div class="tsd-signature tsd-kind-icon">db<wbr>Path<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:27</li>
 						</ul>
 					</aside>
 				</section>
@@ -150,12 +165,52 @@
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="readcache" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> read<wbr>Cache</h3>
+					<div class="tsd-signature tsd-kind-icon">read<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:29</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="secondaryadapters" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> secondary<wbr>Adapters</h3>
 					<div class="tsd-signature tsd-kind-icon">secondary<wbr>Adapters<span class="tsd-signature-symbol">:</span> <a href="_index_.nanosqlbackupadapter.html" class="tsd-signature-type">NanoSQLBackupAdapter</a><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
 							<li>Defined in index.ts:26</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="size" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> size</h3>
+					<div class="tsd-signature tsd-kind-icon">size<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:30</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="tokenizer" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> tokenizer</h3>
+					<div class="tsd-signature tsd-kind-icon">tokenizer<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:31</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="writecache" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> write<wbr>Cache</h3>
+					<div class="tsd-signature tsd-kind-icon">write<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:28</li>
 						</ul>
 					</aside>
 				</section>
@@ -219,6 +274,9 @@
 								<a href="_index_.nanosqlconfig.html#cache" class="tsd-kind-icon">cache</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#dbpath" class="tsd-kind-icon">db<wbr>Path</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.nanosqlconfig.html#history" class="tsd-kind-icon">history</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
@@ -231,7 +289,19 @@
 								<a href="_index_.nanosqlconfig.html#mode" class="tsd-kind-icon">mode</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#readcache" class="tsd-kind-icon">read<wbr>Cache</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.nanosqlconfig.html#secondaryadapters" class="tsd-kind-icon">secondary<wbr>Adapters</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#size" class="tsd-kind-icon">size</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#tokenizer" class="tsd-kind-icon">tokenizer</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#writecache" class="tsd-kind-icon">write<wbr>Cache</a>
 							</li>
 						</ul>
 					</li>

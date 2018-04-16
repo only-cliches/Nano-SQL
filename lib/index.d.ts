@@ -15,6 +15,15 @@ export interface NanoSQLConfig {
         [table: string]: string;
     };
     secondaryAdapters?: NanoSQLBackupAdapter[];
+    dbPath?: string;
+    writeCache?: number;
+    readCache?: number;
+    size?: number;
+    tokenizer?: (table: string, column: string, args: string[], value: string) => {
+        o: string;
+        w: string;
+        i: number;
+    }[] | boolean;
     [key: string]: any;
 }
 /**
@@ -283,7 +292,7 @@ export declare class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    getConfig(): StdObject<any>;
+    getConfig(): NanoSQLConfig;
     /**
      * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
      *

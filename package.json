@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "NoSQL Everywhere",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",
@@ -93,12 +93,15 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
+    "bitap": "^1.0.1",
     "int64-buffer": "^0.1.10",
     "leveldown": "^3.0.0",
     "levelup": "^2.0.2",
     "lie-ts": "^3.8.0",
+    "metaphone": "^1.0.3",
     "prefix-trie-ts": "0.0.4",
-    "really-small-events": "^1.1.0"
+    "really-small-events": "^1.1.0",
+    "stemmer": "^1.0.2"
   },
   "contributors": [
     {

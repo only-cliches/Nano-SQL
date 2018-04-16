@@ -1,8 +1,18 @@
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
-import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN } from "../utilities";
+import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect } from "../utilities";
+import * as metaphone from "metaphone";
+import * as stemmer from "stemmer";
 
+export interface SearchRowIndex {
+    wrd: string;
+    rows: {
+        id: any;
+        l: number;
+        i: number[];
+    }[];
+}
 
 const queryObj = {
     select: (self: _NanoSQLStorageQuery, next) => {
@@ -92,23 +102,13 @@ export class _NanoSQLStorageQuery {
         if (this._isInstanceTable) {
             new InstanceSelection(this._query).getRows(complete);
         } else {
-            new _RowSelection(this._query, this._store, (rows) => {
+            new _RowSelection(this, this._query, this._store, (rows) => {
                 complete(rows.filter(r => r));
             });
         }
     }
 
     private _hash: string;
-
-    private _setCache(rows: any[]) {
-        this._store._cache[this._query.table as any][this._hash] = rows;
-
-        // store primary keys for this cache, used for cache invalidation
-        this._store._cacheKeys[this._query.table as any][this._hash] = {};
-        rows.forEach((r) => {
-            this._store._cacheKeys[this._query.table as any][this._hash][r[this._store.tableInfo[this._query.table as any]._pk]] = true;
-        });
-    }
 
     /**
      * Initilze a SELECT query.
@@ -128,22 +128,22 @@ export class _NanoSQLStorageQuery {
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
 
         // Query cache for the win!
-        /*if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
             this._query.result = this._store._cache[this._query.table as any][this._hash];
             next(this._query);
             return;
-        }*/
+        }
 
         this._getRows((rows) => {
 
             // No query arguments, we can skip the whole mutation selection class
             if (!["having", "orderBy", "offset", "limit", "actionArgs", "groupBy", "orm", "join"].filter(k => this._query[k]).length) {
-                if (canCache) this._setCache(rows);
+                if (canCache) this._store._cache[this._query.table as any][this._hash] = rows;
                 this._query.result = rows;
                 next(this._query);
             } else {
                 new _MutateSelection(this._query, this._store)._executeQueryArguments(rows, (resultRows) => {
-                    if (canCache) this._setCache(rows);
+                    if (canCache) this._store._cache[this._query.table as any][this._hash] = rows;
                     this._query.result = resultRows;
                     next(this._query);
                 });
@@ -294,6 +294,158 @@ export class _NanoSQLStorageQuery {
         }).then(complete);
     }
 
+    public _tokenizer(column: string, value: string): { o: string, w: string, i: number }[] {
+        const args = this._store.tableInfo[this._query.table as any]._searchColumns[column];
+        if (!args) {
+            return [];
+        }
+        const userTokenizer = this._store._nsql.getConfig().tokenizer;
+        if (userTokenizer) {
+            let tokens = userTokenizer(this._query.table as any, column, args, value);
+            if (tokens !== false) return tokens as any;
+        }
+        // Step 1, remove puncuation, line breaks and set to lowercase
+        let words: string[] = (value || "").toLowerCase().replace(/[^\w\s]|_/gmi, "").replace(/\r?\n|\r|\t/gmi, "").replace(/\s+/g, " ").split(" ");
+        // Step 2, stem away!
+        if (args[1] === "english") {
+            return words.map((w, i) => ({ o: w, w: metaphone(stemmer(w)), i: i }));
+        }
+        if (args[1] === "english-stem") {
+            return words.map((w, i) => ({ o: w, w: stemmer(w), i: i }));
+        }
+        if (args[1] === "english-meta") {
+            return words.map((w, i) => ({ o: w, w: metaphone(w), i: i }));
+        }
+        return words.map((w, i) => ({ o: w, w, i }));
+    }
+
+    private _clearFromSearchIndex(pk: any, complete: () => void): void {
+        const table: string = this._query.table as string;
+        const columns = Object.keys(this._store.tableInfo[table]._searchColumns);
+        // No search indexes on this table OR
+        // update doesn't include indexed columns
+        if (columns.length === 0) {
+            complete();
+            return;
+        }
+        const tokenTable = "_" + table + "_search_tokens_";
+        const searchTable = "_" + table + "_search_";
+        fastALL(columns, (col, i, next) => {
+            // get token cache for this row and column
+            this._store.adapters[0].adapter.read(tokenTable + col, pk, (row: { id: any, hash: string, tokens: { w: string, i: number }[] }) => {
+                if (!row) {
+                    next();
+                    return;
+                }
+                // reduce to a list of words to remove
+                let wordsToRemove: { [word: string]: boolean } = {};
+                row.tokens.forEach((token) => {
+                    if (!wordsToRemove[token.w]) {
+                        wordsToRemove[token.w] = true;
+                    }
+                });
+                // query those words and remove this row from them
+                fastALL(Object.keys(wordsToRemove), (word, j, done) => {
+                    this._store.adapters[0].adapter.read(searchTable + col, word, (wRow: SearchRowIndex) => {
+                        if (!wRow) {
+                            done();
+                            return;
+                        }
+                        if (Object.isFrozen(wRow)) {
+                            wRow = _assign(wRow);
+                        }
+                        wRow.rows = wRow.rows.filter(r => r.id !== pk);
+                        this._store.adapterWrite(searchTable + col, word, wRow, done);
+                    });
+                }).then(() => {
+                    // remove row hash and token cache
+                    this._store.adapters[0].adapter.delete(tokenTable + col, pk, next);
+                });
+            });
+        }).then(complete);
+    }
+
+    private _updateSearchIndex(pk: any, newRowData: any, complete: () => void): void {
+        const table: string = this._query.table as string;
+        const columns = Object.keys(this._store.tableInfo[table]._searchColumns);
+        // No search indexes on this table OR
+        // update doesn't include indexed columns
+        if (columns.length === 0 || !intersect(Object.keys(newRowData), columns)) {
+            complete();
+            return;
+        }
+
+        const tokenTable = "_" + table + "_search_tokens_";
+        fastALL(columns, (col, i, next) => {
+            if ([undefined, null].indexOf(newRowData[col]) !== -1) { // row doesn't contain indexed value
+                next();
+                return;
+            }
+            // get token cache and hash for this row/column
+            this._store.adapters[0].adapter.read(tokenTable + col, pk, (row: any) => {
+                const existing: {
+                    id: any;
+                    hash: string;
+                    tokens: { w: string, i: number }[]
+                } = row || { id: pk, hash: "1505", tokens: [] };
+                const thisHash = hash(newRowData[col]);
+                if (thisHash === existing.hash) { // indexed value hasn't changed, no updates needed
+                    next();
+                    return;
+                }
+
+                const newTokens = this._tokenizer(col, newRowData[col]).map(o => ({w: o.w, i: o.i}));
+                const oldTokenIdx = existing.tokens.map(t => t.i + "-" + t.w);
+                const newTokenIdx = newTokens.map(t => t.i + "-" + t.w);
+
+                const addTokens = newTokenIdx.filter(i => oldTokenIdx.indexOf(i) === -1);
+                const removeTokens = oldTokenIdx.filter(i => newTokenIdx.indexOf(i) === -1);
+
+                fastCHAIN([removeTokens, addTokens], (tokens: string[], j, nextTokens) => {
+                    let reduceWords: { [word: string]: { w: string, i: number }[] } = {};
+                    tokens.forEach((token) => {
+                        let sToken = token.split(/-(.+)/);
+                        let wToken = { w: sToken[1], i: parseInt(sToken[0]) };
+                        if (!reduceWords[wToken.w]) {
+                            reduceWords[wToken.w] = [];
+                        }
+                        reduceWords[wToken.w].push(wToken);
+                    });
+                    fastALL(Object.keys(reduceWords), (word, k, nextWord) => {
+                        this._store.adapters[0].adapter.read("_" + table + "_search_" + col, word, (colRow: SearchRowIndex) => {
+                            let searchIndex: SearchRowIndex = colRow || { wrd: word, rows: [] };
+                            if (Object.isFrozen(searchIndex)) {
+                                searchIndex = _assign(searchIndex);
+                            }
+                            switch (j) {
+                                case 0: // remove
+                                    searchIndex.rows.forEach((sRow, l) => {
+                                        if (sRow.id === pk) {
+                                            searchIndex.rows.splice(l, 1);
+                                        }
+                                    });
+                                    break;
+                                case 1: // add
+                                    searchIndex.rows.push({
+                                        id: pk,
+                                        i: reduceWords[word].map(w => w.i),
+                                        l: newTokens.length
+                                    });
+                                    break;
+                            }
+                            this._store.adapterWrite("_" + table + "_search_" + col, word, searchIndex, nextWord);
+                        });
+                    }).then(nextTokens);
+                }).then(() => {
+                    this._store.adapterWrite(tokenTable + col, pk, {
+                        id: pk,
+                        hash: thisHash,
+                        tokens: newTokens
+                    }, next);
+                });
+            });
+        }).then(complete);
+    }
 
     /**
      * For each updated row, update view columns from remote records that are related.
@@ -471,13 +623,15 @@ export class _NanoSQLStorageQuery {
 
                 if (rows.length) {
                     fastCHAIN(rows, (r, i, rowDone) => {
-                        this._updateRowViews(this._query.actionArgs || {}, r, (updatedColumns) => {
-                            this._store._write(this._query.table as any, r[pk], r, updatedColumns, rowDone);
+                        this._updateSearchIndex(r[pk], r, () => {
+                            this._updateRowViews(this._query.actionArgs || {}, r, (updatedColumns) => {
+                                this._store._write(this._query.table as any, r[pk], r, updatedColumns, rowDone);
+                            });
                         });
                     }).then((newRows: DBRow[]) => {
                         // any changes to this table invalidates the cache
                         const pks = newRows.map(r => r[pk]);
-                        this._store._invalidateCache(this._query.table as string, pks);
+                        this._store._cache[this._query.table as any] = {};
 
                         this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
@@ -497,19 +651,21 @@ export class _NanoSQLStorageQuery {
             const write = (oldRow: any) => {
                 this._updateRowViews(row, oldRow, (updatedColumns) => {
                     this._store._write(this._query.table as any, row[pk], oldRow, updatedColumns, (result) => {
-                        this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
-                        if (this._store._hasORM) {
-                            this._syncORM("add", [oldRow].filter(r => r), [result], () => {
+                        this._updateSearchIndex(result[pk], result, () => {
+                            this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
+                            if (this._store._hasORM) {
+                                this._syncORM("add", [oldRow].filter(r => r), [result], () => {
+                                    this._doAfterQuery([result], false, next);
+                                });
+                            } else {
                                 this._doAfterQuery([result], false, next);
-                            });
-                        } else {
-                            this._doAfterQuery([result], false, next);
-                        }
+                            }
+                        });
                     });
                 });
             };
 
-            if (row[pk] !== undefined) {
+            if (row[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index") === -1) {
                 this._store._read(this._query.table as any, [row[pk]] as any, (rows) => {
                     if (rows.length) {
                         write(rows[0]);
@@ -557,12 +713,13 @@ export class _NanoSQLStorageQuery {
                 rows = rows.filter(r => r);
                 if (rows.length) {
                     fastALL(rows, (r, i, done) => {
-                        this._store._delete(this._query.table as any, r[this._store.tableInfo[this._query.table as any]._pk], done);
+                        this._clearFromSearchIndex(r[this._store.tableInfo[this._query.table as any]._pk], () => {
+                            this._store._delete(this._query.table as any, r[this._store.tableInfo[this._query.table as any]._pk], done);
+                        });
                     }).then((affectedRows) => {
                         // any changes to this table invalidate the cache
                         this._store._cache[this._query.table as any] = {};
                         const pks = rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
-                        this._store._invalidateCache(this._query.table as string, pks);
 
                         this._query.result = [{ msg: rows.length + " row(s) deleted.", affectedRowPKS: pks, affectedRows: rows }];
                         this._syncORM("del", rows, [], () => {
@@ -597,8 +754,8 @@ export class _NanoSQLStorageQuery {
 
         this._store._rangeRead(this._query.table as string, undefined as any, undefined as any, false, (rows) => {
             this._store._cache[this._query.table as any] = {};
-            this._store._cacheKeys[this._query.table as any] = {};
 
+            let table = this._query.table as any;
             this._store._drop(this._query.table as any, () => {
                 this._query.result = [{ msg: "'" + this._query.table as any + "' table dropped.", affectedRowPKS: rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]), affectedRows: rows }];
                 this._syncORM("del", rows, [], () => {
@@ -1028,30 +1185,30 @@ export class _MutateSelection {
 
             fastALL(columnSelection, (column, j, columnDone) => {
 
-                    if (column.indexOf("(") > -1) { // function exists
+                if (column.indexOf("(") > -1) { // function exists
 
-                        const fnArgs: string[] = (column.match(/\(.*\)/g) || [""])[0].replace(/\(|\)/g, "").split(",").map(v => v.trim());
+                    const fnArgs: string[] = (column.match(/\(.*\)/g) || [""])[0].replace(/\(|\)/g, "").split(",").map(v => v.trim());
 
-                        if (this._sortGroups && hasAggregateFun) { // group by exists with aggregate function
-                            fastALL(Object.keys(this._sortGroups), (k, l, fnDone) => {
-                                if (!fnGroupByResults[k]) {
-                                    fnGroupByResults[k] = {};
-                                }
-                                    columnData[column].fn.call(rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1), (result) => {
-                                        fnGroupByResults[k][columnData[column].key] = result;
-                                        fnDone();
-                                    }, ...fnArgs);
-                            }).then(columnDone);
-                        } else { // no group by
-                            columnData[column].fn.call(rows, (result) => {
-                                functionResults[columnData[column].key] = result;
-                                columnDone();
+                    if (this._sortGroups && hasAggregateFun) { // group by exists with aggregate function
+                        fastALL(Object.keys(this._sortGroups), (k, l, fnDone) => {
+                            if (!fnGroupByResults[k]) {
+                                fnGroupByResults[k] = {};
+                            }
+                            columnData[column].fn.call(rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1), (result) => {
+                                fnGroupByResults[k][columnData[column].key] = result;
+                                fnDone();
                             }, ...fnArgs);
-                        }
-
-                    } else {
-                        columnDone(); // no function
+                        }).then(columnDone);
+                    } else { // no group by
+                        columnData[column].fn.call(rows, (result) => {
+                            functionResults[columnData[column].key] = result;
+                            columnDone();
+                        }, ...fnArgs);
                     }
+
+                } else {
+                    columnDone(); // no function
+                }
             }).then(() => {
 
                 // time to rebuild row results
@@ -1181,6 +1338,7 @@ export class _RowSelection {
 
 
     constructor(
+        public qu: _NanoSQLStorageQuery,
         public q: IdbQuery,
         public s: _NanoSQLStorage,
         callback: (rows: DBRow[]) => void
@@ -1232,7 +1390,7 @@ export class _RowSelection {
         }
 
         if (doFastRead) { // can go straight to primary or secondary keys, wee!
-            this._selectByKeys(this.q.where, callback);
+            this._selectByKeysOrSeach(this.q.where, callback);
             return;
         }
 
@@ -1242,7 +1400,7 @@ export class _RowSelection {
         if (whereSlice > 0) {
             const fastWhere: any[] = this.q.where.slice(0, whereSlice);
             const slowWhere: any[] = this.q.where.slice(whereSlice + 1);
-            this._selectByKeys(fastWhere, (rows) => {
+            this._selectByKeysOrSeach(fastWhere, (rows) => {
                 callback(rows.filter((r, i) => _where(r, slowWhere, i)));
             });
             return;
@@ -1261,10 +1419,10 @@ export class _RowSelection {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _RowSelection
      */
-    private _selectByKeys(where: any[], callback: (rows: DBRow[]) => void) {
-
+    private _selectByKeysOrSeach(where: any[], callback: (rows: DBRow[]) => void) {
+        const pk = this.s.tableInfo[this.q.table as string]._pk;
         if (where && typeof where[0] === "string") { // single where
-            this._selectRowsByIndex(where as any, callback);
+            this._selectRowsByIndexOrSearch(where as any, callback);
         } else if (where) { // compound where
             let resultRows: DBRow[] = [];
             let lastCommand = "";
@@ -1274,7 +1432,7 @@ export class _RowSelection {
                     nextWArg();
                     return;
                 }
-                this._selectRowsByIndex(wArg, (rows) => {
+                this._selectRowsByIndexOrSearch(wArg, (rows) => {
                     if (lastCommand === "AND") {
                         let idx = {};
                         let i = rows.length;
@@ -1290,7 +1448,14 @@ export class _RowSelection {
                     nextWArg();
                 });
             }).then(() => {
-                callback(resultRows);
+                let pks: any[] = [];
+                callback(resultRows.filter(r => {
+                    if (pks.indexOf(r[pk]) !== -1) {
+                        return false;
+                    }
+                    pks.push(r[pk]);
+                    return true;
+                }));
             });
         }
     }
@@ -1305,13 +1470,163 @@ export class _RowSelection {
      * @returns
      * @memberof _RowSelection
      */
-    private _selectRowsByIndex(where: any[], callback: (rows: DBRow[]) => void) {
+    private _selectRowsByIndexOrSearch(where: any[], callback: (rows: DBRow[]) => void) {
+
+        if (where[0].indexOf("search(") !== -1) {
+
+            let whereType = 0;
+
+            if (where[1].indexOf(">") !== -1) {
+                whereType = parseFloat(where[1].replace(">", ""));
+            }
+            if (where[1].indexOf("<") !== -1) {
+                whereType = parseFloat(where[1].replace("<", "")) * -1;
+            }
+
+            const columns: string[] = where[0].replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
+            let weights: { [rowPK: string]: { weight: number, locations: {[col: string]: {word: string, loc: number[]}[]} } } = {};
+            fastALL(columns, (col, i, nextCol) => {
+                // tokenize search terms
+                const searchTerms = this.qu._tokenizer(col, where[2]);
+                const args = this.s.tableInfo[this.q.table as any]._searchColumns[col];
+                let reducedResults: {
+                    [rowPK: string]: {
+                        [word: string]: { id: any, l: number, i: number[] };
+                    }
+                } = {};
+
+                let tokenToTerm: {[token: string]: string} = {};
+                searchTerms.forEach((search) => {
+                    tokenToTerm[search.w] = search.o;
+                });
+
+                // get all rows that have at least one search term
+                fastALL(searchTerms, (term: { w: string, i: number[] }, j, nextTerm) => {
+                    const indexTable = "_" + this.q.table + "_search_" + col;
+                    this.s.adapters[0].adapter.read(indexTable, term.w as any, (row: SearchRowIndex) => {
+                        if (!row) {
+                            nextTerm();
+                            return;
+                        }
+                        row.rows.forEach(r => {
+                            if (!reducedResults[r.id]) {
+                                reducedResults[r.id] = {};
+                            }
+                            reducedResults[r.id][term.w] = r;
+                        });
+                        nextTerm();
+                    });
+                }).then(() => {
+                    // now get the weights and locations for each row
+
+                    Object.keys(reducedResults).forEach((rowPK) => {
+                        if (whereType === 0) { // exact match, row results must have same number of terms as search
+                            if (Object.keys(reducedResults[rowPK]).length !== searchTerms.length) {
+                                delete reducedResults[rowPK];
+                                return;
+                            }
+                        }
+                        let docLength = 0;
+                        const wordLocs = Object.keys(reducedResults[rowPK]).map(w => {
+                            docLength = reducedResults[rowPK][w].l;
+                            return {word: tokenToTerm[w], loc: reducedResults[rowPK][w].i};
+                        });
+                        const locations = wordLocs.reduce((p, c) => p + c.loc.length, 0);
+                        if (!weights[rowPK]) {
+                            weights[rowPK] = { weight: 0, locations: {} };
+                        }
+
+                        weights[rowPK].weight += (locations / docLength) + parseInt(args[0]);
+                        weights[rowPK].locations[col] = wordLocs;
+
+                        if (whereType !== 0) { // fuzzy term match
+                            searchTerms.forEach((sTerm) => {
+                                // all instances of this term in this row/column
+                                let idxsTerm = reducedResults[rowPK][sTerm.w];
+                                if (idxsTerm) {
+                                    idxsTerm.i.forEach((refLocation) => {
+                                        // now check to see where the other parts of the terms are located in reference to this one
+                                        Object.keys(reducedResults[rowPK]).forEach((sTerm2: string) => {
+                                            if (sTerm2 !== sTerm.w) {
+                                                // check all instances of other terms
+                                                reducedResults[rowPK][sTerm2].i.forEach((wordLoc) => {
+                                                    const distance = Math.abs(wordLoc - refLocation);
+                                                    weights[rowPK].weight += (10 / (distance * 10));
+                                                });
+                                            }
+                                        });
+                                    });
+                                }
+                            });
+                        } else { // exact term match
+                            if (searchTerms.length > 1) {
+                                let startingWord: number[] = [];
+                                Object.keys(reducedResults[rowPK]).forEach((term) => {
+                                    if (term === searchTerms[0].w) {
+                                        startingWord = reducedResults[rowPK][term].i;
+                                    }
+                                });
+                                let doingGood = true;
+                                startingWord.forEach((location, i) => {
+                                    let nextWord = searchTerms[i + 1];
+                                    if (nextWord) {
+                                        Object.keys(reducedResults[rowPK]).forEach((term) => {
+                                            if (term === nextWord.w) {
+                                                let offset = nextWord.i + location;
+                                                if (reducedResults[rowPK][term].i.indexOf(offset) === -1) {
+                                                    doingGood = false;
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                                if (!doingGood) {
+                                    delete weights[rowPK];
+                                }
+                            }
+                        }
+
+                    });
+                    nextCol();
+                });
+            }).then((results) => {
+                let max = 0;
+                const rowKeys = Object.keys(weights);
+                rowKeys.forEach((w) => {
+                    max = Math.max(max, weights[w].weight);
+                });
+                rowKeys.forEach((w) => {
+                    weights[w].weight = weights[w].weight / max;
+                });
+
+                fastALL(rowKeys.filter(pk => {
+                    if (whereType === 0) return true;
+                    if (whereType > 0) {
+                        return whereType < weights[pk].weight;
+                    }
+                    if (whereType < 0) {
+                        return whereType * -1 > weights[pk].weight;
+                    }
+                    return true;
+                }), (pk, i, done) => {
+                    this.s.adapters[0].adapter.read(this.q.table as string, pk, done);
+                }).then((rows) => {
+                    const pk = this.s.tableInfo[this.q.table as any]._pk;
+                    callback(rows.map(r => ({
+                        ...r,
+                        _weight: weights[r[pk]].weight,
+                        _locations: weights[r[pk]].locations
+                    })));
+                });
+            });
+            return;
+        }
 
         if (where[1] === "BETWEEN") {
             let secondaryIndexKey = where[0] === this.s.tableInfo[this.q.table as any]._pk ? "" : where[0];
             if (secondaryIndexKey) {
                 const idxTable = "_" + this.q.table + "_idx_" + secondaryIndexKey;
-                this.s._rangeRead(idxTable, where[2][0], where[2][1], true, (rows: {id: any, rows: any[]}[]) => {
+                this.s._rangeRead(idxTable, where[2][0], where[2][1], true, (rows: { id: any, rows: any[] }[]) => {
                     let keys: any[] = [];
                     let i = rows.length;
                     while (i--) {
@@ -1409,19 +1724,58 @@ export class _RowSelection {
     private _fullTableScan(callback: (rows: DBRow[]) => void) {
         const hasWhere = this.q.where !== undefined;
         const arrWhere = hasWhere && Array.isArray(this.q.where);
+        const PK = this.s.tableInfo[this.q.table as any]._pk;
+        let arraySearchCache: any[] = [];
+        let rowCache: {
+            [key: string]: any;
+        } = [];
 
-        this.s._read(this.q.table as any, (row, i, keep) => {
-            if (!hasWhere) { // no where statement
-                keep(true);
-                return;
-            }
+        const scanTable = () => {
+            this.s._read(this.q.table as any, (row, i, keep) => {
+                if (!hasWhere) { // no where statement
+                    keep(true);
+                    return;
+                }
 
-            if (arrWhere) { // where is array
-                keep(_where(row, this.q.where as any, i));
-            } else { // where is function
-                keep((this.q.where as any)(row, i));
-            }
-        }, callback);
+                if (arrWhere) { // where is array
+                    keep(_where(row, this.q.where as any, i, false, arraySearchCache, PK));
+                } else { // where is function
+                    keep((this.q.where as any)(row, i));
+                }
+            }, (rows) => {
+                if (arraySearchCache.length) {
+                    callback(rows.map(r => rowCache[r[PK]] ? rowCache[r[PK]] : r));
+                } else {
+                    callback(rows);
+                }
+            });
+        };
+
+        const where: any[] = this.q.where as any || [];
+        if (arrWhere && typeof where[0] !== "string") { // array and compount where
+
+            // compound where, handle search() queries inside an unoptimized query.
+            fastCHAIN(where, (wAr, i, done) => {
+                if (wAr[0].indexOf("search(") === -1) {
+                    done();
+                    return;
+                }
+
+                this.qu._store._nsql.query("select").where(wAr).manualExec({ table: this.q.table }).then((rows) => {
+                    arraySearchCache[i] = rows;
+                    rows.forEach((r) => {
+                        rowCache[r[PK]] = r;
+                    });
+                    done();
+                });
+
+            }).then(() => {
+                scanTable();
+            });
+
+        } else {
+            scanTable();
+        }
     }
 
 
@@ -1473,9 +1827,9 @@ export class _RowSelection {
      */
     private _isOptimizedWhere(wArgs: any[]): number {
         const tableData = this.s.tableInfo[this.q.table as any];
-        if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1) {
+        if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1 || (wArgs[0].indexOf("search(") !== -1 && (wArgs[1] === "=" || wArgs[1].indexOf(">") !== -1 || wArgs[1].indexOf("<") !== -1))) {
             // if (wArgs[0] === tableData._pk) {
-            if (wArgs[0] === tableData._pk || tableData._secondaryIndexes.indexOf(wArgs[0]) > -1) {
+            if (wArgs[0] === tableData._pk || tableData._secondaryIndexes.indexOf(wArgs[0]) !== -1 || wArgs[0].indexOf("search(") !== -1) {
                 return 0;
             }
         }
@@ -1532,7 +1886,7 @@ export class InstanceSelection {
 
 /**
  * Handles WHERE statements, combining multiple compared statements aginst AND/OR as needed to return a final boolean value.
- * The final boolean value is wether the row matches all WHERE conditions or not.
+ * The final boolean value is wether the row matches the WHERE conditions or not.
  *
  * @param {*} singleRow
  * @param {any[]} where
@@ -1540,22 +1894,35 @@ export class InstanceSelection {
  * @param {boolean} [ignoreFirstPath]
  * @returns {boolean}
  */
-const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: boolean): boolean => {
-
-    const commands = ["AND", "OR"];
+const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: boolean, searchCache?: any[], pk?: any): boolean => {
 
     if (typeof where[0] !== "string") { // compound where statements
 
+        const hasOr = where.indexOf("OR") !== -1;
+        let decided: boolean;
         let prevCondition: string;
 
         return where.reduce((prev, wArg, idx) => {
+
+            if (decided !== undefined) return decided;
 
             if (idx % 2 === 1) {
                 prevCondition = wArg;
                 return prev;
             }
 
-            let compareResult: boolean = _compare(wArg[2], wArg[1], objQuery(wArg[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
+            let compareResult: boolean = false;
+            if (wArg[0].indexOf("search(") !== -1 && searchCache) {
+                compareResult = searchCache[idx].map(r => r[pk]).indexOf(singleRow[pk]) !== -1;
+            } else {
+                compareResult = _compare(wArg[2], wArg[1], objQuery(wArg[0], singleRow, ignoreFirstPath));
+            }
+
+            // if all conditions are "AND" we can stop checking on the first false result
+            if (!hasOr && compareResult === false) {
+                decided = false;
+                return decided;
+            }
             if (idx === 0) return compareResult;
 
             if (prevCondition === "AND") {
@@ -1565,7 +1932,7 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
             }
         }, false);
     } else { // single where statement
-        return _compare(where[2], where[1], objQuery(where[0], singleRow, ignoreFirstPath)) === 0 ? true : false;
+        return _compare(where[2], where[1], objQuery(where[0], singleRow, ignoreFirstPath));
     }
 };
 
@@ -1573,12 +1940,13 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
 /**
  * Compare function used by WHERE to determine if a given value matches a given condition.
  *
+ *
  * @param {*} val1
  * @param {string} compare
  * @param {*} val2
- * @returns {number}
+ * @returns {boolean}
  */
-const _compare = (val1: any, compare: string, val2: any): number => {
+const _compare = (val1: any, compare: string, val2: any): boolean => {
 
     const setValue = (val: any) => {
         return ["LIKE", "NOT LIKE"].indexOf(compare) > -1 ? String(val || "").toLowerCase() : val;
@@ -1592,42 +1960,42 @@ const _compare = (val1: any, compare: string, val2: any): number => {
         return (val1 === "NULL" ?
             (val2 === null || val2 === undefined) :
             (val2 !== null && val2 !== undefined)) ?
-            (pos ? 0 : 1) : (pos ? 1 : 0);
+            (pos ? true : false) : (pos ? false : true);
     }
 
     switch (compare) {
         // if column equal to given value
-        case "=": return columnValue === givenValue ? 0 : 1;
+        case "=": return columnValue === givenValue ? true : false;
         // if column not equal to given value
-        case "!=": return columnValue !== givenValue ? 0 : 1;
+        case "!=": return columnValue !== givenValue ? true : false;
         // if column greather than given value
-        case ">": return columnValue > givenValue ? 0 : 1;
+        case ">": return columnValue > givenValue ? true : false;
         // if column less than given value
-        case "<": return columnValue < givenValue ? 0 : 1;
+        case "<": return columnValue < givenValue ? true : false;
         // if column less than or equal to given value
-        case "<=": return columnValue <= givenValue ? 0 : 1;
+        case "<=": return columnValue <= givenValue ? true : false;
         // if column greater than or equal to given value
-        case ">=": return columnValue >= givenValue ? 0 : 1;
+        case ">=": return columnValue >= givenValue ? true : false;
         // if column value exists in given array
-        case "IN": return (givenValue || []).indexOf(columnValue) < 0 ? 1 : 0;
+        case "IN": return (givenValue || []).indexOf(columnValue) < 0 ? false : true;
         // if column does not exist in given array
-        case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0 ? 0 : 1;
+        case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0 ? true : false;
         // regexp search the column
-        case "REGEX": return columnValue.match(givenValue).length ? 0 : 1;
+        case "REGEX": return columnValue.match(givenValue).length ? true : false;
         // if given value exists in column value
-        case "LIKE": return columnValue.indexOf(givenValue) < 0 ? 1 : 0;
+        case "LIKE": return String(columnValue || "").toLowerCase().indexOf(givenValue) < 0 ? false : true;
         // if given value does not exist in column value
-        case "NOT LIKE": return columnValue.indexOf(givenValue) >= 0 ? 1 : 0;
+        case "NOT LIKE": return String(columnValue || "").toLowerCase().indexOf(givenValue) >= 0 ? false : true;
         // if the column value is between two given numbers
-        case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue ? 0 : 1;
+        case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue ? true : false;
         // if single value exists in array column
-        case "HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? 1 : 0;
+        case "HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? false : true;
         // if single value does not exist in array column
-        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? 0 : 1;
+        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? true : false;
         // if array of values intersects with array column
-        case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0 ? 0 : 1;
+        case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0 ? true : false;
         // if array of values does not intersect with array column
-        case "NOT INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === 0 ? 0 : 1;
-        default: return 1;
+        case "NOT INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === 0 ? true : false;
+        default: return false;
     }
 };

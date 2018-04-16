@@ -157,43 +157,7 @@
     </script>
     <script>
         /* This file used to run tests and play with the lib */
-        nSQL([{
-                id: 1,
-                name: "Bill",
-                age: 20,
-                email: "bill@gmail.com",
-                meta: {
-                    value: 1
-                },
-                posts: [1, 3]
-            },
-            {
-                id: 2,
-                name: "Jeb",
-                age: 24,
-                email: "jeb@gmail.com",
-                meta: {
-                    value: 1
-                },
-                posts: [1]
-            },
-            {
-                id: 3,
-                name: "Bob",
-                age: 21,
-                email: "bob@gmail.com",
-                meta: {
-                    value: 1
-                },
-                posts: [1, 2, 3]
-            }
-        ]).query("select").where([
-            ["name", "=", "Bill"], "AND", ["age", "=", 20], "OR", ["email", "=", "jeb@gmail.com"]
-        ]).exec().then((rows) => {
-            const div = document.createElement("pre");
-            document.body.appendChild(div);
-            div.innerHTML = JSON.stringify(rows, null, 4);
-        })
+ 
         /*
                     nSQL('users') // <= Table Name
                     .model([ // <= create table model before you can use it
@@ -259,10 +223,15 @@
                     type: 'int',
                     props: ['pk', "ai"]
                 }, {
+                    key: 'title',
+                    type: 'string',
+                    default: "none",
+                    props: ["search(5, english)"]
+                }, {
                     key: 'name',
                     type: 'string',
                     default: "none",
-                    props: ["trie"]
+                    props: ["search(1, english)"]
                 }, {
                     key: 'age',
                     type: 'int'
@@ -369,7 +338,8 @@
                         nSQL()
                         .loadJS('users', [{
                             id: null,
-                            name: 'jeb',
+                            title: "some text",
+                            name: "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.",
                             age: 28,
                             balance: 25.02,
                             somethingElse: () => {
@@ -383,7 +353,8 @@
                             }
                         }, {
                             id: null,
-                            name: 'bob',
+                            title: "Lorem Ipsum",
+                            name: "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
                             age: 25,
                             balance: 25.02,
                             orderIDs: [2, 3],
@@ -395,7 +366,7 @@
                         }, {
                             id: null,
                             name: 'jeb',
-                            age: null,
+                            age: 20,
                             balance: 22.02,
                             meta: {
                                 favorteColor: {
@@ -434,6 +405,11 @@
                         console.time("READ");
                         nSQL("users")
                             .query("select")
+                            .where([
+                                ["search(title, name)", "=", "lorem"],
+                                "OR",
+                                ["name", "=", "jeb"]
+                            ])
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])
                             // .orm(["orderIDs"])
@@ -445,7 +421,7 @@
                             .groupBy({
                                 "orders.title": "asc"
                             })*/
-                            .where(["orderIDs", "HAVE", 0])
+                            // .where(["orderIDs", "HAVE", 0])
                             .exec().then(function (rows, db) {
                                 console.log(rows);
                                 // console.log(rows[0].somethingElse());
@@ -603,7 +579,7 @@
         nSQL("table")
         .model([
             {key: "id", type: "uuid", props: ["pk"]},
-            {key: "text", type: "string", props: ["search:3"]} // "search" tells the system to index this column for .search() queries :3 is optional default weight
+            {key: "text", type: "string", props: ["search(3, english)"]} // "search" tells the system to index this column for .search() queries :3 is optional default weight
         ])
         .config({
             thesaurusAPIKey: "1234",
@@ -612,6 +588,9 @@
 
             }
         }) 
+        nSQL("table").query("select").where([
+            ["search(title, body)", "=", "search term"]
+        ]).exec().then..
         nSQL("table").query("select").where(...).search(
             "ALL", // "ALL" or "ANY"
             ["term1", "term2", "multi word term"],  // array of terms to match against
