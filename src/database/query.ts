@@ -1,7 +1,7 @@
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
-import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect } from "../utilities";
+import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect, levenshtein } from "../utilities";
 import * as metaphone from "metaphone";
 import * as stemmer from "stemmer";
 import * as fuzzy from "fuzzysearch";
@@ -1513,6 +1513,9 @@ export class _RowSelection {
             const columns: string[] = where[0].replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
             let weights: { [rowPK: string]: { weight: number, locations: { [col: string]: { word: string, loc: number[] }[] } } } = {};
 
+            let searchTermsToFound: {
+                [search: string]: string;
+            } = {};
             fastALL(columns, (col, i, nextCol) => {
                 // tokenize search terms
                 const searchTerms = this.qu._tokenizer(col, where[2]);
@@ -1565,6 +1568,8 @@ export class _RowSelection {
                                 index.forEach((word) => {
                                     searchTerms.forEach((term) => {
                                         if (fuzzy(term.o, word)) {
+                                            searchTermsToFound[term.o] = word;
+                                            tokenToTerm[word] = term.o;
                                             wordsToGet.push(word);
                                         }
                                     });
@@ -1645,6 +1650,18 @@ export class _RowSelection {
                                         });
                                     });
                                 }
+
+                                // the fuzzy search algorithm used above is orders of magnitude faster than levenshtein distance,
+                                // however it only returns boolean values, so we use levenshtein to get relevance on the much smaller set
+                                // of result records
+                                if (searchTermsToFound[sTerm.o]) {
+                                    wordLocs.forEach((loc) => {
+                                        if (searchTermsToFound[sTerm.o] === loc.word) {
+                                            weights[rowPK].weight += 10 / (levenshtein(sTerm.o, loc.word) * 5);
+                                        }
+                                    });
+                                }
+
                             });
                         } else { // exact term match
                             if (searchTerms.length > 1) {

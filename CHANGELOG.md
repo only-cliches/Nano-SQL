@@ -4,6 +4,9 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.8]
+- Added levenshtien distance to fuzzy search relevance calculations.
+
 ## [1.4.7] 4-15-2018
 - Fixed issue with LevelDB and search feature.
 - Fixed issue with search feature and optimized query checking.
