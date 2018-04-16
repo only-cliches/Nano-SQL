@@ -232,7 +232,7 @@ export declare class NanoSQLInstance {
         };
     };
     constructor();
-    rowFilter(callback: (row: any) => any): void;
+    rowFilter(callback: (row: any) => any): this;
     toColumn(columnFns: {
         [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void;
     }): this;

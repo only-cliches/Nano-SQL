@@ -380,11 +380,12 @@ export class NanoSQLInstance {
         }
     }
 
-    public rowFilter(callback: (row: any) => any) {
+    public rowFilter(callback: (row: any) => any): this {
         this.rowFilters[this.sTable as string] = callback;
+        return this;
     }
 
-    public toColumn(columnFns: { [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void }) {
+    public toColumn(columnFns: { [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void }): this {
         if (!this.toColFns[this.sTable as string]) {
             this.toColFns[this.sTable as string] = {};
         }
@@ -392,7 +393,7 @@ export class NanoSQLInstance {
         return this;
     }
 
-    public toRow(columnFns: { [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void }) {
+    public toRow(columnFns: { [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void }): this {
         if (!this.toRowFns[this.sTable as string]) {
             this.toRowFns[this.sTable as string] = {};
         }

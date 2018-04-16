@@ -7,6 +7,7 @@
 ## [1.4.7] 4-15-2018
 - Fixed issue with LevelDB and search feature.
 - Fixed issue with search feature and optimized query checking.
+- Forgot to do `return this` on `.rowFilter`.
 
 ## [1.4.6] 4-15-2018
 - Fixed CSV Export and Import formating.
