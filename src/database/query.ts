@@ -1626,7 +1626,7 @@ export class _RowSelection {
                         const wordLocs = Object.keys(reducedResults[rowPK]).map(w => {
                             docLength = reducedResults[rowPK][w].l;
                             if (tokenToTerm[w]) {
-                                weights[rowPK].weight += 1;
+                                weights[rowPK].weight += 5;
                             }
                             return { word: tokenToTerm[w] || w, loc: reducedResults[rowPK][w].i };
                         });
@@ -1648,7 +1648,7 @@ export class _RowSelection {
                                                 // check all instances of other terms
                                                 reducedResults[rowPK][sTerm2].i.forEach((wordLoc) => {
                                                     const distance = Math.abs(wordLoc - refLocation);
-                                                    weights[rowPK].weight += (10 / (distance * 10));
+                                                    if (distance) weights[rowPK].weight += (10 / (distance * 10));
                                                 });
                                             }
                                         });
@@ -1661,7 +1661,12 @@ export class _RowSelection {
                                 if (searchTermsToFound[sTerm.o]) {
                                     wordLocs.forEach((loc) => {
                                         if (searchTermsToFound[sTerm.o] === loc.word) {
-                                            weights[rowPK].weight += 10 / (levenshtein(sTerm.o, loc.word) * 5);
+                                            const lev = levenshtein(sTerm.o, loc.word);
+                                            if (lev === 0) {
+                                                weights[rowPK].weight += 10;
+                                            } else {
+                                                weights[rowPK].weight += 10 / (lev * 5);
+                                            }
                                         }
                                     });
                                 }
