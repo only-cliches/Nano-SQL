@@ -1704,6 +1704,7 @@ export class _RowSelection {
                     nextCol();
                 });
             }).then((results) => {
+
                 let max = 0;
                 const rowKeys = Object.keys(weights);
                 rowKeys.forEach((w) => {
@@ -1726,7 +1727,43 @@ export class _RowSelection {
                     this.s.adapters[0].adapter.read(this.q.table as string, pk, done);
                 }).then((rows) => {
                     const pk = this.s.tableInfo[this.q.table as any]._pk;
-                    callback(rows.map(r => ({
+
+                    rows.forEach((row) => {
+                        const rowPK = row[pk];
+                        Object.keys(weights[rowPK].locations).forEach((col) => {
+                            const rowCol: string[] = String(row[col] || "").split(" ");
+                            weights[rowPK].locations[col].forEach((matches) => {
+                                matches.loc.forEach((idx) => {
+                                    const lev = levenshtein(rowCol[idx], matches.word);
+                                    if (lev === 0) {
+                                        weights[rowPK].weight += 1;
+                                    } else {
+                                        weights[rowPK].weight += 1 / (lev * 5);
+                                    }
+                                });
+                            });
+                        });
+                    });
+
+                    let max = 0;
+                    const rowKeys = Object.keys(weights);
+                    rowKeys.forEach((w) => {
+                        max = Math.max(max, weights[w].weight);
+                    });
+                    rowKeys.forEach((w) => {
+                        weights[w].weight = weights[w].weight / max;
+                    });
+
+                    callback(rows.filter(r => {
+                        if (whereType === 0) return true;
+                        if (whereType > 0) {
+                            return whereType < weights[r[pk]].weight;
+                        }
+                        if (whereType < 0) {
+                            return whereType * -1 > weights[r[pk]].weight;
+                        }
+                        return true;
+                    }).map(r => ({
                         ...r,
                         _weight: weights[r[pk]].weight,
                         _locations: weights[r[pk]].locations
