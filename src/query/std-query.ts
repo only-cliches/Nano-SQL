@@ -441,8 +441,12 @@ export class _NanoSQLQuery {
                         if (row[k] === null || row[k] === undefined) {
                             return "";
                         }
+                        if (typeof row[k] === "string") {
+                            // tslint:disable-next-line
+                            return "\"" + (row[k]).replace(/\"/g, '\"\"') + "\"";
+                        }
                         // tslint:disable-next-line
-                        return typeof row[k] === "object" ? '"' + JSON.stringify(row[k]).replace(/\"/g, '\'') + '"' : row[k];
+                        return typeof row[k] === "object" ? "\"" + JSON.stringify(row[k]).replace(/\"/g, '\'') + "\"" : row[k];
                     }).join(","));
                 });
                 res(csv.join("\r\n"), t);

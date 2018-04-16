@@ -1430,7 +1430,7 @@ export class NanoSQLInstance {
                         row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
                         // tslint:disable-next-line
                     } else if (row[i].indexOf('"') === 0) {
-                        row[i] = row[i].slice(1, row[i].length - 1);
+                        row[i] = row[i].slice(1, row[i].length - 1).replace(/\"\"/gmi, "\"");
                     }
                     record[fields[i]] = row[i];
                 }
