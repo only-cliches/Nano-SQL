@@ -425,7 +425,7 @@ export class _NanoSQLQuery {
                     columnHeaders = this._db.dataModels[this._query.table as string].map(k => k.key);
                 } else {
                     json.forEach((json) => {
-                        let maybeHeaders = Object.keys(json[0]);
+                        let maybeHeaders = Object.keys(json);
                         if (maybeHeaders.length > columnHeaders.length) {
                             columnHeaders = maybeHeaders;
                         }
@@ -437,7 +437,7 @@ export class _NanoSQLQuery {
                 }
 
                 json.forEach((row) => {
-                    csv.push(Object.keys(row).map((k) => {
+                    csv.push(columnHeaders.map((k) => {
                         if (row[k] === null || row[k] === undefined) {
                             return "";
                         }
