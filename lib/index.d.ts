@@ -617,7 +617,7 @@ export declare class NanoSQLInstance {
      */
     rawImport(tables: {
         [table: string]: DBRow[];
-    }): Promise<any>;
+    }, onProgress?: (percent: number) => void): Promise<any>;
     /**
      * Request disconnect from all databases.
      *
@@ -765,7 +765,7 @@ export interface NanoSQLPlugin {
      */
     importTables?: (tables: {
         [tableName: string]: DBRow[];
-    }) => Promise<any>;
+    }, onProgress: (percent: number) => void) => Promise<any>;
     /**
      * Generic for other misc functions, called when ".extend()" is used.
      *

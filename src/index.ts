@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.49;
+const VERSION = 1.50;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -1161,11 +1161,11 @@ export class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    public rawImport(tables: { [table: string]: DBRow[] }): Promise<any> {
+    public rawImport(tables: { [table: string]: DBRow[] }, onProgress?: (percent: number) => void): Promise<any> {
         return new Promise((res, rej) => {
             fastCHAIN(this.plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.importTables) {
-                    plugin.importTables(tables).then(next);
+                    plugin.importTables(tables, onProgress || ((c) => {})).then(next);
                 } else {
                     next();
                 }
@@ -1544,7 +1544,7 @@ export interface NanoSQLPlugin {
      *
      * @memberof NanoSQLPlugin
      */
-    importTables?: (tables: { [tableName: string]: DBRow[] }) => Promise<any>;
+    importTables?: (tables: { [tableName: string]: DBRow[] }, onProgress: (percent: number) => void) => Promise<any>;
 
     /**
      * Generic for other misc functions, called when ".extend()" is used.

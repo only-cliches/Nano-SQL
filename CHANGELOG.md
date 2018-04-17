@@ -4,6 +4,9 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.0]
+- Raw import now happens incrimentally and has a onProgress callback.
+
 ## [1.4.9] 4-17-2018
 - Fixed search bug with null rows.
 - Fixed CSV import bug.

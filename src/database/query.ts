@@ -1594,6 +1594,9 @@ export class _RowSelection {
                                     });
                                 });
 
+                                // remove duplicates
+                                wordsToGet = wordsToGet.filter((v, i, s) => s.indexOf(v) === i);
+
                                 fastALL(wordsToGet, (term: string, j, nextTerm) => {
                                     this.s.adapters[0].adapter.read(indexTable, term as any, (row: SearchRowIndex) => {
                                         if (!row) {

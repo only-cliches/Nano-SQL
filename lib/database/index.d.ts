@@ -9,7 +9,7 @@ export declare class NanoSQLDefaultBackend implements NanoSQLPlugin {
     willConnect(connectArgs: DBConnect, next: (connectArgs: DBConnect) => void): void;
     doExec(execArgs: IdbQuery, next: (execArgs: IdbQuery) => void): void;
     dumpTables(tables?: string[]): any;
-    importTables(tables: any): any;
+    importTables(tables: any, onProgress: any): any;
     willDisconnect(next: any): void;
     extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void;
 }

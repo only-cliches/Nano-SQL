@@ -4,6 +4,7 @@ import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
 import { _NanoSQLStorageQuery } from "./query";
 import { fastALL, Promise, fastCHAIN } from "../utilities";
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
+import { setFast } from "lie-ts";
 
 declare var global: any;
 
@@ -76,17 +77,32 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         });
     }
 
-    public importTables(tables) {
+    public importTables(tables, onProgress) {
         return new Promise((res, rej) => {
             fastALL(Object.keys(tables), (tableName, i, done) => {
                 const pkKey = this._store.tableInfo[tableName]._pk;
-                fastALL(tables[tableName], (row, i, done) => {
-                    if (row[pkKey]) {
-                        this._store.adapters[0].adapter.write(tableName, row[pkKey], row, done);
+                const length = (tables[tableName] || []).length || 0;
+                let k = 0;
+                const next = () => {
+                    
+                    if (k < length) {
+                        const row = tables[tableName][k];
+                        if (row[pkKey]) {
+                            this._store.adapters[0].adapter.write(tableName, row[pkKey], row, () => {
+                                k++;
+                                onProgress(Math.round(((k + 1) / length) * 10000) / 100)
+                                k % 500 == 0 ? setFast(next) : next();
+                            });
+                        } else {
+                            k++;
+                            onProgress(Math.round(((k + 1) / length) * 10000) / 100)
+                            k % 500 == 0 ? setFast(next) : next();
+                        }
                     } else {
                         done();
                     }
-                }).then(done);
+                }
+                next();
             }).then(() => {
                 res();
             });
