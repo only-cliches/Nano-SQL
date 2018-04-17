@@ -393,7 +393,7 @@ export class _NanoSQLStorageQuery {
 
         const tokenTable = "_" + table + "_search_tokens_";
         fastALL(columns, (col, i, next) => {
-            if ([undefined, null].indexOf(newRowData[col]) !== -1) { // row doesn't contain indexed value
+            if ([undefined, null].indexOf(newRowData[col]) !== -1) { // columns doesn't contain indexable value
                 next();
                 return;
             }
@@ -652,8 +652,15 @@ export class _NanoSQLStorageQuery {
                 if (rows.length) {
                     fastCHAIN(rows, (r, i, rowDone) => {
                         this._updateSearchIndex(r[pk], r, () => {
-                            this._updateRowViews(this._query.actionArgs || {}, r, (updatedColumns) => {
-                                this._store._write(this._query.table as any, r[pk], r, updatedColumns, rowDone);
+                            this._updateRowViews(this._query.actionArgs || {}, r, (updatedRowData) => {
+                                if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
+                                    Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
+                                        if (updatedRowData[col] === undefined) {
+                                            updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
+                                        }
+                                    });
+                                }
+                                this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone);
                             });
                         });
                     }).then((newRows: DBRow[]) => {
@@ -677,8 +684,17 @@ export class _NanoSQLStorageQuery {
             let row = this._query.actionArgs || {};
             this._store._cache[this._query.table as any] = {};
             const write = (oldRow: any) => {
-                this._updateRowViews(row, oldRow, (updatedColumns) => {
-                    this._store._write(this._query.table as any, row[pk], oldRow, updatedColumns, (result) => {
+                this._updateRowViews(row, oldRow, (updatedRowData) => {
+
+                    if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
+                        Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
+                            if (updatedRowData[col] === undefined) {
+                                updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
+                            }
+                        });
+                    }
+
+                    this._store._write(this._query.table as any, row[pk], oldRow, updatedRowData, (result) => {
                         this._updateSearchIndex(result[pk], result, () => {
                             this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
                             if (this._store._hasORM) {
@@ -693,7 +709,7 @@ export class _NanoSQLStorageQuery {
                 });
             };
 
-            if (row[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index") === -1) {
+            if (row[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index_") === -1) {
                 this._store._read(this._query.table as any, [row[pk]] as any, (rows) => {
                     if (rows.length) {
                         write(rows[0]);
@@ -1541,6 +1557,7 @@ export class _RowSelection {
 
                     switch (j) {
                         case 0:
+                            // Search the tokenized index for matches (super quick);
                             fastALL(searchTerms, (term: { w: string, i: number[] }, j, nextTerm) => {
                                 this.s.adapters[0].adapter.read(indexTable, term.w as any, (row: SearchRowIndex) => {
                                     if (!row) {
@@ -1562,6 +1579,8 @@ export class _RowSelection {
                                 nextTable();
                                 return;
                             }
+                            // Grab the fuzzy search index then compare each string for match
+                            // WAY slower than the tokenizer match but gets you fuzzy results.
                             this.s.adapters[0].adapter.getIndex(indexTable, false, (index: string[]) => {
                                 let wordsToGet: string[] = [];
 
@@ -1583,6 +1602,7 @@ export class _RowSelection {
                                         }
 
                                         row.rows.forEach(r => {
+                                            // if the non fuzzy search already got this row then ignore it
                                             let exists = false;
                                             if (!reducedResults[r.id]) {
                                                 reducedResults[r.id] = {};
@@ -1626,19 +1646,22 @@ export class _RowSelection {
                         const wordLocs = Object.keys(reducedResults[rowPK]).map(w => {
                             docLength = reducedResults[rowPK][w].l;
                             if (tokenToTerm[w]) {
+                                // if we got something from fuzzy search, boost it up.
+                                // this is to balance against the idxsTerm code below
                                 weights[rowPK].weight += 5;
                             }
                             return { word: tokenToTerm[w] || w, loc: reducedResults[rowPK][w].i };
                         });
-                        const locations = wordLocs.reduce((p, c) => p + c.loc.length, 0);
+                        const totalLocations = wordLocs.reduce((p, c) => p + c.loc.length, 0);
 
-                        weights[rowPK].weight += (locations / docLength) + parseInt(args[0]);
+                        weights[rowPK].weight += (totalLocations / docLength) + parseInt(args[0]);
                         weights[rowPK].locations[col] = wordLocs;
 
                         if (whereType !== 0) { // fuzzy term match
 
+
                             searchTerms.forEach((sTerm) => {
-                                // all instances of this term in this row/column
+                                // all instances of this term in this row/column, only runs against tokenizer results
                                 let idxsTerm = reducedResults[rowPK][sTerm.w];
                                 if (idxsTerm) {
                                     idxsTerm.i.forEach((refLocation) => {
@@ -1655,14 +1678,14 @@ export class _RowSelection {
                                     });
                                 }
 
-                                // the fuzzy search algorithm used above is orders of magnitude faster than levenshtein distance,
+                                // the fuzzy() search algorithm used in the previouse step is orders of magnitude faster than levenshtein distance,
                                 // however it only returns boolean values, so we use levenshtein to get relevance on the much smaller set
                                 // of result records
                                 if (searchTermsToFound[sTerm.o]) {
                                     wordLocs.forEach((loc) => {
                                         if (searchTermsToFound[sTerm.o] === loc.word) {
                                             const lev = levenshtein(sTerm.o, loc.word);
-                                            if (lev === 0) {
+                                            if (lev <= 1) {
                                                 weights[rowPK].weight += 10;
                                             } else {
                                                 weights[rowPK].weight += 10 / (lev * 5);
@@ -1705,6 +1728,7 @@ export class _RowSelection {
                 });
             }).then((results) => {
 
+                // normalize the weights
                 let max = 0;
                 const rowKeys = Object.keys(weights);
                 rowKeys.forEach((w) => {
@@ -1724,10 +1748,14 @@ export class _RowSelection {
                     }
                     return true;
                 }), (pk, i, done) => {
+                    // get result rows
                     this.s.adapters[0].adapter.read(this.q.table as string, pk, done);
                 }).then((rows) => {
                     const pk = this.s.tableInfo[this.q.table as any]._pk;
 
+                    // run levenshtein again against the results.
+                    // We're doing this again because there's no way to know the values of the tokenized result rows that we've matched
+                    // without querying them, so we reduce the problem set to the smallest possible, then levenshtein against it.
                     rows.forEach((row) => {
                         const rowPK = row[pk];
                         Object.keys(weights[rowPK].locations).forEach((col) => {
@@ -1735,7 +1763,7 @@ export class _RowSelection {
                             weights[rowPK].locations[col].forEach((matches) => {
                                 matches.loc.forEach((idx) => {
                                     const lev = levenshtein(rowCol[idx], matches.word);
-                                    if (lev === 0) {
+                                    if (lev <= 1) {
                                         weights[rowPK].weight += 10;
                                     } else {
                                         weights[rowPK].weight += 10 / (lev * 10);
@@ -1745,6 +1773,7 @@ export class _RowSelection {
                         });
                     });
 
+                    // normalize weights again
                     let max = 0;
                     const rowKeys = Object.keys(weights);
                     rowKeys.forEach((w) => {

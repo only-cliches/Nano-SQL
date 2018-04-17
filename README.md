@@ -51,8 +51,10 @@ NanoSQL can save data to several different places, depending on the browser or e
 
 2. **[SQLite (NodeJS)](https://github.com/ClickSimply/Nano-SQLite3)**
 3. **[SQLite (Cordova)](https://github.com/ClickSimply/cordova-Nano-SQLite)**
-4. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
-5. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
+4. **[MySQL](https://www.npmjs.com/package/nano-mysql)**
+5. **[React Native](https://www.npmjs.com/package/nano-react-native)**
+6. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
+7. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
 
 ### Oh Look, Another Data Store
 
@@ -90,7 +92,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.4.7/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.4.8/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

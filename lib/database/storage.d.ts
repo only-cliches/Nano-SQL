@@ -170,7 +170,10 @@ export declare class _NanoSQLStorage {
             };
             _trieColumns: string[];
             _keys: string[];
-            _defaults: any[];
+            _defaults: {
+                [column: string]: any;
+            };
+            _hasDefaults: boolean;
             _views: {
                 [table: string]: {
                     pkColumn: string;

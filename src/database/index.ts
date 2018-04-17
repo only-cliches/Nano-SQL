@@ -175,7 +175,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     }).then(() => {
                         this._store.adapters[0].adapter.rangeRead(table, (row, idx, next) => {
                             this.parent.query("upsert", row)
-                            .comment("_rebuild_search_index")
+                            .comment("_rebuild_search_index_")
                             .manualExec({table: table}).then(next);
                         }, done);
                     });

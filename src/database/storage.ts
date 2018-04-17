@@ -205,7 +205,8 @@ export class _NanoSQLStorage {
             }
             _trieColumns: string[] // trie columns
             _keys: string[] // array of columns
-            _defaults: any[] // array of default values
+            _defaults: {[column: string]: any};
+            _hasDefaults: boolean;
             _views: { // views present on this table
                 [table: string]: {
                     pkColumn: string;
@@ -1071,6 +1072,7 @@ export class _NanoSQLStorage {
             _keys: [],
             _defaults: [],
             _secondaryIndexes: [],
+            _hasDefaults: false,
             _trieColumns: [],
             _name: tableName,
             _views: {},
@@ -1091,7 +1093,10 @@ export class _NanoSQLStorage {
         while (i--) {
             const p = this.models[tableName][i];
             this.tableInfo[tableName]._keys.unshift(p.key);
-            this.tableInfo[tableName]._defaults[i] = p.default;
+            if (p.default !== undefined) {
+                this.tableInfo[tableName]._defaults[p.key] = p.default;
+                this.tableInfo[tableName]._hasDefaults = true;
+            }
 
             if (p.props && p.props.length) {
 

@@ -34,4 +34,32 @@ describe("Data Integrity", () => {
 
         });
     });
+
+    it("Default values should automatically insert", (done: MochaDone) => {
+        usersDB([
+            {key: "id", type: "int", props: ["pk()", "ai()"]},
+            {key: "name", type: "string"},
+            {key: "title", type: "string", default: "Captain"},
+            {key: "age", type: "int"}
+        ], (nSQL) => {
+            nSQL.query("upsert", {
+                name: "Bill"
+            }).exec().then(() => {
+                nSQL.query("select").exec().then((rows) => {
+                    try {
+                        expect(rows).to.deep.equal([
+                            {
+                                id: 1,
+                                name: "Bill",
+                                title: "Captain"
+                            }], "Default values failed!");
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                });
+            });
+
+        });
+    });
 });

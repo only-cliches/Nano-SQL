@@ -406,7 +406,7 @@
                         nSQL("users")
                             .query("select")
                             .where([
-                                ["search(title, name)", ">0", "orem fct"]
+                                ["search(title, name)", ">0.6", "fact"]
                             ])
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])

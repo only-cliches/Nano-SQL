@@ -4,8 +4,11 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
-## [1.4.8]
+## [1.4.8] 4-16-2018
 - Added levenshtien distance to fuzzy search relevance calculations.
+- Added further optimizations to the new elastic search features.
+- Added MySQL Adapter and React Native to README.
+- Restored `default` column behavior and added test for it.
 
 ## [1.4.7] 4-15-2018
 - Fixed issue with LevelDB and search feature.
