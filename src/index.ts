@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.48;
+const VERSION = 1.49;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -1426,14 +1426,17 @@ export class NanoSQLInstance {
 
                 let i = fields.length;
                 while (i--) {
-                    if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
-                        // tslint:disable-next-line
-                        row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
-                        // tslint:disable-next-line
-                    } else if (row[i].indexOf('"') === 0) {
-                        row[i] = row[i].slice(1, row[i].length - 1).replace(/\"\"/gmi, "\"");
+                    if (row[i]) {
+                        if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                            // tslint:disable-next-line
+                            row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                            // tslint:disable-next-line
+                        } else if (row[i].indexOf('"') === 0) {
+                            row[i] = row[i].slice(1, row[i].length - 1).replace(/\"\"/gmi, "\"");
+                        }
+                        record[fields[i]] = row[i];
                     }
-                    record[fields[i]] = row[i];
+
                 }
                 if (rowFilter) {
                     return rowFilter(record);

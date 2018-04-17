@@ -1752,7 +1752,7 @@ export class _RowSelection {
                     this.s.adapters[0].adapter.read(this.q.table as string, pk, done);
                 }).then((rows) => {
                     const pk = this.s.tableInfo[this.q.table as any]._pk;
-
+                    rows = rows.filter(r => r);
                     // run levenshtein again against the results.
                     // We're doing this again because there's no way to know the values of the tokenized result rows that we've matched
                     // without querying them, so we reduce the problem set to the smallest possible, then levenshtein against it.

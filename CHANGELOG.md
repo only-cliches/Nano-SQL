@@ -4,6 +4,10 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.4.9] 4-17-2018
+- Fixed search bug with null rows.
+- Fixed CSV import bug.
+
 ## [1.4.8] 4-16-2018
 - Added levenshtien distance to fuzzy search relevance calculations.
 - Added further optimizations to the new elastic search features.
