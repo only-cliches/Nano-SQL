@@ -94,7 +94,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         k++;
                         totalProgress++;
                         if (row[pkKey]) {
-                            this._store.adapters[0].adapter.write(tableName, row[pkKey], row, () => {
+                            this._store.adapterWrite(tableName, row[pkKey], row, () => {
                                 onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100)
                                 k % 500 == 0 ? setFast(next) : next();
                             });
@@ -186,18 +186,35 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     if (args[1]) return [args[1]];
                     return Object.keys(this._store.tableInfo);
                 })();
+                const progress: (progress: number) => void = args[2];
+
                 fastALL(rebuildTables, (table, i, done) => {
-                    let tablesToDrop: string[] = Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_tokens_" + t);
-                    tablesToDrop = tablesToDrop.concat(Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_" + t));
-                    tablesToDrop = tablesToDrop.concat(Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_fuzzy_" + t));
-                    fastALL(tablesToDrop, (dropTable, i, dropDone) => {
-                        this._store.adapterDrop(dropTable, dropDone);
+                    let totalProgress = 0;
+                    let currentProgress = 0;
+                    fastALL(rebuildTables, (t, kk, lengthDone) => {
+                        this._store.adapters[0].adapter.getIndex(t, true, (len: number) => {
+                            totalProgress += len;
+                            lengthDone();
+                        })
                     }).then(() => {
-                        this._store.adapters[0].adapter.rangeRead(table, (row, idx, next) => {
-                            this.parent.query("upsert", row)
-                            .comment("_rebuild_search_index_")
-                            .manualExec({table: table}).then(next);
-                        }, done);
+
+                        let tablesToDrop: string[] = Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_tokens_" + t);
+                        tablesToDrop = tablesToDrop.concat(Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_" + t));
+                        tablesToDrop = tablesToDrop.concat(Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_fuzzy_" + t));
+                        fastALL(tablesToDrop, (dropTable, i, dropDone) => {
+                            this._store.adapterDrop(dropTable, dropDone);
+                        }).then(() => {
+                            this._store.adapters[0].adapter.rangeRead(table, (row, idx, next) => {
+                                this.parent.query("upsert", row)
+                                .comment("_rebuild_search_index_")
+                                .manualExec({table: table}).then(() => {
+                                    if (progress) progress(Math.round(((currentProgress + 1) / totalProgress) * 10000) / 100);
+                                    currentProgress++;
+                                    next();
+                                });
+                            }, done);
+                        });
+
                     });
                 }).then(() => {
                     next(args, []);
