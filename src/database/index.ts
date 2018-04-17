@@ -79,23 +79,27 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
 
     public importTables(tables, onProgress) {
         return new Promise((res, rej) => {
+            let totalLength = 0;
+            let totalProgress = 0;
+            Object.keys(tables).forEach((table) => {
+                totalLength += (tables[table] || []).length || 0;
+            })
             fastALL(Object.keys(tables), (tableName, i, done) => {
                 const pkKey = this._store.tableInfo[tableName]._pk;
                 const length = (tables[tableName] || []).length || 0;
                 let k = 0;
                 const next = () => {
-                    
                     if (k < length) {
                         const row = tables[tableName][k];
+                        k++;
+                        totalProgress++;
                         if (row[pkKey]) {
                             this._store.adapters[0].adapter.write(tableName, row[pkKey], row, () => {
-                                k++;
-                                onProgress(Math.round(((k + 1) / length) * 10000) / 100)
+                                onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100)
                                 k % 500 == 0 ? setFast(next) : next();
                             });
                         } else {
-                            k++;
-                            onProgress(Math.round(((k + 1) / length) * 10000) / 100)
+                            onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100)
                             k % 500 == 0 ? setFast(next) : next();
                         }
                     } else {
