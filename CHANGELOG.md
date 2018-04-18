@@ -4,8 +4,14 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
-## [1.5.0]
+## [1.5.0] 4-18-2018
+BREAKING CHANGE (Custom Function API), PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)
 - Raw import now happens incrimentally and has a onProgress callback.
+- Rebuilding search index and secondary indexes now have onProgress callback.
+- `default` was overwriting at incorrect times, fixed bug and added tests.
+- Increased sorted index performance for large datasets.
+- Functions weren't working on JOIN queries, fixed and added tests.
+- New faster binary search implimentation courtesy of [Olical](https://github.com/Olical/binary-search).
 
 ## [1.4.9] 4-17-2018
 - Fixed search bug with null rows.

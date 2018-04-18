@@ -62,4 +62,39 @@ describe("Data Integrity", () => {
 
         });
     });
+
+    it("Default values shouldn't overwrite existing values", (done: MochaDone) => {
+        usersDB([
+            {key: "id", type: "int", props: ["pk()", "ai()"]},
+            {key: "name", type: "string"},
+            {key: "title", type: "string", default: "Captain"},
+            {key: "age", type: "int"}
+        ], (nSQL) => {
+            nSQL.query("upsert", {
+                id: 1,
+                name: "Bill",
+                title: "Pilot"
+            }).exec().then(() => {
+                return nSQL.query("upsert", {
+                    id: 1,
+                    name: "Bob",
+                }).exec();
+            }).then(() => {
+                nSQL.query("select").exec().then((rows) => {
+                    try {
+                        expect(rows).to.deep.equal([
+                            {
+                                id: 1,
+                                name: "Bob",
+                                title: "Pilot"
+                            }], "Default values failed!");
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                });
+            });
+
+        });
+    });
 });

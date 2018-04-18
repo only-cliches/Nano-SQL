@@ -403,23 +403,20 @@
                                                     })
                         */
                         console.time("READ");
-                        nSQL("users")
-                            .query("select")
-                            .where([
-                                ["search(title, name)", ">0.6", "fact"]
-                            ])
+                        nSQL("orders")
+                            .query("select", ["UPPER(orders.title) AS name"])
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])
                             // .orm(["orderIDs"])
-                            /*.join({
-                                type: "cross",
+                            .join({
+                                type: "left",
                                 table: "users",
                                 where: ["orders.user", "=", "users.id"]
                             })
-                            .groupBy({
+                            /*.groupBy({
                                 "orders.title": "asc"
-                            })*/
-                            // .where(["orderIDs", "HAVE", 0])
+                            })
+                            // .where(["orderIDs", "HAVE", 0])*/
                             .exec().then(function (rows, db) {
                                 console.log(rows);
                                 // console.log(rows[0].somethingElse());

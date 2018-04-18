@@ -11,7 +11,7 @@ import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID
 export class DatabaseIndex {
 
     private _sorted: any[]; // sorted array of keys
-    private _indexOf: {[k: string]: any}; // the .indexOf value for each key
+    private _exists: { [k: string]: any }; // the .indexOf value for each key
 
     public ai: number; // auto incriment value
 
@@ -19,16 +19,16 @@ export class DatabaseIndex {
 
     constructor() {
         this._sorted = [];
-        this._indexOf = {};
+        this._exists = {};
         this.ai = 1;
         this.doAI = false;
     }
 
     public set(index?: any[]): void {
         this._sorted = index || [];
-        this._indexOf = {};
+        this._exists = {};
         this._sorted.forEach((s, i) => {
-            this._indexOf[String(s)] = i;
+            this._exists[String(s)] = true;
         });
 
         if (this.doAI && this._sorted.length) {
@@ -37,28 +37,24 @@ export class DatabaseIndex {
         }
     }
 
-    public getLocation(key: any): number {
+    public getLocation(key: any, startIdx?: number): number {
         const idx = this.indexOf(key);
         if (idx !== -1) {
             return idx;
         }
-        return binarySearch(this._sorted, key);
+        return binarySearch(this._sorted, key, startIdx);
     }
 
     public add(key: any): void {
-
+        if (this._exists[key]) return;
+        this._exists[String(key)] = true;
         if (!this.doAI) {
             const idx = binarySearch(this._sorted, key);
             this._sorted.splice(idx, 0, key);
-            this._indexOf[String(key)] = idx;
-            for (let i = idx + 1; i < this._sorted.length; i++) {
-                this._indexOf[String(this._sorted[i])]++;
-            }
         } else {
             if (parseInt(key) >= this.ai) {
                 this.ai++;
             }
-            this._indexOf[String(key)] = this._sorted.length;
             this._sorted.push(key);
         }
     }
@@ -68,17 +64,14 @@ export class DatabaseIndex {
     }
 
     public indexOf(key: any): number {
-        return this._indexOf[String(key)] !== undefined ? this._indexOf[String(key)] : -1;
+        return this._exists[String(key)] ? binarySearch(this._sorted, key) : -1;
     }
 
     public remove(key: any): void {
-        const idx = this._indexOf[String(key)];
-        if (idx !== undefined) {
-            delete this._indexOf[String(key)];
+        if (this._exists[String(key)]) {
+            this._exists[String(key)] = false;
+            const idx = binarySearch(this._sorted, key);
             this._sorted.splice(idx, 1);
-            for (let i = idx; i < this._sorted.length; i++) {
-                this._indexOf[String(this._sorted[i])]--;
-            }
         }
     }
 }

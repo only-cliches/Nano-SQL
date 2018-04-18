@@ -83,7 +83,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             let totalProgress = 0;
             Object.keys(tables).forEach((table) => {
                 totalLength += (tables[table] || []).length || 0;
-            })
+            });
             fastALL(Object.keys(tables), (tableName, i, done) => {
                 const pkKey = this._store.tableInfo[tableName]._pk;
                 const length = (tables[tableName] || []).length || 0;
@@ -95,17 +95,17 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         totalProgress++;
                         if (row[pkKey]) {
                             this._store.adapterWrite(tableName, row[pkKey], row, () => {
-                                onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100)
-                                k % 500 == 0 ? setFast(next) : next();
+                                onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100);
+                                k % 500 === 0 ? setFast(next) : next();
                             });
                         } else {
-                            onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100)
-                            k % 500 == 0 ? setFast(next) : next();
+                            onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100);
+                            k % 500 === 0 ? setFast(next) : next();
                         }
                     } else {
                         done();
                     }
-                }
+                };
                 next();
             }).then(() => {
                 res();
@@ -195,7 +195,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         this._store.adapters[0].adapter.getIndex(t, true, (len: number) => {
                             totalProgress += len;
                             lengthDone();
-                        })
+                        });
                     }).then(() => {
 
                         let tablesToDrop: string[] = Object.keys(this._store.tableInfo[table]._searchColumns).map(t => "_" + table + "_search_tokens_" + t);

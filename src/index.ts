@@ -1558,9 +1558,9 @@ export interface NanoSQLPlugin {
 NanoSQLInstance.functions = {
     COUNT: {
         type: "A",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             if (column && column !== "*") {
-                complete(rows.filter(r => objQuery(column, r)).length);
+                complete(rows.filter(r => objQuery(column, r, isJoin)).length);
             } else {
                 complete(rows.length);
             }
@@ -1568,13 +1568,13 @@ NanoSQLInstance.functions = {
     },
     MAX: {
         type: "A",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             if (rows.length) {
                 let max = objQuery(column, rows[0]) || 0;
                 rows.forEach(r => {
-                    const v = objQuery(column, r);
+                    const v = objQuery(column, r, isJoin);
                     if (objQuery(column, r) > max) {
-                        max = objQuery(column, r);
+                        max = objQuery(column, r, isJoin);
                     }
                 });
                 complete(max);
@@ -1585,11 +1585,11 @@ NanoSQLInstance.functions = {
     },
     MIN: {
         type: "A",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             if (rows.length) {
-                let min = objQuery(column, rows[0]) || 0;
+                let min = objQuery(column, rows[0], isJoin) || 0;
                 rows.forEach(r => {
-                    const v = objQuery(column, r);
+                    const v = objQuery(column, r, isJoin);
                     if (v < min) {
                         min = v;
                     }
@@ -1602,77 +1602,77 @@ NanoSQLInstance.functions = {
     },
     AVG: {
         type: "A",
-        call: (rows, complete, column) => {
-            complete(rows.reduce((prev, cur) => prev + (objQuery(column, cur) || 0), 0) / rows.length);
+        call: (rows, complete, isJoin, column) => {
+            complete(rows.reduce((prev, cur) => prev + (objQuery(column, cur, isJoin) || 0), 0) / rows.length);
         }
     },
     SUM: {
         type: "A",
-        call: (rows, complete, column) => {
-            complete(rows.reduce((prev, cur) => prev + (objQuery(column, cur) || 0), 0));
+        call: (rows, complete, isJoin, column) => {
+            complete(rows.reduce((prev, cur) => prev + (objQuery(column, cur, isJoin) || 0), 0));
         }
     },
     LOWER: {
         type: "S",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             complete(rows.map((r) => {
-                return String(objQuery(column, r)).toLowerCase();
+                return String(objQuery(column, r, isJoin)).toLowerCase();
             }));
         }
     },
     UPPER: {
         type: "S",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             complete(rows.map((r) => {
-                return String(objQuery(column, r)).toUpperCase();
+                return String(objQuery(column, r, isJoin)).toUpperCase();
             }));
         }
     },
     CAST: {
         type: "S",
-        call: (rows, complete, column, type) => {
+        call: (rows, complete, isJoin, column, type) => {
             complete(rows.map((r) => {
-                return cast(type, objQuery(column, r));
+                return cast(type, objQuery(column, r, isJoin));
             }));
         }
     },
     ABS: {
         type: "S",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             complete(rows.map((r) => {
-                return Math.abs(objQuery(column, r));
+                return Math.abs(objQuery(column, r, isJoin));
             }));
         }
     },
     CEIL: {
         type: "S",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             complete(rows.map((r) => {
-                return Math.ceil(objQuery(column, r));
+                return Math.ceil(objQuery(column, r, isJoin));
             }));
         }
     },
     POW: {
         type: "S",
-        call: (rows, complete, column, power) => {
+        call: (rows, complete, isJoin, column, power) => {
             complete(rows.map((r) => {
-                return Math.pow(objQuery(column, r), parseInt(power));
+                return Math.pow(objQuery(column, r, isJoin), parseInt(power));
             }));
         }
     },
     ROUND: {
         type: "S",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             complete(rows.map((r) => {
-                return Math.round(objQuery(column, r));
+                return Math.round(objQuery(column, r, isJoin));
             }));
         }
     },
     SQRT: {
         type: "S",
-        call: (rows, complete, column) => {
+        call: (rows, complete, isJoin, column) => {
             complete(rows.map((r) => {
-                return Math.sqrt(objQuery(column, r));
+                return Math.sqrt(objQuery(column, r, isJoin));
             }));
         }
     }

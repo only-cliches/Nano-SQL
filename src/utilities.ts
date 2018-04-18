@@ -390,6 +390,7 @@ export const sortedInsert = (arr: any[], value: any, startVal?: number, endVal?:
 
 /**
  * Given a sorted array and a value, find where that value fits into the array.
+ * Thanks to Olical for this. https://github.com/Olical/binary-search
  *
  * @param {any[]} arr
  * @param {*} value
@@ -398,36 +399,35 @@ export const sortedInsert = (arr: any[], value: any, startVal?: number, endVal?:
  * @returns {number}
  */
 export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?: number): number => {
-    const length = arr.length;
-    const start = startVal || 0;
-    const end = endVal !== undefined ? endVal : length - 1;
 
-    if (length === 0) {
-        return 0;
+    let min = 0;
+    let max = arr.length - 1;
+    let guess;
+    if (value < arr[min]) return 0;
+    if (value > arr[max]) return max + 1;
+
+    let bitwise = (max <= 2147483647) ? true : false;
+    if (bitwise) {
+        while (min <= max) {
+            guess = (min + max) >> 1;
+            if (arr[guess] === value) { return guess; }
+            else {
+                if (arr[guess] < value) { min = guess + 1; }
+                else { max = guess - 1; }
+            }
+        }
+    } else {
+        while (min <= max) {
+            guess = Math.floor((min + max) / 2);
+            if (arr[guess] === value) { return guess; }
+            else {
+                if (arr[guess] < value) { min = guess + 1; }
+                else { max = guess - 1; }
+            }
+        }
     }
 
-    if (value > arr[end]) {
-        return end + 1;
-    }
-
-    if (value < arr[start]) {
-        return start;
-    }
-
-    if (start >= end) {
-        return 0;
-    }
-
-    const m = start + Math.floor((end - start) / 2);
-
-    if (value < arr[m]) {
-        return binarySearch(arr, value, start, m - 1);
-    }
-
-    if (value > arr[m]) {
-        return binarySearch(arr, value, m + 1, end);
-    }
-    return 0;
+    return guess;
 };
 
 /**

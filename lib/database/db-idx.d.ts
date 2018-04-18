@@ -8,12 +8,12 @@
  */
 export declare class DatabaseIndex {
     private _sorted;
-    private _indexOf;
+    private _exists;
     ai: number;
     doAI: boolean;
     constructor();
     set(index?: any[]): void;
-    getLocation(key: any): number;
+    getLocation(key: any, startIdx?: number): number;
     add(key: any): void;
     keys(): any[];
     indexOf(key: any): number;

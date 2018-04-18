@@ -655,7 +655,7 @@ export class _NanoSQLStorageQuery {
                             this._updateRowViews(this._query.actionArgs || {}, r, (updatedRowData) => {
                                 if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
                                     Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                                        if (updatedRowData[col] === undefined) {
+                                        if (r[col] === undefined && updatedRowData[col] === undefined) {
                                             updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
                                         }
                                     });
@@ -688,7 +688,7 @@ export class _NanoSQLStorageQuery {
 
                     if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
                         Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                            if (updatedRowData[col] === undefined) {
+                            if ((oldRow || {})[col] === undefined && updatedRowData[col] === undefined) {
                                 updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
                             }
                         });
@@ -1241,13 +1241,13 @@ export class _MutateSelection {
                             columnData[column].fn.call(rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1), (result) => {
                                 fnGroupByResults[k][columnData[column].key] = result;
                                 fnDone();
-                            }, ...fnArgs);
+                            }, this.q.join !== undefined, ...fnArgs);
                         }).then(columnDone);
                     } else { // no group by
                         columnData[column].fn.call(rows, (result) => {
                             functionResults[columnData[column].key] = result;
                             columnDone();
-                        }, ...fnArgs);
+                        }, this.q.join !== undefined, ...fnArgs);
                     }
 
                 } else {
