@@ -4,6 +4,7 @@
     <script src="nano-sql.min.js"></script>
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.4.3/alasql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'unsafe-inline'">
 </head>
 
 <body>
@@ -309,7 +310,7 @@
                 props: ["ref=>orderIDs"]
             }])
             .config({
-                // mode: "PERM",
+                mode: "PERM",
                 // history: true,
                 // rebuildIndexes: true
                 // memory: false
@@ -403,12 +404,12 @@
                                                     })
                         */
                         console.time("READ");
-                        nSQL("orders")
-                            .query("select", ["UPPER(orders.title) AS name"])
+                        nSQL("users")
+                            .query("select").where(["levenshtein(bib, name)", "<", 3])
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])
                             // .orm(["orderIDs"])
-                            .join({
+                            /*.join({
                                 type: "left",
                                 table: "users",
                                 where: ["orders.user", "=", "users.id"]

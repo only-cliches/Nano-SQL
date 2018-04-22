@@ -4,11 +4,6 @@ import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, intersect } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
-const _evalContext = (source: string, context: {[key: string]: any}) => {
-    const compiled = eval("(function(" + Object.keys(context).join(", ") + ") {" + source + "})");
-    return compiled.apply(context, Object.keys(context).map(c => context[c]));
-};
-
 /**
  * Handles IndexedDB with and without web workers.
  * Uses blob worker OR eval()s the worker and uses it inline.
@@ -34,90 +29,74 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     private _id: string;
 
-    private _w: any;
+    private _db: IDBDatabase;
 
-    private _waitingCBs: {
-        [key: string]: any;
-    };
 
-    private _useWorker: boolean;
-
-    private _worker = require("./adapter-indexedDB-worker.txt");
-
-    constructor(useWorker: boolean) {
+    constructor() {
         this._pkKey = {};
         this._pkType = {};
         this._dbIndex = {};
-        this._waitingCBs = {};
-        this._useWorker = useWorker;
     }
 
     public connect(complete: () => void) {
+        const idb = indexedDB.open(this._id, 1);
+        let upgrading = false;
+        let idxes = {};
 
-        if (this._useWorker) {
-
-            // blob webworker, doesn't use an external file!
-            // not supported by IE and Edge with IndexedDB, like at all.
-
-            this._w = new Worker(window.URL.createObjectURL(new Blob([this._worker])));
-            this._w.addEventListener("message", (e: MessageEvent) => {
-                this._handleWWMessage(e.data.do, e.data.args);
+        // Called only when there is no existing DB, creates the tables and data store.
+        // Sets indexes as empty arrays.
+        idb.onupgradeneeded = (event: any) => {
+            upgrading = true;
+            this._db = event.target.result;
+            Object.keys(this._dbIndex).forEach((table) => {
+                this._db.createObjectStore(table, { keyPath: this._pkKey[table] });
+                idxes[table] = [];
             });
-
-        } else {
-
-            // eval the worker, the end result being a ui thread indexed db instance.
-            // this is mostly to get IndexedDB support in IE and Edge without duplicating the indexed db code
-
-            let listeners: any[] = [];
-
-            // emulate worker behavior
-            _evalContext(this._worker, {
-                postMessage: (msg: any) => {
-                    this._handleWWMessage(msg.do, msg.args);
-                },
-                addEventListener: (type: string, listener: (e) => void) => {
-                    listeners.push(listener);
-                }
-            });
-
-            // emulate worker object
-            this._w = {
-                addEventListener: null as any,
-                postMessage: (message: any, transfer?: any[]) => {
-                    listeners.forEach((l) => {
-                        l({data: message});
-                    });
-                }
-            };
-        }
-
-        // returns indexes for each table
-        this._waitingCBs["rdy"] = (args: { [table: string]: any[] }) => {
-
-            Object.keys(args).forEach((table) => {
-                this._dbIndex[table].set(args[table]);
-            });
-            complete();
         };
 
-        this._w.postMessage({
-            do: "setup", args: {
-                pkKeys: this._pkKey,
-                id: this._id
+        // Called once the database is connected and working
+        // If an onupgrade wasn't called it's an existing DB, so we import indexes
+        idb.onsuccess = (event: any) => {
+            this._db = event.target.result;
+
+            if (!upgrading) {
+                const getIDBIndex = (tName: string, callBack: (items) => void) => {
+                    let items: any[] = [];
+                    this.store(tName, "readonly", (transaction, store) => {
+                        let cursorRequest = store.openCursor();
+                        cursorRequest.onsuccess = (evt: any) => {
+                            let cursor: IDBCursor = evt.target.result;
+                            if (cursor) {
+                                items.push(cursor.key);
+                                cursor.continue();
+                            }
+                        };
+                        transaction.oncomplete = () => {
+                            callBack(items);
+                        };
+                    });
+                };
+                fastALL(Object.keys(this._dbIndex), (table, i, tDone) => {
+                    getIDBIndex(table, (index) => {
+                        this._dbIndex[table].set(index);
+                        tDone();
+                    });
+                }).then(() => {
+                    complete();
+                });
+            } else {
+                complete();
             }
-        });
+        };
+    }
+
+    public store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void) {
+        const transaction = this._db.transaction(table, type);
+        open(transaction, transaction.objectStore(table));
     }
 
     public setID(id: string) {
         this._id = id;
-    }
-
-    private _handleWWMessage(action: string, args: any) {
-        if (this._waitingCBs[action]) {
-            this._waitingCBs[action](args);
-            delete this._waitingCBs[action];
-        }
     }
 
     public makeTable(tableName: string, dataModels: DataModel[]): void {
@@ -140,31 +119,23 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
-            throw new Error("Can't add a row without a primary key!");
+            throw new Error("nSQL: Can't add a row without a primary key!");
         }
 
         if (this._dbIndex[table].indexOf(pk) === -1) {
             this._dbIndex[table].add(pk);
         }
 
-        let queryID = uuid();
-
         let r  = {
             ...data,
             [this._pkKey[table]]: pk,
         };
 
-        this._waitingCBs["write_" + queryID] = (args: null) => {
-            complete(r);
-        };
-
-        this._w.postMessage({
-            do: "write",
-            args: {
-                table: table,
-                id: queryID,
-                row: r
-            }
+        this.store(table, "readwrite", (transaction, store) => {
+            store.put(r);
+            transaction.oncomplete = (e) => {
+                complete(r);
+            };
         });
     }
 
@@ -174,39 +145,32 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             this._dbIndex[table].remove(pk);
         }
 
-        let queryID = uuid();
-
-
-        this._waitingCBs["delete_" + queryID] = (args: null) => {
-            complete();
-        };
-
-        this._w.postMessage({
-            do: "delete", args: {
-                table: table,
-                id: queryID,
-                pk: pk
+        this.store(table, "readwrite", (transaction, store) => {
+            transaction.oncomplete = (e) => {
+                complete();
+            };
+            transaction.onerror = (e) => {
+                complete();
+            };
+            if (pk as any === "_clear_") {
+                store.clear();
+            } else {
+                store.delete(pk as any);
             }
         });
     }
 
     public read(table: string, pk: DBKey, callback: (row: any) => void): void {
-        let queryID = uuid();
         if (this._dbIndex[table].indexOf(pk) === -1) {
             callback(null);
             return;
         }
 
-        this._waitingCBs["read_" + queryID] = (args: DBRow) => {
-            callback(args);
-        };
-
-        this._w.postMessage({
-            do: "read", args: {
-                table: table,
-                id: queryID,
-                pk: pk
-            }
+        this.store(table, "readonly", (transaction, store) => {
+            const singleReq = store.get(pk);
+            singleReq.onsuccess = () => {
+                callback(singleReq.result);
+            };
         });
     }
 
@@ -220,46 +184,34 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             return;
         }
 
-        const queryID = uuid();
+        const lower = usePK && usefulValues ? from : keys[ranges[0]];
+        const higher = usePK && usefulValues ? to : keys[ranges[1]];
 
-        let rows: DBRow[] = [];
 
-        let idx = ranges[0];
-        let i = 0;
-
-        this._waitingCBs["readRange_" + queryID + "_done"] = (args: DBRow[]) => {
-            delete this._waitingCBs["readRange_" + queryID];
-            rows = args;
-
-            const getRow = () => {
-                if (idx <= ranges[1]) {
-                    rowCallback(rows[i], idx, () => {
-                        idx++;
-                        i++;
-                        i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
-                    });
-                } else {
-                    complete();
+        this.store(table, "readonly", (transaction, store) => {
+            let rows: any[] = [];
+            const cursorRequest = usefulValues ? store.openCursor(IDBKeyRange.bound(lower, higher)) : store.openCursor();
+            transaction.oncomplete = (e) => {
+                let i = 0;
+                const getRow = () => {
+                    if (rows[i]) {
+                        rowCallback(rows[i], i, () => {
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            };
+            cursorRequest.onsuccess = (evt: any) => {
+                const cursor: IDBCursorWithValue = evt.target.result;
+                if (cursor) {
+                    rows.push(cursor.value);
+                    cursor.continue();
                 }
             };
-            getRow();
-        };
-
-        /*const getNextRows = () => {
-            this._waitingCBs["readRange_" + queryID] = (args: DBRow[]) => {
-                rows = rows.concat(args);
-                getNextRows();
-            };
-        };
-        getNextRows();*/
-
-        this._w.postMessage({
-            do: "readRange",
-            args: {
-                table: table,
-                id: queryID,
-                range: usePK && usefulValues ? ranges : ranges.map(r => keys[r])
-            }
         });
     }
 
@@ -268,18 +220,9 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         let idx = new DatabaseIndex();
         idx.doAI = this._dbIndex[table].doAI;
         this._dbIndex[table] = idx;
-        let queryID = uuid();
 
-        this._waitingCBs["delete_" + queryID] = (args: null) => {
+        this.delete(table, "_clear_" as any, () => {
             callback();
-        };
-
-        this._w.postMessage({
-            do: "delete", args: {
-                table: table,
-                id: queryID,
-                pk: "_clear_"
-            }
         });
     }
 

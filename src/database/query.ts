@@ -1,10 +1,11 @@
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
-import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect, levenshtein } from "../utilities";
+import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect } from "../utilities";
 import * as metaphone from "metaphone";
 import * as stemmer from "stemmer";
 import * as fuzzy from "fuzzysearch";
+import * as levenshtein from "levenshtein-edit-distance";
 
 export interface SearchRowIndex {
     wrd: string;
@@ -308,14 +309,10 @@ export class _NanoSQLStorageQuery {
         // Step 1, remove puncuation, line breaks and set to lowercase
         let words: string[] = (value || "").toLowerCase().replace(/[^\w\s]|_/gmi, "").replace(/\r?\n|\r|\t/gmi, "").replace(/\s+/g, " ").split(" ");
         // Step 2, stem away!
-        if (args[1] === "english") {
-            return words.map((w, i) => ({ o: w, w: metaphone(stemmer(w)), i: i }));
-        }
-        if (args[1] === "english-stem") {
-            return words.map((w, i) => ({ o: w, w: stemmer(w), i: i }));
-        }
-        if (args[1] === "english-meta") {
-            return words.map((w, i) => ({ o: w, w: metaphone(w), i: i }));
+        switch (args[1]) {
+            case "english": return words.map((w, i) => ({ o: w, w: metaphone(stemmer(w)), i: i }));
+            case "english-stem": return words.map((w, i) => ({ o: w, w: stemmer(w), i: i }));
+            case "english-meta": return words.map((w, i) => ({ o: w, w: metaphone(w), i: i }));
         }
         return words.map((w, i) => ({ o: w, w, i }));
     }
@@ -886,7 +883,7 @@ export class _MutateSelection {
                 }));
             } else if (this.q.range) { // apply range statement to join
                 complete(joinedRows.filter((row: any, idx) => {
-                    return this.q.range && this.q.range[0] >= idx && this.q.range[1] <= idx;
+                    return this.q.range && this.q.range[0] >= idx && (this.q.range[0] + this.q.range[1]) - 1 <= idx;
                 }));
             } else { // send the whole result
                 complete(joinedRows);
@@ -1216,7 +1213,7 @@ export class _MutateSelection {
                 const fn = NanoSQLInstance.functions[fnName];
                 const key = column.split(" AS ").length === 1 ? fnName : (column.split(" AS ").pop() || "").trim();
                 if (!fn) {
-                    throw new Error("'" + fnName + "' is not a valid function!");
+                    throw new Error("nSQL: '" + fnName + "' is not a valid function!");
                 }
                 if (fn.type === "A") { // agregate function
                     hasAggregateFun = true;
@@ -1389,11 +1386,11 @@ export class _RowSelection {
     ) {
 
         if (this.q.join && this.q.orm) {
-            throw new Error("Cannot do a JOIN and ORM command at the same time!");
+            throw new Error("nSQL: Cannot do a JOIN and ORM command at the same time!");
         }
 
         if ([this.q.where, this.q.range, this.q.trie].filter(i => i).length > 1) {
-            throw new Error("Can only have ONE of Trie, Range or Where!");
+            throw new Error("nSQL: Can only have ONE of Trie, Range or Where!");
         }
 
         // join command requires n^2 scan that gets taken care of in join logic.
@@ -1516,7 +1513,7 @@ export class _RowSelection {
      */
     private _selectRowsByIndexOrSearch(where: any[], callback: (rows: DBRow[]) => void) {
 
-        if (where[0].indexOf("search(") !== -1) {
+        if (where[0].indexOf("search(") === 0) {
 
             let whereType = 0;
 
@@ -1527,11 +1524,22 @@ export class _RowSelection {
             }
 
             const columns: string[] = where[0].replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
-            let weights: { [rowPK: string]: { weight: number, locations: { [col: string]: { word: string, loc: number[] }[] } } } = {};
+            let weights: {
+                    [rowPK: string]: {
+                        weight: number,
+                        locations: {
+                            [col: string]: {
+                                word: string,
+                                loc: number[]
+                            }[]
+                        }
+                    }
+            } = {};
 
             let searchTermsToFound: {
                 [search: string]: string;
             } = {};
+
             fastALL(columns, (col, i, nextCol) => {
                 // tokenize search terms
                 const searchTerms = this.qu._tokenizer(col, where[2]);
@@ -1541,6 +1549,7 @@ export class _RowSelection {
                         [word: string]: { id: any, l: number, i: number[] };
                     }
                 } = {};
+                let reducedFirstLocations: any[] = [];
 
                 let tokenToTerm: { [token: string]: string } = {};
                 let termToToken: { [term: string]: string } = {};
@@ -1568,6 +1577,7 @@ export class _RowSelection {
                                         if (!reducedResults[r.id]) {
                                             reducedResults[r.id] = {};
                                         }
+                                        reducedFirstLocations.push(r.i[0]);
                                         reducedResults[r.id][term.w] = r;
                                     });
                                     nextTerm();
@@ -1610,11 +1620,9 @@ export class _RowSelection {
                                             if (!reducedResults[r.id]) {
                                                 reducedResults[r.id] = {};
                                             } else {
-                                                Object.keys(reducedResults[r.id]).forEach((rowPK) => {
-                                                    if (reducedResults[r.id][rowPK].i[0] === r.i[0]) {
-                                                        exists = true;
-                                                    }
-                                                });
+                                                if (reducedFirstLocations.indexOf(r.i[0]) !== -1) {
+                                                    exists = true;
+                                                }
                                             }
                                             if (!exists) {
                                                 const key = termToToken[term] || term;
@@ -1661,8 +1669,8 @@ export class _RowSelection {
                         weights[rowPK].locations[col] = wordLocs;
 
                         if (whereType !== 0) { // fuzzy term match
-
-
+                            // We're checking each result to see how closely it matches the search phrase.
+                            // Closer proximity === higher weight
                             searchTerms.forEach((sTerm) => {
                                 // all instances of this term in this row/column, only runs against tokenizer results
                                 let idxsTerm = reducedResults[rowPK][sTerm.w];
@@ -1734,12 +1742,14 @@ export class _RowSelection {
                 // normalize the weights
                 let max = 0;
                 const rowKeys = Object.keys(weights);
-                rowKeys.forEach((w) => {
-                    max = Math.max(max, weights[w].weight);
-                });
-                rowKeys.forEach((w) => {
-                    weights[w].weight = weights[w].weight / max;
-                });
+                let ii = rowKeys.length;
+                while (ii--) {
+                    max = Math.max(max, weights[rowKeys[ii]].weight);
+                }
+                ii = rowKeys.length;
+                while (ii--) {
+                    weights[rowKeys[ii]].weight = weights[rowKeys[ii]].weight / max;
+                }
 
                 fastALL(rowKeys.filter(pk => {
                     if (whereType === 0) return true;
@@ -1762,7 +1772,7 @@ export class _RowSelection {
                     rows.forEach((row) => {
                         const rowPK = row[pk];
                         Object.keys(weights[rowPK].locations).forEach((col) => {
-                            const rowCol: string[] = String(row[col] || "").split(" ");
+                            const rowCol: string[] = this.qu._tokenizer(col, row[col]).map(w => w.o);
                             weights[rowPK].locations[col].forEach((matches) => {
                                 matches.loc.forEach((idx) => {
                                     const lev = levenshtein(rowCol[idx], matches.word);
@@ -1779,12 +1789,14 @@ export class _RowSelection {
                     // normalize weights again
                     let max = 0;
                     const rowKeys = Object.keys(weights);
-                    rowKeys.forEach((w) => {
-                        max = Math.max(max, weights[w].weight);
-                    });
-                    rowKeys.forEach((w) => {
-                        weights[w].weight = weights[w].weight / max;
-                    });
+                    let ii = rowKeys.length;
+                    while (ii--) {
+                        max = Math.max(max, weights[rowKeys[ii]].weight);
+                    }
+                    ii = rowKeys.length;
+                    while (ii--) {
+                        weights[rowKeys[ii]].weight = weights[rowKeys[ii]].weight / max;
+                    }
 
                     callback(rows.filter(r => {
                         if (whereType === 0) return true;
@@ -1861,10 +1873,10 @@ export class _RowSelection {
         if (this.q.range) {
             const r: any[] = this.q.range;
             if (r[0] > 0) { // positive limit value, we can send this straight to the adapter
-                this.s._rangeRead(this.q.table as any, r[1], r[1] + r[0], false, callback);
+                this.s._rangeRead(this.q.table as any, r[1], (r[1] + r[0]) - 1, false, callback);
             } else { // using negative limit value to get rows at the end of the database.
                 this.s.adapters[0].adapter.getIndex(this.q.table as any, true, (count: number) => {
-                    const fromIdx = r[0] > 0 ? r[1] : count + r[0] - r[1];
+                    const fromIdx = count + r[0] - r[1];
 
                     let toIdx = fromIdx;
                     let counter = Math.abs(r[0]) - 1;
@@ -2038,7 +2050,7 @@ export class InstanceSelection {
     public getRows(callback: (rows: DBRow[]) => void) {
 
         if (this.q.join || this.q.orm || this.q.trie) {
-            throw new Error("Cannot do a JOIN, ORM or TRIE command with instance table!");
+            throw new Error("nSQL: Cannot do a JOIN, ORM or TRIE command with instance table!");
         }
 
 
@@ -2100,7 +2112,7 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
             if (wArg[0].indexOf("search(") !== -1 && searchCache) {
                 compareResult = searchCache[idx].map(r => r[pk]).indexOf(singleRow[pk]) !== -1;
             } else {
-                compareResult = _compare(wArg[2], wArg[1], objQuery(wArg[0], singleRow, ignoreFirstPath));
+                compareResult = _compare(wArg, singleRow, ignoreFirstPath || false);
             }
 
             // if all conditions are "AND" we can stop checking on the first false result
@@ -2117,10 +2129,13 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
             }
         }, false);
     } else { // single where statement
-        return _compare(where[2], where[1], objQuery(where[0], singleRow, ignoreFirstPath));
+        return _compare(where, singleRow, ignoreFirstPath || false);
     }
 };
 
+const likeCache: {[likeQuery: string]: RegExp} = {};
+const whereLevenshtienCache: {[value: string]: string[]} = {};
+const wordLevenshtienCache: {[words: string]: number} = {};
 
 /**
  * Compare function used by WHERE to determine if a given value matches a given condition.
@@ -2131,56 +2146,75 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
  * @param {*} val2
  * @returns {boolean}
  */
-const _compare = (val1: any, compare: string, val2: any): boolean => {
+const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
 
-    const setValue = (val: any) => {
-        return ["LIKE", "NOT LIKE"].indexOf(compare) > -1 ? String(val || "").toLowerCase() : val;
+    if (whereLevenshtienCache[where[0]] === undefined) {
+        whereLevenshtienCache[where[0]] = where[0].indexOf("levenshtein(") === 0 ? where[0].replace(/levenshtein\((.*,.*)\)/gmi, "$1").split(",").map(s => s.trim()) : [];
+    }
+
+    const processLIKE = (columnValue: string, givenValue: string): boolean => {
+        if (!likeCache[givenValue]) {
+            likeCache[givenValue] = new RegExp("^" + givenValue.replace(/\%/gm, ".*").replace(/\_/gm, ".") + "$", "gmi");
+        }
+        return columnValue.match(likeCache[givenValue]) !== null;
     };
 
-    const columnValue = setValue(val2);
-    const givenValue = setValue(val1);
+    const getColValue = () => {
+        if (whereLevenshtienCache[where[0]] && whereLevenshtienCache[where[0]].length) {
+            const val = objQuery(whereLevenshtienCache[where[0]][1], wholeRow, isJoin);
+            const key = (val || "") + "::"  + whereLevenshtienCache[where[0]][0];
+            if (!wordLevenshtienCache[key]) {
+                wordLevenshtienCache[key] = levenshtein(val || "", whereLevenshtienCache[where[0]][0]);
+            }
+            return wordLevenshtienCache[key];
+        } else {
+            const val = objQuery(where[0], wholeRow, isJoin);
+            return ["LIKE", "NOT LIKE"].indexOf(compare) > -1 ? String(val || "") : val;
+        }
+    };
 
-    if (val1 === "NULL" || val1 === "NOT NULL") {
-        const pos = compare === "=" || compare === "LIKE";
-        return (val1 === "NULL" ?
-            (val2 === null || val2 === undefined) :
-            (val2 !== null && val2 !== undefined)) ?
-            (pos ? true : false) : (pos ? false : true);
+    const givenValue = where[2];
+    const columnValue = getColValue();
+    const compare = where[1];
+
+    switch (givenValue) {
+        case "NULL": return [undefined, null].indexOf(columnValue) !== -1;
+        case "NOT NULL": return [undefined, null].indexOf(columnValue) === -1;
     }
 
     switch (compare) {
         // if column equal to given value
-        case "=": return columnValue === givenValue ? true : false;
+        case "=": return columnValue === givenValue;
         // if column not equal to given value
-        case "!=": return columnValue !== givenValue ? true : false;
+        case "!=": return columnValue !== givenValue;
         // if column greather than given value
-        case ">": return columnValue > givenValue ? true : false;
+        case ">": return columnValue > givenValue;
         // if column less than given value
-        case "<": return columnValue < givenValue ? true : false;
+        case "<": return columnValue < givenValue;
         // if column less than or equal to given value
-        case "<=": return columnValue <= givenValue ? true : false;
+        case "<=": return columnValue <= givenValue;
         // if column greater than or equal to given value
-        case ">=": return columnValue >= givenValue ? true : false;
+        case ">=": return columnValue >= givenValue;
         // if column value exists in given array
         case "IN": return (givenValue || []).indexOf(columnValue) < 0 ? false : true;
         // if column does not exist in given array
-        case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0 ? true : false;
+        case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0;
         // regexp search the column
-        case "REGEX": return columnValue.match(givenValue).length ? true : false;
+        case "REGEX": return columnValue.match(givenValue) !== null;
         // if given value exists in column value
-        case "LIKE": return String(columnValue || "").toLowerCase().indexOf(givenValue) < 0 ? false : true;
+        case "LIKE": return processLIKE(columnValue, givenValue);
         // if given value does not exist in column value
-        case "NOT LIKE": return String(columnValue || "").toLowerCase().indexOf(givenValue) >= 0 ? false : true;
+        case "NOT LIKE": return !processLIKE(columnValue, givenValue);
         // if the column value is between two given numbers
-        case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue ? true : false;
+        case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
         // if single value exists in array column
         case "HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? false : true;
         // if single value does not exist in array column
-        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? true : false;
+        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) < 0;
         // if array of values intersects with array column
-        case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0 ? true : false;
+        case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0;
         // if array of values does not intersect with array column
-        case "NOT INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === 0 ? true : false;
+        case "NOT INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === 0;
         default: return false;
     }
 };

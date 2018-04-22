@@ -7,7 +7,7 @@ import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 
-const VERSION = 1.50;
+const VERSION = 1.51;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -29,9 +29,9 @@ export interface NanoSQLConfig {
     readCache?: number; // read cache (used by LevelDB)
     size?: number; // size of WebSQL database
     tokenizer?: (table: string, column: string, args: string[], value: string) => {
-        o: string;
-        w: string;
-        i: number;
+        o: string; // original string
+        w: string; // tokenized output
+        i: number; // location of string
     }[] | boolean;
     [key: string]: any;
 }
@@ -333,6 +333,7 @@ export class NanoSQLInstance {
     constructor() {
 
         let t = this;
+        t.isConnected = false;
         t._actions = {};
         t._views = {};
         t.dataModels = {};
@@ -469,7 +470,7 @@ export class NanoSQLInstance {
                 this.use(new NanoSQLDefaultBackend());
             }
 
-            fastCHAIN(this.plugins, (p, i, nextP) => {
+            fastCHAIN(t.plugins, (p, i, nextP) => {
                 if (p.willConnect) {
                     p.willConnect(connectArgs, (newArgs) => {
                         connectArgs = newArgs;
@@ -479,33 +480,33 @@ export class NanoSQLInstance {
                     nextP();
                 }
             }).then(() => {
-                this.dataModels = connectArgs.models;
-                this._actions = connectArgs.actions;
-                this._views = connectArgs.views;
-                this._config = connectArgs.config;
+                t.dataModels = connectArgs.models;
+                t._actions = connectArgs.actions;
+                t._views = connectArgs.views;
+                t._config = connectArgs.config;
 
-                Object.keys(this.dataModels).forEach((table) => {
+                Object.keys(t.dataModels).forEach((table) => {
                     let hasWild = false;
-                    this.dataModels[table] = this.dataModels[table].filter((model) => {
+                    t.dataModels[table] = t.dataModels[table].filter((model) => {
                         if (model.key === "*" && model.type === "*") {
                             hasWild = true;
                             return false;
                         }
                         return true;
                     });
-                    this.skipPurge[table] = hasWild;
+                    t.skipPurge[table] = hasWild;
                 });
 
-                this.plugins.forEach((plugin) => {
+                t.plugins.forEach((plugin) => {
                     if (plugin.didExec) {
-                        this.pluginHasDidExec = true;
+                        t.pluginHasDidExec = true;
                     }
                 });
 
-                t.tableNames = Object.keys(this.dataModels);
+                t.tableNames = Object.keys(t.dataModels);
 
                 const completeConnect = () => {
-                    fastALL(this.plugins, (p, i, nextP) => {
+                    fastALL(t.plugins, (p, i, nextP) => {
                         if (p.didConnect) {
                             p.didConnect(connectArgs, () => {
                                 nextP();
@@ -514,18 +515,18 @@ export class NanoSQLInstance {
                             nextP();
                         }
                     }).then(() => {
-                        this.isConnected = true;
-                        if (this._onConnectedCallBacks.length) {
-                            this._onConnectedCallBacks.forEach(cb => cb());
+                        t.isConnected = true;
+                        if (t._onConnectedCallBacks.length) {
+                            t._onConnectedCallBacks.forEach(cb => cb());
                         }
                         res(t.tableNames);
                     });
                 };
 
                 const updateVersion = (rebuildIDX: boolean) => {
-                    this.query("upsert", { key: "version", value: this.version }).manualExec({ table: "_util" }).then(() => {
+                    t.query("upsert", { key: "version", value: t.version }).manualExec({ table: "_util" }).then(() => {
                         if (rebuildIDX) {
-                            this.extend("rebuild_idx").then(() => {
+                            t.extend("rebuild_idx").then(() => {
                                 completeConnect();
                             });
                         } else {
@@ -534,7 +535,7 @@ export class NanoSQLInstance {
                     });
                 };
 
-                this.query("select").where(["key", "=", "version"]).manualExec({ table: "_util" }).then((rows) => {
+                t.query("select").where(["key", "=", "version"]).manualExec({ table: "_util" }).then((rows) => {
                     if (!rows.length) {
                         // new database or an old one that needs indexes rebuilt
                         updateVersion(true);

@@ -49,12 +49,12 @@ NanoSQL can save data to several different places, depending on the browser or e
     - WebSQL
     - Local Storage
 
-2. **[SQLite (NodeJS)](https://github.com/ClickSimply/Nano-SQLite3)**
-3. **[SQLite (Cordova)](https://github.com/ClickSimply/cordova-Nano-SQLite)**
+2. **[SQLite (NodeJS)](https://www.npmjs.com/package/nano-sqlite)**
+3. **[SQLite (Cordova)](https://www.npmjs.com/package/cordova-plugin-nano-sqlite)**
 4. **[MySQL](https://www.npmjs.com/package/nano-mysql)**
 5. **[React Native](https://www.npmjs.com/package/nano-react-native)**
-6. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
-7. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
+6. **[Redis](https://www.npmjs.com/package/nano-redis)**
+7. **[Google Cloud Datastore](https://www.npmjs.com/package/nano-gcloud-datastore)**
 
 ## Installation
 

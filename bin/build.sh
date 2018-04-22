@@ -7,41 +7,41 @@ rm -rf docs
 rm -rf lib
 mkdir docs
 
-echo "(1/6) Clean Completed..."
+echo "(1/5) Clean Completed..."
 
 #compile web worker
-./node_modules/.bin/tsc --removeComments -t "es5" --out "./src/database/adapter-indexedDB-worker.txt" ./src/database/adapter-indexedDB-worker.ts
+#./node_modules/.bin/tsc --removeComments -t "es5" --out "./src/database/adapter-indexedDB-worker.txt" ./src/database/adapter-indexedDB-worker.ts
 #compress web worker
-./node_modules/.bin/uglifyjs --compress --mangle toplevel --output src/database/adapter-indexedDB-worker.txt  -- src/database/adapter-indexedDB-worker.txt
+#./node_modules/.bin/uglifyjs --compress --mangle toplevel --output src/database/adapter-indexedDB-worker.txt  -- src/database/adapter-indexedDB-worker.txt
 
-echo "(2/6) Worker Build Completed..."
+#echo "(2/6) Worker Build Completed..."
 
 #type declerations & node build
 ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
 
-echo "(3/6) Node Build & Type Declarations Completed..."
+echo "(2/5) Node Build & Type Declarations Completed..."
 
 # Move the web worker TXT file into the JS file to prevent folks from having to setup a custom build environment for the TXT file.
-file=$(cat src/database/adapter-indexedDB-worker.txt);
-sed -i "s#require(\"./adapter-indexedDB-worker.txt\")#'${file//&/\\&}'#" lib/database/adapter-indexedDB.js
-rm -rf lib/database/*.txt;
+#file=$(cat src/database/adapter-indexedDB-worker.txt);
+#sed -i "s#require(\"./adapter-indexedDB-worker.txt\")#'${file//&/\\&}'#" lib/database/adapter-indexedDB.js
+#rm -rf lib/database/*.txt;
 
 
 #browser build
 export NODE_ENV=production && ./node_modules/.bin/webpack --display-modules
 
-echo "(4/6) Browser Build Completed..."
+echo "(3/5) Browser Build Completed..."
 
 #docs 
 ./node_modules/.bin/typedoc --out docs --includes src --target ES5 --exclude node_modules --excludeExternals --excludePrivate
 touch docs/.nojekyll
-echo "(5/6) Docs Completed..."
+echo "(4/5) Docs Completed..."
 
 #copy from examples into dist folder
 yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
 rm -rf src/*.js
 
-echo "(6/6) Cleaning up..."
+echo "(5/5) Cleaning up..."
 
 echo "Build Completed. Size Info:"
 

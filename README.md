@@ -49,27 +49,12 @@ NanoSQL can save data to several different places, depending on the browser or e
     - WebSQL
     - Local Storage
 
-2. **[SQLite (NodeJS)](https://github.com/ClickSimply/Nano-SQLite3)**
-3. **[SQLite (Cordova)](https://github.com/ClickSimply/cordova-Nano-SQLite)**
+2. **[SQLite (NodeJS)](https://www.npmjs.com/package/nano-sqlite)**
+3. **[SQLite (Cordova)](https://www.npmjs.com/package/cordova-plugin-nano-sqlite)**
 4. **[MySQL](https://www.npmjs.com/package/nano-mysql)**
 5. **[React Native](https://www.npmjs.com/package/nano-react-native)**
-6. **[Redis](https://github.com/ClickSimply/Nano-Redis)**
-7. **[Google Cloud Datastore](https://github.com/ClickSimply/Nano-GoogleCloudstore)**
-
-### Oh Look, Another Data Store
-
-I looked for existing solution that would do everything I needed and couldn't find one, here's some of the other data stores I looked into and why I didn't end up using them:
-
-|           | nanoSQL | Redux | TaffyDB | Immutable | LokiJS | NeDB | LoveField | PouchDB | alaSQL | SQL.js |
-|-----------|---------|-------|---------|-----------|--------|------|-----------|---------|--------|--------|
-| Events    | ✓       | ✓     | ✓       | ✕         | ✓      | ✕    | ✓         | ✓       | ✕      | ✕      |
-| Typescript| ✓       | ✓     | ✕       | ✓         | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      |
-| Undo/Redo | ✓       | ✕     | ✕       | ✕         | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
-| ORM       | ✓       | ✕     | ✕       | ✕         | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
-| RDBMS     | ✓       | ✕     | ✓       | ✕         | ✓      | ✓    | ✓         | ✓       | ✓      | ✓      |
-| IndexedDB | ✓       | ✕     | ✕       | ✕         | ✓      | ✕    | ✓         | ✓       | ✓      | ✕      |
-| Node      | ✓       | ✓     | ✓       | ✓         | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      |
-| Size (kb) | 25      | 2      | 5       | 16        | 19      | 27   | 40         | 46      | 88     | 500    |
+6. **[Redis](https://www.npmjs.com/package/nano-redis)**
+7. **[Google Cloud Datastore](https://www.npmjs.com/package/nano-gcloud-datastore)**
 
 ## Installation
 
@@ -92,7 +77,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.5.0/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.5.1/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

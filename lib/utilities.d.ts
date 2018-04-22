@@ -108,16 +108,6 @@ export declare const cleanArgs: (argDeclarations: string[], args: StdObject<any>
  */
 export declare const isObject: (val: any) => boolean;
 /**
- * Calculate Lavenshtein distance between two strings.
- *
- * Stolen from https://gist.github.com/andrei-m/982927
- *
- * @param {string} a
- * @param {string} b
- * @returns {number}
- */
-export declare const levenshtein: (a: string, b: string) => number;
-/**
  * Cast a javascript variable to a given type. Supports typescript primitives and more specific types.
  *
  * @param {string} type

@@ -88,6 +88,24 @@ describe("Where", () => {
         });
     });
 
+    it("Select multiple rows by Levenshtein distance.", (done: MochaDone) => {
+        usersDB(ExampleDataModel, (nSQL) => {
+            nSQL.loadJS("users", ExampleUsers).then(() => {
+                nSQL.table("users").query("select").where(["levenshtein(bib, name)", "<", 3]).exec().then((rows) => {
+                    try {
+                        expect(rows).to.deep.equal([
+                            {id: 2, name: "Jeb", age: 24, email: "jeb@gmail.com", meta: {value: 1}, posts: [1]},
+                            {id: 3, name: "Bob", age: 21, email: "bob@gmail.com", meta: {value: 1}, posts: [1, 2, 3]}
+                        ], "Levenshtein select failed!");
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                });
+            });
+        });
+    });
+
     it("Select multiple rows using IN statement", (done: MochaDone) => {
         usersDB(ExampleDataModel, (nSQL) => {
             nSQL.loadJS("users", ExampleUsers).then(() => {
@@ -217,15 +235,34 @@ describe("Where", () => {
     it("Select using range.", (done: MochaDone) => {
         usersDB(ExampleDataModel, (nSQL) => {
             nSQL.loadJS("users", ExampleUsers).then(() => {
-                nSQL.table("users").query("select").range(1, 2).exec().then((rows) => {
+                nSQL.table("users").query("select").range(2, 1).exec().then((rows) => {
                     try {
                         expect(rows).to.deep.equal([
+                            {id: 2, name: "Jeb", age: 24, email: "jeb@gmail.com", meta: {value: 1}, posts: [1]},
                             {id: 3, name: "Bob", age: 21, email: "bob@gmail.com", meta: {value: 1}, posts: [1, 2, 3]}
                         ], "Range select failed!");
                         done();
                     } catch (e) {
                         done(e);
                     }
+                });
+            });
+        });
+    });
+
+    it("Range and Limit/Offset should match.", (done: MochaDone) => {
+        usersDB(ExampleDataModel, (nSQL) => {
+            nSQL.loadJS("users", ExampleUsers).then(() => {
+                nSQL.table("users").query("select").range(2, 1).exec().then((rows) => {
+                    nSQL.table("users").query("select").limit(2).offset(1).exec().then((rows2) => {
+                        try {
+                            expect(rows).to.deep.equal(rows2, "Limit/offset and range don't match!");
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    });
+
                 });
             });
         });

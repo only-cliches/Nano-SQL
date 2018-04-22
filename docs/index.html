@@ -122,139 +122,14 @@
 							<li>Local Storage</li>
 						</ul>
 					</li>
-					<li><p><strong><a href="https://github.com/ClickSimply/Nano-SQLite3">SQLite (NodeJS)</a></strong></p>
+					<li><p><strong><a href="https://www.npmjs.com/package/nano-sqlite">SQLite (NodeJS)</a></strong></p>
 					</li>
-					<li><strong><a href="https://github.com/ClickSimply/cordova-Nano-SQLite">SQLite (Cordova)</a></strong></li>
+					<li><strong><a href="https://www.npmjs.com/package/cordova-plugin-nano-sqlite">SQLite (Cordova)</a></strong></li>
 					<li><strong><a href="https://www.npmjs.com/package/nano-mysql">MySQL</a></strong></li>
 					<li><strong><a href="https://www.npmjs.com/package/nano-react-native">React Native</a></strong></li>
-					<li><strong><a href="https://github.com/ClickSimply/Nano-Redis">Redis</a></strong></li>
-					<li><strong><a href="https://github.com/ClickSimply/Nano-GoogleCloudstore">Google Cloud Datastore</a></strong></li>
+					<li><strong><a href="https://www.npmjs.com/package/nano-redis">Redis</a></strong></li>
+					<li><strong><a href="https://www.npmjs.com/package/nano-gcloud-datastore">Google Cloud Datastore</a></strong></li>
 				</ol>
-				<h3 id="oh-look-another-data-store">Oh Look, Another Data Store</h3>
-				<p>I looked for existing solution that would do everything I needed and couldn&#39;t find one, here&#39;s some of the other data stores I looked into and why I didn&#39;t end up using them:</p>
-				<table>
-					<thead>
-						<tr>
-							<th></th>
-							<th>nanoSQL</th>
-							<th>Redux</th>
-							<th>TaffyDB</th>
-							<th>Immutable</th>
-							<th>LokiJS</th>
-							<th>NeDB</th>
-							<th>LoveField</th>
-							<th>PouchDB</th>
-							<th>alaSQL</th>
-							<th>SQL.js</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>Events</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Typescript</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Undo/Redo</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>ORM</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>RDBMS</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>IndexedDB</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Node</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Size (kb)</td>
-							<td>25</td>
-							<td>2</td>
-							<td>5</td>
-							<td>16</td>
-							<td>19</td>
-							<td>27</td>
-							<td>40</td>
-							<td>46</td>
-							<td>88</td>
-							<td>500</td>
-						</tr>
-					</tbody>
-				</table>
 				<h2 id="installation">Installation</h2>
 				<pre><code class="lang-sh">npm i nano-sql --save
 </code></pre>
@@ -265,7 +140,7 @@
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"nano-sql"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/nano-sql@1.5.0/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/nano-sql@1.5.1/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="simple-usage">Simple Usage</h2>
 				<p>1 minute minimal quick start:</p>
@@ -513,6 +388,9 @@ nSQL().extend(<span class="hljs-string">"hist"</span>, <span class="hljs-string"
 				<ul>
 					<li class="globals  ">
 						<a href="globals.html"><em>Globals</em></a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_adapter_test_.html">"adapter-<wbr>test"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_history_plugin_.html">"history-<wbr>plugin"</a>

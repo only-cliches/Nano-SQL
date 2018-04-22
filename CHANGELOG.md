@@ -4,14 +4,24 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.1] 4-22-2018
+- LIKE now uses MySQL LIKE syntax with `%` and `_` characters.
+- Added `levenshtein` query operator to allow you to get rows based on levenshtien distance. Usage: `nSQ("users").query("select").where(["levenshtein(wordToCompare, column)", "<", 4]).exec()..`
+- Moved to a different, much faster (3x), Levenshtein implementation.
+- Fixed `.range()` implementation to match `.limit().offset()` behavior, added test to make sure it stays that way.
+- Added is connected check on each query to return better error messages.
+- All errors now show `nSQL` prefix.
+- IndexedDB no longer has a "Webworkers" option, this reduces the build size and increases security since we no longer need to use blob workers or eval.
+- Added a new browser based test for all the browser based adapters.
+- Updated binary search again, it wasn't working with the new adapter tests. 
+
 ## [1.5.0] 4-18-2018
 BREAKING CHANGE (Custom Function API), PLEASE READ THE [MIGRATION GUIDE](https://docs.nanosql.io/fine-print/migration)
 - Raw import now happens incrimentally and has a onProgress callback.
 - Rebuilding search index and secondary indexes now have onProgress callback.
 - `default` was overwriting at incorrect times, fixed bug and added tests.
-- Increased sorted index performance for large datasets.
 - Functions weren't working on JOIN queries, fixed and added tests.
-- New faster binary search implimentation courtesy of [Olical](https://github.com/Olical/binary-search).
+- New faster binary search implimentation.
 
 ## [1.4.9] 4-17-2018
 - Fixed search bug with null rows.

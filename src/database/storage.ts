@@ -205,7 +205,7 @@ export class _NanoSQLStorage {
             }
             _trieColumns: string[] // trie columns
             _keys: string[] // array of columns
-            _defaults: {[column: string]: any};
+            _defaults: { [column: string]: any };
             _hasDefaults: boolean;
             _views: { // views present on this table
                 [table: string]: {
@@ -426,10 +426,8 @@ export class _NanoSQLStorage {
 
             switch (this._mode) {
                 case "IDB":
-                    this.adapters[0].adapter = new _IndexedDBStore(false);
-                    break;
                 case "IDB_WW":
-                    this.adapters[0].adapter = new _IndexedDBStore(true);
+                    this.adapters[0].adapter = new _IndexedDBStore();
                     break;
                 case "WSQL":
                     this.adapters[0].adapter = new _WebSQLStore(this._size);
@@ -691,27 +689,15 @@ export class _NanoSQLStorage {
             return "WSQL";
         }
 
-        // IE and Edge don't support Indexed DB web workers, and may not support indexed db at all.
-        if (isMSBrowser) {
-            return typeof indexedDB !== "undefined" ? "IDB" : "LS";
+        // everyone else (FF + Chrome + Edge + IE)
+        // check for support for indexed db, web workers and blob
+        if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
+            return "IDB";
         }
 
-        // everyone else (FF + Chrome)
-        // check for support for indexed db, web workers and blob
-        if ([typeof Worker, typeof Blob, typeof indexedDB].indexOf("undefined") === -1 && window.URL && window.URL.createObjectURL) {
-            try {
-                const w = new Worker(window.URL.createObjectURL(new Blob(["var t = 't';"])));
-                w.postMessage("");
-                w.terminate();
-                const idbID = "1234";
-                indexedDB.open(idbID, 1);
-                indexedDB.deleteDatabase(idbID);
-                return "IDB_WW";
-            } catch (e) { // worker, blob, or indexed DB failed
-                if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
-                    return "IDB";
-                }
-            }
+        // Use WebSQL if it's there.
+        if (typeof window !== "undefined" && typeof window.openDatabase !== "undefined") {
+            return "WSQL";
         }
 
         // nothing else works, we gotta do local storage. :(
@@ -956,7 +942,7 @@ export class _NanoSQLStorage {
      */
     public _delete(table: string, pk: DBKey, complete: (row: DBRow) => void) {
         if (!pk) {
-            throw new Error("Can't delete without a primary key!");
+            throw new Error("nSQL: Can't delete without a primary key!");
         } else {
 
             // update secondary indexes
@@ -1039,7 +1025,7 @@ export class _NanoSQLStorage {
                             ];
                             dataModels["_" + table + "_search_tokens_" + model.key] = [
                                 { key: "id", type: pkType, props: ["pk"] },
-                                { key: "hash", type: "string"},
+                                { key: "hash", type: "string" },
                                 { key: "tokens", type: "any[]" }
                             ];
                         }
@@ -1047,7 +1033,7 @@ export class _NanoSQLStorage {
                 }
             });
             if ((hasIDX || hasSearch) && !pkType) {
-                throw new Error("Tables with secondary indexes or search() must have a primary key!");
+                throw new Error("nSQL: Tables with secondary indexes or search() must have a primary key!");
             }
         });
 
@@ -1130,7 +1116,7 @@ export class _NanoSQLStorage {
                         }
                     }
 
-                    if (prop.indexOf("search(") !== -1) {
+                    if (prop.indexOf("search(") === 0) {
                         this.tableInfo[tableName]._searchColumns[p.key] = prop.replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
                     }
                 });

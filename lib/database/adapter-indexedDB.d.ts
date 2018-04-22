@@ -13,14 +13,11 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _pkType;
     private _dbIndex;
     private _id;
-    private _w;
-    private _waitingCBs;
-    private _useWorker;
-    private _worker;
-    constructor(useWorker: boolean);
+    private _db;
+    constructor();
     connect(complete: () => void): void;
+    store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void): void;
     setID(id: string): void;
-    private _handleWWMessage(action, args);
     makeTable(tableName: string, dataModels: DataModel[]): void;
     write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void;
     delete(table: string, pk: DBKey, complete: () => void): void;

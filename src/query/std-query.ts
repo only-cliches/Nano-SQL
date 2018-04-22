@@ -642,7 +642,7 @@ export class _NanoSQLQuery {
             this._query.action = a;
             this._query.actionArgs = this._query.actionArgs ? newArgs : undefined;
         } else {
-            throw Error("No valid database action!");
+            throw Error("nSQL: No valid database action!");
         }
 
         return new Promise((res, rej) => {
@@ -657,12 +657,16 @@ export class _NanoSQLQuery {
                 return;
             }
 
+            if (t._db.isConnected !== true && t._query.table !== "_util") {
+                t._error = "nSQL: Database not connected, can't do a query!";
+            }
+
             if (!t._db.plugins.length) {
-                t._error = "No plugins, nothing to do!";
+                t._error = "nSQL: No plugins, nothing to do!";
             }
 
             if (t._error) {
-                rej(t._error, this._db);
+                rej(t._error);
                 return;
             }
 

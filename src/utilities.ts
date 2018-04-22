@@ -257,51 +257,6 @@ export const isObject = (val: any): boolean => {
 };
 
 /**
- * Calculate Lavenshtein distance between two strings.
- *
- * Stolen from https://gist.github.com/andrei-m/982927
- *
- * @param {string} a
- * @param {string} b
- * @returns {number}
- */
-export const levenshtein = (a: string, b: string): number => {
-    if (a.length === 0) return b.length;
-    if (b.length === 0) return a.length;
-    let tmp, i, j, prev, val, row;
-    // swap to save some memory O(min(a,b)) instead of O(a)
-    if (a.length > b.length) {
-        tmp = a;
-        a = b;
-        b = tmp;
-    }
-
-    row = Array(a.length + 1);
-    // init the row
-    for (i = 0; i <= a.length; i++) {
-        row[i] = i;
-    }
-
-    // fill in the rest
-    for (i = 1; i <= b.length; i++) {
-        prev = i;
-        for (j = 1; j <= a.length; j++) {
-            if (b[i - 1] === a[j - 1]) {
-                val = row[j - 1]; // match
-            } else {
-                val = Math.min(row[j - 1] + 1, // substitution
-                    Math.min(prev + 1,     // insertion
-                        row[j] + 1));  // deletion
-            }
-            row[j - 1] = prev;
-            prev = val;
-        }
-        row[a.length] = prev;
-    }
-    return row[a.length];
-};
-
-/**
  * Cast a javascript variable to a given type. Supports typescript primitives and more specific types.
  *
  * @param {string} type
@@ -388,9 +343,9 @@ export const sortedInsert = (arr: any[], value: any, startVal?: number, endVal?:
 };
 
 
+
 /**
  * Given a sorted array and a value, find where that value fits into the array.
- * Thanks to Olical for this. https://github.com/Olical/binary-search
  *
  * @param {any[]} arr
  * @param {*} value
@@ -400,34 +355,18 @@ export const sortedInsert = (arr: any[], value: any, startVal?: number, endVal?:
  */
 export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?: number): number => {
 
-    let min = 0;
-    let max = arr.length - 1;
-    let guess;
-    if (value < arr[min]) return 0;
-    if (value > arr[max]) return max + 1;
+    const start = startVal || 0;
+    const end = endVal || arr.length;
 
-    let bitwise = (max <= 2147483647) ? true : false;
-    if (bitwise) {
-        while (min <= max) {
-            guess = (min + max) >> 1;
-            if (arr[guess] === value) { return guess; }
-            else {
-                if (arr[guess] < value) { min = guess + 1; }
-                else { max = guess - 1; }
-            }
-        }
-    } else {
-        while (min <= max) {
-            guess = Math.floor((min + max) / 2);
-            if (arr[guess] === value) { return guess; }
-            else {
-                if (arr[guess] < value) { min = guess + 1; }
-                else { max = guess - 1; }
-            }
-        }
-    }
+    if (arr[start] > value) return 0;
+    if (arr[end] < value) return end + 1;
 
-    return guess;
+    const m = Math.floor((start + end) / 2);
+    if (value === arr[m]) return m;
+    if (end - 1 === start) return end;
+    if (value > arr[m]) return binarySearch(arr, value, m, end);
+    if (value < arr[m]) return binarySearch(arr, value, start, m);
+    return end;
 };
 
 /**

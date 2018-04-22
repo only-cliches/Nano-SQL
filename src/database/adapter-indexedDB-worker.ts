@@ -153,7 +153,7 @@ const IDBWorker: {
         readRange: (args) => {
             IDBWorker.store(args.table, "readonly", (transaction, store, msg) => {
                 let rows = [];
-                const cursorRequest = args.range.indexOf(undefined) === -1 ? store.openCursor(IDBKeyRange.bound(args.range[0], args.range[1])) : store.openCursor();
+                const cursorRequest = args.range.indexOf(undefined) === -1 ? store.openCursor(IDBKeyRange.bound(args.range[0], args.range[1], true, true)) : store.openCursor();
                 transaction.oncomplete = msg("readRange_" + args.id + "_done", rows);
                 cursorRequest.onsuccess = (evt: any) => {
                     const cursor: IDBCursorWithValue = evt.target.result;

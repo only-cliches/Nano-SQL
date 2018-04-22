@@ -81,7 +81,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
-            throw new Error("Can't add a row without a primary key!");
+            throw new Error("nSQL: Can't add a row without a primary key!");
         }
 
 
@@ -102,14 +102,12 @@ export class _SyncStore implements NanoSQLStorageAdapter {
             localStorage.setItem(this._id + "*" + table + "__" + pk, JSON.stringify(r));
             complete(r);
         } else {
-
             const r = {
                 ...data,
                 [this._pkKey[table]]: pk,
             };
             this._rows[table][pk as any] = deepFreeze(r);
             complete(r);
-
         }
     }
 
@@ -148,7 +146,10 @@ export class _SyncStore implements NanoSQLStorageAdapter {
         }
 
         if (usePK && usefulValues) {
-            ranges = ranges.map(r => this._dbIndex[table].getLocation(r));
+            ranges = ranges.map(r => {
+                const idxOf = this._dbIndex[table].indexOf(r);
+                return idxOf !== -1 ? idxOf : this._dbIndex[table].getLocation(r);
+            });
         }
 
         let idx = ranges[0];

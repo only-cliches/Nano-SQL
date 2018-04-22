@@ -9,7 +9,8 @@ const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 const options = {
     entry: {
-        'nano-sql': [path.join(__dirname, 'src', 'index.ts')]
+        'nano-sql': [path.join(__dirname, 'src', 'index.ts')],
+        'adapter-test': [path.join(__dirname, "src", "adapter-test.ts")]
     },
     output: {
         path: PATHS.build,
@@ -39,7 +40,7 @@ const options = {
         new UglifyJSPlugin({
             uglifyOptions: {
                 mangle: {
-                    //properties: { regex: new RegExp(/^_|Promise/) }
+                    // properties: { regex: new RegExp(/^_|Promise/) }
                 }
             }
         })
