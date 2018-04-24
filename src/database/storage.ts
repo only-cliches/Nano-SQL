@@ -404,7 +404,7 @@ export class _NanoSQLStorage {
         this.tableInfo = {};
         this._trieIndexes = {};
         this._tableNames = [];
-        this._doCache = args.cache || true;
+        this._doCache = typeof args.cache !== "undefined" ? args.cache : true;
         this._cache = {};
 
         this.adapters[0] = {

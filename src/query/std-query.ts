@@ -606,41 +606,53 @@ export class _NanoSQLQuery {
 
         if (["select", "upsert", "delete", "drop", "show tables", "describe"].indexOf(a) > -1) {
 
-            let newArgs = this._query.actionArgs || (a === "select" || a === "delete" ? [] : {});
-
+            let newArgs = this._query.actionArgs || (a === "select" ? [] : {});
+            let setArgs: any = [];
             if (a === "upsert") {
 
-                // Do Row Filter
-                if (this._db.rowFilters[this._query.table as string]) {
-                    newArgs = this._db.rowFilters[this._query.table as string](newArgs);
+                if (Array.isArray(newArgs)) {
+                    setArgs = newArgs;
+                } else {
+                    setArgs = [newArgs];
                 }
 
-                // Cast row types and remove columns that don't exist in the data model
-                let inputArgs = {};
-                const models = this._db.dataModels[this._query.table as string];
-
-                let k = 0;
-                while (k < models.length) {
-                    if (newArgs[models[k].key] !== undefined) {
-                        inputArgs[models[k].key] = cast(models[k].type, newArgs[models[k].key]);
+                setArgs.forEach((nArgs, i) => {
+                    // Do Row Filter
+                    if (this._db.rowFilters[this._query.table as string]) {
+                        setArgs[i] = this._db.rowFilters[this._query.table as string](setArgs[i]);
                     }
-                    k++;
-                }
 
-                // insert wildcard columns
-                if (this._db.skipPurge[this._query.table as string]) {
-                    const modelColumns = models.map(m => m.key);
-                    const columns = Object.keys(newArgs).filter(c => modelColumns.indexOf(c) === -1); // wildcard columns
-                    columns.forEach((col) => {
-                        inputArgs[col] = newArgs[col];
-                    });
-                }
+                    // Cast row types and remove columns that don't exist in the data model
+                    let inputArgs = {};
+                    const models = this._db.dataModels[this._query.table as string];
 
-                newArgs = inputArgs;
+                    let k = 0;
+                    while (k < models.length) {
+                        if (setArgs[i][models[k].key] !== undefined) {
+                            inputArgs[models[k].key] = cast(models[k].type, setArgs[i][models[k].key]);
+                        }
+                        k++;
+                    }
+
+                    // insert wildcard columns
+                    if (this._db.skipPurge[this._query.table as string]) {
+                        const modelColumns = models.map(m => m.key);
+                        const columns = Object.keys(setArgs[i]).filter(c => modelColumns.indexOf(c) === -1); // wildcard columns
+                        columns.forEach((col) => {
+                            inputArgs[col] = setArgs[i][col];
+                        });
+                    }
+
+                    setArgs[i] = inputArgs;
+                });
+
+
+            } else {
+                setArgs = this._query.actionArgs;
             }
 
             this._query.action = a;
-            this._query.actionArgs = this._query.actionArgs ? newArgs : undefined;
+            this._query.actionArgs = this._query.actionArgs ? setArgs : undefined;
         } else {
             throw Error("nSQL: No valid database action!");
         }
@@ -657,7 +669,7 @@ export class _NanoSQLQuery {
                 return;
             }
 
-            if (t._db.isConnected !== true && t._query.table !== "_util") {
+            if (t._db.isConnected !== true && (t._query.table as string || "").indexOf("_") !== 0) {
                 t._error = "nSQL: Database not connected, can't do a query!";
             }
 

@@ -15,6 +15,7 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _id;
     private _db;
     constructor();
+    private onError(ev);
     connect(complete: () => void): void;
     store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void): void;
     setID(id: string): void;

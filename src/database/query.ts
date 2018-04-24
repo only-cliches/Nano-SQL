@@ -128,14 +128,14 @@ export class _NanoSQLStorageQuery {
         }));
 
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
-
+/*
         // Query cache for the win!
         if (canCache && this._store._cache[this._query.table as any][this._hash]) {
             this._query.result = this._store._cache[this._query.table as any][this._hash];
             next(this._query);
             return;
         }
-
+*/
         this._getRows((rows) => {
 
             // No query arguments, we can skip the whole mutation selection class
@@ -642,29 +642,36 @@ export class _NanoSQLStorageQuery {
             return;
         }
 
+
         if (this._query.where) { // has where statement, select rows then modify them
 
             this._getRows((rows) => {
-
                 if (rows.length) {
-                    fastCHAIN(rows, (r, i, rowDone) => {
-                        this._updateSearchIndex(r[pk], r, () => {
-                            this._updateRowViews(this._query.actionArgs || {}, r, (updatedRowData) => {
-                                if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
-                                    Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                                        if (r[col] === undefined && updatedRowData[col] === undefined) {
-                                            updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
-                                        }
-                                    });
-                                }
-                                this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone);
-                            });
-                        });
-                    }).then((newRows: DBRow[]) => {
-                        // any changes to this table invalidates the cache
-                        const pks = newRows.map(r => r[pk]);
-                        this._store._cache[this._query.table as any] = {};
 
+                    this._store._cache[this._query.table as any] = {};
+
+                    let newRows: any[] = [];
+                    fastCHAIN(this._query.actionArgs, (inputData, k, nextRow) => {
+                        fastCHAIN(rows, (r, i, rowDone) => {
+                            this._updateSearchIndex(r[pk], r, () => {
+                                this._updateRowViews(inputData || {}, r, (updatedRowData) => {
+                                    if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
+                                        Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
+                                            if (r[col] === undefined && updatedRowData[col] === undefined) {
+                                                updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
+                                            }
+                                        });
+                                    }
+                                    this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone);
+                                });
+                            });
+                        }).then((nRows: DBRow[]) => {
+                            newRows = nRows;
+                            nextRow();
+                        });
+                    }).then(() => {
+                        const pks = newRows.map(r => r[pk]);
+                        // any changes to this table invalidates the cache
                         this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
                             this._doAfterQuery(newRows, false, next);
@@ -678,47 +685,53 @@ export class _NanoSQLStorageQuery {
 
         } else { // no where statement, perform direct upsert
 
-            let row = this._query.actionArgs || {};
+            let rows = this._query.actionArgs || [];
             this._store._cache[this._query.table as any] = {};
-            const write = (oldRow: any) => {
-                this._updateRowViews(row, oldRow, (updatedRowData) => {
+            let oldRows: any[] = [];
+            let addedRows: any[] = [];
+            fastCHAIN(rows, (row, k, nextRow) => {
+                const write = (oldRow: any) => {
+                    this._updateRowViews(row, oldRow, (updatedRowData) => {
 
-                    if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
-                        Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                            if ((oldRow || {})[col] === undefined && updatedRowData[col] === undefined) {
-                                updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
-                            }
-                        });
-                    }
+                        if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
+                            Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
+                                if ((oldRow || {})[col] === undefined && updatedRowData[col] === undefined) {
+                                    updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
+                                }
+                            });
+                        }
 
-                    this._store._write(this._query.table as any, row[pk], oldRow, updatedRowData, (result) => {
-                        this._updateSearchIndex(result[pk], result, () => {
-                            this._query.result = [{ msg: "1 row inserted.", affectedRowPKS: [result[pk]], affectedRows: [result] }];
-                            if (this._store._hasORM) {
-                                this._syncORM("add", [oldRow].filter(r => r), [result], () => {
-                                    this._doAfterQuery([result], false, next);
-                                });
-                            } else {
-                                this._doAfterQuery([result], false, next);
-                            }
+                        this._store._write(this._query.table as any, row[pk], oldRow, updatedRowData, (result) => {
+                            this._updateSearchIndex(result[pk], result, () => {
+                                oldRows.push(oldRow || {});
+                                addedRows.push(result);
+                                nextRow();
+                            });
                         });
                     });
-                });
-            };
+                };
 
-            if (row[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index_") === -1) {
-                this._store._read(this._query.table as any, [row[pk]] as any, (rows) => {
-                    if (rows.length) {
-                        write(rows[0]);
-                    } else {
-                        write(null);
-                    }
-                });
-            } else {
-                write(null);
-            }
-
-
+                if (row[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index_") === -1) {
+                    this._store._read(this._query.table as any, [row[pk]] as any, (rows) => {
+                        if (rows.length) {
+                            write(rows[0]);
+                        } else {
+                            write(null);
+                        }
+                    });
+                } else {
+                    write(null);
+                }
+            }).then(() => {
+                this._query.result = [{ msg: `${addedRows.length} row(s) inserted.`, affectedRowPKS: addedRows.map(r => r[pk]), affectedRows: addedRows }];
+                if (this._store._hasORM) {
+                    this._syncORM("add", oldRows, addedRows, () => {
+                        this._doAfterQuery(addedRows, false, next);
+                    });
+                } else {
+                    this._doAfterQuery(addedRows, false, next);
+                }
+            });
         }
     }
 
@@ -1015,12 +1028,13 @@ export class _MutateSelection {
             return o as ORMArgs;
         }) : [];
 
+
         fastALL(rows, (row, i, rowResult) => {
             row = Object.isFrozen(row) ? _assign(row) : row;
 
             fastALL(ormQueries, (orm, k, ormResult) => {
 
-                if (!row[orm.key] || !row[orm.key].length) {
+                if (typeof row[orm.key] === "undefined") {
                     ormResult();
                     return;
                 }
@@ -1525,15 +1539,15 @@ export class _RowSelection {
 
             const columns: string[] = where[0].replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
             let weights: {
-                    [rowPK: string]: {
-                        weight: number,
-                        locations: {
-                            [col: string]: {
-                                word: string,
-                                loc: number[]
-                            }[]
-                        }
+                [rowPK: string]: {
+                    weight: number,
+                    locations: {
+                        [col: string]: {
+                            word: string,
+                            loc: number[]
+                        }[]
                     }
+                }
             } = {};
 
             let searchTermsToFound: {
@@ -2133,9 +2147,9 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
     }
 };
 
-const likeCache: {[likeQuery: string]: RegExp} = {};
-const whereLevenshtienCache: {[value: string]: string[]} = {};
-const wordLevenshtienCache: {[words: string]: number} = {};
+const likeCache: { [likeQuery: string]: RegExp } = {};
+const whereLevenshtienCache: { [value: string]: string[] } = {};
+const wordLevenshtienCache: { [words: string]: number } = {};
 
 /**
  * Compare function used by WHERE to determine if a given value matches a given condition.
@@ -2162,7 +2176,7 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
     const getColValue = () => {
         if (whereLevenshtienCache[where[0]] && whereLevenshtienCache[where[0]].length) {
             const val = objQuery(whereLevenshtienCache[where[0]][1], wholeRow, isJoin);
-            const key = (val || "") + "::"  + whereLevenshtienCache[where[0]][0];
+            const key = (val || "") + "::" + whereLevenshtienCache[where[0]][0];
             if (!wordLevenshtienCache[key]) {
                 wordLevenshtienCache[key] = levenshtein(val || "", whereLevenshtienCache[where[0]][0]);
             }
@@ -2200,6 +2214,7 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         // if column does not exist in given array
         case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0;
         // regexp search the column
+        case "REGEXP":
         case "REGEX": return columnValue.match(givenValue) !== null;
         // if given value exists in column value
         case "LIKE": return processLIKE(columnValue, givenValue);

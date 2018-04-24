@@ -127,7 +127,6 @@ export declare const cast: (type: string, val?: any) => any;
 export declare const sortedInsert: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => any[];
 /**
  * Given a sorted array and a value, find where that value fits into the array.
- * Thanks to Olical for this. https://github.com/Olical/binary-search
  *
  * @param {any[]} arr
  * @param {*} value

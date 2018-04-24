@@ -358,7 +358,7 @@ export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?:
     const start = startVal || 0;
     const end = endVal || arr.length;
 
-    if (arr[start] > value) return 0;
+    if (arr[start] > value) return start;
     if (arr[end] < value) return end + 1;
 
     const m = Math.floor((start + end) / 2);

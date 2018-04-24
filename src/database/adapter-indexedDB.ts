@@ -38,10 +38,17 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         this._dbIndex = {};
     }
 
+    private onError(ev: Event) {
+        console.error(ev);
+        throw new Error("nSQL: IndexedDB Error!");
+    }
+
     public connect(complete: () => void) {
         const idb = indexedDB.open(this._id, 1);
         let upgrading = false;
         let idxes = {};
+
+        idb.onerror = this.onError;
 
         // Called only when there is no existing DB, creates the tables and data store.
         // Sets indexes as empty arrays.
@@ -71,6 +78,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
                                 cursor.continue();
                             }
                         };
+                        cursorRequest.onerror = this.onError;
                         transaction.oncomplete = () => {
                             callBack(items);
                         };
@@ -92,6 +100,8 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     public store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void) {
         const transaction = this._db.transaction(table, type);
+        transaction.onabort = this.onError;
+        transaction.onerror = this.onError;
         open(transaction, transaction.objectStore(table));
     }
 
@@ -132,8 +142,9 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         };
 
         this.store(table, "readwrite", (transaction, store) => {
-            store.put(r);
-            transaction.oncomplete = (e) => {
+            const req = store.put(r);
+            req.onerror = this.onError;
+            req.onsuccess = (e) => {
                 complete(r);
             };
         });
@@ -146,17 +157,11 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         }
 
         this.store(table, "readwrite", (transaction, store) => {
-            transaction.oncomplete = (e) => {
+            const req = (pk as any === "_clear_") ? store.clear() : store.delete(pk as any);
+            req.onerror = this.onError;
+            req.onsuccess = (e) => {
                 complete();
             };
-            transaction.onerror = (e) => {
-                complete();
-            };
-            if (pk as any === "_clear_") {
-                store.clear();
-            } else {
-                store.delete(pk as any);
-            }
         });
     }
 
@@ -168,6 +173,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
         this.store(table, "readonly", (transaction, store) => {
             const singleReq = store.get(pk);
+            singleReq.onerror = this.onError;
             singleReq.onsuccess = () => {
                 callback(singleReq.result);
             };
@@ -212,6 +218,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
                     cursor.continue();
                 }
             };
+            cursorRequest.onerror = this.onError;
         });
     }
 

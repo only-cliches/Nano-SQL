@@ -4,6 +4,14 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.2] 4-24-2018
+- Added better error handling for IndexedDB.
+- Added support to upsert multiple records when using an array: `nSQL("table").query("upsert", [{name: "billy"}, {name: "joel"}]).exec();`
+- Fixed issue [#37](https://github.com/ClickSimply/Nano-SQL/issues/37) with the database not connecting when history is enabled.
+- Fixed issue [#36](https://github.com/ClickSimply/Nano-SQL/issues/36) with ORM queries not working against non array values.
+- Fixed issue [#34](https://github.com/ClickSimply/Nano-SQL/issues/34), cache was not disabeling when `cache:false` was passed into the config object.
+- Cache is temporarily disabled until I can find the root cause of the cache issue described in [#34](https://github.com/ClickSimply/Nano-SQL/issues/34).
+
 ## [1.5.1] 4-22-2018
 - LIKE now uses MySQL LIKE syntax with `%` and `_` characters.
 - Added `levenshtein` query operator to allow you to get rows based on levenshtien distance. Usage: `nSQ("users").query("select").where(["levenshtein(wordToCompare, column)", "<", 4]).exec()..`
