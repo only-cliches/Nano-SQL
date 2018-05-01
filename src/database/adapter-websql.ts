@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, isAndroid } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 
@@ -56,7 +56,9 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                             idx.push(result.rows.item(i).id);
                         }
                         // SQLite doesn't sort primary keys, but the system depends on sorted primary keys
-                        idx = idx.sort();
+                        if (this._dbIndex[table].sortIndex) {
+                            idx = idx.sort((a, b) => a > b ? 1 : -1);
+                        }
                         this._dbIndex[table].set(idx);
                         nextKey();
                     });
@@ -85,13 +87,17 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         this._dbIndex[tableName] = new DatabaseIndex();
 
         dataModels.forEach((d) => {
-            if (d.props && d.props.indexOf("pk") > -1) {
+            if (d.props && intersect(["pk", "pk()"], d.props)) {
                 this._pkType[tableName] = d.type;
                 this._pkKey[tableName] = d.key;
-            }
 
-            if (d.props && d.props.indexOf("ai") > -1 && d.props.indexOf("pk") > -1 && d.type === "int") {
-                this._dbIndex[tableName].doAI = true;
+                if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
+                    this._dbIndex[tableName].doAI = true;
+                }
+
+                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._pkType[tableName]) !== -1) {
+                    this._dbIndex[tableName].sortIndex = false;
+                }
             }
         });
     }
@@ -179,7 +185,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
     }
 
     public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
-        const keys = this._dbIndex[table].keys();
+        let keys = this._dbIndex[table].keys();
         const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
         let ranges: number[] = usefulValues ? [from as any, to as any] : [];
         if (!keys.length) {
@@ -188,6 +194,10 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         }
         if (usePK && usefulValues) {
             ranges = ranges.map(r => this._dbIndex[table].getLocation(r));
+        }
+
+        if (this._dbIndex[table].sortIndex === false) {
+            keys = keys.sort();
         }
 
         let idx = ranges[0] || 0;
@@ -232,6 +242,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
     public drop(table: string, callback: () => void): void {
         let idx = new DatabaseIndex();
         idx.doAI = this._dbIndex[table].doAI;
+        idx.sortIndex = this._dbIndex[table].sortIndex;
         this._dbIndex[table] = idx;
         this._sql(true, `DELETE FROM ${this._chkTable(table)}`, [], (rows) => {
             callback();

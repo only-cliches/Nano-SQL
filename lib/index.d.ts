@@ -137,6 +137,7 @@ export declare class NanoSQLInstance {
     private _config;
     plugins: NanoSQLPlugin[];
     version: number;
+    static earthRadius: number;
     /**
      * Holds the plugin / adapter used by instance queries.
      *
@@ -149,6 +150,9 @@ export declare class NanoSQLInstance {
     private _randomPtr;
     static functions: {
         [fnName: string]: NanoSQLFunction;
+    };
+    static whereFunctions: {
+        [fnName: string]: (row: any, isJoin: boolean, ...args: any[]) => any;
     };
     /**
      * Misc placeholder that can be used by the dev.

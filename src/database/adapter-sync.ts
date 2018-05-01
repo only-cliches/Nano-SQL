@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, intersect } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, intersect } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 
@@ -61,16 +61,20 @@ export class _SyncStore implements NanoSQLStorageAdapter {
             if (d.props && intersect(["pk", "pk()"], d.props)) {
                 this._pkType[tableName] = d.type;
                 this._pkKey[tableName] = d.key;
-            }
 
-            if (d.props && intersect(["pk", "pk()"], d.props) && intersect(["ai", "ai()"], d.props) && d.type === "int") {
-                this._dbIndex[tableName].doAI = true;
-            }
+                if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
+                    this._dbIndex[tableName].doAI = true;
+                }
 
-            if (this._ls) {
-                const index = localStorage.getItem(this._id + "*" + tableName + "_idx");
-                if (index) {
-                    this._dbIndex[tableName].set(JSON.parse(index));
+                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._pkType[tableName]) !== -1) {
+                    this._dbIndex[tableName].sortIndex = false;
+                }
+
+                if (this._ls) {
+                    const index = localStorage.getItem(this._id + "*" + tableName + "_idx");
+                    if (index) {
+                        this._dbIndex[tableName].set(JSON.parse(index));
+                    }
                 }
             }
         });
@@ -137,12 +141,16 @@ export class _SyncStore implements NanoSQLStorageAdapter {
     }
 
     public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
-        const keys = this._dbIndex[table].keys();
+        let keys = this._dbIndex[table].keys();
         const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
         let ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
         if (!keys.length) {
             complete();
             return;
+        }
+
+        if (this._dbIndex[table].sortIndex === false) {
+            keys = keys.sort();
         }
 
         if (usePK && usefulValues) {
@@ -190,6 +198,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
 
         let idx = new DatabaseIndex();
         idx.doAI = this._dbIndex[table].doAI;
+        idx.sortIndex = this._dbIndex[table].sortIndex;
         this._dbIndex[table] = idx;
         callback();
     }

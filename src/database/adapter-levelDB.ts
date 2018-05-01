@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, sortedInsert, intersect } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, intersect } from "../utilities";
 import { DatabaseIndex } from "./db-idx";
 
 declare var global: any;
@@ -111,11 +111,14 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             if (d.props && intersect(["pk", "pk()"], d.props)) {
                 this._pkType[tableName] = d.type;
                 this._pkKey[tableName] = d.key;
-                this._isPKnum[tableName] = ["int", "number", "float"].indexOf(d.type) !== -1;
-            }
 
-            if (d.props && intersect(["ai", "ai()"], d.props) && intersect(["pk", "pk()"], d.props) && d.type === "int") {
-                this._dbIndex[tableName].doAI = true;
+                if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
+                    this._dbIndex[tableName].doAI = true;
+                }
+
+                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._pkType[tableName]) !== -1) {
+                    this._dbIndex[tableName].sortIndex = false;
+                }
             }
         });
     }
@@ -177,11 +180,15 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
     public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
 
-        const keys = this._dbIndex[table].keys();
+        let keys = this._dbIndex[table].keys();
         const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
         const ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
 
         let rows: any[] = [];
+
+        if (this._dbIndex[table].sortIndex === false) {
+            keys = keys.sort();
+        }
 
         const lower = usePK && usefulValues ? from : keys[ranges[0]];
         const higher = usePK && usefulValues ? to : keys[ranges[1]];
@@ -219,6 +226,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         }).then(() => {
             let idx = new DatabaseIndex();
             idx.doAI = this._dbIndex[table].doAI;
+            idx.sortIndex = this._dbIndex[table].sortIndex;
             this._dbIndex[table] = idx;
             callback();
         });

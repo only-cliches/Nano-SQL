@@ -17,10 +17,13 @@ export class DatabaseIndex {
 
     public doAI: boolean; // whether we're doing auto incriment or not
 
+    public sortIndex: boolean; // do we need to maintain sorted order of the index?  Write performance is lowered consierably with this enabled.
+
     constructor() {
         this._sorted = [];
         this._exists = {};
         this.ai = 1;
+        this.sortIndex = true;
         this.doAI = false;
     }
 
@@ -32,8 +35,7 @@ export class DatabaseIndex {
         });
 
         if (this.doAI && this._sorted.length) {
-            const l = this._sorted.length;
-            this.ai = this._sorted[l - 1] + 1;
+            this.ai = this._sorted[this._sorted.length - 1] + 1;
         }
     }
 
@@ -42,15 +44,23 @@ export class DatabaseIndex {
         if (idx !== -1) {
             return idx;
         }
-        return binarySearch(this._sorted, key, startIdx);
+        if (this.sortIndex) {
+            return binarySearch(this._sorted, key, startIdx);
+        } else {
+            return 0;
+        }
     }
 
     public add(key: any): void {
-        if (this._exists[key]) return;
+        if (this._exists[String(key)]) return;
         this._exists[String(key)] = true;
         if (!this.doAI) {
-            const idx = binarySearch(this._sorted, key);
-            this._sorted.splice(idx, 0, key);
+            if (this.sortIndex) {
+                const idx = binarySearch(this._sorted, key);
+                this._sorted.splice(idx, 0, key);
+            } else {
+                this._sorted.push(key);
+            }
         } else {
             if (parseInt(key) >= this.ai) {
                 this.ai++;
@@ -64,13 +74,17 @@ export class DatabaseIndex {
     }
 
     public indexOf(key: any): number {
-        return this._exists[String(key)] ? binarySearch(this._sorted, key) : -1;
+        if (this.sortIndex) {
+            return this._exists[String(key)] ? binarySearch(this._sorted, key) : -1;
+        } else {
+            return this._exists[String(key)] ? this._sorted.indexOf(key) : -1;
+        }
     }
 
     public remove(key: any): void {
         if (this._exists[String(key)]) {
             this._exists[String(key)] = false;
-            const idx = binarySearch(this._sorted, key);
+            const idx = this.indexOf(key);
             this._sorted.splice(idx, 1);
         }
     }

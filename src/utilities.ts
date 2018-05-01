@@ -1,4 +1,7 @@
 import { Promise as PR, setFast } from "lie-ts";
+import * as metaphone from "metaphone";
+import * as stemmer from "stemmer";
+
 export const Promise = (() => {
     return typeof window !== "undefined" && window["Promise"] ? window["Promise"] : typeof global !== "undefined" && global["Promise"] ? global["Promise"] : PR;
 })();
@@ -30,8 +33,23 @@ export interface timeIdms extends String {
 
 }
 
+
+export const stopWords = [
+    "a", "about", "after", "all", "also", "am", "an", "and", "andor", "another", "any",
+    "are", "as", "at", "be", "because", "been", "before", "being", "between",
+    "both", "but", "by", "came", "can", "come", "could", "did", "do", "each",
+    "for", "from", "get", "got", "had", "has", "have", "he", "her", "here",
+    "him", "himself", "his", "how", "i", "if", "in", "into", "is", "it", "like",
+    "make", "many", "me", "might", "more", "most", "much", "must", "my", "never",
+    "now", "of", "on", "only", "or", "other", "our", "out", "over", "said", "same",
+    "see", "should", "since", "some", "still", "such", "take", "than", "that", "the",
+    "their", "them", "then", "there", "these", "they", "this", "those", "through",
+    "to", "too", "under", "up", "very", "was", "way", "we", "well", "were", "what",
+    "where", "which", "while", "who", "with", "would", "you", "your"
+];
+
 /**
- * Object.assign, but better.
+ * Object.assign, but faster.
  *
  * @param {*} obj
  * @returns
@@ -69,7 +87,7 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
 };
 
 /**
- * Quickly and efficiently fire asyncrounous operations in parallel, returns once any operation completes.
+ * Quickly and efficiently fire asyncrounous operations in parallel, returns once first operation completes.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
@@ -128,7 +146,7 @@ export const isMSBrowser: boolean = ua.length === 0 ? false : ua.indexOf("MSIE "
 export const isAndroid = /Android/.test(ua);
 
 /**
- * Generate a random 16 bit number using strongest crypto available.
+ * Generate a random 16 bit number using strongest entropy/crypto available.
  *
  * @returns {number}
  */
@@ -146,6 +164,68 @@ export const random16Bits = (): number => {
             return Math.round(Math.random() * Math.pow(2, 16)); // Less random fallback.
         }
     }
+};
+
+
+/**
+ * nanoSQL's default tokenizer, handles a few different cases for the english language.
+ *
+ * @param {string} table
+ * @param {string} column
+ * @param {string[]} args
+ * @param {string} value
+ * @returns {{
+ *     o: string; // original string
+ *     w: string; // tokenized output
+ *     i: number; // location of string
+ * }[]}
+ */
+export const tokenizer = (table: string, column: string, args: string[], value: string, fractionFixed?: number): {
+    o: string; // original string
+    w: string; // tokenized output
+    i: number; // location of string
+}[] => {
+
+    const isStopWord = (word: string): boolean => {
+        return !word ? true : // is this word falsey? (ie no length, undefined, etc);
+            String(word).length === 1 ? true : // is this word 1 length long?
+                stopWords.indexOf(word) !== -1; // does word match something in the stop word list?
+    };
+
+    // Step 1, Clean up and normalize the text
+    const words: string[] = (value || "")
+        // everything to lowercase
+        .toLowerCase()
+        // normalize fractions and numbers (1/4 => 0.2500, 1,000,235 => 100235.0000)
+        .replace(/(\d+)\/(\d+)|(?:\d+(?:,\d+)*|\d+)(?:\.\d+)?/gmi, (all, top, bottom) => top || bottom ? (parseInt(top) / parseInt(bottom)).toFixed(fractionFixed || 4) : (parseFloat(all.replace(/\,/gmi, ""))).toFixed(fractionFixed || 4))
+        // replace dashes, underscores, anything like parantheses, slashes, newlines and tabs with a single whitespace
+        .replace(/\-|\_|\[|\]|\(|\)|\{|\}|\r?\n|\r|\t/gmi, " ")
+        // remove anything but letters, numbers and decimals inside numbers with nothing.
+        .replace(/[^\w\s]|(\d\.)/gmi, "$1")
+        // remove white spaces larger than 1 with 1 white space.
+        .replace(/\s+/g, " ")
+        .split(" ");
+
+    // Step 2, stem away!
+    switch (args[1]) {
+        case "english": return words.map((w, i) => ({ // 220 words/ms
+            i: i,
+            o: w,
+            w: isNaN(w as any) ? (isStopWord(w) ? "" : metaphone(stemmer(w))) : w
+        }));
+        case "english-stem": return words.map((w, i) => ({ // 560 words/ms
+            i: i,
+            o: w,
+            w: isNaN(w as any) ? (isStopWord(w) ? "" : stemmer(w)) : w
+        }));
+        case "english-meta": return words.map((w, i) => ({ // 270 words/ms
+            i: i,
+            o: w,
+            w: isNaN(w as any) ? (isStopWord(w) ? "" : metaphone(w)) : w
+        }));
+    }
+    // 2,684 words/ms
+    return words.map((w, i) => ({ o: w, w, i }));
 };
 
 /**
@@ -323,26 +403,6 @@ export const cast = (type: string, val?: any): any => {
     return undefined;
 };
 
-/**
- * Insert a value into a sorted array, efficiently gaurantees records are sorted on insert.
- *
- * @param {any[]} arr
- * @param {*} value
- * @param {number} [startVal]
- * @param {number} [endVal]
- * @returns {any[]}
- */
-export const sortedInsert = (arr: any[], value: any, startVal?: number, endVal?: number): any[] => {
-    if (arr.length) {
-        arr.splice(binarySearch(arr, value), 0, value);
-        return arr;
-    } else {
-        arr.push(value);
-        return arr;
-    }
-};
-
-
 
 /**
  * Given a sorted array and a value, find where that value fits into the array.
@@ -403,13 +463,48 @@ export const deepFreeze = (obj: any) => {
     return Object.freeze(obj);
 };
 
+/**
+ * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
+ *
+ * The unit used for the radius will determine the unit of the answer.  If the radius is in km, distance provided will be in km.
+ *
+ * The radius is in km by default.
+ *
+ * @param {number} lat1
+ * @param {number} lon1
+ * @param {number} lat2
+ * @param {number} lon2
+ * @param {number} radius
+ * @returns {number}
+ */
+export const crowDistance = (lat1: number, lon1: number, lat2: number, lon2: number, radius: number = 6371): number => {
+    const deg2rad = (deg: number): number => {
+        return deg * (Math.PI / 180);
+    };
 
-let objectPathCache: {
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return radius * c;
+};
+
+const objectPathCache: {
     [pathQuery: string]: string[];
 } = {};
 
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
+ *
+ * objQuery("hello", {hello: 2}, false) => 2
+ * objQuery("hello.length", {hello: [0]}, false) => 1
+ * objQuery("hello[0]", {hello: ["there"]}, false) => "there"
+ * objQuery("hello[0].length", {hello: ["there"]}, false) => 5
+ * objQuery("hello.color.length", {"hello.color": "blue"}, true) => 4
+ * objQuery("hello.color.length", {hello: {color: "blue"}}, false) => 4
  *
  * @param {string} pathQuery
  * @param {*} object

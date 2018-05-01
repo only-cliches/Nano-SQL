@@ -51,14 +51,6 @@ const options = {
                 loader: 'ts-loader'
             },
             {
-                test: /\.txt$/,
-                use: [
-                    {
-                        loader: 'raw-loader'
-                    }
-                ]
-            },
-            {
                 test: /\.ts$/,
                 loader: "webpack-strip-block?start=NODE-START&end=NODE-END"
             }

@@ -1,9 +1,7 @@
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
-import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect } from "../utilities";
-import * as metaphone from "metaphone";
-import * as stemmer from "stemmer";
+import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect, tokenizer, crowDistance } from "../utilities";
 import * as fuzzy from "fuzzysearch";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -102,7 +100,7 @@ export class _NanoSQLStorageQuery {
      */
     private _getRows(complete: (rows: DBRow[]) => void) {
         if (this._isInstanceTable) {
-            new InstanceSelection(this._query).getRows(complete);
+            new InstanceSelection(this._query, this._store._nsql).getRows(complete);
         } else {
             new _RowSelection(this, this._query, this._store, (rows) => {
                 complete(rows.filter(r => r));
@@ -128,14 +126,14 @@ export class _NanoSQLStorageQuery {
         }));
 
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
-/*
-        // Query cache for the win!
-        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
-            this._query.result = this._store._cache[this._query.table as any][this._hash];
-            next(this._query);
-            return;
-        }
-*/
+        /*
+                // Query cache for the win!
+                if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+                    this._query.result = this._store._cache[this._query.table as any][this._hash];
+                    next(this._query);
+                    return;
+                }
+        */
         this._getRows((rows) => {
 
             // No query arguments, we can skip the whole mutation selection class
@@ -306,15 +304,8 @@ export class _NanoSQLStorageQuery {
             let tokens = userTokenizer(this._query.table as any, column, args, value);
             if (tokens !== false) return tokens as any;
         }
-        // Step 1, remove puncuation, line breaks and set to lowercase
-        let words: string[] = (value || "").toLowerCase().replace(/[^\w\s]|_/gmi, "").replace(/\r?\n|\r|\t/gmi, "").replace(/\s+/g, " ").split(" ");
-        // Step 2, stem away!
-        switch (args[1]) {
-            case "english": return words.map((w, i) => ({ o: w, w: metaphone(stemmer(w)), i: i }));
-            case "english-stem": return words.map((w, i) => ({ o: w, w: stemmer(w), i: i }));
-            case "english-meta": return words.map((w, i) => ({ o: w, w: metaphone(w), i: i }));
-        }
-        return words.map((w, i) => ({ o: w, w, i }));
+
+        return tokenizer(this._query.table as any, column, args, value);
     }
 
     private _clearFromSearchIndex(pk: any, rowData: any, complete: () => void): void {
@@ -402,25 +393,29 @@ export class _NanoSQLStorageQuery {
                     tokens: { w: string, i: number }[]
                 } = row || { id: pk, hash: "1505", tokens: [] };
                 const thisHash = hash(newRowData[col]);
-                if (thisHash === existing.hash) { // indexed value hasn't changed, no updates needed
+                if (thisHash === existing.hash) { // indexed/hashed value hasn't changed, no updates needed
                     next();
                     return;
                 }
 
                 let wordCache: { [token: string]: string } = {};
 
-                const newTokens = this._tokenizer(col, newRowData[col]);
+                const newTokens = this._tokenizer(col, newRowData[col]); // tokenize the new string
+
+                // next 5 lines or so are used to find what words
+                // have changed so we have to perform the smallest number of index updates.
                 const oldTokenIdx = existing.tokens.map(t => t.i + "-" + t.w);
                 const newTokenIdx = newTokens.map(t => t.i + "-" + t.w);
+
+                const addTokens = newTokenIdx.filter(i => oldTokenIdx.indexOf(i) === -1); // tokens that need to be added to index
+                const removeTokens = oldTokenIdx.filter(i => newTokenIdx.indexOf(i) === -1); // tokens to remove from the index
 
                 newTokens.forEach((token) => {
                     wordCache[token.w] = token.o;
                 });
 
-                const addTokens = newTokenIdx.filter(i => oldTokenIdx.indexOf(i) === -1);
-                const removeTokens = oldTokenIdx.filter(i => newTokenIdx.indexOf(i) === -1);
-
                 fastCHAIN([removeTokens, addTokens], (tokens: string[], j, nextTokens) => {
+                    // find the total number of words that need to be updated (each word is a single index entry)
                     let reduceWords: { [word: string]: { w: string, i: number }[] } = {};
                     tokens.forEach((token) => {
                         let sToken = token.split(/-(.+)/);
@@ -430,24 +425,32 @@ export class _NanoSQLStorageQuery {
                         }
                         reduceWords[wToken.w].push(wToken);
                     });
+                    // Update all words in the index
                     fastALL(Object.keys(reduceWords), (word, k, nextWord) => {
+                        // Update token index and standard index
+                        // _search_ = tokenized index
+                        // _search_fuzzy_ = non tokenized index
                         fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next) => {
-                            if (!(l === 0 ? word : wordCache[word])) {
+
+                            const indexWord = l === 0 ? word : wordCache[word];
+
+                            if (!indexWord) { // if the word/token is falsey no need to index it.
                                 next();
                                 return;
                             }
-                            this._store.adapters[0].adapter.read("_" + table + tableSection + col, l === 0 ? word : wordCache[word], (colRow: SearchRowIndex) => {
+                            this._store.adapters[0].adapter.read("_" + table + tableSection + col, indexWord, (colRow: SearchRowIndex) => {
                                 let searchIndex: SearchRowIndex = colRow || { wrd: word, rows: [] };
                                 if (Object.isFrozen(searchIndex)) {
                                     searchIndex = _assign(searchIndex);
                                 }
                                 switch (j) {
                                     case 0: // remove
-                                        searchIndex.rows.forEach((sRow, l) => {
-                                            if (sRow.id === pk) {
-                                                searchIndex.rows.splice(l, 1);
+                                        let idx = searchIndex.rows.length;
+                                        while (idx--) {
+                                            if (searchIndex.rows[idx].id === pk) {
+                                                searchIndex.rows.splice(idx, 1);
                                             }
-                                        });
+                                        }
                                         break;
                                     case 1: // add
                                         searchIndex.rows.push({
@@ -1125,7 +1128,7 @@ export class _MutateSelection {
                     const willJoinRows = _where({
                         [firstTableData._name]: firstRow,
                         [seconTableData._name]: secondRow
-                    }, [joinConditions._left, joinConditions._check, type === R ? firstRow[rightKey] : secondRow[rightKey]], 0);
+                    }, [joinConditions._left, joinConditions._check, type === R ? firstRow[rightKey] : secondRow[rightKey]], 0, false);
                     if (willJoinRows) {
                         if (type === O) usedSecondTableRows[idx2] = true;
                         joinTable.push(doJoinRows(firstRow, secondRow));
@@ -1456,7 +1459,7 @@ export class _RowSelection {
             const fastWhere: any[] = this.q.where.slice(0, whereSlice);
             const slowWhere: any[] = this.q.where.slice(whereSlice + 1);
             this._selectByKeysOrSeach(fastWhere, (rows) => {
-                callback(rows.filter((r, i) => _where(r, slowWhere, i)));
+                callback(rows.filter((r, i) => _where(r, slowWhere, i, false)));
             });
             return;
         }
@@ -1475,14 +1478,14 @@ export class _RowSelection {
      * @memberof _RowSelection
      */
     private _selectByKeysOrSeach(where: any[], callback: (rows: DBRow[]) => void) {
-        const pk = this.s.tableInfo[this.q.table as string]._pk;
         if (where && typeof where[0] === "string") { // single where
             this._selectRowsByIndexOrSearch(where as any, callback);
         } else if (where) { // compound where
             let resultRows: DBRow[] = [];
             let lastCommand = "";
+            const PK = this.s.tableInfo[this.q.table as any]._pk;
             fastCHAIN((where as any), (wArg, i, nextWArg) => {
-                if (typeof wArg === "string") {
+                if (i % 2 === 1) {
                     lastCommand = wArg;
                     nextWArg();
                     return;
@@ -1492,23 +1495,20 @@ export class _RowSelection {
                         let idx = {};
                         let i = rows.length;
                         while (i--) {
-                            idx[rows[i][this.s.tableInfo[this.q.table as any]._pk]] = true;
+                            idx[rows[i][PK]] = true;
                         }
-                        resultRows = resultRows.filter((row) => {
-                            return idx[row[this.s.tableInfo[this.q.table as any]._pk]];
-                        });
+                        resultRows = resultRows.filter(row => idx[row[PK]]);
                     } else {
                         resultRows = resultRows.concat(rows);
                     }
                     nextWArg();
                 });
             }).then(() => {
-                let pks: any[] = [];
-                callback(resultRows.filter(r => {
-                    if (pks.indexOf(r[pk]) !== -1) {
-                        return false;
-                    }
-                    pks.push(r[pk]);
+                let pks: {[pk: string]: boolean} = {};
+                // remove duplicates
+                callback(resultRows.filter(row => {
+                    if (pks[row[PK]]) return false;
+                    pks[row[PK]] = true;
                     return true;
                 }));
             });
@@ -1831,6 +1831,73 @@ export class _RowSelection {
             return;
         }
 
+        // get rows based on crow distance from given GPS coordinates
+        if (where[0].indexOf("crow(") === 0) {
+            const gps: any[] = where[0].replace(/crow\((.*)\)/gmi, "$1").split(",").map((c, i) => i < 2 ? parseFloat(c.trim()) : c.trim());
+
+            const latTable = "_" + this.q.table + "_idx_" + (gps.length > 2 ? gps[2] : "lat");
+            const lonTable = "_" + this.q.table + "_idx_" + (gps.length > 2 ? gps[3] : "lon");
+
+            const distance = parseFloat(where[2] || "0");
+
+            // get latitudes that are distance north and distance south from the search point
+            const latRange = [-1, 1].map((i) => {
+                return gps[0] + ((distance * i) / NanoSQLInstance.earthRadius) * (180 * Math.PI);
+            });
+
+            // get the longitudes that are distance west and distance east from the search point
+            const lonRange = [-1, 1].map((i) => {
+                return gps[1] + ((distance * i) / NanoSQLInstance.earthRadius) * (180 * Math.PI) / Math.cos(gps[0] * Math.PI / 180);
+            });
+
+            // We're getting all rows that are within the latitude OR longitude range.
+            // the final result will be a square giving us an approximation of the final result set.
+            fastALL([latTable, lonTable], (table, i, next) => {
+                const ranges = i === 0 ? latRange : lonRange;
+                this.s._rangeRead(table, ranges[0], ranges[1], true, next);
+            }).then((result: { id: number, rows: any[] }[][]) => {
+
+                // if the lat or lon results are empty then we have no records that match
+                if (!result[0].length || !result[1].length) {
+                    callback([]);
+                    return;
+                }
+
+                // build an array of row primary keys and calculate their distance
+                // doesn't calculate distance if row doesn't fit inside the approximation square.
+                let rows: { [pk: string]: number } = {};
+                let keys: any[] = [];
+                [0, 1].forEach((i) => {
+                    result[i].forEach((r) => {
+                        r.rows.forEach((pk) => {
+                            switch (i) {
+                                case 0:
+                                    rows[pk] = r.id;
+                                    break;
+                                case 1:
+                                    // record is inside the search radius
+                                    if (rows[pk] && crowDistance(gps[0], gps[1], rows[pk], r.id, NanoSQLInstance.earthRadius) < distance) {
+                                        keys.push(pk);
+                                    }
+                                    break;
+                            }
+                        });
+                    });
+                });
+
+                // Get the rows
+                const pk = this.qu._store.tableInfo[this.q.table as any]._pk;
+                this.s._read(this.q.table as any, keys as any, (records) => {
+                    callback(records.map(r => ({
+                        ...r,
+                        _distance: rows[r[pk]]
+                    })));
+                });
+            });
+
+            return;
+        }
+
         if (where[1] === "BETWEEN") {
             let secondaryIndexKey = where[0] === this.s.tableInfo[this.q.table as any]._pk ? "" : where[0];
             if (secondaryIndexKey) {
@@ -1951,13 +2018,7 @@ export class _RowSelection {
                 } else { // where is function
                     keep((this.q.where as any)(row, i));
                 }
-            }, (rows) => {
-                if (arraySearchCache.length) {
-                    callback(rows.map(r => rowCache[r[PK]] ? rowCache[r[PK]] : r));
-                } else {
-                    callback(rows);
-                }
-            });
+            }, callback);
         };
 
         const where: any[] = this.q.where as any || [];
@@ -1970,11 +2031,9 @@ export class _RowSelection {
                     return;
                 }
 
+                // perform optimized search query, then store the results to compare aginst the rest of the .where() conditions
                 this.qu._store._nsql.query("select").where(wAr).manualExec({ table: this.q.table }).then((rows) => {
-                    arraySearchCache[i] = rows;
-                    rows.forEach((r) => {
-                        rowCache[r[PK]] = r;
-                    });
+                    arraySearchCache[i] = rows.map(r => r[PK]);
                     done();
                 });
 
@@ -2038,9 +2097,32 @@ export class _RowSelection {
         const tableData = this.s.tableInfo[this.q.table as any];
         const wQuery = wArgs[0] || "";
         const wCondition = wArgs[1] || "";
-        if (["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1 || (wQuery.indexOf("search(") !== -1 && (wCondition === "=" || wCondition.indexOf(">") !== -1 || wCondition.indexOf("<") !== -1))) {
-            // if (wQuery === tableData._pk) {
-            if (wQuery === tableData._pk || tableData._secondaryIndexes.indexOf(wQuery) !== -1 || wQuery.indexOf("search(") !== -1) {
+        if (
+        ["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1 || // we are using an appriate comparitor
+        (wQuery.indexOf("search(") !== -1 && (wCondition === "=" || wCondition.indexOf(">") !== -1 || wCondition.indexOf("<") !== -1)) || // OR a search
+        (wQuery.indexOf("crow(") !== 1 && wCondition === "<") // OR a crow comparison with less than
+        ) {
+            // search select
+            if (wQuery.indexOf("search(") !== -1) {
+                const searchArgs = wQuery.replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
+                // all search columns are indexed
+                if (searchArgs.filter(s => Object.keys(tableData._searchColumns).indexOf(s) !== -1).length) {
+                    return 0;
+                }
+                return 1;
+            }
+
+            // gps select, lat/lon columns better be indexed!
+            if (wQuery.indexOf("crow(") !== -1) {
+                const crowArgs = wQuery.replace(/crow\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
+                const latTable = crowArgs[2] || "lat";
+                const lonTable = crowArgs[3] || "lon";
+                if (tableData._secondaryIndexes.indexOf(latTable) === -1 || tableData._secondaryIndexes.indexOf(lonTable) === -1) return 1;
+                return 0;
+            }
+
+            // secondary index / primary key select
+            if (wQuery === tableData._pk || tableData._secondaryIndexes.indexOf(wQuery) !== -1) {
                 return 0;
             }
         }
@@ -2057,7 +2139,8 @@ export class _RowSelection {
 export class InstanceSelection {
 
     constructor(
-        public q: IdbQuery
+        public q: IdbQuery,
+        public p: NanoSQLInstance
     ) {
     }
 
@@ -2088,7 +2171,7 @@ export class InstanceSelection {
 
         callback((this.q.table as any[]).filter((row, i) => {
             if (this.q.where) {
-                return Array.isArray(this.q.where) ? _where(row, this.q.where as any || [], i) : this.q.where(row, i);
+                return Array.isArray(this.q.where) ? _where(row, this.q.where as any || [], i, false) : this.q.where(row, i);
             }
             return true;
         }));
@@ -2123,8 +2206,8 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
             }
 
             let compareResult: boolean = false;
-            if (wArg[0].indexOf("search(") !== -1 && searchCache) {
-                compareResult = searchCache[idx].map(r => r[pk]).indexOf(singleRow[pk]) !== -1;
+            if (wArg[0].indexOf("search(") === 0 && searchCache) {
+                compareResult = searchCache[idx].indexOf(singleRow[pk]) !== -1;
             } else {
                 compareResult = _compare(wArg, singleRow, ignoreFirstPath || false);
             }
@@ -2134,6 +2217,7 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
                 decided = false;
                 return decided;
             }
+
             if (idx === 0) return compareResult;
 
             if (prevCondition === "AND") {
@@ -2148,11 +2232,13 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
 };
 
 const likeCache: { [likeQuery: string]: RegExp } = {};
-const whereLevenshtienCache: { [value: string]: string[] } = {};
-const wordLevenshtienCache: { [words: string]: number } = {};
+const whereFuncCache: { [value: string]: string[] } = {};
+
 
 /**
  * Compare function used by WHERE to determine if a given value matches a given condition.
+ *
+ * Accepts single where arguments (compound arguments not allowed).
  *
  *
  * @param {*} val1
@@ -2162,8 +2248,13 @@ const wordLevenshtienCache: { [words: string]: number } = {};
  */
 const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
 
-    if (whereLevenshtienCache[where[0]] === undefined) {
-        whereLevenshtienCache[where[0]] = where[0].indexOf("levenshtein(") === 0 ? where[0].replace(/levenshtein\((.*,.*)\)/gmi, "$1").split(",").map(s => s.trim()) : [];
+    if (!whereFuncCache[where[0]]) {
+        // "levenshtein(word, column)"" => ["levenshtein", "word", "column"]
+        // "crow(-49, 29, lat_main, lon_main)" => ["crow", -49, 29, "lat_main", "lon_main"]
+        // notAFunction => []
+        whereFuncCache[where[0]] = where[0].indexOf("(") !== -1 ?
+            where[0].replace(/(.*)\((.*)\)/gmi, "$1,$2").split(",").map(c => isNaN(c) ? c.trim() : parseFloat(c.trim()))
+        : [];
     }
 
     const processLIKE = (columnValue: string, givenValue: string): boolean => {
@@ -2174,13 +2265,12 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
     };
 
     const getColValue = () => {
-        if (whereLevenshtienCache[where[0]] && whereLevenshtienCache[where[0]].length) {
-            const val = objQuery(whereLevenshtienCache[where[0]][1], wholeRow, isJoin);
-            const key = (val || "") + "::" + whereLevenshtienCache[where[0]][0];
-            if (!wordLevenshtienCache[key]) {
-                wordLevenshtienCache[key] = levenshtein(val || "", whereLevenshtienCache[where[0]][0]);
+        if (whereFuncCache[where[0]].length) {
+            const whereFn = NanoSQLInstance.whereFunctions[whereFuncCache[where[0]][0]];
+            if (whereFn) {
+                return whereFn.apply(null, [wholeRow, isJoin].concat(whereFuncCache[where[0]].slice(1)));
             }
-            return wordLevenshtienCache[key];
+            return undefined;
         } else {
             const val = objQuery(where[0], wholeRow, isJoin);
             return ["LIKE", "NOT LIKE"].indexOf(compare) > -1 ? String(val || "") : val;
@@ -2191,9 +2281,13 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
     const columnValue = getColValue();
     const compare = where[1];
 
-    switch (givenValue) {
-        case "NULL": return [undefined, null].indexOf(columnValue) !== -1;
-        case "NOT NULL": return [undefined, null].indexOf(columnValue) === -1;
+    if (givenValue === "NULL" || givenValue === "NOT NULL") {
+        const isNull = [undefined, null, ""].indexOf(columnValue) !== -1;
+        const isEqual = compare === "=" || compare === "LIKE";
+        switch (givenValue) {
+            case "NULL": return isEqual ? isNull : !isNull;
+            case "NOT NULL": return isEqual ? !isNull : isNull;
+        }
     }
 
     switch (compare) {
@@ -2210,9 +2304,9 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         // if column greater than or equal to given value
         case ">=": return columnValue >= givenValue;
         // if column value exists in given array
-        case "IN": return (givenValue || []).indexOf(columnValue) < 0 ? false : true;
+        case "IN": return (givenValue || []).indexOf(columnValue) !== -1;
         // if column does not exist in given array
-        case "NOT IN": return (givenValue || []).indexOf(columnValue) < 0;
+        case "NOT IN": return (givenValue || []).indexOf(columnValue) === -1;
         // regexp search the column
         case "REGEXP":
         case "REGEX": return columnValue.match(givenValue) !== null;
@@ -2223,9 +2317,9 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         // if the column value is between two given numbers
         case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
         // if single value exists in array column
-        case "HAVE": return (columnValue || []).indexOf(givenValue) < 0 ? false : true;
+        case "HAVE": return (columnValue || []).indexOf(givenValue) !== -1;
         // if single value does not exist in array column
-        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) < 0;
+        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) === -1;
         // if array of values intersects with array column
         case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0;
         // if array of values does not intersect with array column
@@ -2233,3 +2327,4 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         default: return false;
     }
 };
+

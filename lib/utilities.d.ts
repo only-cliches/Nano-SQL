@@ -15,8 +15,9 @@ export interface timeId extends String {
 }
 export interface timeIdms extends String {
 }
+export declare const stopWords: string[];
 /**
- * Object.assign, but better.
+ * Object.assign, but faster.
  *
  * @param {*} obj
  * @returns
@@ -31,7 +32,7 @@ export declare const _assign: (obj: any) => any;
  */
 export declare const fastCHAIN: (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void) => Promise<any[]>;
 /**
- * Quickly and efficiently fire asyncrounous operations in parallel, returns once any operation completes.
+ * Quickly and efficiently fire asyncrounous operations in parallel, returns once first operation completes.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
@@ -50,11 +51,29 @@ export declare const isSafari: boolean;
 export declare const isMSBrowser: boolean;
 export declare const isAndroid: boolean;
 /**
- * Generate a random 16 bit number using strongest crypto available.
+ * Generate a random 16 bit number using strongest entropy/crypto available.
  *
  * @returns {number}
  */
 export declare const random16Bits: () => number;
+/**
+ * nanoSQL's default tokenizer, handles a few different cases for the english language.
+ *
+ * @param {string} table
+ * @param {string} column
+ * @param {string[]} args
+ * @param {string} value
+ * @returns {{
+ *     o: string; // original string
+ *     w: string; // tokenized output
+ *     i: number; // location of string
+ * }[]}
+ */
+export declare const tokenizer: (table: string, column: string, args: string[], value: string, fractionFixed?: number | undefined) => {
+    o: string;
+    w: string;
+    i: number;
+}[];
 /**
  * Generate a TimeID for use in the database.
  *
@@ -116,16 +135,6 @@ export declare const isObject: (val: any) => boolean;
  */
 export declare const cast: (type: string, val?: any) => any;
 /**
- * Insert a value into a sorted array, efficiently gaurantees records are sorted on insert.
- *
- * @param {any[]} arr
- * @param {*} value
- * @param {number} [startVal]
- * @param {number} [endVal]
- * @returns {any[]}
- */
-export declare const sortedInsert: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => any[];
-/**
  * Given a sorted array and a value, find where that value fits into the array.
  *
  * @param {any[]} arr
@@ -150,7 +159,29 @@ export declare const removeDuplicates: (arr: any[]) => any[];
  */
 export declare const deepFreeze: (obj: any) => any;
 /**
+ * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
+ *
+ * The unit used for the radius will determine the unit of the answer.  If the radius is in km, distance provided will be in km.
+ *
+ * The radius is in km by default.
+ *
+ * @param {number} lat1
+ * @param {number} lon1
+ * @param {number} lat2
+ * @param {number} lon2
+ * @param {number} radius
+ * @returns {number}
+ */
+export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lon2: number, radius?: number) => number;
+/**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
+ *
+ * objQuery("hello", {hello: 2}, false) => 2
+ * objQuery("hello.length", {hello: [0]}, false) => 1
+ * objQuery("hello[0]", {hello: ["there"]}, false) => "there"
+ * objQuery("hello[0].length", {hello: ["there"]}, false) => 5
+ * objQuery("hello.color.length", {"hello.color": "blue"}, true) => 4
+ * objQuery("hello.color.length", {hello: {color: "blue"}}, false) => 4
  *
  * @param {string} pathQuery
  * @param {*} object

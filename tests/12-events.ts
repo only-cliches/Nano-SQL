@@ -8,15 +8,14 @@ describe("Events", () => {
 
             nSQL.loadJS("users", ExampleUsers).then(() => {
 
-                const onSelect = (event) => {
+                nSQL.table("users").on("select", (event) => {
                     try {
                         expect(event.table).to.equal("users", "Event listener failed!");
                         done();
                     } catch (e) {
                         done(e);
                     }
-                };
-                nSQL.table("users").on("select", onSelect);
+                });
 
                 nSQL.table("users").query("select").exec();
             });

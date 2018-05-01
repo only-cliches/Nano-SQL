@@ -1,4 +1,5 @@
 import { IdbQuery } from "../query/std-query";
+import { NanoSQLInstance } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
 export interface SearchRowIndex {
     wrd: string;
@@ -114,6 +115,7 @@ export declare class _RowSelection {
  */
 export declare class InstanceSelection {
     q: IdbQuery;
-    constructor(q: IdbQuery);
+    p: NanoSQLInstance;
+    constructor(q: IdbQuery, p: NanoSQLInstance);
     getRows(callback: (rows: DBRow[]) => void): void;
 }

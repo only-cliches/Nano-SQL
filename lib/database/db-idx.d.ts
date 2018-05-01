@@ -11,6 +11,7 @@ export declare class DatabaseIndex {
     private _exists;
     ai: number;
     doAI: boolean;
+    sortIndex: boolean;
     constructor();
     set(index?: any[]): void;
     getLocation(key: any, startIdx?: number): number;

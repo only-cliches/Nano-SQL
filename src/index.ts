@@ -2,12 +2,13 @@ import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN, intersect } from "./utilities";
+import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN, intersect, crowDistance } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
+import * as levenshtein from "levenshtein-edit-distance";
 
-const VERSION = 1.52;
+const VERSION = 1.53;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -170,6 +171,8 @@ export class NanoSQLInstance {
 
     public version: number = VERSION;
 
+    public static earthRadius: number = 6371;
+
     /**
      * Holds the plugin / adapter used by instance queries.
      *
@@ -188,6 +191,10 @@ export class NanoSQLInstance {
 
     public static functions: {
         [fnName: string]: NanoSQLFunction;
+    };
+
+    public static whereFunctions: {
+        [fnName: string]: (row: any, isJoin: boolean, ...args: any[]) => any;
     };
 
     /**
@@ -1216,7 +1223,7 @@ export class NanoSQLInstance {
 
         return new Promise((resolve, reject) => {
             if (!t.plugins.length) {
-                reject("Nothing to do, no plugins!");
+                reject("nSQL: Nothing to do, no plugins!");
                 return;
             }
 
@@ -1555,6 +1562,47 @@ export interface NanoSQLPlugin {
     extend?: (next: (args: any[], result: any[]) => void, args: any[], result: any[]) => void;
 }
 
+const wordLevenshtienCache: { [words: string]: number } = {};
+
+NanoSQLInstance.whereFunctions = {
+    levenshtein: (row: any, isJoin: boolean, word: string, column: string) => {
+        const val = objQuery(column, row, isJoin) || "";
+        const key = val + "::" + word;
+        if (!wordLevenshtienCache[key]) {
+            wordLevenshtienCache[key] = levenshtein(val, word);
+        }
+        return wordLevenshtienCache[key];
+    },
+    crow: (row: any, isJoin: boolean, lat: number, lon: number, latColumn?: string, lonColumn?: string) => {
+        const latCol = latColumn || "lat";
+        const lonCol = lonColumn || "lon";
+        const latVal = objQuery(latCol, row, isJoin);
+        const lonVal = objQuery(lonCol, row, isJoin);
+        return crowDistance(latVal, lonVal, lat, lon, NanoSQLInstance.earthRadius);
+    },
+    sum: (row: any, isJoin: boolean, ...columns: string[]) => {
+        return columns.reduce((prev, cur) => {
+            const val = objQuery(cur, row, isJoin) || 0;
+            if (Array.isArray(val)) {
+                return prev + val.reduce((p, c) => p + parseFloat(c || 0), 0);
+            }
+            return prev + parseFloat(val);
+        }, 0);
+    },
+    avg: (row: any, isJoin: boolean, ...columns: string[]) => {
+        let numRecords = 0;
+        const total = columns.reduce((prev, cur) => {
+            const val = objQuery(cur, row, isJoin) || 0;
+            if (Array.isArray(val)) {
+                numRecords += val.length;
+                return prev + val.reduce((p, c) => p + parseFloat(c || 0), 0);
+            }
+            numRecords++;
+            return prev + parseFloat(val);
+        }, 0);
+        return total / numRecords;
+    }
+};
 
 NanoSQLInstance.functions = {
     COUNT: {

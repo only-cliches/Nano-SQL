@@ -19,4 +19,5 @@ import "./09-orderby";
 import "./10-groupbyFns";
 import "./11-orm";
 import "./12-events";
+import "./13-search";
 // import "./13-denormalization";

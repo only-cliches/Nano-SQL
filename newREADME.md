@@ -12,13 +12,13 @@ NoSQL Everywhere
 ## NanoSQL is a database abstraction layer that: 
 1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native).
 2. Lets you scale faster by moving query logic to your application server.
-3. Supports many advanced features like ORM, Map/Reduce, Indexing and Fuzzy Search.
+3. Supports many advanced features like ORM, Map/Reduce, Indexing, Geolocations and Fuzzy Search.
 
 ### Identical API Everywhere
-Develop your application with a simple database like LevelDB, then deploy into production with Redis, Google Cloud Datastore, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  All data is portable and all features are isomorphic; jumping between different databases and environments is trivial.
+Develop your application with a simple database like LevelDB, then deploy into production with Redis, Google Cloud Datastore, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
 ### Automate NoSQL Housekeeping
-NanoSQL includes a full ORM system, secondary indexes, events, Map/Reduce, fuzzy document search and denormalization helpers to make high performance data modeling simple and easy.
+NanoSQL includes a full ORM system, secondary indexes, Map/Reduce, fuzzy document search and denormalization helpers to make high performance data modeling simple and easy.
 
 ### Not Only NoSQL 
 Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
@@ -27,9 +27,12 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
 ### Other Cool Things
-Built in undo/redo, automatic live backups, typescript support, full event system, CSV/JSON import & export, and runs in every browser back to IE9!
+Built in geolocation helpers, undo/redo, automatic live backups, typescript support, full event system, CSV/JSON import & export, and runs in every browser back to IE9!
 
-## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [React Native](https://docs.nanosql.io/examples/react-native) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
+#### Wait a second, how can all these features be isomorphic and work with simple databases like Redis, LevelDB and LocalStorage?
+NanoSQL treats every database backend it uses as nothing more than a key/value store; all features are built ontop of that assumption alone.  If it's atleast a key/value store nanoSQL can run ontop of it with no feature loss. For example, secondary indexes are always implemented as a seperate table that acts as an inverted index (even in something like MySQL).  Secondary index reads then involve two seperate reads: one of the inverted index table then another from the actual data table.  Since both of these reads are jumping directly to keys in the key/value stores or primary keys in RDBMS backends the reads are crazy fast and remain fast regardless of the table sizes.  If you avoid full table scans nanoSQL's reads are almost always orders of magnitude faster than sending similar queries to the database it's sitting ontop of. 
+
+## Live Examples: [Express/NodeJS](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [React Native](https://docs.nanosql.io/examples/react-native) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
 
 
 ## Browser Support
@@ -131,6 +134,9 @@ Just because we're running no-SQL doesn't mean we can't have relationships.
 
 ## Denormalization & Map/Reduce
 Get the performancea advantages of no-SQL without the housework.  Just let nanoSQL know when and where you want your data and it takes care of the rest.
+
+## Geolocation Helpers
+Need to find which retail store your client is closest to?  nanoSQL can do it in no time at all.
 
 ## Import / Export
 It's easy to move CSV and JSON data into and out of nanoSQL.

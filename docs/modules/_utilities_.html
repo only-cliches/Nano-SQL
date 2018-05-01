@@ -86,6 +86,7 @@
 								<li class="tsd-kind-variable tsd-parent-kind-external-module"><a href="_utilities_.html#ismsbrowser" class="tsd-kind-icon">isMSBrowser</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-external-module"><a href="_utilities_.html#issafari" class="tsd-kind-icon">is<wbr>Safari</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_utilities_.html#objectpathcache" class="tsd-kind-icon">object<wbr>Path<wbr>Cache</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-external-module"><a href="_utilities_.html#stopwords" class="tsd-kind-icon">stop<wbr>Words</a></li>
 								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_utilities_.html#ua" class="tsd-kind-icon">ua</a></li>
 							</ul>
 						</section>
@@ -96,6 +97,7 @@
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#binarysearch" class="tsd-kind-icon">binary<wbr>Search</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#cast" class="tsd-kind-icon">cast</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#cleanargs" class="tsd-kind-icon">clean<wbr>Args</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#crowdistance" class="tsd-kind-icon">crow<wbr>Distance</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#deepfreeze" class="tsd-kind-icon">deep<wbr>Freeze</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#fastall" class="tsd-kind-icon">fastALL</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#fastchain" class="tsd-kind-icon">fastCHAIN</a></li>
@@ -107,8 +109,8 @@
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#objquery" class="tsd-kind-icon">obj<wbr>Query</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#random16bits" class="tsd-kind-icon">random16<wbr>Bits</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#removeduplicates" class="tsd-kind-icon">remove<wbr>Duplicates</a></li>
-								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#sortedinsert" class="tsd-kind-icon">sorted<wbr>Insert</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#timeid-1" class="tsd-kind-icon">timeid</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#tokenizer" class="tsd-kind-icon">tokenizer</a></li>
 								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_utilities_.html#uuid-1" class="tsd-kind-icon">uuid</a></li>
 							</ul>
 						</section>
@@ -129,7 +131,7 @@
 					<div class="tsd-signature tsd-kind-icon">Promise<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> =&nbsp;(() &#x3D;&gt; {return typeof window !&#x3D;&#x3D; &quot;undefined&quot; &amp;&amp; window[&quot;Promise&quot;] ? window[&quot;Promise&quot;] : typeof global !&#x3D;&#x3D; &quot;undefined&quot; &amp;&amp; global[&quot;Promise&quot;] ? global[&quot;Promise&quot;] : PR;})()</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:2</li>
+							<li>Defined in utilities.ts:5</li>
 						</ul>
 					</aside>
 				</section>
@@ -139,7 +141,7 @@
 					<div class="tsd-signature tsd-kind-icon">global<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:6</li>
+							<li>Defined in utilities.ts:9</li>
 						</ul>
 					</aside>
 				</section>
@@ -149,7 +151,7 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Android<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;/Android/.test(ua)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:128</li>
+							<li>Defined in utilities.ts:146</li>
 						</ul>
 					</aside>
 				</section>
@@ -159,7 +161,7 @@
 					<div class="tsd-signature tsd-kind-icon">isMSBrowser<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;ua.length &#x3D;&#x3D;&#x3D; 0 ? false : ua.indexOf(&quot;MSIE &quot;) &gt; 0 || ua.indexOf(&quot;Trident/&quot;) &gt; 0 || ua.indexOf(&quot;Edge/&quot;) &gt; 0</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:125</li>
+							<li>Defined in utilities.ts:143</li>
 						</ul>
 					</aside>
 				</section>
@@ -169,17 +171,17 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Safari<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> =&nbsp;ua.length &#x3D;&#x3D;&#x3D; 0 ? false : (/^((?!chrome|android).)*safari/i.test(ua)) || (/iPad|iPhone|iPod/.test(ua) &amp;&amp; !window[&quot;MSStream&quot;])</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:122</li>
+							<li>Defined in utilities.ts:140</li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
 					<a name="objectpathcache" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagLet">Let</span> object<wbr>Path<wbr>Cache</h3>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> object<wbr>Path<wbr>Cache</h3>
 					<div class="tsd-signature tsd-kind-icon">object<wbr>Path<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:407</li>
+							<li>Defined in utilities.ts:495</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -191,13 +193,23 @@
 						</ul>
 					</div>
 				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module">
+					<a name="stopwords" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> stop<wbr>Words</h3>
+					<div class="tsd-signature tsd-kind-icon">stop<wbr>Words<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> =&nbsp;[&quot;a&quot;, &quot;about&quot;, &quot;after&quot;, &quot;all&quot;, &quot;also&quot;, &quot;am&quot;, &quot;an&quot;, &quot;and&quot;, &quot;andor&quot;, &quot;another&quot;, &quot;any&quot;,&quot;are&quot;, &quot;as&quot;, &quot;at&quot;, &quot;be&quot;, &quot;because&quot;, &quot;been&quot;, &quot;before&quot;, &quot;being&quot;, &quot;between&quot;,&quot;both&quot;, &quot;but&quot;, &quot;by&quot;, &quot;came&quot;, &quot;can&quot;, &quot;come&quot;, &quot;could&quot;, &quot;did&quot;, &quot;do&quot;, &quot;each&quot;,&quot;for&quot;, &quot;from&quot;, &quot;get&quot;, &quot;got&quot;, &quot;had&quot;, &quot;has&quot;, &quot;have&quot;, &quot;he&quot;, &quot;her&quot;, &quot;here&quot;,&quot;him&quot;, &quot;himself&quot;, &quot;his&quot;, &quot;how&quot;, &quot;i&quot;, &quot;if&quot;, &quot;in&quot;, &quot;into&quot;, &quot;is&quot;, &quot;it&quot;, &quot;like&quot;,&quot;make&quot;, &quot;many&quot;, &quot;me&quot;, &quot;might&quot;, &quot;more&quot;, &quot;most&quot;, &quot;much&quot;, &quot;must&quot;, &quot;my&quot;, &quot;never&quot;,&quot;now&quot;, &quot;of&quot;, &quot;on&quot;, &quot;only&quot;, &quot;or&quot;, &quot;other&quot;, &quot;our&quot;, &quot;out&quot;, &quot;over&quot;, &quot;said&quot;, &quot;same&quot;,&quot;see&quot;, &quot;should&quot;, &quot;since&quot;, &quot;some&quot;, &quot;still&quot;, &quot;such&quot;, &quot;take&quot;, &quot;than&quot;, &quot;that&quot;, &quot;the&quot;,&quot;their&quot;, &quot;them&quot;, &quot;then&quot;, &quot;there&quot;, &quot;these&quot;, &quot;they&quot;, &quot;this&quot;, &quot;those&quot;, &quot;through&quot;,&quot;to&quot;, &quot;too&quot;, &quot;under&quot;, &quot;up&quot;, &quot;very&quot;, &quot;was&quot;, &quot;way&quot;, &quot;we&quot;, &quot;well&quot;, &quot;were&quot;, &quot;what&quot;,&quot;where&quot;, &quot;which&quot;, &quot;while&quot;, &quot;who&quot;, &quot;with&quot;, &quot;would&quot;, &quot;you&quot;, &quot;your&quot;]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in utilities.ts:37</li>
+						</ul>
+					</aside>
+				</section>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
 					<a name="ua" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> ua</h3>
 					<div class="tsd-signature tsd-kind-icon">ua<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;typeof window &#x3D;&#x3D;&#x3D; &quot;undefined&quot; ? &quot;&quot; : (navigator.userAgent || &quot;&quot;)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:120</li>
+							<li>Defined in utilities.ts:138</li>
 						</ul>
 					</aside>
 				</section>
@@ -214,12 +226,12 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:39</li>
+									<li>Defined in utilities.ts:57</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Object.assign, but better.</p>
+									<p>Object.assign, but faster.</p>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -242,7 +254,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:356</li>
+									<li>Defined in utilities.ts:416</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -279,7 +291,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:266</li>
+									<li>Defined in utilities.ts:346</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -310,7 +322,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:234</li>
+									<li>Defined in utilities.ts:314</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -332,6 +344,48 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
+					<a name="crowdistance" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> crow<wbr>Distance</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
+						<li class="tsd-signature tsd-kind-icon">crow<wbr>Distance<span class="tsd-signature-symbol">(</span>lat1<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, lon1<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, lat2<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, lon2<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, radius<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in utilities.ts:480</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>&quot;As the crow flies&quot; or Haversine formula, used to calculate the distance between two points on a sphere.</p>
+								</div>
+								<p>The unit used for the radius will determine the unit of the answer.  If the radius is in km, distance provided will be in km.</p>
+								<p>The radius is in km by default.</p>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>lat1: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>lon1: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>lat2: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>lon2: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> radius: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;6371</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="deepfreeze" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> deep<wbr>Freeze</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -341,7 +395,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:393</li>
+									<li>Defined in utilities.ts:453</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -369,7 +423,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:109</li>
+									<li>Defined in utilities.ts:127</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -442,7 +496,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:50</li>
+									<li>Defined in utilities.ts:68</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -515,12 +569,12 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:78</li>
+									<li>Defined in utilities.ts:96</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Quickly and efficiently fire asyncrounous operations in parallel, returns once any operation completes.</p>
+									<p>Quickly and efficiently fire asyncrounous operations in parallel, returns once first operation completes.</p>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -588,7 +642,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:223</li>
+									<li>Defined in utilities.ts:303</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -619,7 +673,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:208</li>
+									<li>Defined in utilities.ts:288</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -648,7 +702,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:172</li>
+									<li>Defined in utilities.ts:252</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -679,7 +733,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:255</li>
+									<li>Defined in utilities.ts:335</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -707,13 +761,19 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:419</li>
+									<li>Defined in utilities.ts:514</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
 									<p>Take an object and a string describing a path like &quot;value.length&quot; or &quot;val[length]&quot; and safely get that value in the object.</p>
 								</div>
+								<p>objQuery(&quot;hello&quot;, {hello: 2}, false) =&gt; 2
+									objQuery(&quot;hello.length&quot;, {hello: [0]}, false) =&gt; 1
+									objQuery(&quot;hello[0]&quot;, {hello: [&quot;there&quot;]}, false) =&gt; &quot;there&quot;
+									objQuery(&quot;hello[0].length&quot;, {hello: [&quot;there&quot;]}, false) =&gt; 5
+									objQuery(&quot;hello.color.length&quot;, {&quot;hello.color&quot;: &quot;blue&quot;}, true) =&gt; 4
+								objQuery(&quot;hello.color.length&quot;, {hello: {color: &quot;blue&quot;}}, false) =&gt; 4</p>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
@@ -741,12 +801,12 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:135</li>
+									<li>Defined in utilities.ts:153</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>Generate a random 16 bit number using strongest crypto available.</p>
+									<p>Generate a random 16 bit number using strongest entropy/crypto available.</p>
 								</div>
 							</div>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4>
@@ -763,7 +823,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:378</li>
+									<li>Defined in utilities.ts:438</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -782,43 +842,6 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
-					<a name="sortedinsert" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagConst">Const</span> sorted<wbr>Insert</h3>
-					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
-						<li class="tsd-signature tsd-kind-icon">sorted<wbr>Insert<span class="tsd-signature-symbol">(</span>arr<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, startVal<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span>, endVal<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in utilities.ts:335</li>
-								</ul>
-							</aside>
-							<div class="tsd-comment tsd-typography">
-								<div class="lead">
-									<p>Insert a value into a sorted array, efficiently gaurantees records are sorted on insert.</p>
-								</div>
-							</div>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>arr: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-								<li>
-									<h5>value: <span class="tsd-signature-type">any</span></h5>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> startVal: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
-								</li>
-								<li>
-									<h5><span class="tsd-flag ts-flagOptional">Optional</span> endVal: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="timeid-1" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> timeid</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -828,7 +851,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:157</li>
+									<li>Defined in utilities.ts:237</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -847,6 +870,51 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
+					<a name="tokenizer" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> tokenizer</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
+						<li class="tsd-signature tsd-kind-icon">tokenizer<span class="tsd-signature-symbol">(</span>table<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, column<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span>, value<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, fractionFixed<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in utilities.ts:183</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>nanoSQL&#39;s default tokenizer, handles a few different cases for the english language.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>table: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>column: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>args: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li>
+									<h5>value: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> fractionFixed: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span></h4>
+							<p>{{
+								o: string; // original string
+								w: string; // tokenized output
+								i: number; // location of string
+							}[]}</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
 					<a name="uuid-1" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagConst">Const</span> uuid</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
@@ -856,7 +924,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in utilities.ts:183</li>
+									<li>Defined in utilities.ts:263</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -877,7 +945,7 @@
 					<div class="tsd-signature tsd-kind-icon">id<wbr>Types<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in utilities.ts:194</li>
+							<li>Defined in utilities.ts:274</li>
 						</ul>
 					</aside>
 					<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
@@ -886,7 +954,7 @@
 						<div class="tsd-signature tsd-kind-icon">uuid<span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type">uuid</a><span class="tsd-signature-symbol"> =&nbsp;uuid</span></div>
 						<aside class="tsd-sources">
 							<ul>
-								<li>Defined in utilities.ts:196</li>
+								<li>Defined in utilities.ts:276</li>
 							</ul>
 						</aside>
 					</section>
@@ -900,7 +968,7 @@
 							<li class="tsd-description">
 								<aside class="tsd-sources">
 									<ul>
-										<li>Defined in utilities.ts:195</li>
+										<li>Defined in utilities.ts:275</li>
 									</ul>
 								</aside>
 								<h4 class="tsd-parameters-title">Parameters</h4>
@@ -923,7 +991,7 @@
 							<li class="tsd-description">
 								<aside class="tsd-sources">
 									<ul>
-										<li>Defined in utilities.ts:197</li>
+										<li>Defined in utilities.ts:277</li>
 									</ul>
 								</aside>
 								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
@@ -940,7 +1008,7 @@
 							<li class="tsd-description">
 								<aside class="tsd-sources">
 									<ul>
-										<li>Defined in utilities.ts:198</li>
+										<li>Defined in utilities.ts:278</li>
 									</ul>
 								</aside>
 								<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
@@ -1005,6 +1073,9 @@
 					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_utilities_.html#objectpathcache" class="tsd-kind-icon">object<wbr>Path<wbr>Cache</a>
 					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-external-module">
+						<a href="_utilities_.html#stopwords" class="tsd-kind-icon">stop<wbr>Words</a>
+					</li>
 					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_utilities_.html#ua" class="tsd-kind-icon">ua</a>
 					</li>
@@ -1019,6 +1090,9 @@
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="_utilities_.html#cleanargs" class="tsd-kind-icon">clean<wbr>Args</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module">
+						<a href="_utilities_.html#crowdistance" class="tsd-kind-icon">crow<wbr>Distance</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="_utilities_.html#deepfreeze" class="tsd-kind-icon">deep<wbr>Freeze</a>
@@ -1054,10 +1128,10 @@
 						<a href="_utilities_.html#removeduplicates" class="tsd-kind-icon">remove<wbr>Duplicates</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="_utilities_.html#sortedinsert" class="tsd-kind-icon">sorted<wbr>Insert</a>
+						<a href="_utilities_.html#timeid-1" class="tsd-kind-icon">timeid</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="_utilities_.html#timeid-1" class="tsd-kind-icon">timeid</a>
+						<a href="_utilities_.html#tokenizer" class="tsd-kind-icon">tokenizer</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module">
 						<a href="_utilities_.html#uuid-1" class="tsd-kind-icon">uuid</a>

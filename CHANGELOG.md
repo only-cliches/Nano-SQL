@@ -4,6 +4,16 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.3] 5-1-2018
+- Added `ns()` prop to disable primary key sorting, useful for speeding up inserts on large data sets.
+- Fuzzy search indexes don't use sorted indexes by default now.
+- Added stop word index to fuzzy search system tokenizer.
+- Improved tokenizer to normalize numbers and fractions.
+- Added `crow()` query capability, now you can grab rows by their distance from a given GPS point. Usage: `nSQL("table").query("select").where(["crow(latitude, longitude)", "<", 3.5]).exec()`.  Defaults to kilometers for the distance.  Rows must have columns of `lat` and `lon` to work.  If `lat` and `lon` are secondary indexes the query uses an optimized read path and goes MUCH faster.
+- Fixed bug with NULL and NOT NULL.
+- More work on the new readme.
+- Added new `whereFunction` capability used by levenshtein and crow features.  Developers will be able to add their own where functions as they want.
+
 ## [1.5.2] 4-24-2018
 - Added better error handling for IndexedDB.
 - Added support to upsert multiple records when using an array: `nSQL("table").query("upsert", [{name: "billy"}, {name: "joel"}]).exec();`
