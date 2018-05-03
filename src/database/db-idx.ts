@@ -47,7 +47,7 @@ export class DatabaseIndex {
         if (this.sortIndex) {
             return binarySearch(this._sorted, key, startIdx);
         } else {
-            return 0;
+            return binarySearch(this._sorted.sort((a, b) => a > b ? 1 : -1), key, startIdx);
         }
     }
 
@@ -74,17 +74,14 @@ export class DatabaseIndex {
     }
 
     public indexOf(key: any): number {
-        if (this.sortIndex) {
-            return this._exists[String(key)] ? binarySearch(this._sorted, key) : -1;
-        } else {
-            return this._exists[String(key)] ? this._sorted.indexOf(key) : -1;
-        }
+        if (!this._exists[String(key)]) return -1;
+        return this.sortIndex ? binarySearch(this._sorted, key) : this._sorted.indexOf(key);
     }
 
     public remove(key: any): void {
         if (this._exists[String(key)]) {
-            this._exists[String(key)] = false;
             const idx = this.indexOf(key);
+            this._exists[String(key)] = false;
             this._sorted.splice(idx, 1);
         }
     }

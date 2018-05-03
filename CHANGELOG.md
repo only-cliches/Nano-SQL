@@ -4,6 +4,9 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.4] 5-2-2018
+- Fixed an issue with the default database index.
+
 ## [1.5.3] 5-1-2018
 - Added `ns()` prop to disable primary key sorting, useful for speeding up inserts on large data sets.
 - Fuzzy search indexes don't use sorted indexes by default now.
