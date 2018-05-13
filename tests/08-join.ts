@@ -12,6 +12,11 @@ const joinTables = (ready: (nSQL: NanoSQLInstance) => void) => {
             { key: "title", type: "string" },
             { key: "author", type: "int" }
         ])
+        .table("comments").model([
+            { key: "id", type: "int", props: ["pk()", "ai()"] },
+            { key: "author", type: "int" },
+            { key: "text", type: "string" }
+        ])
         .connect()
         .then(() => {
             return n.loadJS("users", [
@@ -27,6 +32,12 @@ const joinTables = (ready: (nSQL: NanoSQLInstance) => void) => {
                 { id: 3, title: "give", author: 6 },
                 { id: 4, title: "you", author: 2 },
                 { id: 5, title: "up", author: 1 }
+            ]);
+        }).then(() => {
+            return n.loadJS("comments", [
+                { id: 1, text: "never", author: 1 },
+                { id: 2, text: "gonna", author: 3 },
+                { id: 3, text: "give", author: 6 },
             ]);
         }).then(() => {
             ready(n);
@@ -97,6 +108,92 @@ describe("Join", () => {
                         { "posts.id": 4, "posts.title": "you", "posts.author": 2, "users.id": 2, "users.age": 24, "users.name": "Jeb", "users.email": "jeb@gmail.com", "users.meta": { "value": 1 }, "users.posts": [1, 2, 3] },
                         { "posts.id": 5, "posts.title": "up", "posts.author": 1, "users.id": 1, "users.age": 20, "users.name": "Bill", "users.email": "bill@gmail.com", "users.meta": { "value": 1 }, "users.posts": [1, 2, 3] }
                     ], "Right join failed!");
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+    });
+
+    it("Multiple Joins", (done: MochaDone) => {
+        joinTables((n) => {
+            n.table("users").query("select").join([
+                {
+                    type: "inner",
+                    table: "posts",
+                    where: ["users.id", "=", "posts.author"]
+                },
+                {
+                    type: "inner",
+                    table: "comments",
+                    where: ["users.id", "=", "comments.author"]
+                }
+            ]).exec().then((rows) => {
+
+                try {
+                    expect(rows).to.deep.equal([{
+                        "users.id": 1,
+                        "users.age": 20,
+                        "users.name": "Bill",
+                        "users.email": "bill@gmail.com",
+                        "users.meta": {
+                            "value": 1
+                        },
+                        "users.posts": [1, 2, 3],
+                        "posts.id": 1,
+                        "posts.title": "never",
+                        "posts.author": 1,
+                        "comments.id": 1,
+                        "comments.author": 1,
+                        "comments.text": "never"
+                    },
+                    {
+                        "users.id": 1,
+                        "users.age": 20,
+                        "users.name": "Bill",
+                        "users.email": "bill@gmail.com",
+                        "users.meta": {
+                            "value": 1
+                        },
+                        "users.posts": [1, 2, 3],
+                        "posts.id": 5,
+                        "posts.title": "up",
+                        "posts.author": 1,
+                        "comments.id": 1,
+                        "comments.author": 1,
+                        "comments.text": "never"
+                    },
+                    {
+                        "users.id": 2,
+                        "users.age": 24,
+                        "users.name": "Jeb",
+                        "users.email": "jeb@gmail.com",
+                        "users.meta": {
+                            "value": 1
+                        },
+                        "users.posts": [1, 2, 3],
+                        "posts.id": 4,
+                        "posts.title": "you",
+                        "posts.author": 2
+                    },
+                    {
+                        "users.id": 3,
+                        "users.age": 21,
+                        "users.name": "Bob",
+                        "users.email": "bob@gmail.com",
+                        "users.meta": {
+                            "value": 1
+                        },
+                        "users.posts": [1, 2, 3],
+                        "posts.id": 2,
+                        "posts.title": "gonna",
+                        "posts.author": 3,
+                        "comments.id": 2,
+                        "comments.author": 3,
+                        "comments.text": "gonna"
+                    }
+                    ], "Multiple join failed!");
                     done();
                 } catch (e) {
                     done(e);

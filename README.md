@@ -55,6 +55,7 @@ NanoSQL can save data to several different places, depending on the browser or e
 5. **[React Native](https://www.npmjs.com/package/nano-react-native)**
 6. **[Redis](https://www.npmjs.com/package/nano-redis)**
 7. **[Google Cloud Datastore](https://www.npmjs.com/package/nano-gcloud-datastore)**
+8. **[Trival DB (JSON File Store)](https://www.npmjs.com/package/nano-trivial)**
 
 ## Installation
 
@@ -77,7 +78,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.5.4/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.5.5/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

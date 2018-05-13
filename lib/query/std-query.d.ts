@@ -21,7 +21,7 @@ export interface IdbQueryBase {
         [column: string]: "asc" | "desc";
     };
     having?: any[];
-    join?: JoinArgs;
+    join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
     on?: any[];
@@ -176,7 +176,7 @@ export declare class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    join(args: JoinArgs): _NanoSQLQuery;
+    join(args: JoinArgs | JoinArgs[]): _NanoSQLQuery;
     /**
      * Limits the result to a specific amount.  Example:
      *

@@ -1,5 +1,5 @@
 import { IdbQuery } from "../query/std-query";
-import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL } from "../index";
+import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL, JoinArgs } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
 import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect, tokenizer, crowDistance } from "../utilities";
 import * as fuzzy from "fuzzysearch";
@@ -563,7 +563,7 @@ export class _NanoSQLStorageQuery {
                     rowDone();
                     return;
                 }
-                this._store._secondaryIndexRead(view.table, view.column, row[pk], (relatedRows: any[]) => {
+                this._store._secondaryIndexRead(view.table, "=", view.column, row[pk], (relatedRows: any[]) => {
                     // nothing to update
                     if (!relatedRows.length) {
                         rowDone();
@@ -874,37 +874,74 @@ export class _MutateSelection {
      * @memberof _MutateSelection
      */
     private _join(rows: DBRow[], complete: (rows: DBRow[]) => void): void {
+
         if (!this.q.join) {
             complete(rows);
             return;
         }
 
-        let joinConditions = {};
-        if (this.q.join.type !== "cross" && this.q.join.where) {
-            joinConditions = {
-                _left: this.q.join.where[0],
-                _check: this.q.join.where[1],
-                _right: this.q.join.where[2]
-            };
-        }
+        let joinData: JoinArgs[] = Array.isArray(this.q.join) ? this.q.join : [this.q.join];
 
-        const leftTable = this.q.table as any;
+        const leftTablePK = this.q.table + "." + this.s.tableInfo[this.q.table as string]._pk;
 
-        const rightTable = this.q.join.table;
+        fastCHAIN(joinData, (join: JoinArgs, ji, next) => {
+            let joinConditions = {};
+            if (join.type !== "cross" && join.where) {
+                joinConditions = {
+                    _left: join.where[0],
+                    _check: join.where[1],
+                    _right: join.where[2]
+                };
+            }
 
-        this._doJoin(this.q.join.type, leftTable as any, rightTable, joinConditions as any, (joinedRows) => {
+            const leftTable = this.q.table as any;
+
+            const rightTable = join.table;
+
+            this._doJoin(join.type, leftTable as any, rightTable, joinConditions as any, (joinedRows) => {
+                next(joinedRows);
+            });
+        }).then((result: any[][]) => {
+
+            // handle bringing the multiple joins into a single result set.
+            // we're essentially doing a left outer join on the results.
+            let i = 1;
+            while (result[i] !== undefined) {
+                result[i].forEach((row) => {
+                    let found = false;
+                    if ([undefined, null].indexOf(row[leftTablePK]) === -1) {
+                        result[0].forEach((row2, j) => {
+                            if (row2[leftTablePK] && row[leftTablePK] === row2[leftTablePK]) {
+                                found = true;
+                                Object.keys(row).forEach((key) => {
+                                    if (result[0][j][key] === undefined) {
+                                        result[0][j][key] = row[key];
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if (!found) {
+                        result[0].push(row);
+                    }
+                });
+                i++;
+            }
+
             if (this.q.where) { // apply where statement to join
-                complete(joinedRows.filter((row: any, idx) => {
+                complete(result[0].filter((row: any, idx) => {
                     return Array.isArray(this.q.where) ? _where(row, this.q.where || [], idx, true) : (this.q.where as any)(row, idx);
                 }));
             } else if (this.q.range) { // apply range statement to join
-                complete(joinedRows.filter((row: any, idx) => {
+                complete(result[0].filter((row: any, idx) => {
                     return this.q.range && this.q.range[0] >= idx && (this.q.range[0] + this.q.range[1]) - 1 <= idx;
                 }));
             } else { // send the whole result
-                complete(joinedRows);
+                complete(result[0]);
             }
         });
+
+
     }
 
     /**
@@ -1504,7 +1541,7 @@ export class _RowSelection {
                     nextWArg();
                 });
             }).then(() => {
-                let pks: {[pk: string]: boolean} = {};
+                let pks: { [pk: string]: boolean } = {};
                 // remove duplicates
                 callback(resultRows.filter(row => {
                     if (pks[row[PK]]) return false;
@@ -1920,13 +1957,20 @@ export class _RowSelection {
         }
 
         let keys: any[] = [];
+        let condition: string = "";
 
         switch (where[1]) {
             case "IN":
                 keys = where[2];
+                condition = "=";
                 break;
             case "=":
+            case ">":
+            case ">=":
+            case "<":
+            case "<=":
                 keys = [where[2]];
+                condition = where[1];
                 break;
         }
 
@@ -1934,7 +1978,7 @@ export class _RowSelection {
             this.s._read(this.q.table as any, keys as any, callback);
         } else { // secondary index select
             fastALL(keys, (idx, i, complete) => {
-                this.s._secondaryIndexRead(this.q.table as any, where[0], idx, complete);
+                this.s._secondaryIndexRead(this.q.table as any, condition, where[0], idx, complete);
             }).then((rows) => {
                 callback([].concat.apply([], rows));
             });
@@ -2097,35 +2141,32 @@ export class _RowSelection {
         const tableData = this.s.tableInfo[this.q.table as any];
         const wQuery = wArgs[0] || "";
         const wCondition = wArgs[1] || "";
-        if (
-        ["=", "IN", "BETWEEN"].indexOf(wArgs[1]) > -1 || // we are using an appriate comparitor
-        (wQuery.indexOf("search(") !== -1 && (wCondition === "=" || wCondition.indexOf(">") !== -1 || wCondition.indexOf("<") !== -1)) || // OR a search
-        (wQuery.indexOf("crow(") !== 1 && wCondition === "<") // OR a crow comparison with less than
-        ) {
-            // search select
-            if (wQuery.indexOf("search(") !== -1) {
-                const searchArgs = wQuery.replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
-                // all search columns are indexed
-                if (searchArgs.filter(s => Object.keys(tableData._searchColumns).indexOf(s) !== -1).length) {
-                    return 0;
-                }
-                return 1;
-            }
 
-            // gps select, lat/lon columns better be indexed!
-            if (wQuery.indexOf("crow(") !== -1) {
-                const crowArgs = wQuery.replace(/crow\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
-                const latTable = crowArgs[2] || "lat";
-                const lonTable = crowArgs[3] || "lon";
-                if (tableData._secondaryIndexes.indexOf(latTable) === -1 || tableData._secondaryIndexes.indexOf(lonTable) === -1) return 1;
-                return 0;
-            }
-
-            // secondary index / primary key select
-            if (wQuery === tableData._pk || tableData._secondaryIndexes.indexOf(wQuery) !== -1) {
-                return 0;
-            }
+        // is a valid crow query with secondary indexes
+        if (wQuery.indexOf("crow(") !== 1 && wCondition === "<") {
+            const crowArgs = wQuery.replace(/crow\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
+            const latTable = crowArgs[2] || "lat";
+            const lonTable = crowArgs[3] || "lon";
+            if (tableData._secondaryIndexes.indexOf(latTable) === -1 || tableData._secondaryIndexes.indexOf(lonTable) === -1) return 1;
+            return 0;
         }
+
+        // is a valid search query
+        if (wQuery.indexOf("search(") !== -1 && ["=", ">", "<"].indexOf(wArgs[1]) > -1) {
+            const searchArgs = wQuery.replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
+            // all search columns are indexed
+            if (searchArgs.filter(s => Object.keys(tableData._searchColumns).indexOf(s) !== -1).length) {
+                return 0;
+            }
+            return 1;
+        }
+
+        // secondary index with valid where condition and column
+        if (wQuery === tableData._pk || tableData._secondaryIndexes.indexOf(wQuery) !== -1) {
+            if (["=", "IN", "BETWEEN", ">", ">=", "<", "<="].indexOf(wArgs[1]) > -1) return 0;
+            return 1;
+        }
+
         return 1;
     }
 }
@@ -2254,7 +2295,7 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         // notAFunction => []
         whereFuncCache[where[0]] = where[0].indexOf("(") !== -1 ?
             where[0].replace(/(.*)\((.*)\)/gmi, "$1,$2").split(",").map(c => isNaN(c) ? c.trim() : parseFloat(c.trim()))
-        : [];
+            : [];
     }
 
     const processLIKE = (columnValue: string, givenValue: string): boolean => {

@@ -4,6 +4,10 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.5] 5-13-2018
+- Added feature to allow multiple joins in a single query. [Issue 41](https://github.com/ClickSimply/Nano-SQL/issues/41).
+- Fixed issue [Issue 42](https://github.com/ClickSimply/Nano-SQL/issues/42) with range queries on secondary indexes.
+
 ## [1.5.4] 5-2-2018
 - Fixed an issue with the default database index.
 

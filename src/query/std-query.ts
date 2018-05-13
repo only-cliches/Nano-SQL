@@ -20,7 +20,7 @@ export interface IdbQueryBase {
     orderBy?: { [column: string]: "asc" | "desc" };
     groupBy?: { [column: string]: "asc" | "desc" };
     having?: any[];
-    join?: JoinArgs;
+    join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
     on?: any[];
@@ -309,13 +309,23 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    public join(args: JoinArgs): _NanoSQLQuery {
+    public join(args: JoinArgs | JoinArgs[]): _NanoSQLQuery {
         if (Array.isArray(this._query.table)) {
-            throw Error("Can't JOIN with instance table!");
+            throw new Error("Can't JOIN with instance table!");
         }
-        if (!args.table || !args.type) {
-            this._error = "Join command requires table and type arguments!";
+        const err = "Join commands requires table and type arguments!";
+        if (Array.isArray(args)) {
+            args.forEach((arg) => {
+                if (!arg.table || !arg.type) {
+                    this._error = err;
+                }
+            });
+        } else {
+            if (!args.table || !args.type) {
+                this._error = err;
+            }
         }
+
         this._query.join = args;
         return this;
     }

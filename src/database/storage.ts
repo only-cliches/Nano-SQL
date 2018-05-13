@@ -7,6 +7,7 @@ import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
 /* NODE-START */
 import { _LevelStore } from "./adapter-levelDB";
+import { DEFAULT_ENCODING } from "crypto";
 /* NODE-END */
 
 export interface DBRow {
@@ -708,20 +709,53 @@ export class _NanoSQLStorage {
     /**
      * Get rows from a table given the column and secondary index primary key to read from.
      *
+     * valid conditions are: =, <, <=, >, >=
+     *
+     *
      * @param {string} table
      * @param {string} column
      * @param {string} search
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _NanoSQLStorage
      */
-    public _secondaryIndexRead(table: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
-        this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
-            if (row !== undefined && row !== null) {
-                this._read(table, (row["rows"] || []), callback);
-            } else {
-                callback([]);
-            }
-        });
+    public _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
+        switch (condition) {
+            case "=":
+                this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
+                    if (row !== undefined && row !== null) {
+                        this._read(table, (row["rows"] || []), callback);
+                    } else {
+                        callback([]);
+                    }
+                });
+                break;
+            default:
+                this.adapters[0].adapter.getIndex("_" + table + "_idx_" + column, false, (index: any[]) => {
+                    const searchVal = this._secondaryIndexKey(search);
+                    const getPKs = index.filter((val) => {
+                        switch (condition) {
+                            case ">": return searchVal > val;
+                            case ">=": return searchVal >= val;
+                            case "<": return searchVal < val;
+                            case "<=": return searchVal <= val;
+                        }
+                        return false;
+                    });
+                    if (!getPKs.length) {
+                        callback([]);
+                        return;
+                    }
+                    this._read("_" + table + "_idx_" + column, getPKs as any, (rows) => {
+                        const rowPKs = [].concat.apply([], rows.map(r => r.rows));
+                        if (!rowPKs.length) {
+                            callback([]);
+                            return;
+                        }
+                        this._read(table, rowPKs as any, callback);
+                    });
+                });
+        }
+
     }
 
     /**
@@ -804,7 +838,7 @@ export class _NanoSQLStorage {
         const words = this._trieIndexes[table][column].getPrefix(search) as any[];
 
         fastALL(words, (w, i, result) => {
-            this._secondaryIndexRead(table, column, w, result);
+            this._secondaryIndexRead(table, "=", column, w, result);
         }).then((arrayOfRows) => {
             callback([].concat.apply([], arrayOfRows));
         });

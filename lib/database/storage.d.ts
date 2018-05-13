@@ -350,13 +350,16 @@ export declare class _NanoSQLStorage {
     /**
      * Get rows from a table given the column and secondary index primary key to read from.
      *
+     * valid conditions are: =, <, <=, >, >=
+     *
+     *
      * @param {string} table
      * @param {string} column
      * @param {string} search
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _NanoSQLStorage
      */
-    _secondaryIndexRead(table: string, column: string, search: string, callback: (rows: DBRow[]) => void): void;
+    _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void): void;
     /**
      * Get a range of rows from a given table.
      * If usePKs is false the range is in limit/offset form where the from and to values are numbers indicating a range of rows to get.
