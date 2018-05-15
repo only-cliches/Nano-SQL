@@ -906,7 +906,7 @@ export class _MutateSelection {
             // handle bringing the multiple joins into a single result set.
             // we're essentially doing a left outer join on the results.
             let i = 1;
-            while (result[i] !== undefined) {
+            while (i < result.length) {
                 result[i].forEach((row) => {
                     let found = false;
                     if ([undefined, null].indexOf(row[leftTablePK]) === -1) {
@@ -2350,11 +2350,11 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         case "NOT IN": return (givenValue || []).indexOf(columnValue) === -1;
         // regexp search the column
         case "REGEXP":
-        case "REGEX": return columnValue.match(givenValue) !== null;
+        case "REGEX": return (columnValue || "").match(givenValue) !== null;
         // if given value exists in column value
-        case "LIKE": return processLIKE(columnValue, givenValue);
+        case "LIKE": return processLIKE((columnValue || ""), givenValue);
         // if given value does not exist in column value
-        case "NOT LIKE": return !processLIKE(columnValue, givenValue);
+        case "NOT LIKE": return !processLIKE((columnValue || ""), givenValue);
         // if the column value is between two given numbers
         case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
         // if single value exists in array column

@@ -8,7 +8,7 @@ import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 
-const VERSION = 1.54;
+const VERSION = 1.56;
 
 // uglifyJS fix
 const str = ["_util"];
