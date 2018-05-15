@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "description": "NoSQL Everywhere",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",

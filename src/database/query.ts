@@ -2302,6 +2302,13 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         if (!likeCache[givenValue]) {
             likeCache[givenValue] = new RegExp("^" + givenValue.replace(/\%/gm, ".*").replace(/\_/gm, ".") + "$", "gmi");
         }
+        if (typeof columnValue !== "string") {
+            if (typeof columnValue === "number") {
+                return String(columnValue).match(likeCache[givenValue]) !== null;
+            } else {
+                return JSON.stringify(columnValue).match(likeCache[givenValue]) !== null;
+            }
+        }
         return columnValue.match(likeCache[givenValue]) !== null;
     };
 

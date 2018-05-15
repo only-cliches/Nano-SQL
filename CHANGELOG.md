@@ -4,6 +4,9 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.7] 5-15-2018
+- Fixed LIKE queries when column vlaue isn't string.
+
 ## [1.5.6] 5-14-2018
 - Fixed LIKE queries when column value is undefined.
 
