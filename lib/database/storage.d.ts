@@ -7,6 +7,20 @@ export interface DBKey {
     string: any;
     number: any;
 }
+export interface QueryQ {
+    list: {
+        [table: string]: number[];
+    };
+    cbs: {
+        [id: number]: (done: (passArg: any, passCB: (arg: any) => void) => void) => void;
+    };
+    add: (doQeue: boolean, table: string, cb: (done: (passArg: any, passCB: (arg: any) => void) => void) => void) => void;
+    running: boolean;
+    currentID: {
+        [table: string]: number;
+    };
+    loop: () => void;
+}
 /**
  * Storage class uses one of these to attach to the actual database backend.
  *
@@ -190,6 +204,7 @@ export declare class _NanoSQLStorage {
             }[];
         };
     };
+    qq: QueryQ;
     /**
      * Wether ORM values exist in the data models or not.
      *
@@ -359,7 +374,7 @@ export declare class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _NanoSQLStorage
      */
-    _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void): void;
+    _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void, queue?: boolean): void;
     /**
      * Get a range of rows from a given table.
      * If usePKs is false the range is in limit/offset form where the from and to values are numbers indicating a range of rows to get.
@@ -402,7 +417,7 @@ export declare class _NanoSQLStorage {
      * @param {(row: DBRow) => void} complete
      * @memberof _NanoSQLStorage
      */
-    _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void): void;
+    _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void, queue?: boolean): void;
     /**
      * Delete a specific row from the database.
      *
@@ -420,7 +435,8 @@ export declare class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     _drop(table: string, complete: () => void): void;
-    adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void;
+    adapterRead(table: string, pk: DBKey, complete: (row: DBRow) => void, queue?: boolean): void;
+    adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void, queue?: boolean): void;
     adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void;
     adapterDrop(table: string, complete: () => void, error?: (err: Error) => void): void;
 }

@@ -1,7 +1,7 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates } from "../utilities";
+import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates, random16Bits } from "../utilities";
 import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
@@ -18,6 +18,69 @@ export interface DBKey {
     string;
     number;
 }
+
+export interface QueryQ {
+    list: {[table: string]: number[]};
+    cbs: { [id: number]: (done: (passArg: any, passCB: (arg: any) => void) => void) => void };
+    add: (doQeue: boolean, table: string, cb: (done: (passArg: any, passCB: (arg: any) => void) => void) => void) => void;
+    running: boolean;
+    currentID: {[table: string]: number};
+    loop: () => void;
+}
+
+const newQueryQ = (_this: _NanoSQLStorage): QueryQ => {
+    return {
+        list: {},
+        cbs: {},
+        currentID: {},
+        running: false,
+        add: (doQeue: boolean, table: string, cb: (done: (passArg: any, passCB: (arg: any) => void) => void) => void): void => {
+
+            if (!doQeue) {
+                cb((passArg, passCB) => {
+                    passCB(passArg);
+                });
+                return;
+            }
+            const id = _this._nsql.fastRand();
+            _this.qq.cbs[id] = cb;
+            if (!_this.qq.list[table]) {
+                _this.qq.list[table] = [];
+                _this.qq.currentID[table] = -1;
+            }
+            _this.qq.list[table].push(id);
+            if (!_this.qq.running) {
+                _this.qq.loop();
+            }
+        },
+        loop: () => {
+            _this.qq.running = true;
+            setTimeout(() => {
+                let totalRunning = 0;
+                Object.keys(_this.qq.list).forEach((table) => {
+                    totalRunning = _this.qq.list[table].length;
+                    if (_this.qq.list[table].length) {
+                        if (_this.qq.currentID[table] !== _this.qq.list[table][0]) {
+                            _this.qq.currentID[table] = _this.qq.list[table][0];
+                            _this.qq.cbs[_this.qq.list[table][0]]((passArg, passCB) => {
+                                delete _this.qq.cbs[_this.qq.list[table][0]];
+                                _this.qq.list[table].shift();
+                                passCB(passArg);
+                            });
+                        }
+                    } else {
+                        delete _this.qq.list[table];
+                    }
+                });
+                if (totalRunning > 0) {
+                    _this.qq.loop();
+                } else {
+                    _this.qq.running = false;
+                }
+            }, 0);
+        }
+    };
+};
 
 /**
  * Storage class uses one of these to attach to the actual database backend.
@@ -219,6 +282,8 @@ export class _NanoSQLStorage {
         }
     };
 
+    public qq: QueryQ;
+
     /**
      * Wether ORM values exist in the data models or not.
      *
@@ -399,6 +464,7 @@ export class _NanoSQLStorage {
         this._mode = args.persistent ? "PERM" : args.mode || "TEMP" as any;
         this._id = args.id as any;
         this._size = args.size || 5;
+        this.qq = newQueryQ(this);
 
         this.adapters = [];
         this.models = {};
@@ -718,43 +784,50 @@ export class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _NanoSQLStorage
      */
-    public _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
-        switch (condition) {
-            case "=":
-                this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
-                    if (row !== undefined && row !== null) {
-                        this._read(table, (row["rows"] || []), callback);
-                    } else {
-                        callback([]);
-                    }
-                });
-                break;
-            default:
-                this.adapters[0].adapter.getIndex("_" + table + "_idx_" + column, false, (index: any[]) => {
-                    const searchVal = this._secondaryIndexKey(search);
-                    const getPKs = index.filter((val) => {
-                        switch (condition) {
-                            case ">": return searchVal > val;
-                            case ">=": return searchVal >= val;
-                            case "<": return searchVal < val;
-                            case "<=": return searchVal <= val;
+    public _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void, queue?: boolean) {
+
+        this.qq.add(queue || false, table, (ready) => {
+            switch (condition) {
+                case "=":
+                    this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
+                        if (row !== undefined && row !== null) {
+                            this._read(table, (row["rows"] || []), (rows) => {
+                                ready(rows, callback);
+                            });
+                        } else {
+                            ready([], callback);
                         }
-                        return false;
                     });
-                    if (!getPKs.length) {
-                        callback([]);
-                        return;
-                    }
-                    this._read("_" + table + "_idx_" + column, getPKs as any, (rows) => {
-                        const rowPKs = [].concat.apply([], rows.map(r => r.rows));
-                        if (!rowPKs.length) {
-                            callback([]);
+                    break;
+                default:
+                    this.adapters[0].adapter.getIndex("_" + table + "_idx_" + column, false, (index: any[]) => {
+                        const searchVal = this._secondaryIndexKey(search);
+                        const getPKs = index.filter((val) => {
+                            switch (condition) {
+                                case ">": return searchVal > val;
+                                case ">=": return searchVal >= val;
+                                case "<": return searchVal < val;
+                                case "<=": return searchVal <= val;
+                            }
+                            return false;
+                        });
+                        if (!getPKs.length) {
+                            ready([], callback);
                             return;
                         }
-                        this._read(table, rowPKs as any, callback);
+                        this._read("_" + table + "_idx_" + column, getPKs as any, (rows) => {
+                            const rowPKs = [].concat.apply([], rows.map(r => r.rows));
+                            if (!rowPKs.length) {
+                                ready([], callback);
+                                return;
+                            }
+                            this._read(table, rowPKs as any, (rows) => {
+                                ready(rows, callback);
+                            });
+                        });
                     });
-                });
-        }
+            }
+        });
 
     }
 
@@ -925,45 +998,52 @@ export class _NanoSQLStorage {
      * @param {(row: DBRow) => void} complete
      * @memberof _NanoSQLStorage
      */
-    public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void) {
+    public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void, queue?: boolean) {
 
-        if (!oldRow) { // new row
+        this.qq.add(queue || false, table, (ready) => {
+            if (!oldRow) { // new row
 
-            this.adapterWrite(table, pk, newRow, (row) => {
+                this.adapterWrite(table, pk, newRow, (row) => {
+
+                    if (this.tableInfo[table]._secondaryIndexes.length) {
+                        this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
+                            ready(row, complete);
+                        });
+                    } else {
+                        ready(row, complete);
+                    }
+
+                });
+
+
+            } else { // existing row
+
+                const setRow = {
+                    ...oldRow,
+                    ...newRow,
+                    [this.tableInfo[table]._pk]: pk
+                };
+
+                const sameKeys = Object.keys(setRow).filter((key) => {
+                    return setRow[key] === oldRow[key];
+                });
 
                 if (this.tableInfo[table]._secondaryIndexes.length) {
-                    this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
-                        complete(row);
+                    this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
+                        this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
+                            this.adapterWrite(table, pk, setRow, (row) => {
+                                ready(row, complete);
+                            });
+                        });
                     });
                 } else {
-                    complete(row);
-                }
-
-            });
-
-
-        } else { // existing row
-
-            const setRow = {
-                ...oldRow,
-                ...newRow,
-                [this.tableInfo[table]._pk]: pk
-            };
-
-            const sameKeys = Object.keys(setRow).filter((key) => {
-                return setRow[key] === oldRow[key];
-            });
-
-            if (this.tableInfo[table]._secondaryIndexes.length) {
-                this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
-                    this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
-                        this.adapterWrite(table, pk, setRow, complete);
+                    this.adapterWrite(table, pk, setRow, (row) => {
+                        ready(row, complete);
                     });
-                });
-            } else {
-                this.adapterWrite(table, pk, setRow, complete);
+                }
             }
-        }
+        });
+
     }
 
     /**
@@ -1178,23 +1258,34 @@ export class _NanoSQLStorage {
         return tableName;
     }
 
+    public adapterRead(table: string, pk: DBKey, complete: (row: DBRow) => void, queue?: boolean): void {
+        this.qq.add(queue || false, table, (ready) => {
+            this.adapters[0].adapter.read(table, pk, (row) => {
+                ready(row, complete);
+            });
+        });
+    }
 
-    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void {
-        let result: any;
-        fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
-            if (a.waitForWrites) {
-                a.adapter.write(table, pk, data, (row) => {
-                    result = row;
+
+    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void, queue?: boolean): void {
+
+        this.qq.add(queue || false, table, (ready) => {
+            let result: any;
+            fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
+                if (a.waitForWrites) {
+                    a.adapter.write(table, pk, data, (row) => {
+                        result = row;
+                        done();
+                    });
+                } else {
                     done();
-                });
-            } else {
-                done();
-                a.adapter.write(table, pk, data, (row) => { });
-            }
-        }).then(() => {
-            complete(result);
-        }).catch((err) => {
-            if (error) error(err);
+                    a.adapter.write(table, pk, data, (row) => { });
+                }
+            }).then(() => {
+                ready(result, complete);
+            }).catch((err) => {
+                if (error) error(err);
+            });
         });
     }
 

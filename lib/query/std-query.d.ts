@@ -6,6 +6,7 @@ export interface IdbQuery extends IdbQueryBase {
     state: string;
     result: DBRow[];
     comments: string[];
+    queue: boolean;
 }
 export interface IdbQueryBase {
     queryID?: string;
@@ -208,6 +209,7 @@ export declare class _NanoSQLQuery {
      * @memberof _NanoSQLQuery
      */
     comment(comment: string): _NanoSQLQuery;
+    queue(set?: boolean): void;
     /**
      * Perform custom actions supported by plugins.
      *

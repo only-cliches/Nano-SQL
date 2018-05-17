@@ -328,7 +328,7 @@ export class _NanoSQLStorageQuery {
             });
 
             // get token cache for this row and column
-            this._store.adapters[0].adapter.read(tokenTable + col, pk, (row: { id: any, hash: string, tokens: { w: string, i: number }[] }) => {
+            this._store.adapterRead(tokenTable + col, pk, (row: { id: any, hash: string, tokens: { w: string, i: number }[] }) => {
                 if (!row) {
                     next();
                     return;
@@ -349,7 +349,7 @@ export class _NanoSQLStorageQuery {
                             done();
                             return;
                         }
-                        this._store.adapters[0].adapter.read("_" + table + tableSection + col, word, (wRow: SearchRowIndex) => {
+                        this._store.adapterRead("_" + table + tableSection + col, word, (wRow: SearchRowIndex) => {
                             if (!wRow) {
                                 done();
                                 return;
@@ -359,13 +359,13 @@ export class _NanoSQLStorageQuery {
                             }
                             wRow.rows = wRow.rows.filter(r => r.id !== pk);
                             this._store.adapterWrite("_" + table + tableSection + col, word, wRow, done);
-                        });
+                        }, true);
                     }).then(next);
                 }).then(() => {
                     // remove row hash and token cache
                     this._store.adapters[0].adapter.delete(tokenTable + col, pk, next);
                 });
-            });
+            }, true);
         }).then(complete);
     }
 
@@ -386,7 +386,7 @@ export class _NanoSQLStorageQuery {
                 return;
             }
             // get token cache and hash for this row/column
-            this._store.adapters[0].adapter.read(tokenTable + col, pk, (row: any) => {
+            this._store.adapterRead(tokenTable + col, pk, (row: any) => {
                 const existing: {
                     id: any;
                     hash: string;
@@ -438,7 +438,7 @@ export class _NanoSQLStorageQuery {
                                 next();
                                 return;
                             }
-                            this._store.adapters[0].adapter.read("_" + table + tableSection + col, indexWord, (colRow: SearchRowIndex) => {
+                            this._store.adapterRead("_" + table + tableSection + col, indexWord, (colRow: SearchRowIndex) => {
                                 let searchIndex: SearchRowIndex = colRow || { wrd: word, rows: [] };
                                 if (Object.isFrozen(searchIndex)) {
                                     searchIndex = _assign(searchIndex);
@@ -460,8 +460,8 @@ export class _NanoSQLStorageQuery {
                                         });
                                         break;
                                 }
-                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next);
-                            });
+                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next, () => {}, true);
+                            }, true);
                         }).then(nextWord);
                     }).then(nextTokens);
                 }).then(() => {
@@ -469,9 +469,9 @@ export class _NanoSQLStorageQuery {
                         id: pk,
                         hash: thisHash,
                         tokens: newTokens.map(o => ({ w: o.w, i: o.i }))
-                    }, next);
+                    }, next, () => {}, true);
                 });
-            });
+            }, true);
         }).then(complete);
     }
 
@@ -520,7 +520,7 @@ export class _NanoSQLStorageQuery {
                 return;
             }
             // get reference record and copy everything over
-            this._store._read(table, [newRowData[pk]] as any, (refRows: any[]) => {
+            this._store.adapterRead(table, newRowData[pk], (refRows: any[]) => {
                 // record doesn't exist
                 if (!refRows.length && this._store.tableInfo[this._query.table as any]._views[table].mode === "LIVE") {
                     this._store.tableInfo[this._query.table as any]._views[table].columns.forEach((col) => {
@@ -534,7 +534,7 @@ export class _NanoSQLStorageQuery {
                     newRowData[col.thisColumn] = refRows[0][col.otherColumn];
                 });
                 done();
-            });
+            }, true);
         }).then(() => {
             complete(newRowData);
         });
@@ -599,9 +599,9 @@ export class _NanoSQLStorageQuery {
                         }
 
                         const rPk = this._store.tableInfo[view.table]._pk;
-                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone);
+                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone, () => {}, true);
                     }).then(rowDone);
-                });
+                }, true);
             }).then(done);
         }).then(complete);
     }
@@ -665,7 +665,7 @@ export class _NanoSQLStorageQuery {
                                             }
                                         });
                                     }
-                                    this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone);
+                                    this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone, true);
                                 });
                             });
                         }).then((nRows: DBRow[]) => {
@@ -710,7 +710,7 @@ export class _NanoSQLStorageQuery {
                                 addedRows.push(result);
                                 nextRow();
                             });
-                        });
+                        }, true);
                     });
                 };
 
@@ -1619,7 +1619,7 @@ export class _RowSelection {
                         case 0:
                             // Search the tokenized index for matches (super quick);
                             fastALL(searchTerms, (term: { w: string, i: number[] }, j, nextTerm) => {
-                                this.s.adapters[0].adapter.read(indexTable, term.w as any, (row: SearchRowIndex) => {
+                                this.s.adapterRead(indexTable, term.w as any, (row: SearchRowIndex) => {
                                     if (!row) {
                                         nextTerm();
                                         return;
@@ -1659,7 +1659,7 @@ export class _RowSelection {
                                 wordsToGet = wordsToGet.filter((v, i, s) => s.indexOf(v) === i);
 
                                 fastALL(wordsToGet, (term: string, j, nextTerm) => {
-                                    this.s.adapters[0].adapter.read(indexTable, term as any, (row: SearchRowIndex) => {
+                                    this.s.adapterRead(indexTable, term as any, (row: SearchRowIndex) => {
                                         if (!row) {
                                             nextTerm();
                                             return;
@@ -1813,7 +1813,7 @@ export class _RowSelection {
                     return true;
                 }), (pk, i, done) => {
                     // get result rows
-                    this.s.adapters[0].adapter.read(this.q.table as string, pk, done);
+                    this.s.adapterRead(this.q.table as string, pk, done);
                 }).then((rows) => {
                     const pk = this.s.tableInfo[this.q.table as any]._pk;
                     rows = rows.filter(r => r);

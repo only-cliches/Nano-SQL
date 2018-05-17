@@ -19,7 +19,8 @@ export class _NanoSQLTransactionQuery {
             queryID: transactionID,
             transaction: true,
             result: [],
-            comments: []
+            comments: [],
+            queue: false
         };
         this._queries = queries;
     }

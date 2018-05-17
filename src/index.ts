@@ -8,7 +8,7 @@ import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 
-const VERSION = 1.57;
+const VERSION = 1.58;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -186,7 +186,7 @@ export class NanoSQLInstance {
 
     // Incase you don't need truly random numbers,
     // this will generate a cache of random numbers and loop between them.
-    private _randoms: string[];
+    private _randoms: number[];
     private _randomPtr: number;
 
     public static functions: {
@@ -362,8 +362,8 @@ export class NanoSQLInstance {
         // t._queryPtr = 0;
         t._randomPtr = 0;
         t.hasAnyEvents = false;
-        for (let i = 0; i < 200; i++) {
-            t._randoms.push(random16Bits().toString(16));
+        for (let i = 0; i < 1000; i++) {
+            t._randoms.push(random16Bits());
             // t._queryPool.push(new _NanoSQLQuery(t));
         }
 
@@ -417,7 +417,7 @@ export class NanoSQLInstance {
      * @returns {string}
      * @memberof NanoSQLInstance
      */
-    public fastRand(): string {
+    public fastRand(): number {
         this._randomPtr++;
         if (this._randomPtr >= this._randoms.length) {
             this._randomPtr = 0;

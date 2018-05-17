@@ -8,6 +8,7 @@ export interface IdbQuery extends IdbQueryBase {
     state: string;
     result: DBRow[];
     comments: string[];
+    queue: boolean;
 }
 
 export interface IdbQueryBase {
@@ -145,7 +146,8 @@ export class _NanoSQLQuery {
             queryID: Date.now() + "." + this._db.fastRand(),
             action: queryAction,
             actionArgs: queryArgs,
-            result: []
+            result: [],
+            queue: false
         };
     }
 
@@ -371,6 +373,10 @@ export class _NanoSQLQuery {
     public comment(comment: string): _NanoSQLQuery {
         this._query.comments.push(comment);
         return this;
+    }
+
+    public queue(set?: boolean) {
+        this._query.queue = set !== undefined ? set : true;
     }
 
     /**

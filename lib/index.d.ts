@@ -251,7 +251,7 @@ export declare class NanoSQLInstance {
      * @returns {string}
      * @memberof NanoSQLInstance
      */
-    fastRand(): string;
+    fastRand(): number;
     /**
      * Changes the table pointer to a new table.
      *
