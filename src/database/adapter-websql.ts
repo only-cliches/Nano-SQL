@@ -127,7 +127,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         }
 
         let newRow = false;
-        if (this._dbIndex[table].indexOf(pk) === -1) {
+        if (!this._dbIndex[table].exists(pk)) {
             newRow = true;
             this._dbIndex[table].add(pk);
         }

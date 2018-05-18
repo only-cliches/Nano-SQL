@@ -73,6 +73,10 @@ export class DatabaseIndex {
         return this._sorted;
     }
 
+    public exists(key: any): boolean {
+        return this._exists[String(key)] ? true : false;
+    }
+
     public indexOf(key: any): number {
         if (!this._exists[String(key)]) return -1;
         return this.sortIndex ? binarySearch(this._sorted, key) : this._sorted.indexOf(key);

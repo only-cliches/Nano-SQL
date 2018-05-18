@@ -17,6 +17,7 @@ export declare class DatabaseIndex {
     getLocation(key: any, startIdx?: number): number;
     add(key: any): void;
     keys(): any[];
+    exists(key: any): boolean;
     indexOf(key: any): number;
     remove(key: any): void;
 }
