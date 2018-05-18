@@ -786,7 +786,7 @@ export class _NanoSQLStorage {
      */
     public _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void, queue?: boolean) {
 
-        this.qq.add(queue || false, table, (ready) => {
+        this.qq.add(queue || false, "_" + table + "_idx_" + column, (ready) => {
             switch (condition) {
                 case "=":
                     this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
@@ -804,13 +804,14 @@ export class _NanoSQLStorage {
                         const searchVal = this._secondaryIndexKey(search);
                         const getPKs = index.filter((val) => {
                             switch (condition) {
-                                case ">": return searchVal > val;
-                                case ">=": return searchVal >= val;
-                                case "<": return searchVal < val;
-                                case "<=": return searchVal <= val;
+                                case ">": return val > searchVal;
+                                case ">=": return val >= searchVal;
+                                case "<": return val < searchVal;
+                                case "<=": return val <= searchVal;
                             }
                             return false;
                         });
+
                         if (!getPKs.length) {
                             ready([], callback);
                             return;

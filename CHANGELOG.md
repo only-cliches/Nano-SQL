@@ -4,6 +4,11 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.5.9] 5-18-2018
+- Fixed secondary index range select issue.
+- Added secondary index range tests.
+- 
+
 ## [1.5.8] 5-17-2018
 - Fixed issue [43](https://github.com/ClickSimply/Nano-SQL/issues/43), secondary indexes, ORM queries and denormalization queries are now ran in a queue to prevent conflicts.
 - Cleaned up build system a little.

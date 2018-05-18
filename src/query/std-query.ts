@@ -143,7 +143,7 @@ export class _NanoSQLQuery {
             table: table,
             comments: [],
             state: "pending",
-            queryID: Date.now() + "." + this._db.fastRand(),
+            queryID: Date.now() + "." + this._db.fastRand().toString(16),
             action: queryAction,
             actionArgs: queryArgs,
             result: [],
