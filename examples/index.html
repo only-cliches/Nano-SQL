@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,38 +8,89 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="nano-sql.min.js"></script>
     <script>
+        nSQL("personnelLocation")
+            .model([{
+                    "key": "id",
+                    "type": "uuid",
+                    "props": [
+                        "pk"
+                    ]
+                },
+                {
+                    "key": "client_id",
+                    "type": "uuid",
+                    "props": [
+                        "idx"
+                    ]
+                },
+                {
+                    "key": "client_location_id",
+                    "type": "uuid",
+                    "props": [
+                        "idx"
+                    ]
+                },
+                {
+                    "key": "personnel_id",
+                    "type": "string",
+                    "props": [
+                        "idx"
+                    ]
+                },
+                {
+                    "key": "created_date",
+                    "type": "string",
+                    "props": []
+                },
+                {
+                    "key": "modified_date",
+                    "type": "string",
+                    "props": []
+                }
+            ])
+            .config({
+                id: 'test-cache'
+            }).connect().then(() => {
 
-    const ExampleUsers = [
-        {id: 1, name: "Bill", age: 20, email: "bill@gmail.com", meta: {value: 1}, posts: [1, 3]},
-        {id: 2, name: "Jeb", age: 24, email: "jeb@gmail.com", meta: {value: 1}, posts: [1]},
-        {id: 3, name: "Bob", age: 21, email: "bob@gmail.com", meta: {value: 1}, posts: [1, 2, 3]},
-        {id: 4, name: "Bill", age: 23, email: "bill@gmail.com", meta: {value: 1}, posts: [1, 3]},
-        {id: 5, name: "Jeb", age: 30, email: "jeb@gmail.com", meta: {value: 1}, posts: [1]},
-        {id: 6, name: "Bob", age: 29, email: "bob@gmail.com", meta: {value: 1}, posts: [1, 2, 3]}
-    ];
+                const data = [{
+                        'id': '1',
+                        'personnel_id': '2596'
+                    },
+                    {
+                        'id': '2',
+                        'personnel_id': '2596'
+                    },
+                    {
+                        'id': '3',
+                        'personnel_id': '2596'
+                    },
+                    {
+                        'id': '4',
+                        'personnel_id': '2596'
+                    }
+                ];
 
-    const dataModel = [
-        { key: "id", type: "int", props: ["pk()", "ai()"] },
-        { key: "age", type: "int", props: ["idx()"] },
-        { key: "name", type: "string", props: ["idx()"] },
-        { key: "email", type: "string", props: ["trie()"] },
-        { key: "meta", type: "map"},
-        { key: "posts", type: "int[]"}
-    ];
+                const promises = [];
 
-    nSQL("users")
-    .model(dataModel)
-    .connect().then(() => {
-        return nSQL().loadJS("users", ExampleUsers);
-    }).then(() => {
-        
-        nSQL("users").query("select").where(["age", ">", 23]).exec().then((rows) => {
-            console.log(rows);
-        })
-    })
+                data.forEach(row => {
+                    promises.push(nSQL("personnelLocation").query("upsert", row).exec());
+                });
+
+                return Promise.all(promises);
+
+            }).then(() => {
+                // performing select on a secondary index uses that secondary index for the query...
+                return nSQL("personnelLocation").query("select").where(["personnel_id", "=", "2596"]).exec();
+            }).then((rows) => {
+                const pre = document.createElement("pre");
+                document.body.appendChild(pre);
+                pre.innerHTML = JSON.stringify(rows, null, 4);
+            })
     </script>
 </head>
+
 <body>
-    
+
 </body>
+
 </html>

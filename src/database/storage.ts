@@ -1,14 +1,16 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates, random16Bits } from "../utilities";
+import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates, random16Bits, Promise } from "../utilities";
 import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
+import { setFast } from "lie-ts";
 /* NODE-START */
 import { _LevelStore } from "./adapter-levelDB";
 import { DEFAULT_ENCODING } from "crypto";
 /* NODE-END */
+const queue = require("queue");
 
 export interface DBRow {
     [key: string]: any;
@@ -19,65 +21,29 @@ export interface DBKey {
     number;
 }
 
+
 export interface QueryQ {
-    list: {[table: string]: number[]};
-    cbs: { [id: number]: (done: (passArg: any, passCB: (arg: any) => void) => void) => void };
-    add: (doQeue: boolean, table: string, cb: (done: (passArg: any, passCB: (arg: any) => void) => void) => void) => void;
-    running: boolean;
-    currentID: {[table: string]: number};
-    loop: () => void;
+    add: (table: string, cb: (done: () => void) => void) => void;
+    qs: { [table: string]: any };
 }
 
 const newQueryQ = (_this: _NanoSQLStorage): QueryQ => {
     return {
-        list: {},
-        cbs: {},
-        currentID: {},
-        running: false,
-        add: (doQeue: boolean, table: string, cb: (done: (passArg: any, passCB: (arg: any) => void) => void) => void): void => {
+        qs: {},
+        add: (table: string, cb: (done: () => void) => void): void => {
 
-            if (!doQeue) {
-                cb((passArg, passCB) => {
-                    passCB(passArg);
+            if (!_this.queue.qs[table]) {
+                _this.queue.qs[table] = queue();
+                _this.queue.qs[table].autostart = true;
+                _this.queue.qs[table].concurrency = 1;
+            }
+
+            _this.queue.qs[table].push((done) => {
+                setFast(() => {
+                    cb(done);
                 });
-                return;
-            }
-            const id = _this._nsql.fastRand();
-            _this.qq.cbs[id] = cb;
-            if (!_this.qq.list[table]) {
-                _this.qq.list[table] = [];
-                _this.qq.currentID[table] = -1;
-            }
-            _this.qq.list[table].push(id);
-            if (!_this.qq.running) {
-                _this.qq.loop();
-            }
-        },
-        loop: () => {
-            _this.qq.running = true;
-            setTimeout(() => {
-                let totalRunning = 0;
-                Object.keys(_this.qq.list).forEach((table) => {
-                    totalRunning = _this.qq.list[table].length;
-                    if (_this.qq.list[table].length) {
-                        if (_this.qq.currentID[table] !== _this.qq.list[table][0]) {
-                            _this.qq.currentID[table] = _this.qq.list[table][0];
-                            _this.qq.cbs[_this.qq.list[table][0]]((passArg, passCB) => {
-                                delete _this.qq.cbs[_this.qq.list[table][0]];
-                                _this.qq.list[table].shift();
-                                passCB(passArg);
-                            });
-                        }
-                    } else {
-                        delete _this.qq.list[table];
-                    }
-                });
-                if (totalRunning > 0) {
-                    _this.qq.loop();
-                } else {
-                    _this.qq.running = false;
-                }
-            }, 0);
+            });
+
         }
     };
 };
@@ -256,6 +222,8 @@ export class _NanoSQLStorage {
 
     public _id: string; // database ID
 
+    public queue: QueryQ;
+
     // public _adapter: NanoSQLStorageAdapter; // The storage adapter used by the system.
 
     public tableInfo: {
@@ -282,7 +250,7 @@ export class _NanoSQLStorage {
         }
     };
 
-    public qq: QueryQ;
+    // public qq: QueryQ;
 
     /**
      * Wether ORM values exist in the data models or not.
@@ -464,7 +432,7 @@ export class _NanoSQLStorage {
         this._mode = args.persistent ? "PERM" : args.mode || "TEMP" as any;
         this._id = args.id as any;
         this._size = args.size || 5;
-        this.qq = newQueryQ(this);
+        this.queue = newQueryQ(this);
 
         this.adapters = [];
         this.models = {};
@@ -784,51 +752,50 @@ export class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _NanoSQLStorage
      */
-    public _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void, queue?: boolean) {
+    public _secondaryIndexRead(table: string, condition: string, column: string, search: string, callback: (rows: DBRow[]) => void) {
 
-        this.qq.add(queue || false, "_" + table + "_idx_" + column, (ready) => {
-            switch (condition) {
-                case "=":
-                    this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
-                        if (row !== undefined && row !== null) {
-                            this._read(table, (row["rows"] || []), (rows) => {
-                                ready(rows, callback);
-                            });
-                        } else {
-                            ready([], callback);
-                        }
-                    });
-                    break;
-                default:
-                    this.adapters[0].adapter.getIndex("_" + table + "_idx_" + column, false, (index: any[]) => {
-                        const searchVal = this._secondaryIndexKey(search);
-                        const getPKs = index.filter((val) => {
-                            switch (condition) {
-                                case ">": return val > searchVal;
-                                case ">=": return val >= searchVal;
-                                case "<": return val < searchVal;
-                                case "<=": return val <= searchVal;
-                            }
-                            return false;
+        switch (condition) {
+            case "=":
+                this.adapters[0].adapter.read("_" + table + "_idx_" + column, this._secondaryIndexKey(search) as any, (row) => {
+                    if (row !== undefined && row !== null) {
+                        this._read(table, (row["rows"] || []), (rows) => {
+                            callback(rows);
                         });
+                    } else {
+                        callback([]);
+                    }
+                });
+                break;
+            default:
+                this.adapters[0].adapter.getIndex("_" + table + "_idx_" + column, false, (index: any[]) => {
+                    const searchVal = this._secondaryIndexKey(search);
+                    const getPKs = index.filter((val) => {
+                        switch (condition) {
+                            case ">": return val > searchVal;
+                            case ">=": return val >= searchVal;
+                            case "<": return val < searchVal;
+                            case "<=": return val <= searchVal;
+                        }
+                        return false;
+                    });
 
-                        if (!getPKs.length) {
-                            ready([], callback);
+                    if (!getPKs.length) {
+                        callback([]);
+                        return;
+                    }
+                    this._read("_" + table + "_idx_" + column, getPKs as any, (rows) => {
+                        const rowPKs = [].concat.apply([], rows.map(r => r.rows));
+                        if (!rowPKs.length) {
+                            callback([]);
                             return;
                         }
-                        this._read("_" + table + "_idx_" + column, getPKs as any, (rows) => {
-                            const rowPKs = [].concat.apply([], rows.map(r => r.rows));
-                            if (!rowPKs.length) {
-                                ready([], callback);
-                                return;
-                            }
-                            this._read(table, rowPKs as any, (rows) => {
-                                ready(rows, callback);
-                            });
+                        this._read(table, rowPKs as any, (rows) => {
+                            callback(rows);
                         });
                     });
-            }
-        });
+                });
+        }
+
 
     }
 
@@ -999,19 +966,19 @@ export class _NanoSQLStorage {
      * @param {(row: DBRow) => void} complete
      * @memberof _NanoSQLStorage
      */
-    public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void, queue?: boolean) {
+    public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void) {
 
-        this.qq.add(queue || false, table, (ready) => {
+
             if (!oldRow) { // new row
 
                 this.adapterWrite(table, pk, newRow, (row) => {
 
                     if (this.tableInfo[table]._secondaryIndexes.length) {
                         this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
-                            ready(row, complete);
+                            complete(row);
                         });
                     } else {
-                        ready(row, complete);
+                        complete(row);
                     }
 
                 });
@@ -1033,17 +1000,16 @@ export class _NanoSQLStorage {
                     this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
                         this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
                             this.adapterWrite(table, pk, setRow, (row) => {
-                                ready(row, complete);
+                                complete(row);
                             });
                         });
                     });
                 } else {
                     this.adapterWrite(table, pk, setRow, (row) => {
-                        ready(row, complete);
+                        complete(row);
                     });
                 }
             }
-        });
 
     }
 
@@ -1260,17 +1226,14 @@ export class _NanoSQLStorage {
     }
 
     public adapterRead(table: string, pk: DBKey, complete: (row: DBRow) => void, queue?: boolean): void {
-        this.qq.add(queue || false, table, (ready) => {
-            this.adapters[0].adapter.read(table, pk, (row) => {
-                ready(row, complete);
-            });
+        this.adapters[0].adapter.read(table, pk, (row) => {
+            complete(row);
         });
     }
 
 
-    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void, queue?: boolean): void {
+    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void {
 
-        this.qq.add(queue || false, table, (ready) => {
             let result: any;
             fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
                 if (a.waitForWrites) {
@@ -1283,11 +1246,10 @@ export class _NanoSQLStorage {
                     a.adapter.write(table, pk, data, (row) => { });
                 }
             }).then(() => {
-                ready(result, complete);
+                complete(result);
             }).catch((err) => {
                 if (error) error(err);
             });
-        });
     }
 
     public adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void {

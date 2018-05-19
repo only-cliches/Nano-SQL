@@ -10,7 +10,7 @@ NoSQL Everywhere
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 
 ## NanoSQL is a database abstraction layer that: 
-1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native).
+1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).
 2. Lets you scale faster by moving query logic to your application server.
 3. Supports many advanced features like ORM, Map/Reduce, Indexing, Geolocations and Fuzzy Search.
 
@@ -126,29 +126,77 @@ nSQL('users') //  "users" is our table name.
 
 ```
 
-## Advanced Document Search
-Have lots of data that needs searching?  Many concepts have been taken from Apache Solr/ElasticSearch, streamlined and implimented in nanoSQL.  Just let nanoSQL know what columns need to be indexed and it takes everything from there.
+<details>
+    <summary>
+    <b>Advanced Document Search</b>
+    <p>Have lots of data that needs searching?  Many concepts have been taken from Apache Solr/ElasticSearch then streamlined and implimented in nanoSQL.  Just let nanoSQL know what columns need to be indexed and it takes everything from there.</p>
+    </summary>
 
-## ORM (Object Relation Mapping)
-Just because we're running no-SQL doesn't mean we can't have relationships.
+example code
+</details>
 
-## Denormalization & Map/Reduce
-Get the performancea advantages of no-SQL without the housework.  Just let nanoSQL know when and where you want your data and it takes care of the rest.
+<details>
+    <summary>
+    <b>ORM (Object Relation Mapping)</b>
+    <p>Just because we're running no-SQL doesn't mean we can't have relationships.</p>
+    </summary>
 
-## Geolocation Helpers
-Need to find which retail store your client is closest to?  nanoSQL can do it in no time at all.
+example code
+</details>
 
-## Import / Export
-It's easy to move CSV and JSON data into and out of nanoSQL.
+<details>
+    <summary>
+    <b>Denormalization & Map/Reduce</b>
+    <p>Get the performancea advantages of no-SQL without the housework.  Just let nanoSQL know when and where you want your data and it takes care of the rest.</p>
+    </summary>
 
-## History (Undo / Redo)
-NanoSQL can keep track of changes to your data so you can scrub back and forth through time.
+example code
+</details>
 
-## Live Write Backups
-NanoSQL can optionally write to any number of databases at the same time.  This allows you to have always accurate, in place backups of your data.
+<details>
+    <summary>
+    <b>Geolocation Helpers</b>
+    <p>Need to find which retail store your client is closest to?  nanoSQL can do it in no time at all.</p>
+    </summary>
 
-## Events
-Want to know when something is happening?  Just ask!
+example code
+</details>
+
+<details>
+    <summary>
+    <b>Import / Export</b>
+    <p>It's easy to move CSV and JSON data into and out of nanoSQL.</p>
+    </summary>
+
+example code
+</details>
+
+<details>
+    <summary>
+    <b>History (Undo / Redo)</b>
+    <p>NanoSQL can keep track of changes to your data so you can scrub back and forth through time.</p>
+    </summary>
+
+example code
+</details>
+
+<details>
+    <summary>
+    <b>Live Write Backups</b>
+    <p>NanoSQL can optionally write to any number of databases at the same time.  This allows you to have always accurate, in place backups of your data.</p>
+    </summary>
+
+example code
+</details>
+
+<details>
+    <summary>
+    <b>Events</b>
+    <p>Want to know when something is happening?  Just ask!</p>
+    </summary>
+
+example code
+</details>
 
 
 [Documentation](https://docs.nanosql.io/)

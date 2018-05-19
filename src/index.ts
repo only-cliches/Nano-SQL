@@ -601,7 +601,7 @@ export class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     public getConfig(): NanoSQLConfig {
-        return this._config;
+        return this._config || {};
     }
 
     /**

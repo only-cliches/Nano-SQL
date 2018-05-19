@@ -6,7 +6,30 @@ import { tokenizer } from "../src/utilities";
 
 const initStore = (complete: (nSQL: NanoSQLInstance) => void) => {
     const nSQL = new NanoSQLInstance();
-
+    nSQL.table("posts")
+    .model([
+        {key: "id", type: "uuid", props: ["pk()"]},
+        {key: "title", type: "string", props: ["search(4, enlglish)"]},
+        {key: "content", type: "string", props: ["search(1, english)"]}
+    ])
+    .connect().then(() => {
+        return nSQL.loadJS("posts", [
+            {
+                title: "Typescript",
+                content: "TypeScript is designed for development of large applications and transpile to JavaScript. As TypeScript is a superset of JavaScript, existing JavaScript programs are also valid TypeScript programs. TypeScript may be used to develop JavaScript applications for both client-side and server-side (Node.js) execution."
+            },
+            {
+                title: "Programming Language",
+                content: "A programming language is a formal language that specifies a set of instructions that can be used to produce various kinds of output. Programming languages generally consist of instructions for a computer. Programming languages can be used to create programs that implement specific algorithms."
+            },
+            {
+                title: "Node.js",
+                content: "Node.js is an open-source, cross-platform JavaScript run-time environment that executes JavaScript code server-side. Historically, JavaScript was used primarily for client-side scripting, in which scripts written in JavaScript are embedded in a webpage's HTML and run client-side by a JavaScript engine in the user's web browser. Node.js lets developers use JavaScript for server-side scripting—running scripts server-side to produce dynamic web page content before the page is sent to the user's web browser. Consequently, Node.js represents a 'JavaScript everywhere' paradigm, unifying web application development around a single programming language, rather than different languages for server side and client side scripts."
+            }
+        ]);
+    }).then(() => {
+        complete(nSQL);
+    });
 };
 
 const englishText = `JavaScript (/ˈdʒɑːvəˌskrɪpt/),[6] often abbreviated as JS, is a high-level, interpreted programming language. It is a language which is also characterized as dynamic, weakly typed, prototype-based and multi-paradigm.
@@ -22,7 +45,7 @@ const enligshStemTokens = [{ "o": "javascript", "w": "javascript", "i": 0 }, { "
 describe("Search", () => {
     it("Test English Tokenizer (Default)", (done: MochaDone) => {
         try {
-            expect(englishTokens).to.deep.equal(tokenizer("", "", [null, "english"], englishText));
+            expect(englishTokens).to.deep.equal(tokenizer("", "", ["", "english"], englishText));
             done();
         } catch (e) {
             done(e);
@@ -30,7 +53,7 @@ describe("Search", () => {
     });
     it("Test English Tokenizer (Metaphone)", (done: MochaDone) => {
         try {
-            expect(englishMetaTokens).to.deep.equal(tokenizer("", "", [null, "english-meta"], englishText));
+            expect(englishMetaTokens).to.deep.equal(tokenizer("", "", ["", "english-meta"], englishText));
             done();
         } catch (e) {
             done(e);
@@ -38,10 +61,34 @@ describe("Search", () => {
     });
     it("Test English Tokenizer (Stemmer)", (done: MochaDone) => {
         try {
-            expect(enligshStemTokens).to.deep.equal(tokenizer("", "", [null, "english-stem"], englishText));
+            expect(enligshStemTokens).to.deep.equal(tokenizer("", "", ["", "english-stem"], englishText));
             done();
         } catch (e) {
             done(e);
         }
+    });
+    it("Test search() query with one column", (done: MochaDone) => {
+        initStore((db) => {
+            db.query("select").where(["search(title)", ">0.4", "language"]).exec().then((rows) => {
+                try {
+                    expect(rows[0].title).to.equal("Programming Language");
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+    });
+    it("Test search() query with two columns", (done: MochaDone) => {
+        initStore((db) => {
+            db.query("select").where(["search(title, content)", ">0.4", "javascript"]).exec().then((rows) => {
+                try {
+                    expect(rows.map(r => r.title)).to.deep.equal(["Typescript", "Node.js"]);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
     });
 });

@@ -19,13 +19,28 @@ const queryObj = {
         self._select(next);
     },
     upsert: (self: _NanoSQLStorageQuery, next) => {
-        self._upsert(next);
+        self._store.queue.add(self._query.table as string, (done) => {
+            self._upsert(() => {
+                done();
+                next(self._query);
+            });
+        });
     },
     delete: (self: _NanoSQLStorageQuery, next) => {
-        self._delete(next);
+        self._store.queue.add(self._query.table as string, (done) => {
+            self._delete(() => {
+                done();
+                next(self._query);
+            });
+        });
     },
     drop: (self: _NanoSQLStorageQuery, next) => {
-        self._drop(next);
+        self._store.queue.add(self._query.table as string, (done) => {
+            self._drop(() => {
+                done();
+                next(self._query);
+            });
+        });
     },
     "show tables": (self: _NanoSQLStorageQuery, next) => {
         self._query.result = Object.keys(self._store.tableInfo) as any[];
@@ -380,11 +395,13 @@ export class _NanoSQLStorageQuery {
         }
 
         const tokenTable = "_" + table + "_search_tokens_";
+
         fastALL(columns, (col, i, next) => {
-            if ([undefined, null].indexOf(newRowData[col]) !== -1) { // columns doesn't contain indexable value
+            if ([undefined, null, ""].indexOf(newRowData[col]) !== -1) { // columns doesn't contain indexable value
                 next();
                 return;
             }
+
             // get token cache and hash for this row/column
             this._store.adapterRead(tokenTable + col, pk, (row: any) => {
                 const existing: {
@@ -404,8 +421,8 @@ export class _NanoSQLStorageQuery {
 
                 // next 5 lines or so are used to find what words
                 // have changed so we have to perform the smallest number of index updates.
-                const oldTokenIdx = existing.tokens.map(t => t.i + "-" + t.w);
-                const newTokenIdx = newTokens.map(t => t.i + "-" + t.w);
+                const oldTokenIdx = existing.tokens.map(t => t.i + "-" + t.w).filter(t => t.split("-")[1]);
+                const newTokenIdx = newTokens.map(t => t.i + "-" + t.w).filter(t => t.split("-")[1]);
 
                 const addTokens = newTokenIdx.filter(i => oldTokenIdx.indexOf(i) === -1); // tokens that need to be added to index
                 const removeTokens = oldTokenIdx.filter(i => newTokenIdx.indexOf(i) === -1); // tokens to remove from the index
@@ -413,6 +430,7 @@ export class _NanoSQLStorageQuery {
                 newTokens.forEach((token) => {
                     wordCache[token.w] = token.o;
                 });
+
 
                 fastCHAIN([removeTokens, addTokens], (tokens: string[], j, nextTokens) => {
                     // find the total number of words that need to be updated (each word is a single index entry)
@@ -460,16 +478,17 @@ export class _NanoSQLStorageQuery {
                                         });
                                         break;
                                 }
-                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next, () => {}, true);
+                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next);
                             }, true);
                         }).then(nextWord);
                     }).then(nextTokens);
                 }).then(() => {
+
                     this._store.adapterWrite(tokenTable + col, pk, {
                         id: pk,
                         hash: thisHash,
                         tokens: newTokens.map(o => ({ w: o.w, i: o.i }))
-                    }, next, () => {}, true);
+                    }, next);
                 });
             }, true);
         }).then(complete);
@@ -599,9 +618,9 @@ export class _NanoSQLStorageQuery {
                         }
 
                         const rPk = this._store.tableInfo[view.table]._pk;
-                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone, () => {}, true);
+                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone);
                     }).then(rowDone);
-                }, true);
+                });
             }).then(done);
         }).then(complete);
     }
@@ -665,7 +684,7 @@ export class _NanoSQLStorageQuery {
                                             }
                                         });
                                     }
-                                    this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone, true);
+                                    this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone);
                                 });
                             });
                         }).then((nRows: DBRow[]) => {
@@ -710,7 +729,7 @@ export class _NanoSQLStorageQuery {
                                 addedRows.push(result);
                                 nextRow();
                             });
-                        }, true);
+                        });
                     });
                 };
 
@@ -1609,7 +1628,6 @@ export class _RowSelection {
                     termToToken[search.o] = search.w;
                 });
 
-
                 // get all rows that have at least one search term
                 fastALL(["_search_", "_search_fuzzy_"], (tableSection: string, j, nextTable) => {
 
@@ -1975,7 +1993,29 @@ export class _RowSelection {
         }
 
         if (where[0] === this.s.tableInfo[this.q.table as any]._pk) { // primary key select
-            this.s._read(this.q.table as any, keys as any, callback);
+            if (condition === "=") {
+                this.s._read(this.q.table as any, keys as any, callback);
+            } else {
+                this.s.adapters[0].adapter.getIndex(this.q.table as any, false, (index: any[]) => {
+                    const searchVal = keys[0];
+                    const getPKs = index.filter((val) => {
+                        switch (condition) {
+                            case ">": return val > searchVal;
+                            case ">=": return val >= searchVal;
+                            case "<": return val < searchVal;
+                            case "<=": return val <= searchVal;
+                        }
+                        return false;
+                    });
+
+                    if (!getPKs.length) {
+                        callback([]);
+                        return;
+                    }
+                    this.s._read(this.q.table as any, getPKs as any, callback);
+                });
+            }
+
         } else { // secondary index select
             fastALL(keys, (idx, i, complete) => {
                 this.s._secondaryIndexRead(this.q.table as any, condition, where[0], idx, complete);
@@ -2161,7 +2201,7 @@ export class _RowSelection {
             return 1;
         }
 
-        // secondary index with valid where condition and column
+        // primary or secondary index with valid where condition
         if (wQuery === tableData._pk || tableData._secondaryIndexes.indexOf(wQuery) !== -1) {
             if (["=", "IN", "BETWEEN", ">", ">=", "<", "<="].indexOf(wArgs[1]) > -1) return 0;
             return 1;
@@ -2300,7 +2340,17 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
 
     const processLIKE = (columnValue: string, givenValue: string): boolean => {
         if (!likeCache[givenValue]) {
-            likeCache[givenValue] = new RegExp("^" + givenValue.replace(/\%/gm, ".*").replace(/\_/gm, ".") + "$", "gmi");
+            let prevChar = "";
+            likeCache[givenValue] = new RegExp(givenValue.split("").map(s => {
+                if (prevChar === "\\") {
+                    prevChar = s;
+                    return s;
+                }
+                prevChar = s;
+                if (prevChar === "%") return ".*";
+                if (prevChar === "_") return ".";
+                return s === "\\" ? s : "\\" + s;
+            }).join(""), "gmi");
         }
         if (typeof columnValue !== "string") {
             if (typeof columnValue === "number") {
@@ -2312,7 +2362,9 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         return columnValue.match(likeCache[givenValue]) !== null;
     };
 
-    const getColValue = () => {
+    const givenValue = where[2];
+    const compare = where[1];
+    const columnValue = (() => {
         if (whereFuncCache[where[0]].length) {
             const whereFn = NanoSQLInstance.whereFunctions[whereFuncCache[where[0]][0]];
             if (whereFn) {
@@ -2320,14 +2372,9 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
             }
             return undefined;
         } else {
-            const val = objQuery(where[0], wholeRow, isJoin);
-            return ["LIKE", "NOT LIKE"].indexOf(compare) > -1 ? String(val || "") : val;
+            return objQuery(where[0], wholeRow, isJoin);
         }
-    };
-
-    const givenValue = where[2];
-    const columnValue = getColValue();
-    const compare = where[1];
+    })();
 
     if (givenValue === "NULL" || givenValue === "NOT NULL") {
         const isNull = [undefined, null, ""].indexOf(columnValue) !== -1;

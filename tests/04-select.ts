@@ -32,6 +32,20 @@ describe("Select", () => {
             });
         });
     });
+    it("Select using LIKE.", (done: MochaDone) => {
+        usersDB(ExampleDataModel, (nSQL) => {
+            nSQL.loadJS("users", ExampleUsers).then(() => {
+                nSQL.table("users").query("select", ["name"]).where(["name", "LIKE", "%j%"]).exec().then((rows) => {
+                    try {
+                        expect(rows).to.deep.equal([{name: "Jeb"}], "LIKE select failed!");
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                });
+            });
+        });
+    });
     it("Select column using AS alias.", (done: MochaDone) => {
         usersDB(ExampleDataModel, (nSQL) => {
             nSQL.loadJS("users", ExampleUsers).then(() => {

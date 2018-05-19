@@ -1,11 +1,12 @@
 # Change Log
 
-## TODO
-- Finish integration tests for history.
-- Add Denormalized view feature (copy column data over)
-
-## [1.6.0]
-
+## [1.6.0] 5-19-2018
+- Fixed an issue with search() queries not working anymore.
+- Now using better, more reliable queue implementation courtesy of [queue](https://www.npmjs.com/package/queue).
+- Updated all dependencies with ncu -u.
+- Added tests for new search feature.
+- Improved LIKE query behavior, matches much closer to MySQL behavior now.
+- Fixed primary key range select.
 
 ## [1.5.9] 5-18-2018
 - Fixed secondary index range select issue.
@@ -17,7 +18,7 @@
 - Cleaned up build system a little.
 
 ## [1.5.7] 5-15-2018
-- Fixed LIKE queries when column vlaue isn't string.
+- Fixed LIKE queries when column value isn't string.
 
 ## [1.5.6] 5-14-2018
 - Fixed LIKE queries when column value is undefined.
