@@ -2152,7 +2152,7 @@ export class _RowSelection {
         }
 
         // is a valid search query
-        if (wQuery.indexOf("search(") !== -1 && ["=", ">", "<"].indexOf(wArgs[1]) > -1) {
+        if (wQuery.indexOf("search(") !== -1 && ["=", ">", "<"].reduce((p, c) => p + wArgs[1].indexOf(c), 0) !== -3) {
             const searchArgs = wQuery.replace(/search\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
             // all search columns are indexed
             if (searchArgs.filter(s => Object.keys(tableData._searchColumns).indexOf(s) !== -1).length) {
