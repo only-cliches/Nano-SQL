@@ -2347,8 +2347,8 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
                     return s;
                 }
                 prevChar = s;
-                if (prevChar === "%") return ".*";
-                if (prevChar === "_") return ".";
+                if (s === "%") return ".*";
+                if (s === "_") return ".";
                 return s;
             }).join(""), "gmi");
         }
