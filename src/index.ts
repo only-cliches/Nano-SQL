@@ -8,7 +8,7 @@ import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 
-const VERSION = 1.59;
+const VERSION = 1.60;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -766,7 +766,7 @@ export class NanoSQLInstance {
 
         if (!hasPK) {
             this.tablePKs[l] = "_id_";
-            dataModel.unshift({ key: "_id_", type: "uuid", props: ["pk"] });
+            dataModel.unshift({ key: "_id_", type: "uuid", props: ["pk()"] });
         }
 
         t.dataModels[l] = dataModel;

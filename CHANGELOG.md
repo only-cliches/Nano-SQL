@@ -4,6 +4,9 @@
 - Finish integration tests for history.
 - Add Denormalized view feature (copy column data over)
 
+## [1.6.0]
+
+
 ## [1.5.9] 5-18-2018
 - Fixed secondary index range select issue.
 - Added secondary index range tests.
