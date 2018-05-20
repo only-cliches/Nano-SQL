@@ -1,5 +1,13 @@
 # Change Log
 
+## [1.6.1] 5-20-2018
+- Added observable queries with a small collection of observable modifiers.
+- Cache feature has been restored, [#34](https://github.com/ClickSimply/Nano-SQL/issues/34) example is now working.
+- Added multitab syncing for web browser based databases.
+- Added `peer` mode where multiple tabs can communicate events about the same database.  Only works in the browser and should be used on combination with IndexedDB/WebSQL/LocalStorage.  Example Usage: `.config({peer: true, mode: "PERM"})`.
+- Finally found the problem with mangling the props, restored that and it's reduced the browser build size by quite a bit.
+- Added tests.
+
 ## [1.6.0] 5-19-2018
 - Fixed an issue with search() queries not working anymore.
 - Now using better, more reliable queue implementation courtesy of [queue](https://www.npmjs.com/package/queue).

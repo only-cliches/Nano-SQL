@@ -224,10 +224,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         fastALL(this._dbIndex[table].keys(), (pk, i, done) => {
             this._levelDBs[table].del(pk, done);
         }).then(() => {
-            let idx = new DatabaseIndex();
-            idx.doAI = this._dbIndex[table].doAI;
-            idx.sortIndex = this._dbIndex[table].sortIndex;
-            this._dbIndex[table] = idx;
+            this._dbIndex[table] = this._dbIndex[table].clone();
             callback();
         });
 

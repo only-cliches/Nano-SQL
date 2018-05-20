@@ -423,7 +423,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         const adjustHistoryIDX = (appendID: any) => {
             // adjust the history pointer table with the new row id
             this.parent.query("select").where(["id", "=", rowPK]).manualExec({ table: rowHistTable }).then((rows: HistoryRowMeta[]) => {
-                let histRowIDX = Object.isFrozen(rows[0]) ? _assign(rows[0]) : rows[0];
+                let histRowIDX = Object.isFrozen(rows[0]) || Object.isFrozen(rows[0].histRows) ? _assign(rows[0]) : rows[0];
                 histRowIDX.histRows.unshift(appendID);
                 this.parent.query("upsert", histRowIDX).where(["id", "=", rowPK]).manualExec({ table: rowHistTable }).then(() => {
                     complete(appendID);
@@ -436,8 +436,9 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             adjustHistoryIDX(-1);
         } else {
             // add row to history table
+
             this.parent.query("upsert", {
-                _id: id,
+                [strs[2]]: id,
                 ...row
             }).manualExec({ table: "_" + table + "__hist_rows" }).then(() => {
                 if (skipIDX) {
@@ -531,7 +532,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
         if (!histTable) { // get single row history
             if (!rowPK) {
-                throw Error("Need a row primary key to query this history!");
+                throw Error("nSQL: Need a row primary key to query this history!");
             }
             const rowHistTable = "_" + table + "__hist_idx";
             this.parent.query("select").where(["id", "=", rowPK]).manualExec({ table: rowHistTable }).then((rows: HistoryRowMeta[]) => {
@@ -540,7 +541,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
             });
         } else { // get single table history
             if (!table) {
-                throw Error("Need a table to query this history!");
+                throw Error("nSQL: Need a table to query this history!");
             }
             this._getTableHistory(histTable, complete);
         }
@@ -624,13 +625,13 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
 
         if (!histTable) { // adjust single row history
             if (!rowPK) {
-                throw Error("Need a row primary key to change this history!");
+                throw Error("nSQL: Need a row primary key to change this history!");
             }
             this._shiftRowHistory(direction, table, rowPK, complete);
 
         } else { // adjust single table history
             if (!table) {
-                throw Error("Need a table to change this history!");
+                throw Error("nSQL: Need a table to change this history!");
             }
             this._shiftTableHistory(direction, histTable, complete);
         }

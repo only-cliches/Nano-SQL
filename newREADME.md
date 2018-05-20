@@ -43,7 +43,7 @@ Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
 
 ## Database Support
 
-NanoSQL can save data to several different places, depending on the browser or environment it's being ran in.
+NanoSQL can save data to many different places, depending on the browser or environment it's being ran in.
 
 1. **Included In The Box**
     - Memory
@@ -58,6 +58,9 @@ NanoSQL can save data to several different places, depending on the browser or e
 5. **[React Native](https://www.npmjs.com/package/nano-react-native)**
 6. **[Redis](https://www.npmjs.com/package/nano-redis)**
 7. **[Google Cloud Datastore](https://www.npmjs.com/package/nano-gcloud-datastore)**
+8. **[Trival DB (JSON File Store)](https://www.npmjs.com/package/nano-trivial)**
+
+[Documentation](https://docs.nanosql.io/)
 
 ## Installation
 
@@ -126,10 +129,15 @@ nSQL('users') //  "users" is our table name.
 
 ```
 
+[Documentation](https://docs.nanosql.io/)
+
+## Feature Highlight (Open To See Details)
+All features are universal/isomorphic and work with any database adapter.
+
 <details>
     <summary>
     <b>Advanced Document Search</b>
-    <p>Have lots of data that needs searching?  Many concepts have been taken from Apache Solr/ElasticSearch then streamlined and implimented in nanoSQL.  Just let nanoSQL know what columns need to be indexed and it takes everything from there.</p>
+    <p>Have lots of data that needs searching?  Many concepts have been taken from Apache Solr/ElasticSearch then streamlined and implimented in nanoSQL.</p>
     </summary>
 
 example code
@@ -138,7 +146,16 @@ example code
 <details>
     <summary>
     <b>ORM (Object Relation Mapping)</b>
-    <p>Just because we're running no-SQL doesn't mean we can't have relationships.</p>
+    <p>Just because we're running No-SQL doesn't mean we can't have relationships.</p>
+    </summary>
+
+example code
+</details>
+
+<details>
+    <summary>
+    <b>Observables</b>
+    <p>Use the observable pattern to wire your application views to database queries with ease.</p>
     </summary>
 
 example code
@@ -147,7 +164,7 @@ example code
 <details>
     <summary>
     <b>Denormalization & Map/Reduce</b>
-    <p>Get the performancea advantages of no-SQL without the housework.  Just let nanoSQL know when and where you want your data and it takes care of the rest.</p>
+    <p>Get the performance advantages of No-SQL without the housework.  Just let nanoSQL know when and where you want your data and it takes care of the rest.</p>
     </summary>
 
 example code
@@ -182,8 +199,8 @@ example code
 
 <details>
     <summary>
-    <b>Live Write Backups</b>
-    <p>NanoSQL can optionally write to any number of databases at the same time.  This allows you to have always accurate, in place backups of your data.</p>
+    <b>Live Backups</b>
+    <p>NanoSQL can optionally write to any number of database backends at the same time.  This allows you to have always accurate, in place backups of your data.</p>
     </summary>
 
 example code
@@ -193,6 +210,15 @@ example code
     <summary>
     <b>Events</b>
     <p>Want to know when something is happening?  Just ask!</p>
+    </summary>
+
+example code
+</details>
+
+<details>
+    <summary>
+    <b>SQL Commands</b>
+    <p>Want to do a join with a group by and a query function?  No problem!</p>
     </summary>
 
 example code

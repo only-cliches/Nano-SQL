@@ -402,6 +402,16 @@ export class _NanoSQLQuery {
         return this;
     }
 
+    /**
+     * Export the built query object.
+     *
+     * @returns {IdbQueryExec}
+     * @memberof _NanoSQLQuery
+     */
+    public emit(): IdbQueryExec {
+        return this._query;
+    }
+
 
     /**
      * Export the current query to a CSV file, use in place of "exec()";
@@ -425,41 +435,8 @@ export class _NanoSQLQuery {
         return new Promise((res, rej) => {
 
             t.exec().then((json: any[]) => {
-
-                let csv: string[] = [];
-                if (!json.length) {
-                    res("", t);
-                }
-                let columnHeaders: string[] = [];
-                if (typeof this._query.table === "string") {
-                    columnHeaders = this._db.dataModels[this._query.table as string].map(k => k.key);
-                } else {
-                    json.forEach((json) => {
-                        let maybeHeaders = Object.keys(json);
-                        if (maybeHeaders.length > columnHeaders.length) {
-                            columnHeaders = maybeHeaders;
-                        }
-                    });
-                }
-
-                if (headers) {
-                    csv.push(columnHeaders.join(","));
-                }
-
-                json.forEach((row) => {
-                    csv.push(columnHeaders.map((k) => {
-                        if (row[k] === null || row[k] === undefined) {
-                            return "";
-                        }
-                        if (typeof row[k] === "string") {
-                            // tslint:disable-next-line
-                            return "\"" + (row[k]).replace(/\"/g, '\"\"') + "\"";
-                        }
-                        // tslint:disable-next-line
-                        return typeof row[k] === "object" ? "\"" + JSON.stringify(row[k]).replace(/\"/g, '\'') + "\"" : row[k];
-                    }).join(","));
-                });
-                res(csv.join("\r\n"), t);
+                const useHeaders = typeof this._query.table === "string" ? this._db.dataModels[this._query.table as string].map(k => k.key) : undefined;
+                res(t._db.JSONtoCSV(json, headers || false, useHeaders));
             });
         });
     }

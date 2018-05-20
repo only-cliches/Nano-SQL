@@ -10,7 +10,6 @@ import { DataModel } from "../index";
  */
 export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _pkKey;
-    private _pkType;
     private _dbIndex;
     private _id;
     private _db;
@@ -27,4 +26,5 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     drop(table: string, callback: () => void): void;
     getIndex(table: string, getLength: boolean, complete: (index) => void): void;
     destroy(complete: () => void): void;
+    setNSQL(nSQL: any): void;
 }

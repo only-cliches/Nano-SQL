@@ -10,7 +10,6 @@ import { DataModel } from "../index";
 export declare class _SyncStore implements NanoSQLStorageAdapter {
     private _rows;
     private _pkKey;
-    private _pkType;
     private _dbIndex;
     private _ls;
     private _id;
@@ -25,4 +24,5 @@ export declare class _SyncStore implements NanoSQLStorageAdapter {
     drop(table: string, callback: () => void): void;
     getIndex(table: string, getLength: boolean, complete: (index) => void): void;
     destroy(complete: () => void): void;
+    setNSQL(nSQL: any): void;
 }

@@ -7,85 +7,58 @@
     <title>Page Title</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="nano-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.min.js"></script>
     <script>
-        nSQL("personnelLocation")
-            .model([{
-                    "key": "id",
-                    "type": "uuid",
-                    "props": [
-                        "pk"
-                    ]
-                },
-                {
-                    "key": "client_id",
-                    "type": "uuid",
-                    "props": [
-                        "idx"
-                    ]
-                },
-                {
-                    "key": "client_location_id",
-                    "type": "uuid",
-                    "props": [
-                        "idx"
-                    ]
-                },
-                {
-                    "key": "personnel_id",
-                    "type": "string",
-                    "props": [
-                        "idx"
-                    ]
-                },
-                {
-                    "key": "created_date",
-                    "type": "string",
-                    "props": []
-                },
-                {
-                    "key": "modified_date",
-                    "type": "string",
-                    "props": []
-                }
+        nSQL("message")
+            .model([
+                { key: "id", type: "int", props: ["pk", "ai"] },
+                { key: "message", type: "string" }
             ])
-            .config({
-                id: 'test-cache'
-            }).connect().then(() => {
-
-                const data = [{
-                        'id': '1',
-                        'personnel_id': '2596'
-                    },
-                    {
-                        'id': '2',
-                        'personnel_id': '2596'
-                    },
-                    {
-                        'id': '3',
-                        'personnel_id': '2596'
-                    },
-                    {
-                        'id': '4',
-                        'personnel_id': '2596'
+            .config({mode: "PERM", peer: true})
+            .connect().then(function () {
+                // new random color every half second
+                
+                setInterval(function () {
+                    if (nSQL().peers[0] === nSQL().pid) {
+                        function randomString() {
+                            var color = Math.round(Math.random() * 150 + 100).toString(16);
+                            while (color.length < 2) color = "0" + color;
+                            return color.toUpperCase();
+                        };
+                        nSQL("message").query("upsert", {
+                            id: 1,
+                            message: randomString() + randomString() + randomString()
+                        }).exec();
                     }
-                ];
+                }, 500);
+                
 
-                const promises = [];
 
-                data.forEach(row => {
-                    promises.push(nSQL("personnelLocation").query("upsert", row).exec());
-                });
+            });
 
-                return Promise.all(promises);
+        nSQL().onConnected(() => {
+            const div = document.createElement("div");
+            document.body.appendChild(div);
 
-            }).then(() => {
-                // performing select on a secondary index uses that secondary index for the query...
-                return nSQL("personnelLocation").query("select").where(["personnel_id", "=", "2596"]).exec();
-            }).then((rows) => {
-                const pre = document.createElement("pre");
-                document.body.appendChild(pre);
-                pre.innerHTML = JSON.stringify(rows, null, 4);
-            })
+            new Vue({
+                el: div,
+                template: `<p>Random Color: {{ message }}</p>`,
+                data: {
+                    message: 'Loading',
+                },
+                created: function() {
+                    nSQL()
+                    .observable(() => nSQL("message").query("select").emit())
+                    .filter((rows, idx) => rows.length > 0)
+                    .subscribe((rows, event) => {
+                        const data = "#" + rows[0].message;
+                        document.body.style.color = data;
+                        this.message = data;
+                    });
+                }
+            });
+
+        });
     </script>
 </head>
 

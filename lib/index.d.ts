@@ -1,13 +1,15 @@
-import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
+import { _NanoSQLQuery, IdbQuery, IdbQueryExec } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { StdObject } from "./utilities";
 import { NanoSQLStorageAdapter } from "./database/storage";
+import { Observer } from "./observable";
 export interface NanoSQLBackupAdapter {
     adapter: NanoSQLStorageAdapter;
     waitForWrites?: boolean;
 }
 export interface NanoSQLConfig {
     id?: string | number;
+    peer?: boolean;
     cache?: boolean;
     mode?: string | NanoSQLStorageAdapter | boolean;
     history?: boolean;
@@ -225,6 +227,12 @@ export declare class NanoSQLInstance {
             [column: string]: string[];
         };
     };
+    peers: string[];
+    pid: string;
+    id: string;
+    peerEvents: string[];
+    focused: boolean;
+    peerMode: boolean;
     toRowFns: {
         [table: string]: {
             [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void;
@@ -654,6 +662,27 @@ export declare class NanoSQLInstance {
      */
     config(args: NanoSQLConfig): NanoSQLInstance;
     /**
+     * Init obvserable query.
+     *
+     * Usage:
+     * ```ts
+     * nSQL()
+     * .observable(() => nSQL("message").query("select").emit())
+     * .filter((rows, idx) => rows.length > 0)
+     * .subscribe((rows, event) => {
+     *
+     * });
+     *
+     * ```
+     *
+     * @template T
+     * @param {((ev?: DatabaseEvent) => IdbQueryExec|undefined)} getQuery
+     * @param {string[]} [tablesToListen]
+     * @returns {Observer<T>}
+     * @memberof NanoSQLInstance
+     */
+    observable<T>(getQuery: (ev?: DatabaseEvent) => IdbQueryExec | undefined, tablesToListen?: string[]): Observer<T>;
+    /**
      * Perform a custom action supported by the database driver.
      *
      * @param {...Array<any>} args
@@ -682,6 +711,25 @@ export declare class NanoSQLInstance {
      */
     loadJS(table: string, rows: Array<any>, useTransaction?: boolean, onProgress?: (percent: number) => void): Promise<Array<any>>;
     /**
+     * Convert a JSON array of objects to a CSV.
+     *
+     * @param {any[]} json
+     * @param {boolean} [printHeaders]
+     * @param {string[]} [useHeaders]
+     * @returns {string}
+     * @memberof NanoSQLInstance
+     */
+    JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
+    /**
+     * Convert a CSV to array of JSON objects
+     *
+     * @param {string} csv
+     * @param {(row: any) => any} [rowMap]
+     * @returns {*}
+     * @memberof NanoSQLInstance
+     */
+    CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
+    /**
      * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
      *
      * This function performs a bunch of upserts, so expect appropriate behavior based on the primary key.
@@ -693,7 +741,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    loadCSV(table: string, csv: string, useTransaction?: boolean, rowFilter?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>>;
+    loadCSV(table: string, csv: string, useTransaction?: boolean, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>>;
 }
 export interface DBConnect {
     models: StdObject<DataModel[]>;
@@ -710,6 +758,7 @@ export interface DBConnect {
  * @interface NanoSQLPlugin
  */
 export interface NanoSQLPlugin {
+    getId?: () => string;
     /**
      * Called before database connection with all the connection arguments, including data models and what not.
      * Lets you adjust the connect arguments, add tables, remove tables, adjust data models, etc.

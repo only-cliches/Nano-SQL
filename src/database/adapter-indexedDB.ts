@@ -2,7 +2,7 @@ import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage"
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, intersect } from "../utilities";
-import { DatabaseIndex } from "./db-idx";
+import { DatabaseIndex, syncPeerIndex } from "./db-idx";
 
 /**
  * Handles IndexedDB with and without web workers.
@@ -19,10 +19,6 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         [tableName: string]: string;
     };
 
-    private _pkType: {
-        [tableName: string]: string;
-    };
-
     private _dbIndex: {
         [tableName: string]: DatabaseIndex;
     };
@@ -34,7 +30,6 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     constructor() {
         this._pkKey = {};
-        this._pkType = {};
         this._dbIndex = {};
     }
 
@@ -114,14 +109,14 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
         dataModels.forEach((d) => {
             if (d.props && intersect(["pk", "pk()"], d.props)) {
-                this._pkType[tableName] = d.type;
+                this._dbIndex[tableName].pkType = d.type;
                 this._pkKey[tableName] = d.key;
 
                 if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
                     this._dbIndex[tableName].doAI = true;
                 }
 
-                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._pkType[tableName]) !== -1) {
+                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._dbIndex[tableName].pkType) !== -1) {
                     this._dbIndex[tableName].sortIndex = false;
                 }
             }
@@ -130,7 +125,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
 
-        pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
+        pk = pk || generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
             throw new Error("nSQL: Can't add a row without a primary key!");
@@ -232,10 +227,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     public drop(table: string, callback: () => void): void {
 
-        let idx = new DatabaseIndex();
-        idx.doAI = this._dbIndex[table].doAI;
-        idx.sortIndex = this._dbIndex[table].sortIndex;
-        this._dbIndex[table] = idx;
+        this._dbIndex[table] = this._dbIndex[table].clone();
 
         this.delete(table, "_clear_" as any, () => {
             callback();
@@ -250,5 +242,9 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         fastALL(Object.keys(this._dbIndex), (table, i, done) => {
             this.drop(table, done);
         }).then(complete);
+    }
+
+    public setNSQL(nSQL) {
+        syncPeerIndex(nSQL, this._dbIndex);
     }
 }

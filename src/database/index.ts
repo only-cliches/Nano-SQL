@@ -43,6 +43,10 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         });
     }
 
+    public getId() {
+        return this._store._id;
+    }
+
     public doExec(execArgs: IdbQuery, next: (execArgs: IdbQuery) => void): void {
         execArgs.state = "complete";
         /*this._queryPtr++;

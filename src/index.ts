@@ -1,14 +1,16 @@
 import { setFast } from "lie-ts";
-import { _NanoSQLQuery, IdbQuery } from "./query/std-query";
+import { _NanoSQLQuery, IdbQuery, IdbQueryExec } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN, intersect, crowDistance } from "./utilities";
+import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN, intersect, crowDistance, removeDuplicates, uuid } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
+import { Observer } from "./observable";
+import { executionAsyncId } from "async_hooks";
 
-const VERSION = 1.60;
+const VERSION = 1.61;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -20,6 +22,7 @@ export interface NanoSQLBackupAdapter {
 
 export interface NanoSQLConfig {
     id?: string | number;
+    peer?: boolean;
     cache?: boolean;
     mode?: string | NanoSQLStorageAdapter | boolean;
     history?: boolean;
@@ -146,6 +149,8 @@ export interface IActionViewMod {
     ): void;
 }
 
+
+
 /**
  * The primary abstraction class, there is no database implimintation code here.
  * Just events, quries and filters.
@@ -205,7 +210,7 @@ export class NanoSQLInstance {
      */
     public data: any;
 
-    public rowFilters: {[table: string]: (row: any) => any};
+    public rowFilters: { [table: string]: (row: any) => any };
 
 
     /**
@@ -334,6 +339,13 @@ export class NanoSQLInstance {
         }
     };
 
+    public peers: string[];
+    public pid: string;
+    public id: string;
+    public peerEvents: string[];
+    public focused: boolean;
+    public peerMode: boolean;
+
     public toRowFns: { [table: string]: { [fnName: string]: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void } };
     public toColFns: { [table: string]: { [fnName: string]: (existingValue: any, callback: (newValue: any) => void, ...args: any[]) => void } };
 
@@ -341,6 +353,7 @@ export class NanoSQLInstance {
 
         let t = this;
         t.isConnected = false;
+        t.focused = true;
         t._actions = {};
         t._views = {};
         t.dataModels = {};
@@ -356,6 +369,9 @@ export class NanoSQLInstance {
         t.toColFns = {};
         t.toColRules = {};
         t.rowFilters = {};
+        t.peers = [];
+        t.peerEvents = [];
+        t.pid = uuid();
 
         t._randoms = [];
         // t._queryPool = [];
@@ -434,7 +450,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public table(table?: string|any[]): NanoSQLInstance {
+    public table(table?: string | any[]): NanoSQLInstance {
         if (table) this.sTable = table;
         return this;
     }
@@ -477,6 +493,10 @@ export class NanoSQLInstance {
                 this.use(new NanoSQLDefaultBackend());
             }
 
+            if (typeof window !== "undefined" && this._config && this._config.peer) {
+                this.peerMode = true;
+            }
+
             fastCHAIN(t.plugins, (p, i, nextP) => {
                 if (p.willConnect) {
                     p.willConnect(connectArgs, (newArgs) => {
@@ -512,8 +532,14 @@ export class NanoSQLInstance {
 
                 t.tableNames = Object.keys(t.dataModels);
 
+
+
                 const completeConnect = () => {
+
                     fastALL(t.plugins, (p, i, nextP) => {
+                        if (p.getId && !this.id) {
+                            this.id = p.getId();
+                        }
                         if (p.didConnect) {
                             p.didConnect(connectArgs, () => {
                                 nextP();
@@ -522,6 +548,95 @@ export class NanoSQLInstance {
                             nextP();
                         }
                     }).then(() => {
+
+                        // handle peer features with other browser windows/tabs
+                        if (this.peerMode) {
+                            let counter = 0;
+                            if (!this.id) {
+                                this.id = this.pid;
+                            }
+                            // Append this peer to the network
+                            const getPeers = () => JSON.parse(localStorage.getItem("nsql-peers-" + this.id) || "[]");
+                            this.peers = getPeers();
+                            this.peers.unshift(this.pid);
+                            localStorage.setItem("nsql-peers-" + this.id, JSON.stringify(this.peers));
+                            // When localstorage changes we may need to possibly update the peer list
+                            // or possibly respond to an event from another peer
+                            window.addEventListener("storage", (e) => {
+                                // peer list updated
+                                if (e.key === "nsql-peers-" + this.id) {
+                                    this.peers = getPeers();
+                                }
+                                // recieved event from another peer
+                                if (e.key && e.key.indexOf(this.pid + ".") === 0) {
+                                    localStorage.removeItem(e.key);
+                                    const ev: DatabaseEvent = JSON.parse(e.newValue || "{}");
+                                    this.peerEvents.push(ev.query.queryID || "");
+                                    this.triggerEvent(ev);
+                                }
+                                // the "master" peer checks to make sure all peers have been
+                                // cleaning up their mess every 50 requests, if they aren't they
+                                // are removed. Keeps localStorage from filling up accidentally.
+                                counter++;
+                                if (counter > 50 && this.peers[0] === this.pid) {
+                                    counter = 0;
+                                    let len = localStorage.length;
+                                    let peerKeys: {[id: string]: string[]} = {};
+                                    while (len--) {
+                                        const key = localStorage.key(len);
+                                        // only grab events
+                                        const keyMatch = key ? key.match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{8}/gmi) : null;
+                                        if (key && keyMatch) {
+                                            const peerID = (keyMatch || [""])[0];
+                                            if (!peerKeys[peerID]) {
+                                                peerKeys[peerID] = [];
+                                            }
+                                            peerKeys[peerID].push(key);
+                                        }
+                                    }
+                                    Object.keys(peerKeys).forEach((peerID) => {
+                                        // purge peers that aren't cleaning up their mess (and thus probably gone)
+                                        if (peerKeys[peerID].length > 10) {
+                                            this.peers = this.peers.filter(p => p !== peerID);
+                                            peerKeys[peerID].forEach((key) => {
+                                                localStorage.removeItem(key);
+                                            });
+                                            localStorage.setItem("nsql-peers-" + this.id, JSON.stringify(this.peers));
+                                        }
+                                    });
+                                }
+                            });
+                            window.onblur = () => {
+                                this.focused = false;
+                            };
+                            // on focus we set this nsql to focused and move it's peer position
+                            // to the front
+                            window.onfocus = () => {
+                                // set this peer to master on focus
+                                this.peers = this.peers.filter((p) => p !== this.pid);
+                                this.peers.unshift(this.pid);
+                                localStorage.setItem("nsql-peers-" + this.id, JSON.stringify(this.peers));
+                                this.focused = true;
+                            };
+                            // send events to the peer network
+                            nSQL("*").on("change", (ev) => {
+                                const idxOf = this.peerEvents.indexOf(ev.query.queryID || "");
+                                if (idxOf !== -1) {
+                                    this.peerEvents.splice(idxOf, 1);
+                                    return;
+                                }
+                                this.peers.filter(p => p !== this.pid).forEach((p) => {
+                                    localStorage.setItem(p + "." + ev.query.queryID, JSON.stringify(ev));
+                                });
+                            });
+                            // Remove self from peer network
+                            window.addEventListener("beforeunload", () => {
+                                this.peers = this.peers.filter((p) => p !== this.pid);
+                                localStorage.setItem("nsql-peers-" + this.id, JSON.stringify(this.peers));
+                                return false;
+                            });
+                        }
+
                         t.isConnected = true;
                         if (t._onConnectedCallBacks.length) {
                             t._onConnectedCallBacks.forEach(cb => cb());
@@ -542,7 +657,10 @@ export class NanoSQLInstance {
                     });
                 };
 
+
+
                 t.query("select").where(["key", "=", "version"]).manualExec({ table: "_util" }).then((rows) => {
+
                     if (!rows.length) {
                         // new database or an old one that needs indexes rebuilt
                         updateVersion(true);
@@ -1077,6 +1195,7 @@ export class NanoSQLInstance {
             if (eventData.table === "*") return this;
             setFast(() => {
                 let c: Function[];
+
                 eventData.types.forEach((type) => {
                     // trigger wildcard
                     t._callbacks["*"].trigger(type, eventData, t);
@@ -1173,7 +1292,7 @@ export class NanoSQLInstance {
         return new Promise((res, rej) => {
             fastCHAIN(this.plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.importTables) {
-                    plugin.importTables(tables, onProgress || ((c) => {})).then(next);
+                    plugin.importTables(tables, onProgress || ((c) => { })).then(next);
                 } else {
                     next();
                 }
@@ -1309,6 +1428,30 @@ export class NanoSQLInstance {
     }
 
     /**
+     * Init obvserable query.
+     *
+     * Usage:
+     * ```ts
+     * nSQL()
+     * .observable(() => nSQL("message").query("select").emit())
+     * .filter((rows, idx) => rows.length > 0)
+     * .subscribe((rows, event) => {
+     *
+     * });
+     *
+     * ```
+     *
+     * @template T
+     * @param {((ev?: DatabaseEvent) => IdbQueryExec|undefined)} getQuery
+     * @param {string[]} [tablesToListen]
+     * @returns {Observer<T>}
+     * @memberof NanoSQLInstance
+     */
+    public observable<T>(getQuery: (ev?: DatabaseEvent) => IdbQueryExec | undefined, tablesToListen?: string[]): Observer<T> {
+        return new Observer<T>(this, getQuery, tablesToListen || []);
+    }
+
+    /**
      * Perform a custom action supported by the database driver.
      *
      * @param {...Array<any>} args
@@ -1384,22 +1527,65 @@ export class NanoSQLInstance {
     }
 
     /**
-     * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
+     * Convert a JSON array of objects to a CSV.
      *
-     * This function performs a bunch of upserts, so expect appropriate behavior based on the primary key.
-     *
-     * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
+     * @param {any[]} json
+     * @param {boolean} [printHeaders]
+     * @param {string[]} [useHeaders]
+     * @returns {string}
+     * @memberof NanoSQLInstance
+     */
+    public JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string {
+        let csv: string[] = [];
+        if (!json.length) {
+            return "";
+        }
+        let columnHeaders: string[] = [];
+        if (useHeaders) {
+            // use provided headers (much faster)
+            columnHeaders = useHeaders;
+        } else {
+            // auto detect headers
+            json.forEach((json) => {
+                columnHeaders = removeDuplicates(Object.keys(json).concat(columnHeaders));
+            });
+        }
+
+        if (printHeaders) {
+            csv.push(columnHeaders.join(","));
+        }
+
+        json.forEach((row) => {
+            csv.push(columnHeaders.map((k) => {
+                if (row[k] === null || row[k] === undefined) {
+                    return "";
+                }
+                if (typeof row[k] === "string") {
+                    // tslint:disable-next-line
+                    return "\"" + (row[k]).replace(/\"/g, '\"\"') + "\"";
+                }
+                if (typeof row[k] === "boolean") {
+                    return row[k] === true ? "true" : "false";
+                }
+                // tslint:disable-next-line
+                return typeof row[k] === "object" ? "\"" + JSON.stringify(row[k]).replace(/\"/g, '\'') + "\"" : row[k];
+            }).join(","));
+        });
+        return csv.join("\r\n");
+    }
+
+    /**
+     * Convert a CSV to array of JSON objects
      *
      * @param {string} csv
-     * @returns {(Promise<Array<Object>>)}
-     *
-     * @memberOf NanoSQLInstance
+     * @param {(row: any) => any} [rowMap]
+     * @returns {*}
+     * @memberof NanoSQLInstance
      */
-    public loadCSV(table: string, csv: string, useTransaction?: boolean, rowFilter?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>> {
+    public CSVtoJSON(csv: string, rowMap?: (row: any) => any): any {
         let t = this;
         let fields: Array<string> = [];
-
-        let rowData = csv.split(/\r?\n|\r|\t/gm).map((v, k) => {
+        return csv.split(/\r?\n|\r|\t/gm).map((v, k) => {
             if (k === 0) {
                 fields = v.split(",");
                 return undefined;
@@ -1435,23 +1621,44 @@ export class NanoSQLInstance {
                 let i = fields.length;
                 while (i--) {
                     if (row[i]) {
-                        if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                        if (row[i] === "true" || row[i] === "false") {
+                            record[fields[i]] = row[i] === "true";
+                        } else if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
                             // tslint:disable-next-line
-                            row[i] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                            record[fields[i]] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
                             // tslint:disable-next-line
                         } else if (row[i].indexOf('"') === 0) {
-                            row[i] = row[i].slice(1, row[i].length - 1).replace(/\"\"/gmi, "\"");
+                            record[fields[i]] = row[i].slice(1, row[i].length - 1).replace(/\"\"/gmi, "\"");
+                        } else {
+                            record[fields[i]] = row[i];
                         }
-                        record[fields[i]] = row[i];
                     }
 
                 }
-                if (rowFilter) {
-                    return rowFilter(record);
+                if (rowMap) {
+                    return rowMap(record);
                 }
                 return record;
             }
         }).filter(r => r);
+    }
+
+    /**
+     * Load a CSV file into the DB.  Headers must exist and will be used to identify what columns to attach the data to.
+     *
+     * This function performs a bunch of upserts, so expect appropriate behavior based on the primary key.
+     *
+     * Rows must align with the data model.  Row data that isn't in the data model will be ignored.
+     *
+     * @param {string} csv
+     * @returns {(Promise<Array<Object>>)}
+     *
+     * @memberOf NanoSQLInstance
+     */
+    public loadCSV(table: string, csv: string, useTransaction?: boolean, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>> {
+        let t = this;
+
+        let rowData = this.CSVtoJSON(csv, rowMap);
 
         if (useTransaction) {
             return t.doTransaction((db, complete) => {
@@ -1489,6 +1696,9 @@ export interface DBConnect {
  * @interface NanoSQLPlugin
  */
 export interface NanoSQLPlugin {
+
+    getId?: () => string;
+
     /**
      * Called before database connection with all the connection arguments, including data models and what not.
      * Lets you adjust the connect arguments, add tables, remove tables, adjust data models, etc.
@@ -1560,6 +1770,7 @@ export interface NanoSQLPlugin {
      * @memberof NanoSQLPlugin
      */
     extend?: (next: (args: any[], result: any[]) => void, args: any[], result: any[]) => void;
+
 }
 
 const wordLevenshtienCache: { [words: string]: number } = {};
@@ -1732,7 +1943,7 @@ NanoSQLInstance.functions = {
  */
 let _NanoSQLStatic = new NanoSQLInstance();
 
-export const nSQL = (setTablePointer?: string|any[]) => {
+export const nSQL = (setTablePointer?: string | any[]) => {
     return _NanoSQLStatic.table(setTablePointer);
 };
 

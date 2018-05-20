@@ -2,7 +2,7 @@ import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage"
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "../utilities";
-import { DatabaseIndex } from "./db-idx";
+import { DatabaseIndex, syncPeerIndex } from "./db-idx";
 
 
 /**
@@ -20,10 +20,6 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         [tableName: string]: string;
     };
 
-    private _pkType: {
-        [tableName: string]: string;
-    };
-
     private _dbIndex: {
         [tableName: string]: DatabaseIndex;
     };
@@ -36,7 +32,6 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
 
     constructor(size?: number) {
         this._pkKey = {};
-        this._pkType = {};
         this._dbIndex = {};
         this._size = (size || 0) * 1000 * 1000;
     }
@@ -76,7 +71,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
      * @memberof _WebSQLStore
      */
     private _chkTable(table: string): string {
-        if (Object.keys(this._pkType).indexOf(table) === -1) {
+        if (Object.keys(this._dbIndex).indexOf(table) === -1) {
             throw Error("No table " + table + " found!");
         } else {
             return table;
@@ -88,14 +83,14 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
 
         dataModels.forEach((d) => {
             if (d.props && intersect(["pk", "pk()"], d.props)) {
-                this._pkType[tableName] = d.type;
+                this._dbIndex[tableName].pkType = d.type;
                 this._pkKey[tableName] = d.key;
 
                 if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
                     this._dbIndex[tableName].doAI = true;
                 }
 
-                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._pkType[tableName]) !== -1) {
+                if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._dbIndex[tableName].pkType) !== -1) {
                     this._dbIndex[tableName].sortIndex = false;
                 }
             }
@@ -120,7 +115,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
 
     public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
 
-        pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
+        pk = pk || generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
             throw new Error("nSQL: Can't add a row without a primary key!");
@@ -235,15 +230,10 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
             };
             getRow();
         });
-
-
     }
 
     public drop(table: string, callback: () => void): void {
-        let idx = new DatabaseIndex();
-        idx.doAI = this._dbIndex[table].doAI;
-        idx.sortIndex = this._dbIndex[table].sortIndex;
-        this._dbIndex[table] = idx;
+        this._dbIndex[table] = this._dbIndex[table].clone();
         this._sql(true, `DELETE FROM ${this._chkTable(table)}`, [], (rows) => {
             callback();
         });
@@ -257,5 +247,9 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         fastALL(Object.keys(this._dbIndex), (table, i, done) => {
                 this.drop(table, done);
         }).then(complete);
+    }
+
+    public setNSQL(nSQL) {
+        syncPeerIndex(nSQL, this._dbIndex);
     }
 }

@@ -280,7 +280,7 @@ const idTypes = {
 
 /**
  * A quick and dirty hashing function, turns a string into a md5 style hash.
- * stolen from https://github.com/darkskyapp/string-hash
+ * Stolen from https://github.com/darkskyapp/string-hash
  *
  * @param {string} str
  * @returns {string}

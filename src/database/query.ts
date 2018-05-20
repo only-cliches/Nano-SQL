@@ -141,14 +141,14 @@ export class _NanoSQLStorageQuery {
         }));
 
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
-        /*
-                // Query cache for the win!
-                if (canCache && this._store._cache[this._query.table as any][this._hash]) {
-                    this._query.result = this._store._cache[this._query.table as any][this._hash];
-                    next(this._query);
-                    return;
-                }
-        */
+
+        // Query cache for the win!
+        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+            this._query.result = this._store._cache[this._query.table as any][this._hash];
+            next(this._query);
+            return;
+        }
+
         this._getRows((rows) => {
 
             // No query arguments, we can skip the whole mutation selection class
@@ -664,27 +664,29 @@ export class _NanoSQLStorageQuery {
             return;
         }
 
-
         if (this._query.where) { // has where statement, select rows then modify them
 
             this._getRows((rows) => {
+
                 if (rows.length) {
 
                     this._store._cache[this._query.table as any] = {};
 
                     let newRows: any[] = [];
                     fastCHAIN(this._query.actionArgs, (inputData, k, nextRow) => {
-                        fastCHAIN(rows, (r, i, rowDone) => {
-                            this._updateSearchIndex(r[pk], r, () => {
-                                this._updateRowViews(inputData || {}, r, (updatedRowData) => {
+
+                        fastCHAIN(rows, (row, i, rowDone) => {
+
+                            this._updateSearchIndex(row[pk], row, () => {
+                                this._updateRowViews(inputData || {}, row, (updatedRowData) => {
                                     if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
                                         Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                                            if (r[col] === undefined && updatedRowData[col] === undefined) {
+                                            if (row[col] === undefined && updatedRowData[col] === undefined) {
                                                 updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
                                             }
                                         });
                                     }
-                                    this._store._write(this._query.table as any, r[pk], r, updatedRowData, rowDone);
+                                    this._store._write(this._query.table as any, row[pk], row, updatedRowData, rowDone);
                                 });
                             });
                         }).then((nRows: DBRow[]) => {

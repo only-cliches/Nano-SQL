@@ -40,7 +40,7 @@ const options = {
         new UglifyJSPlugin({
             uglifyOptions: {
                 mangle: {
-                    // properties: { regex: new RegExp(/^_|Promise/) }
+                    properties: { regex: new RegExp(/^_|Promise/) }
                 }
             }
         })

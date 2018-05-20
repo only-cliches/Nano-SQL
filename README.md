@@ -32,6 +32,19 @@ Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser,
 - Fast secondary indexes.
 - Full events system.
 
+## NEW: Observable Queries
+
+Use observables to subscribe to table changes and automatically update your views.
+```ts
+nSQL().observable(() => {
+    return nSQL("table").query("select").emit(); // use .emit() instead of .exec()
+})
+.filter(rows => rows.length)
+.subscribe((rows) => {
+    // Update view here, this will be called each time the table changes
+})
+```
+
 ## Browser Support
 
 ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
@@ -78,7 +91,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.6.0/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.6.1/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

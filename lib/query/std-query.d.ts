@@ -230,6 +230,13 @@ export declare class _NanoSQLQuery {
      */
     offset(args: number): _NanoSQLQuery;
     /**
+     * Export the built query object.
+     *
+     * @returns {IdbQueryExec}
+     * @memberof _NanoSQLQuery
+     */
+    emit(): IdbQueryExec;
+    /**
      * Export the current query to a CSV file, use in place of "exec()";
      *
      * Example:

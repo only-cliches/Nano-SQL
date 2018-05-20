@@ -8,7 +8,6 @@ import { _WebSQLStore } from "./adapter-websql";
 import { setFast } from "lie-ts";
 /* NODE-START */
 import { _LevelStore } from "./adapter-levelDB";
-import { DEFAULT_ENCODING } from "crypto";
 /* NODE-END */
 const queue = require("queue");
 
@@ -33,9 +32,7 @@ const newQueryQ = (_this: _NanoSQLStorage): QueryQ => {
         add: (table: string, cb: (done: () => void) => void): void => {
 
             if (!_this.queue.qs[table]) {
-                _this.queue.qs[table] = queue();
-                _this.queue.qs[table].autostart = true;
-                _this.queue.qs[table].concurrency = 1;
+                _this.queue.qs[table] = queue({autostart: true, concurrency: 1});
             }
 
             _this.queue.qs[table].push((done) => {
@@ -439,7 +436,7 @@ export class _NanoSQLStorage {
         this.tableInfo = {};
         this._trieIndexes = {};
         this._tableNames = [];
-        this._doCache = typeof args.cache !== "undefined" ? args.cache : true;
+        this._doCache = (typeof args.cache !== "undefined" ? args.cache : true) && !args.peer;
         this._cache = {};
 
         this.adapters[0] = {
