@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.6.2]
+- Fixed [46](https://github.com/ClickSimply/Nano-SQL/issues/46) with LevelDB not handling auto incriment correctly.
+
 ## [1.6.1] 5-20-2018
 - Added observable queries with a small collection of observable modifiers.
 - Cache feature has been restored, [#34](https://github.com/ClickSimply/Nano-SQL/issues/34) example is now working.

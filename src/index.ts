@@ -10,7 +10,7 @@ import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 import { executionAsyncId } from "async_hooks";
 
-const VERSION = 1.61;
+const VERSION = 1.62;
 
 // uglifyJS fix
 const str = ["_util"];

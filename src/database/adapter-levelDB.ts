@@ -71,7 +71,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             let pks: any[] = [];
             this._levelDBs[table].createKeyStream()
                 .on("data", (data) => {
-                    pks.push(this._isPKnum[table] ? new global._Int64BE(data.toString()).toNumber() : data.toString());
+                    pks.push(this._isPKnum[table] ? new global._Int64BE(data).toNumber() : data.toString());
                 })
                 .on("end", () => {
                     if (pks.length) {
@@ -111,6 +111,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
             if (d.props && intersect(["pk", "pk()"], d.props)) {
                 this._pkType[tableName] = d.type;
                 this._pkKey[tableName] = d.key;
+                this._isPKnum[tableName] = ["int", "float", "number"].indexOf(d.type) !== -1;
 
                 if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
                     this._dbIndex[tableName].doAI = true;
@@ -121,6 +122,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
                 }
             }
         });
+        
     }
 
     public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {

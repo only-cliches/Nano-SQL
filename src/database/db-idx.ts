@@ -37,6 +37,7 @@ export class DatabaseIndex {
         if (this._changeCB && !skipEvent) this._changeCB(this._ta, "drop", null);
         const idx = new DatabaseIndex();
         idx.doAI = this.doAI;
+        idx.ai = this.ai;
         idx.sortIndex = this.sortIndex;
         idx._changeCB = this._changeCB;
         idx._ta = this._ta;
@@ -91,9 +92,7 @@ export class DatabaseIndex {
                 this._sorted.push(key);
             }
         } else {
-            if (parseInt(key) >= this.ai) {
-                this.ai++;
-            }
+            this.ai++;
             this._sorted.push(key);
         }
     }
