@@ -912,8 +912,7 @@ export class _NanoSQLStorage {
                 }
                 let newRow = row ? Object.isFrozen(row) ? _assign(row) : row : { id: null, rows: [] };
                 newRow.rows.splice(i, 1);
-                newRow.rows.sort();
-                newRow.rows = removeDuplicates(newRow.rows);
+                // newRow.rows = removeDuplicates(newRow.rows);
                 this.adapterWrite(idxTable, newRow.id, newRow, done);
             });
         }).then(complete);
@@ -946,8 +945,8 @@ export class _NanoSQLStorage {
             this.adapters[0].adapter.read(idxTable, column, (row) => {
                 let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
                 indexRow.rows.push(pk);
-                indexRow.rows.sort();
-                indexRow.rows = removeDuplicates(indexRow.rows);
+                // indexRow.rows.sort();
+                // indexRow.rows = removeDuplicates(indexRow.rows);
                 this.adapterWrite(idxTable, column, indexRow, done);
             });
         }).then(complete);
@@ -965,21 +964,24 @@ export class _NanoSQLStorage {
      */
     public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void) {
 
-
             if (!oldRow) { // new row
 
-                this.adapterWrite(table, pk, newRow, (row) => {
-
-                    if (this.tableInfo[table]._secondaryIndexes.length) {
-                        this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
-                            complete(row);
-                        });
-                    } else {
-                        complete(row);
+                fastALL([0, 1], (idx, i, next) => {
+                    switch (idx) {
+                        case 0:
+                            this.adapterWrite(table, pk, newRow, next);
+                        break;
+                        case 1:
+                            if (this.tableInfo[table]._secondaryIndexes.length) {
+                                this._setSecondaryIndexes(table, newRow[this.tableInfo[table]._pk], newRow, [], next);
+                            } else {
+                                next();
+                            }
+                        break;
                     }
-
+                }).then((results) => {
+                    complete(results[0]);
                 });
-
 
             } else { // existing row
 
@@ -994,13 +996,22 @@ export class _NanoSQLStorage {
                 });
 
                 if (this.tableInfo[table]._secondaryIndexes.length) {
-                    this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, () => {
-                        this._setSecondaryIndexes(table, pk, setRow, sameKeys, () => {
-                            this.adapterWrite(table, pk, setRow, (row) => {
-                                complete(row);
-                            });
-                        });
+                    fastALL([0, 1, 2], (idx, i, next) => {
+                        switch (idx) {
+                            case 0:
+                                this._clearSecondaryIndexes(table, pk, oldRow, sameKeys, next);
+                            break;
+                            case 1:
+                                this._setSecondaryIndexes(table, pk, setRow, sameKeys, next);
+                            break;
+                            case 2:
+                                this.adapterWrite(table, pk, setRow, next);
+                            break;
+                        }
+                    }).then((results) => {
+                        complete(results[2]);
                     });
+
                 } else {
                     this.adapterWrite(table, pk, setRow, (row) => {
                         complete(row);

@@ -3,6 +3,7 @@
 ## [1.6.2]
 - Fixed [46](https://github.com/ClickSimply/Nano-SQL/issues/46) with LevelDB not handling auto incriment correctly.
 - Fixed [45](https://github.com/ClickSimply/Nano-SQL/issues/45) with IndexedDB not reconnecting if new databases were added to an existing indexed db store.
+- Progress on [47](https://github.com/ClickSimply/Nano-SQL/issues/47).  Secondary index performance increase substantially, went from 10-30x  to 3-4x.
 
 ## [1.6.1] 5-20-2018
 - Added observable queries with a small collection of observable modifiers.
