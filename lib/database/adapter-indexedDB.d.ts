@@ -13,6 +13,8 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _dbIndex;
     private _id;
     private _db;
+    private _modelHash;
+    private _dataModels;
     constructor();
     private onError(ev);
     connect(complete: () => void): void;

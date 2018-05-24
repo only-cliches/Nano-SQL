@@ -27,10 +27,15 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     private _db: IDBDatabase;
 
+    private _modelHash: string;
+
+    private _dataModels: {[table: string]: DataModel[]};
+
 
     constructor() {
         this._pkKey = {};
         this._dbIndex = {};
+        this._dataModels = {};
     }
 
     private onError(ev: Event) {
@@ -39,7 +44,19 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
     }
 
     public connect(complete: () => void) {
-        const idb = indexedDB.open(this._id, 1);
+        this._modelHash = hash(JSON.stringify(this._dataModels));
+
+        let version = parseInt(localStorage.getItem(this._id + "-idb-version") || "") || 1;
+        const modelHash = localStorage.getItem(this._id + "-idb-hash") || this._modelHash;
+
+        if (modelHash !== this._modelHash) {
+            version++;
+        }
+
+        localStorage.setItem(this._id + "-idb-version", String(version));
+        localStorage.setItem(this._id + "-idb-hash", this._modelHash);
+
+        const idb = indexedDB.open(this._id, version);
         let upgrading = false;
         let idxes = {};
 
@@ -50,8 +67,11 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         idb.onupgradeneeded = (event: any) => {
             upgrading = true;
             this._db = event.target.result;
+
             Object.keys(this._dbIndex).forEach((table) => {
-                this._db.createObjectStore(table, { keyPath: this._pkKey[table] });
+                if (!this._db.objectStoreNames.contains(table)) {
+                    this._db.createObjectStore(table, { keyPath: this._pkKey[table] });
+                }
                 idxes[table] = [];
             });
         };
@@ -106,6 +126,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
 
     public makeTable(tableName: string, dataModels: DataModel[]): void {
         this._dbIndex[tableName] = new DatabaseIndex();
+        this._dataModels[tableName] = dataModels;
 
         dataModels.forEach((d) => {
             if (d.props && intersect(["pk", "pk()"], d.props)) {

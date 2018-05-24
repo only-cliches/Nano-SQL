@@ -9,56 +9,66 @@
     <script src="nano-sql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.min.js"></script>
     <script>
-        nSQL("message")
-            .model([
-                { key: "id", type: "int", props: ["pk", "ai"] },
-                { key: "message", type: "string" }
-            ])
-            .config({mode: "PERM", peer: true})
-            .connect().then(function () {
-                // new random color every half second
-                
-                setInterval(function () {
-                    if (nSQL().peers[0] === nSQL().pid) {
-                        function randomString() {
-                            var color = Math.round(Math.random() * 150 + 100).toString(16);
-                            while (color.length < 2) color = "0" + color;
-                            return color.toUpperCase();
-                        };
-                        nSQL("message").query("upsert", {
-                            id: 1,
-                            message: randomString() + randomString() + randomString()
-                        }).exec();
-                    }
-                }, 500);
-                
+        /*nSQL("message")
+                    .model([
+                        { key: "id", type: "int", props: ["pk", "ai"] },
+                        { key: "message", type: "string" }
+                    ])
+                    .config({mode: "PERM", peer: true})
+                    .connect().then(function () {
+                        // new random color every half second
+                        
+                        setInterval(function () {
+                            if (nSQL().peers[0] === nSQL().pid) {
+                                function randomString() {
+                                    var color = Math.round(Math.random() * 150 + 100).toString(16);
+                                    while (color.length < 2) color = "0" + color;
+                                    return color.toUpperCase();
+                                };
+                                nSQL("message").query("upsert", {
+                                    id: 1,
+                                    message: randomString() + randomString() + randomString()
+                                }).exec();
+                            }
+                        }, 500);
+                        
 
 
-            });
-
-        nSQL().onConnected(() => {
-            const div = document.createElement("div");
-            document.body.appendChild(div);
-
-            new Vue({
-                el: div,
-                template: `<p>Random Color: {{ message }}</p>`,
-                data: {
-                    message: 'Loading',
-                },
-                created: function() {
-                    nSQL()
-                    .observable(() => nSQL("message").query("select").emit())
-                    .filter((rows, idx) => rows.length > 0)
-                    .subscribe((rows, event) => {
-                        const data = "#" + rows[0].message;
-                        document.body.style.color = data;
-                        this.message = data;
                     });
-                }
-            });
 
-        });
+                nSQL().onConnected(() => {
+                    const div = document.createElement("div");
+                    document.body.appendChild(div);
+
+                    new Vue({
+                        el: div,
+                        template: `<p>Random Color: {{ message }}</p>`,
+                        data: {
+                            message: 'Loading',
+                        },
+                        created: function() {
+                            nSQL()
+                            .observable(() => nSQL("message").query("select").emit())
+                            .filter((rows, idx) => rows.length > 0)
+                            .subscribe((rows, event) => {
+                                const data = "#" + rows[0].message;
+                                document.body.style.color = data;
+                                this.message = data;
+                            });
+                        }
+                    });
+
+                });*/
+        nSQL("table1")
+            .model([
+                {key: "id", type: "uuid", props: ["pk()"]}
+            ])
+            .config({
+                id: "myDB1",
+                mode: "PERM",
+                history: false
+            })
+            .connect();
     </script>
 </head>
 
