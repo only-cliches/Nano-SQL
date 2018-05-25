@@ -930,23 +930,24 @@ export class _NanoSQLStorage {
      * @memberof _NanoSQLStorage
      */
     private _setSecondaryIndexes(table: string, pk: DBKey, rowData: DBRow, skipColumns: string[], complete: () => void) {
-        fastALL(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (idx, i, done) => {
+        fastALL(this.tableInfo[table]._secondaryIndexes.filter(idx => skipColumns.indexOf(idx) === -1), (col, i, done) => {
 
-            const column = this._secondaryIndexKey(rowData[idx]) as any;
-            if (!column) {
+            const column = this._secondaryIndexKey(rowData[col]) as any;
+            if (typeof column === "undefined") {
                 done();
                 return;
             }
-            if (this._trieIndexes[table][idx]) {
-                this._trieIndexes[table][idx].addWord(String(rowData[idx]));
+
+            if (this._trieIndexes[table][col]) {
+                this._trieIndexes[table][col].addWord(String(rowData[col]));
             }
 
-            const idxTable = "_" + table + "_idx_" + idx;
+            const idxTable = "_" + table + "_idx_" + col;
             this.adapters[0].adapter.read(idxTable, column, (row) => {
                 let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
                 indexRow.rows.push(pk);
-                // indexRow.rows.sort();
-                // indexRow.rows = removeDuplicates(indexRow.rows);
+                indexRow.rows.sort();
+                indexRow.rows = removeDuplicates(indexRow.rows);
                 this.adapterWrite(idxTable, column, indexRow, done);
             });
         }).then(complete);
@@ -965,22 +966,14 @@ export class _NanoSQLStorage {
     public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void) {
 
             if (!oldRow) { // new row
-
-                fastALL([0, 1], (idx, i, next) => {
-                    switch (idx) {
-                        case 0:
-                            this.adapterWrite(table, pk, newRow, next);
-                        break;
-                        case 1:
-                            if (this.tableInfo[table]._secondaryIndexes.length) {
-                                this._setSecondaryIndexes(table, newRow[this.tableInfo[table]._pk], newRow, [], next);
-                            } else {
-                                next();
-                            }
-                        break;
+                this.adapterWrite(table, pk, newRow, (row) => {
+                    if (this.tableInfo[table]._secondaryIndexes.length) {
+                        this._setSecondaryIndexes(table, row[this.tableInfo[table]._pk], newRow, [], () => {
+                            complete(row);
+                        });
+                    } else {
+                        complete(row);
                     }
-                }).then((results) => {
-                    complete(results[0]);
                 });
 
             } else { // existing row

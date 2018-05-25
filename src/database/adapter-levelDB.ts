@@ -122,7 +122,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
                 }
             }
         });
-        
+
     }
 
     public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
@@ -167,7 +167,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
     }
 
     public read(table: string, pk: DBKey, callback: (row: any) => void): void {
-        if (this._dbIndex[table].indexOf(pk) === -1) {
+        if (!this._dbIndex[table].exists(pk)) {
             callback(null);
             return;
         }

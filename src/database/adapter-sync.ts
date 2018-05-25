@@ -171,7 +171,6 @@ export class _SyncStore implements NanoSQLStorageAdapter {
                 } else {
                     rowCallback(this._rows[table][keys[idx]], idx, rowDone);
                 }
-
             } else {
                 complete();
             }

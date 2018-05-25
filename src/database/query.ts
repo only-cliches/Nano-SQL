@@ -51,7 +51,7 @@ const queryObj = {
             next(self._query);
             return;
         }
-        self._query.result = self._store.models[self._query.table] ? _assign(self._store.models[self._query.table]) : [];
+        self._query.result = self._store.models[self._query.table] ? _assign(self._store.models[self._query.table]) : [{error: "Table does not exist"}];
         next(self._query);
     },
 };
