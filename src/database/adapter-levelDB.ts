@@ -68,6 +68,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
     public connect(complete: () => void) {
         fastALL(Object.keys(this._dbIndex), (table, i, done) => {
+
             let pks: any[] = [];
             this._levelDBs[table].createKeyStream()
                 .on("data", (data) => {

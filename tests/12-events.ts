@@ -39,7 +39,9 @@ describe("Events", () => {
                         done(e);
                     }
                 });
-                nSQL.table("users").query("upsert", {id: 1, name: "BILL"}).exec();
+                setTimeout(() => {
+                    nSQL.table("users").query("upsert", {id: 1, name: "BILL"}).exec();
+                }, 0);
             });
         });
     });

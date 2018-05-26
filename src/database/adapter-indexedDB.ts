@@ -57,7 +57,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         localStorage.setItem(this._id + "-idb-hash", this._modelHash);
 
         const idb = indexedDB.open(this._id, version);
-        let upgrading = false;
+
         let idxes = {};
 
         idb.onerror = this.onError;
@@ -65,7 +65,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         // Called only when there is no existing DB, creates the tables and data store.
         // Sets indexes as empty arrays.
         idb.onupgradeneeded = (event: any) => {
-            upgrading = true;
+
             this._db = event.target.result;
 
             Object.keys(this._dbIndex).forEach((table) => {
@@ -81,35 +81,31 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         idb.onsuccess = (event: any) => {
             this._db = event.target.result;
 
-            if (!upgrading) {
-                const getIDBIndex = (tName: string, callBack: (items) => void) => {
-                    let items: any[] = [];
-                    this.store(tName, "readonly", (transaction, store) => {
-                        let cursorRequest = store.openCursor();
-                        cursorRequest.onsuccess = (evt: any) => {
-                            let cursor: IDBCursor = evt.target.result;
-                            if (cursor) {
-                                items.push(cursor.key);
-                                cursor.continue();
-                            }
-                        };
-                        cursorRequest.onerror = this.onError;
-                        transaction.oncomplete = () => {
-                            callBack(items);
-                        };
-                    });
-                };
-                fastALL(Object.keys(this._dbIndex), (table, i, tDone) => {
-                    getIDBIndex(table, (index) => {
-                        this._dbIndex[table].set(index);
-                        tDone();
-                    });
-                }).then(() => {
-                    complete();
+            const getIDBIndex = (tName: string, callBack: (items) => void) => {
+                let items: any[] = [];
+                this.store(tName, "readonly", (transaction, store) => {
+                    let cursorRequest = store.openCursor();
+                    cursorRequest.onsuccess = (evt: any) => {
+                        let cursor: IDBCursor = evt.target.result;
+                        if (cursor) {
+                            items.push(cursor.key);
+                            cursor.continue();
+                        }
+                    };
+                    cursorRequest.onerror = this.onError;
+                    transaction.oncomplete = () => {
+                        callBack(items);
+                    };
                 });
-            } else {
+            };
+            fastALL(Object.keys(this._dbIndex), (table, i, tDone) => {
+                getIDBIndex(table, (index) => {
+                    this._dbIndex[table].set(index);
+                    tDone();
+                });
+            }).then(() => {
                 complete();
-            }
+            });
         };
     }
 

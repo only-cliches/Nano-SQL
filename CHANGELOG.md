@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.6.3]
+- Using cache secondary index performance penalty is now only 10-50% depending on the adapter being used.
+- Query queue is only used when cache is disabled now.
+
 ## [1.6.2] 5-24-2018
 - Fixed [46](https://github.com/ClickSimply/Nano-SQL/issues/46) with LevelDB not handling auto incriment correctly.
 - Fixed [45](https://github.com/ClickSimply/Nano-SQL/issues/45) with IndexedDB not reconnecting if new databases were added to an existing indexed db store.

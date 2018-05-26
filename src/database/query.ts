@@ -19,28 +19,41 @@ const queryObj = {
         self._select(next);
     },
     upsert: (self: _NanoSQLStorageQuery, next) => {
-        self._store.queue.add(self._query.table as string, (done) => {
-            self._upsert(() => {
-                done();
-                next(self._query);
+        if (self._store._doCache) {
+            self._upsert(next);
+        } else {
+            self._store.queue.add(self._query.table as string, (done) => {
+                self._upsert(() => {
+                    done();
+                    next(self._query);
+                });
             });
-        });
+        }
     },
     delete: (self: _NanoSQLStorageQuery, next) => {
-        self._store.queue.add(self._query.table as string, (done) => {
-            self._delete(() => {
-                done();
-                next(self._query);
+        if (self._store._doCache) {
+            self._delete(next);
+        } else {
+            self._store.queue.add(self._query.table as string, (done) => {
+                self._delete(() => {
+                    done();
+                    next(self._query);
+                });
             });
-        });
+        }
     },
     drop: (self: _NanoSQLStorageQuery, next) => {
-        self._store.queue.add(self._query.table as string, (done) => {
-            self._drop(() => {
-                done();
-                next(self._query);
+        if (self._store._doCache) {
+            self._drop(next);
+        } else {
+            self._store.queue.add(self._query.table as string, (done) => {
+                self._drop(() => {
+                    done();
+                    next(self._query);
+                });
             });
-        });
+        }
+
     },
     "show tables": (self: _NanoSQLStorageQuery, next) => {
         self._query.result = Object.keys(self._store.tableInfo) as any[];
@@ -1959,14 +1972,25 @@ export class _RowSelection {
             let secondaryIndexKey = where[0] === this.s.tableInfo[this.q.table as any]._pk ? "" : where[0];
             if (secondaryIndexKey) {
                 const idxTable = "_" + this.q.table + "_idx_" + secondaryIndexKey;
-                this.s._rangeRead(idxTable, where[2][0], where[2][1], true, (rows: { id: any, rows: any[] }[]) => {
-                    let keys: any[] = [];
-                    let i = rows.length;
-                    while (i--) {
-                        keys = keys.concat(rows[i].rows);
-                    }
+                if (this.s._doCache) {
+
+                    const pks = this.s._secondaryIndexes[idxTable].idx.filter(idx => where[2][0] <= idx && where[2][1] >= idx);
+                    const keys = pks.map(r => this.s._secondaryIndexes[idxTable].rows[r]).reverse().reduce((prev, cur) => {
+                        return prev.concat(cur.rows);
+                    }, []);
                     this.s._read(this.q.table as any, keys as any, callback);
-                });
+
+                } else {
+                    this.s._rangeRead(idxTable, where[2][0], where[2][1], true, (rows: { id: any, rows: any[] }[]) => {
+                        let keys: any[] = [];
+                        let i = rows.length;
+                        while (i--) {
+                            keys = keys.concat(rows[i].rows);
+                        }
+                        this.s._read(this.q.table as any, keys as any, callback);
+                    });
+                }
+
 
             } else {
                 this.s._rangeRead(this.q.table as any, where[2][0], where[2][1], true, (rows) => {

@@ -1,6 +1,7 @@
 import { NanoSQLInstance, DatabaseEvent } from ".";
 import { IdbQueryExec } from "./query/std-query";
 import { removeDuplicates } from "./utilities";
+import { setFast } from "lie-ts";
 
 export class Observer<T> {
 
@@ -292,13 +293,18 @@ export class ObserverSubscriber {
     }
 
     public exec(event?: DatabaseEvent) {
-        const q = this._getQuery(event);
-        if (!q) return;
-        this._nSQL.query("select").manualExec(q).then((rows) => {
-            this._callback.next(rows, event);
-        }).catch((err) => {
-            this._callback.error(err);
+
+        setFast(() => {
+            const q = this._getQuery(event);
+            if (!q) return;
+
+            this._nSQL.query("select").manualExec(q).then((rows) => {
+                this._callback.next(rows, event);
+            }).catch((err) => {
+                this._callback.error(err);
+            });
         });
+
     }
 
     public unsubscribe() {

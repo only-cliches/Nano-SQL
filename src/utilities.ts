@@ -76,7 +76,7 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
             if (results.length < items.length) {
                 callback(items[results.length], results.length, (result) => {
                     results.push(result);
-                    setFast(step);
+                    results.length % 100 === 0 ? setFast(step) : step();
                 });
             } else {
                 res(results);
@@ -271,12 +271,7 @@ export const uuid = (): string => {
     }, b);
 };
 
-const idTypes = {
-    "int": (value) => value,
-    "uuid": uuid,
-    "timeId": () => timeid(),
-    "timeIdms": () => timeid(true)
-};
+
 
 /**
  * A quick and dirty hashing function, turns a string into a md5 style hash.
@@ -291,6 +286,13 @@ export const hash = (str: string): string => {
         hash = (hash * 33) ^ str.charCodeAt(--i);
     }
     return (hash >>> 0).toString(16);
+};
+
+const idTypes = {
+    "int": (value) => value,
+    "uuid": uuid,
+    "timeId": () => timeid(),
+    "timeIdms": () => timeid(true)
 };
 
 /**

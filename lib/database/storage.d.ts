@@ -329,8 +329,20 @@ export declare class _NanoSQLStorage {
     _relationColumns: {
         [tableName: string]: string[];
     };
+    _secondaryIndexes: {
+        [table: string]: {
+            idx: any[];
+            rows: any;
+            sortIdx: boolean;
+        };
+    };
+    _secondaryIndexUpdates: {
+        [table: string]: any[];
+    };
     adapters: NanoSQLBackupAdapter[];
     constructor(parent: NanoSQLInstance, args: NanoSQLConfig);
+    _isFlushing: boolean;
+    _flushIndexes(): void;
     /**
      * Initilize the storage adapter and get ready to rumble!
      *
