@@ -84,7 +84,7 @@ export interface DatabaseEvent {
     time: number;
     notes: string[];
     result: any[];
-    types: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[];
+    types: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction" | "peer-change")[];
     actionOrView: string;
     transactionID?: string;
     affectedRowPKS?: any[];
@@ -357,7 +357,7 @@ export class NanoSQLInstance {
         t._actions = {};
         t._views = {};
         t.dataModels = {};
-        t._events = ["*", "change", "delete", "upsert", "drop", "select", "error"];
+        t._events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
 
         t._hasEvents = {};
         t.tableNames = [];
@@ -453,6 +453,10 @@ export class NanoSQLInstance {
     public table(table?: string | any[]): NanoSQLInstance {
         if (table) this.sTable = table;
         return this;
+    }
+
+    public getPeers() {
+        return JSON.parse(localStorage.getItem("nsql-peers-" + this.id) || "[]");
     }
 
     /**
@@ -556,8 +560,7 @@ export class NanoSQLInstance {
                                 this.id = this.pid;
                             }
                             // Append this peer to the network
-                            const getPeers = () => JSON.parse(localStorage.getItem("nsql-peers-" + this.id) || "[]");
-                            this.peers = getPeers();
+                            this.peers = this.getPeers();
                             this.peers.unshift(this.pid);
                             localStorage.setItem("nsql-peers-" + this.id, JSON.stringify(this.peers));
                             // When localstorage changes we may need to possibly update the peer list
@@ -565,14 +568,20 @@ export class NanoSQLInstance {
                             window.addEventListener("storage", (e) => {
                                 // peer list updated
                                 if (e.key === "nsql-peers-" + this.id) {
-                                    this.peers = getPeers();
+                                    this.peers = this.getPeers();
                                 }
                                 // recieved event from another peer
                                 if (e.key && e.key.indexOf(this.pid + ".") === 0) {
                                     localStorage.removeItem(e.key);
                                     const ev: DatabaseEvent = JSON.parse(e.newValue || "{}");
                                     this.peerEvents.push(ev.query.queryID || "");
-                                    this.triggerEvent(ev);
+                                    this.triggerEvent({
+                                        ...ev,
+                                        types: ["peer-change"]
+                                    });
+                                    setFast(() => {
+                                        this.triggerEvent(ev);
+                                    });
                                 }
                                 // the "master" peer checks to make sure all peers have been
                                 // cleaning up their mess every 50 requests, if they aren't they
@@ -581,7 +590,7 @@ export class NanoSQLInstance {
                                 if (counter > 50 && this.peers[0] === this.pid) {
                                     counter = 0;
                                     let len = localStorage.length;
-                                    let peerKeys: {[id: string]: string[]} = {};
+                                    let peerKeys: { [id: string]: string[] } = {};
                                     while (len--) {
                                         const key = localStorage.key(len);
                                         // only grab events
@@ -640,6 +649,7 @@ export class NanoSQLInstance {
                         t.isConnected = true;
                         if (t._onConnectedCallBacks.length) {
                             t._onConnectedCallBacks.forEach(cb => cb());
+                            t._onConnectedCallBacks = [];
                         }
                         res(t.tableNames);
                     });
@@ -648,7 +658,7 @@ export class NanoSQLInstance {
                 const updateVersion = (rebuildIDX: boolean) => {
                     t.query("upsert", { key: "version", value: t.version }).manualExec({ table: "_util" }).then(() => {
                         if (rebuildIDX) {
-                            t.extend("rebuild_idx").then(() => {
+                            t.extend("beforeConn", "rebuild_idx").then(() => {
                                 completeConnect();
                             });
                         } else {
@@ -657,8 +667,6 @@ export class NanoSQLInstance {
                     });
                 };
 
-
-
                 t.query("select").where(["key", "=", "version"]).manualExec({ table: "_util" }).then((rows) => {
 
                     if (!rows.length) {
@@ -666,7 +674,7 @@ export class NanoSQLInstance {
                         updateVersion(true);
                     } else {
 
-                        if (rows[0].value <= 1.21) { // secondary indexes need to be rebuilt after 1.21
+                        if (rows[0].value <= 1.21) { // secondary indexes need to be rebuilt before 1.21
                             updateVersion(true);
                         } else if (rows[0].value < VERSION) {
                             updateVersion(false);
@@ -1346,70 +1354,78 @@ export class NanoSQLInstance {
                 return;
             }
 
-            fastCHAIN(t.plugins, (p, i, nextP) => {
-                if (p.transactionBegin) {
-                    p.transactionBegin(transactionID, nextP);
-                } else {
-                    nextP();
-                }
-            }).then(() => {
-
-                if (Array.isArray(t.sTable)) return;
-
-                initTransaction(
-                    (table?: string) => {
-                        let ta: string = table || t.sTable as any;
-                        return {
-                            query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => {
-                                return new _NanoSQLTransactionQuery(action, args, ta, queries, transactionID);
-                            }
-                        };
-                    },
-                    () => {
-
-                        let tables: string[] = [];
-
-                        fastCHAIN(queries, (quer, i, nextQuery) => {
-                            tables.push(quer.table as any);
-                            t.query(quer.action as any, quer.actionArgs).manualExec({
-                                ...quer,
-                                table: quer.table,
-                                transaction: true,
-                                queryID: transactionID,
-                            }).then(nextQuery);
-                        }).then((results) => {
-
-                            fastCHAIN(this.plugins, (p, i, nextP) => {
-                                if (p.transactionEnd) {
-                                    p.transactionEnd(transactionID, nextP);
-                                } else {
-                                    nextP();
-                                }
-                            }).then(() => {
-                                tables.filter((val, idx, self) => {
-                                    return self.indexOf(val) === idx;
-                                }).forEach((table) => {
-                                    if (table.indexOf("_") !== 0) {
-                                        t.triggerEvent({
-                                            query: queries[0],
-                                            table: table,
-                                            time: new Date().getTime(),
-                                            result: results,
-                                            types: ["transaction"],
-                                            actionOrView: "",
-                                            notes: [],
-                                            transactionID: transactionID,
-                                            affectedRowPKS: [],
-                                            affectedRows: []
-                                        });
-                                    }
-                                });
-                                resolve(results);
-                            });
-                        });
+            const run = () => {
+                fastCHAIN(t.plugins, (p, i, nextP) => {
+                    if (p.transactionBegin) {
+                        p.transactionBegin(transactionID, nextP);
+                    } else {
+                        nextP();
                     }
-                );
-            });
+                }).then(() => {
+
+                    if (Array.isArray(t.sTable)) return;
+
+                    initTransaction(
+                        (table?: string) => {
+                            let ta: string = table || t.sTable as any;
+                            return {
+                                query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => {
+                                    return new _NanoSQLTransactionQuery(action, args, ta, queries, transactionID);
+                                }
+                            };
+                        },
+                        () => {
+
+                            let tables: string[] = [];
+
+                            fastCHAIN(queries, (quer, i, nextQuery) => {
+                                tables.push(quer.table as any);
+                                t.query(quer.action as any, quer.actionArgs).manualExec({
+                                    ...quer,
+                                    table: quer.table,
+                                    transaction: true,
+                                    queryID: transactionID,
+                                }).then(nextQuery);
+                            }).then((results) => {
+
+                                fastCHAIN(this.plugins, (p, i, nextP) => {
+                                    if (p.transactionEnd) {
+                                        p.transactionEnd(transactionID, nextP);
+                                    } else {
+                                        nextP();
+                                    }
+                                }).then(() => {
+                                    tables.filter((val, idx, self) => {
+                                        return self.indexOf(val) === idx;
+                                    }).forEach((table) => {
+                                        if (table.indexOf("_") !== 0) {
+                                            t.triggerEvent({
+                                                query: queries[0],
+                                                table: table,
+                                                time: new Date().getTime(),
+                                                result: results,
+                                                types: ["transaction"],
+                                                actionOrView: "",
+                                                notes: [],
+                                                transactionID: transactionID,
+                                                affectedRowPKS: [],
+                                                affectedRows: []
+                                            });
+                                        }
+                                    });
+                                    resolve(results);
+                                });
+                            });
+                        }
+                    );
+                });
+            };
+
+            if (this.isConnected) {
+                run();
+            } else {
+                this.onConnected(run);
+            }
         });
     }
 
@@ -1463,24 +1479,39 @@ export class NanoSQLInstance {
         let t = this;
 
         return new Promise((res, rej) => {
-            if (t.plugins.length) { // Query Mode
-                let newArgs = args;
-                let result: any[] = [];
-                fastCHAIN(t.plugins, (p, i, nextP) => {
-                    if (p.extend) {
-                        p.extend((nArgs, newResult) => {
-                            newArgs = nArgs;
-                            result = newResult;
+
+            const run = () => {
+                if (t.plugins.length) { // Query Mode
+                    let newArgs = args;
+                    let result: any[] = [];
+                    fastCHAIN(t.plugins, (p, i, nextP) => {
+                        if (p.extend) {
+                            p.extend((nArgs, newResult) => {
+                                newArgs = nArgs;
+                                result = newResult;
+                                nextP();
+                            }, newArgs, result);
+                        } else {
                             nextP();
-                        }, newArgs, result);
-                    } else {
-                        nextP();
-                    }
-                }).then(() => {
-                    res(result);
-                });
+                        }
+                    }).then(() => {
+                        res(result);
+                    });
+                } else {
+                    rej("No plugins!");
+                }
+            };
+
+            if (args[0] === "beforeConn") {
+                args.shift();
+                run();
+                return;
+            }
+
+            if (this.isConnected) {
+                run();
             } else {
-                rej("No plugins!");
+                this.onConnected(run);
             }
         });
 

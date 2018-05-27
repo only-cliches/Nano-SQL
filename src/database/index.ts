@@ -1,6 +1,6 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
-import { NanoSQLPlugin, DBConnect, NanoSQLInstance  } from "../index";
+import { NanoSQLPlugin, DBConnect, NanoSQLInstance } from "../index";
 import { _NanoSQLStorageQuery } from "./query";
 import { fastALL, Promise, fastCHAIN } from "../utilities";
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
@@ -128,6 +128,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
     }
 
     public extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void {
+
         switch (args[0]) {
             case "clone":
                 const nSQLi = new NanoSQLInstance();
@@ -135,24 +136,24 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     nSQLi.table(table).model(this.parent.dataModels[table], [], true);
                 });
                 nSQLi
-                .config({
-                    id: this._store._id,
-                    mode: args[1]
-                })
-                .connect().then(() => {
-                    let i = 0;
-                    fastCHAIN(Object.keys(this.parent.dataModels), (table, i, done) => {
-                        console.log(`Importing ${table}...`);
-                        this.parent.rawDump([table])
-                        .then((data) => {
-                            return nSQLi.rawImport(data);
-                        })
-                        .then(done);
-                    }).then(() => {
-                        next(args, []);
+                    .config({
+                        id: this._store._id,
+                        mode: args[1]
+                    })
+                    .connect().then(() => {
+                        let i = 0;
+                        fastCHAIN(Object.keys(this.parent.dataModels), (table, i, done) => {
+                            console.log(`Importing ${table}...`);
+                            this.parent.rawDump([table])
+                                .then((data) => {
+                                    return nSQLi.rawImport(data);
+                                })
+                                .then(done);
+                        }).then(() => {
+                            next(args, []);
+                        });
                     });
-                });
-            break;
+                break;
             case "flush":
                 let tables: string[] = [];
                 if (!args[1]) {
@@ -165,7 +166,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 }).then(() => {
                     next(args, tables);
                 });
-            break;
+                break;
             case "get_adapter":
                 if (!args[1]) {
                     next(args, [this._store.adapters[0].adapter]);
@@ -173,7 +174,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                     next(args, [this._store.adapters[args[1]].adapter]);
                 }
 
-            break;
+                break;
             case "idx.length":
             case "idx":
                 const table = args[1];
@@ -184,7 +185,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 } else {
                     next(args, []);
                 }
-            break;
+                break;
             case "rebuild_search":
                 const rebuildTables: string[] = (() => {
                     if (args[1]) return [args[1]];
@@ -210,12 +211,12 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         }).then(() => {
                             this._store.adapters[0].adapter.rangeRead(table, (row, idx, next) => {
                                 this.parent.query("upsert", row)
-                                .comment("_rebuild_search_index_")
-                                .manualExec({table: table}).then(() => {
-                                    if (progress) progress(Math.round(((currentProgress + 1) / totalProgress) * 10000) / 100);
-                                    currentProgress++;
-                                    next();
-                                });
+                                    .comment("_rebuild_search_index_")
+                                    .manualExec({ table: table }).then(() => {
+                                        if (progress) progress(Math.round(((currentProgress + 1) / totalProgress) * 10000) / 100);
+                                        currentProgress++;
+                                        next();
+                                    });
                             }, done);
                         });
 
@@ -223,7 +224,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                 }).then(() => {
                     next(args, []);
                 });
-            break;
+                break;
             case "rebuild_idx":
                 if (args[1]) {
                     this._store.rebuildIndexes(args[1], (time) => {
@@ -236,9 +237,10 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         next(args, times);
                     });
                 }
-            break;
+                break;
             default:
                 next(args, result);
         }
+
     }
 }

@@ -197,7 +197,6 @@ define("index", ["require", "exports", "react", "react", "react-dom", "store", "
         };
         return TodoApp;
     }(react_4.PureComponent));
-    store_1.initStore().then(function () {
-        ReactDOM.render(React.createElement(TodoApp, null), document.body);
-    });
+    store_1.initStore();
+    ReactDOM.render(React.createElement(TodoApp, null), document.body);
 });

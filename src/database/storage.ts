@@ -447,8 +447,16 @@ export class _NanoSQLStorage {
         this.tableInfo = {};
         this._trieIndexes = {};
         this._tableNames = [];
-        this._doCache = (typeof args.cache !== "undefined" ? args.cache : true) && !args.peer;
+        this._doCache = (typeof args.cache !== "undefined" ? args.cache : true);
         this._cache = {};
+
+        if (this._doCache && args.peer && typeof window !== "undefined") {
+            const prevTable = parent.sTable;
+            parent.table("*").on("peer-change", (ev) => {
+                this._cache[ev.table] = {};
+            });
+            parent.table(prevTable);
+        }
 
         this.adapters[0] = {
             adapter: null as any,
@@ -498,7 +506,7 @@ export class _NanoSQLStorage {
                     this.adapterWrite(table, pk, _assign(this._secondaryIndexes[table].rows[pk]), nextRow);
                 }).then(done);
             }).then(() => {
-                // flush indexes to database no more than twice a second.
+                // flush indexes to database no more than every 100ms.
                 setTimeout(() => {
                     this._isFlushing = false;
                     this._flushIndexes();

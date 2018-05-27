@@ -192,7 +192,7 @@ export class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         const finishSetup = () => {
             // we need to know what existing primary keys are in each table and make sure pointers are setup where needed.
             fastALL(Object.keys(this._tableKeys), (table, k, tableDone) => {
-                this.parent.extend("idx", `_${table}__hist_idx`).then((index) => {
+                this.parent.extend("beforeConn", "idx", `_${table}__hist_idx`).then((index) => {
                     index.forEach((item) => {
                         this._tableKeys[table][item] = true;
                     });

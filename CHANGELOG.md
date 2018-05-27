@@ -1,8 +1,10 @@
 # Change Log
 
-## [1.6.3]
+## [1.6.3] 5-27-2018
 - Using cache secondary index performance penalty is now only 10-50% depending on the adapter being used.
 - Query queue is only used when cache is disabled now.
+- Restored cache feature with peer mode.
+- You no longer need to call `connect()` before performing queries.  The queries will now wait until `connect()` completes to execute.
 
 ## [1.6.2] 5-24-2018
 - Fixed [46](https://github.com/ClickSimply/Nano-SQL/issues/46) with LevelDB not handling auto incriment correctly.

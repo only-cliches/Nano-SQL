@@ -682,7 +682,7 @@ export class _NanoSQLStorageQuery {
             this._getRows((rows) => {
 
                 if (rows.length) {
-
+                    // any changes to this table invalidates the cache
                     this._store._cache[this._query.table as any] = {};
 
                     let newRows: any[] = [];
@@ -708,7 +708,6 @@ export class _NanoSQLStorageQuery {
                         });
                     }).then(() => {
                         const pks = newRows.map(r => r[pk]);
-                        // any changes to this table invalidates the cache
                         this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
                             this._doAfterQuery(newRows, false, next);

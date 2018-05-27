@@ -68,7 +68,7 @@ export interface DatabaseEvent {
     time: number;
     notes: string[];
     result: any[];
-    types: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[];
+    types: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction" | "peer-change")[];
     actionOrView: string;
     transactionID?: string;
     affectedRowPKS?: any[];
@@ -269,6 +269,7 @@ export declare class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     table(table?: string | any[]): NanoSQLInstance;
+    getPeers(): any;
     /**
      * Inits the backend database for use.
      *

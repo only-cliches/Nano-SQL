@@ -570,11 +570,24 @@ export class _NanoSQLQuery {
      */
     public exec(): any {
 
+        // handle instance queries
+        if (Array.isArray(this._query.table)) {
+            return new Promise((res, rej) => {
+                if (this._db.iB.doExec) {
+                    this._db.iB.doExec(this._query, (q) => {
+                        res(q.result);
+                    });
+                }
+            });
+        }
+
+
+
         if (this._query.table === "*") return;
 
         let t = this;
 
-        const a = this._query.action.toLowerCase();
+        const a = (this._query.action || "").toLowerCase().trim();
 
         if (["tocolumn", "torow"].indexOf(a) > -1) {
             if (this._query.debounce) {
@@ -646,37 +659,30 @@ export class _NanoSQLQuery {
 
         return new Promise((res, rej) => {
 
-            // handle instance queries
-            if (Array.isArray(this._query.table)) {
-                if (this._db.iB.doExec) {
-                    this._db.iB.doExec(this._query, (q) => {
-                        res(q.result);
-                    });
+            const runExec = () => {
+                if (!t._db.plugins.length) {
+                    t._error = "nSQL: No plugins, nothing to do!";
                 }
-                return;
-            }
 
-            if (t._db.isConnected !== true && (t._query.table as string || "").indexOf("_") !== 0) {
-                t._error = "nSQL: Database not connected, can't do a query!";
-            }
+                if (t._error) {
+                    rej(t._error);
+                    return;
+                }
 
-            if (!t._db.plugins.length) {
-                t._error = "nSQL: No plugins, nothing to do!";
-            }
-
-            if (t._error) {
-                rej(t._error);
-                return;
-            }
-
-
-            if (this._db.queryMod) {
-                this._db.queryMod(this._query, (newQ) => {
-                    this._query = newQ;
+                if (this._db.queryMod) {
+                    this._db.queryMod(this._query, (newQ) => {
+                        this._query = newQ;
+                        runQuery(this, res);
+                    });
+                } else {
                     runQuery(this, res);
-                });
+                }
+            };
+
+            if (this._db.isConnected || (this._query.table as string).indexOf("_") === 0) {
+                runExec();
             } else {
-                runQuery(this, res);
+                this._db.onConnected(runExec);
             }
 
         });

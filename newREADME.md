@@ -27,7 +27,7 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
 ### Other Cool Things
-Built in geolocation helpers, undo/redo, automatic live backups, typescript support, full event system, CSV/JSON import & export, and runs in every browser back to IE9!
+Built in geolocation helpers, undo/redo, multi-tab sync, automatic live backups, typescript support, full event system, CSV/JSON import & export, and runs in every browser back to IE9!
 
 #### Wait a second, how can all these features be isomorphic and work with simple databases like Redis, LevelDB and LocalStorage?
 NanoSQL treats every database backend it uses as nothing more than a key/value store; all features are built ontop of that assumption alone.  If it's atleast a key/value store nanoSQL can run ontop of it with no feature loss. For example, secondary indexes are always implemented as a seperate table that acts as an inverted index (even in something like MySQL).  Secondary index reads then involve two seperate reads: one of the inverted index table then another from the actual data table.  Since both of these reads are jumping directly to keys in the key/value stores or primary keys in RDBMS backends the reads are crazy fast and remain fast regardless of the table sizes.  If you avoid full table scans nanoSQL's reads are almost always orders of magnitude faster than sending similar queries to the database it's sitting ontop of. 
@@ -156,6 +156,15 @@ example code
     <summary>
     <b>Observables</b>
     <p>Use the observable pattern to wire your application views to database queries with ease.</p>
+    </summary>
+
+example code
+</details>
+
+<details>
+    <summary>
+    <b>Multi Tab Support</b>
+    <p>Want two browser tabs to remain in sync?  With a single config change nanoSQL can keep two tabs in perfect sync.</p>
     </summary>
 
 example code
