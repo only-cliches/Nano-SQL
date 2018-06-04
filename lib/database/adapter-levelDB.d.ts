@@ -11,6 +11,7 @@ export declare class _LevelStore implements NanoSQLStorageAdapter {
     path: string | undefined;
     writeCache: number | undefined;
     readCache: number | undefined;
+    levelDown: any;
     private _pkKey;
     private _pkType;
     private _isPKnum;
@@ -18,7 +19,7 @@ export declare class _LevelStore implements NanoSQLStorageAdapter {
     private _id;
     private _path;
     private _levelDBs;
-    constructor(path?: string | undefined, writeCache?: number | undefined, readCache?: number | undefined);
+    constructor(path?: string | undefined, writeCache?: number | undefined, readCache?: number | undefined, levelDown?: any);
     connect(complete: () => void): void;
     disconnect(complete: () => void): void;
     setID(id: string): void;

@@ -57,7 +57,8 @@ export class _LevelStore implements NanoSQLStorageAdapter {
     constructor(
         public path?: string,
         public writeCache?: number,
-        public readCache?: number
+        public readCache?: number,
+        public levelDown?: any
     ) {
         this._pkKey = {};
         this._pkType = {};
@@ -103,7 +104,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
         this._dbIndex[tableName] = new DatabaseIndex();
 
-        this._levelDBs[tableName] = global._levelup(global._leveldown(global._path.join(this._path, tableName)), {
+        this._levelDBs[tableName] = global._levelup(this.levelDown || global._leveldown(global._path.join(this._path, tableName)), {
             cacheSize: (this.readCache || 32) * 1024 * 1024,
             writeBufferSize: (this.writeCache || 32) * 1024 * 1024
         });
