@@ -189,7 +189,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
         let rows: any[] = [];
 
-        if (this._dbIndex[table].sortIndex === false) {
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
             keys = keys.sort();
         }
 

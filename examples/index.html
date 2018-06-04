@@ -9,6 +9,30 @@
     <script src="nano-sql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.min.js"></script>
     <script>
+        // arraySrch: (row: any, isJoin: boolean, arrayKey: string, objKey: string, objVal: any, compareKey: string)
+        nSQL([
+            {
+                name: "hello",
+                prices: [
+                    {
+                        unit: "1g",
+                        price: 20
+                    }
+                ]
+            },
+            {
+                name: "hello2",
+                prices: [
+                    {
+                        unit: "1g",
+                        price: 30
+                    }
+                ]
+            }
+        ]).query("select").where(["arrayObjSrch(prices, unit=1g, price)", "=", 20]).exec().then((rows) => {
+            console.log(rows);
+        });
+
         /*nSQL("message")
                             .model([
                                 { key: "id", type: "int", props: ["pk", "ai"] },

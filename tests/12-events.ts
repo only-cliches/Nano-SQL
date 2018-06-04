@@ -41,7 +41,7 @@ describe("Events", () => {
                 });
                 setTimeout(() => {
                     nSQL.table("users").query("upsert", {id: 1, name: "BILL"}).exec();
-                }, 0);
+                }, 25);
             });
         });
     });

@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.6.4] 6-4-2018
+- Fixed compound WHERE condition issue.
+- Disabled query cache again as it's causing issues with offset/limit. Fixed [50](https://github.com/ClickSimply/Nano-SQL/issues/50).
+
 ## [1.6.3] 5-27-2018
 - Using cache secondary index performance penalty is now only 10-50% depending on the adapter being used.
 - Query queue is only used when cache is disabled now.

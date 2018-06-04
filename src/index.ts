@@ -9,8 +9,9 @@ import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 import { executionAsyncId } from "async_hooks";
+import { match } from "minimatch";
 
-const VERSION = 1.63;
+const VERSION = 1.64;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -483,7 +484,7 @@ export class NanoSQLInstance {
             };
 
             connectArgs.models[str[0]] = [
-                { key: "key", type: "string", props: ["pk", "ai"] },
+                { key: "key", type: "string", props: ["pk()", "ai()"] },
                 { key: "value", type: "any" }
             ];
 
@@ -1814,6 +1815,24 @@ NanoSQLInstance.whereFunctions = {
             wordLevenshtienCache[key] = levenshtein(val, word);
         }
         return wordLevenshtienCache[key];
+    },
+    arrayObjSrch: (row: any, isJoin: boolean, arrayKey: string, objCompare: string, compareKey: string) => {
+        const arr: any[] = objQuery(arrayKey, row, isJoin);
+        if (!Array.isArray(arr)) return undefined;
+        if (!arr.length) return undefined;
+        let matchingObj: any;
+        let objData: any[] = objCompare.split("=");
+        arr.forEach((obj) => {
+            let key = objQuery(objData[0], obj);
+            key = isNaN(key) ? key : parseFloat(key);
+            objData[1] = isNaN(objData[1]) ? objData[1] : parseFloat(objData[1]);
+            if (key === objData[1]) {
+                matchingObj = obj;
+            }
+        });
+        if (matchingObj === undefined) return undefined;
+        return objQuery(compareKey, matchingObj);
+
     },
     crow: (row: any, isJoin: boolean, lat: number, lon: number, latColumn?: string, lonColumn?: string) => {
         const latCol = latColumn || "lat";

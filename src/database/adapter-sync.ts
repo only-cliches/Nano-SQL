@@ -143,7 +143,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
             return;
         }
 
-        if (this._dbIndex[table].sortIndex === false) {
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
             keys = keys.sort();
         }
 

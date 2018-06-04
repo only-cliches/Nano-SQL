@@ -148,19 +148,19 @@ export class _NanoSQLStorageQuery {
      */
     public _select(next: (q: IdbQuery) => void) {
 
-        this._hash = hash(JSON.stringify({
+        this._hash = JSON.stringify({
             ...this._query,
             queryID: null
-        }));
+        });
 
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
 
         // Query cache for the win!
-        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+        /*if (canCache && this._store._cache[this._query.table as any][this._hash]) {
             this._query.result = this._store._cache[this._query.table as any][this._hash];
             next(this._query);
             return;
-        }
+        }*/
 
         this._getRows((rows) => {
 
@@ -2300,17 +2300,9 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
 
         const hasOr = where.indexOf("OR") !== -1;
         let decided: boolean;
-        let prevCondition: string;
 
-        return where.reduce((prev, wArg, idx) => {
-
-            if (decided !== undefined) return decided;
-
-            if (idx % 2 === 1) {
-                prevCondition = wArg;
-                return prev;
-            }
-
+        let conditions = where.map((wArg, idx) => {
+            if (idx % 2 === 1) return wArg;
             let compareResult: boolean = false;
             if (wArg[0].indexOf("search(") === 0 && searchCache) {
                 compareResult = searchCache[idx].indexOf(singleRow[pk]) !== -1;
@@ -2318,20 +2310,40 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
                 compareResult = _compare(wArg, singleRow, ignoreFirstPath || false);
             }
 
-            // if all conditions are "AND" we can stop checking on the first false result
-            if (!hasOr && compareResult === false) {
-                decided = false;
-                return decided;
+            return compareResult;
+        });
+        // combine all AND conditions next to eachother into a single boolean
+        let prevCondition: string;
+        let skipSlots: number[] = [];
+        conditions.forEach((wArg, idx) => {
+            if (wArg === "AND" && skipSlots.indexOf(idx) === -1) {
+                let stackAnds: number[] = [];
+                let stop: boolean = false;
+                conditions.forEach((wArg2, idx2) => {
+                    if (idx < idx2 && idx2 % 2 === 1 && !stop) {
+                        if (wArg2 === "OR") {
+                            stop = true;
+                        } else {
+                            stackAnds.push(idx2);
+                        }
+                    }
+                });
+                conditions[idx] = conditions[idx - 1] && conditions[idx + 1];
+                stackAnds.forEach((stackIdx) => {
+                    conditions[idx] = conditions[idx] && conditions[stackIdx - 1] && conditions[stackIdx + 1];
+                });
+                conditions[idx - 1] = undefined;
+                conditions[idx + 1] = undefined;
+                stackAnds.forEach((stackIdx) => {
+                    conditions[stackIdx] = undefined;
+                    conditions[stackIdx - 1] = undefined;
+                    conditions[stackIdx + 1] = undefined;
+                });
+                skipSlots = skipSlots.concat(stackAnds);
             }
+        });
 
-            if (idx === 0) return compareResult;
-
-            if (prevCondition === "AND") {
-                return prev && compareResult;
-            } else {
-                return prev || compareResult;
-            }
-        }, false);
+        return conditions.filter((c, i) => c !== undefined && c !== "OR").reduce((p, c) => p || c, false);
     } else { // single where statement
         return _compare(where, singleRow, ignoreFirstPath || false);
     }

@@ -28,7 +28,7 @@ export class Observer<T> {
      */
     public debounce(ms: number) {
         this._config[this._order.length] = ms;
-        this._order.push("debounce");
+        this._order.push("dbnc");
         return this;
     }
 
@@ -43,7 +43,7 @@ export class Observer<T> {
             keyFunc || ((obj) => obj),
             compareFunc || ((k1, k2) => k1 === k2)
         ];
-        this._order.push("distinct");
+        this._order.push("dsct");
         return this;
     }
 
@@ -56,7 +56,7 @@ export class Observer<T> {
      */
     public filter(fn: (obj: T, idx?: number, event?: DatabaseEvent) => boolean) {
         this._config[this._order.length] = fn;
-        this._order.push("filter");
+        this._order.push("fltr");
         return this;
     }
 
@@ -69,7 +69,7 @@ export class Observer<T> {
      */
     public map(fn: (obj: T, idx?: number, event?: DatabaseEvent) => any) {
         this._config[this._order.length] = fn;
-        this._order.push("map");
+        this._order.push("mp");
         return this;
     }
 
@@ -82,7 +82,7 @@ export class Observer<T> {
      */
     public first(fn?: (obj: T, idx?: number, event?: DatabaseEvent) => boolean) {
         this._config[this._order.length] = fn || ((obj, idx) => true);
-        this._order.push("first");
+        this._order.push("fst");
         return this;
     }
 
@@ -95,7 +95,7 @@ export class Observer<T> {
      */
     public skip(num: number) {
         this._config[this._order.length] = num;
-        this._order.push("skip");
+        this._order.push("skp");
         return this;
     }
 
@@ -107,7 +107,7 @@ export class Observer<T> {
      */
     public take(num: number) {
         this._config[this._order.length] = num;
-        this._order.push("take");
+        this._order.push("tk");
         return this;
     }
 
@@ -178,7 +178,7 @@ export class Observer<T> {
                         };
 
                         switch (this._order[step]) {
-                            case "debounce":
+                            case "dbnc":
                                 if (!lastRan[step]) {
                                     lastRan[step] = Date.now();
                                 } else {
@@ -198,7 +198,7 @@ export class Observer<T> {
                                     return;
                                 }
                                 break;
-                            case "distinct":
+                            case "dsct":
                                 const key = this._config[step][0](rows, event);
                                 if (this._config[step][1](prevValue[step], key) === false) {
                                     prevValue[step] = key;
@@ -210,7 +210,7 @@ export class Observer<T> {
                                     return;
                                 }
                                 break;
-                            case "filter":
+                            case "fltr":
                                 if (this._config[step](rows, getCount(step), event) === false) {
                                     return;
                                 } else {
@@ -220,7 +220,7 @@ export class Observer<T> {
                                     lastCount[step]++;
                                 }
                                 break;
-                            case "first":
+                            case "fst":
                                 if (this._config[step](rows, getCount(step), event) === true) {
                                     if (lastCount[step] === undefined) {
                                         lastCount[step] = 0;
@@ -231,15 +231,15 @@ export class Observer<T> {
                                     return;
                                 }
                                 break;
-                            case "map":
+                            case "mp":
                                 rows = this._config[step](rows, getCount(step), event);
                                 break;
-                            case "skip":
+                            case "skp":
                                 if (getCount(step) <= this._config[step]) {
                                     return;
                                 }
                                 break;
-                            case "take":
+                            case "tk":
                                 if (getCount(step) >= this._config[step]) {
                                     complete = true;
                                 }

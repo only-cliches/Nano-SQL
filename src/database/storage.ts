@@ -1269,7 +1269,7 @@ export class _NanoSQLStorage {
                         hasIDX = true;
                         const isNumber = ["number", "float", "int"].indexOf(model.type) !== -1;
                         dataModels["_" + table + "_idx_" + model.key] = [
-                            { key: "id", type: isNumber ? model.type : "string", props: ["pk"] },
+                            { key: "id", type: isNumber ? model.type : "string", props: ["pk()"] },
                             { key: "rows", type: "any[]" }
                         ];
                     }
@@ -1277,15 +1277,15 @@ export class _NanoSQLStorage {
                         if (prop.indexOf("search(") !== -1) {
                             hasSearch = true;
                             dataModels["_" + table + "_search_" + model.key] = [
-                                { key: "wrd", type: "string", props: ["pk", "ns"] },
+                                { key: "wrd", type: "string", props: ["pk()", "ns()"] },
                                 { key: "rows", type: "any[]" }
                             ];
                             dataModels["_" + table + "_search_fuzzy_" + model.key] = [
-                                { key: "wrd", type: "string", props: ["pk", "ns"] },
+                                { key: "wrd", type: "string", props: ["pk()", "ns()"] },
                                 { key: "rows", type: "any[]" }
                             ];
                             dataModels["_" + table + "_search_tokens_" + model.key] = [
-                                { key: "id", type: pkType, props: ["pk", "ns"] },
+                                { key: "id", type: pkType, props: ["pk()", "ns()"] },
                                 { key: "hash", type: "string" },
                                 { key: "tokens", type: "any[]" }
                             ];

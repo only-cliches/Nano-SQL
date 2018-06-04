@@ -191,7 +191,7 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
             ranges = ranges.map(r => this._dbIndex[table].getLocation(r));
         }
 
-        if (this._dbIndex[table].sortIndex === false) {
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
             keys = keys.sort();
         }
 

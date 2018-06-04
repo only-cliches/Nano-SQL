@@ -206,7 +206,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
             return;
         }
 
-        if (this._dbIndex[table].sortIndex === false) {
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
             keys = keys.sort();
         }
 
@@ -256,6 +256,8 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
     }
 
     public destroy(complete: () => void) {
+        localStorage.removeItem(this._id + "-idb-version");
+        localStorage.removeItem(this._id + "-idb-hash");
         fastALL(Object.keys(this._dbIndex), (table, i, done) => {
             this.drop(table, done);
         }).then(complete);

@@ -198,7 +198,6 @@ describe("Where", () => {
         usersDB(ExampleDataModel, (nSQL) => {
             nSQL.loadJS("users", ExampleUsers).then(() => {
                 nSQL.table(ExampleUsers).query("select").where([["name", "=", "Bill"], "AND", ["age", "=", 20], "OR", ["email", "=", "bob@gmail.com"]]).exec().then((rows) => {
-
                     try {
                         expect(rows).to.deep.equal([
                             {id: 1, name: "Bill", age: 20, email: "bill@gmail.com", meta: {value: 1}, posts: [1, 3]},
