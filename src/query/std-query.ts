@@ -651,18 +651,6 @@ export class _NanoSQLQuery {
                 setArgs = this._query.actionArgs;
             }
 
-            // convert where statements that should be single array to single array
-            // [["column", "=", "value"]] = ["column", "=", "value"]
-            // [["column", "=", "value"], "AND"] = ["column", "=", "value"]
-            if (this._query.where && Array.isArray(this._query.where) && typeof this._query.where[0] !== "string") {
-                if (this._query.where[this._query.where.length - 1] === "AND" || this._query.where[this._query.where.length - 1] === "OR") {
-                    this._query.where.pop();
-                }
-                if (this._query.where.length === 1) {
-                    this._query.where = this._query.where[0];
-                }
-            }
-
             this._query.action = a;
             this._query.actionArgs = this._query.actionArgs ? setArgs : undefined;
         } else {

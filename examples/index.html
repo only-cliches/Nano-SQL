@@ -10,28 +10,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.min.js"></script>
     <script>
         // arraySrch: (row: any, isJoin: boolean, arrayKey: string, objKey: string, objVal: any, compareKey: string)
-        nSQL([
-            {
-                name: "hello",
-                prices: [
-                    {
-                        unit: "1g",
-                        price: 20
+        let conditions = [true,"AND",false,"OR",true,"AND",true]
+        // combine all AND conditions next to eachother into a single boolean
+
+        let skipSlots = [];
+        conditions.forEach((wArg, idx) => {
+            if (wArg === "AND" && skipSlots.indexOf(idx) === -1) {
+                let stackAnds = [];
+                let stop = false;
+                conditions.forEach((wArg2, idx2) => {
+                    if (idx < idx2 && idx2 % 2 === 1 && !stop) {
+                        if (wArg2 === "OR") {
+                            stop = true;
+                        } else {
+                            stackAnds.push(idx2);
+                        }
                     }
-                ]
-            },
-            {
-                name: "hello2",
-                prices: [
-                    {
-                        unit: "1g",
-                        price: 30
-                    }
-                ]
+                });
+                conditions[idx] = conditions[idx - 1] && conditions[idx + 1];
+                stackAnds.forEach((stackIdx) => {
+                    conditions[idx] = conditions[idx] && conditions[stackIdx - 1] && conditions[
+                        stackIdx + 1];
+                });
+                conditions[idx - 1] = undefined;
+                conditions[idx + 1] = undefined;
+                stackAnds.forEach((stackIdx) => {
+                    conditions[stackIdx] = undefined;
+                    conditions[stackIdx - 1] = undefined;
+                    conditions[stackIdx + 1] = undefined;
+                });
+                skipSlots = skipSlots.concat(stackAnds);
             }
-        ]).query("select").where(["arrayObjSrch(prices, unit=1g, price)", "=", 20]).exec().then((rows) => {
-            console.log(rows);
         });
+
+        console.log(conditions.filter((c, i) => c !== undefined && c !== "OR").reduce((p, c) => p || c, false));
 
         /*nSQL("message")
                             .model([
