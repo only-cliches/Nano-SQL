@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.6.5]
+- Added support for nested where statements.
+
 ## [1.6.4] 6-4-2018
 - Disabled query cache again as it's causing issues with offset/limit. Fixed [50](https://github.com/ClickSimply/Nano-SQL/issues/50).
 - Added optional constructor argument to LevelDB adapter for issue [49](https://github.com/ClickSimply/Nano-SQL/issues/49).
