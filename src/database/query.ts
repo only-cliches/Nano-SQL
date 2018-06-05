@@ -2208,6 +2208,10 @@ export class _RowSelection {
         const wQuery = wArgs[0] || "";
         const wCondition = wArgs[1] || "";
 
+        if (Array.isArray(wQuery)) { // nested where statement
+            return 0;
+        }
+
         // is a valid crow query with secondary indexes
         if (wQuery.indexOf("crow(") !== 1 && wCondition === "<") {
             const crowArgs = wQuery.replace(/crow\((.*)\)/gmi, "$1").split(",").map(c => c.trim());
