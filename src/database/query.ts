@@ -2303,42 +2303,38 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
         let decided: boolean;
         let prevCondition: string;
 
-        const resolveWhere = (wArgs: any[]): boolean => {
-            return wArgs.reduce((prev, wArg, idx) => {
+        return where.reduce((prev, wArg, idx) => {
 
-                if (decided !== undefined) return decided;
+            if (decided !== undefined) return decided;
 
-                if (idx % 2 === 1) {
-                    prevCondition = wArg;
-                    return prev;
-                }
+            if (idx % 2 === 1) {
+                prevCondition = wArg;
+                return prev;
+            }
 
-                let compareResult: boolean = false;
-                if (wArg[0].indexOf("search(") === 0 && searchCache) {
-                    compareResult = searchCache[idx].indexOf(singleRow[pk]) !== -1;
-                } else if (Array.isArray(wArg[0])) {
-                    compareResult = resolveWhere(wArg);
-                } else {
-                    compareResult = _compare(wArg, singleRow, ignoreFirstPath || false);
-                }
+            let compareResult: boolean = false;
+            if (wArg[0].indexOf("search(") === 0 && searchCache) {
+                compareResult = searchCache[idx].indexOf(singleRow[pk]) !== -1;
+            } else if (Array.isArray(wArg[0])) {
+                compareResult = _where(singleRow, wArg, rowIDX, ignoreFirstPath || false, searchCache, pk);
+            } else {
+                compareResult = _compare(wArg, singleRow, ignoreFirstPath || false);
+            }
 
-                // if all conditions are "AND" we can stop checking on the first false result
-                if (!hasOr && compareResult === false) {
-                    decided = false;
-                    return decided;
-                }
+            // if all conditions are "AND" we can stop checking on the first false result
+            if (!hasOr && compareResult === false) {
+                decided = false;
+                return decided;
+            }
 
-                if (idx === 0) return compareResult;
+            if (idx === 0) return compareResult;
 
-                if (prevCondition === "AND") {
-                    return prev && compareResult;
-                } else {
-                    return prev || compareResult;
-                }
-            }, false);
-        };
-
-        return resolveWhere(where);
+            if (prevCondition === "AND") {
+                return prev && compareResult;
+            } else {
+                return prev || compareResult;
+            }
+        }, false);
     } else { // single where statement
         return _compare(where, singleRow, ignoreFirstPath || false);
     }
