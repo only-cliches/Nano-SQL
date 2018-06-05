@@ -2316,7 +2316,7 @@ const _where = (singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: 
                 let compareResult: boolean = false;
                 if (wArg[0].indexOf("search(") === 0 && searchCache) {
                     compareResult = searchCache[idx].indexOf(singleRow[pk]) !== -1;
-                } else if (Array.isArray(wArg)) {
+                } else if (Array.isArray(wArg[0])) {
                     compareResult = resolveWhere(wArg);
                 } else {
                     compareResult = _compare(wArg, singleRow, ignoreFirstPath || false);
