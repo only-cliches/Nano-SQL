@@ -1064,6 +1064,9 @@ export class _NanoSQLStorage {
                 if (typeof column === "undefined") {
                     return;
                 }
+                if (typeof column === "string" && !column.length) {
+                    return;
+                }
                 if (this._trieIndexes[table][col]) {
                     this._trieIndexes[table][col].addWord(String(rowData[col]));
                 }
@@ -1094,6 +1097,10 @@ export class _NanoSQLStorage {
 
                 const column = this._secondaryIndexKey(rowData[col]) as any;
                 if (typeof column === "undefined") {
+                    done();
+                    return;
+                }
+                if (typeof column === "string" && !column.length) {
                     done();
                     return;
                 }

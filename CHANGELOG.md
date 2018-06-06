@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.6.6] 6-6-2018
+- Fixed an issue with secondary indexes not writing on empty string value.
+
 ## [1.6.5] 6-5-2018
 - Added support for deeply nested where statements, used to group conditions together.
 

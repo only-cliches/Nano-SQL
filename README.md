@@ -39,7 +39,13 @@ Use observables to subscribe to table changes and automatically update your view
 nSQL().observable(() => {
     return nSQL("table").query("select").emit(); // use .emit() instead of .exec()
 })
-.filter(rows => rows.length)
+.debounce(1000) // dont trigger more than every second (optional)
+.distinct() // only trigger if the previous record doesn't match the next record to trigger (optional)
+.filter(rows => rows.length) // use a filter function to only emit changes based on provided fn. (optional)
+.map(rows => rows) // mutate the results (optional)
+.first() // only emit the first change (optional)
+.skip(10) // skip the first n elements (optional)
+.take(10) // only get the first n elements (optional)
 .subscribe((rows) => {
     // Update view here, this will be called each time the table changes
 })
@@ -91,7 +97,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.6.5/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.6.6/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage
