@@ -37,7 +37,7 @@ Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser,
 Use observables to subscribe to table changes and automatically update your views.
 ```ts
 nSQL().observable(() => {
-    return nSQL("table").query("select").emit(); // use .emit() instead of .exec()
+    return nSQL("users").query("select").emit(); // use .emit() instead of .exec()
 })
 .debounce(1000) // dont trigger more than every second (optional)
 .distinct() // only trigger if the previous record doesn't match the next record to trigger (optional)
@@ -47,8 +47,22 @@ nSQL().observable(() => {
 .skip(10) // skip the first n elements (optional)
 .take(10) // only get the first n elements (optional)
 .subscribe((rows) => {
-    // Update view here, this will be called each time the table changes
+    // Update view here, this will be called each time the "users" table changes
 })
+```
+
+## NEW: Fuzzy Search
+```ts
+// first set which columns are indexed
+nSQL("posts")
+.model([
+    {key: "id", type: "uuid", props: ["pk"]},
+    {key: "title", type: "string", props: ["search(english, 5)"]}, // arguments are tokenizer, weight
+    {key: "body", type: "string", props: ["search(english, 1)"]}
+]).connect().then(() => {
+    // search the title and body columns for items with above .4 relevance for "some search term"
+    return nSQL("posts").query("select").where(["search(title, body)", ">0.4", "some search term"]).exec();
+})....
 ```
 
 ## Browser Support
@@ -56,6 +70,22 @@ nSQL().observable(() => {
 ![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
 --- | --- | --- | --- | --- | --- |
 Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
+
+## Comparison With Other Projects
+
+|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | SQL.js |
+|-----------|---------|---------|--------|------|-----------|---------|--------|--------|
+| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✕      |
+| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      |
+| Undo/Redo | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
+| ORM       | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
+| RDBMS     | ✓       | ✓      | ✓      | ✓    | ✓         | ✓       | ✓      | ✓      |
+| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✕      |
+| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      |
+| Observables| ✓      | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
+| Fuzzy Search| ✓     | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
+| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✓      |
+| Size (kb) | 30      | 5       | 19      | 27   | 40         | 46      | 88     | 500    |
 
 ## Database Support
 

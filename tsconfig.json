@@ -9,7 +9,8 @@
         "noImplicitAny": false,
         "noImplicitReturns": true,
         "noImplicitThis": true,
-        "noImplicitUseStrict": true
+        "noImplicitUseStrict": true,
+        "sourceMap": true
     },
     "include": [
         "src/*"

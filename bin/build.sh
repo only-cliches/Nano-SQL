@@ -33,7 +33,7 @@ export NODE_ENV=production && ./node_modules/.bin/webpack --display-modules
 echo "(3/5) Browser Build Completed..."
 
 #docs 
-./node_modules/.bin/typedoc --out docs --includes src --target ES5 --exclude node_modules --excludeExternals --excludePrivate
+./node_modules/.bin/typedoc --out docs --includes src --target ES6 --exclude node_modules --excludeExternals --excludePrivate
 touch docs/.nojekyll
 echo "(4/5) Docs Completed..."
 

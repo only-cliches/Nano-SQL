@@ -54,17 +54,38 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         [key: string]: any;
     };
 
+    private _lvlDown: (dbID: string, tableName: string) => {lvld: any, args: any};
+
     constructor(
-        public path?: string,
+        public path?: string | ((dbID: string, tableName: string) => {lvld: any, args: any}),
         public writeCache?: number,
-        public readCache?: number,
-        public levelDown?: any
+        public readCache?: number
     ) {
         this._pkKey = {};
         this._pkType = {};
         this._dbIndex = {};
         this._levelDBs = {};
         this._isPKnum = {};
+
+        if (typeof this.path === "string" || typeof this.path === "undefined") {
+            this._lvlDown = ((dbId: string, tableName: string) => {
+
+                const basePath = (this.path || ".") + "/db_" + dbId;
+                if (!global._fs.existsSync(basePath)) {
+                    global._fs.mkdirSync(basePath);
+                }
+
+                return {
+                    lvld: global._leveldown(global._path.join(basePath, tableName)),
+                    args: {
+                        cacheSize: (this.readCache || 32) * 1024 * 1024,
+                        writeBufferSize: (this.writeCache || 32) * 1024 * 1024
+                    }
+                };
+            });
+        } else {
+            this._lvlDown = this.path;
+        }
     }
 
     public connect(complete: () => void) {
@@ -94,20 +115,15 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
     public setID(id: string) {
         this._id = id;
-        this._path = (this.path || ".") + "/db_" + this._id;
-        if (!global._fs.existsSync(this._path)) {
-            global._fs.mkdirSync(this._path);
-        }
     }
 
     public makeTable(tableName: string, dataModels: DataModel[]): void {
 
         this._dbIndex[tableName] = new DatabaseIndex();
 
-        this._levelDBs[tableName] = global._levelup(this.levelDown || global._leveldown(global._path.join(this._path, tableName)), {
-            cacheSize: (this.readCache || 32) * 1024 * 1024,
-            writeBufferSize: (this.writeCache || 32) * 1024 * 1024
-        });
+        const lvlDown = this._lvlDown(this._id, tableName);
+
+        this._levelDBs[tableName] = global._levelup(lvlDown.lvld, lvlDown.args);
 
         dataModels.forEach((d) => {
             if (d.props && intersect(["pk", "pk()"], d.props)) {

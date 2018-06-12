@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.6.7] 6-12-2018
+- Issue [49](https://github.com/ClickSimply/Nano-SQL/issues/49) actually resolved this time with new LevelDB API.
+- Resovled Issue [52](https://github.com/ClickSimply/Nano-SQL/issues/52), added .npmignore file as suggested.
+- Fixed typedoc build.
+- Sourcemaps are now included in the build.
+
 ## [1.6.6] 6-6-2018
 - Fixed an issue with secondary indexes not writing on empty string value.
 
