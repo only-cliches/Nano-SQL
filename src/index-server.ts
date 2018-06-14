@@ -1,10 +1,16 @@
 declare var global: any;
 global._fs = require("fs");
 global._path = require("path");
-global._levelup = require("levelup");
-global._leveldown = require("leveldown");
 global._crypto = require("crypto");
-global._Int64BE = require("int64-buffer").Uint64BE;
+try {
+    global._levelup = require("levelup");
+catch () {}
+try {
+    global._leveldown = require("leveldown");
+catch () {}
+try {
+    global._Int64BE = require("int64-buffer").Uint64BE;
+catch () {}
 
 import {
     ActionOrView,
