@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.6.9]
+- Removed `HAVE` from sanity check.
+
 ## [1.6.8] 6-13-2018
 - Added sanity checking for where queries that require an array value.
 - Issue [49](https://github.com/ClickSimply/Nano-SQL/issues/49) moved LevelDB to optional dependencies.

@@ -2423,7 +2423,7 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         }
     }
 
-    if (["IN", "BETWEEN", "HAVE", "NOT HAVE", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
+    if (["IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
         if (!Array.isArray(givenValue)) {
             throw new Error(`nSQL: ${compare} requires an array value!`);
         }
