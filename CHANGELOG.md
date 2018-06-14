@@ -1,7 +1,9 @@
 # Change Log
 
-## [1.6.9]
+## [1.6.9] 6-14-2018
 - Removed `HAVE` from sanity check.
+- Merged PR [54](https://github.com/ClickSimply/Nano-SQL/pull/54) for LevelDB optional requires.
+- Removed `src` folder from `.npmignore` becuase it's needed by the new source maps.
 
 ## [1.6.8] 6-13-2018
 - Added sanity checking for where queries that require an array value.

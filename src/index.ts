@@ -8,10 +8,8 @@ import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
-import { executionAsyncId } from "async_hooks";
-import { match } from "minimatch";
 
-const VERSION = 1.68;
+const VERSION = 1.69;
 
 // uglifyJS fix
 const str = ["_util"];

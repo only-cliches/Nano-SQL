@@ -4,13 +4,15 @@ global._path = require("path");
 global._crypto = require("crypto");
 try {
     global._levelup = require("levelup");
-catch () {}
+} catch (e) {}
+
 try {
     global._leveldown = require("leveldown");
-catch () {}
+} catch (e) {}
+
 try {
     global._Int64BE = require("int64-buffer").Uint64BE;
-catch () {}
+} catch (e) {}
 
 import {
     ActionOrView,

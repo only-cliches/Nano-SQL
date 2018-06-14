@@ -1,6 +1,6 @@
 {
   "name": "nano-sql",
-  "version": "1.6.9",
+  "version": "1.6.8",
   "description": "NoSQL Everywhere",
   "main": "lib/index-server.js",
   "browser": "lib/index.js",
@@ -113,17 +113,8 @@
   },
   "contributors": [
     {
-      "name": "Scott Lott",
-      "email": null,
-      "url": "https://github.com/ClickSimply",
-      "contributions": 309,
-      "additions": 381948,
-      "deletions": 285629,
-      "hireable": true
-    },
-    {
       "name": "Jesús Ignacio Ortíz Beltrán",
-      "email": null,
+      "email": "",
       "url": "https://github.com/Jesuso",
       "contributions": 2,
       "additions": 16438,
@@ -131,17 +122,17 @@
       "hireable": true
     },
     {
-      "name": "Heri Sim",
-      "email": null,
-      "url": "https://github.com/heri16",
-      "contributions": 3,
-      "additions": 21,
-      "deletions": 9,
+      "name": "Scott Lott",
+      "email": "",
+      "url": "https://github.com/ClickSimply",
+      "contributions": 202,
+      "additions": 304772,
+      "deletions": 140403,
       "hireable": true
     },
     {
       "name": "Vikrant Pogula",
-      "email": null,
+      "email": "",
       "url": "https://github.com/vikrantpogula",
       "contributions": 3,
       "additions": 1681,
