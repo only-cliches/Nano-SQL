@@ -1970,6 +1970,9 @@ export class _RowSelection {
 
         if (where[1] === "BETWEEN") {
             let secondaryIndexKey = where[0] === this.s.tableInfo[this.q.table as any]._pk ? "" : where[0];
+            if (!Array.isArray(where[2])) {
+                throw new Error("nSQL: BETWEEN query must use an array!");
+            }
             if (secondaryIndexKey) {
                 const idxTable = "_" + this.q.table + "_idx_" + secondaryIndexKey;
                 if (this.s._doCache) {
@@ -2006,6 +2009,9 @@ export class _RowSelection {
         switch (where[1]) {
             case "IN":
                 keys = where[2];
+                if (!Array.isArray(keys)) {
+                    throw new Error("nSQL: IN query must use array!");
+                }
                 condition = "=";
                 break;
             case "=":
@@ -2417,6 +2423,12 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         }
     }
 
+    if (["IN", "BETWEEN", "HAVE", "NOT HAVE", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
+        if (!Array.isArray(givenValue)) {
+            throw new Error(`nSQL: ${compare} requires an array value!`);
+        }
+    }
+
     switch (compare) {
         // if column equal to given value
         case "=": return columnValue === givenValue;
@@ -2449,6 +2461,8 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         case "NOT HAVE": return (columnValue || []).indexOf(givenValue) === -1;
         // if array of values intersects with array column
         case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0;
+        // if every value in the provided array exists in the array column
+        case "INTERSECT ALL": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === givenValue.length;
         // if array of values does not intersect with array column
         case "NOT INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === 0;
         default: return false;

@@ -11,7 +11,7 @@ import { Observer } from "./observable";
 import { executionAsyncId } from "async_hooks";
 import { match } from "minimatch";
 
-const VERSION = 1.67;
+const VERSION = 1.68;
 
 // uglifyJS fix
 const str = ["_util"];

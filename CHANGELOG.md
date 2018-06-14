@@ -1,5 +1,9 @@
 # Change Log
 
+## [1.6.8] 6-13-2018
+- Added sanity checking for where queries that require an array value.
+- Issue [49](https://github.com/ClickSimply/Nano-SQL/issues/49) moved LevelDB to optional dependencies.
+
 ## [1.6.7] 6-12-2018
 - Issue [49](https://github.com/ClickSimply/Nano-SQL/issues/49) actually resolved this time with new LevelDB API.
 - Resovled Issue [52](https://github.com/ClickSimply/Nano-SQL/issues/52), added .npmignore file as suggested.
@@ -10,7 +14,14 @@
 - Fixed an issue with secondary indexes not writing on empty string value.
 
 ## [1.6.5] 6-5-2018
-- Added support for deeply nested where statements, used to group conditions together.
+- Added support for deeply nested where statements, used to group conditions together.  Like this:
+```ts
+nSQL("table").query("select").where([
+    ["age", "=", 23], "AND" [
+        ["favoriteColor", "=", "blue"], "OR", ["favoriteColor", "=", "orange"]
+    ]
+]).exec()...
+```
 
 ## [1.6.4] 6-4-2018
 - Disabled query cache again as it's causing issues with offset/limit. Fixed [50](https://github.com/ClickSimply/Nano-SQL/issues/50).
