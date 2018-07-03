@@ -17,7 +17,7 @@ export declare class _SyncStore implements NanoSQLStorageAdapter {
     connect(complete: () => void): void;
     setID(id: string): void;
     makeTable(tableName: string, dataModels: DataModel[]): void;
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void;
     delete(table: string, pk: DBKey, complete: () => void): void;
     read(table: string, pk: DBKey, callback: (row: DBRow) => void): void;
     rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;

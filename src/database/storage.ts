@@ -471,7 +471,7 @@ export class _NanoSQLStorage {
             switch (this._mode) {
                 case "IDB":
                 case "IDB_WW":
-                    this.adapters[0].adapter = new _IndexedDBStore();
+                    this.adapters[0].adapter = new _IndexedDBStore(args.idbVersion);
                     break;
                 case "WSQL":
                     this.adapters[0].adapter = new _WebSQLStore(this._size);
@@ -503,7 +503,9 @@ export class _NanoSQLStorage {
             fastALL(Object.keys(indexes), (table, i, done) => {
                 const PKs = indexes[table];
                 fastALL(PKs, (pk, ii, nextRow) => {
-                    this.adapterWrite(table, pk, _assign(this._secondaryIndexes[table].rows[pk]), nextRow);
+                    this.adapterWrite(table, pk, _assign(this._secondaryIndexes[table].rows[pk]), nextRow, (err) => {
+
+                    });
                 }).then(done);
             }).then(() => {
                 // flush indexes to database no more than every 100ms.
@@ -677,7 +679,7 @@ export class _NanoSQLStorage {
      */
     public rebuildIndexes(table: string, complete: (time: number) => void) {
         const start = new Date().getTime();
-        fastALL(Object.keys(this.tableInfo), (ta, k, tableDone) => {
+        fastALL(Object.keys(this.tableInfo), (ta, k, tableDone, tableErr) => {
             if ((table !== "_ALL_" && table !== ta) || ta.indexOf("_") === 0) {
                 tableDone();
                 return;
@@ -733,17 +735,16 @@ export class _NanoSQLStorage {
                             });
                             done();
                         } else {
-                            fastALL(Object.keys(indexGroups[item]), (rowKey, i, next) => {
+                            fastALL(Object.keys(indexGroups[item]), (rowKey, i, next, err) => {
                                 this.adapterWrite(idxTable, rowKey, {
                                     id: rowKey,
                                     rows: indexGroups[item][rowKey].sort()
-                                }, next);
-                            }).then(done);
+                                }, next, err);
+                            }).then(done).catch(tableErr);
                         }
-
                     }).then(() => {
                         tableDone();
-                    });
+                    }).catch(tableErr);
                 });
             });
         }).then(() => {
@@ -1019,7 +1020,7 @@ export class _NanoSQLStorage {
             this._flushIndexes();
             complete();
         } else {
-            fastALL(doColumns, (idx, k, done) => {
+            fastALL(doColumns, (idx, k, done, error) => {
 
                 const column = this._secondaryIndexKey(rowData[idx]) as any;
 
@@ -1037,7 +1038,7 @@ export class _NanoSQLStorage {
                     let newRow = row ? Object.isFrozen(row) ? _assign(row) : row : { id: column, rows: [] };
                     newRow.rows.splice(i, 1);
                     // newRow.rows = removeDuplicates(newRow.rows);
-                    this.adapterWrite(idxTable, newRow.id, newRow, done);
+                    this.adapterWrite(idxTable, newRow.id, newRow, done, error);
                 });
             }).then(complete);
         }
@@ -1093,7 +1094,7 @@ export class _NanoSQLStorage {
             this._flushIndexes();
             if (complete) complete();
         } else {
-            fastALL(doColumns, (col, i, done) => {
+            fastALL(doColumns, (col, i, done, error) => {
 
                 const column = this._secondaryIndexKey(rowData[col]) as any;
                 if (typeof column === "undefined") {
@@ -1115,7 +1116,7 @@ export class _NanoSQLStorage {
                     indexRow.rows.push(pk);
                     // indexRow.rows.sort();
                     // indexRow.rows = removeDuplicates(indexRow.rows);
-                    this.adapterWrite(idxTable, column, indexRow, done);
+                    this.adapterWrite(idxTable, column, indexRow, done, error);
                 });
             }).then(() => {
                 if (complete) complete();
@@ -1134,7 +1135,7 @@ export class _NanoSQLStorage {
      * @param {(row: DBRow) => void} complete
      * @memberof _NanoSQLStorage
      */
-    public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void) {
+    public _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void, error: (erro: Error) => void) {
 
         if (!oldRow) { // new row
             this.adapterWrite(table, pk, newRow, (row) => {
@@ -1145,7 +1146,7 @@ export class _NanoSQLStorage {
                 } else {
                     complete(row);
                 }
-            });
+            }, error);
 
         } else { // existing row
 
@@ -1160,7 +1161,7 @@ export class _NanoSQLStorage {
             }).indexOf(col) === -1);
 
             if (this.tableInfo[table]._secondaryIndexes.length) {
-                fastALL([0, 1, 2], (idx, i, next) => {
+                fastALL([0, 1, 2], (idx, i, next, err) => {
                     switch (idx) {
                         case 0:
                             this._clearSecondaryIndexes(table, pk, oldRow, doColumns, next);
@@ -1169,17 +1170,17 @@ export class _NanoSQLStorage {
                             this._setSecondaryIndexes(table, pk, setRow, doColumns, next);
                             break;
                         case 2:
-                            this.adapterWrite(table, pk, setRow, next);
+                            this.adapterWrite(table, pk, setRow, next, err);
                             break;
                     }
                 }).then((results) => {
                     complete(results[2]);
-                });
+                }).catch(error);
 
             } else {
                 this.adapterWrite(table, pk, setRow, (row) => {
                     complete(row);
-                });
+                }, error);
             }
         }
 
@@ -1419,24 +1420,22 @@ export class _NanoSQLStorage {
     }
 
 
-    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void {
+    public adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error: (err: Error) => void): void {
 
         let result: any;
-        fastALL(this.adapters, (a: NanoSQLBackupAdapter, i, done) => {
+        fastCHAIN(this.adapters, (a: NanoSQLBackupAdapter, i, done, writeErr) => {
             if (a.waitForWrites) {
                 a.adapter.write(table, pk, data, (row) => {
                     result = row;
                     done();
-                });
+                }, writeErr);
             } else {
                 done();
-                a.adapter.write(table, pk, data, (row) => { });
+                a.adapter.write(table, pk, data, (row) => { }, writeErr);
             }
         }).then(() => {
             complete(result);
-        }).catch((err) => {
-            if (error) error(err);
-        });
+        }).catch(error);
     }
 
     public adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void {

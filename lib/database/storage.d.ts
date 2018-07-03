@@ -421,7 +421,7 @@ export declare class _NanoSQLStorage {
      * @param {(row: DBRow) => void} complete
      * @memberof _NanoSQLStorage
      */
-    _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void): void;
+    _write(table: string, pk: DBKey, oldRow: any, newRow: DBRow, complete: (row: DBRow) => void, error: (erro: Error) => void): void;
     /**
      * Delete a specific row from the database.
      *
@@ -440,7 +440,7 @@ export declare class _NanoSQLStorage {
      */
     _drop(table: string, complete: () => void): void;
     adapterRead(table: string, pk: DBKey, complete: (row: DBRow) => void, queue?: boolean): void;
-    adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error?: (err: Error) => void): void;
+    adapterWrite(table: string, pk: DBKey | null, data: DBRow, complete: (finalRow: DBRow) => void, error: (err: Error) => void): void;
     adapterDelete(table: string, pk: DBKey, complete: () => void, error?: (err: Error) => void): void;
     adapterDrop(table: string, complete: () => void, error?: (err: Error) => void): void;
 }

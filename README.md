@@ -73,19 +73,18 @@ Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
 
 ## Comparison With Other Projects
 
-|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | SQL.js |
-|-----------|---------|---------|--------|------|-----------|---------|--------|--------|
-| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✕      |
-| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      |
-| Undo/Redo | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
-| ORM       | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
-| RDBMS     | ✓       | ✓      | ✓      | ✓    | ✓         | ✓       | ✓      | ✓      |
-| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✕      |
-| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      |
-| Observables| ✓      | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
-| Fuzzy Search| ✓     | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      |
-| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✓      |
-| Size (kb) | 30      | 5       | 19      | 27   | 40         | 46      | 88     | 500    |
+|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js |
+|-----------|---------|---------|--------|------|-----------|---------|--------|--------|--------|
+| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      |
+| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |
+| Undo/Redo | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✓      | ✕      |
+| ORM       | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✓      | ✕      |
+| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      |
+| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      |
+| Observables| ✓      | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✓      | ✕      |
+| Fuzzy Search| ✓     | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      |
+| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      |
+| Size (kb) | 30      | 5       | 19      | 27   | 40         | 46      | 88     | 183     | 500    |
 
 ## Database Support
 
@@ -127,7 +126,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.6.9/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.7.0/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

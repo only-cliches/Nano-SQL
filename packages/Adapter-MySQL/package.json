@@ -1,0 +1,33 @@
+{
+  "name": "nano-mysql",
+  "version": "1.0.2",
+  "description": "MySQL Adapter for NanoSQL",
+  "main": "index.js",
+  "typings": "index.d.ts",
+  "scripts": {
+    "build": "tsc && mv source.js index.js && mv source.d.ts index.d.ts",
+    "test": "tsc test.ts && node test.js && rm -rf *.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+  "keywords": [],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ClickSimply/Nano-MySQL/issues"
+  },
+  "homepage": "https://nanosql.io",
+  "dependencies": {
+    "@types/mysql": "^2.15.4",
+    "@types/redis": "^2.8.6",
+    "mysql": "^2.15.0",
+    "nano-sql": "^1.6.3",
+    "redis": "^2.8.0"
+  },
+  "devDependencies": {
+    "NanoSQL-Adapter-Test": "git+https://github.com/ClickSimply/NanoSQL-Adapter-Test.git",
+    "typescript": "^2.6.2"
+  }
+}

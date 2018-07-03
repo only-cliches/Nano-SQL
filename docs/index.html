@@ -150,6 +150,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<th>LoveField</th>
 							<th>PouchDB</th>
 							<th>alaSQL</th>
+							<th>RxDB</th>
 							<th>SQL.js</th>
 						</tr>
 					</thead>
@@ -163,6 +164,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✓</td>
 							<td>✓</td>
 							<td>✕</td>
+							<td>✓</td>
 							<td>✕</td>
 						</tr>
 						<tr>
@@ -175,6 +177,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✓</td>
 							<td>✕</td>
 							<td>✓</td>
+							<td>✓</td>
 						</tr>
 						<tr>
 							<td>Undo/Redo</td>
@@ -185,6 +188,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✕</td>
 							<td>✕</td>
 							<td>✕</td>
+							<td>✓</td>
 							<td>✕</td>
 						</tr>
 						<tr>
@@ -196,18 +200,8 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✕</td>
 							<td>✕</td>
 							<td>✕</td>
+							<td>✓</td>
 							<td>✕</td>
-						</tr>
-						<tr>
-							<td>RDBMS</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
 						</tr>
 						<tr>
 							<td>IndexedDB</td>
@@ -215,6 +209,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✕</td>
 							<td>✓</td>
 							<td>✕</td>
+							<td>✓</td>
 							<td>✓</td>
 							<td>✓</td>
 							<td>✓</td>
@@ -230,6 +225,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✓</td>
 							<td>✓</td>
 							<td>✓</td>
+							<td>✓</td>
 						</tr>
 						<tr>
 							<td>Observables</td>
@@ -240,11 +236,13 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✕</td>
 							<td>✕</td>
 							<td>✕</td>
+							<td>✓</td>
 							<td>✕</td>
 						</tr>
 						<tr>
 							<td>Fuzzy Search</td>
 							<td>✓</td>
+							<td>✕</td>
 							<td>✕</td>
 							<td>✕</td>
 							<td>✕</td>
@@ -262,6 +260,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>✕</td>
 							<td>✕</td>
 							<td>✓</td>
+							<td>✕</td>
 							<td>✓</td>
 						</tr>
 						<tr>
@@ -273,6 +272,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<td>40</td>
 							<td>46</td>
 							<td>88</td>
+							<td>183</td>
 							<td>500</td>
 						</tr>
 					</tbody>
@@ -308,7 +308,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"nano-sql"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/nano-sql@1.6.9/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/nano-sql@1.7.0/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="simple-usage">Simple Usage</h2>
 				<p>1 minute minimal quick start:</p>

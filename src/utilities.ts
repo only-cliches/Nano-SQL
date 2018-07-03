@@ -65,20 +65,25 @@ export const _assign = (obj: any) => {
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any[]> => {
+export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (result?: any) => void, err: (result: any) => void) => void): Promise<any[]> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
             res([]);
             return;
         }
         let results: any[] = [];
+        let hasError = false;
         const step = () => {
             if (results.length < items.length) {
                 callback(items[results.length], results.length, (result) => {
                     results.push(result);
                     results.length % 100 === 0 ? setFast(step) : step();
+                }, (err) => {
+                    hasError = true;
+                    rej(err);
                 });
             } else {
+                if (hasError) return;
                 res(results);
             }
         };
@@ -93,7 +98,7 @@ export const fastCHAIN = (items: any[], callback: (item: any, i: number, next: (
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export const fastRACE = (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void): Promise<any[]> => {
+export const fastRACE = (items: any[], callback: (item: any, i: number, next: (result?: any) => void, err: (result: any) => void) => void): Promise<any[]> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
             res([]);
@@ -107,6 +112,11 @@ export const fastRACE = (items: any[], callback: (item: any, i: number, next: (r
                     if (!resolved) {
                         resolved = true;
                         res([result]);
+                    }
+                }, (err) => {
+                    if (!resolved) {
+                        resolved = true;
+                        rej(err);
                     }
                 });
                 counter++;
@@ -124,12 +134,10 @@ export const fastRACE = (items: any[], callback: (item: any, i: number, next: (r
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void): Promise<any[]> => {
+export const fastALL = (items: any[], callback: (item: any, i: number, done: (result?: any) => void, err: (result: any) => void) => void): Promise<any[]> => {
     return Promise.all((items || []).map((item, i) => {
         return new Promise((res, rej) => {
-            callback(item, i, (result) => {
-                res(result);
-            });
+            callback(item, i, res, rej);
         });
     }));
 };

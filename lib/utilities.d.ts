@@ -30,7 +30,7 @@ export declare const _assign: (obj: any) => any;
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export declare const fastCHAIN: (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void) => Promise<any[]>;
+export declare const fastCHAIN: (items: any[], callback: (item: any, i: number, next: (result?: any) => void, err: (result: any) => void) => void) => Promise<any[]>;
 /**
  * Quickly and efficiently fire asyncrounous operations in parallel, returns once first operation completes.
  *
@@ -38,7 +38,7 @@ export declare const fastCHAIN: (items: any[], callback: (item: any, i: number, 
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export declare const fastRACE: (items: any[], callback: (item: any, i: number, next: (result?: any) => void) => void) => Promise<any[]>;
+export declare const fastRACE: (items: any[], callback: (item: any, i: number, next: (result?: any) => void, err: (result: any) => void) => void) => Promise<any[]>;
 /**
  * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
  *
@@ -46,7 +46,7 @@ export declare const fastRACE: (items: any[], callback: (item: any, i: number, n
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export declare const fastALL: (items: any[], callback: (item: any, i: number, done: (result?: any) => void) => void) => Promise<any[]>;
+export declare const fastALL: (items: any[], callback: (item: any, i: number, done: (result?: any) => void, err: (result: any) => void) => void) => Promise<any[]>;
 export declare const isSafari: boolean;
 export declare const isMSBrowser: boolean;
 export declare const isAndroid: boolean;

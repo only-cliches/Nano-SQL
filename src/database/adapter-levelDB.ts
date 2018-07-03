@@ -143,12 +143,13 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void {
 
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
-            throw Error("Can't add a row without a primary key!");
+            error(new Error("Can't add a row without a primary key!"));
+            return;
         }
 
         if (this._dbIndex[table].indexOf(pk) === -1) {

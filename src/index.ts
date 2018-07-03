@@ -9,7 +9,7 @@ import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 
-const VERSION = 1.69;
+const VERSION = 1.70;
 
 // uglifyJS fix
 const str = ["_util"];
@@ -27,6 +27,7 @@ export interface NanoSQLConfig {
     history?: boolean;
     hostoryMode?: string | { [table: string]: string };
     secondaryAdapters?: NanoSQLBackupAdapter[];
+    idbVersion?: number;
     dbPath?: string; // path (used by LevelDB)
     writeCache?: number; // writeCache (used by LevelDB)
     readCache?: number; // read cache (used by LevelDB)
@@ -1756,7 +1757,7 @@ export interface NanoSQLPlugin {
      *
      * @memberof NanoSQLPlugin
      */
-    doExec?: (execArgs: IdbQuery, next: (execArgs: IdbQuery) => void) => void;
+    doExec?: (execArgs: IdbQuery, next: (execArgs: IdbQuery) => void, error: (err: Error) => void) => void;
 
     /**
      * Called after the query is done, allows you to modify the event data before the event is emmited

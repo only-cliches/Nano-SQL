@@ -113,12 +113,13 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
         }
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void {
 
         pk = pk || generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
-            throw new Error("nSQL: Can't add a row without a primary key!");
+            error(new Error("nSQL: Can't add a row without a primary key!"));
+            return;
         }
 
         let newRow = false;

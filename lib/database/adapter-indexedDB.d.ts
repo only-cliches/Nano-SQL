@@ -9,19 +9,20 @@ import { DataModel } from "../index";
  * @implements {NanoSQLStorageAdapter}
  */
 export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
+    version: number | undefined;
     private _pkKey;
     private _dbIndex;
     private _id;
     private _db;
     private _modelHash;
     private _dataModels;
-    constructor();
+    constructor(version?: number | undefined);
     private onError(ev);
     connect(complete: () => void): void;
     store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void): void;
     setID(id: string): void;
     makeTable(tableName: string, dataModels: DataModel[]): void;
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void;
     delete(table: string, pk: DBKey, complete: () => void): void;
     read(table: string, pk: DBKey, callback: (row: any) => void): void;
     rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;

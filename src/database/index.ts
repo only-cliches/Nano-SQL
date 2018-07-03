@@ -47,13 +47,13 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
         return this._store._id;
     }
 
-    public doExec(execArgs: IdbQuery, next: (execArgs: IdbQuery) => void): void {
+    public doExec(execArgs: IdbQuery, next: (execArgs: IdbQuery) => void, error: (err: Error) => void): void {
         execArgs.state = "complete";
         /*this._queryPtr++;
         if (this._queryPtr > this._queryPool.length - 1) {
             this._queryPtr = 0;
         }*/
-        new _NanoSQLStorageQuery(this._store).doQuery(execArgs, next);
+        new _NanoSQLStorageQuery(this._store).doQuery(execArgs, next, error);
     }
 
     /*public transactionBegin(id: string, next: () => void): void {
@@ -88,7 +88,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             Object.keys(tables).forEach((table) => {
                 totalLength += (tables[table] || []).length || 0;
             });
-            fastALL(Object.keys(tables), (tableName, i, done) => {
+            fastALL(Object.keys(tables), (tableName, i, done, err) => {
                 const pkKey = this._store.tableInfo[tableName]._pk;
                 const length = (tables[tableName] || []).length || 0;
                 let k = 0;
@@ -101,7 +101,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                             this._store.adapterWrite(tableName, row[pkKey], row, () => {
                                 onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100);
                                 k % 500 === 0 ? setFast(next) : next();
-                            });
+                            }, err);
                         } else {
                             onProgress(Math.round(((totalProgress + 1) / totalLength) * 10000) / 100);
                             k % 500 === 0 ? setFast(next) : next();

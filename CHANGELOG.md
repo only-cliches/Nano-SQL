@@ -1,5 +1,11 @@
 # Change Log
 
+## [1.7.0]
+- Merged PR from [dtiem](https://github.com/ditiem) that increased limit/offset performance by 17%.
+- Combined NanoSQL into a monorepo as suggested in [issue 58](https://github.com/ClickSimply/Nano-SQL/issues/58).
+- Fixed issue [59](https://github.com/ClickSimply/Nano-SQL/issues/59) regarding primary key write errors not propagating.
+- Fixed Issue [57](https://github.com/ClickSimply/Nano-SQL/issues/57), IndxedDB versions can now be specified with `idbVersion` in the config object.
+
 ## [1.6.9] 6-14-2018
 - Removed `HAVE` from sanity check.
 - Merged PR [54](https://github.com/ClickSimply/Nano-SQL/pull/54) for LevelDB optional requires.

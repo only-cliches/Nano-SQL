@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "stripInternal": true,
+        "removeComments": true,
+        "importHelpers": false,
+        "strictNullChecks": true,
+        "noImplicitAny": false,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "noImplicitUseStrict": true,
+        "outDir": ".",
+        "declaration": true,
+        "declarationDir": "."
+    },
+    "files": [
+        "source.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}

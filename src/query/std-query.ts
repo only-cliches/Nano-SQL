@@ -1,5 +1,6 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../index";
 import { _assign, StdObject, uuid, cast, Promise, timeid, fastCHAIN, fastALL, hash } from "../utilities";
+import { NanoSQLPlugin } from "nano-sql";
 
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
@@ -41,7 +42,7 @@ export interface IdbQueryExec extends IdbQueryBase {
 const blankRow = { affectedRowPKS: [], affectedRows: [] };
 
 
-const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
+const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void, error: (err: Error) => void) => {
 
     if (self._db.plugins.length === 1 && !self._db.hasAnyEvents) {
         // fast query path, only used if there's a single plugin and no event listeners
@@ -53,14 +54,14 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
                 complete(self._query.result.map(r => ({ ...r, _id_: undefined })));
             }
 
-        });
+        }, error);
     } else {
-        fastCHAIN(self._db.plugins, (p, i, nextP) => {
+        fastCHAIN(self._db.plugins, (p: NanoSQLPlugin, i, nextP, pluginErr) => {
             if (p.doExec) {
-                p.doExec(self._query, (newQ) => {
+                p.doExec(self._query as any, (newQ) => {
                     self._query = newQ || self._query;
                     nextP();
-                });
+                }, pluginErr);
             } else {
                 nextP();
             }
@@ -113,7 +114,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void) => {
                     self._db.triggerEvent(event);
                 });
             }
-        });
+        }).catch(error);
     }
 };
 
@@ -505,7 +506,7 @@ export class _NanoSQLQuery {
                         }).then(() => {
                             res({ msg: `${rows.length} rows modified` });
                         });
-                    });
+                    }, rej);
                     break;
                 case "torow":
 
@@ -543,7 +544,7 @@ export class _NanoSQLQuery {
                             }).then(() => {
                                 res({ msg: `${rows.length} rows modified` });
                             });
-                        });
+                        }, rej);
                     } else {
                         rej(`No function ${this._query.actionArgs} found to perform updates!`);
                         return;
@@ -576,7 +577,7 @@ export class _NanoSQLQuery {
                 if (this._db.iB.doExec) {
                     this._db.iB.doExec(this._query, (q) => {
                         res(q.result);
-                    });
+                    }, rej);
                 }
             });
         }
@@ -672,10 +673,10 @@ export class _NanoSQLQuery {
                 if (this._db.queryMod) {
                     this._db.queryMod(this._query, (newQ) => {
                         this._query = newQ;
-                        runQuery(this, res);
+                        runQuery(this, res, rej);
                     });
                 } else {
-                    runQuery(this, res);
+                    runQuery(this, res, rej);
                 }
             };
 

@@ -16,22 +16,22 @@ export interface SearchRowIndex {
 }
 
 const queryObj = {
-    select: (self: _NanoSQLStorageQuery, next) => {
+    select: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         self._select(next);
     },
-    upsert: (self: _NanoSQLStorageQuery, next) => {
+    upsert: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (self._store._doCache) {
-            self._upsert(next);
+            self._upsert(next, error);
         } else {
             self._store.queue.add(self._query.table as string, (done) => {
                 self._upsert(() => {
                     done();
                     next(self._query);
-                });
+                }, error);
             });
         }
     },
-    delete: (self: _NanoSQLStorageQuery, next) => {
+    delete: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (self._store._doCache) {
             self._delete(next);
         } else {
@@ -43,7 +43,7 @@ const queryObj = {
             });
         }
     },
-    drop: (self: _NanoSQLStorageQuery, next) => {
+    drop: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (self._store._doCache) {
             self._drop(next);
         } else {
@@ -56,11 +56,11 @@ const queryObj = {
         }
 
     },
-    "show tables": (self: _NanoSQLStorageQuery, next) => {
+    "show tables": (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         self._query.result = Object.keys(self._store.tableInfo) as any[];
         next(self._query);
     },
-    describe: (self: _NanoSQLStorageQuery, next) => {
+    describe: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (typeof self._query.table !== "string") {
             next(self._query);
             return;
@@ -112,12 +112,12 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    public doQuery(query: IdbQuery, next: (q: IdbQuery) => void) {
+    public doQuery(query: IdbQuery, next: (q: IdbQuery) => void, error: (err: Error) => void) {
 
         this._query = query;
         this._isInstanceTable = Array.isArray(query.table);
 
-        queryObj[query.action](this, next);
+        queryObj[query.action](this, next, error);
     }
 
     /**
@@ -348,7 +348,7 @@ export class _NanoSQLStorageQuery {
         }
         const tokenTable = "_" + table + "_search_tokens_";
         // const searchTable = "_" + table + "_search_";
-        fastALL(columns, (col, i, next) => {
+        fastALL(columns, (col, i, next, colError) => {
 
             const tokens = this._tokenizer(col, rowData[col]);
             let wordCache: { [token: string]: string } = {};
@@ -363,7 +363,7 @@ export class _NanoSQLStorageQuery {
                     return;
                 }
 
-                fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next) => {
+                fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next, err) => {
                     // reduce to a list of words to remove
                     let wordsToRemove: { [word: string]: boolean } = {};
                     row.tokens.forEach((token) => {
@@ -373,7 +373,7 @@ export class _NanoSQLStorageQuery {
                         }
                     });
                     // query those words and remove this row from them
-                    fastALL(Object.keys(wordsToRemove), (word, j, done) => {
+                    fastALL(Object.keys(wordsToRemove), (word, j, done, error) => {
                         if (!word) {
                             done();
                             return;
@@ -387,13 +387,13 @@ export class _NanoSQLStorageQuery {
                                 wRow = _assign(wRow);
                             }
                             wRow.rows = wRow.rows.filter(r => r.id !== pk);
-                            this._store.adapterWrite("_" + table + tableSection + col, word, wRow, done);
+                            this._store.adapterWrite("_" + table + tableSection + col, word, wRow, done, error);
                         }, true);
-                    }).then(next);
+                    }).then(next).catch(err);
                 }).then(() => {
                     // remove row hash and token cache
                     this._store.adapters[0].adapter.delete(tokenTable + col, pk, next);
-                });
+                }).catch(colError);
             }, true);
         }).then(complete);
     }
@@ -410,7 +410,7 @@ export class _NanoSQLStorageQuery {
 
         const tokenTable = "_" + table + "_search_tokens_";
 
-        fastALL(columns, (col, i, next) => {
+        fastALL(columns, (col, i, next, colError) => {
             if ([undefined, null, ""].indexOf(newRowData[col]) !== -1) { // columns doesn't contain indexable value
                 next();
                 return;
@@ -446,7 +446,7 @@ export class _NanoSQLStorageQuery {
                 });
 
 
-                fastCHAIN([removeTokens, addTokens], (tokens: string[], j, nextTokens) => {
+                fastCHAIN([removeTokens, addTokens], (tokens: string[], j, nextTokens, tokenErr) => {
                     // find the total number of words that need to be updated (each word is a single index entry)
                     let reduceWords: { [word: string]: { w: string, i: number }[] } = {};
                     tokens.forEach((token) => {
@@ -462,7 +462,7 @@ export class _NanoSQLStorageQuery {
                         // Update token index and standard index
                         // _search_ = tokenized index
                         // _search_fuzzy_ = non tokenized index
-                        fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next) => {
+                        fastALL(["_search_", "_search_fuzzy_"], (tableSection, l, next, error) => {
 
                             const indexWord = l === 0 ? word : wordCache[word];
 
@@ -492,7 +492,7 @@ export class _NanoSQLStorageQuery {
                                         });
                                         break;
                                 }
-                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next);
+                                this._store.adapterWrite("_" + table + tableSection + col, l === 0 ? word : wordCache[word], searchIndex, next, error);
                             }, true);
                         }).then(nextWord);
                     }).then(nextTokens);
@@ -502,7 +502,7 @@ export class _NanoSQLStorageQuery {
                         id: pk,
                         hash: thisHash,
                         tokens: newTokens.map(o => ({ w: o.w, i: o.i }))
-                    }, next);
+                    }, next, colError);
                 });
             }, true);
         }).then(complete);
@@ -606,7 +606,7 @@ export class _NanoSQLStorageQuery {
                     const columns = this._store.tableInfo[view.table]._views[this._query.table as any].columns;
                     const relPK = this._store.tableInfo[view.table]._views[this._query.table as any].pkColumn;
                     // update the records
-                    fastALL(relatedRows, (rRow, j, rDone) => {
+                    fastALL(relatedRows, (rRow, j, rDone, rError) => {
                         let i = columns.length;
                         let doUpdate = false;
                         if (doDel) {
@@ -632,7 +632,7 @@ export class _NanoSQLStorageQuery {
                         }
 
                         const rPk = this._store.tableInfo[view.table]._pk;
-                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone);
+                        this._store.adapterWrite(view.table, rRow[rPk], rRow, rDone, rError);
                     }).then(rowDone);
                 });
             }).then(done);
@@ -658,7 +658,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    public _upsert(next: (q: IdbQuery) => void) {
+    public _upsert(next: (q: IdbQuery) => void, error: (err: Error) => void) {
 
         const pk = this._store.tableInfo[this._query.table as any]._pk;
 
@@ -678,6 +678,8 @@ export class _NanoSQLStorageQuery {
             return;
         }
 
+        let hasError = false;
+
         if (this._query.where) { // has where statement, select rows then modify them
 
             this._getRows((rows) => {
@@ -687,9 +689,9 @@ export class _NanoSQLStorageQuery {
                     this._store._cache[this._query.table as any] = {};
 
                     let newRows: any[] = [];
-                    fastCHAIN(this._query.actionArgs, (inputData, k, nextRow) => {
+                    fastCHAIN(this._query.actionArgs, (inputData, k, nextRow, actionErr) => {
 
-                        fastCHAIN(rows, (row, i, rowDone) => {
+                        fastCHAIN(rows, (row, i, rowDone, rowError) => {
 
                             this._updateSearchIndex(row[pk], row, () => {
                                 this._updateRowViews(inputData || {}, row, (updatedRowData) => {
@@ -700,21 +702,27 @@ export class _NanoSQLStorageQuery {
                                             }
                                         });
                                     }
-                                    this._store._write(this._query.table as any, row[pk], row, updatedRowData, rowDone);
+                                    this._store._write(this._query.table as any, row[pk], row, updatedRowData, rowDone, (err) => {
+                                        hasError = true;
+                                        rowError(err);
+                                    });
                                 });
                             });
                         }).then((nRows: DBRow[]) => {
+                            if (hasError) return;
                             newRows = nRows;
                             nextRow();
-                        });
+                        }).catch(actionErr);
                     }).then(() => {
+                        if (hasError) return;
                         const pks = newRows.map(r => r[pk]);
                         this._query.result = [{ msg: newRows.length + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                         this._syncORM("add", rows, newRows, () => {
                             this._doAfterQuery(newRows, false, next);
                         });
-                    });
+                    }).catch(error);
                 } else {
+                    if (hasError) return;
                     this._query.result = [{ msg: "0 row(s) modfied.", affectedRowPKS: [], affectedRows: [] }];
                     next(this._query);
                 }
@@ -726,7 +734,7 @@ export class _NanoSQLStorageQuery {
             this._store._cache[this._query.table as any] = {};
             let oldRows: any[] = [];
             let addedRows: any[] = [];
-            fastCHAIN(rows, (row, k, nextRow) => {
+            fastCHAIN(rows, (row, k, nextRow, rowError) => {
                 const write = (oldRow: any) => {
                     this._updateRowViews(row, oldRow, (updatedRowData) => {
 
@@ -744,6 +752,9 @@ export class _NanoSQLStorageQuery {
                                 addedRows.push(result);
                                 nextRow();
                             });
+                        }, (err) => {
+                            hasError = true;
+                            rowError(err);
                         });
                     });
                 };
@@ -760,6 +771,7 @@ export class _NanoSQLStorageQuery {
                     write(null);
                 }
             }).then(() => {
+                if (hasError) return;
                 this._query.result = [{ msg: `${addedRows.length} row(s) inserted.`, affectedRowPKS: addedRows.map(r => r[pk]), affectedRows: addedRows }];
                 if (this._store._hasORM) {
                     this._syncORM("add", oldRows, addedRows, () => {
@@ -768,7 +780,7 @@ export class _NanoSQLStorageQuery {
                 } else {
                     this._doAfterQuery(addedRows, false, next);
                 }
-            });
+            }).catch(error);
         }
     }
 

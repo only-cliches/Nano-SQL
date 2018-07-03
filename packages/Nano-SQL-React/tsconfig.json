@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "stripInternal": true,
+        "removeComments": true,
+        "declaration": true,
+        "declarationDir": "./",
+        "jsx": "react",
+        "outDir":"./"
+    },
+    "files": [
+        "./index.tsx"
+    ],
+    "include": []
+}

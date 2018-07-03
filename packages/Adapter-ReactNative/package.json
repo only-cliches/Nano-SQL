@@ -1,0 +1,45 @@
+{
+  "name": "nano-react-native",
+  "version": "1.0.5",
+  "description": "Use nanoSQL in React Native",
+  "main": "index.js",
+  "typings": "index.d.ts",
+  "scripts": {
+    "build": "rm -rf *.d.ts && tsc && mv source.js index.js && mv source.d.ts index.d.ts",
+    "test": "tsc test.ts && node test.js && rm -rf *.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+  "keywords": [
+    "database",
+    "db",
+    "react",
+    "react-native",
+    "persistence",
+    "localstorage",
+    "sqlite",
+    "asyncstorage",
+    "rocksdb",
+    "leveldb"
+  ],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ClickSimply/Nano-ReactNative/issues"
+  },
+  "homepage": "https://nanosql.io",
+  "devDependencies": {
+    "typescript": "^2.6.2"
+  },
+  "peerDependencies": {
+    "react-native": ">0.50.0",
+    "nano-sql": "^1.6.3"
+  },
+  "dependencies": {
+    "lie-ts": "^4.0.0",
+    "nano-sql": "^1.6.3",
+    "react-native": "^0.55.4"
+  }
+}

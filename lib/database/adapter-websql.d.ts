@@ -29,7 +29,7 @@ export declare class _WebSQLStore implements NanoSQLStorageAdapter {
     private _chkTable(table);
     makeTable(tableName: string, dataModels: DataModel[]): void;
     _sql(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void): void;
-    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void;
+    write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void;
     delete(table: string, pk: DBKey, complete: () => void): void;
     read(table: string, pk: DBKey, callback: (row: DBRow) => void): void;
     batchRead(table: string, pks: any[], callback: (rows: any[]) => void): void;

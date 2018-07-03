@@ -27,7 +27,7 @@ export declare class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    doQuery(query: IdbQuery, next: (q: IdbQuery) => void): void;
+    doQuery(query: IdbQuery, next: (q: IdbQuery) => void, error: (err: Error) => void): void;
     private _hash;
     private _updateORMRows(relation, fromPKs, add, primaryKey, complete);
     private _syncORM(type, oldRows, newRows, complete);

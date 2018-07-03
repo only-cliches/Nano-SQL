@@ -17,6 +17,7 @@ export interface NanoSQLConfig {
         [table: string]: string;
     };
     secondaryAdapters?: NanoSQLBackupAdapter[];
+    idbVersion?: number;
     dbPath?: string;
     writeCache?: number;
     readCache?: number;
@@ -784,7 +785,7 @@ export interface NanoSQLPlugin {
      *
      * @memberof NanoSQLPlugin
      */
-    doExec?: (execArgs: IdbQuery, next: (execArgs: IdbQuery) => void) => void;
+    doExec?: (execArgs: IdbQuery, next: (execArgs: IdbQuery) => void, error: (err: Error) => void) => void;
     /**
      * Called after the query is done, allows you to modify the event data before the event is emmited
      *

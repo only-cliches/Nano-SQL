@@ -32,7 +32,7 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _dataModels: {[table: string]: DataModel[]};
 
 
-    constructor() {
+    constructor(public version?: number) {
         this._pkKey = {};
         this._dbIndex = {};
         this._dataModels = {};
@@ -46,15 +46,20 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
     public connect(complete: () => void) {
         this._modelHash = hash(JSON.stringify(this._dataModels));
 
-        let version = parseInt(localStorage.getItem(this._id + "-idb-version") || "") || 1;
-        const modelHash = localStorage.getItem(this._id + "-idb-hash") || this._modelHash;
+        let version = 1;
+        if (this.version) { // manually handled by developer
+            version = this.version;
+        } else { // automatically handled by nanoSQL
+            version = parseInt(localStorage.getItem(this._id + "-idb-version") || "") || 1;
+            const modelHash = localStorage.getItem(this._id + "-idb-hash") || this._modelHash;
 
-        if (modelHash !== this._modelHash) {
-            version++;
+            if (modelHash !== this._modelHash) {
+                version++;
+            }
+
+            localStorage.setItem(this._id + "-idb-version", String(version));
+            localStorage.setItem(this._id + "-idb-hash", this._modelHash);
         }
-
-        localStorage.setItem(this._id + "-idb-version", String(version));
-        localStorage.setItem(this._id + "-idb-hash", this._modelHash);
 
         const idb = indexedDB.open(this._id, version);
 
@@ -140,12 +145,13 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         });
     }
 
-    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
+    public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void {
 
         pk = pk || generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai) as DBKey;
 
         if (!pk) {
-            throw new Error("nSQL: Can't add a row without a primary key!");
+            error(new Error("nSQL: Can't add a row without a primary key!"));
+            return;
         }
 
         if (this._dbIndex[table].indexOf(pk) === -1) {
