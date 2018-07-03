@@ -1064,9 +1064,7 @@ export class _MutateSelection {
      * @memberof _MutateSelection
      */
     private _offset(rows: DBRow[]): any[] {
-        return rows.filter((row: any, index: number) => {
-            return this.q.offset ? index >= this.q.offset : true;
-        });
+        return rows.slice( this.q.offset ) ;
     }
 
     /**
@@ -1078,9 +1076,7 @@ export class _MutateSelection {
      * @memberof _MutateSelection
      */
     private _limit(rows: DBRow[]): any[] {
-        return rows.filter((row: any, index: number) => {
-            return this.q.limit ? index < this.q.limit : true;
-        });
+        return rows.slice( 0, this.q.limit ) ;
     }
 
     /**
