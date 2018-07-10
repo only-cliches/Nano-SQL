@@ -9,3 +9,9 @@ newREADME.md
 tests
 docs
 packages
+/src
+/CHANGELOG.md
+/contributors.md
+/.gitattributes
+/.vs/
+/bin
