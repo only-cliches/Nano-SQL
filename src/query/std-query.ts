@@ -1,6 +1,8 @@
 import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../index";
 import { _assign, StdObject, uuid, cast, Promise, timeid, fastCHAIN, fastALL, hash } from "../utilities";
 import { NanoSQLPlugin } from "nano-sql";
+import { cleanArgs } from "../../node_modules/nano-sql/lib/utilities";
+import { pbkdf2 } from "crypto";
 
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
@@ -24,10 +26,13 @@ export interface IdbQueryBase {
     join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
+    noEvents?: boolean;
     on?: any[];
     debounce?: number;
     trie?: { column: string, search: string };
     extend?: any[];
+    ttl?: number;
+    ttlCols?: string[];
 }
 
 export interface IdbQueryExec extends IdbQueryBase {
@@ -44,8 +49,9 @@ const blankRow = { affectedRowPKS: [], affectedRows: [] };
 
 const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void, error: (err: Error) => void) => {
 
-    if (self._db.plugins.length === 1 && !self._db.hasAnyEvents) {
-        // fast query path, only used if there's a single plugin and no event listeners
+    if (self._db.plugins.length === 1 && !self._db.hasAnyEvents && !self._query.ttl) {
+
+        // fast query path, only used if there's a single plugin, no event listeners and no ttl
         (self._db.plugins[0] as any).doExec(self._query, (newQ) => {
             self._query = newQ;
             if (self._db.hasPK[self._query.table as string]) {
@@ -56,6 +62,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void, error: (
 
         }, error);
     } else {
+
         fastCHAIN(self._db.plugins, (p: NanoSQLPlugin, i, nextP, pluginErr) => {
             if (p.doExec) {
                 p.doExec(self._query as any, (newQ) => {
@@ -73,7 +80,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void, error: (
                 complete(self._query.result.map(r => ({ ...r, _id_: undefined })));
             }
 
-            if (self._db.hasAnyEvents || self._db.pluginHasDidExec) {
+            if (self._db.hasAnyEvents || self._db.pluginHasDidExec || self._query.ttl) {
 
                 const eventTypes: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction")[] = (() => {
                     switch (self._query.action) {
@@ -100,6 +107,21 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void, error: (
                     affectedRowPKS: hasLength ? (self._query.result[0] || blankRow).affectedRowPKS : [],
                     affectedRows: hasLength ? (self._query.result[0] || blankRow).affectedRows : [],
                 };
+
+                if ((event.affectedRowPKS || []).length && self._query.ttl) {
+                    const TTL = Date.now() + ((self._query.ttl || 0) * 1000);
+                    fastCHAIN(event.affectedRowPKS || [], (pk, i, next) => {
+                        self._db.query("upsert", {
+                            key: self._query.table + "." + pk,
+                            table: self._query.table,
+                            cols: self._query.ttlCols,
+                            date: TTL
+                        }).manualExec({table: "_ttl"}).then(next);
+                    }).then(() => {
+                        self._db._checkTTL();
+                    });
+
+                }
 
                 fastCHAIN(self._db.plugins, (p, i, nextP) => {
                     if (p.didExec) {
@@ -242,6 +264,17 @@ export class _NanoSQLQuery {
      */
     public orderBy(args: { [key: string]: "asc" | "desc" }): _NanoSQLQuery {
         this._query.orderBy = args;
+        return this;
+    }
+
+    /**
+     * Disable events for this query, improves memory usage and query speed; sometimes dramatically.
+     *
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
+    public noEvents(): _NanoSQLQuery {
+        this._query.noEvents = true;
         return this;
     }
 
@@ -413,6 +446,25 @@ export class _NanoSQLQuery {
         return this._query;
     }
 
+    /**
+     * Delete inserted/updated row after a given time.
+     *
+     * Provide array of column names to just clear specific columns.
+     * Leave array empty to delete entire row
+     *
+     * @param {number} [seconds=60]
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
+    public ttl(seconds: number = 60, cols?: string[]): _NanoSQLQuery {
+        if (this._query.action !== "upsert") {
+            throw new Error("nSQL: Can only do ttl on upsert queries!");
+        }
+        this._query.ttl = seconds;
+        this._query.ttlCols = cols || [];
+        return this;
+    }
+
 
     /**
      * Export the current query to a CSV file, use in place of "exec()";
@@ -515,7 +567,7 @@ export class _NanoSQLQuery {
                     if (this._db.toRowFns[this._query.table as string] && this._db.toRowFns[this._query.table as string][fnKey]) {
 
                         const fn: (primaryKey: any, existingRow: any, callback: (newRow: any) => void) => void = this._db.toRowFns[this._query.table as string][fnKey];
-                        const PK = this._db.tablePKs[this._query.table as string];
+                        const PK = this._db._tablePKs[this._query.table as string];
 
                         if (this._query.on && this._query.on.length) {
                             fastALL(this._query.on, (pk, i, done) => {
@@ -551,6 +603,30 @@ export class _NanoSQLQuery {
                     }
                     break;
             }
+        });
+    }
+
+    /**
+     * Pagination via cursor
+     *
+     * @param {number} [pageSize=20]
+     * @returns
+     * @memberof _NanoSQLQuery
+     */
+    public getCursor(pageSize: number = 20) {
+        return new Promise((res, rej) => {
+            if (this._query.offset || this._query.limit || this._query.range) {
+                rej("nSQL: Can't use limit/offset with getCursor!");
+                return;
+            }
+            let idx = -1;
+            res(() => {
+                idx++;
+                return this.manualExec({
+                    ...this._query,
+                    range: [pageSize, pageSize * idx]
+                });
+            });
         });
     }
 

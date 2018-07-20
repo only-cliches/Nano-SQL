@@ -17,7 +17,7 @@ export interface SearchRowIndex {
 
 const queryObj = {
     select: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
-        self._select(next);
+        self._select(next, error);
     },
     upsert: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (self._store._doCache) {
@@ -33,25 +33,25 @@ const queryObj = {
     },
     delete: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (self._store._doCache) {
-            self._delete(next);
+            self._delete(next, error);
         } else {
             self._store.queue.add(self._query.table as string, (done) => {
                 self._delete(() => {
                     done();
                     next(self._query);
-                });
+                }, error);
             });
         }
     },
     drop: (self: _NanoSQLStorageQuery, next, error: (err: Error) => void) => {
         if (self._store._doCache) {
-            self._drop(next);
+            self._drop(next, error);
         } else {
             self._store.queue.add(self._query.table as string, (done) => {
                 self._drop(() => {
                     done();
                     next(self._query);
-                });
+                }, error);
             });
         }
 
@@ -127,13 +127,13 @@ export class _NanoSQLStorageQuery {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorageQuery
      */
-    private _getRows(complete: (rows: DBRow[]) => void) {
+    private _getRows(complete: (rows: DBRow[]) => void, error: (e: Error) => void) {
         if (this._isInstanceTable) {
-            new InstanceSelection(this._query, this._store._nsql).getRows(complete);
+            new InstanceSelection(this._query, this._store._nsql).getRows(complete, error);
         } else {
             new _RowSelection(this, this._query, this._store, (rows) => {
                 complete(rows.filter(r => r));
-            });
+            }, error);
         }
     }
 
@@ -147,7 +147,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    public _select(next: (q: IdbQuery) => void) {
+    public _select(next: (q: IdbQuery) => void, error: (e: Error) => void) {
 
         this._hash = JSON.stringify({
             ...this._query,
@@ -178,7 +178,7 @@ export class _NanoSQLStorageQuery {
                 });
             }
 
-        });
+        }, error);
     }
 
     private _updateORMRows(relation: {
@@ -674,7 +674,7 @@ export class _NanoSQLStorageQuery {
                     };
                 });
                 next(this._query);
-            });
+            }, error);
             return;
         }
 
@@ -726,7 +726,7 @@ export class _NanoSQLStorageQuery {
                     this._query.result = [{ msg: "0 row(s) modfied.", affectedRowPKS: [], affectedRows: [] }];
                     next(this._query);
                 }
-            });
+            }, error);
 
         } else { // no where statement, perform direct upsert
 
@@ -792,7 +792,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    public _delete(next: (q: IdbQuery) => void) {
+    public _delete(next: (q: IdbQuery) => void, error: (e: Error) => void) {
 
         if (this._isInstanceTable) {
             if (this._query.where) {
@@ -801,7 +801,7 @@ export class _NanoSQLStorageQuery {
                         return rows.indexOf(row) === -1;
                     });
                     next(this._query);
-                });
+                }, error);
             } else {
                 this._query.result = [];
                 next(this._query);
@@ -833,10 +833,10 @@ export class _NanoSQLStorageQuery {
                     this._query.result = [{ msg: "0 row(s) deleted.", affectedRowPKS: [], affectedRows: [] }];
                     next(this._query);
                 }
-            });
+            }, error);
 
         } else { // no where statement, perform drop
-            this._drop(next);
+            this._drop(next, error);
         }
     }
 
@@ -848,7 +848,7 @@ export class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    public _drop(next: (q: IdbQuery) => void) {
+    public _drop(next: (q: IdbQuery) => void, error: (e: Error) => void) {
         if (this._isInstanceTable) {
             this._query.result = [];
             next(this._query);
@@ -1284,7 +1284,17 @@ export class _MutateSelection {
             [column: string]: any;
         } = {};
 
+        const functionResultRows: {
+            [column: string]: any;
+        } = {};
+
         const fnGroupByResults: {
+            [groupByKey: string]: {
+                [column: string]: any;
+            }
+        } = {};
+
+        const fnGroupByResultRows: {
             [groupByKey: string]: {
                 [column: string]: any;
             }
@@ -1331,14 +1341,21 @@ export class _MutateSelection {
                             if (!fnGroupByResults[k]) {
                                 fnGroupByResults[k] = {};
                             }
-                            columnData[column].fn.call(rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1), (result) => {
+                            if (!fnGroupByResultRows[k]) {
+                                fnGroupByResultRows[k] = {};
+                            }
+                            columnData[column].fn.call(rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1), (result, resultRow) => {
                                 fnGroupByResults[k][columnData[column].key] = result;
+                                if (resultRow) {
+                                    fnGroupByResultRows[k][columnData[column].key] = resultRow;
+                                }
                                 fnDone();
                             }, this.q.join !== undefined, ...fnArgs);
                         }).then(columnDone);
                     } else { // no group by
-                        columnData[column].fn.call(rows, (result) => {
+                        columnData[column].fn.call(rows, (result, row) => {
                             functionResults[columnData[column].key] = result;
+                            functionResultRows[columnData[column].key] = row;
                             columnDone();
                         }, this.q.join !== undefined, ...fnArgs);
                     }
@@ -1350,20 +1367,25 @@ export class _MutateSelection {
 
                 // time to rebuild row results
 
-                const doMuateRows = (row: DBRow, idx: number, fnResults: { [column: string]: any }): any => {
+                const doMuateRows = (row: DBRow, idx: number, fnResults: { [column: string]: any }, fnResultRows: { [column: string]: any }): any => {
                     let newRow = {};
                     // remove unselected columns, apply AS and integrate function results
                     columnSelection.forEach((column) => {
                         const hasFunc = column.indexOf("(") > -1;
                         const type = hasFunc ? columnData[column].fn.type : "";
+                        let key = hasFunc ? columnData[column].key : column;
+                        let objCol = column;
                         if (column.indexOf(" AS ") > -1) { // alias column data
                             const alias: string[] = column.split(" AS ");
-                            const key = hasFunc ? columnData[column].key : alias[0].trim();
-                            newRow[alias[1]] = hasFunc ? (type === "A" ? fnResults[key] : fnResults[key][idx]) : objQuery(key, row, this.q.join !== undefined);
-                        } else {
-                            const key = hasFunc ? columnData[column].key : column;
-                            newRow[column] = hasFunc ? (type === "A" ? fnResults[key] : fnResults[key][idx]) : objQuery(key, row, this.q.join !== undefined);
+                            key = hasFunc ? columnData[column].key : alias[0].trim();
+                            objCol = alias[1];
                         }
+                        if (fnResultRows[key]) {
+                            Object.keys(fnResultRows[key]).forEach((rowCol) => {
+                                newRow[rowCol] = fnResultRows[key][rowCol];
+                            });
+                        }
+                        newRow[objCol] = hasFunc ? (type === "A" ? fnResults[key] : fnResults[key][idx]) : objQuery(key, row, this.q.join !== undefined);
                     });
                     return newRow;
                 };
@@ -1384,14 +1406,14 @@ export class _MutateSelection {
                     Object.keys(this._sortGroups).forEach((k) => {
                         let thisRow = rows.filter((r, i) => this._sortGroups[k].indexOf(i) > -1).filter((v, i) => i < 1);
                         if (thisRow && thisRow.length) {
-                            newRows.push(doMuateRows(thisRow[0], 0, fnGroupByResults[k]));
+                            newRows.push(doMuateRows(thisRow[0], 0, fnGroupByResults[k], fnGroupByResultRows[k]));
                         }
                     });
                     complete(newRows);
                 } else if (hasAggregateFun) { // just aggregate (returns 1 row)
-                    complete(rows.filter((v, i) => i < 1).map((v, i) => doMuateRows(v, i, functionResults)));
+                    complete(rows.filter((v, i) => i < 1).map((v, i) => doMuateRows(v, i, functionResults, functionResultRows)));
                 } else { // no aggregate and no group by, easy peasy
-                    complete(rows.map((v, i) => doMuateRows(v, i, functionResults)));
+                    complete(rows.map((v, i) => doMuateRows(v, i, functionResults, functionResultRows)));
                 }
             });
         } else {
@@ -1478,15 +1500,16 @@ export class _RowSelection {
         public qu: _NanoSQLStorageQuery,
         public q: IdbQuery,
         public s: _NanoSQLStorage,
-        callback: (rows: DBRow[]) => void
+        callback: (rows: DBRow[]) => void,
+        error: (e: Error) => void
     ) {
 
         if (this.q.join && this.q.orm) {
-            throw new Error("nSQL: Cannot do a JOIN and ORM command at the same time!");
+            error(new Error("nSQL: Cannot do a JOIN and ORM command at the same time!"));
         }
 
         if ([this.q.where, this.q.range, this.q.trie].filter(i => i).length > 1) {
-            throw new Error("nSQL: Can only have ONE of Trie, Range or Where!");
+            error(new Error("nSQL: Can only have ONE of Trie, Range or Where!"));
         }
 
         // join command requires n^2 scan that gets taken care of in join logic.
@@ -2269,10 +2292,11 @@ export class InstanceSelection {
     ) {
     }
 
-    public getRows(callback: (rows: DBRow[]) => void) {
+    public getRows(callback: (rows: DBRow[]) => void, error: (e: Error) => void) {
 
         if (this.q.join || this.q.orm || this.q.trie) {
-            throw new Error("nSQL: Cannot do a JOIN, ORM or TRIE command with instance table!");
+            error(new Error("nSQL: Cannot do a JOIN, ORM or TRIE command with instance table!"));
+            return;
         }
 
 

@@ -24,6 +24,7 @@ export interface IdbQueryBase {
     join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
+    noEvents?: boolean;
     on?: any[];
     debounce?: number;
     trie?: {
@@ -31,6 +32,8 @@ export interface IdbQueryBase {
         search: string;
     };
     extend?: any[];
+    ttl?: number;
+    ttlCols?: string[];
 }
 export interface IdbQueryExec extends IdbQueryBase {
     table?: string | any[];
@@ -120,6 +123,13 @@ export declare class _NanoSQLQuery {
     orderBy(args: {
         [key: string]: "asc" | "desc";
     }): _NanoSQLQuery;
+    /**
+     * Disable events for this query, improves memory usage and query speed; sometimes dramatically.
+     *
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
+    noEvents(): _NanoSQLQuery;
     /**
      * Group By command, typically used with an aggregate function.
      *
@@ -237,6 +247,17 @@ export declare class _NanoSQLQuery {
      */
     emit(): IdbQueryExec;
     /**
+     * Delete inserted/updated row after a given time.
+     *
+     * Provide array of column names to just clear specific columns.
+     * Leave array empty to delete entire row
+     *
+     * @param {number} [seconds=60]
+     * @returns {_NanoSQLQuery}
+     * @memberof _NanoSQLQuery
+     */
+    ttl(seconds?: number, cols?: string[]): _NanoSQLQuery;
+    /**
      * Export the current query to a CSV file, use in place of "exec()";
      *
      * Example:
@@ -271,6 +292,14 @@ export declare class _NanoSQLQuery {
      * @memberof _NanoSQLQuery
      */
     denormalizationQuery(action: string): any;
+    /**
+     * Pagination via cursor
+     *
+     * @param {number} [pageSize=20]
+     * @returns
+     * @memberof _NanoSQLQuery
+     */
+    getCursor(pageSize?: number): any;
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      *

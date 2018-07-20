@@ -9,10 +9,10 @@ import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 
-const VERSION = 1.70;
+const VERSION = 1.71;
 
 // uglifyJS fix
-const str = ["_util"];
+const str = ["_util", "_ttl"];
 
 export interface NanoSQLBackupAdapter {
     adapter: NanoSQLStorageAdapter; // the adapter to use
@@ -28,6 +28,7 @@ export interface NanoSQLConfig {
     hostoryMode?: string | { [table: string]: string };
     secondaryAdapters?: NanoSQLBackupAdapter[];
     idbVersion?: number;
+    version?: number;
     dbPath?: string; // path (used by LevelDB)
     writeCache?: number; // writeCache (used by LevelDB)
     readCache?: number; // read cache (used by LevelDB)
@@ -37,6 +38,7 @@ export interface NanoSQLConfig {
         w: string; // tokenized output
         i: number; // location of string
     }[] | boolean;
+    onVersionUpdate?: (oldVersion: number) => Promise<number>;
     [key: string]: any;
 }
 
@@ -56,7 +58,7 @@ export interface ActionOrView {
 
 export interface NanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
-    call: (rows: any[], complete: (result: any | any[]) => void, ...args: any[]) => void; // function call
+    call: (rows: any[], complete: (result: any | any[], aggregateRow?: any) => void, ...args: any[]) => void; // function call
 }
 
 /**
@@ -170,7 +172,7 @@ export class NanoSQLInstance {
      */
     public sTable: string | any[];
 
-    private _config: StdObject<any>;
+    private _config: NanoSQLConfig;
 
     public plugins: NanoSQLPlugin[];
 
@@ -325,7 +327,8 @@ export class NanoSQLInstance {
         [tableName: string]: boolean;
     };
 
-    public tablePKs: { [table: string]: any };
+    public _tablePKs: { [table: string]: any };
+    public _tablePKTypes: { [table: string]: any };
 
     private _onConnectedCallBacks: any[] = [];
 
@@ -365,7 +368,8 @@ export class NanoSQLInstance {
         t.hasPK = {};
         t.skipPurge = {};
         t.toRowFns = {};
-        t.tablePKs = {};
+        t._tablePKs = {};
+        t._tablePKTypes = {};
         t.toColFns = {};
         t.toColRules = {};
         t.rowFilters = {};
@@ -390,7 +394,7 @@ export class NanoSQLInstance {
             models: {},
             actions: {},
             views: {},
-            config: {},
+            config: {} as any,
             parent: this
         };
         if (t.iB.willConnect) {
@@ -402,6 +406,7 @@ export class NanoSQLInstance {
                 }
             });
         }
+        this._checkTTL = this._checkTTL.bind(this);
     }
 
     public rowFilter(callback: (row: any) => any): this {
@@ -439,6 +444,84 @@ export class NanoSQLInstance {
             this._randomPtr = 0;
         }
         return this._randoms[this._randomPtr];
+    }
+
+    /**
+     * Remove TTL from specific row
+     *
+     * @param {*} primaryKey
+     * @returns {Promise<any>}
+     * @memberof NanoSQLInstance
+     */
+    public clearTTL(primaryKey: any): Promise<any> {
+        const k = this.sTable + "." + primaryKey;
+        return this.query("delete").where(["key", "=", k]).manualExec({table: "_ttl"});
+    }
+
+    /**
+     * Check when a given row is going to expire.
+     *
+     * @param {*} primaryKey
+     * @returns {Promise<any>}
+     * @memberof NanoSQLInstance
+     */
+    public expires(primaryKey: any): Promise<any> {
+        return new Promise((res, rej) => {
+            const k = this.sTable + "." + primaryKey;
+            this.query("select").where(["key", "=", k]).manualExec({table: "_ttl"}).then((rows) => {
+                if (!rows.length) {
+                    res({time: -1, cols: []});
+                } else {
+                    res({time: (rows[0].date - Date.now()) / 1000, cols: rows[0].cols});
+                }
+            });
+        });
+    }
+
+    private _ttlTimer: any;
+
+    public _checkTTL() {
+        if (this._ttlTimer) {
+            clearTimeout(this._ttlTimer);
+        }
+        let page = 0;
+        let nextTTL = 0;
+        const getPage = () => {
+            this.query("select").range(20, 20 * page).manualExec({table: "_ttl"}).then((rows: any[]) => {
+                if (!rows.length) {
+                    if (nextTTL) {
+                        this._ttlTimer = setTimeout(this._checkTTL, nextTTL - Date.now());
+                    }
+                    return;
+                }
+                fastCHAIN(rows, (row, i, next) => {
+                    if (row.date < Date.now()) {
+                        const clearTTL = () => {
+                            this.query("delete").where(["key", "=", row.key]).manualExec({table: "_ttl"}).then(next);
+                        };
+                        const rowData = row.key.split(".");
+                        const table = rowData[0];
+                        const key = ["float", "int", "number"].indexOf(this._tablePKTypes[table]) === -1 ? rowData[1] : parseFloat(rowData[1]);
+                        if (row.cols.length) {
+                            let upsertObj = {};
+                            row.cols.forEach((col) => {
+                                upsertObj[col] = null;
+                            });
+                            this.query("upsert", upsertObj).where([this._tablePKs[table], "=", key]).manualExec({table: table}).then(clearTTL);
+                        } else {
+                            this.query("delete").where([this._tablePKs[table], "=", key]).manualExec({table: table}).then(clearTTL);
+                        }
+                    } else {
+                        nextTTL = Math.max(nextTTL, row.date);
+                        next();
+                    }
+                }).then(() => {
+                    page++;
+                    getPage();
+                });
+            });
+        };
+        getPage();
     }
 
 
@@ -487,6 +570,13 @@ export class NanoSQLInstance {
                 { key: "value", type: "any" }
             ];
 
+            connectArgs.models[str[1]] = [
+                { key: "key", type: "string", props: ["pk()"] },
+                { key: "table", type: "string"},
+                { key: "cols", type: "string[]"},
+                { key: "date", type: "number" }
+            ];
+
             // if history is enabled, turn on the built in history plugin
             if (t._config && t._config.history) {
                 this.use(new _NanoSQLHistoryPlugin(t._config.historyMode));
@@ -514,7 +604,7 @@ export class NanoSQLInstance {
                 t.dataModels = connectArgs.models;
                 t._actions = connectArgs.actions;
                 t._views = connectArgs.views;
-                t._config = connectArgs.config;
+                t._config = connectArgs.config as any;
 
                 Object.keys(t.dataModels).forEach((table) => {
                     let hasWild = false;
@@ -651,18 +741,52 @@ export class NanoSQLInstance {
                             t._onConnectedCallBacks.forEach(cb => cb());
                             t._onConnectedCallBacks = [];
                         }
+                        this._checkTTL();
                         res(t.tableNames);
                     });
                 };
 
-                const updateVersion = (rebuildIDX: boolean) => {
+
+                const updateDBVersion = () => {
+                    if (typeof this.getConfig().version !== "undefined") {
+                        t.query("select").where(["key", "=", "db-version"]).manualExec({ table: "_util" }).then((rows) => {
+                            if (!rows.length) {
+                                t.query("upsert", {key: "db-version", value: this.getConfig().version}).manualExec({ table: "_util" }).then(() => {
+                                    completeConnect();
+                                });
+                                return;
+                            }
+                            let version = rows.length ? rows[0].value : this.getConfig().version;
+                            const upgrade = () => {
+                                if (version === this.getConfig().version) {
+                                    completeConnect();
+                                } else {
+                                    if (!this.getConfig().onVersionUpdate) {
+                                        version = this.getConfig().version;
+                                        upgrade();
+                                        return;
+                                    }
+                                    (this.getConfig() as any).onVersionUpdate(version).then((newVersion) => {
+                                        version = newVersion;
+                                        setFast(upgrade);
+                                    }).catch(rej);
+                                }
+                            };
+                            upgrade();
+                        });
+                    } else {
+                        completeConnect();
+                    }
+                };
+
+                const updateNSQLVersion = (rebuildIDX: boolean) => {
                     t.query("upsert", { key: "version", value: t.version }).manualExec({ table: "_util" }).then(() => {
                         if (rebuildIDX) {
                             t.extend("beforeConn", "rebuild_idx").then(() => {
-                                completeConnect();
+                                updateDBVersion();
                             });
                         } else {
-                            completeConnect();
+                            updateDBVersion();
                         }
                     });
                 };
@@ -671,15 +795,15 @@ export class NanoSQLInstance {
 
                     if (!rows.length) {
                         // new database or an old one that needs indexes rebuilt
-                        updateVersion(true);
+                        updateNSQLVersion(true);
                     } else {
 
                         if (rows[0].value <= 1.21) { // secondary indexes need to be rebuilt before 1.21
-                            updateVersion(true);
+                            updateNSQLVersion(true);
                         } else if (rows[0].value < VERSION) {
-                            updateVersion(false);
+                            updateNSQLVersion(false);
                         } else {
-                            completeConnect();
+                            updateDBVersion();
                         }
                     }
                 });
@@ -727,7 +851,7 @@ export class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     public getConfig(): NanoSQLConfig {
-        return this._config || {};
+        return (this._config || {}) as any;
     }
 
     /**
@@ -883,7 +1007,8 @@ export class NanoSQLInstance {
             }
 
             if (model.props && intersect(["pk", "pk()"], model.props)) {
-                this.tablePKs[l] = model.key;
+                this._tablePKs[l] = model.key;
+                this._tablePKTypes[l] = model.type;
                 hasPK = true;
             }
         });
@@ -891,7 +1016,7 @@ export class NanoSQLInstance {
         this.hasPK[l] = hasPK;
 
         if (!hasPK) {
-            this.tablePKs[l] = "_id_";
+            this._tablePKs[l] = "_id_";
             dataModel.unshift({ key: "_id_", type: "uuid", props: ["pk()"] });
         }
 
@@ -1716,7 +1841,7 @@ export interface DBConnect {
     models: StdObject<DataModel[]>;
     actions: StdObject<ActionOrView[]>;
     views: StdObject<ActionOrView[]>;
-    config: StdObject<string>;
+    config: NanoSQLConfig;
     parent: NanoSQLInstance;
 }
 /**
@@ -1880,13 +2005,15 @@ NanoSQLInstance.functions = {
         call: (rows, complete, isJoin, column) => {
             if (rows.length) {
                 let max = objQuery(column, rows[0]) || 0;
+                let maxRow = rows[0];
                 rows.forEach(r => {
                     const v = objQuery(column, r, isJoin);
                     if (objQuery(column, r) > max) {
+                        maxRow = r;
                         max = objQuery(column, r, isJoin);
                     }
                 });
-                complete(max);
+                complete(max, maxRow);
             } else {
                 complete(0);
             }
@@ -1897,13 +2024,15 @@ NanoSQLInstance.functions = {
         call: (rows, complete, isJoin, column) => {
             if (rows.length) {
                 let min = objQuery(column, rows[0], isJoin) || 0;
+                let minRow = rows[0];
                 rows.forEach(r => {
                     const v = objQuery(column, r, isJoin);
                     if (v < min) {
                         min = v;
+                        minRow = r;
                     }
                 });
-                complete(min);
+                complete(min, minRow);
             } else {
                 complete(0);
             }
@@ -2002,3 +2131,4 @@ if (typeof window !== "undefined") {
         NanoSQLInstance: NanoSQLInstance
     };
 }
+

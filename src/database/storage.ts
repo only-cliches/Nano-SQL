@@ -471,7 +471,7 @@ export class _NanoSQLStorage {
             switch (this._mode) {
                 case "IDB":
                 case "IDB_WW":
-                    this.adapters[0].adapter = new _IndexedDBStore(args.idbVersion);
+                    this.adapters[0].adapter = new _IndexedDBStore(args.idbVersion || args.version);
                     break;
                 case "WSQL":
                     this.adapters[0].adapter = new _WebSQLStore(this._size);

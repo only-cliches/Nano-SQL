@@ -164,11 +164,14 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         };
 
         this.store(table, "readwrite", (transaction, store) => {
-            const req = store.put(r);
-            req.onerror = this.onError;
-            req.onsuccess = (e) => {
-                complete(r);
-            };
+            try {
+                store.put(r).onsuccess = () => {
+                    complete(r);
+                };
+            } catch (e) {
+                console.error(e);
+                error(e);
+            }
         });
     }
 
@@ -206,6 +209,46 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         let keys = this._dbIndex[table].keys();
         const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
         let ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
+        if (!keys.length) {
+            complete();
+            return;
+        }
+
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
+            keys = keys.sort();
+        }
+
+        if (usePK && usefulValues) {
+            ranges = ranges.map(r => {
+                const idxOf = this._dbIndex[table].indexOf(r);
+                return idxOf !== -1 ? idxOf : this._dbIndex[table].getLocation(r);
+            });
+        }
+
+        let idx = ranges[0];
+        let i = 0;
+
+        const rowDone = () => {
+            idx++;
+            i++;
+            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+        };
+
+        const getRow = () => {
+            if (idx <= ranges[1]) {
+                this.read(table, keys[idx], (row) => {
+                    rowCallback(row, idx, rowDone);
+                });
+            } else {
+                complete();
+            }
+        };
+        getRow();
+
+
+        /*let keys = this._dbIndex[table].keys();
+        const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
+        let ranges: number[] = usefulValues ? [from as any, to as any] : [0, keys.length - 1];
 
         if (!keys.length) {
             complete();
@@ -217,35 +260,41 @@ export class _IndexedDBStore implements NanoSQLStorageAdapter {
         }
 
         const lower = usePK && usefulValues ? from : keys[ranges[0]];
-        const higher = usePK && usefulValues ? to : keys[ranges[1]];
+        const higher = (usePK && usefulValues ? to : keys[ranges[1]]);
 
 
         this.store(table, "readonly", (transaction, store) => {
             let rows: any[] = [];
-            const cursorRequest = usefulValues ? store.openCursor(IDBKeyRange.bound(lower, higher)) : store.openCursor();
-            transaction.oncomplete = (e) => {
-                let i = 0;
-                const getRow = () => {
-                    if (rows[i]) {
-                        rowCallback(rows[i], i, () => {
-                            i++;
-                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
-                        });
-                    } else {
-                        complete();
+            try {
+                const cursorRequest = usefulValues ? store.openCursor(IDBKeyRange.bound(lower, higher)) : store.openCursor();
+                transaction.oncomplete = (e) => {
+                    let i = 0;
+                    const getRow = () => {
+                        if (rows[i]) {
+                            rowCallback(rows[i], i, () => {
+                                i++;
+                                i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                            });
+                        } else {
+                            complete();
+                        }
+                    };
+                    getRow();
+                };
+                cursorRequest.onsuccess = (evt: any) => {
+                    const cursor: IDBCursorWithValue = evt.target.result;
+                    if (cursor) {
+                        rows.push(cursor.value);
+                        cursor.continue();
                     }
                 };
-                getRow();
-            };
-            cursorRequest.onsuccess = (evt: any) => {
-                const cursor: IDBCursorWithValue = evt.target.result;
-                if (cursor) {
-                    rows.push(cursor.value);
-                    cursor.continue();
-                }
-            };
-            cursorRequest.onerror = this.onError;
-        });
+                cursorRequest.onerror = this.onError;
+            } catch (e) {
+                console.log(lower, higher);
+                console.error(e);
+            }
+
+        });*/
     }
 
     public drop(table: string, callback: () => void): void {

@@ -1,6 +1,13 @@
 # Change Log
 
-## [1.7.0]
+## [1.7.1] 7-19-2018
+- Better error handling.
+- Resolved issue [70](https://github.com/ClickSimply/Nano-SQL/issues/70), added a database versioning/migration code.
+- Resolved issue [69](https://github.com/ClickSimply/Nano-SQL/issues/69) and also added a test to prevent the bug from popping up again.  
+- Resolved issue [63](https://github.com/ClickSimply/Nano-SQL/issues/63), added cursor feature to queries.
+- Resovled issue [64](https://github.com/ClickSimply/Nano-SQL/issues/64), added TTL feature.
+
+## [1.7.0] 7-3-2018
 - Merged PR from [dtiem](https://github.com/ditiem) that increased limit/offset performance by 17%.
 - Combined NanoSQL into a monorepo as suggested in [issue 58](https://github.com/ClickSimply/Nano-SQL/issues/58).
 - Fixed issue [59](https://github.com/ClickSimply/Nano-SQL/issues/59) regarding primary key write errors not propagating.

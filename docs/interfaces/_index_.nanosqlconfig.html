@@ -93,11 +93,13 @@
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#id" class="tsd-kind-icon">id</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#idbversion" class="tsd-kind-icon">idb<wbr>Version</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#mode" class="tsd-kind-icon">mode</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#onversionupdate" class="tsd-kind-icon">on<wbr>Version<wbr>Update</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#peer" class="tsd-kind-icon">peer</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#readcache" class="tsd-kind-icon">read<wbr>Cache</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#secondaryadapters" class="tsd-kind-icon">secondary<wbr>Adapters</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#size" class="tsd-kind-icon">size</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#tokenizer" class="tsd-kind-icon">tokenizer</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#version" class="tsd-kind-icon">version</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_index_.nanosqlconfig.html#writecache" class="tsd-kind-icon">write<wbr>Cache</a></li>
 							</ul>
 						</section>
@@ -122,7 +124,7 @@
 					<div class="tsd-signature tsd-kind-icon">db<wbr>Path<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:31</li>
+							<li>Defined in index.ts:32</li>
 						</ul>
 					</aside>
 				</section>
@@ -177,6 +179,16 @@
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="onversionupdate" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> on<wbr>Version<wbr>Update</h3>
+					<div class="tsd-signature tsd-kind-icon">on<wbr>Version<wbr>Update<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:41</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="peer" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagOptional">Optional</span> peer</h3>
 					<div class="tsd-signature tsd-kind-icon">peer<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">false</span></div>
@@ -192,7 +204,7 @@
 					<div class="tsd-signature tsd-kind-icon">read<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:33</li>
+							<li>Defined in index.ts:34</li>
 						</ul>
 					</aside>
 				</section>
@@ -212,7 +224,7 @@
 					<div class="tsd-signature tsd-kind-icon">size<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:34</li>
+							<li>Defined in index.ts:35</li>
 						</ul>
 					</aside>
 				</section>
@@ -222,7 +234,17 @@
 					<div class="tsd-signature tsd-kind-icon">tokenizer<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:35</li>
+							<li>Defined in index.ts:36</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="version" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> version</h3>
+					<div class="tsd-signature tsd-kind-icon">version<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:31</li>
 						</ul>
 					</aside>
 				</section>
@@ -232,7 +254,7 @@
 					<div class="tsd-signature tsd-kind-icon">write<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:32</li>
+							<li>Defined in index.ts:33</li>
 						</ul>
 					</aside>
 				</section>
@@ -320,6 +342,9 @@
 								<a href="_index_.nanosqlconfig.html#mode" class="tsd-kind-icon">mode</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#onversionupdate" class="tsd-kind-icon">on<wbr>Version<wbr>Update</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.nanosqlconfig.html#peer" class="tsd-kind-icon">peer</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
@@ -333,6 +358,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.nanosqlconfig.html#tokenizer" class="tsd-kind-icon">tokenizer</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_index_.nanosqlconfig.html#version" class="tsd-kind-icon">version</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_index_.nanosqlconfig.html#writecache" class="tsd-kind-icon">write<wbr>Cache</a>

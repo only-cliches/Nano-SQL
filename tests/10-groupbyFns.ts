@@ -1,4 +1,4 @@
-import { NanoSQLInstance } from "../src/index";
+import { NanoSQLInstance, nSQL } from "../src/index";
 import { expect, assert } from "chai";
 import "mocha";
 import { usersDB, ExampleUsers, ExampleDataModel } from "./data";
@@ -27,6 +27,21 @@ describe("Group By & Functions", () => {
                     }
                 });
             });
+        });
+    });
+
+    it("Check Aggregate Functions", (done: MochaDone) => {
+        nSQL([
+            {name: "bill", age: 20},
+            {name: "bob", age: 25},
+            {name: "jeb", age: 27}
+        ]).query("select", ["name", "MAX(age) AS age"]).exec().then((rows) => {
+            try {
+                expect(rows).to.deep.equal([{name: "jeb", age: 27}], "Aggregate Function Failed!");
+                done();
+            } catch (e) {
+                done(e);
+            }
         });
     });
 

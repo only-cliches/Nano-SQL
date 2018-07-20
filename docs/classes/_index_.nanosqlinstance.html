@@ -103,6 +103,8 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#_tablepktypes" class="tsd-kind-icon">_tablePKTypes</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#_tablepks" class="tsd-kind-icon">_tablePKs</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#data" class="tsd-kind-icon">data</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#datamodels" class="tsd-kind-icon">data<wbr>Models</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#focused" class="tsd-kind-icon">focused</a></li>
@@ -122,7 +124,6 @@
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#stable" class="tsd-kind-icon">s<wbr>Table</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#skippurge" class="tsd-kind-icon">skip<wbr>Purge</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="_index_.nanosqlinstance.html#tablenames" class="tsd-kind-icon">table<wbr>Names</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#tablepks" class="tsd-kind-icon">tablePKs</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#tocolfns" class="tsd-kind-icon">to<wbr>Col<wbr>Fns</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#tocolrules" class="tsd-kind-icon">to<wbr>Col<wbr>Rules</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#torowfns" class="tsd-kind-icon">to<wbr>Row<wbr>Fns</a></li>
@@ -137,14 +138,17 @@
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#csvtojson" class="tsd-kind-icon">CSVtoJSON</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#jsontocsv" class="tsd-kind-icon">JSONtoCSV</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#_checkttl" class="tsd-kind-icon">_checkTTL</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#actions" class="tsd-kind-icon">actions</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#avfilter" class="tsd-kind-icon">av<wbr>Filter</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#clearttl" class="tsd-kind-icon">clearTTL</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#config" class="tsd-kind-icon">config</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#connect" class="tsd-kind-icon">connect</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#default" class="tsd-kind-icon">default</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#disconnect" class="tsd-kind-icon">disconnect</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#doaction" class="tsd-kind-icon">do<wbr>Action</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#dotransaction" class="tsd-kind-icon">do<wbr>Transaction</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#expires" class="tsd-kind-icon">expires</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#extend" class="tsd-kind-icon">extend</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#fastrand" class="tsd-kind-icon">fast<wbr>Rand</a></li>
 								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_index_.nanosqlinstance.html#getactions" class="tsd-kind-icon">get<wbr>Actions</a></li>
@@ -187,7 +191,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:350</li>
+									<li>Defined in index.ts:353</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="_index_.nanosqlinstance.html" class="tsd-signature-type">NanoSQLInstance</a></h4>
@@ -198,12 +202,48 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="_tablepktypes" class="tsd-anchor"></a>
+					<h3>_tablePKTypes</h3>
+					<div class="tsd-signature tsd-kind-icon">_tablePKTypes<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:331</li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>table: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">any</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="_tablepks" class="tsd-anchor"></a>
+					<h3>_tablePKs</h3>
+					<div class="tsd-signature tsd-kind-icon">_tablePKs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in index.ts:330</li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>table: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">any</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="data" class="tsd-anchor"></a>
 					<h3>data</h3>
 					<div class="tsd-signature tsd-kind-icon">data<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:211</li>
+							<li>Defined in index.ts:213</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -226,7 +266,7 @@
 					<div class="tsd-signature tsd-kind-icon">data<wbr>Models<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:275</li>
+							<li>Defined in index.ts:277</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -259,7 +299,7 @@
 					<div class="tsd-signature tsd-kind-icon">focused<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:346</li>
+							<li>Defined in index.ts:349</li>
 						</ul>
 					</aside>
 				</section>
@@ -269,7 +309,7 @@
 					<div class="tsd-signature tsd-kind-icon">has<wbr>Any<wbr>Events<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:292</li>
+							<li>Defined in index.ts:294</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -292,7 +332,7 @@
 					<div class="tsd-signature tsd-kind-icon">hasPK<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:257</li>
+							<li>Defined in index.ts:259</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -323,7 +363,7 @@
 					<div class="tsd-signature tsd-kind-icon">iB<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_index_.nanosqlplugin.html" class="tsd-signature-type">NanoSQLPlugin</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:187</li>
+							<li>Defined in index.ts:189</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -346,7 +386,7 @@
 					<div class="tsd-signature tsd-kind-icon">id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:344</li>
+							<li>Defined in index.ts:347</li>
 						</ul>
 					</aside>
 				</section>
@@ -356,7 +396,7 @@
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Connected<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:189</li>
+							<li>Defined in index.ts:191</li>
 						</ul>
 					</aside>
 				</section>
@@ -366,7 +406,7 @@
 					<div class="tsd-signature tsd-kind-icon">peer<wbr>Events<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:345</li>
+							<li>Defined in index.ts:348</li>
 						</ul>
 					</aside>
 				</section>
@@ -376,7 +416,7 @@
 					<div class="tsd-signature tsd-kind-icon">peer<wbr>Mode<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:347</li>
+							<li>Defined in index.ts:350</li>
 						</ul>
 					</aside>
 				</section>
@@ -386,7 +426,7 @@
 					<div class="tsd-signature tsd-kind-icon">peers<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:342</li>
+							<li>Defined in index.ts:345</li>
 						</ul>
 					</aside>
 				</section>
@@ -396,7 +436,7 @@
 					<div class="tsd-signature tsd-kind-icon">pid<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:343</li>
+							<li>Defined in index.ts:346</li>
 						</ul>
 					</aside>
 				</section>
@@ -406,7 +446,7 @@
 					<div class="tsd-signature tsd-kind-icon">plugin<wbr>Has<wbr>Did<wbr>Exec<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:303</li>
+							<li>Defined in index.ts:305</li>
 						</ul>
 					</aside>
 				</section>
@@ -416,7 +456,7 @@
 					<div class="tsd-signature tsd-kind-icon">plugins<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_index_.nanosqlplugin.html" class="tsd-signature-type">NanoSQLPlugin</a><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:175</li>
+							<li>Defined in index.ts:177</li>
 						</ul>
 					</aside>
 				</section>
@@ -426,7 +466,7 @@
 					<div class="tsd-signature tsd-kind-icon">query<wbr>Mod<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:266</li>
+							<li>Defined in index.ts:268</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -490,7 +530,7 @@
 					<div class="tsd-signature tsd-kind-icon">row<wbr>Filters<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:213</li>
+							<li>Defined in index.ts:215</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -526,7 +566,7 @@
 					<div class="tsd-signature tsd-kind-icon">s<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:171</li>
+							<li>Defined in index.ts:173</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -549,7 +589,7 @@
 					<div class="tsd-signature tsd-kind-icon">skip<wbr>Purge<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:324</li>
+							<li>Defined in index.ts:326</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -582,7 +622,7 @@
 					<div class="tsd-signature tsd-kind-icon">table<wbr>Names<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:313</li>
+							<li>Defined in index.ts:315</li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -600,30 +640,12 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="tablepks" class="tsd-anchor"></a>
-					<h3>tablePKs</h3>
-					<div class="tsd-signature tsd-kind-icon">tablePKs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in index.ts:328</li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter-index-signature">
-								<h5><span class="tsd-signature-symbol">[</span>table: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">any</span></h5>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
 					<a name="tocolfns" class="tsd-anchor"></a>
 					<h3>to<wbr>Col<wbr>Fns</h3>
 					<div class="tsd-signature tsd-kind-icon">to<wbr>Col<wbr>Fns<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:350</li>
+							<li>Defined in index.ts:353</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -688,7 +710,7 @@
 					<div class="tsd-signature tsd-kind-icon">to<wbr>Col<wbr>Rules<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:336</li>
+							<li>Defined in index.ts:339</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -711,7 +733,7 @@
 					<div class="tsd-signature tsd-kind-icon">to<wbr>Row<wbr>Fns<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:349</li>
+							<li>Defined in index.ts:352</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -776,7 +798,7 @@
 					<div class="tsd-signature tsd-kind-icon">version<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;VERSION</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:177</li>
+							<li>Defined in index.ts:179</li>
 						</ul>
 					</aside>
 				</section>
@@ -786,7 +808,7 @@
 					<div class="tsd-signature tsd-kind-icon">earth<wbr>Radius<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> =&nbsp;6371</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:179</li>
+							<li>Defined in index.ts:181</li>
 						</ul>
 					</aside>
 				</section>
@@ -796,7 +818,7 @@
 					<div class="tsd-signature tsd-kind-icon">functions<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:197</li>
+							<li>Defined in index.ts:199</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -814,7 +836,7 @@
 					<div class="tsd-signature tsd-kind-icon">where<wbr>Functions<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in index.ts:201</li>
+							<li>Defined in index.ts:203</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -863,7 +885,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1616</li>
+									<li>Defined in index.ts:1741</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -899,7 +921,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1569</li>
+									<li>Defined in index.ts:1694</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -929,6 +951,23 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="_checkttl" class="tsd-anchor"></a>
+					<h3>_checkTTL</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">_checkTTL<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in index.ts:483</li>
+								</ul>
+							</aside>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="actions" class="tsd-anchor"></a>
 					<h3>actions</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -938,7 +977,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1032</li>
+									<li>Defined in index.ts:1157</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1004,7 +1043,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:741</li>
+									<li>Defined in index.ts:865</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1028,6 +1067,39 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="clearttl" class="tsd-anchor"></a>
+					<h3>clearTTL</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">clearTTL<span class="tsd-signature-symbol">(</span>primaryKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in index.ts:456</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Remove TTL from specific row</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>NanoSQLInstance</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>primaryKey: <span class="tsd-signature-type">any</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="config" class="tsd-anchor"></a>
 					<h3>config</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -1037,7 +1109,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1441</li>
+									<li>Defined in index.ts:1566</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1070,7 +1142,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:472</li>
+									<li>Defined in index.ts:555</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1098,7 +1170,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1245</li>
+									<li>Defined in index.ts:1370</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1144,7 +1216,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1319</li>
+									<li>Defined in index.ts:1444</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1171,7 +1243,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1053</li>
+									<li>Defined in index.ts:1178</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1212,7 +1284,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1341</li>
+									<li>Defined in index.ts:1466</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1313,6 +1385,39 @@
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="expires" class="tsd-anchor"></a>
+					<h3>expires</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">expires<span class="tsd-signature-symbol">(</span>primaryKey<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in index.ts:468</li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Check when a given row is going to expire.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>memberof</dt>
+									<dd><p>NanoSQLInstance</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>primaryKey: <span class="tsd-signature-type">any</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
 					<a name="extend" class="tsd-anchor"></a>
 					<h3>extend</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -1322,7 +1427,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1478</li>
+									<li>Defined in index.ts:1603</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1358,7 +1463,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:436</li>
+									<li>Defined in index.ts:441</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1387,7 +1492,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:698</li>
+									<li>Defined in index.ts:822</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1421,7 +1526,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:729</li>
+									<li>Defined in index.ts:853</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1448,7 +1553,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:458</li>
+									<li>Defined in index.ts:541</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
@@ -1465,7 +1570,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:977</li>
+									<li>Defined in index.ts:1102</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1506,7 +1611,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:714</li>
+									<li>Defined in index.ts:838</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1539,7 +1644,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1689</li>
+									<li>Defined in index.ts:1814</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1586,7 +1691,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1538</li>
+									<li>Defined in index.ts:1663</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1635,7 +1740,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:839</li>
+									<li>Defined in index.ts:963</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1680,7 +1785,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1466</li>
+									<li>Defined in index.ts:1591</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1755,7 +1860,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:789</li>
+									<li>Defined in index.ts:913</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1812,7 +1917,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:759</li>
+									<li>Defined in index.ts:883</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1869,7 +1974,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1184</li>
+									<li>Defined in index.ts:1309</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -1904,7 +2009,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1168</li>
+									<li>Defined in index.ts:1293</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1974,7 +2079,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1065</li>
+									<li>Defined in index.ts:1190</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2048,7 +2153,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1270</li>
+									<li>Defined in index.ts:1395</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2082,7 +2187,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1299</li>
+									<li>Defined in index.ts:1424</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2124,7 +2229,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:407</li>
+									<li>Defined in index.ts:412</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2165,7 +2270,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:453</li>
+									<li>Defined in index.ts:536</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2198,7 +2303,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:412</li>
+									<li>Defined in index.ts:417</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2268,7 +2373,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:420</li>
+									<li>Defined in index.ts:425</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2338,7 +2443,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:1199</li>
+									<li>Defined in index.ts:1324</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2373,7 +2478,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:746</li>
+									<li>Defined in index.ts:870</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -2396,7 +2501,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in index.ts:956</li>
+									<li>Defined in index.ts:1081</li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -2491,6 +2596,12 @@
 								<a href="_index_.nanosqlinstance.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#_tablepktypes" class="tsd-kind-icon">_tablePKTypes</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#_tablepks" class="tsd-kind-icon">_tablePKs</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#data" class="tsd-kind-icon">data</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
@@ -2548,9 +2659,6 @@
 								<a href="_index_.nanosqlinstance.html#tablenames" class="tsd-kind-icon">table<wbr>Names</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_index_.nanosqlinstance.html#tablepks" class="tsd-kind-icon">tablePKs</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#tocolfns" class="tsd-kind-icon">to<wbr>Col<wbr>Fns</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
@@ -2578,10 +2686,16 @@
 								<a href="_index_.nanosqlinstance.html#jsontocsv" class="tsd-kind-icon">JSONtoCSV</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#_checkttl" class="tsd-kind-icon">_checkTTL</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#actions" class="tsd-kind-icon">actions</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#avfilter" class="tsd-kind-icon">av<wbr>Filter</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#clearttl" class="tsd-kind-icon">clearTTL</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#config" class="tsd-kind-icon">config</a>
@@ -2600,6 +2714,9 @@
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#dotransaction" class="tsd-kind-icon">do<wbr>Transaction</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_index_.nanosqlinstance.html#expires" class="tsd-kind-icon">expires</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class">
 								<a href="_index_.nanosqlinstance.html#extend" class="tsd-kind-icon">extend</a>

@@ -90,7 +90,7 @@ export declare class _RowSelection {
     qu: _NanoSQLStorageQuery;
     q: IdbQuery;
     s: _NanoSQLStorage;
-    constructor(qu: _NanoSQLStorageQuery, q: IdbQuery, s: _NanoSQLStorage, callback: (rows: DBRow[]) => void);
+    constructor(qu: _NanoSQLStorageQuery, q: IdbQuery, s: _NanoSQLStorage, callback: (rows: DBRow[]) => void, error: (e: Error) => void);
     /**
      * Given a compound where statement like [[value, =, key], AND, [something, =, something]]
      * Check if first where conditions are primary key/ secondary index followed by unoptimized/unindexed conditions
@@ -117,5 +117,5 @@ export declare class InstanceSelection {
     q: IdbQuery;
     p: NanoSQLInstance;
     constructor(q: IdbQuery, p: NanoSQLInstance);
-    getRows(callback: (rows: DBRow[]) => void): void;
+    getRows(callback: (rows: DBRow[]) => void, error: (e: Error) => void): void;
 }

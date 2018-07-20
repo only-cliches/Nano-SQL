@@ -18,6 +18,7 @@ export interface NanoSQLConfig {
     };
     secondaryAdapters?: NanoSQLBackupAdapter[];
     idbVersion?: number;
+    version?: number;
     dbPath?: string;
     writeCache?: number;
     readCache?: number;
@@ -27,6 +28,7 @@ export interface NanoSQLConfig {
         w: string;
         i: number;
     }[] | boolean;
+    onVersionUpdate?: (oldVersion: number) => Promise<number>;
     [key: string]: any;
 }
 /**
@@ -43,7 +45,7 @@ export interface ActionOrView {
 }
 export interface NanoSQLFunction {
     type: "A" | "S";
-    call: (rows: any[], complete: (result: any | any[]) => void, ...args: any[]) => void;
+    call: (rows: any[], complete: (result: any | any[], aggregateRow?: any) => void, ...args: any[]) => void;
 }
 /**
  * You need an array of these to declare a data model.
@@ -218,7 +220,10 @@ export declare class NanoSQLInstance {
     skipPurge: {
         [tableName: string]: boolean;
     };
-    tablePKs: {
+    _tablePKs: {
+        [table: string]: any;
+    };
+    _tablePKTypes: {
         [table: string]: any;
     };
     private _onConnectedCallBacks;
@@ -261,6 +266,24 @@ export declare class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     fastRand(): number;
+    /**
+     * Remove TTL from specific row
+     *
+     * @param {*} primaryKey
+     * @returns {Promise<any>}
+     * @memberof NanoSQLInstance
+     */
+    clearTTL(primaryKey: any): Promise<any>;
+    /**
+     * Check when a given row is going to expire.
+     *
+     * @param {*} primaryKey
+     * @returns {Promise<any>}
+     * @memberof NanoSQLInstance
+     */
+    expires(primaryKey: any): Promise<any>;
+    private _ttlTimer;
+    _checkTTL(): void;
     /**
      * Changes the table pointer to a new table.
      *
@@ -749,7 +772,7 @@ export interface DBConnect {
     models: StdObject<DataModel[]>;
     actions: StdObject<ActionOrView[]>;
     views: StdObject<ActionOrView[]>;
-    config: StdObject<string>;
+    config: NanoSQLConfig;
     parent: NanoSQLInstance;
 }
 /**
