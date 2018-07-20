@@ -1,6 +1,6 @@
 {
   "name": "nano-redis",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Redis Adapter for nanoSQL https://nanosql.io",
   "main": "index.js",
   "typings": "index.d.ts",
@@ -28,7 +28,7 @@
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ClickSimply/nano-redis/issues"
+    "url": "https://github.com/ClickSimply/Nano-SQL/issues"
   },
   "homepage": "https://nanosql.io",
   "dependencies": {

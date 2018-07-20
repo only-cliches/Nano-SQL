@@ -29,7 +29,7 @@ You can simply include this script in your head:
 <!-- nanoSQL Vue Mixin -->
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/nano-sql-vue@1.1.3/nano-sql-vue.min.js"></script>
 <!-- nanoSQL -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/nano-sql@1.1.3/dist/nano-sql.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/nano-sql@1.7.1/dist/nano-sql.min.js"></script>
 ```
 Make sure you have NanoSQL also loaded on the page for this to work.
 

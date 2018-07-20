@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.7.2]
+- Updated `.npmignore` according to recommendation by @vladimiry on github.
+
 ## [1.7.1] 7-19-2018
 - Better error handling.
 - Resolved issue [70](https://github.com/ClickSimply/Nano-SQL/issues/70), added a database versioning/migration code.

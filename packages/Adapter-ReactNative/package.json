@@ -1,6 +1,6 @@
 {
   "name": "nano-react-native",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Use nanoSQL in React Native",
   "main": "index.js",
   "typings": "index.d.ts",
@@ -27,7 +27,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ClickSimply/Nano-ReactNative/issues"
+    "url": "https://github.com/ClickSimply/Nano-SQL/issues"
   },
   "homepage": "https://nanosql.io",
   "devDependencies": {

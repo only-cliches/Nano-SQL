@@ -1,6 +1,6 @@
 {
   "name": "nano-mysql",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "MySQL Adapter for NanoSQL",
   "main": "index.js",
   "typings": "index.d.ts",
@@ -16,7 +16,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ClickSimply/Nano-MySQL/issues"
+    "url": "https://github.com/ClickSimply/Nano-SQL/issues"
   },
   "homepage": "https://nanosql.io",
   "dependencies": {

@@ -1,6 +1,6 @@
 {
     "name": "nano-sqlite",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "SQLite3 Driver for Nano SQL",
     "main": "index.js",
     "typings": "index.d.ts",
@@ -20,7 +20,7 @@
     "author": "Scott Lott <Scott@ClickSimply.com>",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/ClickSimply/Nano-SQLite3/issues"
+        "url": "https://github.com/ClickSimply/Nano-SQL/issues"
     },
     "homepage": "https://nanosql.io/",
     "devDependencies": {

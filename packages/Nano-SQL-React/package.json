@@ -1,6 +1,6 @@
 {
   "name": "nano-sql-react",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "High Order Component for using nanoSQL with React",
   "main": "index.js",
   "typings": "index.d.ts",
@@ -27,7 +27,7 @@
   "author": "Scott Lott <me@ScottLott.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ClickSimply/Nano-SQL-React/issues"
+    "url": "https://github.com/ClickSimply/Nano-SQL/issues"
   },
   "homepage": "https://nanosql.io",
   "devDependencies": {
