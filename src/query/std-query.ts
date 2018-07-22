@@ -47,7 +47,7 @@ export interface IdbQueryExec extends IdbQueryBase {
 const blankRow = { affectedRowPKS: [], affectedRows: [] };
 
 
-const runQuery = (self: _NanoSQLQuery, complete: (result: any) => void, error: (err: Error) => void) => {
+const runQuery = (self: _NanoSQLQuery, complete: (result: DBRow[]) => void, error: (err: Error) => void) => {
 
     if (self._db.plugins.length === 1 && !self._db.hasAnyEvents && !self._query.ttl) {
 
@@ -645,7 +645,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public exec(): any {
+    public exec(): Promise<DBRow[] | void | { msg: string }> {
 
         // handle instance queries
         if (Array.isArray(this._query.table)) {
@@ -660,7 +660,7 @@ export class _NanoSQLQuery {
 
 
 
-        if (this._query.table === "*") return;
+        if (this._query.table === "*") return Promise.resolve();
 
         let t = this;
 
@@ -674,7 +674,7 @@ export class _NanoSQLQuery {
                         clearTimeout(debounceTimers[denormalizationKey]);
                     }
                     debounceTimers[denormalizationKey] = setTimeout(() => {
-                        this.denormalizationQuery(a).then(res);
+                        this.denormalizationQuery(a).then(res).catch(rej);
                     }, this._query.debounce);
                 });
             }
@@ -731,7 +731,7 @@ export class _NanoSQLQuery {
             this._query.action = a;
             this._query.actionArgs = this._query.actionArgs ? setArgs : undefined;
         } else {
-            throw Error("nSQL: No valid database action!");
+            return Promise.reject(new Error("nSQL: No valid database action!"));
         }
 
         return new Promise((res, rej) => {
