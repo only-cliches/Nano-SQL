@@ -747,10 +747,12 @@ export class _NanoSQLQuery {
                 }
 
                 if (this._db.queryMod) {
-                    this._db.queryMod(this._query, (newQ) => {
-                        this._query = newQ;
-                        runQuery(this, res, rej);
-                    });
+                    this._db.queryMod(this._query)
+                        .then((_query) => {
+                            this._query = _query;
+                            runQuery(this, res, rej);
+                        })
+                        .catch(rej);
                 } else {
                     runQuery(this, res, rej);
                 }

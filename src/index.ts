@@ -265,7 +265,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public queryMod: (args: IdbQuery, complete: (args: IdbQuery) => void) => void;
+    public queryMod: (args: IdbQuery) => Promise<IdbQuery>;
 
     /**
      * A map containing the models
@@ -1183,12 +1183,12 @@ export class NanoSQLInstance {
     /**
      * Adds a query filter to every request.
      *
-     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
+     * @param {(args: DBExec) => Promise<IdbQuery>}
      *
      * @memberOf NanoSQLInstance
      */
-    public queryFilter(callBack: (args: IdbQuery, complete: (args: IdbQuery) => void) => void): NanoSQLInstance {
-        this.queryMod = callBack;
+    public queryFilter(queryMod: (args: IdbQuery) => Promise<IdbQuery>): NanoSQLInstance {
+        this.queryMod = queryMod;
         return this;
     }
 
