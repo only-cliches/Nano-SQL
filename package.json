@@ -5,9 +5,11 @@
 	"main": "lib/index-server.js",
 	"browser": "lib/index.js",
 	"scripts": {
+		"dist": "npm-run-all lint test build",
 		"serve": "webpack-dev-server",
 		"build": "bash bin/build.sh",
-		"test": "mocha -r ts-node/register tests/index.ts"
+		"test": "mocha -r ts-node/register tests/index.ts",
+		"lint": "tslint -p ./tsconfig.json \"./src/**/*.ts\""
 	},
 	"repository": {
 		"type": "git",
@@ -16,28 +18,28 @@
 	"typings": "lib/index.d.ts",
 	"homepage": "https://nanosql.io/",
 	"devDependencies": {
-		"@types/chai": "^4.1.2",
-		"@types/mocha": "^5.0.0",
-		"@types/node": "^10.1.2",
+		"@types/chai": "^4.1.4",
+		"@types/mocha": "^5.2.5",
+		"@types/node": "^10.5.2",
 		"@types/websql": "0.0.27",
 		"NanoSQL-Adapter-Test": "git+https://github.com/ClickSimply/NanoSQL-Adapter-Test.git",
 		"chai": "^4.1.2",
 		"http-server": "^0.11.1",
-		"mocha": "^5.0.5",
+		"mocha": "^5.2.0",
 		"mocha-testdata": "^1.2.0",
 		"raw-loader": "^0.5.1",
-		"ts-loader": "^4.1.0",
-		"ts-node": "^6.0.3",
-		"tslib": "^1.9.0",
-		"tslint": "^5.9.1",
+		"ts-loader": "^4.4.2",
+		"ts-node": "^7.0.0",
+		"tslib": "^1.9.3",
+		"tslint": "^5.11.0",
 		"typedoc": "^0.11.1",
-		"typescript": "2.8.3",
-		"uglify-js": "^3.3.17",
-		"webpack": "^4.4.1",
-		"webpack-cli": "^2.0.13",
+		"typescript": "2.9.2",
+		"uglify-js": "^3.4.5",
+		"webpack": "^4.16.1",
+		"webpack-cli": "^3.1.0",
 		"webpack-node-externals": "^1.7.2",
 		"webpack-strip-block": "^0.2.0",
-		"lerna": "2.0.0-beta.20"
+		"lerna": "2.11.0"
 	},
 	"keywords": [
 		"database",
@@ -102,6 +104,7 @@
 		"levenshtein-edit-distance": "^2.0.2",
 		"lie-ts": "^4.0.0",
 		"metaphone": "^1.0.3",
+		"npm-run-all": "4.1.3",
 		"prefix-trie-ts": "0.0.4",
 		"queue": "^4.4.2",
 		"really-small-events": "^1.1.0",
@@ -112,7 +115,8 @@
 		"levelup": "^2.0.2",
 		"int64-buffer": "^0.1.10"
 	},
-	"contributors": [{
+	"contributors": [
+		{
 			"name": "Scott Lott",
 			"email": null,
 			"url": "https://github.com/ClickSimply",
