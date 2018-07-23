@@ -9,9 +9,8 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("nano-sql/lib/utilities");
 var db_idx_1 = require("nano-sql/lib/database/db-idx");
-var trivialdb = require('trivialdb');
+var trivialdb = require("trivialdb");
 var lie_ts_1 = require("lie-ts");
-;
 var TrivialAdapter = (function () {
     function TrivialAdapter(nameSpaceOpts, dbOpts) {
         this.nameSpaceOpts = nameSpaceOpts;

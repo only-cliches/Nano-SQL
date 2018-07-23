@@ -35,7 +35,7 @@ Read about NanoSQL [here](https://nanosql.io/).
 
 # API
 
-When you call `new TrivalAdapter` there are two optional arguments, namespace arguments and database arguments.
+When you call `new TrivialAdapter` there are two optional arguments, namespace arguments and database arguments.
 
 The namespace arguments are documented [here](https://github.com/trivialsoftware/trivialdb#creating-a-namespace) and mostly allow you to adjust the location the files are saved to.
 
