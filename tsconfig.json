@@ -11,7 +11,7 @@
         "noImplicitThis": true,
         "noImplicitUseStrict": true,
         "sourceMap": true,
-        "lib": ["dom", "es2015.promise", "es5"]
+        "lib": ["dom", "es2015", "es5"]
     },
     "include": [
         "src/*"
