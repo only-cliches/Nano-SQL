@@ -1,6 +1,4 @@
-import { Trie } from "prefix-trie-ts";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance, DatabaseEvent, DataModel } from "./index";
-import { IdbQuery } from "./query/std-query";
 import { _assign, fastALL, timeid, intersect } from "./utilities";
 
 interface HistoryDataTable {

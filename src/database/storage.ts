@@ -1,7 +1,7 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates, random16Bits, Promise, binarySearch } from "../utilities";
+import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates, random16Bits, binarySearch } from "../utilities";
 import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";
@@ -321,8 +321,12 @@ export class _NanoSQLStorage {
      */
     public _cache: {
         [table: string]: {
-            [queryHash: number]: any[];
+            [queryHash: number]: {time: number, rows: any[]};
         }
+    };
+
+    public _cacheTime: {
+        [table: string]: number;
     };
 
     /**
@@ -449,11 +453,13 @@ export class _NanoSQLStorage {
         this._tableNames = [];
         this._doCache = (typeof args.cache !== "undefined" ? args.cache : true);
         this._cache = {};
+        this._cacheTime = {};
 
         if (this._doCache && args.peer && typeof window !== "undefined") {
             const prevTable = parent.sTable;
             parent.table("*").on("peer-change", (ev) => {
                 this._cache[ev.table] = {};
+                this._cacheTime[ev.table] = Date.now();
             });
             parent.table(prevTable);
         }
@@ -1336,6 +1342,7 @@ export class _NanoSQLStorage {
         };
 
         this._cache[tableName] = {};
+        this._cacheTime[tableName] = Date.now();
 
         this._trieIndexes[tableName] = {};
 

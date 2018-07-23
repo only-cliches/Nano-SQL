@@ -29,15 +29,15 @@ export declare class _NanoSQLStorageQuery {
      */
     doQuery(query: IdbQuery, next: (q: IdbQuery) => void, error: (err: Error) => void): void;
     private _hash;
-    private _updateORMRows(relation, fromPKs, add, primaryKey, complete);
-    private _syncORM(type, oldRows, newRows, complete);
+    private _updateORMRows;
+    private _syncORM;
     _tokenizer(column: string, value: string): {
         o: string;
         w: string;
         i: number;
     }[];
-    private _clearFromSearchIndex(pk, rowData, complete);
-    private _updateSearchIndex(pk, newRowData, complete);
+    private _clearFromSearchIndex;
+    private _updateSearchIndex;
     /**
      * For each updated row, update view columns from remote records that are related.
      *
@@ -47,7 +47,7 @@ export declare class _NanoSQLStorageQuery {
      * @returns
      * @memberof _NanoSQLStorageQuery
      */
-    private _updateRowViews(newRowData, existingRow, complete);
+    private _updateRowViews;
     /**
      * Go to tables that have views pointing to this one, and update their records.
      *
@@ -56,8 +56,8 @@ export declare class _NanoSQLStorageQuery {
      * @param {() => void} complete
      * @memberof _NanoSQLStorageQuery
      */
-    private _updateRemoteViews(updatedRows, doDel, complete);
-    private _doAfterQuery(newRows, doDel, next);
+    private _updateRemoteViews;
+    private _doAfterQuery;
 }
 /**
  * Takes a selection of rows and applys modifiers like orderBy, join and others to the rows.
@@ -77,7 +77,7 @@ export declare class _MutateSelection {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _MutateSelection
      */
-    _executeQueryArguments(inputRows: DBRow[], callback: (rows: DBRow[]) => void): void;
+    _executeQueryArguments(inputRows: DBRow[], callback: (rows: DBRow[]) => void, error: (err: Error) => void): void;
 }
 /**
  * Selects the needed rows from the storage system.
@@ -105,7 +105,7 @@ export declare class _RowSelection {
      * @returns {number}
      * @memberof _RowSelection
      */
-    private _isSubOptimizedWhere(wArgs);
+    private _isSubOptimizedWhere;
 }
 /**
  * Select rows from an instance table. Supports RANGE and WHERE statements.

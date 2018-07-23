@@ -156,26 +156,28 @@ export class _NanoSQLStorageQuery {
 
         const canCache = !this._query.join && !this._query.orm && this._store._doCache && !Array.isArray(this._query.table);
 
-        // Query cache for the win!
-        /*if (canCache && this._store._cache[this._query.table as any][this._hash]) {
-            this._query.result = this._store._cache[this._query.table as any][this._hash];
-            next(this._query);
-            return;
-        }*/
+        // Query cache
+        if (canCache && this._store._cache[this._query.table as any][this._hash]) {
+            if (this._store._cache[this._query.table as any][this._hash].time < this._store._cacheTime[this._query.table as any]) {
+                this._query.result = this._store._cache[this._query.table as any][this._hash].rows;
+                next(this._query);
+                return;
+            }
+        }
 
         this._getRows((rows) => {
 
             // No query arguments, we can skip the whole mutation selection class
             if (!["having", "orderBy", "offset", "limit", "actionArgs", "groupBy", "orm", "join"].filter(k => this._query[k]).length) {
-                if (canCache) this._store._cache[this._query.table as any][this._hash] = rows;
+                if (canCache) this._store._cache[this._query.table as any][this._hash] = {rows: rows, time: Date.now()};
                 this._query.result = rows;
                 next(this._query);
             } else {
                 new _MutateSelection(this._query, this._store)._executeQueryArguments(rows, (resultRows) => {
-                    if (canCache) this._store._cache[this._query.table as any][this._hash] = rows;
+                    if (canCache) this._store._cache[this._query.table as any][this._hash] = {rows: resultRows, time: Date.now()};
                     this._query.result = resultRows;
                     next(this._query);
-                });
+                }, error);
             }
 
         }, error);
@@ -687,6 +689,7 @@ export class _NanoSQLStorageQuery {
                 if (rows.length) {
                     // any changes to this table invalidates the cache
                     this._store._cache[this._query.table as any] = {};
+                    this._store._cacheTime[this._query.table as any] = Date.now();
 
                     let newRows: any[] = [];
                     fastCHAIN(this._query.actionArgs, (inputData, k, nextRow, actionErr) => {
@@ -731,6 +734,7 @@ export class _NanoSQLStorageQuery {
         } else { // no where statement, perform direct upsert
 
             let rows = this._query.actionArgs || [];
+            this._store._cacheTime[this._query.table as any] = Date.now();
             this._store._cache[this._query.table as any] = {};
             let oldRows: any[] = [];
             let addedRows: any[] = [];
@@ -821,6 +825,7 @@ export class _NanoSQLStorageQuery {
                         });
                     }).then((affectedRows) => {
                         // any changes to this table invalidate the cache
+                        this._store._cacheTime[this._query.table as any] = Date.now();
                         this._store._cache[this._query.table as any] = {};
                         const pks = rows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
 
@@ -856,6 +861,7 @@ export class _NanoSQLStorageQuery {
         }
 
         this._store._rangeRead(this._query.table as string, undefined as any, undefined as any, false, (rows) => {
+            this._store._cacheTime[this._query.table as any] = Date.now();
             this._store._cache[this._query.table as any] = {};
 
             let table = this._query.table as any;
@@ -1276,7 +1282,7 @@ export class _MutateSelection {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _MutateSelection
      */
-    private _mutateRows(rows: DBRow[], complete: (rows: DBRow[]) => void): void {
+    private _mutateRows(rows: DBRow[], complete: (rows: DBRow[]) => void, error: (err: Error) => void): void {
 
         const columnSelection: string[] = this.q.actionArgs;
 
@@ -1311,6 +1317,8 @@ export class _MutateSelection {
                 }
             } = {};
 
+            let hasError = false;
+
             columnSelection.forEach((column) => {
                 if (column.indexOf("(") === -1) { // no functions
                     return;
@@ -1319,7 +1327,9 @@ export class _MutateSelection {
                 const fn = NanoSQLInstance.functions[fnName];
                 const key = column.split(" AS ").length === 1 ? fnName : (column.split(" AS ").pop() || "").trim();
                 if (!fn) {
-                    throw new Error("nSQL: '" + fnName + "' is not a valid function!");
+                    hasError = true;
+                    error(new Error("nSQL: '" + fnName + "' is not a valid function!"));
+                    return;
                 }
                 if (fn.type === "A") { // agregate function
                     hasAggregateFun = true;
@@ -1329,6 +1339,7 @@ export class _MutateSelection {
                     key: key
                 };
             });
+            if (hasError) return;
 
             fastALL(columnSelection, (column, j, columnDone) => {
 
@@ -1429,7 +1440,7 @@ export class _MutateSelection {
      * @param {(rows: DBRow[]) => void} callback
      * @memberof _MutateSelection
      */
-    public _executeQueryArguments(inputRows: DBRow[], callback: (rows: DBRow[]) => void) {
+    public _executeQueryArguments(inputRows: DBRow[], callback: (rows: DBRow[]) => void, error: (err: Error) => void) {
 
         const afterMutate = () => {
             if (this.q.having) {
@@ -1452,7 +1463,7 @@ export class _MutateSelection {
                 this._mutateRows(inputRows, (newRows) => {
                     inputRows = newRows;
                     afterMutate();
-                });
+                }, error);
             } else {
                 afterMutate();
             }

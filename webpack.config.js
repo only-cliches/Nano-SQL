@@ -29,18 +29,11 @@ const options = {
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },
-    node: {
-        console: false,
-        global: false,
-        process: false,
-        Buffer: false,
-        setImmediate: false
-    },
     plugins: [
         new UglifyJSPlugin({
             uglifyOptions: {
                 mangle: {
-                    properties: { regex: new RegExp(/^_|Promise/) }
+                    properties: { regex: new RegExp(/^_/) }
                 }
             }
         })

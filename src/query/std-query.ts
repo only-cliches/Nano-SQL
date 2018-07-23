@@ -1,8 +1,5 @@
-import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent } from "../index";
-import { _assign, StdObject, uuid, cast, Promise, timeid, fastCHAIN, fastALL, hash } from "../utilities";
-import { NanoSQLPlugin } from "nano-sql";
-import { cleanArgs } from "../../node_modules/nano-sql/lib/utilities";
-import { pbkdf2 } from "crypto";
+import { NanoSQLInstance, ORMArgs, JoinArgs, DBRow, DatabaseEvent, NanoSQLPlugin } from "../index";
+import { _assign, StdObject, uuid, cast, timeid, fastCHAIN, fastALL, hash, cleanArgs } from "../utilities";
 
 export interface IdbQuery extends IdbQueryBase {
     table: string | any[];
@@ -48,6 +45,13 @@ const blankRow = { affectedRowPKS: [], affectedRows: [] };
 
 
 const runQuery = (self: _NanoSQLQuery, complete: (result: DBRow[]) => void, error: (err: Error) => void) => {
+
+    if (self._query.state === "pending") {
+        self._query.state = "executing";
+    } else {
+        error(new Error("nSQL: Can't call query twice!"));
+        return;
+    }
 
     if (self._db.plugins.length === 1 && !self._db.hasAnyEvents && !self._query.ttl) {
 
@@ -517,7 +521,7 @@ export class _NanoSQLQuery {
      * @returns
      * @memberof _NanoSQLQuery
      */
-    public denormalizationQuery(action: string) {
+    public denormalizationQuery(action: string): Promise<any[]> {
         return new Promise((res, rej) => {
 
             switch (action) {
@@ -556,7 +560,7 @@ export class _NanoSQLQuery {
                                 this._db.query("upsert", row).manualExec({ table: this._query.table }).then(done).catch(done);
                             });
                         }).then(() => {
-                            res({ msg: `${rows.length} rows modified` });
+                            res([{ msg: `${rows.length} rows modified` }]);
                         });
                     }, rej);
                     break;
@@ -594,7 +598,7 @@ export class _NanoSQLQuery {
                                     this._db.query("upsert", newRow).manualExec({ table: this._query.table }).then(done).catch(done);
                                 });
                             }).then(() => {
-                                res({ msg: `${rows.length} rows modified` });
+                                res([{ msg: `${rows.length} rows modified` }]);
                             });
                         }, rej);
                     } else {
@@ -645,7 +649,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public exec(): Promise<DBRow[] | void | { msg: string }> {
+    public exec(): Promise<{[key: string]: any}[]> {
 
         // handle instance queries
         if (Array.isArray(this._query.table)) {
@@ -660,7 +664,7 @@ export class _NanoSQLQuery {
 
 
 
-        if (this._query.table === "*") return Promise.resolve();
+        if (this._query.table === "*") return Promise.resolve([]);
 
         let t = this;
 
@@ -747,12 +751,20 @@ export class _NanoSQLQuery {
                 }
 
                 if (this._db.queryMod) {
-                    this._db.queryMod(this._query)
-                        .then((_query) => {
+
+                    const pr = this._db.queryMod(this._query, (newQ) => {
+                        this._query = newQ;
+                        runQuery(this, res, rej);
+                    });
+
+                    if (typeof pr !== "undefined") {
+                        pr.then((_query) => {
                             this._query = _query;
                             runQuery(this, res, rej);
                         })
                         .catch(rej);
+                    }
+
                 } else {
                     runQuery(this, res, rej);
                 }

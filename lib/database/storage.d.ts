@@ -241,8 +241,14 @@ export declare class _NanoSQLStorage {
      */
     _cache: {
         [table: string]: {
-            [queryHash: number]: any[];
+            [queryHash: number]: {
+                time: number;
+                rows: any[];
+            };
         };
+    };
+    _cacheTime: {
+        [table: string]: number;
     };
     /**
      * Parent instance of NanoSQL

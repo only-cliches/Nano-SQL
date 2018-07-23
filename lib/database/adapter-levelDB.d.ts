@@ -8,12 +8,12 @@ import { DataModel } from "../index";
  * @implements {NanoSQLStorageAdapter}
  */
 export declare class _LevelStore implements NanoSQLStorageAdapter {
-    path: string | ((dbID: string, tableName: string) => {
+    path?: string | ((dbID: string, tableName: string) => {
         lvld: any;
         args: any;
     }) | undefined;
-    writeCache: number | undefined;
-    readCache: number | undefined;
+    writeCache?: number | undefined;
+    readCache?: number | undefined;
     private _pkKey;
     private _pkType;
     private _isPKnum;
@@ -35,6 +35,6 @@ export declare class _LevelStore implements NanoSQLStorageAdapter {
     read(table: string, pk: DBKey, callback: (row: any) => void): void;
     rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;
     drop(table: string, callback: () => void): void;
-    getIndex(table: string, getLength: boolean, complete: (index) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index: any) => void): void;
     destroy(complete: () => void): void;
 }

@@ -9,7 +9,7 @@ import { DataModel } from "../index";
  * @implements {NanoSQLStorageAdapter}
  */
 export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
-    version: number | undefined;
+    version?: number | undefined;
     private _pkKey;
     private _dbIndex;
     private _id;
@@ -17,7 +17,7 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     private _modelHash;
     private _dataModels;
     constructor(version?: number | undefined);
-    private onError(ev);
+    private onError;
     connect(complete: () => void): void;
     store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void): void;
     setID(id: string): void;
@@ -27,7 +27,7 @@ export declare class _IndexedDBStore implements NanoSQLStorageAdapter {
     read(table: string, pk: DBKey, callback: (row: any) => void): void;
     rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;
     drop(table: string, callback: () => void): void;
-    getIndex(table: string, getLength: boolean, complete: (index) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index: any) => void): void;
     destroy(complete: () => void): void;
     setNSQL(nSQL: any): void;
 }

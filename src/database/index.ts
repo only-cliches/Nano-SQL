@@ -2,7 +2,7 @@ import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, NanoSQLInstance } from "../index";
 import { _NanoSQLStorageQuery } from "./query";
-import { fastALL, Promise, fastCHAIN } from "../utilities";
+import { fastALL, fastCHAIN } from "../utilities";
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { setFast } from "lie-ts";
 
@@ -65,7 +65,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
     }
     */
 
-    public dumpTables(tables?: string[]) {
+    public dumpTables(tables?: string[]): Promise<{ [tableName: string]: DBRow[] }> {
         return new Promise((res, rej) => {
             let dump = {};
             let exportTables = tables && tables.length ? tables : Object.keys(this._store.tableInfo);
@@ -145,7 +145,7 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
                         fastCHAIN(Object.keys(this.parent.dataModels), (table, i, done) => {
                             console.log(`Importing ${table}...`);
                             this.parent.rawDump([table])
-                                .then((data) => {
+                                .then((data: { [table: string]: DBRow[] }) => {
                                     return nSQLi.rawImport(data);
                                 })
                                 .then(done);

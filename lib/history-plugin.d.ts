@@ -35,8 +35,8 @@ export declare class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
         [tableName: string]: ("row" | "table");
     });
     willConnect(connectArgs: DBConnect, next: (connectArgs: DBConnect) => void): void;
-    private _histTable(table);
-    private _generateHistoryPointers(table, complete);
+    private _histTable;
+    private _generateHistoryPointers;
     didConnect(connectArgs: DBConnect, next: () => void): void;
     /**
      * If any of the given row pointers are above zero, remove the rows in "forward" history.
@@ -47,8 +47,8 @@ export declare class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
      * @param {() => void} complete
      * @memberof _NanoSQLHistoryPlugin
      */
-    private _purgeRowHistory(table, rowPKs, complete, clearAll?);
-    private _purgeTableHistory(table, complete, clearAll?);
+    private _purgeRowHistory;
+    private _purgeTableHistory;
     /**
      * If any row pointers are above zero, we must first remove the revisions ahead of the existing one before adding a new revision.
      * This prevents the history from becomming broken
@@ -59,16 +59,16 @@ export declare class _NanoSQLHistoryPlugin implements NanoSQLPlugin {
      * @param {() => void} complete
      * @memberof _NanoSQLHistoryPlugin
      */
-    private _purgeParentHistory(table, rowPKs, complete);
-    private _purgeAllHistory(table, rowPK, complete);
+    private _purgeParentHistory;
+    private _purgeAllHistory;
     didExec(event: DatabaseEvent, next: (event: DatabaseEvent) => void): void;
-    private _unshiftParent(event, histRowIDs, complete);
-    private _unshiftSingleRow(table, eventTypes, rowPK, row, skipIDX, complete);
+    private _unshiftParent;
+    private _unshiftSingleRow;
     extend(next: (args: any[], result: any[]) => void, args: any[], result: any[]): void;
-    private _getRevisionHistory(table, rowPK, complete);
-    private _getTableHistory(table, complete);
-    private _queryHistory(table, rowPK, complete);
-    private _shiftTableHistory(direction, table, complete);
-    private _shiftRowHistory(direction, table, PK, complete);
-    private _shiftHistory(direction, table, rowPK, complete);
+    private _getRevisionHistory;
+    private _getTableHistory;
+    private _queryHistory;
+    private _shiftTableHistory;
+    private _shiftRowHistory;
+    private _shiftHistory;
 }

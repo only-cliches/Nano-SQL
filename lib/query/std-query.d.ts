@@ -291,7 +291,7 @@ export declare class _NanoSQLQuery {
      * @returns
      * @memberof _NanoSQLQuery
      */
-    denormalizationQuery(action: string): any;
+    denormalizationQuery(action: string): Promise<any[]>;
     /**
      * Pagination via cursor
      *
@@ -299,7 +299,7 @@ export declare class _NanoSQLQuery {
      * @returns
      * @memberof _NanoSQLQuery
      */
-    getCursor(pageSize?: number): any;
+    getCursor(pageSize?: number): Promise<{}>;
     /**
      * Executes the current pending query to the db engine, returns a promise with the rows as objects in an array.
      *
@@ -315,5 +315,7 @@ export declare class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    exec(): any;
+    exec(): Promise<{
+        [key: string]: any;
+    }[]>;
 }

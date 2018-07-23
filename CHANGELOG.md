@@ -1,7 +1,14 @@
 # Change Log
 
-## [1.7.2]
+## 2.0 TODO
+- Remove query filter callback in favor of pure promise implemintation.
+- Split out history and fuzzy search into seperate plugins.
+
+## [1.7.2] 7-22-2018
 - Updated `.npmignore` according to recommendation by @vladimiry on github.
+- Perged PR [73](https://github.com/ClickSimply/Nano-SQL/pull/73), improving promise behavior of exec method.
+- Added changes to PR to prevent breaking changes of query filter.
+- Restored query cache.
 
 ## [1.7.1] 7-19-2018
 - Better error handling.

@@ -363,7 +363,7 @@ export declare class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     off(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance;
-    private _refreshEventChecker();
+    private _refreshEventChecker;
     /**
      * Declare the data model for the current selected table.
      *
@@ -523,11 +523,11 @@ export declare class NanoSQLInstance {
     /**
      * Adds a query filter to every request.
      *
-     * @param {(args: DBExec, complete:(args: DBExec) => void) => void} callBack
+     * @param {(args: DBExec) => Promise<IdbQuery>}
      *
      * @memberOf NanoSQLInstance
      */
-    queryFilter(callBack: (args: IdbQuery, complete: (args: IdbQuery) => void) => void): NanoSQLInstance;
+    queryFilter(queryMod: (args: IdbQuery, complete?: (args: IdbQuery) => void) => Promise<IdbQuery> | void): NanoSQLInstance;
     /**
      * Internal function to fire action/views.
      *
@@ -540,7 +540,7 @@ export declare class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    private _doAV(AVType, AVList, AVName, AVargs);
+    private _doAV;
     /**
      * Start a query into the current selected table.
      * Possibl querys are "select", "upsert", "delete", and "drop";
@@ -643,7 +643,7 @@ export declare class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    rawDump(tables?: string[]): any;
+    rawDump(tables?: string[]): Promise<{}>;
     /**
      * Import table data directly into the datatabase.
      * Signifincatly faster than .loadJS but doesn't do type checking, indexing or anything else fancy.
@@ -654,7 +654,7 @@ export declare class NanoSQLInstance {
      */
     rawImport(tables: {
         [table: string]: DBRow[];
-    }, onProgress?: (percent: number) => void): Promise<any>;
+    }, onProgress?: (percent: number) => void): Promise<void>;
     /**
      * Request disconnect from all databases.
      *

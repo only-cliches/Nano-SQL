@@ -1,4 +1,3 @@
-export declare const Promise: any;
 /**
  * Standard object placeholder with string key.
  *
@@ -189,3 +188,4 @@ export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lo
  * @returns {*}
  */
 export declare const objQuery: (pathQuery: string, object: any, ignoreFirstPath?: boolean | undefined) => any;
+export declare const setFast: (...args: any[]) => void;

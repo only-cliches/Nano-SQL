@@ -1,11 +1,13 @@
-import { Promise as PR, setFast } from "lie-ts";
 import * as metaphone from "metaphone";
 import * as stemmer from "stemmer";
+import { Promise as PR } from "lie-ts";
+PR.doPolyFill();
 
+/*
 export const Promise = (() => {
     return typeof window !== "undefined" && window["Promise"] ? window["Promise"] : typeof global !== "undefined" && global["Promise"] ? global["Promise"] : PR;
 })();
-
+*/
 declare var global: any;
 
 /**
@@ -554,3 +556,48 @@ export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boole
 
     return safeGet(objectPathCache[cacheKey], 0, object);
 };
+
+
+let uid = 0;
+let storage = {};
+let slice = Array.prototype.slice;
+let message = "setMsg";
+
+const canPost = typeof window !== "undefined" && window.postMessage && window.addEventListener;
+
+const fastApply = (args) => {
+    return args[0].apply(null, slice.call(args, 1));
+};
+
+const callback = (event) => {
+    let key = event.data;
+    let data;
+    if (typeof key === "string" && key.indexOf(message) === 0) {
+        data = storage[key];
+        if (data) {
+            delete storage[key];
+            fastApply(data);
+        }
+    }
+};
+
+if (canPost) {
+    window.addEventListener("message", callback);
+}
+
+const setImmediatePolyfill = (...args: any[]) => {
+    let id = uid++;
+    let key = message + id;
+    storage[key] = args;
+    window.postMessage(key, "*");
+    return id;
+};
+
+export const setFast = (() => {
+    return canPost ? setImmediatePolyfill : // built in window messaging (pretty fast, not bad)
+    (...args: any[]) => {
+        setTimeout(() => { // setTimeout, absolute worse case :(
+            fastApply(args);
+        }, 0);
+    };
+})();

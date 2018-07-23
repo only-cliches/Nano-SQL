@@ -2,14 +2,14 @@ import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery, IdbQueryExec } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, Promise, fastCHAIN, intersect, crowDistance, removeDuplicates, uuid } from "./utilities";
+import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, fastCHAIN, intersect, crowDistance, removeDuplicates, uuid } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 
-const VERSION = 1.71;
+const VERSION = 1.72;
 
 // uglifyJS fix
 const str = ["_util", "_ttl"];
@@ -265,7 +265,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public queryMod: (args: IdbQuery) => Promise<IdbQuery>;
+    public queryMod: (args: IdbQuery, complete?: (args: IdbQuery) => void) => Promise<IdbQuery>|void;
 
     /**
      * A map containing the models
@@ -1187,7 +1187,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public queryFilter(queryMod: (args: IdbQuery) => Promise<IdbQuery>): NanoSQLInstance {
+    public queryFilter(queryMod: (args: IdbQuery, complete?: (args: IdbQuery) => void) => Promise<IdbQuery>|void): NanoSQLInstance {
         this.queryMod = queryMod;
         return this;
     }
@@ -1421,7 +1421,7 @@ export class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    public rawImport(tables: { [table: string]: DBRow[] }, onProgress?: (percent: number) => void): Promise<any> {
+    public rawImport(tables: { [table: string]: DBRow[] }, onProgress?: (percent: number) => void): Promise<void> {
         return new Promise((res, rej) => {
             fastCHAIN(this.plugins, (plugin: NanoSQLPlugin, i, next) => {
                 if (plugin.importTables) {

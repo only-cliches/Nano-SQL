@@ -26,7 +26,7 @@ export declare class _WebSQLStore implements NanoSQLStorageAdapter {
      * @returns {string}
      * @memberof _WebSQLStore
      */
-    private _chkTable(table);
+    private _chkTable;
     makeTable(tableName: string, dataModels: DataModel[]): void;
     _sql(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void): void;
     write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void, error: (err: Error) => void): void;
@@ -35,7 +35,7 @@ export declare class _WebSQLStore implements NanoSQLStorageAdapter {
     batchRead(table: string, pks: any[], callback: (rows: any[]) => void): void;
     rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void;
     drop(table: string, callback: () => void): void;
-    getIndex(table: string, getLength: boolean, complete: (index) => void): void;
+    getIndex(table: string, getLength: boolean, complete: (index: any) => void): void;
     destroy(complete: () => void): void;
     setNSQL(nSQL: any): void;
 }
