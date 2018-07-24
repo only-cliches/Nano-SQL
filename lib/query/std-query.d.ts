@@ -24,7 +24,6 @@ export interface IdbQueryBase {
     join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
-    batch?: number;
     on?: any[];
     debounce?: number;
     trie?: {
@@ -123,13 +122,6 @@ export declare class _NanoSQLQuery {
     orderBy(args: {
         [key: string]: "asc" | "desc";
     }): _NanoSQLQuery;
-    /**
-     * Perform delete or upsert action in batches, useful if you're running out of memory on queries.
-     *
-     * @returns {_NanoSQLQuery}
-     * @memberof _NanoSQLQuery
-     */
-    batch(size?: number): _NanoSQLQuery;
     /**
      * Group By command, typically used with an aggregate function.
      *

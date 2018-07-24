@@ -117,5 +117,5 @@ export declare class InstanceSelection {
     q: IdbQuery;
     p: NanoSQLInstance;
     constructor(q: IdbQuery, p: NanoSQLInstance);
-    getRows(onRows: (rows: DBRow[], nextBatch: () => void) => void, error: (e: Error) => void): void;
+    getRows(onRows: (rows: DBRow[]) => void, error: (e: Error) => void): void;
 }
