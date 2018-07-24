@@ -2,13 +2,13 @@
 
 ## 2.0 TODO
 - Remove query filter callback in favor of pure promise implemintation.
-- Split out history and fuzzy search into seperate plugins.
-- Move LevelDB to RocksDB
+- Split out history, fuzzy search, orm and denormalization into seperate plugins.
+- Move LevelDB to RocksDB.
+- Rewrite upsert/delete engine to perform updates one row at a time.
 
 ## [1.7.3] 7-23-2018
 - Merged PR [74](https://github.com/ClickSimply/Nano-SQL/pull/74).
 - Fixed stack call error on database read.
-- Added new `.batch` modifier to resolve issue [65](https://github.com/ClickSimply/Nano-SQL/issues/65).  Allows upserts/delets to occur in batches automatically to allow smaller memory footprints.
 
 ## [1.7.2] 7-22-2018
 - Updated `.npmignore` according to recommendation by @vladimiry on github.

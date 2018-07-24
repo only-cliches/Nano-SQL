@@ -23,7 +23,6 @@ export interface IdbQueryBase {
     join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
-    batch?: number;
     on?: any[];
     debounce?: number;
     trie?: { column: string, search: string };
@@ -270,17 +269,6 @@ export class _NanoSQLQuery {
      */
     public orderBy(args: { [key: string]: "asc" | "desc" }): _NanoSQLQuery {
         this._query.orderBy = args;
-        return this;
-    }
-
-    /**
-     * Perform delete or upsert action in batches, useful if you're running out of memory on queries.
-     *
-     * @returns {_NanoSQLQuery}
-     * @memberof _NanoSQLQuery
-     */
-    public batch(size: number = 1000): _NanoSQLQuery {
-        this._query.batch = size;
         return this;
     }
 

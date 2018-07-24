@@ -127,37 +127,13 @@ export class _NanoSQLStorageQuery {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorageQuery
      */
-    private _getRows(onRows: (rows: DBRow[], nextBatch: () => void) => void, onComplete: () => void, error: (e: Error) => void) {
+    private _getRows(onRows: (rows: DBRow[]) => void, error: (e: Error) => void) {
         if (this._isInstanceTable) {
-            if (this._query.batch) {
-                error(new Error("nSQL: Can't use .batch with instance tables!"));
-                return;
-            }
             new InstanceSelection(this._query, this._store._nsql).getRows(onRows, error);
         } else {
-            let i = 0;
-            const getRows = () => {
-                if (this._query.batch) {
-                    this._query.limit = this._query.batch;
-                    this._query.offset = i * this._query.batch;
-                }
-                new _RowSelection(this, this._query, this._store, (rows) => {
-                    const rF = rows.filter(r => r);
-                    onRows(rF, () => {
-                        if (this._query.batch) {
-                            if (rF.length) {
-                                i++;
-                                setFast(getRows);
-                            } else {
-                                onComplete();
-                            }
-                        } else {
-                            onComplete();
-                        }
-                    });
-                }, error);
-            };
-            getRows();
+            new _RowSelection(this, this._query, this._store, (rows) => {
+                onRows(rows.filter(r => r));
+            }, error);
         }
     }
 
@@ -189,7 +165,7 @@ export class _NanoSQLStorageQuery {
             }
         }
 
-        this._getRows((rows, nextBatch) => {
+        this._getRows((rows) => {
 
             // No query arguments, we can skip the whole mutation selection class
             if (!["having", "orderBy", "offset", "limit", "actionArgs", "groupBy", "orm", "join"].filter(k => this._query[k]).length) {
@@ -204,8 +180,6 @@ export class _NanoSQLStorageQuery {
                 }, error);
             }
 
-        }, () => {
-            error(new Error("nSQL: Can't use .batch with select queries!"));
         }, error);
     }
 
@@ -691,7 +665,7 @@ export class _NanoSQLStorageQuery {
         const pk = this._store.tableInfo[this._query.table as any]._pk;
 
         if (this._isInstanceTable) {
-            this._getRows((rows, nextBatch) => {
+            this._getRows((rows) => {
                 this._query.result = (this._query.table as any[]).map((r) => {
                     if (rows.indexOf(r) === -1) {
                         return r;
@@ -702,7 +676,7 @@ export class _NanoSQLStorageQuery {
                     };
                 });
                 next(this._query);
-            }, () => {}, error);
+            }, error);
             return;
         }
 
@@ -712,7 +686,7 @@ export class _NanoSQLStorageQuery {
 
             let newRows: any[] = [];
             let num = 0;
-            this._getRows((rows, nextRows) => {
+            this._getRows((rows) => {
 
                 if (rows.length) {
                     // any changes to this table invalidates the cache
@@ -741,26 +715,21 @@ export class _NanoSQLStorageQuery {
                         }).then((nRows: DBRow[]) => {
                             if (hasError) return;
                             newRows = nRows;
-                            num += nRows.length;
+                            const pks = newRows.map(r => r[pk]);
+                            this._query.result = [{ msg: num + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
                             nextRow();
                         }).catch(actionErr);
                     }).then(() => {
                         if (hasError) return;
                         this._syncORM("add", rows, newRows, () => {
-                            this._doAfterQuery(newRows, false, () => {
-                                nextRows();
-                            });
+                            this._doAfterQuery(newRows, false, next);
                         });
                     }).catch(error);
                 } else {
                     if (hasError) return;
                     this._query.result = [{ msg: "0 row(s) modfied.", affectedRowPKS: [], affectedRows: [] }];
-                    nextRows();
+                    next(this._query);
                 }
-            }, () => {
-                const pks = newRows.map(r => r[pk]);
-                this._query.result = [{ msg: num + " row(s) modfied.", affectedRowPKS: pks, affectedRows: newRows }];
-                next(this._query);
             }, error);
 
         } else { // no where statement, perform direct upsert
@@ -832,12 +801,12 @@ export class _NanoSQLStorageQuery {
 
         if (this._isInstanceTable) {
             if (this._query.where) {
-                this._getRows((rows, nextBatch) => {
+                this._getRows((rows) => {
                     this._query.result = (this._query.table as any[]).filter((row) => {
                         return rows.indexOf(row) === -1;
                     });
                     next(this._query);
-                }, () => {}, error);
+                }, error);
             } else {
                 this._query.result = [];
                 next(this._query);
@@ -849,7 +818,7 @@ export class _NanoSQLStorageQuery {
 
             let aRows: any[] = [];
             let num = 0;
-            this._getRows((rows, nextBatch) => {
+            this._getRows((rows) => {
 
                 rows = rows.filter(r => r);
                 if (rows.length) {
@@ -863,21 +832,17 @@ export class _NanoSQLStorageQuery {
                         // any changes to this table invalidate the cache
                         this._store._cacheTime[this._query.table as any] = Date.now();
                         this._store._cache[this._query.table as any] = {};
+                        const pks = aRows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
+                        this._query.result = [{ msg: num + " row(s) deleted.", affectedRowPKS: pks, affectedRows: aRows }];
                         this._syncORM("del", rows, [], () => {
-                            this._doAfterQuery(rows, true, () => {
-                                nextBatch();
-                            });
+                            this._doAfterQuery(rows, true, next);
                         });
                     });
                 } else {
                     this._query.result = [{ msg: "0 row(s) deleted.", affectedRowPKS: [], affectedRows: [] }];
                     aRows = [];
-                    nextBatch();
+                    next(this._query);
                 }
-            }, () => {
-                const pks = aRows.map(r => r[this._store.tableInfo[this._query.table as any]._pk]);
-                this._query.result = [{ msg: num + " row(s) deleted.", affectedRowPKS: pks, affectedRows: aRows }];
-                next(this._query);
             }, error);
 
         } else { // no where statement, perform drop
@@ -2343,7 +2308,7 @@ export class InstanceSelection {
     ) {
     }
 
-    public getRows(onRows: (rows: DBRow[], nextBatch: () => void) => void, error: (e: Error) => void) {
+    public getRows(onRows: (rows: DBRow[]) => void, error: (e: Error) => void) {
 
         if (this.q.join || this.q.orm || this.q.trie) {
             error(new Error("nSQL: Cannot do a JOIN, ORM or TRIE command with instance table!"));
@@ -2365,7 +2330,7 @@ export class InstanceSelection {
             }
             onRows((this.q.table as any[]).filter((val, idx) => {
                 return idx >= from && idx <= to;
-            }), () => {});
+            }));
             return;
         }
 
@@ -2374,7 +2339,7 @@ export class InstanceSelection {
                 return Array.isArray(this.q.where) ? _where(row, this.q.where as any || [], i, false) : this.q.where(row, i);
             }
             return true;
-        }), () => {});
+        }));
     }
 }
 
