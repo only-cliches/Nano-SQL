@@ -960,7 +960,7 @@ export class _NanoSQLStorage {
                     if (keep) {
                         rows.push(row);
                     }
-                    nextRow();
+                    idx % 200 === 0 ? setFast(nextRow) : nextRow();
                 });
             }, () => {
                 callback(rows);

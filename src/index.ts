@@ -9,7 +9,7 @@ import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 
-const VERSION = 1.72;
+const VERSION = 1.73;
 
 // uglifyJS fix
 const str = ["_util", "_ttl"];

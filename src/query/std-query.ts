@@ -23,7 +23,7 @@ export interface IdbQueryBase {
     join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
-    noEvents?: boolean;
+    batch?: number;
     on?: any[];
     debounce?: number;
     trie?: { column: string, search: string };
@@ -137,7 +137,9 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: DBRow[]) => void, erro
                         nextP();
                     }
                 }).then(() => {
-                    self._db.triggerEvent(event);
+                    if (!self._query.transaction) {
+                        self._db.triggerEvent(event);
+                    }
                 });
             }
         }).catch(error);
@@ -272,13 +274,13 @@ export class _NanoSQLQuery {
     }
 
     /**
-     * Disable events for this query, improves memory usage and query speed; sometimes dramatically.
+     * Perform delete or upsert action in batches, useful if you're running out of memory on queries.
      *
      * @returns {_NanoSQLQuery}
      * @memberof _NanoSQLQuery
      */
-    public noEvents(): _NanoSQLQuery {
-        this._query.noEvents = true;
+    public batch(size: number = 1000): _NanoSQLQuery {
+        this._query.batch = size;
         return this;
     }
 

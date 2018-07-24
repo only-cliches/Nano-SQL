@@ -3,17 +3,23 @@
 ## 2.0 TODO
 - Remove query filter callback in favor of pure promise implemintation.
 - Split out history and fuzzy search into seperate plugins.
+- Move LevelDB to RocksDB
+
+## [1.7.3] 7-23-2018
+- Merged PR [74](https://github.com/ClickSimply/Nano-SQL/pull/74).
+- Fixed stack call error on database read.
+- Added new `.batch` modifier to resolve issue [65](https://github.com/ClickSimply/Nano-SQL/issues/65).  Allows upserts/delets to occur in batches automatically to allow smaller memory footprints.
 
 ## [1.7.2] 7-22-2018
 - Updated `.npmignore` according to recommendation by @vladimiry on github.
-- Perged PR [73](https://github.com/ClickSimply/Nano-SQL/pull/73), improving promise behavior of exec method.
+- Merged PR [73](https://github.com/ClickSimply/Nano-SQL/pull/73), improving promise behavior of exec method.
 - Added changes to PR to prevent breaking changes of query filter.
 - Restored query cache.
 
 ## [1.7.1] 7-19-2018
 - Better error handling.
 - Resolved issue [70](https://github.com/ClickSimply/Nano-SQL/issues/70), added a database versioning/migration code.
-- Resolved issue [69](https://github.com/ClickSimply/Nano-SQL/issues/69) and also added a test to prevent the bug from popping up again.  
+- Resolved issue [69](https://github.com/ClickSimply/Nano-SQL/issues/69) and also added a test to prevent the bug from popping up again.
 - Resolved issue [63](https://github.com/ClickSimply/Nano-SQL/issues/63), added cursor feature to queries.
 - Resovled issue [64](https://github.com/ClickSimply/Nano-SQL/issues/64), added TTL feature.
 
