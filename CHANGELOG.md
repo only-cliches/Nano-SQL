@@ -5,6 +5,8 @@
 - Split out history, fuzzy search, orm and denormalization into seperate plugins.
 - Move LevelDB to RocksDB.
 - Rewrite upsert/delete engine to perform updates one row at a time.
+- Add custom hook/action/filter system so plugins can interact in custom ways.
+- Move query/storage engine from plugin to standard exection path.
 
 ## [1.7.3] 7-23-2018
 - Merged PR [74](https://github.com/ClickSimply/Nano-SQL/pull/74).
