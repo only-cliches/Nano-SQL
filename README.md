@@ -126,7 +126,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.7.3/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.7.4/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

@@ -745,6 +745,7 @@ export declare class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
+    csvToArray(text: string): any[];
     /**
      * Convert a CSV to array of JSON objects
      *

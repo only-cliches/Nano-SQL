@@ -8,8 +8,9 @@ import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
 import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
+import { callbackify } from "util";
 
-const VERSION = 1.73;
+const VERSION = 1.74;
 
 // uglifyJS fix
 const str = ["_util", "_ttl"];
@@ -1724,10 +1725,32 @@ export class NanoSQLInstance {
                     return row[k] === true ? "true" : "false";
                 }
                 // tslint:disable-next-line
-                return typeof row[k] === "object" ? "\"" + JSON.stringify(row[k]).replace(/\"/g, '\'') + "\"" : row[k];
+                return typeof row[k] === "object" ? "\"" + JSON.stringify(row[k]).replace(/\"/g, '\"\"') + "\"" : row[k];
             }).join(","));
         });
         return csv.join("\r\n");
+    }
+
+    public csvToArray(text: string): any[] {
+        // tslint:disable-next-line
+        let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
+        for (l of text) {
+            // tslint:disable-next-line
+            if ('"' === l) {
+                if (s && l === p) row[i] += l;
+                s = !s;
+                // tslint:disable-next-line
+            } else if (',' === l && s) l = row[++i] = '';
+            // tslint:disable-next-line
+            else if ('\n' === l && s) {
+                // tslint:disable-next-line
+                if ('\r' === p) row[i] = row[i].slice(0, -1);
+                // tslint:disable-next-line
+                row = ret[++r] = [l = '']; i = 0;
+            } else row[i] += l;
+            p = l;
+        }
+        return ret[0];
     }
 
     /**
@@ -1746,42 +1769,24 @@ export class NanoSQLInstance {
                 fields = v.split(",");
                 return undefined;
             } else {
-                let record: StdObject<any> = {};
-                let row = v.match(/(,)|(["|\[|\{].*?["|\]|\}]|[^",\s]+)(?=\s*,|\s*$)/g) || [];
 
-                let fits = false;
-                if (row[0] === ",") {
-                    row.unshift("");
-                }
-
-                while (!fits) {
-                    let doBreak = false;
-                    row.forEach((val, i) => {
-                        if (doBreak) return;
-                        if (val === ",") {
-                            if (typeof row[i + 1] === "undefined" || row[i + 1] === ",") {
-                                doBreak = true;
-                                row.splice(i + 1, 0, "");
-                            }
-                        }
-                    });
-                    if (!doBreak) {
-                        fits = true;
-                    } else {
-                        break;
-                    }
-                }
-
-                row = row.filter((v, i) => i % 2 === 0);
+                let row = this.csvToArray(v);
+                if (!row) return undefined;
+                row = row.map(r => r.trim());
 
                 let i = fields.length;
+                let record: StdObject<any> = {};
                 while (i--) {
                     if (row[i]) {
                         if (row[i] === "true" || row[i] === "false") {
                             record[fields[i]] = row[i] === "true";
-                        } else if (row[i].indexOf("{") === 1 || row[i].indexOf("[") === 1) {
+                        } else if (row[i].indexOf("{") === 0 || row[i].indexOf("[") === 0) {
                             // tslint:disable-next-line
-                            record[fields[i]] = JSON.parse(row[i].slice(1, row[i].length - 1).replace(/'/gm, '\"'));
+                            try {
+                                record[fields[i]] = JSON.parse(row[i]);
+                            } catch (e) {
+                                record[fields[i]] = row[i];
+                            }
                             // tslint:disable-next-line
                         } else if (row[i].indexOf('"') === 0) {
                             record[fields[i]] = row[i].slice(1, row[i].length - 1).replace(/\"\"/gmi, "\"");
@@ -1789,8 +1794,8 @@ export class NanoSQLInstance {
                             record[fields[i]] = row[i];
                         }
                     }
-
                 }
+
                 if (rowMap) {
                     return rowMap(record);
                 }

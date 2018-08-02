@@ -9,21 +9,6 @@
     <script src="nano-sql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.min.js"></script>
     <script>
-        nSQL([{
-                name: "bill",
-                age: 20
-            },
-            {
-                name: "bob",
-                age: 25
-            },
-            {
-                name: "jeb",
-                age: 27
-            }
-        ]).query("select", ["name", "MAX(age) AS age"]).exec().then((rows) => {
-            console.log(rows); // <= [{name: "jeb", age: 27}]
-        })
 
         nSQL("message")
             .model([{
