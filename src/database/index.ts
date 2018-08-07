@@ -228,12 +228,18 @@ export class NanoSQLDefaultBackend implements NanoSQLPlugin {
             case "rebuild_idx":
                 if (args[1]) {
                     this._store.rebuildIndexes(args[1], (time) => {
+                        if (this._store._doCache) {
+                            this._store._flushIndexes();
+                        }
                         next(args, [time]);
                     });
                 } else {
                     fastALL(Object.keys(this._store.tableInfo), (table, i, done) => {
                         this._store.rebuildIndexes(table, done);
                     }).then((times) => {
+                        if (this._store._doCache) {
+                            this._store._flushIndexes();
+                        }
                         next(args, times);
                     });
                 }

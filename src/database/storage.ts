@@ -231,6 +231,7 @@ export class _NanoSQLStorage {
             _searchColumns: {
                 [column: string]: string[];
             }
+            _uniqueColumns: string[];
             _trieColumns: string[] // trie columns
             _keys: string[] // array of columns
             _defaults: { [column: string]: any };
@@ -754,9 +755,6 @@ export class _NanoSQLStorage {
                 });
             });
         }).then(() => {
-            if (this._doCache) {
-                this._flushIndexes();
-            }
             complete(new Date().getTime() - start);
         });
     }
@@ -1279,7 +1277,7 @@ export class _NanoSQLStorage {
                     if (intersect(["pk", "pk()"], model.props)) {
                         pkType = model.key;
                     }
-                    if (intersect(["trie", "idx", "idx()", "trie()"], model.props)) {
+                    if (intersect(["trie", "idx", "idx()", "trie()", "unique()", "unique"], model.props)) {
                         hasIDX = true;
                         const isNumber = ["number", "float", "int"].indexOf(model.type) !== -1;
                         dataModels["_" + table + "_idx_" + model.key] = [
@@ -1338,7 +1336,8 @@ export class _NanoSQLStorage {
             _name: tableName,
             _views: {},
             _viewTables: [],
-            _searchColumns: {}
+            _searchColumns: {},
+            _uniqueColumns: []
         };
 
         this._cache[tableName] = {};
@@ -1397,22 +1396,35 @@ export class _NanoSQLStorage {
                     }
                 });
 
+                let isPKCol = false;
+
                 // Check for primary key
                 if (intersect(["pk", "pk()"], p.props)) {
+                    isPKCol = true;
                     this.tableInfo[tableName]._pk = p.key;
                     this.tableInfo[tableName]._pkType = p.type;
                 }
 
+                // check for unique rows
+                if (intersect(["unique()", "unique"], p.props) && !isPKCol) {
+                    is2ndIndex = true;
+                    this.tableInfo[tableName]._uniqueColumns.push(p.key);
+                }
+
                 // Check for secondary indexes
                 if (intersect(["trie", "idx", "idx()", "trie()"], p.props) || is2ndIndex) {
-                    this.tableInfo[tableName]._secondaryIndexes.push(p.key);
-                    this._secondaryIndexes["_" + tableName + "_idx_" + p.key] = {idx: [], rows: [], sortIdx: ["number", "int", "float"].indexOf(p.type) !== -1};
+                    if (isPKCol === false) {
+                        this.tableInfo[tableName]._secondaryIndexes.push(p.key);
+                        this._secondaryIndexes["_" + tableName + "_idx_" + p.key] = {idx: [], rows: [], sortIdx: ["number", "int", "float"].indexOf(p.type) !== -1};
+                    }
                 }
 
                 // Check for trie indexes
                 if (intersect(["trie", "trie()"], p.props)) {
-                    this.tableInfo[tableName]._trieColumns.push(p.key);
-                    this._trieIndexes[tableName][p.key] = new Trie([]);
+                    if (isPKCol === false) {
+                        this.tableInfo[tableName]._trieColumns.push(p.key);
+                        this._trieIndexes[tableName][p.key] = new Trie([]);
+                    }
                 }
             }
         }

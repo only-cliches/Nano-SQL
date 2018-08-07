@@ -65,7 +65,7 @@ const queryObj = {
             next(self._query);
             return;
         }
-        self._query.result = self._store.models[self._query.table] ? _assign(self._store.models[self._query.table]) : [{error: "Table does not exist"}];
+        self._query.result = self._store.models[self._query.table] ? _assign(self._store.models[self._query.table]) : [{ error: "Table does not exist" }];
         next(self._query);
     },
 };
@@ -169,12 +169,12 @@ export class _NanoSQLStorageQuery {
 
             // No query arguments, we can skip the whole mutation selection class
             if (!["having", "orderBy", "offset", "limit", "actionArgs", "groupBy", "orm", "join"].filter(k => this._query[k]).length) {
-                if (canCache) this._store._cache[this._query.table as any][this._hash] = {rows: rows, time: Date.now()};
+                if (canCache) this._store._cache[this._query.table as any][this._hash] = { rows: rows, time: Date.now() };
                 this._query.result = rows;
                 next(this._query);
             } else {
                 new _MutateSelection(this._query, this._store)._executeQueryArguments(rows, (resultRows) => {
-                    if (canCache) this._store._cache[this._query.table as any][this._hash] = {rows: resultRows, time: Date.now()};
+                    if (canCache) this._store._cache[this._query.table as any][this._hash] = { rows: resultRows, time: Date.now() };
                     this._query.result = resultRows;
                     next(this._query);
                 }, error);
@@ -652,6 +652,38 @@ export class _NanoSQLStorageQuery {
         });
     }
 
+    public _uniqueColCheck(updatingRow: any, inputData: any, err: (e: Error) => void) {
+        return (col: string, i: number, nextCol: (result?: any) => void) => {
+            if (updatingRow && updatingRow[col] === inputData[col]) { // data isn't being changed, no check needed
+                nextCol();
+                return;
+            }
+
+            const pk = this._store.tableInfo[this._query.table as any]._pk;
+
+            const e = (r) => {
+                err(new Error(`nSQL: Unique row violation on table "${this._query.table}", row ${r[pk]} already contains value ${JSON.stringify(inputData[col])}`));
+            };
+
+            this._store._secondaryIndexRead(this._query.table as any, "=", col, inputData[col], (rows) => {
+                if (rows.length) { // existing value in database
+                    if (!updatingRow) {
+                        e(rows[0]);
+                        return;
+                    }
+
+                    if (rows[0][pk] === updatingRow[pk]) { // unique value matches row being modified
+                        nextCol();
+                    } else {
+                        e(rows[0]);
+                    }
+                } else { // value doesn't have a row yet
+                    nextCol();
+                }
+            });
+        };
+    }
+
     /**
      * Initilize an UPSERT query.
      *
@@ -680,6 +712,7 @@ export class _NanoSQLStorageQuery {
             return;
         }
 
+
         let hasError = false;
 
         if (this._query.where) { // has where statement, select rows then modify them
@@ -689,6 +722,8 @@ export class _NanoSQLStorageQuery {
             this._getRows((rows) => {
 
                 if (rows.length) {
+
+
                     // any changes to this table invalidates the cache
                     this._store._cache[this._query.table as any] = {};
                     this._store._cacheTime[this._query.table as any] = Date.now();
@@ -697,18 +732,23 @@ export class _NanoSQLStorageQuery {
 
                         fastCHAIN(rows, (row, i, rowDone, rowError) => {
 
-                            this._updateSearchIndex(row[pk], row, () => {
-                                this._updateRowViews(inputData || {}, row, (updatedRowData) => {
-                                    if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
-                                        Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                                            if (row[col] === undefined && updatedRowData[col] === undefined) {
-                                                updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
-                                            }
+                            let uniqeCols: string[] = Object.keys(inputData).filter(col => this._store.tableInfo[this._query.table as any]._uniqueColumns.indexOf(col) !== -1);
+
+                            fastCHAIN(uniqeCols, this._uniqueColCheck(row, inputData, error)).then(() => {
+
+                                this._updateSearchIndex(row[pk], row, () => {
+                                    this._updateRowViews(inputData || {}, row, (updatedRowData) => {
+                                        if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
+                                            Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
+                                                if (row[col] === undefined && updatedRowData[col] === undefined) {
+                                                    updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
+                                                }
+                                            });
+                                        }
+                                        this._store._write(this._query.table as any, row[pk], row, updatedRowData, rowDone, (err) => {
+                                            hasError = true;
+                                            rowError(err);
                                         });
-                                    }
-                                    this._store._write(this._query.table as any, row[pk], row, updatedRowData, rowDone, (err) => {
-                                        hasError = true;
-                                        rowError(err);
                                     });
                                 });
                             });
@@ -725,6 +765,7 @@ export class _NanoSQLStorageQuery {
                             this._doAfterQuery(newRows, false, next);
                         });
                     }).catch(error);
+
                 } else {
                     if (hasError) return;
                     this._query.result = [{ msg: "0 row(s) modfied.", affectedRowPKS: [], affectedRows: [] }];
@@ -734,38 +775,45 @@ export class _NanoSQLStorageQuery {
 
         } else { // no where statement, perform direct upsert
 
-            let rows = this._query.actionArgs || [];
+            let newRows = this._query.actionArgs || [];
             this._store._cacheTime[this._query.table as any] = Date.now();
             this._store._cache[this._query.table as any] = {};
             let oldRows: any[] = [];
             let addedRows: any[] = [];
-            fastCHAIN(rows, (row, k, nextRow, rowError) => {
+            fastCHAIN(newRows, (newRowData, k, nextRow, rowError) => {
                 const write = (oldRow: any) => {
-                    this._updateRowViews(row, oldRow, (updatedRowData) => {
 
-                        if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
-                            Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
-                                if ((oldRow || {})[col] === undefined && updatedRowData[col] === undefined) {
-                                    updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
-                                }
-                            });
-                        }
+                    let uniqeCols: string[] = Object.keys(newRowData).filter(col => this._store.tableInfo[this._query.table as any]._uniqueColumns.indexOf(col) !== -1);
 
-                        this._store._write(this._query.table as any, row[pk], oldRow, updatedRowData, (result) => {
-                            this._updateSearchIndex(result[pk], result, () => {
-                                oldRows.push(oldRow || {});
-                                addedRows.push(result);
-                                nextRow();
+                    fastCHAIN(uniqeCols, this._uniqueColCheck(oldRow, newRowData, error)).then(() => {
+
+                        this._updateRowViews(newRowData, oldRow, (updatedRowData) => {
+
+                            if (this._store.tableInfo[this._query.table as any]._hasDefaults) {
+                                Object.keys(this._store.tableInfo[this._query.table as any]._defaults).forEach((col) => {
+                                    if ((oldRow || {})[col] === undefined && updatedRowData[col] === undefined) {
+                                        updatedRowData[col] = this._store.tableInfo[this._query.table as any]._defaults[col];
+                                    }
+                                });
+                            }
+
+                            this._store._write(this._query.table as any, newRowData[pk], oldRow, updatedRowData, (result) => {
+                                this._updateSearchIndex(result[pk], result, () => {
+                                    oldRows.push(oldRow || {});
+                                    addedRows.push(result);
+                                    nextRow();
+                                });
+                            }, (err) => {
+                                hasError = true;
+                                rowError(err);
                             });
-                        }, (err) => {
-                            hasError = true;
-                            rowError(err);
+
                         });
                     });
                 };
 
-                if (row[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index_") === -1) {
-                    this._store._read(this._query.table as any, [row[pk]] as any, (rows) => {
+                if (newRowData[pk] !== undefined && this._query.comments.indexOf("_rebuild_search_index_") === -1) {
+                    this._store._read(this._query.table as any, [newRowData[pk]] as any, (rows) => {
                         if (rows.length) {
                             write(rows[0]);
                         } else {
@@ -930,18 +978,23 @@ export class _MutateSelection {
      * @returns {void}
      * @memberof _MutateSelection
      */
-    private _join(rows: DBRow[], complete: (rows: DBRow[]) => void): void {
+    private _join(rows: DBRow[], complete: (rows: DBRow[]) => void, error: (E: Error) => void): void {
 
         if (!this.q.join) {
             complete(rows);
             return;
         }
 
+
         let joinData: JoinArgs[] = Array.isArray(this.q.join) ? this.q.join : [this.q.join];
 
         const leftTablePK = this.q.table + "." + this.s.tableInfo[this.q.table as string]._pk;
 
         fastCHAIN(joinData, (join: JoinArgs, ji, next) => {
+            if (join.where && join.where[0].indexOf(this.q.table + ".") === -1) {
+                error(new Error("nSQL: Where commands in a join must use the first table on the left side of the where query."));
+                return;
+            }
             let joinConditions = {};
             if (join.type !== "cross" && join.where) {
                 joinConditions = {
@@ -1087,7 +1140,7 @@ export class _MutateSelection {
      * @memberof _MutateSelection
      */
     private _offset(rows: DBRow[]): any[] {
-        return rows.slice( this.q.offset ) ;
+        return rows.slice(this.q.offset);
     }
 
     /**
@@ -1099,7 +1152,7 @@ export class _MutateSelection {
      * @memberof _MutateSelection
      */
     private _limit(rows: DBRow[]): any[] {
-        return rows.slice( 0, this.q.limit ) ;
+        return rows.slice(0, this.q.limit);
     }
 
     /**
@@ -1219,6 +1272,7 @@ export class _MutateSelection {
                         [firstTableData._name]: firstRow,
                         [seconTableData._name]: secondRow
                     }, [joinConditions._left, joinConditions._check, type === R ? firstRow[rightKey] : secondRow[rightKey]], 0, false);
+
                     if (willJoinRows) {
                         if (type === O) usedSecondTableRows[idx2] = true;
                         joinTable.push(doJoinRows(firstRow, secondRow));
@@ -1493,7 +1547,7 @@ export class _MutateSelection {
             this._join(inputRows, (rows) => {
                 inputRows = rows;
                 afterJoin();
-            });
+            }, error);
         } else {
             afterJoin();
         }
@@ -2504,9 +2558,11 @@ const _compare = (where: any[], wholeRow: any, isJoin: boolean): boolean => {
         // if the column value is between two given numbers
         case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
         // if single value exists in array column
-        case "HAVE": return (columnValue || []).indexOf(givenValue) !== -1;
+        case "HAVE":
+        case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
         // if single value does not exist in array column
-        case "NOT HAVE": return (columnValue || []).indexOf(givenValue) === -1;
+        case "NOT HAVE":
+        case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
         // if array of values intersects with array column
         case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0;
         // if every value in the provided array exists in the array column

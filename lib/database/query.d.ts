@@ -58,6 +58,7 @@ export declare class _NanoSQLStorageQuery {
      */
     private _updateRemoteViews;
     private _doAfterQuery;
+    _uniqueColCheck(updatingRow: any, inputData: any, err: (e: Error) => void): (col: string, i: number, nextCol: (result?: any) => void) => void;
 }
 /**
  * Takes a selection of rows and applys modifiers like orderBy, join and others to the rows.

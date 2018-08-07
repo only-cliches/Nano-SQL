@@ -175,6 +175,7 @@ export declare class _NanoSQLStorage {
             _searchColumns: {
                 [column: string]: string[];
             };
+            _uniqueColumns: string[];
             _trieColumns: string[];
             _keys: string[];
             _defaults: {

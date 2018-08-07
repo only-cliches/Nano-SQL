@@ -8,6 +8,12 @@
 - Add custom hook/action/filter system so plugins can interact in custom ways.
 - Move query/storage engine from plugin to standard exection path.
 
+## [1.7.5] 8-6-2018
+- Added `INCLUDES` as `HAVE` alias for queries.
+- Fixed issue [79](https://github.com/ClickSimply/Nano-SQL/issues/79). There's now a sanity check for joins to make sure the where condition is formatted correctly.
+- Fixed issue [72](https://github.com/ClickSimply/Nano-SQL/issues/72). Secondary indexes with cache enabled now rebuild correctly.
+- Fixed issue [76](https://github.com/ClickSimply/Nano-SQL/issues/76). You can now use the prop `unique()` in the data models to force nanoSQL to prevent multiple rows from having the same value.
+
 ## [1.7.4] 8-1-2018
 - CSV import and export now follow official CSV spec.
 
