@@ -5,8 +5,14 @@
 - Split out history, fuzzy search, orm and denormalization into seperate plugins.
 - Move LevelDB to RocksDB.
 - Rewrite upsert/delete engine to perform updates one row at a time.
-- Add custom hook/action/filter system so plugins can interact in custom ways.
+- Add custom hook/action/filter system so plugins can interact in custom, undeclared ways.
 - Move query/storage engine from plugin to standard exection path.
+- Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
+- Remove built in Promise polyfill.
+
+
+## [1.7.6] 8-10-2018
+- Fixed issue with CSV export headers.
 
 ## [1.7.5] 8-6-2018
 - Added `INCLUDES` as `HAVE` alias for queries.

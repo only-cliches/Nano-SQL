@@ -1,7 +1,7 @@
 import { Trie } from "prefix-trie-ts";
 import { IdbQuery } from "../query/std-query";
 import { DataModel, NanoSQLInstance, NanoSQLConfig, NanoSQLBackupAdapter } from "../index";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, removeDuplicates, random16Bits, binarySearch } from "../utilities";
+import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, intersect, timeid, _assign, generateID, isSafari, isMSBrowser, isObject, random16Bits, binarySearch } from "../utilities";
 import { _SyncStore } from "./adapter-sync";
 import { _IndexedDBStore } from "./adapter-indexedDB";
 import { _WebSQLStore } from "./adapter-websql";

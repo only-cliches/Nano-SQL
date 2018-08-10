@@ -2,7 +2,7 @@ import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery, IdbQueryExec } from "./query/std-query";
 import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
-import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, fastCHAIN, intersect, crowDistance, removeDuplicates, uuid } from "./utilities";
+import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, fastCHAIN, intersect, crowDistance , uuid } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
 import { _NanoSQLHistoryPlugin } from "./history-plugin";
 import { NanoSQLStorageAdapter } from "./database/storage";
@@ -10,7 +10,7 @@ import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 import { callbackify } from "util";
 
-const VERSION = 1.75;
+const VERSION = 1.76;
 
 // uglifyJS fix
 const str = ["_util", "_ttl"];
@@ -1704,8 +1704,9 @@ export class NanoSQLInstance {
         } else {
             // auto detect headers
             json.forEach((json) => {
-                columnHeaders = removeDuplicates(Object.keys(json).concat(columnHeaders));
+                columnHeaders = Object.keys(json).concat(columnHeaders);
             });
+            columnHeaders = columnHeaders.filter((v, i, s) => s.indexOf(v) === i);
         }
 
         if (printHeaders) {

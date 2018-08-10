@@ -442,21 +442,6 @@ export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?:
 };
 
 /**
- * Quickly removes duplicates from a sorted array.
- *
- * @param {any[]} arr
- * @returns {any[]}
- */
-export const removeDuplicates = (arr: any[]): any[] => {
-    if (!arr.length) return [];
-    let newarr = [arr[0]];
-    for (let i = 1; i < arr.length; i++) {
-        if (arr[i] !== arr[i - 1]) newarr.push(arr[i]);
-    }
-    return newarr;
-};
-
-/**
  * Recursively freeze a javascript object to prevent it from being modified.
  *
  * @param {*} obj

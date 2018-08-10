@@ -144,13 +144,6 @@ export declare const cast: (type: string, val?: any) => any;
  */
 export declare const binarySearch: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => number;
 /**
- * Quickly removes duplicates from a sorted array.
- *
- * @param {any[]} arr
- * @returns {any[]}
- */
-export declare const removeDuplicates: (arr: any[]) => any[];
-/**
  * Recursively freeze a javascript object to prevent it from being modified.
  *
  * @param {*} obj

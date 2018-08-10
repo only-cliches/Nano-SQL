@@ -1,6 +1,5 @@
 import { NanoSQLInstance, DatabaseEvent } from ".";
 import { IdbQueryExec } from "./query/std-query";
-import { removeDuplicates } from "./utilities";
 import { setFast } from "lie-ts";
 
 export class Observer<T> {
@@ -283,7 +282,8 @@ export class ObserverSubscriber {
         const q = this._getQuery();
 
         if (q) {
-            this._tables = removeDuplicates(this._tables.concat([q.table as string]));
+            this._tables = this._tables.concat([q.table as string]);
+            this._tables = this._tables.filter((v, i, s) => s.indexOf(v) === i);
             this.exec();
         }
 
