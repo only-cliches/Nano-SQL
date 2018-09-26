@@ -9,7 +9,11 @@
 - Move query/storage engine from plugin to standard exection path.
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Remove built in Promise polyfill.
-
+- Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
+- Relations plugin includes ORM and Denormalization features.
+- Add query plugin type to support GraphQL, SQLite3, ReQL and MongoDB QL.
+- Add `.from` and `.into` query modifiers, `.from` allows nested queries with a function or overwrites `.table`.
+- Add `.doQuery` function to core that performs queries using nanosql query json.
 
 ## [1.7.6] 8-10-2018
 - Fixed issue with CSV export headers.

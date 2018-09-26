@@ -1,6 +1,5 @@
 import { setFast } from "lie-ts";
 import { _NanoSQLQuery, IdbQuery, IdbQueryExec } from "./query/std-query";
-import { _NanoSQLTransactionQuery } from "./query/transaction";
 import { ReallySmallEvents } from "really-small-events";
 import { StdObject, _assign, fastALL, random16Bits, cast, cleanArgs, objQuery, fastCHAIN, intersect, crowDistance , uuid } from "./utilities";
 import { NanoSQLDefaultBackend } from "./database/index";
@@ -24,21 +23,13 @@ export interface NanoSQLConfig {
     id?: string | number;
     peer?: boolean;
     cache?: boolean;
-    mode?: string | NanoSQLStorageAdapter | boolean;
-    history?: boolean;
-    hostoryMode?: string | { [table: string]: string };
-    secondaryAdapters?: NanoSQLBackupAdapter[];
+    mode?: string | NanoSQLStorageAdapter;
     idbVersion?: number;
     version?: number;
     dbPath?: string; // path (used by LevelDB)
     writeCache?: number; // writeCache (used by LevelDB)
     readCache?: number; // read cache (used by LevelDB)
     size?: number; // size of WebSQL database
-    tokenizer?: (table: string, column: string, args: string[], value: string) => {
-        o: string; // original string
-        w: string; // tokenized output
-        i: number; // location of string
-    }[] | boolean;
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
     [key: string]: any;
 }
@@ -59,7 +50,7 @@ export interface ActionOrView {
 
 export interface NanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
-    call: (rows: any[], complete: (result: any | any[], aggregateRow?: any) => void, ...args: any[]) => void; // function call
+    call: (row: any, complete: (result: any) => void, prev: any, ...args: any[]) => void; // function call
 }
 
 /**
@@ -89,7 +80,6 @@ export interface DatabaseEvent {
     result: any[];
     types: ("change" | "delete" | "upsert" | "drop" | "select" | "error" | "transaction" | "peer-change")[];
     actionOrView: string;
-    transactionID?: string;
     affectedRowPKS?: any[];
     affectedRows: DBRow[];
 }
@@ -173,7 +163,7 @@ export class NanoSQLInstance {
      */
     public sTable: string | any[];
 
-    private _config: NanoSQLConfig;
+    public config: NanoSQLConfig;
 
     public plugins: NanoSQLPlugin[];
 
@@ -181,16 +171,7 @@ export class NanoSQLInstance {
 
     public static earthRadius: number = 6371;
 
-    /**
-     * Holds the plugin / adapter used by instance queries.
-     *
-     * @type {NanoSQLPlugin}
-     * @memberof NanoSQLInstance
-     */
-    public iB: NanoSQLPlugin;
-
     public isConnected: boolean;
-
 
     // Incase you don't need truly random numbers,
     // this will generate a cache of random numbers and loop between them.
@@ -562,7 +543,7 @@ export class NanoSQLInstance {
                 models: t.dataModels,
                 actions: t._actions,
                 views: t._views,
-                config: t._config,
+                config: t.config,
                 parent: this,
             };
 
@@ -578,17 +559,12 @@ export class NanoSQLInstance {
                 { key: "date", type: "number" }
             ];
 
-            // if history is enabled, turn on the built in history plugin
-            if (t._config && t._config.history) {
-                this.use(new _NanoSQLHistoryPlugin(t._config.historyMode));
-            }
-
             // If the db mode is not set to disable, add default store to the end of the plugin chain
-            if (!t._config || t._config.mode !== false) {
+            if (!t.config || t.config.mode !== false) {
                 this.use(new NanoSQLDefaultBackend());
             }
 
-            if (typeof window !== "undefined" && this._config && this._config.peer) {
+            if (typeof window !== "undefined" && this.config && this.config.peer) {
                 this.peerMode = true;
             }
 
@@ -605,7 +581,7 @@ export class NanoSQLInstance {
                 t.dataModels = connectArgs.models;
                 t._actions = connectArgs.actions;
                 t._views = connectArgs.views;
-                t._config = connectArgs.config as any;
+                t.config = connectArgs.config as any;
 
                 Object.keys(t.dataModels).forEach((table) => {
                     let hasWild = false;
@@ -846,16 +822,6 @@ export class NanoSQLInstance {
     }
 
     /**
-     * Grab a copy of the database config object.
-     *
-     * @returns
-     * @memberof NanoSQLInstance
-     */
-    public getConfig(): NanoSQLConfig {
-        return (this._config || {}) as any;
-    }
-
-    /**
      * Set the action/view filter function.  Called *before* the action/view is sent to the datastore
      *
      * @param {IActionViewMod} filterFunc
@@ -866,10 +832,6 @@ export class NanoSQLInstance {
     public avFilter(filterFunc: IActionViewMod) {
         this._AVMod = filterFunc;
         return this;
-    }
-
-    public use(plugin: NanoSQLPlugin): this {
-        return this.plugins.push(plugin), this;
     }
 
     /**
@@ -1436,6 +1398,7 @@ export class NanoSQLInstance {
         });
     }
 
+
     /**
      * Request disconnect from all databases.
      *
@@ -1452,122 +1415,6 @@ export class NanoSQLInstance {
         });
     }
 
-    /**
-     * Executes a transaction against the database, batching all the queries together.
-     *
-     * @param {((
-     *         db: (table?: string) => {
-     *             query: (action: "select"|"upsert"|"delete"|"drop"|"show tables"|"describe", args?: any) => _NanoSQLTransactionQuery;
-     *             updateORM: (action: "add"|"delete"|"drop"|"set", column?: string, relationIDs?: any[]) => _NanoSQLTransactionORMQuery|undefined;
-     *         }, complete: () => void) => void)} initTransaction
-     * @returns {Promise<any>}
-     *
-     * @memberof NanoSQLInstance
-     */
-    public doTransaction(initTransaction: (
-        db: (table?: string) => {
-            query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => _NanoSQLTransactionQuery;
-        }, complete: () => void) => void
-    ): Promise<any> {
-        let t = this;
-
-        let queries: IdbQuery[] = [];
-        let transactionID = random16Bits().toString(16);
-
-        return new Promise((resolve, reject) => {
-            if (!t.plugins.length) {
-                reject("nSQL: Nothing to do, no plugins!");
-                return;
-            }
-
-            const run = () => {
-                fastCHAIN(t.plugins, (p, i, nextP) => {
-                    if (p.transactionBegin) {
-                        p.transactionBegin(transactionID, nextP);
-                    } else {
-                        nextP();
-                    }
-                }).then(() => {
-
-                    if (Array.isArray(t.sTable)) return;
-
-                    initTransaction(
-                        (table?: string) => {
-                            let ta: string = table || t.sTable as any;
-                            return {
-                                query: (action: "select" | "upsert" | "delete" | "drop" | "show tables" | "describe", args?: any) => {
-                                    return new _NanoSQLTransactionQuery(action, args, ta, queries, transactionID);
-                                }
-                            };
-                        },
-                        () => {
-
-                            let tables: string[] = [];
-
-                            fastCHAIN(queries, (quer, i, nextQuery) => {
-                                tables.push(quer.table as any);
-                                t.query(quer.action as any, quer.actionArgs).manualExec({
-                                    ...quer,
-                                    table: quer.table,
-                                    transaction: true,
-                                    queryID: transactionID,
-                                }).then(nextQuery);
-                            }).then((results) => {
-
-                                fastCHAIN(this.plugins, (p, i, nextP) => {
-                                    if (p.transactionEnd) {
-                                        p.transactionEnd(transactionID, nextP);
-                                    } else {
-                                        nextP();
-                                    }
-                                }).then(() => {
-                                    tables.filter((val, idx, self) => {
-                                        return self.indexOf(val) === idx;
-                                    }).forEach((table) => {
-                                        if (table.indexOf("_") !== 0) {
-                                            t.triggerEvent({
-                                                query: queries[0],
-                                                table: table,
-                                                time: new Date().getTime(),
-                                                result: results,
-                                                types: ["transaction"],
-                                                actionOrView: "",
-                                                notes: [],
-                                                transactionID: transactionID,
-                                                affectedRowPKS: [],
-                                                affectedRows: []
-                                            });
-                                        }
-                                    });
-                                    resolve(results);
-                                });
-                            });
-                        }
-                    );
-                });
-            };
-
-            if (this.isConnected) {
-                run();
-            } else {
-                this.onConnected(run);
-            }
-        });
-    }
-
-
-    /**
-     * Configure the database driver, must be called before the connect() method.
-     *
-     * @param {any} args
-     * @returns {NanoSQLInstance}
-     *
-     * @memberOf NanoSQLInstance
-     */
-    public config(args: NanoSQLConfig): NanoSQLInstance {
-        this._config = args;
-        return this;
-    }
 
     /**
      * Init obvserable query.
@@ -1661,26 +1508,17 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadJS(table: string, rows: Array<any>, useTransaction?: boolean, onProgress?: (percent: number) => void): Promise<Array<any>> {
+    public loadJS(table: string, rows: Array<any>, onProgress?: (percent: number) => void): Promise<Array<any>> {
         let t = this;
 
-        if (useTransaction) {
-            return t.doTransaction((db, complete) => {
-                rows.forEach((row) => {
-                    db(table).query("upsert", row).exec();
-                });
-                complete();
+        return new Promise((res, rej) => {
+            fastCHAIN(rows, (row, i, nextRow) => {
+                if (onProgress) onProgress(Math.round(((i + 1) / rows.length) * 10000) / 100);
+                this.query("upsert", row).manualExec({ table: table }).then(nextRow);
+            }).then((rows) => {
+                res(rows.map(r => r.shift()));
             });
-        } else {
-            return new Promise((res, rej) => {
-                fastCHAIN(rows, (row, i, nextRow) => {
-                    if (onProgress) onProgress(Math.round(((i + 1) / rows.length) * 10000) / 100);
-                    this.query("upsert", row).manualExec({ table: table }).then(nextRow);
-                }).then((rows) => {
-                    res(rows.map(r => r.shift()));
-                });
-            });
-        }
+        });
     }
 
     /**
@@ -1817,123 +1655,22 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadCSV(table: string, csv: string, useTransaction?: boolean, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>> {
+    public loadCSV(table: string, csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>> {
         let t = this;
 
         let rowData = this.CSVtoJSON(csv, rowMap);
 
-        if (useTransaction) {
-            return t.doTransaction((db, complete) => {
-                rowData.forEach((row) => {
-                    db(table).query("upsert", row).exec();
-                });
-                complete();
+        return new Promise((res, rej) => {
+            fastCHAIN(rowData, (row, i, nextRow) => {
+                if (onProgress) onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
+                this.query("upsert", row).manualExec({ table: table }).then(nextRow);
+            }).then((rows) => {
+                res(rows.map(r => r.shift()));
             });
-        } else {
-            return new Promise((res, rej) => {
-                fastCHAIN(rowData, (row, i, nextRow) => {
-                    if (onProgress) onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
-                    this.query("upsert", row).manualExec({ table: table }).then(nextRow);
-                }).then((rows) => {
-                    res(rows.map(r => r.shift()));
-                });
-            });
-        }
+        });
     }
 }
 
-
-export interface DBConnect {
-    models: StdObject<DataModel[]>;
-    actions: StdObject<ActionOrView[]>;
-    views: StdObject<ActionOrView[]>;
-    config: NanoSQLConfig;
-    parent: NanoSQLInstance;
-}
-/**
- * The interface for plugins used by NanoSQL
- * Current plugins include History and the default storage system.
- *
- * @export
- * @interface NanoSQLPlugin
- */
-export interface NanoSQLPlugin {
-
-    getId?: () => string;
-
-    /**
-     * Called before database connection with all the connection arguments, including data models and what not.
-     * Lets you adjust the connect arguments, add tables, remove tables, adjust data models, etc.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    willConnect?: (connectArgs: DBConnect, next: (connectArgs: DBConnect) => void) => void;
-
-    /**
-     * Called after connection, changes to the connectArgs won't have any affect on the database but can still be read.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    didConnect?: (connectArgs: DBConnect, next: () => void) => void;
-
-    /**
-     *  Called when the user requests the database perform a disconnect action.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    willDisconnect?: (next: () => void) => void;
-
-    /**
-     * Called when a query is sent through the system, once all plugins are called the query resullt is sent to the user.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    doExec?: (execArgs: IdbQuery, next: (execArgs: IdbQuery) => void, error: (err: Error) => void) => void;
-
-    /**
-     * Called after the query is done, allows you to modify the event data before the event is emmited
-     *
-     * @memberof NanoSQLPlugin
-     */
-    didExec?: (event: DatabaseEvent, next: (event: DatabaseEvent) => void) => void;
-
-    /**
-     * Called before a transaction takes place.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    transactionBegin?: (id: string, next: () => void) => void;
-
-    /**
-     * Called after a transaction completes.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    transactionEnd?: (id: string, next: () => void) => void;
-
-    /**
-     * Dump the raw contents of all database tables.
-     * Optionally provide a list of tables to export, if nothing is provided then all tables should be dumped.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    dumpTables?: (tables?: string[]) => Promise<{ [tableName: string]: DBRow[] }>;
-
-    /**
-     * Import tables directly into the database without any type checking, indexing or anything else fancy.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    importTables?: (tables: { [tableName: string]: DBRow[] }, onProgress: (percent: number) => void) => Promise<any>;
-
-    /**
-     * Generic for other misc functions, called when ".extend()" is used.
-     *
-     * @memberof NanoSQLPlugin
-     */
-    extend?: (next: (args: any[], result: any[]) => void, args: any[], result: any[]) => void;
-
-}
 
 const wordLevenshtienCache: { [words: string]: number } = {};
 
@@ -1995,6 +1732,7 @@ NanoSQLInstance.whereFunctions = {
     }
 };
 
+/*
 NanoSQLInstance.functions = {
     COUNT: {
         type: "A",
@@ -2121,6 +1859,7 @@ NanoSQLInstance.functions = {
         }
     }
 };
+*/
 
 /**
  * @internal
