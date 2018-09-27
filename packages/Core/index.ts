@@ -3,7 +3,7 @@ import { _assign, allAsync, random16Bits, cast, cleanArgs, objQuery, chainAsync,
 import { Observer } from "./observable";
 import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, ActionOrView, DataModel, IdbQuery, disconnectFilter, DatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, connectFilter } from "./interfaces";
 import { callbackify } from "util";
-import { attachDefaultFns } from "./fns";
+import { attachDefaultFns } from "./functions";
 
 const VERSION = 2.0;
 
