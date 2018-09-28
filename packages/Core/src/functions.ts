@@ -3,12 +3,10 @@ import { crowDistance, objQuery, cast } from "./utilities";
 
 export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
     nSQL.whereFunctions = {
-        crow: (row: any, isJoin: boolean, lat: number, lon: number, latColumn?: string, lonColumn?: string) => {
-            const latCol = latColumn || "lat";
-            const lonCol = lonColumn || "lon";
-            const latVal = objQuery(latCol, row, isJoin);
-            const lonVal = objQuery(lonCol, row, isJoin);
-            return crowDistance(latVal, lonVal, lat, lon, nSQL.earthRadius);
+        crow: (row: any, isJoin: boolean, gpsCol: string, lat: string, lon: string) => {
+            const latVal = objQuery(gpsCol + ".lat", row, isJoin);
+            const lonVal = objQuery(gpsCol + ".lon", row, isJoin);
+            return crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius);
         },
         sum: (row: any, isJoin: boolean, ...columns: string[]) => {
             return columns.reduce((prev, cur) => {
@@ -89,7 +87,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
             call: (row, complete, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
+                const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -101,7 +99,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}},
             call: (row, complete, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
+                const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 complete(prev);

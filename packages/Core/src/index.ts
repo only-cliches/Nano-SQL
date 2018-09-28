@@ -1,19 +1,10 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, random16Bits, cast, cleanArgs, objQuery, chainAsync, intersect, crowDistance , uuid } from "./utilities";
+import { _assign, allAsync, random16Bits, cast, cleanArgs, objQuery, chainAsync, intersect, crowDistance, uuid, hash, defaultTypes, noop, throwErr, setFast, events } from "./utilities";
 import { Observer } from "./observable";
-import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, ActionOrView, DataModel, IdbQuery, disconnectFilter, DatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, connectFilter } from "./interfaces";
-import { callbackify } from "util";
+import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, ActionOrView, DataModel, IdbQuery, disconnectFilter, DatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, connectFilter, JoinArgs } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 
 const VERSION = 2.0;
-
-const noop = () => {};
-const throwErr = (err: any) => {
-    throw new Error(err);
-};
-
-// uglifyJS fix
-const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
 
 /**
  * The primary abstraction class, there is no database implimintation code here.
@@ -32,7 +23,7 @@ export class NanoSQLInstance {
 
     public version: number = VERSION;
 
-    public filters: {[filterName: string]: ((inputArgs: any) => Promise<any>)[]};
+    public filters: { [filterName: string]: ((inputArgs: any) => Promise<any>)[] };
 
     public functions: {
         [fnName: string]: NanoSQLFunction;
@@ -50,12 +41,14 @@ export class NanoSQLInstance {
             filter?: (row: any) => any,
             actions: ActionOrView[],
             views: ActionOrView[],
+            types: {[name: string]: {[key: string]: {type: string, default?: any}}};
             hasEvents: boolean;
-            eventCBs: {[row: string]: ReallySmallEvents}
+            eventCBs: { [row: string]: ReallySmallEvents }
             pkType: string;
             pkCol: string;
             ai: boolean;
             secondaryIdxs: string[];
+            wildCard: boolean;
             props?: any;
         }
     };
@@ -105,8 +98,10 @@ export class NanoSQLInstance {
                 },
                 pkType: "",
                 pkCol: "",
+                types: defaultTypes,
                 secondaryIdxs: [],
-                ai: false
+                ai: false,
+                wildCard: false
             }
         };
 
@@ -176,9 +171,9 @@ export class NanoSQLInstance {
                 rows.push(row);
             }, () => {
                 if (!rows.length) {
-                    res({time: -1, cols: []});
+                    res({ time: -1, cols: [] });
                 } else {
-                    res({time: (rows[0].date - Date.now()) / 1000, cols: rows[0].cols});
+                    res({ time: (rows[0].date - Date.now()) / 1000, cols: rows[0].cols });
                 }
             }, rej);
         });
@@ -268,25 +263,19 @@ export class NanoSQLInstance {
         return JSON.parse(localStorage.getItem("nsql-peers-" + this.state.id) || "[]");
     }
 
-    /**
-     * Inits the backend database for use.
-     *
-     * Optionally include a custom database driver, otherwise the built in memory driver will be used.
-     *
-     * @param {NanoSQLBackend} [backend]
-     * @returns {(Promise<Object | string>)}
-     *
-     * @memberOf NanoSQLInstance
-     */
+
+
     public connect(config: NanoSQLConfig): Promise<any> {
         let t = this;
-
-        // Build plugin filters
-        let filterObj: {[filterName: string]: any[]} = {};
 
         if (this.adapter.plugin) {
             (config.plugins || []).push(this.adapter.plugin);
         }
+        this.state.id = config.id || hash(JSON.stringify(config.tables || []));
+
+
+        // Build plugin filters
+        let filterObj: { [filterName: string]: any[] } = {};
 
         (config.plugins || []).forEach((plugin) => {
             plugin.filters.forEach((filter) => {
@@ -319,48 +308,64 @@ export class NanoSQLInstance {
             }
         };
 
-        // check that dependencies are satisfied
-        (config.plugins || []).forEach((plugin) => {
-            if (plugin.dependencies) {
-                Object.keys(plugin.dependencies).forEach((pluginName: string, i, next) => {
-                    if (pluginName === "core") {
-                        if (!checkVersionRange(VERSION, plugin.dependencies[pluginName])) {
-                            throw new Error(`Plugin ${plugin.name} requires a different core version of nano-sql!`);
-                        }
-                    } else {
-                        const dependency = (config.plugins || []).reduce((p, c) => c.name === pluginName ? c : p);
-                        if (!dependency) {
-                            throw new Error(`Plugin ${plugin.name} requires plugin ${pluginName} but it isn't installed!`);
-                        }
-                        if (!checkVersionRange(dependency.version, plugin.dependencies[pluginName])) {
-                            throw new Error(`Plugin ${plugin.name} requires a different version of ${pluginName}!`);
-                        }
-                    }
-                });
-            }
-        });
-
         return new Promise((res, rej) => {
+            let hasError = false;
+
+            // check that dependencies are satisfied
+            (config.plugins || []).forEach((plugin) => {
+                if (plugin.dependencies) {
+                    Object.keys(plugin.dependencies).forEach((pluginName: string, i, next) => {
+                        if (pluginName === "core") {
+                            if (!checkVersionRange(VERSION, plugin.dependencies[pluginName])) {
+                                rej(`nSQL: Plugin "${plugin.name}" requires a different core version of nano-sql!`);
+                                hasError = true;
+                            }
+                        } else {
+                            const dependency = (config.plugins || []).reduce((p, c) => c.name === pluginName ? c : p);
+                            if (!dependency) {
+                                rej(`nSQL: Plugin "${plugin.name}" requires plugin "${pluginName}" but it isn't installed!`);
+                                hasError = true;
+                            }
+                            if (!checkVersionRange(dependency.version, plugin.dependencies[pluginName])) {
+                                rej(`nSQL: Plugin "${plugin.name}" requires a different version of "${pluginName}"!`);
+                                hasError = true;
+                            }
+                        }
+                    });
+                }
+            });
+
+
             // sanity checks on user placed tables and data models
             // plugins and internal tables do not get the sanity check
-            let hasError = false;
-            config.tables.forEach((table) => {
+            config.tables.forEach((table, i) => {
                 const l = table.name;
-                const types = ["string", "safestr", "timeId", "timeIdms", "uuid", "int", "float", "number", "array", "map", "bool", "blob", "any"];
-                if (types.indexOf(l.replace(/\W/gmi, "")) !== -1 || l.indexOf("_") === 0 || l.match(/[\(\)\]\[\.]/g) !== null) {
+                if (l.indexOf("_") === 0 || l.match(/[\(\)\]\[\.]/g) !== null) {
                     hasError = true;
                     rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
                 }
+                const types = ["safestr","int","number","float","any","array","uuid","timeId","timeIdms","string","object","obj","map","boolean","bool", "blob", "*"].concat(Object.keys(table.types));
                 table.model.forEach((model) => {
-                    if (!model.key || model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
+                    if (!model.key || !model.type || model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
                         hasError = true;
                         rej(`nSQL: Invalid Data Model at ${table.name}, ${JSON.stringify(model)}! https://docs.nanosql.io/setup/data-models`);
+                        return;
+                    }
+                    const type = model.type.replace(/[\[\]]/gmi, "");
+                    if (types.filter(t => t === type).length === 0) {
+                        hasError = true;
+                        rej(`nSQL: Uknown type "${model.type}" on column "${model.key}" of table "${table.name}"!`);
                     }
                 });
+                // replace white space in column names with dashes
+                config.tables[i].model = config.tables[i].model.map(k => ({
+                    ...k,
+                    key: k.key.replace(/\s+/g, "-")
+                }));
             });
             if (hasError) return;
 
-            return this.doFilter<configFilter, NanoSQLConfig>("config", {result: config});
+            return this.doFilter<configFilter, NanoSQLConfig>("config", { result: config });
         }).then((conf: NanoSQLConfig) => {
 
             conf.tables.push({
@@ -375,8 +380,8 @@ export class NanoSQLInstance {
                 name: "_ttl",
                 model: [
                     { key: "key", type: "string", props: ["pk()"] },
-                    { key: "table", type: "string"},
-                    { key: "cols", type: "string[]"},
+                    { key: "table", type: "string" },
+                    { key: "cols", type: "string[]" },
                     { key: "date", type: "number" }
                 ]
             });
@@ -387,6 +392,10 @@ export class NanoSQLInstance {
                     actions: table.actions || [],
                     views: table.views || [],
                     hasEvents: false,
+                    types: {
+                        ...(table.types || {}),
+                        ...defaultTypes
+                    },
                     eventCBs: {
                         "*": new ReallySmallEvents()
                     },
@@ -407,7 +416,13 @@ export class NanoSQLInstance {
                             p.push(c.key);
                         }
                         return p;
-                    }, [])
+                    }, []),
+                    wildCard: table.model.reduce((p, c) => {
+                        if (c.type === "*" && c.key === "*") {
+                            return true;
+                        }
+                        return p;
+                    }, false)
                 };
 
                 // no primary key found, set one
@@ -587,7 +602,7 @@ export class NanoSQLInstance {
                     if (typeof this.getConfig().version !== "undefined") {
                         t.query("select").where(["key", "=", "db-version"]).manualExec({ table: "_util" }).then((rows) => {
                             if (!rows.length) {
-                                t.query("upsert", {key: "db-version", value: this.getConfig().version}).manualExec({ table: "_util" }).then(() => {
+                                t.query("upsert", { key: "db-version", value: this.getConfig().version }).manualExec({ table: "_util" }).then(() => {
                                     completeConnect();
                                 });
                                 return;
@@ -712,9 +727,9 @@ export class NanoSQLInstance {
 	 *
 	 * @memberOf NanoSQLInstance
 	 */
-    public off(actions: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance {
+    public off(action: string, callBack: (event: DatabaseEvent, database: NanoSQLInstance) => void): NanoSQLInstance {
         let t = this;
-        let a = actions.split(" ");
+        let a = action.split(" ");
         let i = a.length;
         let l = t.selectedTable;
 
@@ -801,12 +816,14 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     private _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any> {
-        return this.doFilter<actionFilter, AVFilterResult>(AVType, {result: {
-            AVType,
-            table,
-            AVName,
-            AVargs
-        }}).then((result) => {
+        return this.doFilter<actionFilter, AVFilterResult>(AVType, {
+            result: {
+                AVType,
+                table,
+                AVName,
+                AVargs
+            }
+        }).then((result) => {
             const key = result.AVType === "Action" ? "actions" : "views";
 
             const selAV: ActionOrView | null = this.tables[result.table][key].reduce((prev, cur) => {
@@ -888,8 +905,13 @@ export class NanoSQLInstance {
         return new _NanoSQLQuery(this, this.state.selectedTable, action, args, av);
     }
 
-    public triggerQuery(query: IdbQuery, onProgress: (row: any) => void, complete: () => void, error: (err: string) => void) {
-        this.doFilter<queryFilter, IdbQuery>("query", {result: query}).then((setQuery) => {
+    public triggerQuery(query: IdbQuery, onProgress: (row: any) => void, complete: () => void, error: (err: string) => void): void {
+        if (this.state.isConnected === false && typeof query.table === "string") {
+            error("nSQL: Can't do a query before the database is connected!");
+            return;
+        }
+
+        this.doFilter<queryFilter, IdbQuery>("query", { result: query }).then((setQuery) => {
 
         }).catch(error);
     }
@@ -904,7 +926,7 @@ export class NanoSQLInstance {
     public triggerEvent(eventData: DatabaseEvent): NanoSQLInstance {
         let t = this;
 
-        this.doFilter<eventFilter, DatabaseEvent>("event", {result: eventData}).then((event) => {
+        this.doFilter<eventFilter, DatabaseEvent>("event", { result: eventData }).then((event) => {
 
         }).catch((err) => {
             console.error("Event suppressed", err);
@@ -953,19 +975,24 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public default(replaceObj?: any): { [key: string]: any } {
+    public default(replaceObj?: any, table?: string): { [key: string]: any } {
         let newObj = {};
-        let t = this;
-        if (Array.isArray(t.state.selectedTable)) return {};
-        t.tables[t.state.selectedTable].model.forEach((m) => {
-            // set key to object argument or the default value in the data model
-            newObj[m.key] = (replaceObj && replaceObj[m.key]) ? replaceObj[m.key] : m.default;
+        replaceObj = replaceObj || {};
+        if (!table && Array.isArray(this.state.selectedTable)) {
+            throw new Error("Can't use array to generate row defaults!");
+        }
+        table = table || this.state.selectedTable as any;
+        if (!this.tables[table]) {
+            throw new Error(`nSQL: Table "${table}" not found for generating default object!`);
+        }
 
-            // Generate default value from type, eg int = 0, string = ""
-            if (newObj[m.key] === undefined) {
-                newObj[m.key] = cast(m.type, null);
-            }
+        this.tables[table].model.forEach((m) => {
+            const type = m.type.replace(/[\[\]]/gmi, "");
+                // set key to object argument or the default value in the data model
+                newObj[m.key] = typeof replaceObj[m.key] !== "undefined" ? replaceObj[m.key] : m.default;
+                newObj[m.key] = cast(m.type, this.tables[table].types, newObj[m.key]);
         });
+
         return newObj;
     }
 
@@ -978,7 +1005,7 @@ export class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    public rawDump(tables: string[], onRow: (table: string, row: {[key: string]: any}) => void): Promise<any> {
+    public rawDump(tables: string[], onRow: (table: string, row: { [key: string]: any }) => void): Promise<any> {
         const exportTables = Object.keys(this.tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);
 
         return chainAsync(exportTables, (table: string, i, nextTable, err) => {
@@ -997,7 +1024,7 @@ export class NanoSQLInstance {
      * @returns
      * @memberof NanoSQLInstance
      */
-    public rawImport(tables: { [table: string]: {[key: string]: any}[] }, onProgress?: (percent: number) => void): Promise<any> {
+    public rawImport(tables: { [table: string]: { [key: string]: any }[] }, onProgress?: (percent: number) => void): Promise<any> {
 
         let progress = 0;
         const totalLength = Object.keys(tables).reduce((p, c) => {
@@ -1028,7 +1055,7 @@ export class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     public disconnect() {
-        return this.doFilter<disconnectFilter, boolean>("disconnect", {result: true}).then((doDisconnect) => {
+        return this.doFilter<disconnectFilter, boolean>("disconnect", { result: true }).then((doDisconnect) => {
             return new Promise((res, rej) => {
                 if (doDisconnect) {
                     this.adapter.disconnect(res, rej);
@@ -1073,7 +1100,7 @@ export class NanoSQLInstance {
      * @memberOf NanoSQLInstance
      */
     public extend(scope: string, ...args: any[]): any | NanoSQLInstance {
-        return this.doFilter<extendFilter, {result: any}>("extend", {scope: scope, args: args, result: null});
+        return this.doFilter<extendFilter, { result: any }>("extend", { scope: scope, args: args, result: null });
     }
 
     /**
@@ -1094,13 +1121,13 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadJS(rows: {[key: string]: any}[], onProgress?: (percent: number) => void): Promise<{[key: string]: any}> {
+    public loadJS(rows: { [key: string]: any }[], onProgress?: (percent: number) => void): Promise<any[]> {
         let t = this;
 
         const table = this.state.selectedTable;
 
         if (Array.isArray(table)) {
-            throw new Error("nSQL: Can't load JS into temporary table!");
+            return Promise.reject("nSQL: Can't load JS into temporary table!");
         }
 
         return chainAsync(rows, (row, i, nextRow, err) => {
@@ -1205,7 +1232,7 @@ export class NanoSQLInstance {
                 row = row.map(r => r.trim());
 
                 let i = fields.length;
-                let record: {[key: string]: any} = {};
+                let record: { [key: string]: any } = {};
                 while (i--) {
                     if (row[i]) {
                         if (row[i] === "true" || row[i] === "false") {
@@ -1246,12 +1273,12 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<Array<Object>> {
+    public loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]> {
 
         const table = this.state.selectedTable;
 
         if (Array.isArray(table)) {
-            throw new Error("nSQL: Can't load CSV into temporary table!");
+            return Promise.reject("nSQL: Can't load CSV into temporary table!");
         }
 
         let rowData = this.CSVtoJSON(csv, rowMap);
@@ -1283,7 +1310,7 @@ if (typeof window !== "undefined") {
     };
 }
 
-
+/*
 const blankRow = { affectedRowPKS: [], affectedRows: [] };
 
 
@@ -1363,7 +1390,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: DBRow[]) => void, erro
                             table: self._query.table,
                             cols: self._query.ttlCols,
                             date: TTL
-                        }).manualExec({table: "_ttl"}).then(next);
+                        }).manualExec({ table: "_ttl" }).then(next);
                     }).then(() => {
                         self._db._checkTTL();
                     });
@@ -1392,6 +1419,7 @@ const runQuery = (self: _NanoSQLQuery, complete: (result: DBRow[]) => void, erro
 let debounceTimers: {
     [key: string]: any;
 } = {};
+*/
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -1411,10 +1439,9 @@ export class _NanoSQLQuery {
 
         this._AV = actionOrView || "";
         this._query = {
-            table: table,
+            ...buildQuery(table as string, queryAction),
             comments: [],
             state: "pending",
-            queryID: Date.now() + "." + this._db.fastRand().toString(16),
             action: queryAction,
             actionArgs: queryArgs,
             result: []
@@ -1441,8 +1468,17 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    public where(args: any[] | any): _NanoSQLQuery {
+    public where(args: any[] | ((row: {[key: string]: any}) => boolean)): _NanoSQLQuery {
         this._query.where = args;
+        return this;
+    }
+
+    public from(tableOrQuery: () => Promise<any[]> | string | any[]): _NanoSQLQuery {
+        if (typeof tableOrQuery === "string" || Array.isArray(tableOrQuery)) {
+            this._query.table = tableOrQuery;
+        } else {
+            this._query.from = tableOrQuery as any;
+        }
         return this;
     }
 
@@ -1494,10 +1530,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf _NanoSQLQuery
      */
-    public having(args: Array<any | Array<any>>): _NanoSQLQuery {
-        if (!args.length || !Array.isArray(args)) {
-            this._error = "Having condition requires an array!";
-        }
+    public having(args: any[] | ((row: {[key: string]: any}) => boolean)): _NanoSQLQuery {
         this._query.having = args;
         return this;
     }
@@ -1532,9 +1565,6 @@ export class _NanoSQLQuery {
      * @memberOf _NanoSQLQuery
      */
     public join(args: JoinArgs | JoinArgs[]): _NanoSQLQuery {
-        if (Array.isArray(this._query.table)) {
-            throw new Error("Can't JOIN with instance table!");
-        }
         const err = "Join commands requires table and type arguments!";
         if (Array.isArray(args)) {
             args.forEach((arg) => {
@@ -1590,7 +1620,7 @@ export class _NanoSQLQuery {
      * @memberof _NanoSQLQuery
      */
     public extend(scope: string, ...args: any[]): _NanoSQLQuery {
-        this._query.extend = {scope: scope, args: args};
+        this._query.extend.push({ scope: scope, args: args });
         return this;
     }
 
@@ -1660,17 +1690,11 @@ export class _NanoSQLQuery {
      */
     public toCSV(headers?: boolean): any {
         let t = this;
-        return new Promise((res, rej) => {
-
-            t.exec().then((json: any[]) => {
-                const useHeaders = typeof this._query.table === "string" ? this._db.dataModels[this._query.table as string].map(k => k.key) : undefined;
-                res(t._db.JSONtoCSV(json, headers || false, useHeaders));
-            });
-        });
+        return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
     }
 
-    public stream(onRow: (row: any) => void, complete: (err: any) => void): void {
-
+    public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
+        this._db.triggerQuery(this._query, onRow, complete, err);
     }
 
     /**
@@ -1688,8 +1712,18 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public exec(): Promise<{[key: string]: any}[]> {
+    public exec(): Promise<{ [key: string]: any }[]> {
 
+        return new Promise((res, rej) => {
+            let rows: any[] = [];
+            this.stream((row) => {
+                rows.push(row);
+            }, () => {
+                res(rows);
+            }, rej);
+        });
+
+        /*
         // handle instance queries
         if (Array.isArray(this._query.table)) {
             return new Promise((res, rej) => {
@@ -1786,7 +1820,7 @@ export class _NanoSQLQuery {
                             this._query = _query;
                             runQuery(this, res, rej);
                         })
-                        .catch(rej);
+                            .catch(rej);
                     }
 
                 } else {
@@ -1799,7 +1833,8 @@ export class _NanoSQLQuery {
             } else {
                 this._db.onConnected(runExec);
             }
-
+            
         });
+        */
     }
 }

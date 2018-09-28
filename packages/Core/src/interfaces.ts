@@ -14,7 +14,7 @@ export interface NanoSQLPlugin {
 }
 
 export interface NanoSQLConfig {
-    id?: string | number;
+    id?: string;
     peer?: boolean;
     cache?: boolean;
     queueQueries?: boolean;
@@ -26,6 +26,7 @@ export interface NanoSQLConfig {
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
     tables: {
         name: string;
+        types?: {[name: string]: {[key: string]: {type: string, default?: any}}}
         model: DataModel[],
         filter?: (row: any) => any,
         actions?: ActionOrView[],
@@ -39,120 +40,28 @@ export interface NanoSQLAdapter {
     name: string;
     plugin?: NanoSQLPlugin;
 
-
-    /**
-     * Called when it's time for the backend to be initilized.
-     * Do all the backend setup work here, then resolve the promise when you're done.
-     *
-     * @param {() => void} complete
-     * @memberof NanoSQLAdapter
-     */
     connect(nSQL: any, complete: () => void, error: (err: any) => void);
 
-    /**
-     * Sent after connect(), sends data models and other info.
-     * makeTable() will be called everytime the database backend is connected, so make sure
-     * it's setup where you don't accidentally overwrite or destroy existing tables with the same name.
-     *
-     * @param {string} tableName
-     * @param {DataModel[]} dataModels
-     * @memberof NanoSQLAdapter
-     */
     makeTable(tableName: string, dataModels: DataModel[], complete: () => void, error: (err: any) => void);
 
-    /**
-     * Completely delete/destroy a given table
-     *
-     * @param {() => void} complete
-     * @memberof NanoSQLAdapter
-     */
     destroyTable(table: string, complete: () => void, error: (err: any) => void);
 
-    /**
-     * Called to disconnect the database and do any clean up that's needed
-     *
-     * @param {() => void} complete
-     * @param {(err: Error) => void} [error]
-     * @memberof NanoSQLAdapter
-     */
-    disconnect?(complete: () => void, error: (err: any) => void);
+    disconnect(complete: () => void, error: (err: any) => void);
 
-    /**
-     * Write a single row to the database backend.
-     * Primary key will be provided if it's known before the insert, otherwise it will be null and up to the database backend to make one.
-     * It's also intirely possible for a primary key to be provided for a non existent row, the backend should handle this gracefully.
-     *
-     * @param {string} table
-     * @param {(DBKey|null)} pk
-     * @param {DBRow} data
-     * @param {(finalRow: DBRow) => void} complete
-     * @param {boolean} skipReadBeforeWrite
-     * @memberof NanoSQLAdapter
-     */
     write(table: string, pk: any, row: {[key: string]: any}, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
 
-    /**
-     * Read a single row from the database
-     *
-     * @param {string} table
-     * @param {DBKey} pk
-     * @param {(row: DBRow ) => void} callback
-     * @memberof NanoSQLAdapter
-     */
     readPK(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
-
 
     readAll(table: string, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
 
-    /**
-     * Read a range of rows given a specific range of keys.
-     *
-     * @param {*} low
-     * @param {*} high
-     * @param {(row: {[key: string]: any}) => void} onRow
-     * @returns {Promise<any>}
-     * @memberof NanoSQLAdapter
-     */
     readPKRange(table: string, low: any, high: any, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
 
-    /**
-     * Read a range of rows given an offset and limit.
-     *
-     * @param {number} offset
-     * @param {number} limit
-     * @param {(row: {[key: string]: any}) => void} onRow
-     * @returns {Promise<any>}
-     * @memberof NanoSQLAdapter
-     */
     readOffsetLimit(table: string, offset: number, limit: number, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
 
-
-    /**
-     * Delete a row from the backend given a table and primary key.
-     *
-     * @param {string} table
-     * @param {DBKey} pk
-     * @param {() => void} complete
-     * @memberof NanoSQLAdapter
-     */
     deletePK(table: string, pk: any, complete: () => void, error: (err: any) => void);
 
-    /**
-     * Get the number of rows in a table or the table index;
-     *
-     * @param {string} table
-     * @param {(count: number) => void} complete
-     * @memberof NanoSQLAdapter
-     */
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
-    /**
-     * Get total number of records in database
-     *
-     * @param {string} table
-     * @returns {Promise<number>}
-     * @memberof NanoSQLAdapter
-     */
     getNumberOfRecords?(table: string, complete: (length: number) => void, error: (err: any) => void);
 }
 
@@ -197,13 +106,14 @@ export interface DataModel {
  */
 export interface DatabaseEvent {
     source: string;
+    sourceID: string;
     table: string;
     time: number;
     notes?: string[];
-    result?: any[];
+    result: any[];
     events: string[];
     actionOrView?: string;
-    affectedpks?: any[];
+    affectedPKs?: any[];
     [key: string]: any;
 }
 
@@ -230,7 +140,8 @@ export const buildQuery = (table: string, action: string): IdbQuery => {
         state: "pending",
         result: [],
         time: Date.now(),
-        queryID: uuid()
+        queryID: uuid(),
+        extend: []
     };
 };
 
@@ -241,17 +152,18 @@ export interface IdbQuery {
     state: "pending" | "processing" | "complete";
     result: any[];
     time: number;
-    comments?: string[];
+    extend: {scope: string, args: any[]}[];
     queryID: string;
-    where?: ((row: any, idx: number) => boolean) | any[];
+    comments?: string[];
+    from?: () => Promise<any[]>;
+    where?: any[] | ((row: {[key: string]: any}) => boolean);
     range?: number[];
     orderBy?: { [column: string]: "asc" | "desc" };
     groupBy?: { [column: string]: "asc" | "desc" };
-    having?: any[];
+    having?: any[] | ((row: {[key: string]: any}) => boolean);
     join?: JoinArgs | JoinArgs[];
     limit?: number;
     offset?: number;
-    extend?: {scope: string, args: any[]};
     ttl?: number;
     ttlCols?: string[];
     [key: string]: any;

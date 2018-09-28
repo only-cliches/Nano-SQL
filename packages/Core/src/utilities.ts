@@ -15,6 +15,19 @@ export interface timeIdms extends String {
 
 }
 
+export const noop = () => { };
+export const throwErr = (err: any) => {
+    throw new Error(err);
+};
+export const defaultTypes = {
+    gps: {
+        lat: {type: "float", default: 0}, 
+        lon: {type: "float", default: 0}
+    }
+}
+
+export const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
+
 /**
  * Object.assign, but faster.
  *
@@ -223,14 +236,17 @@ export const isObject = (val: any): boolean => {
  * @param {*} [val]
  * @returns {*}
  */
-export const cast = (type: string, val?: any): any => {
+export const cast = (type: string, customTypes: {[name: string]: {[key: string]: {type: string, default?: any}}}, val: any, depth?: number): any => {
 
     if (type === "any" || type === "blob") return val;
 
-    const t = typeof val;
-    if (t === "undefined" || val === null) {
-        return val;
+    const lvl = depth || 0;
+
+    if (lvl > 50) {
+        throw new Error(`Infinite recursion found in ${type} type.`);
     }
+
+    const t = typeof val;
 
     const entityMap = {
         "&": "&amp;",
@@ -243,44 +259,59 @@ export const cast = (type: string, val?: any): any => {
         "=": "&#x3D;"
     };
 
-    const types = (type: string, val: any) => {
-        switch (type) {
-            case "safestr": return types("string", val).replace(/[&<>"'`=\/]/gmi, (s) => entityMap[s]);
-            case "int": return (t !== "number" || val % 1 !== 0) ? parseInt(val || 0) : val;
+    const doCast = (castType: string, castVal: any) => {
+        switch (castType) {
+            case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, (s) => entityMap[s]);
+            case "int": return (t !== "number" || castVal % 1 !== 0) ? parseInt(castVal || 0) : castVal;
             case "number":
-            case "float": return t !== "number" ? parseFloat(val || 0) : val;
+            case "float": return t !== "number" ? parseFloat(castVal || 0) : castVal;
             case "any[]":
-            case "array": return Array.isArray(val) ? val : [];
+            case "array": return Array.isArray(castVal) ? castVal : [];
             case "uuid":
             case "timeId":
             case "timeIdms":
-            case "string": return t !== "string" ? String(val) : val;
+            case "string": return t !== "string" ? String(castVal) : castVal;
             case "object":
             case "obj":
-            case "map": return isObject(val) ? val : {};
+            case "map": return isObject(castVal) ? castVal : {};
             case "boolean":
-            case "bool": return val === true;
+            case "bool": return castVal === true;
         }
 
-        return val;
+        const cleanType = castType.replace(/[\[\]]/gmi, "");
+        if (Object.keys(customTypes).indexOf(cleanType) !== -1) {
+            // cast arrays of custom types.
+            if (castType.indexOf("[]") !== -1) return cast(castType, customTypes, castVal, lvl + 1);
+            // cast this object as custom type
+            const objVal = isObject(castVal) ? castVal : {};
+            return Object.keys(customTypes[cleanType]).reduce((prev, key) => {
+                const nestedValue = typeof objVal[key] !== "undefined" ? objVal[key] : customTypes[cleanType][key].default;
+                prev[key] = cast(customTypes[cleanType][key].type, customTypes, nestedValue, lvl + 1);
+                return prev;
+            }, {});
+        }
+
+        // doesn't match known types or custom types, return null;
+        return null;
     };
 
-    const newVal = types(String(type || "").toLowerCase(), val);
-
+    // recursively cast arrays
     if (type.indexOf("[]") !== -1) {
         const arrayOf = type.slice(0, type.lastIndexOf("[]"));
-        return (val || []).map((v) => {
-            return cast(arrayOf, v);
-        });
-    } else if (newVal !== undefined) {
-        if (["int", "float", "number"].indexOf(type) > -1) {
-            return isNaN(newVal) ? 0 : newVal;
-        } else {
-            return newVal;
-        }
+        // value should be array but isn't, cast it to one
+        if (!Array.isArray(val)) return [];
+        // we have an array, cast array of types
+        return val.map((v) => cast(arrayOf, v, 0));
     }
 
-    return undefined;
+    const newVal = doCast(String(type || "").toLowerCase(), val);
+    
+    // force numerical values to be a number.
+    if (newVal !== undefined && ["int", "float", "number"].indexOf(type) > -1) {
+        return isNaN(newVal) ? 0 : newVal;
+    }
+
+    return newVal;
 };
 
 /**
