@@ -1,5 +1,31 @@
 import { uuid } from "./utilities";
 
+export interface NanoSQLConfig {
+    id?: string;
+    peer?: boolean;
+    cache?: boolean;
+    disableTTL?: boolean;
+    queue?: boolean;
+    mode?: string | NanoSQLAdapter;
+    plugins?: NanoSQLPlugin[];
+    version?: number;
+    size?: number; // size of WebSQL database
+    path?: string; // RocksDB path
+    onVersionUpdate?: (oldVersion: number) => Promise<number>;
+    tables: {
+        name: string;
+        model: NanoSQLDataModel[],
+        indexes?: {
+            [name: string]: string[];
+        };
+        types?: {[name: string]: {[key: string]: {type: string, default?: any}}}
+        filter?: (row: any) => any,
+        actions?: NanoSQLActionOrView[],
+        views?: NanoSQLActionOrView[],
+        props?: any;
+    }[];
+}
+
 export interface NanoSQLPlugin {
     name: string;
     version: number;
@@ -13,36 +39,14 @@ export interface NanoSQLPlugin {
     }[];
 }
 
-export interface NanoSQLConfig {
-    id?: string;
-    peer?: boolean;
-    cache?: boolean;
-    queueQueries?: boolean;
-    disableTTL?: boolean;
-    mode?: string | NanoSQLAdapter;
-    plugins?: NanoSQLPlugin[];
-    version?: number;
-    size?: number; // size of WebSQL database
-    onVersionUpdate?: (oldVersion: number) => Promise<number>;
-    tables: {
-        name: string;
-        types?: {[name: string]: {[key: string]: {type: string, default?: any}}}
-        model: DataModel[],
-        filter?: (row: any) => any,
-        actions?: ActionOrView[],
-        views?: ActionOrView[],
-        props?: any;
-    }[];
-}
-
 export interface NanoSQLAdapter {
 
-    name: string;
     plugin?: NanoSQLPlugin;
+    nSQL?: any; // NanoSQLInstance;
 
-    connect(nSQL: any, complete: () => void, error: (err: any) => void);
+    connect(id: string, complete: () => void, error: (err: any) => void);
 
-    makeTable(tableName: string, dataModels: DataModel[], complete: () => void, error: (err: any) => void);
+    makeTable(tableName: string, dataModels: NanoSQLDataModel[], complete: () => void, error: (err: any) => void);
 
     destroyTable(table: string, complete: () => void, error: (err: any) => void);
 
@@ -50,19 +54,15 @@ export interface NanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
 
-    readPK(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
+    read(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
 
-    readAll(table: string, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
+    delete(table: string, pk: any, complete: () => void, error: (err: any) => void);
 
-    readPKRange(table: string, low: any, high: any, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
-
-    readOffsetLimit(table: string, offset: number, limit: number, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
-
-    deletePK(table: string, pk: any, complete: () => void, error: (err: any) => void);
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
 
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
-    getNumberOfRecords?(table: string, complete: (length: number) => void, error: (err: any) => void);
+    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void);
 }
 
 /**
@@ -71,7 +71,7 @@ export interface NanoSQLAdapter {
  * @export
  * @interface ActionOrView
  */
-export interface ActionOrView {
+export interface NanoSQLActionOrView {
     name: string;
     args?: string[];
     extend?: any;
@@ -82,7 +82,7 @@ export interface ActionOrView {
 export interface NanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
-    call: (row: any, complete: (result: {result: any, row?: any, [key: string]: any}) => void, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => void; // function call
+    call: (query: NanoSQLQuery, row: any, complete: (result: {result: any, row?: any, [key: string]: any}) => void, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => void; // function call
 }
 
 /**
@@ -91,7 +91,7 @@ export interface NanoSQLFunction {
  * @export
  * @interface DataModel
  */
-export interface DataModel {
+export interface NanoSQLDataModel {
     key: string;
     type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid" | "blob" | "timeId" | "timeIdms" | "safestr" | "number" | "object" | "obj" | "gps" | string;
     default?: any;
@@ -104,14 +104,12 @@ export interface DataModel {
  * @export
  * @interface DatabaseEvent
  */
-export interface DatabaseEvent {
-    source: string;
-    sourceID: string;
-    table: string;
-    time: number;
-    notes?: string[];
-    result: any[];
+export interface NanoSQLDatabaseEvent {
+    target: string;
+    targetId: string;
     events: string[];
+    time: number;
+    result?: any[];
     actionOrView?: string;
     affectedPKs?: any[];
     [key: string]: any;
@@ -127,13 +125,13 @@ export interface DatabaseEvent {
  * @export
  * @interface JoinArgs
  */
-export interface JoinArgs {
+export interface NanoSQLJoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
     table: string;
     where?: Array<string>;
 }
 
-export const buildQuery = (table: string, action: string): IdbQuery => {
+export const buildQuery = (table: string | any[] | (() => Promise<any[]>), action: string): NanoSQLQuery => {
     return {
         table: table,
         action: action,
@@ -141,12 +139,14 @@ export const buildQuery = (table: string, action: string): IdbQuery => {
         result: [],
         time: Date.now(),
         queryID: uuid(),
-        extend: []
+        extend: [],
+        comments: []
     };
 };
 
-export interface IdbQuery {
-    table: string | any[];
+// tslint:disable-next-line
+export interface NanoSQLQuery {
+    table: string | any[] | (() => Promise<any[]>);
     action: string;
     actionArgs?: {[key: string]: any};
     state: "pending" | "processing" | "complete";
@@ -154,17 +154,17 @@ export interface IdbQuery {
     time: number;
     extend: {scope: string, args: any[]}[];
     queryID: string;
-    comments?: string[];
-    from?: () => Promise<any[]>;
+    comments: string[];
     where?: any[] | ((row: {[key: string]: any}) => boolean);
     range?: number[];
     orderBy?: { [column: string]: "asc" | "desc" };
     groupBy?: { [column: string]: "asc" | "desc" };
     having?: any[] | ((row: {[key: string]: any}) => boolean);
-    join?: JoinArgs | JoinArgs[];
+    join?: NanoSQLJoinArgs | NanoSQLJoinArgs[];
     limit?: number;
     offset?: number;
     ttl?: number;
+    useIndex?: string;
     ttlCols?: string[];
     [key: string]: any;
 }
@@ -180,11 +180,6 @@ export interface abstractFilter {
 }
 
 // tslint:disable-next-line
-export interface disconnectFilter extends abstractFilter {
-
-}
-
-// tslint:disable-next-line
 export interface extendFilter extends abstractFilter {
     scope: string;
     args: any[];
@@ -192,12 +187,12 @@ export interface extendFilter extends abstractFilter {
 
 // tslint:disable-next-line
 export interface queryFilter extends abstractFilter {
-    result: IdbQuery;
+    result: NanoSQLQuery;
 }
 
 // tslint:disable-next-line
 export interface eventFilter extends abstractFilter {
-    result: DatabaseEvent;
+    result: NanoSQLDatabaseEvent;
 }
 
 // tslint:disable-next-line
@@ -228,6 +223,8 @@ export interface configFilter extends abstractFilter {
 }
 
 // tslint:disable-next-line
-export interface connectFilter extends abstractFilter {
-
-}
+export interface willConnectFilter extends abstractFilter { }
+// tslint:disable-next-line
+export interface readyFilter extends abstractFilter { }
+// tslint:disable-next-line
+export interface disconnectFilter extends abstractFilter { }

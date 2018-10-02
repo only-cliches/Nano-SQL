@@ -21,12 +21,12 @@ export const throwErr = (err: any) => {
 };
 export const defaultTypes = {
     gps: {
-        lat: {type: "float", default: 0}, 
+        lat: {type: "float", default: 0},
         lon: {type: "float", default: 0}
     }
-}
+};
 
-export const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
+// export const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
 
 /**
  * Object.assign, but faster.
@@ -204,13 +204,13 @@ export const generateID = (primaryKeyType: string, incrimentValue?: number): any
  * @param {StdObject<any>} args
  * @returns {StdObject<any>}
  */
-export const cleanArgs = (argDeclarations: string[], args: {[key: string]: any}): {[key: string]: any} => {
+export const cleanArgs = (argDeclarations: string[], args: {[key: string]: any}, customTypes: {[name: string]: {[key: string]: {type: string, default?: any}}}): {[key: string]: any} => {
     let a: {[key: string]: any} = {};
     let i = argDeclarations.length;
     while (i--) {
         let k2: string[] = argDeclarations[i].split(":");
         if (k2.length > 1) {
-            a[k2[0]] = cast(k2[1], args[k2[0]] || undefined);
+            a[k2[0]] = cast(k2[1], customTypes, args[k2[0]] || undefined);
         } else {
             a[k2[0]] = args[k2[0]] || undefined;
         }
@@ -236,7 +236,7 @@ export const isObject = (val: any): boolean => {
  * @param {*} [val]
  * @returns {*}
  */
-export const cast = (type: string, customTypes: {[name: string]: {[key: string]: {type: string, default?: any}}}, val: any, depth?: number): any => {
+export const cast = (type: string, customTypes: {[name: string]: {[key: string]: {type: string, default?: any}}}, val: any, doUndefined?: boolean, depth?: number): any => {
 
     if (type === "any" || type === "blob") return val;
 
@@ -244,6 +244,15 @@ export const cast = (type: string, customTypes: {[name: string]: {[key: string]:
 
     if (lvl > 50) {
         throw new Error(`Infinite recursion found in ${type} type.`);
+    }
+
+    // recursively cast arrays
+    if (type.indexOf("[]") !== -1) {
+        const arrayOf = type.slice(0, type.lastIndexOf("[]"));
+        // value should be array but isn't, cast it to one
+        if (!Array.isArray(val)) return [];
+        // we have an array, cast array of types
+        return val.map((v) => cast(arrayOf, customTypes, v, doUndefined, 0));
     }
 
     const t = typeof val;
@@ -265,7 +274,6 @@ export const cast = (type: string, customTypes: {[name: string]: {[key: string]:
             case "int": return (t !== "number" || castVal % 1 !== 0) ? parseInt(castVal || 0) : castVal;
             case "number":
             case "float": return t !== "number" ? parseFloat(castVal || 0) : castVal;
-            case "any[]":
             case "array": return Array.isArray(castVal) ? castVal : [];
             case "uuid":
             case "timeId":
@@ -275,18 +283,16 @@ export const cast = (type: string, customTypes: {[name: string]: {[key: string]:
             case "obj":
             case "map": return isObject(castVal) ? castVal : {};
             case "boolean":
-            case "bool": return castVal === true;
+            case "bool": return castVal === true || castVal === 1;
         }
 
-        const cleanType = castType.replace(/[\[\]]/gmi, "");
-        if (Object.keys(customTypes).indexOf(cleanType) !== -1) {
-            // cast arrays of custom types.
-            if (castType.indexOf("[]") !== -1) return cast(castType, customTypes, castVal, lvl + 1);
+
+        if (Object.keys(customTypes).indexOf(castType) !== -1) {
             // cast this object as custom type
             const objVal = isObject(castVal) ? castVal : {};
-            return Object.keys(customTypes[cleanType]).reduce((prev, key) => {
-                const nestedValue = typeof objVal[key] !== "undefined" ? objVal[key] : customTypes[cleanType][key].default;
-                prev[key] = cast(customTypes[cleanType][key].type, customTypes, nestedValue, lvl + 1);
+            return Object.keys(customTypes[castType]).reduce((prev, key) => {
+                const nestedValue = typeof objVal[key] !== "undefined" ? objVal[key] : customTypes[castType][key].default;
+                prev[key] = cast(customTypes[castType][key].type, customTypes, nestedValue, doUndefined, lvl + 1);
                 return prev;
             }, {});
         }
@@ -295,18 +301,11 @@ export const cast = (type: string, customTypes: {[name: string]: {[key: string]:
         return null;
     };
 
-    // recursively cast arrays
-    if (type.indexOf("[]") !== -1) {
-        const arrayOf = type.slice(0, type.lastIndexOf("[]"));
-        // value should be array but isn't, cast it to one
-        if (!Array.isArray(val)) return [];
-        // we have an array, cast array of types
-        return val.map((v) => cast(arrayOf, v, 0));
-    }
+    if (doUndefined && (typeof val === "undefined" || val === null)) return null;
 
     const newVal = doCast(String(type || "").toLowerCase(), val);
-    
-    // force numerical values to be a number.
+
+    // force numerical values to be a number and not NaN.
     if (newVal !== undefined && ["int", "float", "number"].indexOf(type) > -1) {
         return isNaN(newVal) ? 0 : newVal;
     }
@@ -366,6 +365,29 @@ const objectPathCache: {
     [pathQuery: string]: string[];
 } = {};
 
+// turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
+export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): string[] => {
+    const cacheKey = pathQuery + (ignoreFirstPath ? "0" : "1");
+    if (objectPathCache[cacheKey]) {
+        return objectPathCache[cacheKey];
+    }
+    const path = pathQuery.indexOf("[") > -1 ?
+    // handle complex mix of dots and brackets like "users.value[meta][value].length"
+    [].concat.apply([], pathQuery.split(".").map(v => v.match(/([^\[]+)|\[([^\]]+)\]\[/gmi) || v)).map(v => v.replace(/\[|\]/gmi, "")) :
+    // handle simple dot paths like "users.meta.value.length"
+    pathQuery.split(".");
+
+    // handle joins where each row is defined as table.column
+    if (ignoreFirstPath) {
+        const firstPath = path.shift() + "." + path.shift();
+        path.unshift(firstPath);
+    }
+
+    objectPathCache[cacheKey] = path;
+
+    return objectPathCache[cacheKey];
+};
+
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
@@ -388,31 +410,7 @@ export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boole
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx] as string]);
     };
 
-    const cacheKey = pathQuery + (ignoreFirstPath ? "1" : "0");
-
-    // cached path arrays, skips subsequent identical path requests.
-    if (objectPathCache[cacheKey]) {
-        return safeGet(objectPathCache[cacheKey], 0, object);
-    }
-
-    let path: string[] = [];
-
-    // need to turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
-    path = pathQuery.indexOf("[") > -1 ?
-        // handle complex mix of dots and brackets like "users.value[meta][value].length"
-        [].concat.apply([], pathQuery.split(".").map(v => v.match(/([^\[]+)|\[([^\]]+)\]\[/gmi) || v)).map(v => v.replace(/\[|\]/gmi, "")) :
-        // handle simple dot paths like "users.meta.value.length"
-        pathQuery.split(".");
-
-    // handle joins where each row is defined as table.column
-    if (ignoreFirstPath) {
-        const firstPath = path.shift() + "." + path.shift();
-        path.unshift(firstPath);
-    }
-
-    objectPathCache[cacheKey] = path;
-
-    return safeGet(objectPathCache[cacheKey], 0, object);
+    return safeGet(resolveObjPath(pathQuery, ignoreFirstPath), 0, object);
 };
 
 let uid = 0;

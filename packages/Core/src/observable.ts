@@ -1,4 +1,4 @@
-import { DatabaseEvent, IdbQuery } from "./interfaces";
+import { NanoSQLDatabaseEvent, NanoSQLQuery } from "./interfaces";
 import { setFast } from "./utilities";
 
 export class Observer<T> {
@@ -10,8 +10,8 @@ export class Observer<T> {
     private _count: number = 0;
 
     constructor(
-        private _nSQL: NanoSQLInstance,
-        private _query: (ev?: DatabaseEvent) => IdbQuery,
+        private _nSQL: any,
+        private _query: (ev?: NanoSQLDatabaseEvent) => NanoSQLQuery,
         private _tables: string[]
     ) {
         this._config = [];
@@ -36,7 +36,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public distinct(keyFunc?: (obj: T, event?: DatabaseEvent) => any, compareFunc?: (key1: any, key2: any) => boolean) {
+    public distinct(keyFunc?: (obj: T, event?: NanoSQLDatabaseEvent) => any, compareFunc?: (key1: any, key2: any) => boolean) {
         this._config[this._order.length] = [
             keyFunc || ((obj) => obj),
             compareFunc || ((k1, k2) => k1 === k2)
@@ -52,7 +52,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public filter(fn: (obj: T, idx?: number, event?: DatabaseEvent) => boolean) {
+    public filter(fn: (obj: T, idx?: number, event?: NanoSQLDatabaseEvent) => boolean) {
         this._config[this._order.length] = fn;
         this._order.push("fltr");
         return this;
@@ -65,7 +65,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public map(fn: (obj: T, idx?: number, event?: DatabaseEvent) => any) {
+    public map(fn: (obj: T, idx?: number, event?: NanoSQLDatabaseEvent) => any) {
         this._config[this._order.length] = fn;
         this._order.push("mp");
         return this;
@@ -78,7 +78,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public first(fn?: (obj: T, idx?: number, event?: DatabaseEvent) => boolean) {
+    public first(fn?: (obj: T, idx?: number, event?: NanoSQLDatabaseEvent) => boolean) {
         this._config[this._order.length] = fn || ((obj, idx) => true);
         this._order.push("fst");
         return this;
@@ -112,7 +112,7 @@ export class Observer<T> {
     /**
      * Subscribe to the observer
      *
-     * @param {((value: T, event?: DatabaseEvent) => void | {
+     * @param {((value: T, event?: NanoSQLDatabaseEvent) => void | {
      *         next: (value: T, event?: DatabaseEvent) => void;
      *         error?: (error: any) => void;
      *         complete?: (value?: T, event?: DatabaseEvent) => void;
@@ -120,10 +120,10 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public subscribe(callback: (value: T, event?: DatabaseEvent) => void | {
-        next: (value: T, event?: DatabaseEvent) => void;
+    public subscribe(callback: (value: T, event?: NanoSQLDatabaseEvent) => void | {
+        next: (value: T, event?: NanoSQLDatabaseEvent) => void;
         error?: (error: any) => void;
-        complete?: (value?: T, event?: DatabaseEvent) => void;
+        complete?: (value?: T, event?: NanoSQLDatabaseEvent) => void;
     }) {
         let prevValue: {
             [idx: number]: any;
@@ -266,8 +266,8 @@ export class ObserverSubscriber {
     public _closed: boolean;
 
     constructor(
-        private _nSQL: NanoSQLInstance,
-        private _getQuery: (ev?: DatabaseEvent) => IdbQuery,
+        private _nSQL: any,
+        private _getQuery: (ev?: NanoSQLDatabaseEvent) => NanoSQLQuery,
         private _callback: {
             next: (value: any, event: any) => void;
             error: (error: any) => void;
@@ -291,7 +291,7 @@ export class ObserverSubscriber {
         });
     }
 
-    public exec(event?: DatabaseEvent) {
+    public exec(event?: NanoSQLDatabaseEvent) {
 
         setFast(() => {
             const q = this._getQuery(event);

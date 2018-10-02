@@ -1,43 +1,17 @@
 import { NanoSQLInstance } from ".";
 import { crowDistance, objQuery, cast } from "./utilities";
+import { NanoSQLQuery } from "./interfaces";
+import * as levenshtein from "levenshtein-edit-distance";
+
+const wordLevenshtienCache: { [words: string]: number } = {};
 
 export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
-    nSQL.whereFunctions = {
-        crow: (row: any, isJoin: boolean, gpsCol: string, lat: string, lon: string) => {
-            const latVal = objQuery(gpsCol + ".lat", row, isJoin);
-            const lonVal = objQuery(gpsCol + ".lon", row, isJoin);
-            return crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius);
-        },
-        sum: (row: any, isJoin: boolean, ...columns: string[]) => {
-            return columns.reduce((prev, cur) => {
-                const val = objQuery(cur, row, isJoin) || 0;
-                if (Array.isArray(val)) {
-                    return prev + val.reduce((p, c) => p + parseFloat(c || 0), 0);
-                }
-                return prev + parseFloat(val);
-            }, 0);
-        },
-        avg: (row: any, isJoin: boolean, ...columns: string[]) => {
-            let numRecords = 0;
-            const total = columns.reduce((prev, cur) => {
-                const val = objQuery(cur, row, isJoin) || 0;
-                if (Array.isArray(val)) {
-                    numRecords += val.length;
-                    return prev + val.reduce((p, c) => p + parseFloat(c || 0), 0);
-                }
-                numRecords++;
-                return prev + parseFloat(val);
-            }, 0);
-            return total / numRecords;
-        }
-    };
-
 
     nSQL.functions = {
         COUNT: {
             type: "A",
             aggregateStart: {result: 0, row: {}},
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 if (column && column !== "*") {
                     if (objQuery(column, row, isJoin)) {
                         prev.result++;
@@ -52,7 +26,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         MAX: {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 let max = objQuery(column, row, isJoin) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
@@ -69,7 +43,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         MIN: {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 let min = objQuery(column, row, isJoin) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
@@ -83,10 +57,24 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                 complete(prev);
             }
         },
+        GREATEST: {
+            type: "S",
+            call: (query, row, complete, isJoin, prev, ...values: string[]) => {
+                const args = values.map(s => isNaN(s as any) ? s : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
+                complete({result: args[0]});
+            }
+        },
+        LEAST: {
+            type: "S",
+            call: (query, row, complete, isJoin, prev, ...values: string[]) => {
+                const args = values.map(s => isNaN(s as any) ? s : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
+                complete({result: args[0]});
+            }
+        },
         AVG: {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
@@ -98,7 +86,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         SUM: {
             type: "A",
             aggregateStart: {result: 0, row: {}},
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
@@ -107,59 +95,54 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         },
         LOWER: {
             type: "S",
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 const value = String(objQuery(column, row, isJoin)).toLowerCase();
                 complete({result: value});
             }
         },
         UPPER: {
             type: "S",
-            call: (row, complete, isJoin, prev, column) => {
+            call: (query, row, complete, isJoin, prev, column) => {
                 const value = String(objQuery(column, row, isJoin)).toUpperCase();
                 complete({result: value});
             }
         },
         CAST: {
             type: "S",
-            call: (row, complete, isJoin, prev, column, type) => {
-                const value = cast(type, objQuery(column, row, isJoin));
-                complete({result: value});
+            call: (query, row, complete, isJoin, prev, column, type) => {
+                const customTypes = typeof query.table === "string" ? nSQL.tables[query.table].types : {};
+                complete({result: cast(type, customTypes, objQuery(column, row, isJoin))});
             }
         },
-        ABS: {
+        LEVENSHTEIN: {
             type: "S",
-            call: (row, complete, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
-                complete({result: Math.abs(value)});
+            call: (query, row, complete, isJoin, prev, word, column) => {
+                const val = String(objQuery(column, row, isJoin) || "");
+                const key = val + "::" + word;
+                if (!wordLevenshtienCache[key]) {
+                    wordLevenshtienCache[key] = levenshtein(val, word);
+                }
+                complete({result: wordLevenshtienCache[key]});
             }
         },
-        CEIL: {
+        CROW: {
             type: "S",
-            call: (row, complete, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
-                complete({result: Math.ceil(value)});
-            }
-        },
-        POW: {
-            type: "S",
-            call: (row, complete, isJoin, prev, column, power) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
-                complete({result: Math.pow(value, parseInt(power))});
-            }
-        },
-        ROUND: {
-            type: "S",
-            call: (row, complete, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
-                complete({result: Math.round(value)});
-            }
-        },
-        SQRT: {
-            type: "S",
-            call: (row, complete, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin)) || 0;
-                complete({result: Math.sqrt(value)});
+            call: (query, row, complete, isJoin, prev, gpsCol: string, lat: string, lon: string) => {
+                const latVal = objQuery(gpsCol + ".lat", row, isJoin);
+                const lonVal = objQuery(gpsCol + ".lon", row, isJoin);
+                complete({result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)});
             }
         }
     };
+
+    Object.getOwnPropertyNames(Math).forEach((key) => {
+        nSQL.functions[key.toUpperCase()] = {
+            type: "S",
+            call: (query, row, complete, isJoin, prev, ...args: string[]) => {
+                const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? objQuery(a, row, isJoin) : a));
+                complete({result: Math[key].apply(null, fnArgs)});
+            }
+        };
+    });
 };
+
