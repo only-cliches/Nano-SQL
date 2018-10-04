@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "./storage";
 import { DataModel } from "../index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "../utilities";
+import { StdObject, hash, fastALL, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect, splitArr, fastCHAIN } from "../utilities";
 import { DatabaseIndex, syncPeerIndex } from "./db-idx";
 
 
@@ -170,14 +170,20 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
     }
 
     public batchRead(table: string, pks: any[], callback: (rows: any[]) => void) {
-        this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${pks.map(p => "?").join(", ")}) ORDER BY id`, pks, (result) => {
-            let i = result.rows.length;
-            let rows: any[] = [];
-            while (i--) {
-                rows.unshift(JSON.parse(result.rows.item(i).data));
-            }
+        const useKeys = splitArr(pks, 500);
+        let rows: any[] = [];
+        fastCHAIN(useKeys, (keys, i, next) => {
+            this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${keys.map(p => "?").join(", ")}) ORDER BY id`, keys, (result) => {
+                let i = result.rows.length;
+                while (i--) {
+                    rows.unshift(JSON.parse(result.rows.item(i).data));
+                }
+                next();
+            });
+        }).then(() => {
             callback(rows);
         });
+
     }
 
     public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
@@ -211,26 +217,45 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
                 getKeys.push(keys[startIDX]);
                 startIDX++;
             }
-            stmnt += ` WHERE id IN (${getKeys.map(k => "?").join(", ")})`;
         }
 
         stmnt += " ORDER BY id";
 
-        this._sql(false, stmnt, getKeys, (result) => {
-            let i = 0;
-            const getRow = () => {
-                if (result.rows.length > i) {
-                    rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
-                        idx++;
-                        i++;
-                        i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
-                    });
-                } else {
-                    complete();
-                }
-            };
-            getRow();
-        });
+        if (getKeys.length) {
+            this.batchRead(this._chkTable(table), getKeys, (result: any[]) => {
+                let i = 0;
+                const getRow = () => {
+                    if (result.length > i) {
+                        rowCallback(result[i], idx, () => {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        } else {
+            this._sql(false, stmnt, getKeys, (result) => {
+                let i = 0;
+                const getRow = () => {
+                    if (result.rows.length > i) {
+                        rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        }
+
+
     }
 
     public drop(table: string, callback: () => void): void {
