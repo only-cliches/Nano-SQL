@@ -14,6 +14,7 @@
 - Add query plugin type to support GraphQL, SQLite3, ReQL and MongoDB QL.
 - Add `.from` and `.into` query modifiers, `.from` allows nested queries with a function or overwrites `.table`.
 - Add `.doQuery` function to core that performs queries using nanosql query json.
+- Add `https://github.com/benjamine/jsondiffpatch` for version control of the distributed network.
 
 ## [1.7.6] 8-10-2018
 - Fixed issue with CSV export headers.

@@ -119,6 +119,21 @@ export const random16Bits = (): number => {
     }
 };
 
+export const detectChanges = (oldObj: any, newObj: any): string[] => {
+
+    const compare = (path: string[], obj1: any, obj2: any): string[] => {
+        const newKeys = Object.keys(obj2).filter(k => Object.keys(obj1).indexOf(k) === -1);
+        let changes: string[] = newKeys;
+        Object.keys(obj1).forEach((key1) => {
+            Object.keys(obj2).forEach((key2) => {
+
+            });
+        });
+        return changes;
+    };
+    return compare([], oldObj, newObj);
+};
+
 /**
  * Generate a TimeID for use in the database.
  *

@@ -1712,6 +1712,11 @@ export class _NanoSQLQueryBuilder {
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
     }
 
+    public noEvents(): _NanoSQLQueryBuilder {
+        this._query.noEvents = true;
+        return this;
+    }
+
     public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
         this._db.triggerQuery(this._query, onRow, complete, err);
     }

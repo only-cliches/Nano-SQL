@@ -15,7 +15,13 @@ export class _NanoSQLQuery {
         public error: (err: any) => void
     ) {
         this.query.state = "processing";
-        switch (query.action.toLowerCase().trim()) {
+        const action = query.action.toLowerCase().trim();
+        if (action !== "select" && typeof query.table !== "string") {
+            this.query.state = "error";
+            this.error(`Only "select" queries are available for this resource!`);
+            return;
+        }
+        switch (action) {
             case "select":
                 this._select();
             break;
@@ -35,8 +41,8 @@ export class _NanoSQLQuery {
                 this._describe();
             break;
             default:
-                this.query.state = "complete";
-                this.error(`Action ${query.action} not supported!`);
+                this.query.state = "error";
+                this.error(`Query type "${query.action}" not supported!`);
         }
     }
 

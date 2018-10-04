@@ -111,7 +111,6 @@ export interface NanoSQLDatabaseEvent {
     time: number;
     result?: any[];
     actionOrView?: string;
-    affectedPKs?: any[];
     [key: string]: any;
 }
 
@@ -149,7 +148,7 @@ export interface NanoSQLQuery {
     table: string | any[] | (() => Promise<any[]>);
     action: string;
     actionArgs?: {[key: string]: any};
-    state: "pending" | "processing" | "complete";
+    state: "pending" | "processing" | "complete" | "error";
     result: any[];
     time: number;
     extend: {scope: string, args: any[]}[];
@@ -166,6 +165,7 @@ export interface NanoSQLQuery {
     ttl?: number;
     useIndex?: string;
     ttlCols?: string[];
+    noEvents?: boolean;
     [key: string]: any;
 }
 
