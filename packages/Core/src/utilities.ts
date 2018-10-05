@@ -21,8 +21,8 @@ export const throwErr = (err: any) => {
 };
 export const defaultTypes = {
     gps: {
-        lat: {type: "float", default: 0},
-        lon: {type: "float", default: 0}
+        lat: { type: "float", default: 0 },
+        lon: { type: "float", default: 0 }
     }
 };
 
@@ -119,20 +119,18 @@ export const random16Bits = (): number => {
     }
 };
 
-export const detectChanges = (oldObj: any, newObj: any): string[] => {
-
-    const compare = (path: string[], obj1: any, obj2: any): string[] => {
-        const newKeys = Object.keys(obj2).filter(k => Object.keys(obj1).indexOf(k) === -1);
-        let changes: string[] = newKeys;
-        Object.keys(obj1).forEach((key1) => {
-            Object.keys(obj2).forEach((key2) => {
-
-            });
-        });
-        return changes;
+export const throttle = (func: any, limit: number) => {
+    let waiting = false;
+    return (...args: any[]) => {
+        if (waiting) return;
+        waiting = true;
+        setTimeout(() => {
+            func.apply(null, args);
+            waiting = false;
+        }, limit);
     };
-    return compare([], oldObj, newObj);
 };
+
 
 /**
  * Generate a TimeID for use in the database.
@@ -219,8 +217,8 @@ export const generateID = (primaryKeyType: string, incrimentValue?: number): any
  * @param {StdObject<any>} args
  * @returns {StdObject<any>}
  */
-export const cleanArgs = (argDeclarations: string[], args: {[key: string]: any}, customTypes: {[name: string]: {[key: string]: {type: string, default?: any}}}): {[key: string]: any} => {
-    let a: {[key: string]: any} = {};
+export const cleanArgs = (argDeclarations: string[], args: { [key: string]: any }, customTypes: { [name: string]: { [key: string]: { type: string, default?: any } } }): { [key: string]: any } => {
+    let a: { [key: string]: any } = {};
     let i = argDeclarations.length;
     while (i--) {
         let k2: string[] = argDeclarations[i].split(":");
@@ -251,7 +249,7 @@ export const isObject = (val: any): boolean => {
  * @param {*} [val]
  * @returns {*}
  */
-export const cast = (type: string, customTypes: {[name: string]: {[key: string]: {type: string, default?: any}}}, val: any, doUndefined?: boolean, depth?: number): any => {
+export const cast = (type: string, customTypes: { [name: string]: { [key: string]: { type: string, default?: any } } }, val: any, doUndefined?: boolean, depth?: number): any => {
 
     if (type === "any" || type === "blob") return val;
 
@@ -387,10 +385,10 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
         return objectPathCache[cacheKey];
     }
     const path = pathQuery.indexOf("[") > -1 ?
-    // handle complex mix of dots and brackets like "users.value[meta][value].length"
-    [].concat.apply([], pathQuery.split(".").map(v => v.match(/([^\[]+)|\[([^\]]+)\]\[/gmi) || v)).map(v => v.replace(/\[|\]/gmi, "")) :
-    // handle simple dot paths like "users.meta.value.length"
-    pathQuery.split(".");
+        // handle complex mix of dots and brackets like "users.value[meta][value].length"
+        [].concat.apply([], pathQuery.split(".").map(v => v.match(/([^\[]+)|\[([^\]]+)\]\[/gmi) || v)).map(v => v.replace(/\[|\]/gmi, "")) :
+        // handle simple dot paths like "users.meta.value.length"
+        pathQuery.split(".");
 
     // handle joins where each row is defined as table.column
     if (ignoreFirstPath) {
@@ -465,15 +463,15 @@ const setImmediatePolyfill = (...args: any[]) => {
 
 export const setFast = (() => {
     return canPost ? setImmediatePolyfill : // built in window messaging (pretty fast, not bad)
-    (...args: any[]) => {
-        if (typeof global !== "undefined") {
-            global["setImmediate"](() => { // setImmediate in node
-                fastApply(args);
-            });
-        } else {
-            setTimeout(() => { // setTimeout, worst case...
-                fastApply(args);
-            }, 0);
-        }
-    };
+        (...args: any[]) => {
+            if (typeof global !== "undefined") {
+                global["setImmediate"](() => { // setImmediate in node
+                    fastApply(args);
+                });
+            } else {
+                setTimeout(() => { // setTimeout, worst case...
+                    fastApply(args);
+                }, 0);
+            }
+        };
 })();

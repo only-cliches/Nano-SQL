@@ -4,8 +4,8 @@ export interface NanoSQLConfig {
     id?: string;
     peer?: boolean;
     cache?: boolean;
-    disableTTL?: boolean;
     queue?: boolean;
+    disableTTL?: boolean;
     mode?: string | NanoSQLAdapter;
     plugins?: NanoSQLPlugin[];
     version?: number;
@@ -15,10 +15,21 @@ export interface NanoSQLConfig {
     tables: {
         name: string;
         model: NanoSQLDataModel[],
-        indexes?: {
-            [name: string]: string[];
-        };
-        types?: {[name: string]: {[key: string]: {type: string, default?: any}}}
+        indexes?: {name: string, paths: string[]}[];
+        mapReduce?: {
+            title?: string;
+            throttle?: number;
+            when: {
+                onEvents?: string | string[];
+                seconds?: number | number[];
+                minute?: number | number[];
+                hour?: number | number[];
+                weekDay?: number | number[];
+                date?: number | number[];
+                month?: number | number[];
+            };
+            call: (evn: NanoSQLDatabaseEvent[]) => void;
+        }[];
         filter?: (row: any) => any,
         actions?: NanoSQLActionOrView[],
         views?: NanoSQLActionOrView[],
@@ -94,6 +105,7 @@ export interface NanoSQLFunction {
 export interface NanoSQLDataModel {
     key: string;
     type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid" | "blob" | "timeId" | "timeIdms" | "safestr" | "number" | "object" | "obj" | "gps" | string;
+    model?: NanoSQLDataModel[];
     default?: any;
     props?: any[];
 }
