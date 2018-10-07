@@ -19,12 +19,6 @@ export const noop = () => { };
 export const throwErr = (err: any) => {
     throw new Error(err);
 };
-export const defaultTypes = {
-    gps: {
-        lat: { type: "float", default: 0 },
-        lon: { type: "float", default: 0 }
-    }
-};
 
 // export const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
 

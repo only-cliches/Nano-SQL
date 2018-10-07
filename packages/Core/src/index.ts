@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, random16Bits, cast, cleanArgs, objQuery, chainAsync, intersect, crowDistance, uuid, hash, defaultTypes, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
+import { _assign, allAsync, random16Bits, cast, cleanArgs, objQuery, chainAsync, intersect, crowDistance, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
 import { Observer } from "./observable";
 import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
@@ -47,11 +47,10 @@ export class NanoSQLInstance {
     public tables: {
         [tableName: string]: {
             model: NanoSQLDataModel[],
-            indexes: { [name: string]: string[] };
+            indexes: {name: string, paths: string[]}[];
             filter?: (row: any) => any,
             actions: NanoSQLActionOrView[],
             views: NanoSQLActionOrView[],
-            types: { [name: string]: { [key: string]: { type: string, default?: any } } };
             pkType: string;
             pkCol: string;
             ai: boolean;
@@ -104,11 +103,10 @@ export class NanoSQLInstance {
                 views: [],
                 pkType: "",
                 pkCol: "",
-                types: defaultTypes,
                 notNullCols: [],
                 ai: false,
                 wildCard: false,
-                indexes: {}
+                indexes: []
             }
         };
 
@@ -386,7 +384,7 @@ export class NanoSQLInstance {
                         hasError = true;
                         rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
                     }
-                    const types = ["safestr", "int", "number", "float", "any", "array", "uuid", "timeId", "timeIdms", "string", "object", "obj", "map", "boolean", "bool", "blob", "*"].concat(Object.keys(table.types || {}));
+                    const types = ["safestr", "int", "number", "float", "any", "array", "uuid", "timeId", "timeIdms", "string", "object", "obj", "map", "boolean", "bool", "blob", "*"];
                     table.model.forEach((model) => {
                         if (!model.key || !model.type || model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
                             hasError = true;
@@ -433,25 +431,47 @@ export class NanoSQLInstance {
                 ]
             });
 
-            conf.tables.forEach((table) => {
-                const secondaryIndexes = table.model.reduce((p, c) => {
-                    if (c.key !== "*" && c.props && c.props.indexOf("idx()") !== -1) {
-                        p["_" + table.name + "_idx_" + c.key] = [c.key];
+
+            const setModel = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
+                return dataModels.map(d => {
+                    if (d.type.indexOf("gps") === 0) {
+                        const hasIndex = d.props && d.props.indexOf("idx()") !== -1;
+                        d.model = [
+                            {key: "lat", type: "float", props: hasIndex ? ["idx()"] : []},
+                            {key: "lon", type: "float", props: hasIndex ? ["idx()"] : []}
+                        ]
+                        if (d.props && hasIndex) {
+                            d.props.splice(d.props.indexOf("idx()"), 1);
+                        }
+                    }
+                    if (d.model) {
+                        d.model = setModel(d.model);
+                    }
+                    return d;
+                })
+            }
+
+            const getSecondaryIndexes = (dataModel: NanoSQLDataModel[], path: string): {name: string, paths: string[]}[] => {
+                return dataModel.reduce((p, c) => {
+                    const thisPath = (path.length ? path + "." : "") + c.key;
+                    if (c.model) {
+                        p = p.concat(getSecondaryIndexes(c.model, thisPath));
+                    }
+                    if (c.props && c.props.indexOf("idx()") !== -1) {
+                        p.push({name: c.key, paths: [thisPath]})
                     }
                     return p;
-                }, {});
+                }, [] as any[]);
+            }
+
+            conf.tables.forEach((table) => {
+                const computedDataModel = setModel(table.model);
+                const secondaryIndexes = getSecondaryIndexes(computedDataModel, "");
                 this.tables[table.name] = {
-                    model: table.model,
+                    model: computedDataModel,
                     actions: table.actions || [],
                     views: table.views || [],
-                    indexes: {
-                        ...table.indexes,
-                        ...secondaryIndexes
-                    },
-                    types: {
-                        ...(table.types || {}),
-                        ...defaultTypes
-                    },
+                    indexes: secondaryIndexes.concat(this.tables[table.name].indexes),
                     pkType: table.model.reduce((p, c) => {
                         if (c.props && c.props.indexOf("pk()") !== -1) return c.type;
                         return p;

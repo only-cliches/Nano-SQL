@@ -5,12 +5,13 @@ export interface NanoSQLConfig {
     peer?: boolean;
     cache?: boolean;
     queue?: boolean;
-    disableTTL?: boolean;
     mode?: string | NanoSQLAdapter;
     plugins?: NanoSQLPlugin[];
     version?: number;
     size?: number; // size of WebSQL database
     path?: string; // RocksDB path
+    warnOnSlowQueries?: boolean;
+    disableTTL?: boolean;
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
     tables: {
         name: string;
@@ -33,7 +34,7 @@ export interface NanoSQLConfig {
         filter?: (row: any) => any,
         actions?: NanoSQLActionOrView[],
         views?: NanoSQLActionOrView[],
-        props?: any;
+        props?: any[];
     }[];
 }
 
