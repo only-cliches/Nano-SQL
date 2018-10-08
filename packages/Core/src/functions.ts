@@ -110,8 +110,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         CAST: {
             type: "S",
             call: (query, row, complete, isJoin, prev, column, type) => {
-                const customTypes = typeof query.table === "string" ? nSQL.tables[query.table].types : {};
-                complete({result: cast(type, customTypes, objQuery(column, row, isJoin))});
+                complete({result: cast(type, objQuery(column, row, isJoin))});
             }
         },
         LEVENSHTEIN: {

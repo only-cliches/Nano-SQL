@@ -211,13 +211,13 @@ export const generateID = (primaryKeyType: string, incrimentValue?: number): any
  * @param {StdObject<any>} args
  * @returns {StdObject<any>}
  */
-export const cleanArgs = (argDeclarations: string[], args: { [key: string]: any }, customTypes: { [name: string]: { [key: string]: { type: string, default?: any } } }): { [key: string]: any } => {
+export const cleanArgs = (argDeclarations: string[], args: { [key: string]: any }): { [key: string]: any } => {
     let a: { [key: string]: any } = {};
     let i = argDeclarations.length;
     while (i--) {
         let k2: string[] = argDeclarations[i].split(":");
         if (k2.length > 1) {
-            a[k2[0]] = cast(k2[1], customTypes, args[k2[0]] || undefined);
+            a[k2[0]] = cast(k2[1], args[k2[0]] || undefined, true);
         } else {
             a[k2[0]] = args[k2[0]] || undefined;
         }
@@ -236,6 +236,13 @@ export const isObject = (val: any): boolean => {
     return Object.prototype.toString.call(val) === "[object Object]";
 };
 
+export const objSort = (path?: string, rev?: boolean) => {
+    return (a: any, b: any): number => {
+        const result = path ? (objQuery(path, a) > objQuery(path, b) ? -1 : 1) : (a > b ? -1 : 1);
+        return rev ? result * -1 : result;
+    };
+};
+
 /**
  * Cast a javascript variable to a given type. Supports typescript primitives and more specific types.
  *
@@ -243,15 +250,9 @@ export const isObject = (val: any): boolean => {
  * @param {*} [val]
  * @returns {*}
  */
-export const cast = (type: string, customTypes: { [name: string]: { [key: string]: { type: string, default?: any } } }, val: any, doUndefined?: boolean, depth?: number): any => {
+export const cast = (type: string, val: any, allowUknownTypes?: boolean): any => {
 
     if (type === "any" || type === "blob") return val;
-
-    const lvl = depth || 0;
-
-    if (lvl > 50) {
-        throw new Error(`Infinite recursion found in ${type} type.`);
-    }
 
     // recursively cast arrays
     if (type.indexOf("[]") !== -1) {
@@ -259,7 +260,7 @@ export const cast = (type: string, customTypes: { [name: string]: { [key: string
         // value should be array but isn't, cast it to one
         if (!Array.isArray(val)) return [];
         // we have an array, cast array of types
-        return val.map((v) => cast(arrayOf, customTypes, v, doUndefined, 0));
+        return val.map((v) => cast(arrayOf, v, allowUknownTypes));
     }
 
     const t = typeof val;
@@ -293,22 +294,11 @@ export const cast = (type: string, customTypes: { [name: string]: { [key: string
             case "bool": return castVal === true || castVal === 1;
         }
 
-
-        if (Object.keys(customTypes).indexOf(castType) !== -1) {
-            // cast this object as custom type
-            const objVal = isObject(castVal) ? castVal : {};
-            return Object.keys(customTypes[castType]).reduce((prev, key) => {
-                const nestedValue = typeof objVal[key] !== "undefined" ? objVal[key] : customTypes[castType][key].default;
-                prev[key] = cast(customTypes[castType][key].type, customTypes, nestedValue, doUndefined, lvl + 1);
-                return prev;
-            }, {});
-        }
-
-        // doesn't match known types or custom types, return null;
-        return null;
+        // doesn't match known types, return null;
+        return allowUknownTypes ? val : null;
     };
 
-    if (doUndefined && (typeof val === "undefined" || val === null)) return null;
+    if (typeof val === "undefined" || val === null) return null;
 
     const newVal = doCast(String(type || "").toLowerCase(), val);
 

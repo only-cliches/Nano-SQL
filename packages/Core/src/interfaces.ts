@@ -104,11 +104,18 @@ export interface NanoSQLFunction {
  * @interface DataModel
  */
 export interface NanoSQLDataModel {
-    key: string;
-    type: "string" | "int" | "float" | "array" | "map" | "bool" | "uuid" | "blob" | "timeId" | "timeIdms" | "safestr" | "number" | "object" | "obj" | "gps" | string;
+    name: string;
     model?: NanoSQLDataModel[];
     default?: any;
     props?: any[];
+}
+
+export interface NanoSQLTableColumn {
+    key: string;
+    type: string;
+    model?: NanoSQLTableColumn[];
+    notNull: boolean;
+    default?: any;
 }
 
 /**
@@ -156,7 +163,26 @@ export const buildQuery = (table: string | any[] | (() => Promise<any[]>), actio
     };
 };
 
-// tslint:disable-next-line
+/**
+ * ORM arguments to query ORM data.
+ *
+ * @export
+ * @interface ORMArgs
+ */
+export interface ORMArgs {
+    key: string;
+    select?: string[];
+    offset?: number;
+    limit?: number;
+    orderBy?: {
+        [column: string]: "asc" | "desc";
+    };
+    groupBy?: {
+        [column: string]: "asc" | "desc";
+    };
+    where?: (row: {[key: string]: any}, idx: number) => boolean | any[];
+}
+
 export interface NanoSQLQuery {
     table: string | any[] | (() => Promise<any[]>);
     action: string;
@@ -169,6 +195,7 @@ export interface NanoSQLQuery {
     comments: string[];
     where?: any[] | ((row: {[key: string]: any}) => boolean);
     range?: number[];
+    orm?: (string | ORMArgs)[];
     orderBy?: { [column: string]: "asc" | "desc" };
     groupBy?: { [column: string]: "asc" | "desc" };
     having?: any[] | ((row: {[key: string]: any}) => boolean);

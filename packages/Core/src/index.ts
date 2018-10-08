@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, random16Bits, cast, cleanArgs, objQuery, chainAsync, intersect, crowDistance, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
 import { Observer } from "./observable";
-import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter } from "./interfaces";
+import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter, NanoSQLTableColumn, ORMArgs } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { SequentialTaskQueue } from "sequential-task-queue";
 import { _NanoSQLQuery } from "./query";
@@ -9,9 +9,9 @@ import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 
-let rocksDB: any;
+let RocksDB: any;
 if (typeof global !== "undefined") {
-    rocksDB = (global as any)._rocksDB;
+    RocksDB = (global as any)._rocksDB;
 }
 
 const VERSION = 2.0;
@@ -47,15 +47,14 @@ export class NanoSQLInstance {
     public tables: {
         [tableName: string]: {
             model: NanoSQLDataModel[],
-            indexes: {name: string, paths: string[]}[];
+            columns: NanoSQLTableColumn[];
+            indexes: { name: string, type: string, paths: string[] }[];
             filter?: (row: any) => any,
             actions: NanoSQLActionOrView[],
             views: NanoSQLActionOrView[],
             pkType: string;
             pkCol: string;
             ai: boolean;
-            notNullCols: string[];
-            wildCard: boolean;
             props?: any;
         }
     };
@@ -96,20 +95,7 @@ export class NanoSQLInstance {
             selectedTable: ""
         };
 
-        this.tables = {
-            "*": {
-                model: [],
-                actions: [],
-                views: [],
-                pkType: "",
-                pkCol: "",
-                notNullCols: [],
-                ai: false,
-                wildCard: false,
-                indexes: []
-            }
-        };
-
+        this.tables = {};
         this.plugins = [];
         this._eventCBs = {
             Core: new ReallySmallEvents()
@@ -384,23 +370,21 @@ export class NanoSQLInstance {
                         hasError = true;
                         rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
                     }
-                    const types = ["safestr", "int", "number", "float", "any", "array", "uuid", "timeId", "timeIdms", "string", "object", "obj", "map", "boolean", "bool", "blob", "*"];
                     table.model.forEach((model) => {
-                        if (!model.key || !model.type || model.key.match(/[\(\)\]\[\.]/g) !== null || model.key.indexOf("_") === 0) {
+                        const modelData = model.name.split(":"); // [key, type];
+                        if (modelData.length === 1) {
+                            modelData.push("any");
+                        }
+                        if (!modelData[0] || modelData[0].match(/[\(\)\]\[\.]/g) !== null || modelData[0].indexOf("_") === 0) {
                             hasError = true;
                             rej(`nSQL: Invalid Data Model at ${table.name}, ${JSON.stringify(model)}! https://docs.nanosql.io/setup/data-models`);
                             return;
-                        }
-                        const type = model.type.replace(/[\[\]]/gmi, "");
-                        if (types.filter(t => t === type).length === 0) {
-                            hasError = true;
-                            rej(`nSQL: Uknown type "${model.type}" on column "${model.key}" of table "${table.name}"!`);
                         }
                     });
                     // replace white space in column names with dashes
                     config.tables[i].model = config.tables[i].model.map(k => ({
                         ...k,
-                        key: k.key.replace(/\s+/g, "-")
+                        name: k.name.replace(/\s+/g, "-")
                     }));
                 });
                 if (!hasError) {
@@ -411,106 +395,119 @@ export class NanoSQLInstance {
             return this.doFilter<configFilter, NanoSQLConfig>("config", { result: config });
         }).then((conf: NanoSQLConfig) => {
 
-            this.state.id = config.id || hash(JSON.stringify(config.tables || []));
+            return new Promise((res, rej) => {
 
-            conf.tables.push({
-                name: "_util",
-                model: [
-                    { key: "key", type: "string", props: ["pk()", "ai()"] },
-                    { key: "value", type: "any" }
-                ]
-            });
+                let hasError = false;
 
-            conf.tables.push({
-                name: "_ttl",
-                model: [
-                    { key: "key", type: "string", props: ["pk()"] },
-                    { key: "table", type: "string" },
-                    { key: "cols", type: "string[]" },
-                    { key: "date", type: "number" }
-                ]
-            });
+                this.state.id = config.id || hash(JSON.stringify(config.tables || []));
+
+                conf.tables.push({
+                    name: "_util",
+                    model: [
+                        { name: "key:string", props: ["pk()", "ai()"] },
+                        { name: "value:any" }
+                    ]
+                });
+
+                conf.tables.push({
+                    name: "_ttl",
+                    model: [
+                        { name: "key:string", props: ["pk()"] },
+                        { name: "table:string" },
+                        { name: "cols:string[]" },
+                        { name: "date:number" }
+                    ]
+                });
 
 
-            const setModel = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
-                return dataModels.map(d => {
-                    if (d.type.indexOf("gps") === 0) {
-                        const hasIndex = d.props && d.props.indexOf("idx()") !== -1;
-                        d.model = [
-                            {key: "lat", type: "float", props: hasIndex ? ["idx()"] : []},
-                            {key: "lon", type: "float", props: hasIndex ? ["idx()"] : []}
-                        ]
-                        if (d.props && hasIndex) {
-                            d.props.splice(d.props.indexOf("idx()"), 1);
+                const setModel = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
+                    return dataModels.map(d => {
+                        const type = d.name.split(":")[1] || "any";
+                        if (type.indexOf("gps") === 0) {
+                            d.model = [
+                                { name: "lat:float", default: 0 },
+                                { name: "lon:float", default: 0 }
+                            ];
                         }
-                    }
-                    if (d.model) {
-                        d.model = setModel(d.model);
-                    }
-                    return d;
-                })
-            }
-
-            const getSecondaryIndexes = (dataModel: NanoSQLDataModel[], path: string): {name: string, paths: string[]}[] => {
-                return dataModel.reduce((p, c) => {
-                    const thisPath = (path.length ? path + "." : "") + c.key;
-                    if (c.model) {
-                        p = p.concat(getSecondaryIndexes(c.model, thisPath));
-                    }
-                    if (c.props && c.props.indexOf("idx()") !== -1) {
-                        p.push({name: c.key, paths: [thisPath]})
-                    }
-                    return p;
-                }, [] as any[]);
-            }
-
-            conf.tables.forEach((table) => {
-                const computedDataModel = setModel(table.model);
-                const secondaryIndexes = getSecondaryIndexes(computedDataModel, "");
-                this.tables[table.name] = {
-                    model: computedDataModel,
-                    actions: table.actions || [],
-                    views: table.views || [],
-                    indexes: secondaryIndexes.concat(this.tables[table.name].indexes),
-                    pkType: table.model.reduce((p, c) => {
-                        if (c.props && c.props.indexOf("pk()") !== -1) return c.type;
-                        return p;
-                    }, ""),
-                    pkCol: table.model.reduce((p, c) => {
-                        if (c.props && c.props.indexOf("pk()") !== -1) return c.key;
-                        return p;
-                    }, ""),
-                    ai: table.model.reduce((p, c) => {
-                        if (c.props && c.props.indexOf("pk()") !== -1 && c.props.indexOf("ai()") !== -1) return true;
-                        return p;
-                    }, false),
-                    notNullCols: table.model.reduce((p: any[], c) => {
-                        if (c.props && c.props.indexOf("not_null()") !== -1) {
-                            p.push(c.key);
+                        if (d.model) {
+                            d.model = setModel(d.model);
                         }
-                        return p;
-                    }, []),
-                    wildCard: table.model.reduce((p, c) => {
-                        if (c.type === "*" && c.key === "*") {
-                            return true;
-                        }
-                        return p;
-                    }, false)
+                        return d;
+                    });
                 };
 
-                // no primary key found, set one
-                if (this.tables[table.name].pkCol === "") {
-                    this.tables[table.name].pkCol = "_id_";
-                    this.tables[table.name].pkType = "uuid";
-                    this.tables[table.name].model.unshift({ key: "_id_", type: "uuid", props: ["pk()"] });
+                const generateColumns = (dataModels: NanoSQLDataModel[]): NanoSQLTableColumn[] => {
+                    return dataModels.filter(d => d.name !== "*").map(d => ({
+                        key: d.name.split(":")[0],
+                        type: d.name.split(":")[1] || "any",
+                        default: d.default || null,
+                        notNull: d.props && d.props.indexOf("not_null()") !== -1 ? true : false,
+                        model: d.model ? generateColumns(d.model) : undefined
+                    }));
+                };
+
+                conf.tables.forEach((table) => {
+                    const computedDataModel = setModel(table.model);
+
+                    this.tables[table.name] = {
+                        model: computedDataModel,
+                        columns: generateColumns(computedDataModel),
+                        actions: table.actions || [],
+                        views: table.views || [],
+                        indexes: (table.indexes || []).map(i => ({
+                            name: i.name.split(":")[0],
+                            type: i.name.split(":")[1] || "string",
+                            paths: i.paths
+                        })).reduce((p, c) => {
+                            const allowedTypes = ["string", "gps", "float", "int", "number"];
+                            if (allowedTypes.indexOf(c.type) === -1) {
+                                hasError = true;
+                                rej(`Index "${c.name}" does not have a valid type!`);
+                                return p;
+                            }
+                            if (c.type.indexOf("gps") !== -1) {
+                                if (c.paths.length > 1) {
+                                    hasError = true;
+                                    rej("Can't have multiple paths with GPS index type!");
+                                }
+                                p.push({name: c.name + ".lat", type: "float", paths: [c.paths[0] + ".lat"]});
+                                p.push({name: c.name + ".lon", type: "float", paths: [c.paths[0] + ".lon"]});
+                            } else {
+                                p.push(c);
+                            }
+                            return p;
+                        }, [] as any[]),
+                        pkType: table.model.reduce((p, c) => {
+                            if (c.props && c.props.indexOf("pk()") !== -1) return c.name.split(":")[1];
+                            return p;
+                        }, ""),
+                        pkCol: table.model.reduce((p, c) => {
+                            if (c.props && c.props.indexOf("pk()") !== -1) return c.name.split(":")[0];
+                            return p;
+                        }, ""),
+                        ai: table.model.reduce((p, c) => {
+                            if (c.props && c.props.indexOf("pk()") !== -1 && c.props.indexOf("ai()") !== -1) return true;
+                            return p;
+                        }, false)
+                    };
+
+                    // no primary key found, set one
+                    if (this.tables[table.name].pkCol === "") {
+                        this.tables[table.name].pkCol = "_id_";
+                        this.tables[table.name].pkType = "uuid";
+                        this.tables[table.name].model.unshift({ name: "_id_:uuid", props: ["pk()"] });
+                        this.tables[table.name].columns = generateColumns(this.tables[table.name].model);
+                    }
+                });
+
+                this.config = conf;
+
+                if (typeof window !== "undefined" && conf && conf.peer) {
+                    this.state.peerMode = true;
                 }
+                if (!hasError) res();
             });
-
-            this.config = conf;
-
-            if (typeof window !== "undefined" && conf && conf.peer) {
-                this.state.peerMode = true;
-            }
+        }).then(() => {
 
             return this.doFilter<willConnectFilter, {}>("willConnect", { result: {} });
         }).then(() => {
@@ -537,7 +534,8 @@ export class NanoSQLInstance {
                             this.adapter = new IndexedDB();
                             break;
                         case "ROCKS":
-                            this.adapter = new rocksDB();
+                        case "LVL":
+                            this.adapter = new RocksDB();
                             break;
                         default:
                             rej(`Cannot find mode ${dbMode}!`);
@@ -759,7 +757,7 @@ export class NanoSQLInstance {
         let t = this;
         let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
-        if (l.indexOf("Plugin.") !== -1) {
+        if (l.indexOf("Plugin:") !== -1) {
             if (!this._eventCBs[l]) {
                 this._eventCBs[l] = new ReallySmallEvents();
             }
@@ -776,7 +774,7 @@ export class NanoSQLInstance {
                 this._eventCBs.Core.on(action, callBack);
                 break;
             default:
-                const table = "Table." + resolveObjPath(l).join(".");
+                const table = "Table:" + resolveObjPath(l).join(".");
                 if (!this._eventCBs[table]) {
                     this._eventCBs[table] = new ReallySmallEvents();
                 }
@@ -798,7 +796,7 @@ export class NanoSQLInstance {
         let t = this;
         let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
-        if (l.indexOf("Plugin.") !== -1) {
+        if (l.indexOf("Plugin:") !== -1) {
             this._eventCBs[l].off(action, callBack);
             return t._refreshEventChecker();
         }
@@ -812,7 +810,7 @@ export class NanoSQLInstance {
                 this._eventCBs.Core.off(action, callBack);
                 break;
             default:
-                const table = "Table." + resolveObjPath(l).join(".");
+                const table = "Table:" + resolveObjPath(l).join(".");
                 this._eventCBs[table].off(action, callBack);
         }
 
@@ -907,7 +905,7 @@ export class NanoSQLInstance {
                 return new Promise((res, rej) => rej(`${result.AVType} "${result.AVName}" Not Found!`));
             }
 
-            return selAV.call(selAV.args ? cleanArgs(selAV.args, result.AVargs, this.tables[table].types) : {}, this);
+            return selAV.call(selAV.args ? cleanArgs(selAV.args, result.AVargs) : {}, this);
         });
     }
 
@@ -1047,8 +1045,8 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public default(replaceObj?: any, table?: string, allowNull?: boolean): { [key: string]: any } {
-        let newObj = {};
+    public default(replaceObj?: any, table?: string): { [key: string]: any } | Error {
+
         replaceObj = replaceObj || {};
         if (!table && typeof this.state.selectedTable !== "string") {
             throw new Error("Must select table to generate defualts!");
@@ -1058,15 +1056,55 @@ export class NanoSQLInstance {
             throw new Error(`nSQL: Table "${table}" not found for generating default object!`);
         }
 
-        this.tables[table].model.filter(m => m.key !== "*").forEach((m) => {
-            const type = m.type.replace(/[\[\]]/gmi, "");
+        let error = "";
+        const resolveModel = (cols: NanoSQLTableColumn[], useObj?: any, nestedModel?: string): any => {
+            let newObj = {};
+            if (nestedModel && nestedModel.length) {
+                if (nestedModel.indexOf("[]") !== -1) {
+                    if (Array.isArray(useObj)) {
+                        return useObj.map(a => resolveModel(cols, a, nestedModel.slice(0, nestedModel.lastIndexOf("[]"))));
+                    } else {
+                        return [];
+                    }
+                }
+            }
+            let hasWildCard: boolean = false;
+            cols.forEach((m) => {
+                if (m.key === "*") {
+                    hasWildCard = true;
+                    return;
+                }
+                if (m.model) {
+                    if (m.type.indexOf("[]") !== -1) {
+                        const arr = typeof useObj !== "undefined" ? useObj[m.key] : [];
+                        if (!Array.isArray(arr)) {
+                            newObj[m.key] = [];
+                        } else {
+                            newObj[m.key] = arr.map(a => resolveModel(m.model as any[], a, m.type.slice(0, m.type.lastIndexOf("[]"))));
+                        }
+                    } else {
+                        newObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
+                    }
+                } else {
+                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? cast(m.type, newObj[m.key]) : m.default;
+                }
+                if (m.notNull && newObj[m.key] === null) {
+                    error = `Data error, ${m.key} cannot be null!`;
+                }
+            });
 
-            // set key to object argument or the default value in the data model
-            newObj[m.key] = typeof replaceObj[m.key] !== "undefined" ? replaceObj[m.key] : m.default;
-            newObj[m.key] = cast(m.type, this.tables[table as any].types, newObj[m.key], allowNull);
-        });
+            if (error.length) return new Error(error);
 
-        return newObj;
+            if (hasWildCard && useObj) {
+                const keys = cols.map(c => c.key);
+                Object.keys(useObj).filter(c => keys.indexOf(c) === -1).forEach((key) => {
+                    newObj[key] = useObj[key];
+                });
+            }
+            return newObj;
+        };
+
+        return resolveModel(this.tables[table].columns, replaceObj);
     }
 
 
@@ -1739,6 +1777,19 @@ export class _NanoSQLQueryBuilder {
 
     public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
         this._db.triggerQuery(this._query, onRow, complete, err);
+    }
+
+        /**
+     * Trigge ORM queries for all result rows.
+     *
+     * @param {((string|ORMArgs)[])} [ormArgs]
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberof _NanoSQLQuery
+     */
+    public orm(ormArgs?: (string | ORMArgs)[]): _NanoSQLQueryBuilder {
+        this._query.orm = ormArgs;
+        return this;
     }
 
     /**
