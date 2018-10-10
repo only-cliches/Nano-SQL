@@ -10,6 +10,9 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Remove built in Promise polyfill.
 
+## [1.7.8] 10-10-2018
+- Fixed CDN Link issue.
+
 ## [1.7.7] 10-10-2018
 - Fixed issue [#88](SQL Error: number of parameters does not match argument count) and [#87](https://github.com/ClickSimply/Nano-SQL/issues/87).  WebSQL queries were too large and are now batched.
 - Fixed issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85). Suboptimized queries where failing.
