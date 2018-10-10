@@ -1619,6 +1619,8 @@ export class _RowSelection {
             }, 0) === 0;
         }
 
+
+
         if (doFastRead) { // can go straight to primary or secondary keys, wee!
             this._selectByKeysOrSeach(this.q.where, callback);
             return;
@@ -1627,9 +1629,11 @@ export class _RowSelection {
         // if compound where statement includes primary key/secondary index queries followed by AND with other conditions.
         // grabs the section of data related to the optimized read, then full table scans the result.
         const whereSlice = this._isSubOptimizedWhere(this.q.where);
+
         if (whereSlice > 0) {
             const fastWhere: any[] = this.q.where.slice(0, whereSlice);
             const slowWhere: any[] = this.q.where.slice(whereSlice + 1);
+            console.log(fastWhere, slowWhere);
             this._selectByKeysOrSeach(fastWhere, (rows) => {
                 callback(rows.filter((r, i) => _where(r, slowWhere, i, false)));
             });
@@ -2316,7 +2320,7 @@ export class _RowSelection {
         const wCondition = wArgs[1] || "";
 
         if (Array.isArray(wQuery)) { // nested where statement
-            return 0;
+            return 1;
         }
 
         // is a valid crow query with secondary indexes

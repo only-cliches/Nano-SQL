@@ -10,26 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.min.js"></script>
     <script>
 
-        nSQL("message")
-            .model([{
-                    key: "id",
-                    type: "string",
-                    props: ["pk", "ai"]
-                },
-                {
-                    key: "message",
-                    type: "string"
-                }
-            ]).connect().then(() => {
-                return nSQL("message").query("upsert", {
-                    id: "",
-                    message: ""
-                }).exec();
-            }).then(() => {
-                console.log("HEY");
-            }).catch((err) => {
-                console.error(err);
-            })
         /*nSQL("message")
                             .model([
                                 { key: "id", type: "int", props: ["pk", "ai"] },
