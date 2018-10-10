@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
 import { Observer } from "./observable";
-import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter, NanoSQLTableColumn, ORMArgs } from "./interfaces";
+import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter, NanoSQLTableColumn, ORMArgs, WhereCondition, NanoSQLIndex } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { SequentialTaskQueue } from "sequential-task-queue";
 import { _NanoSQLQuery } from "./query";
@@ -48,7 +48,7 @@ export class NanoSQLInstance {
         [tableName: string]: {
             model: NanoSQLDataModel[],
             columns: NanoSQLTableColumn[];
-            indexes: { name: string, type: string, paths: string[] }[];
+            indexes: NanoSQLIndex[];
             filter?: (row: any) => any,
             actions: NanoSQLActionOrView[],
             views: NanoSQLActionOrView[],
@@ -71,6 +71,17 @@ export class NanoSQLInstance {
         connected: boolean;
         ready: boolean;
         selectedTable: string | any[] | (() => Promise<any[]>);
+    };
+
+    public fnIndexes: {
+        [fnName: string]: {
+            whereParse: (nSQL: NanoSQLInstance, query: NanoSQLQuery, fnArgs: string[], where: string[]) => WhereCondition | false;
+            queryRows: (nSQL: NanoSQLInstance, query: NanoSQLQuery, where: WhereCondition) => Promise<{ [key: string]: any }>
+        }
+    };
+
+    public indexTypes: {
+        [type: string]: (value: any) => any;
     };
 
     private _eventCBs: {
@@ -97,6 +108,60 @@ export class NanoSQLInstance {
 
         this.tables = {};
         this.plugins = [];
+
+        this.indexTypes = {
+            string: (value: any) => {
+                return typeof value === "object" ? JSON.stringify(value) : String(value);
+            },
+            gps: (value: any) => {
+                return undefined;
+            },
+            float: (value: any) => {
+                const float = parseFloat(value);
+                return isNaN(float) ? 0 : float;
+            },
+            int: (value: any) => {
+                const int = parseInt(value);
+                return isNaN(int) ? 0 : int;
+            },
+            number: (value: any) => {
+                const float = parseFloat(value);
+                return isNaN(float) ? 0 : float;
+            }
+        };
+
+        this.fnIndexes = {
+            CROW: {
+                whereParse: (nSQL, query, fnArgs, where) => {
+                    if (where[1] === "<" || where[1] === "<=") {
+                        const indexes: NanoSQLIndex[] = typeof query.table === "string" ? nSQL.tables[query.table].indexes : [];
+                        const crowColumn = fnArgs[0];
+                        let crowCols: string[] = [];
+                        indexes.forEach((index) => {
+                            if (index.paths[0] === crowColumn + ".lat") {
+                                crowCols.push(index.name);
+                            }
+                            if (index.paths[0] === crowColumn + ".lon") {
+                                crowCols.push(index.name);
+                            }
+                        });
+                        if (crowCols.length === 2) {
+                            return {
+                                index: crowCols[0],
+                                fnName: "CROW",
+                                fnArgs: fnArgs,
+                                comp: where[1],
+                                value: where[2]
+                            };
+                        }
+                    }
+                    return false;
+                },
+                queryRows: (query, where) => {
+                    return new Promise((res, rej) => res([]));
+                }
+            }
+        };
         this._eventCBs = {
             Core: new ReallySmallEvents()
         };
@@ -459,7 +524,7 @@ export class NanoSQLInstance {
                             type: i.name.split(":")[1] || "string",
                             paths: i.paths
                         })).reduce((p, c) => {
-                            const allowedTypes = ["string", "gps", "float", "int", "number"];
+                            const allowedTypes = Object.keys(this.indexTypes);
                             if (allowedTypes.indexOf(c.type) === -1) {
                                 hasError = true;
                                 rej(`Index "${c.name}" does not have a valid type!`);
@@ -470,8 +535,8 @@ export class NanoSQLInstance {
                                     hasError = true;
                                     rej("Can't have multiple paths with GPS index type!");
                                 }
-                                p.push({name: c.name + ".lat", type: "float", paths: [c.paths[0] + ".lat"]});
-                                p.push({name: c.name + ".lon", type: "float", paths: [c.paths[0] + ".lon"]});
+                                p.push({ name: c.name + ".lat", type: "float", paths: [c.paths[0] + ".lat"] });
+                                p.push({ name: c.name + ".lon", type: "float", paths: [c.paths[0] + ".lon"] });
                             } else {
                                 p.push(c);
                             }
@@ -1779,14 +1844,14 @@ export class _NanoSQLQueryBuilder {
         this._db.triggerQuery(this._query, onRow, complete, err);
     }
 
-        /**
-     * Trigge ORM queries for all result rows.
-     *
-     * @param {((string|ORMArgs)[])} [ormArgs]
-     * @returns {_NanoSQLQuery}
-     *
-     * @memberof _NanoSQLQuery
-     */
+    /**
+ * Trigge ORM queries for all result rows.
+ *
+ * @param {((string|ORMArgs)[])} [ormArgs]
+ * @returns {_NanoSQLQuery}
+ *
+ * @memberof _NanoSQLQuery
+ */
     public orm(ormArgs?: (string | ORMArgs)[]): _NanoSQLQueryBuilder {
         this._query.orm = ormArgs;
         return this;

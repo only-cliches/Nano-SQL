@@ -209,6 +209,43 @@ export interface NanoSQLQuery {
     [key: string]: any;
 }
 
+export interface NanoSQLIndex {
+    name: string;
+    type: string;
+    paths: string[];
+}
+
+export interface SelectArgs {
+    isFn: boolean;
+    value: string;
+    as?: string;
+    args?: string[];
+}
+
+export enum WhereType {
+    fast, // primary key or secondary index on all WHERE statements using nothing but AND with single dimensional WHERE
+    medium, // fast query followed by AND with slow query (lets us grab optimized rows, then full table scan the optimized rows)
+    slow, // full table scan
+    fn, // full table scan with function
+    none // no where, return all rows
+}
+
+export interface WhereCondition {
+    index?: string;
+    fnName?: string;
+    fnArgs: string[];
+    col?: string | string[];
+    comp: string;
+    value: string | string[];
+}
+
+export interface WhereArgs {
+    type: WhereType;
+    whereFn?: (row: { [name: string]: any }, index: number) => boolean;
+    fastWhere?: (WhereCondition|string|(WhereCondition|string)[])[];
+    slowWhere?: (WhereCondition|string|(WhereCondition|string)[])[];
+}
+
 // tslint:disable-next-line
 export interface abstractFilter {
     abort?: {
