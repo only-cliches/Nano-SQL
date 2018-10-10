@@ -1164,6 +1164,7 @@ export class _MutateSelection {
      * @memberof _MutateSelection
      */
     private _orm(rows: DBRow[], complete: (rows: DBRow[]) => void): void {
+
         const ormQueries: ORMArgs[] = this.q.orm ? this.q.orm.map((o) => {
             if (typeof o === "string") {
                 return {
@@ -1633,7 +1634,6 @@ export class _RowSelection {
         if (whereSlice > 0) {
             const fastWhere: any[] = this.q.where.slice(0, whereSlice);
             const slowWhere: any[] = this.q.where.slice(whereSlice + 1);
-            console.log(fastWhere, slowWhere);
             this._selectByKeysOrSeach(fastWhere, (rows) => {
                 callback(rows.filter((r, i) => _where(r, slowWhere, i, false)));
             });

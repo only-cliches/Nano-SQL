@@ -22,6 +22,7 @@ export declare const stopWords: string[];
  * @returns
  */
 export declare const _assign: (obj: any) => any;
+export declare const splitArr: (arr: any[], n: number) => any[];
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
