@@ -353,9 +353,9 @@ export class _NanoSQLQuery {
         const indexes: NanoSQLIndex[] = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].indexes : [];
 
         // find indexes and functions
-        const recursiveParse = (ww: any[]): any[] => {
+        const recursiveParse = (ww: any[], level: number): any[] => {
             let skip = 0;
-            const doIndex = !ignoreIndexes;
+            const doIndex = !ignoreIndexes && level === 0;
             return ww.reduce((p, w, i) => {
                 if (skip) {
                     skip--;
@@ -366,7 +366,7 @@ export class _NanoSQLQuery {
                     return p;
                 } else { // where conditions
                     if (Array.isArray(w[0])) { // nested array
-                        p.push(recursiveParse(w));
+                        p.push(recursiveParse(w, level + 1));
                     } else if (w[0].indexOf("(") !== -1) { // function
 
                         const fnArgs = w[0].split("(")[1].replace(")", "").split(",").map(v => v.trim());
