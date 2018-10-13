@@ -37,7 +37,7 @@ export class WebSQL implements NanoSQLAdapter {
 
     }
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void) {
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}) => void, complete: () => void, error: (err: any) => void) {
 
     }
 

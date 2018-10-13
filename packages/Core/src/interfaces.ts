@@ -36,6 +36,10 @@ export interface NanoSQLConfig {
         views?: NanoSQLActionOrView[],
         props?: any[];
     }[];
+    relations?: {
+        constrain: string[]; // ["Users.posts", "<=>", "Posts.author"]
+        props?: any[];
+    }[];
 }
 
 export interface NanoSQLPlugin {
@@ -70,7 +74,7 @@ export interface NanoSQLAdapter {
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void);
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, onRow: (row: {[key: string]: any}, nextRow: () => void) => void, complete: () => void, error: (err: any) => void);
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}) => void, complete: () => void, error: (err: any) => void);
 
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
@@ -95,6 +99,8 @@ export interface NanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
     call: (query: NanoSQLQuery, row: any, complete: (result: {result: any, row?: any, [key: string]: any}) => void, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => void; // function call
+    whereIndex?: (nSQL: any, query: NanoSQLQuery, fnArgs: string[], where: string[]) => WhereCondition | false;
+    queryIndex?: (nSQL: any, query: NanoSQLQuery, where: WhereCondition) => Promise<{ [key: string]: any }>;
 }
 
 /**
@@ -172,6 +178,7 @@ export const buildQuery = (table: string | any[] | (() => Promise<any[]>), actio
 export interface ORMArgs {
     key: string;
     select?: string[];
+    orm?: (string | ORMArgs)[];
     offset?: number;
     limit?: number;
     orderBy?: {
@@ -196,8 +203,8 @@ export interface NanoSQLQuery {
     where?: any[] | ((row: {[key: string]: any}) => boolean);
     range?: number[];
     orm?: (string | ORMArgs)[];
-    orderBy?: { [column: string]: "asc" | "desc" };
-    groupBy?: { [column: string]: "asc" | "desc" };
+    orderBy?: string[];
+    groupBy?: string[];
     having?: any[] | ((row: {[key: string]: any}) => boolean);
     join?: NanoSQLJoinArgs | NanoSQLJoinArgs[];
     limit?: number;

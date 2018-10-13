@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from ".";
-import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex } from "./interfaces";
-import { objSort, objQuery } from "./utilities";
+import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex, WhereCondition } from "./interfaces";
+import { objSort, objQuery, chainAsync, compareObjects } from "./utilities";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -10,6 +10,14 @@ export class _NanoSQLQuery {
     private _selectArgs: SelectArgs[] = [];
     private _whereArgs: WhereArgs;
     private _havingArgs: WhereArgs;
+    private _orderBy: {
+        sort: {col: string, dir: string}[],
+        indexed: boolean;
+    };
+    private _groupBy: {
+        sort: {col: string, dir: string}[],
+        indexed: boolean;
+    };
 
     constructor(
         public nSQL: NanoSQLInstance,
@@ -51,9 +59,9 @@ export class _NanoSQLQuery {
     }
 
     private _select() {
-        this._organizeSelectArgs();
         this._whereArgs = this.query.where ? this._parseWhere(this.query.where, typeof this.query.table !== "string") : { type: WhereType.none };
         this._havingArgs = this.query.having ? this._parseWhere(this.query.having, true) : { type: WhereType.none };
+        this._parseSelect();
         if (this.query.state === "error") return;
         // Query order:
         // 1. Join / Index / Where Select
@@ -63,14 +71,20 @@ export class _NanoSQLQuery {
         // 5. OrderBy
         // 6. Offset
         // 7. Limit
+
+        if (this._stream) { // stream results directly to the client.
+
+        } else { // load query results into a buffer, perform order by/group by/aggregate function then stream the buffer to the client.
+
+        }
     }
 
     private _upsert() {
-        this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: WhereType.none };
         if (!this.query.actionArgs) {
             this.error("Can't upsert without records!");
             this.query.state = "error";
         }
+        this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: WhereType.none };
         if (this.query.state === "error") return;
         const upsertRecords = Array.isArray(this.query.actionArgs) ? this.query.actionArgs : [this.query.actionArgs];
 
@@ -104,23 +118,24 @@ export class _NanoSQLQuery {
 
     }
 
-    private _getRecords(onRow: (row: { [name: string]: any }) => void, complete: () => void) {
+    private _getRecords(onRow: (row: { [name: string]: any }, nextRow: () => void) => void, complete: () => void) {
+
+        const scanRecords = (rows) => {
+            chainAsync(rows, (row, i, next) => {
+                onRow(row, next);
+            }).then(() => {
+                complete();
+            });
+        };
+
         if (typeof this.query.table === "string") { // pull from local table
 
         } else if (typeof this.query.table === "function") { // promise that returns array
-            this.query.table().then((rows) => {
-                rows.forEach((row) => {
-                    onRow(row);
-                });
-                complete();
-            }).catch((err) => {
+            this.query.table().then(scanRecords).catch((err) => {
                 this.error(err);
             });
         } else if (Array.isArray(this.query.table)) { // array
-            this.query.table.forEach((row) => {
-                onRow(row);
-            });
-            complete();
+            scanRecords(this.query.table);
         }
     }
 
@@ -135,43 +150,81 @@ export class _NanoSQLQuery {
      * @param {boolean} [ignoreFirstPath]
      * @returns {boolean}
      */
-    private _where(singleRow: any, where: any[], rowIDX: number, ignoreFirstPath?: boolean, searchCache?: any[], pk?: any): boolean {
+    private _where(singleRow: any, where: (WhereCondition | string | (WhereCondition | string)[])[], ignoreFirstPath: boolean, complete: (matches: boolean) => void): void {
 
-        if (typeof where[0] !== "string") { // compound where statements
+        if (where.length > 1) { // compound where statements
 
             let prevCondition: string;
-
-            return where.reduce((prev, wArg, idx) => {
-
+            let matches = false;
+            chainAsync(where, (wArg, idx, next) => {
                 if (idx % 2 === 1) {
-                    prevCondition = wArg;
-                    return prev;
+                    prevCondition = wArg as string;
+                    next();
+                    return;
                 }
 
-                let compareResult: boolean = false;
-                if (wArg[0].indexOf("search(") === 0 && searchCache) {
-                    // compareResult = searchCache[idx].indexOf(singleRow[pk]) !== -1;
-                } else if (Array.isArray(wArg[0])) {
-                    compareResult = this._where(singleRow, wArg, rowIDX, ignoreFirstPath || false, searchCache, pk);
+                const reduce = (compareResult) => {
+                    if (idx === 0) {
+                        matches = compareResult;
+                    } else {
+                        if (prevCondition === "AND") {
+                            matches = matches && compareResult;
+                        } else {
+                            matches = matches || compareResult;
+                        }
+                    }
+                    next();
+                };
+
+                if (Array.isArray(wArg[0])) { // nested where
+                    this._where(singleRow, wArg as any, ignoreFirstPath || false, reduce);
                 } else {
-                    compareResult = this._compare(wArg, singleRow, ignoreFirstPath || false);
+                    this._compare(wArg as WhereCondition, singleRow, ignoreFirstPath || false, reduce);
                 }
+            }).then(() => {
+                complete(matches);
+            });
 
-                if (idx === 0) return compareResult;
-
-                if (prevCondition === "AND") {
-                    return prev && compareResult;
-                } else {
-                    return prev || compareResult;
-                }
-            }, false);
         } else { // single where statement
-            return this._compare(where, singleRow, ignoreFirstPath || false);
+            this._compare(where[0] as WhereCondition, singleRow, ignoreFirstPath || false, complete);
         }
     }
 
     public static likeCache: { [likeQuery: string]: RegExp } = {};
 
+    private _processLIKE(columnValue: string, givenValue: string): boolean {
+        if (!_NanoSQLQuery.likeCache[givenValue]) {
+            let prevChar = "";
+            _NanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(s => {
+                if (prevChar === "\\") {
+                    prevChar = s;
+                    return s;
+                }
+                prevChar = s;
+                if (s === "%") return ".*";
+                if (s === "_") return ".";
+                return s;
+            }).join(""), "gmi");
+        }
+        if (typeof columnValue !== "string") {
+            if (typeof columnValue === "number") {
+                return String(columnValue).match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+            } else {
+                return JSON.stringify(columnValue).match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+            }
+        }
+        return columnValue.match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+    }
+
+    private _getColValue(where: WhereCondition, wholeRow: any, isJoin: boolean, callback: (val: any) => void): void {
+        if (where.fnName) {
+            this.nSQL.functions[where.fnName].call(this.query, wholeRow, (value) => {
+                callback(value.result);
+            }, isJoin, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }, ...where.fnArgs);
+        } else {
+            callback(objQuery(where.col as string, wholeRow, isJoin));
+        }
+    }
 
     /**
      * Compare function used by WHERE to determine if a given value matches a given condition.
@@ -184,122 +237,129 @@ export class _NanoSQLQuery {
      * @param {*} val2
      * @returns {boolean}
      */
-    private _compare(where: any[], wholeRow: any, isJoin: boolean): boolean {
+    private _compare(where: WhereCondition, wholeRow: any, isJoin: boolean, complete: (matches: boolean) => void): void {
 
-        const processLIKE = (columnValue: string, givenValue: string): boolean => {
-            if (!_NanoSQLQuery.likeCache[givenValue]) {
-                let prevChar = "";
-                _NanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(s => {
-                    if (prevChar === "\\") {
-                        prevChar = s;
-                        return s;
-                    }
-                    prevChar = s;
-                    if (s === "%") return ".*";
-                    if (s === "_") return ".";
-                    return s;
-                }).join(""), "gmi");
-            }
-            if (typeof columnValue !== "string") {
-                if (typeof columnValue === "number") {
-                    return String(columnValue).match(_NanoSQLQuery.likeCache[givenValue]) !== null;
-                } else {
-                    return JSON.stringify(columnValue).match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+        this._getColValue(where, wholeRow, isJoin, (columnValue) => {
+
+            const givenValue = where.value as any;
+            const compare = where.comp;
+
+            if (givenValue === "NULL" || givenValue === "NOT NULL") {
+                const isNull = [undefined, null, ""].indexOf(columnValue) !== -1;
+                const isEqual = compare === "=" || compare === "LIKE";
+                switch (givenValue) {
+                    case "NULL": return isEqual ? isNull : !isNull;
+                    case "NOT NULL": return isEqual ? !isNull : isNull;
                 }
             }
-            return columnValue.match(_NanoSQLQuery.likeCache[givenValue]) !== null;
-        };
 
-        const givenValue = where[2];
-        const compare = where[1];
-        const columnValue = (() => {
-            if (whereFuncCache[where[0]].length) {
-                const whereFn = NanoSQLInstance.whereFunctions[whereFuncCache[where[0]][0]];
-                if (whereFn) {
-                    return whereFn.apply(null, [wholeRow, isJoin].concat(whereFuncCache[where[0]].slice(1)));
+            if (["IN", "NOT IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
+                if (!Array.isArray(givenValue)) {
+                    this.query.state = "error";
+                    this.query.error(`WHERE "${compare}" comparison requires an array value!`);
+                    complete(false);
+                    return;
                 }
-                return undefined;
-            } else {
-                return objQuery(where[0], wholeRow, isJoin);
             }
-        })();
 
-        if (givenValue === "NULL" || givenValue === "NOT NULL") {
-            const isNull = [undefined, null, ""].indexOf(columnValue) !== -1;
-            const isEqual = compare === "=" || compare === "LIKE";
-            switch (givenValue) {
-                case "NULL": return isEqual ? isNull : !isNull;
-                case "NOT NULL": return isEqual ? !isNull : isNull;
-            }
-        }
+            const result = (): boolean => {
+                switch (compare) {
+                    // if column equal to given value. Supports arrays, objects and primitives
+                    case "=": return compareObjects(givenValue, columnValue);
+                    // if column not equal to given value. Supports arrays, objects and primitives
+                    case "!=": return !compareObjects(givenValue, columnValue);
+                    // if column greather than given value
+                    case ">": return columnValue > givenValue;
+                    // if column less than given value
+                    case "<": return columnValue < givenValue;
+                    // if column less than or equal to given value
+                    case "<=": return columnValue <= givenValue;
+                    // if column greater than or equal to given value
+                    case ">=": return columnValue >= givenValue;
+                    // if column value exists in given array
+                    case "IN": return givenValue.indexOf(columnValue) !== -1;
+                    // if column does not exist in given array
+                    case "NOT IN": return givenValue.indexOf(columnValue) === -1;
+                    // regexp search the column
+                    case "REGEXP":
+                    case "REGEX": return (columnValue || "").match(givenValue) !== null;
+                    // if given value exists in column value
+                    case "LIKE": return this._processLIKE((columnValue || ""), givenValue);
+                    // if given value does not exist in column value
+                    case "NOT LIKE": return !this._processLIKE((columnValue || ""), givenValue);
+                    // if the column value is between two given numbers
+                    case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] > columnValue;
+                    // if single value exists in array column
+                    case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
+                    // if single value does not exist in array column
+                    case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
+                    // if array of values intersects with array column
+                    case "INTERSECT": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length > 0;
+                    // if every value in the provided array exists in the array column
+                    case "INTERSECT ALL": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === givenValue.length;
+                    // if array of values does not intersect with array column
+                    case "NOT INTERSECT": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === 0;
+                    default: return false;
+                }
+            };
 
-        if (["IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
-            if (!Array.isArray(givenValue)) {
-                throw new Error(`nSQL: ${compare} requires an array value!`);
-            }
-        }
+            complete(result());
+        });
 
-        switch (compare) {
-            // if column equal to given value
-            case "=": return columnValue === givenValue;
-            // if column not equal to given value
-            case "!=": return columnValue !== givenValue;
-            // if column greather than given value
-            case ">": return columnValue > givenValue;
-            // if column less than given value
-            case "<": return columnValue < givenValue;
-            // if column less than or equal to given value
-            case "<=": return columnValue <= givenValue;
-            // if column greater than or equal to given value
-            case ">=": return columnValue >= givenValue;
-            // if column value exists in given array
-            case "IN": return (givenValue || []).indexOf(columnValue) !== -1;
-            // if column does not exist in given array
-            case "NOT IN": return (givenValue || []).indexOf(columnValue) === -1;
-            // regexp search the column
-            case "REGEXP":
-            case "REGEX": return (columnValue || "").match(givenValue) !== null;
-            // if given value exists in column value
-            case "LIKE": return processLIKE((columnValue || ""), givenValue);
-            // if given value does not exist in column value
-            case "NOT LIKE": return !processLIKE((columnValue || ""), givenValue);
-            // if the column value is between two given numbers
-            case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
-            // if single value exists in array column
-            case "HAVE":
-            case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
-            // if single value does not exist in array column
-            case "NOT HAVE":
-            case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
-            // if array of values intersects with array column
-            case "INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length > 0;
-            // if every value in the provided array exists in the array column
-            case "INTERSECT ALL": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === givenValue.length;
-            // if array of values does not intersect with array column
-            case "NOT INTERSECT": return (columnValue || []).filter(l => (givenValue || []).indexOf(l) > -1).length === 0;
-            default: return false;
-        }
     }
 
-    public static selectArgsMemoized: {
+    public static _sortMemoized: {
+        [key: string]: {
+            sort: {col: string, dir: string}[],
+            indexed: boolean;
+        }
+    };
+
+    private _parseSort(sort: string[], checkforIndexes: boolean): {
+        sort: {col: string, dir: string}[];
+        indexed: boolean;
+    } {
+        const key = sort && sort.length ? JSON.stringify(sort) : "";
+        if (!key) return {sort: [], indexed: false};
+        if (_NanoSQLQuery._sortMemoized[key]) return _NanoSQLQuery._sortMemoized[key];
+        const result = sort.map(o => o.split(" ").map(s => s.trim())).reduce((p, c) => { return p.push({col: c[0], dir: (c[1] || "asc").toUpperCase()}), p; }, [] as any[]);
+
+        let indexed = false;
+        if (checkforIndexes && result.length === 1) {
+            const indexes: NanoSQLIndex[] = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].indexes : [];
+            const pkKey: string = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : "";
+            const indexedKeys: string[] = [pkKey].concat(indexes.filter(i => i.paths.length === 1).map(i => i.paths[0]));
+            indexed = indexedKeys.indexOf(result[0].col) !== -1;
+        }
+        _NanoSQLQuery._sortMemoized[key] = {
+            sort: result,
+            indexed: indexed
+        };
+        return _NanoSQLQuery._sortMemoized[key];
+    }
+
+    public static _selectArgsMemoized: {
         [key: string]: {
             hasAggrFn: boolean;
             args: SelectArgs[]
         }
     } = {};
 
-    private _organizeSelectArgs() {
+    private _parseSelect() {
         const selectArgsKey = this.query.actionArgs && this.query.actionArgs.length ? JSON.stringify(this.query.actionArgs) : "";
 
         let hasAggrFn = false;
 
+        this._orderBy = this._parseSort(this.query.orderBy || [], true);
+        this._groupBy = this._parseSort(this.query.groupBy || [], false);
+
         if (selectArgsKey) {
-            if (_NanoSQLQuery.selectArgsMemoized[selectArgsKey]) {
-                hasAggrFn = _NanoSQLQuery.selectArgsMemoized[selectArgsKey].hasAggrFn;
-                this._selectArgs = _NanoSQLQuery.selectArgsMemoized[selectArgsKey].args;
+            if (_NanoSQLQuery._selectArgsMemoized[selectArgsKey]) {
+                hasAggrFn = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].hasAggrFn;
+                this._selectArgs = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].args;
             } else {
                 (this.query.actionArgs || []).forEach((val: string) => {
-                    const splitVal = val.split(/as/i).map(s => s.trim());
+                    const splitVal = val.split(/\s+as\s+/i).map(s => s.trim());
                     if (splitVal[0].indexOf("(") !== -1) {
                         const fnArgs = splitVal[0].split("(")[1].replace(")", "").split(",").map(v => v.trim());
                         const fnName = splitVal[0].split("(")[0].trim().toUpperCase();
@@ -317,7 +377,7 @@ export class _NanoSQLQuery {
                     }
                 });
                 if (this.query.state !== "error") {
-                    _NanoSQLQuery.selectArgsMemoized[selectArgsKey] = { hasAggrFn: hasAggrFn, args: this._selectArgs };
+                    _NanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: hasAggrFn, args: this._selectArgs };
                 }
             }
 
@@ -325,8 +385,15 @@ export class _NanoSQLQuery {
             this._selectArgs = [];
         }
 
+        let canUseOrderByIndex: boolean = false;
+        if (this._whereArgs.type === WhereType.none) {
+            canUseOrderByIndex = this._orderBy.indexed;
+        } else {
+            canUseOrderByIndex = this._orderBy.indexed && this._whereArgs.fastWhere && this._whereArgs.fastWhere[0][0].col === this._orderBy.sort[0].col ? true : false;
+        }
 
-        if (this.query.orderBy || this.query.groupBy || this.query.join || hasAggrFn) {
+
+        if (this._groupBy.sort.length || !canUseOrderByIndex || hasAggrFn) {
             this._stream = false;
         }
     }
@@ -336,7 +403,7 @@ export class _NanoSQLQuery {
     };
 
     private _parseWhere(qWhere: any[] | ((row: { [key: string]: any }) => boolean), ignoreIndexes?: boolean): WhereArgs {
-        const where = this.query.where || [];
+        const where = qWhere || [];
         const key = JSON.stringify(where) + (ignoreIndexes ? "0" : "1");
 
         if (_NanoSQLQuery._whereMemoized[key]) {
@@ -351,9 +418,10 @@ export class _NanoSQLQuery {
         }
 
         const indexes: NanoSQLIndex[] = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].indexes : [];
+        const pkKey: string = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : "";
 
         // find indexes and functions
-        const recursiveParse = (ww: any[], level: number): any[] => {
+        const recursiveParse = (ww: any[], level: number): (WhereCondition | string)[] => {
             let skip = 0;
             const doIndex = !ignoreIndexes && level === 0;
             return ww.reduce((p, w, i) => {
@@ -362,18 +430,34 @@ export class _NanoSQLQuery {
                     return p;
                 }
                 if (i % 2 === 1) { // AND or OR
+                    if (typeof w !== "string") {
+                        this.query.state = "error";
+                        this.error("Malformed WHERE statement!");
+                        return p;
+                    }
                     p.push(w);
                     return p;
                 } else { // where conditions
+
+                    if (!Array.isArray(w)) {
+                        this.query.state = "error";
+                        this.error("Malformed WHERE statement!");
+                        return p;
+                    }
                     if (Array.isArray(w[0])) { // nested array
                         p.push(recursiveParse(w, level + 1));
                     } else if (w[0].indexOf("(") !== -1) { // function
 
-                        const fnArgs = w[0].split("(")[1].replace(")", "").split(",").map(v => v.trim());
-                        const fnName = w[0].split("(")[0].trim().toUpperCase();
+                        const fnArgs: string[] = w[0].split("(")[1].replace(")", "").split(",").map(v => v.trim()).filter(a => a);
+                        const fnName: string = w[0].split("(")[0].trim().toUpperCase();
                         let hasIndex = false;
-                        if (doIndex && this.nSQL.fnIndexes[fnName]) {
-                            const indexFn = this.nSQL.fnIndexes[fnName].whereParse(this.nSQL, this.query, fnArgs, w);
+                        if (!this.nSQL.functions[fnName]) {
+                            this.query.state = "error";
+                            this.error(`Function "${fnName}" not found!`);
+                            return p;
+                        }
+                        if (doIndex && this.nSQL.functions[fnName] && this.nSQL.functions[fnName].whereIndex) {
+                            const indexFn = (this.nSQL.functions[fnName].whereIndex as any)(this.nSQL, this.query, fnArgs, w);
                             if (indexFn) {
                                 hasIndex = true;
                                 p.push(indexFn);
@@ -391,9 +475,21 @@ export class _NanoSQLQuery {
 
                     } else { // column select
                         let isIndexCol = false;
+
+                        // primary key select
+                        if (w[0] === pkKey && ["=", "BETWEEN", "IN"].indexOf(w[1]) !== -1) {
+                            isIndexCol = true;
+                            p.push({
+                                index: "_pk_",
+                                col: w[0],
+                                comp: w[1],
+                                value: w[2]
+                            });
+                        }
+                        // check if we can use any index
                         indexes.forEach((index) => {
                             const idx = index.paths.indexOf(w[0]);
-                            if (idx !== -1 && doIndex) {
+                            if (idx !== -1 && doIndex && !isIndexCol) {
                                 if (index.paths.length === 1) { // single column index
                                     if (["=", "BETWEEN", "IN"].indexOf(w[1]) !== -1) {
                                         isIndexCol = true;
@@ -423,11 +519,13 @@ export class _NanoSQLQuery {
                                             if (nextVal) {
 
                                                 if (nextIdx % 2 === 1) {
+                                                    // compound indexes must have AND between them
                                                     if (nextVal !== "AND") {
                                                         validIndex = false;
                                                     }
                                                 } else {
                                                     if (typeof nextVal[0] !== "string") {
+                                                        // found a nested where, no need to continue checking
                                                         validIndex = false;
                                                     } else {
                                                         const otherIndexes = pickIndexes.indexOf(nextVal[0]);
@@ -447,9 +545,9 @@ export class _NanoSQLQuery {
                                             skip = (index.paths.length * 2) - 2;
                                             p.push({
                                                 index: index.name,
-                                                col: Object.keys(columns),
+                                                col: Object.keys(columns).sort(objSort()),
                                                 comp: "=",
-                                                value: Object.keys(columns).map(c => columns[c])
+                                                value: Object.keys(columns).sort(objSort()).map(c => columns[c])
                                             });
                                         }
                                     }
@@ -468,8 +566,12 @@ export class _NanoSQLQuery {
                 }
             }, [] as any[]);
         };
-        const parsedWhere = recursiveParse(where, 0);
+        let parsedWhere = recursiveParse(typeof where[0] === "string" ? [where] : where, 0);
 
+
+        // discover where we have indexes we can use
+        // the rest is a full table scan OR a scan of the index results
+        // fastWhere = index query, slowWhere = row by row/full table scan
         let isIndex = true;
         let count = 0;
         let lastFastIndx = -1;
@@ -480,18 +582,20 @@ export class _NanoSQLQuery {
                     lastFastIndx = count;
                 }
             } else {
-                if (!parsedWhere[count].index) {
+                if (!(parsedWhere[count] as any).index) {
                     isIndex = false;
                     lastFastIndx = count;
                 }
             }
             count++;
         }
+
+        // make sure lastFastIndx lands on an AND, OR or gets pushed off the end.
         if (lastFastIndx % 2 === 0) {
             lastFastIndx++;
         }
         // has at least some index values
-        // AND or the end of the WHERE should follow the last index to use the indexes
+        // "AND" or the end of the WHERE should follow the last index to use the indexes
         if (lastFastIndx !== -1 && (parsedWhere[lastFastIndx] === "AND" || !parsedWhere[lastFastIndx])) {
             const slowWhere = parsedWhere.slice(lastFastIndx + 1);
             _NanoSQLQuery._whereMemoized[key] = {
