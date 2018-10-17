@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "nano-sql/lib/utilities";
+import { StdObject, hash, fastALL, fastCHAIN, splitArr, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "nano-sql/lib/utilities";
 import { DatabaseIndex } from "nano-sql/lib/database/db-idx";
 import { Database } from "sqlite3";
 
@@ -26,6 +26,7 @@ export class SQLiteResult {
         };
     }
 }
+
 
 /**
  * Handles WebSQL persistent storage
@@ -53,7 +54,7 @@ export class nSQLiteAdapter implements NanoSQLStorageAdapter {
     private _filename: string;
     private _mode: any;
 
-    constructor(filename: ":memory:"|string, mode?: any) {
+    constructor(filename: ":memory:" | string, mode?: any) {
         this._pkKey = {};
         this._dbIndex = {};
         this._filename = filename;
@@ -67,7 +68,7 @@ export class nSQLiteAdapter implements NanoSQLStorageAdapter {
     public connect(complete: () => void) {
 
         this._db = new sqlite3.Database(this._filename, this._mode || (sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE), (err) => {
-            
+
             if (err) {
                 throw err;
             }
@@ -135,7 +136,7 @@ export class nSQLiteAdapter implements NanoSQLStorageAdapter {
             })
         } else {
             let rows: any[] = [];
-            
+
             this._db.each(sql, args, (err, row) => {
                 rows.push(row);
             }, (err) => {
@@ -199,8 +200,26 @@ export class nSQLiteAdapter implements NanoSQLStorageAdapter {
         });
     }
 
+    public batchRead(table: string, pks: any[], callback: (rows: any[]) => void) {
+        const useKeys = splitArr(pks, 500);
+        let rows: any[] = [];
+        fastCHAIN(useKeys, (keys, i, next) => {
+            this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${keys.map(p => "?").join(", ")}) ORDER BY id`, keys, (result) => {
+                let i = result.rows.length;
+                while (i--) {
+                    rows.push(JSON.parse(result.rows.item(i).data));
+                }
+                next();
+            });
+        }).then(() => {
+            callback(rows);
+        });
+
+    }
+
     public rangeRead(table: string, rowCallback: (row: DBRow, idx: number, nextRow: () => void) => void, complete: () => void, from?: any, to?: any, usePK?: boolean): void {
-        const keys = this._dbIndex[table].keys();
+
+        let keys = this._dbIndex[table].keys();
         const usefulValues = [typeof from, typeof to].indexOf("undefined") === -1;
         let ranges: number[] = usefulValues ? [from as any, to as any] : [];
         if (!keys.length) {
@@ -209,6 +228,10 @@ export class nSQLiteAdapter implements NanoSQLStorageAdapter {
         }
         if (usePK && usefulValues) {
             ranges = ranges.map(r => this._dbIndex[table].getLocation(r));
+        }
+
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
+            keys = keys.sort();
         }
 
         let idx = ranges[0] || 0;
@@ -223,29 +246,46 @@ export class nSQLiteAdapter implements NanoSQLStorageAdapter {
         if (ranges.length) {
             const t = typeof keys[startIDX] === "number";
             while (startIDX <= ranges[1]) {
-                getKeys.push(t ? keys[startIDX] : `"${keys[startIDX]}"`);
+                getKeys.push(keys[startIDX]);
                 startIDX++;
             }
-            stmnt += ` WHERE id IN (${getKeys.join(", ")})`;
         }
 
         stmnt += " ORDER BY id";
 
-        this._sql(false, stmnt, [], (result) => {
-            let i = 0;
-            const getRow = () => {
-                if (result.rows.length > i) {
-                    rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
-                        idx++;
-                        i++;
-                        i % 200 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
-                    });
-                } else {
-                    complete();
-                }
-            };
-            getRow();
-        });
+        if (getKeys.length) {
+            this.batchRead(this._chkTable(table), getKeys, (result: any[]) => {
+                let i = 0;
+                const getRow = () => {
+                    if (result.length > i) {
+                        rowCallback(result[i], idx, () => {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        } else {
+            this._sql(false, stmnt, [], (result) => {
+                let i = 0;
+                const getRow = () => {
+                    if (result.rows.length > i) {
+                        rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        }
 
 
     }

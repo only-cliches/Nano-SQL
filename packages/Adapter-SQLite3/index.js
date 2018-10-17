@@ -100,6 +100,7 @@ var nSQLiteAdapter = (function () {
         }
     };
     nSQLiteAdapter.prototype.write = function (table, pk, data, complete) {
+        var _a, _b;
         pk = pk || utilities_1.generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai);
         if (!pk) {
             throw new Error("Can't add a row without a primary key!");
@@ -121,7 +122,6 @@ var nSQLiteAdapter = (function () {
                 complete(r_2);
             });
         }
-        var _a, _b;
     };
     nSQLiteAdapter.prototype.delete = function (table, pk, complete) {
         var pos = this._dbIndex[table].indexOf(pk);
@@ -142,6 +142,22 @@ var nSQLiteAdapter = (function () {
             }
         });
     };
+    nSQLiteAdapter.prototype.batchRead = function (table, pks, callback) {
+        var _this = this;
+        var useKeys = utilities_1.splitArr(pks, 500);
+        var rows = [];
+        utilities_1.fastCHAIN(useKeys, function (keys, i, next) {
+            _this._sql(false, "SELECT data from " + _this._chkTable(table) + " WHERE id IN (" + keys.map(function (p) { return "?"; }).join(", ") + ") ORDER BY id", keys, function (result) {
+                var i = result.rows.length;
+                while (i--) {
+                    rows.push(JSON.parse(result.rows.item(i).data));
+                }
+                next();
+            });
+        }).then(function () {
+            callback(rows);
+        });
+    };
     nSQLiteAdapter.prototype.rangeRead = function (table, rowCallback, complete, from, to, usePK) {
         var _this = this;
         var keys = this._dbIndex[table].keys();
@@ -154,6 +170,9 @@ var nSQLiteAdapter = (function () {
         if (usePK && usefulValues) {
             ranges = ranges.map(function (r) { return _this._dbIndex[table].getLocation(r); });
         }
+        if (!(usePK && usefulValues) && this._dbIndex[table].sortIndex === false) {
+            keys = keys.sort();
+        }
         var idx = ranges[0] || 0;
         var getKeys = [];
         var startIDX = ranges[0];
@@ -161,28 +180,47 @@ var nSQLiteAdapter = (function () {
         if (ranges.length) {
             var t = typeof keys[startIDX] === "number";
             while (startIDX <= ranges[1]) {
-                getKeys.push(t ? keys[startIDX] : "\"" + keys[startIDX] + "\"");
+                getKeys.push(keys[startIDX]);
                 startIDX++;
             }
-            stmnt += " WHERE id IN (" + getKeys.join(", ") + ")";
         }
         stmnt += " ORDER BY id";
-        this._sql(false, stmnt, [], function (result) {
-            var i = 0;
-            var getRow = function () {
-                if (result.rows.length > i) {
-                    rowCallback(JSON.parse(result.rows.item(i).data), idx, function () {
-                        idx++;
-                        i++;
-                        i % 200 === 0 ? lie_ts_1.setFast(getRow) : getRow();
-                    });
-                }
-                else {
-                    complete();
-                }
-            };
-            getRow();
-        });
+        if (getKeys.length) {
+            this.batchRead(this._chkTable(table), getKeys, function (result) {
+                var i = 0;
+                var getRow = function () {
+                    if (result.length > i) {
+                        rowCallback(result[i], idx, function () {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? lie_ts_1.setFast(getRow) : getRow();
+                        });
+                    }
+                    else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        }
+        else {
+            this._sql(false, stmnt, [], function (result) {
+                var i = 0;
+                var getRow = function () {
+                    if (result.rows.length > i) {
+                        rowCallback(JSON.parse(result.rows.item(i).data), idx, function () {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? lie_ts_1.setFast(getRow) : getRow();
+                        });
+                    }
+                    else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        }
     };
     nSQLiteAdapter.prototype.drop = function (table, callback) {
         var idx = new db_idx_1.DatabaseIndex();
