@@ -13,29 +13,30 @@ export interface NanoSQLConfig {
     warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
-    tables: {
-        name: string;
-        model: NanoSQLDataModel[],
-        indexes?: {name: string, paths: string[]}[];
-        mapReduce?: {
-            title?: string;
-            throttle?: number;
-            when: {
-                onEvents?: string | string[];
-                seconds?: number | number[];
-                minute?: number | number[];
-                hour?: number | number[];
-                weekDay?: number | number[];
-                date?: number | number[];
-                month?: number | number[];
-            };
-            call: (evn: NanoSQLDatabaseEvent[]) => void;
-        }[];
-        filter?: (row: any) => any,
-        actions?: NanoSQLActionOrView[],
-        views?: NanoSQLActionOrView[],
-        props?: any[];
+}
+
+export interface NanoSQLTableConfig {
+    name: string;
+    model: NanoSQLDataModel[],
+    indexes?: {name: string, paths: string[]}[];
+    mapReduce?: {
+        title?: string;
+        throttle?: number;
+        when: {
+            onEvents?: string | string[];
+            seconds?: number | number[];
+            minute?: number | number[];
+            hour?: number | number[];
+            weekDay?: number | number[];
+            date?: number | number[];
+            month?: number | number[];
+        };
+        call: (evn: NanoSQLDatabaseEvent[]) => void;
     }[];
+    filter?: (row: any) => any,
+    actions?: NanoSQLActionOrView[],
+    views?: NanoSQLActionOrView[],
+    props?: any[];
 }
 
 export interface NanoSQLPlugin {
@@ -260,6 +261,11 @@ export interface abstractFilter {
 export interface extendFilter extends abstractFilter {
     scope: string;
     args: any[];
+}
+
+// tslint:disable-next-line
+export interface registerTableFilter extends abstractFilter {
+    result: NanoSQLTableConfig
 }
 
 // tslint:disable-next-line

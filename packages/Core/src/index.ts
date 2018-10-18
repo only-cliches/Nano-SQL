@@ -1,13 +1,14 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
 import { Observer } from "./observable";
-import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter, NanoSQLTableColumn, ORMArgs, WhereCondition, NanoSQLIndex } from "./interfaces";
+import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter, NanoSQLTableColumn, ORMArgs, WhereCondition, NanoSQLIndex, NanoSQLTableConfig, registerTableFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { SequentialTaskQueue } from "sequential-task-queue";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
+import { stringify } from "querystring";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -58,6 +59,14 @@ export class NanoSQLInstance {
             props?: any;
         }
     };
+
+    public relations: {
+        [name: string]: {
+            left: string[];
+            sync: "<=" | "<=>" | "=>";
+            right: string[];
+        };
+    }
 
     public state: {
         activeAV: string;
@@ -300,6 +309,193 @@ export class NanoSQLInstance {
         getPage();
     }
 
+    public registerTable(table: NanoSQLTableConfig, isInternal?: boolean): Promise<any> {
+        return new Promise((res, rej) => {
+            let hasError = false;
+            if (!this.state.connected) {
+                rej("Must complete connect() before modifying tables!");
+                return;
+            }
+
+            const l = table.name;
+            if (!isInternal && (l.indexOf("_") === 0 || l.match(/\s/g) !== null || l.match(/[\(\)\]\[\.]/g) !== null)) {
+                rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
+                return;
+            }
+            table.model.forEach((model) => {
+                const modelData = model.name.split(":"); // [key, type];
+                if (modelData.length === 1) {
+                    modelData.push("any");
+                }
+                if (!modelData[0] || modelData[0].match(/[\(\)\]\[\.]/g) !== null || modelData[0].indexOf("_") === 0) {
+                    hasError = true;
+                    rej(`nSQL: Invalid Data Model at ${table.name}, ${JSON.stringify(model)}! https://docs.nanosql.io/setup/data-models`);
+                }
+            });
+            // replace white space in column names with dashes
+            table.model = table.model.map(k => ({
+                ...k,
+                name: k.name.replace(/\s+/g, "-")
+            }));
+
+            if (hasError) return;
+
+            return this.doFilter<registerTableFilter, NanoSQLTableConfig>("registerTable", { result: table })
+        }).then((table: NanoSQLTableConfig) => {
+
+            return new Promise((res, rej) => {
+
+                const setModels = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
+                    return dataModels.map(d => {
+                        const type = d.name.split(":")[1] || "any";
+                        if (type.indexOf("gps") === 0) {
+                            d.model = [
+                                { name: "lat:float", default: 0 },
+                                { name: "lon:float", default: 0 }
+                            ];
+                        }
+                        if (d.model) {
+                            d.model = setModels(d.model);
+                        }
+                        return d;
+                    });
+                };
+
+                const generateColumns = (dataModels: NanoSQLDataModel[]): NanoSQLTableColumn[] => {
+                    return dataModels.filter(d => d.name !== "*").map(d => ({
+                        key: d.name.split(":")[0],
+                        type: d.name.split(":")[1] || "any",
+                        default: d.default || null,
+                        notNull: d.props && d.props.indexOf("not_null()") !== -1 ? true : false,
+                        model: d.model ? generateColumns(d.model) : undefined
+                    }));
+                };
+
+                let hasError = false;
+                const computedDataModel = setModels(table.model);
+
+                this.tables[table.name] = {
+                    model: computedDataModel,
+                    columns: generateColumns(computedDataModel),
+                    actions: table.actions || [],
+                    views: table.views || [],
+                    indexes: (table.indexes || []).map(i => ({
+                        name: i.name.split(":")[0],
+                        type: i.name.split(":")[1] || "string",
+                        paths: i.paths
+                    })).reduce((p, c) => {
+                        const allowedTypes = Object.keys(this.indexTypes);
+                        if (allowedTypes.indexOf(c.type) === -1) {
+                            hasError = true;
+                            rej(`Index "${c.name}" does not have a valid type!`);
+                            return p;
+                        }
+                        if (c.type.indexOf("gps") !== -1) {
+                            if (c.paths.length > 1) {
+                                hasError = true;
+                                rej("Can't have multiple paths with GPS index type!");
+                            }
+                            p.push({ name: c.name + ".lat", type: "float", paths: [c.paths[0] + ".lat"] });
+                            p.push({ name: c.name + ".lon", type: "float", paths: [c.paths[0] + ".lon"] });
+                        } else {
+                            p.push(c);
+                        }
+                        return p;
+                    }, [] as any[]),
+                    pkType: table.model.reduce((p, c) => {
+                        if (c.props && c.props.indexOf("pk()") !== -1) return c.name.split(":")[1];
+                        return p;
+                    }, ""),
+                    pkCol: table.model.reduce((p, c) => {
+                        if (c.props && c.props.indexOf("pk()") !== -1) return c.name.split(":")[0];
+                        return p;
+                    }, ""),
+                    ai: table.model.reduce((p, c) => {
+                        if (c.props && c.props.indexOf("pk()") !== -1 && c.props.indexOf("ai()") !== -1) return true;
+                        return p;
+                    }, false)
+                };
+
+                // no primary key found, set one
+                if (this.tables[table.name].pkCol === "") {
+                    this.tables[table.name].pkCol = "_id_";
+                    this.tables[table.name].pkType = "uuid";
+                    this.tables[table.name].model.unshift({ name: "_id_:uuid", props: ["pk()"] });
+                    this.tables[table.name].columns = generateColumns(this.tables[table.name].model);
+                }
+
+                if (hasError) return;
+
+                this.adapter.makeTable(table.name, this.tables[table.name].model, res, rej);
+            });
+        });
+
+    }
+
+    public destroyTable(table: string): Promise<any> {
+        return new Promise((res, rej) => {
+            if (!this.state.connected) {
+                rej("Must complete connect() before modifying tables!");
+                return;
+            }
+            return this.doFilter("destroyTable", {result: table});
+        }).then((destroyTable: string) => {
+            delete this.tables[destroyTable];
+            return new Promise((res, rej) => this.adapter.destroyTable(destroyTable, res, rej));
+        });
+    }
+
+    public registerRelation(name: string, relation: [string, "<=" | "<=>" | "=>", string]): Promise<any> {
+        return new Promise((res, rej) => {
+            if (!this.state.connected) {
+                rej("Must complete connect() before modifying relations!");
+                return;
+            }
+            return this.doFilter("registerRelation", {result: {name: name, rel: relation}})
+        }).then((result: {name: string, rel: string[]}) => {
+            return new Promise((res, rej) => {
+                const relation = {
+                    left: resolveObjPath(result.rel[0]),
+                    sync: result.rel[1] as any,
+                    right: resolveObjPath(result.rel[2])
+                }
+                if (["<=", "<=>", "=>"].indexOf(relation.sync) === -1 || relation.left.length < 2 || relation.right.length < 2) {
+                    rej("Invalid relation!");
+                    return;
+                }
+                const tables = Object.keys(this.tables);
+                if (tables.indexOf(relation.left[0]) === -1) {
+                    rej(`Relation error, can't find table ${relation.left[0]}!`);
+                    return;
+                }
+                if (tables.indexOf(relation.right[0]) === -1) {
+                    rej(`Relation error, can't find table ${relation.right[0]}!`);
+                    return;
+                }
+                this.relations[result.name] = relation;
+                res(this.relations[result.name]);
+            })
+        })
+    }
+
+    public destroyRelation(name: string): Promise<any> {
+        return new Promise((res, rej) => {
+            if (!this.state.connected) {
+                rej("Must complete connect() before modifying relations!");
+                return;
+            }
+            return this.doFilter("destroyRelation", {result: name});
+        }).then((result: string) => {
+            return new Promise((res, rej) => {
+                if (!this.relations[result]) {
+                    rej(`Relation ${result} not found!`);
+                    return;
+                }
+                delete this.relations[result];
+                res(result);
+            })
+        })
+    }
 
     /**
      * Changes the table pointer to a new table.
@@ -309,7 +505,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public table(table?: string | any[] | (() => Promise<any[]>)): NanoSQLInstance {
+    public selectTable(table?: string | any[] | (() => Promise<any[]>)): NanoSQLInstance {
         if (table) this.state.selectedTable = table;
         return this;
     }
@@ -424,156 +620,15 @@ export class NanoSQLInstance {
         return new Promise((res, rej) => {
             return this._initPlugins(config);
         }).then(() => {
-            return new Promise((res, rej) => {
-                let hasError = false;
-
-                // sanity checks on user placed tables and data models
-                // plugins and internal tables do not get the sanity check
-                config.tables.forEach((table, i) => {
-                    const l = table.name;
-                    if (l.indexOf("_") === 0 || l.match(/[\(\)\]\[\.]/g) !== null) {
-                        hasError = true;
-                        rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
-                    }
-                    table.model.forEach((model) => {
-                        const modelData = model.name.split(":"); // [key, type];
-                        if (modelData.length === 1) {
-                            modelData.push("any");
-                        }
-                        if (!modelData[0] || modelData[0].match(/[\(\)\]\[\.]/g) !== null || modelData[0].indexOf("_") === 0) {
-                            hasError = true;
-                            rej(`nSQL: Invalid Data Model at ${table.name}, ${JSON.stringify(model)}! https://docs.nanosql.io/setup/data-models`);
-                            return;
-                        }
-                    });
-                    // replace white space in column names with dashes
-                    config.tables[i].model = config.tables[i].model.map(k => ({
-                        ...k,
-                        name: k.name.replace(/\s+/g, "-")
-                    }));
-                });
-                if (!hasError) {
-                    res();
-                }
-            });
-        }).then(() => {
             return this.doFilter<configFilter, NanoSQLConfig>("config", { result: config });
         }).then((conf: NanoSQLConfig) => {
+            this.state.id = config.id || "nSQL_DB";
 
-            return new Promise((res, rej) => {
+            this.config = conf;
 
-                let hasError = false;
-
-                this.state.id = config.id || hash(JSON.stringify(config.tables || []));
-
-                conf.tables.push({
-                    name: "_util",
-                    model: [
-                        { name: "key:string", props: ["pk()", "ai()"] },
-                        { name: "value:any" }
-                    ]
-                });
-
-                conf.tables.push({
-                    name: "_ttl",
-                    model: [
-                        { name: "key:string", props: ["pk()"] },
-                        { name: "table:string" },
-                        { name: "cols:string[]" },
-                        { name: "date:number" }
-                    ]
-                });
-
-
-                const setModel = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
-                    return dataModels.map(d => {
-                        const type = d.name.split(":")[1] || "any";
-                        if (type.indexOf("gps") === 0) {
-                            d.model = [
-                                { name: "lat:float", default: 0 },
-                                { name: "lon:float", default: 0 }
-                            ];
-                        }
-                        if (d.model) {
-                            d.model = setModel(d.model);
-                        }
-                        return d;
-                    });
-                };
-
-                const generateColumns = (dataModels: NanoSQLDataModel[]): NanoSQLTableColumn[] => {
-                    return dataModels.filter(d => d.name !== "*").map(d => ({
-                        key: d.name.split(":")[0],
-                        type: d.name.split(":")[1] || "any",
-                        default: d.default || null,
-                        notNull: d.props && d.props.indexOf("not_null()") !== -1 ? true : false,
-                        model: d.model ? generateColumns(d.model) : undefined
-                    }));
-                };
-
-                conf.tables.forEach((table) => {
-                    const computedDataModel = setModel(table.model);
-
-                    this.tables[table.name] = {
-                        model: computedDataModel,
-                        columns: generateColumns(computedDataModel),
-                        actions: table.actions || [],
-                        views: table.views || [],
-                        indexes: (table.indexes || []).map(i => ({
-                            name: i.name.split(":")[0],
-                            type: i.name.split(":")[1] || "string",
-                            paths: i.paths
-                        })).reduce((p, c) => {
-                            const allowedTypes = Object.keys(this.indexTypes);
-                            if (allowedTypes.indexOf(c.type) === -1) {
-                                hasError = true;
-                                rej(`Index "${c.name}" does not have a valid type!`);
-                                return p;
-                            }
-                            if (c.type.indexOf("gps") !== -1) {
-                                if (c.paths.length > 1) {
-                                    hasError = true;
-                                    rej("Can't have multiple paths with GPS index type!");
-                                }
-                                p.push({ name: c.name + ".lat", type: "float", paths: [c.paths[0] + ".lat"] });
-                                p.push({ name: c.name + ".lon", type: "float", paths: [c.paths[0] + ".lon"] });
-                            } else {
-                                p.push(c);
-                            }
-                            return p;
-                        }, [] as any[]),
-                        pkType: table.model.reduce((p, c) => {
-                            if (c.props && c.props.indexOf("pk()") !== -1) return c.name.split(":")[1];
-                            return p;
-                        }, ""),
-                        pkCol: table.model.reduce((p, c) => {
-                            if (c.props && c.props.indexOf("pk()") !== -1) return c.name.split(":")[0];
-                            return p;
-                        }, ""),
-                        ai: table.model.reduce((p, c) => {
-                            if (c.props && c.props.indexOf("pk()") !== -1 && c.props.indexOf("ai()") !== -1) return true;
-                            return p;
-                        }, false)
-                    };
-
-                    // no primary key found, set one
-                    if (this.tables[table.name].pkCol === "") {
-                        this.tables[table.name].pkCol = "_id_";
-                        this.tables[table.name].pkType = "uuid";
-                        this.tables[table.name].model.unshift({ name: "_id_:uuid", props: ["pk()"] });
-                        this.tables[table.name].columns = generateColumns(this.tables[table.name].model);
-                    }
-                });
-
-                this.config = conf;
-
-                if (typeof window !== "undefined" && conf && conf.peer) {
-                    this.state.peerMode = true;
-                }
-                if (!hasError) res();
-            });
-        }).then(() => {
-
+            if (typeof window !== "undefined" && conf && conf.peer) {
+                this.state.peerMode = true;
+            }
             return this.doFilter<willConnectFilter, {}>("willConnect", { result: {} });
         }).then(() => {
             // setup and connect adapter
@@ -620,11 +675,6 @@ export class NanoSQLInstance {
 
             });
         }).then(() => {
-            // make tables
-            return allAsync(Object.keys(this.tables), (table, i, next, err) => {
-                this.adapter.makeTable(table, this.tables[table].model, next as any, err);
-            });
-        }).then(() => {
 
             this.triggerEvent({
                 target: "Core",
@@ -633,6 +683,32 @@ export class NanoSQLInstance {
                 time: Date.now()
             });
             this.state.connected = true;
+
+            return allAsync([0, 1], (j, i, next, err) => {
+                switch (j) {
+                    case 0:
+                        this.registerTable({
+                            name: "_util",
+                            model: [
+                                { name: "key:string", props: ["pk()", "ai()"] },
+                                { name: "value:any" }
+                            ]
+                        }, true).then(next).catch(err);
+                        break;
+                    case 1:
+                        this.registerTable({
+                            name: "_ttl",
+                            model: [
+                                { name: "key:string", props: ["pk()"] },
+                                { name: "table:string" },
+                                { name: "cols:string[]" },
+                                { name: "date:number" }
+                            ]
+                        }, true).then(next).catch(err);
+                        break;
+                }
+            })
+        }).then(() => {
 
             // migrate nanosql version as needed
             return new Promise((res, rej) => {
@@ -668,28 +744,29 @@ export class NanoSQLInstance {
                 }, (row) => {
                     if (row) currentVersion = row.value;
                 }, () => {
-                    const saveVersion = () => {
+                    const saveVersion = (version: number, complete, err) => {
                         this.triggerQuery({
                             ...buildQuery("_util", "upsert"),
-                            actionArgs: { key: "db-version", value: this.config.version }
-                        }, noop, res, rej);
+                            actionArgs: { key: "db-version", value: version }
+                        }, noop, complete, err);
                     };
                     // nothing to migrate, just set version
                     if (!currentVersion) {
-                        saveVersion();
+                        saveVersion(this.config.version || 0, res, rej);
                     } else {
                         const upgrade = () => {
                             if (currentVersion === this.config.version) {
-                                saveVersion();
+                                saveVersion(this.config.version || 0, res, rej);
                             } else {
                                 if (!this.config.onVersionUpdate) {
-                                    currentVersion = this.config.version || 0;
-                                    saveVersion();
+                                    saveVersion(this.config.version || 0, res, rej);
                                     return;
                                 }
                                 this.config.onVersionUpdate(currentVersion).then((newVersion) => {
                                     currentVersion = newVersion;
-                                    setFast(upgrade);
+                                    saveVersion(currentVersion, () => {
+                                        setFast(upgrade);
+                                    }, rej);
                                 }).catch(rej);
                             }
                         };
@@ -1019,14 +1096,6 @@ export class NanoSQLInstance {
      * .query("delete") // Same as drop statement
      * ```
      *
-     * ### Drop
-     *
-     * Drop is used to completely clear the contents of a database.  There are no arguments.
-     *
-     * Drop Examples:
-     * ```ts
-     * .query("drop")
-     * ```
      *
      * @param {("select"|"upsert"|"delete"|"drop")} action
      * @param {any} [args]
@@ -1034,7 +1103,7 @@ export class NanoSQLInstance {
      *
      * @memberOf NanoSQLInstance
      */
-    public query(action: string, args?: any): _NanoSQLQueryBuilder {
+    public query(action: string | NanoSQLQuery, args?: any): _NanoSQLQueryBuilder {
         const av = this.state.activeAV;
         this.state.activeAV = "";
         return new _NanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
@@ -1234,14 +1303,8 @@ export class NanoSQLInstance {
      * @memberof NanoSQLInstance
      */
     public disconnect() {
-        return this.doFilter<disconnectFilter, boolean>("disconnect", { result: true }).then((doDisconnect) => {
-            return new Promise((res, rej) => {
-                if (doDisconnect) {
-                    this.adapter.disconnect(res, rej);
-                } else {
-                    rej("Disconnect aborted by a plugin!");
-                }
-            });
+        return this.doFilter<disconnectFilter, undefined>("disconnect", {}).then(() => {
+            return new Promise((res, rej) => this.adapter.disconnect(res, rej));
         });
     }
 
@@ -1446,7 +1509,7 @@ export class NanoSQLInstance {
 let _NanoSQLStatic = new NanoSQLInstance();
 
 export const nSQL = (setTablePointer?: string | any[] | (() => Promise<any[]>)) => {
-    return _NanoSQLStatic.table(setTablePointer);
+    return _NanoSQLStatic.selectTable(setTablePointer);
 };
 
 if (typeof window !== "undefined") {
@@ -1580,18 +1643,29 @@ export class _NanoSQLQueryBuilder {
 
     public static execMap: any;
 
-    constructor(db: NanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string, queryArgs?: any, actionOrView?: string) {
+    constructor(db: NanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | NanoSQLQuery, queryArgs?: any, actionOrView?: string) {
         this._db = db;
 
         this._AV = actionOrView || "";
-        this._query = {
-            ...buildQuery(table, queryAction),
-            comments: [],
-            state: "pending",
-            action: queryAction,
-            actionArgs: queryArgs,
-            result: []
-        };
+
+        if (typeof queryAction === "string") {
+            this._query = {
+                ...buildQuery(table, queryAction),
+                comments: [],
+                state: "pending",
+                action: queryAction,
+                actionArgs: queryArgs,
+                result: []
+            };
+        } else {
+            this._query = {
+                state: "pending",
+                ...queryAction
+            };
+        }
+
+        
+
     }
 
     /**

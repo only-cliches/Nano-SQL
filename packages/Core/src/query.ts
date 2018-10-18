@@ -35,9 +35,6 @@ export class _NanoSQLQuery {
             case "delete":
                 this._delete();
                 break;
-            case "drop":
-                this._drop();
-                break;
             case "show tables":
                 this._showTables();
                 break;
@@ -86,15 +83,12 @@ export class _NanoSQLQuery {
         if (this.query.state === "error") return;
 
         if (this._whereArgs.type === WhereType.none) { // drop all records
-            this._drop();
+
         } else { // find records and delete them
 
         }
     }
 
-    private _drop() {
-
-    }
 
     private _showTables() {
 
