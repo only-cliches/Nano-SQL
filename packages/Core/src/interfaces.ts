@@ -104,7 +104,7 @@ export interface NanoSQLFunction {
     aggregateStart?: {result: any, row?: any, [key: string]: any};
     call: (query: NanoSQLQuery, row: any, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
     whereIndex?: (nSQL: any, query: NanoSQLQuery, fnArgs: string[], where: string[]) => WhereCondition | false;
-    queryIndex?: (nSQL: any, query: NanoSQLQuery, where: WhereCondition) => Promise<{ [key: string]: any }>;
+    queryIndex?: (nSQL: any, query: NanoSQLQuery, where: WhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
 }
 
 /**

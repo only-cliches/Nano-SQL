@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from ".";
 import { crowDistance, objQuery, cast, resolveObjPath, compareObjects } from "./utilities";
-import { NanoSQLQuery, NanoSQLIndex } from "./interfaces";
+import { NanoSQLQuery, NanoSQLIndex, WhereCondition } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
 const wordLevenshtienCache: { [words: string]: number } = {};
@@ -132,7 +132,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                 return {result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)};
             },
             whereIndex: (nSQL, query, fnArgs, where) => {
-                if (where[1] === "<" || where[1] === "<=") {
+                if (where[1] === ">" || where[1] === ">=") {
                     const indexes: {[name: string]: NanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     const crowColumn = resolveObjPath(fnArgs[0]);
                     let crowCols: string[] = [];
@@ -154,8 +154,8 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                 }
                 return false;
             },
-            queryIndex: (query, where) => {
-                return new Promise((res, rej) => res([]));
+            queryIndex: (nSQL: any, query: NanoSQLQuery, where: WhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => {
+
             }
         }
     };

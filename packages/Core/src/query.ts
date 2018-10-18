@@ -166,10 +166,14 @@ export class _NanoSQLQuery {
 
                 const fastWhere = this._whereArgs.fastWhere[0] as WhereCondition;
                 const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
-                // primary key
-                if (fastWhere.col === this.nSQL.tables[this.query.table as string].pkCol) {
+
+                // function
+                if (fastWhere.index && fastWhere.fnName) {
+                    (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.nSQL, this, fastWhere, false, onRow, complete);
+                    // primary key
+                } else if (fastWhere.col === this.nSQL.tables[this.query.table as string].pkCol) {
                     this._getByPKs(false, fastWhere, isReversed, this._pkOrderBy, onRow, complete);
-                // index
+                    // index
                 } else {
                     this._readIndex(false, fastWhere, onRow, complete);
                 }
@@ -188,10 +192,13 @@ export class _NanoSQLQuery {
                     const addIndexBuffer = (pk) => {
                         indexBuffer[pk] = i;
                     };
-                    // primary key
-                    if (fastWhere.col === this.nSQL.tables[this.query.table as string].pkCol) {
+                    // function
+                    if (fastWhere.index && fastWhere.fnName) {
+                        (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.nSQL, this, fastWhere, true, addIndexBuffer, next);
+                        // primary key
+                    } else if (fastWhere.col === this.nSQL.tables[this.query.table as string].pkCol) {
                         this._getByPKs(true, fastWhere, false, false, addIndexBuffer, next);
-                    // index
+                        // index
                     } else {
                         this._readIndex(true, fastWhere, addIndexBuffer, next);
                     }
@@ -253,7 +260,7 @@ export class _NanoSQLQuery {
         };
 
         const table = "_idx_" + fastWhere.index;
-        let indexBuffer: {id: any, pks: any[]}[] = [];
+        let indexBuffer: { id: any, pks: any[] }[] = [];
         let indexPKs: any[] = [];
         const isReversed = this._idxOrderBy && this._orderBy.sort[0].dir === "DESC";
         this._getByPKs(false, fastWhere, isReversed, this._idxOrderBy, (row) => {
@@ -313,7 +320,7 @@ export class _NanoSQLQuery {
                 // primary key or secondary index followed by slow query
                 case WhereType.medium:
                     this._fastQuery((row, i) => {
-                        if (this._where(row, this._whereArgs.slowWhere as any, this.query.join !== undefined)) {
+                        if (this._where(row, this._whereArgs.slowWhere as any, false)) {
                             onRow(row, i);
                         }
                     }, complete);
@@ -325,7 +332,7 @@ export class _NanoSQLQuery {
                     const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
                     this.nSQL.adapter.readMulti(this.query.table, "all", undefined, undefined, isReversed, (row, i) => {
                         if (this._whereArgs.type === WhereType.slow) {
-                            if (this._where(row, this._whereArgs.slowWhere as any, this.query.join !== undefined)) {
+                            if (this._where(row, this._whereArgs.slowWhere as any, false)) {
                                 onRow(row, i);
                             }
                         } else if (this._whereArgs.type === WhereType.fn && this._whereArgs.whereFn) {
@@ -605,7 +612,7 @@ export class _NanoSQLQuery {
             }
         }
 
-        if ((this._orderBy.sort.length && !canUseOrderByIndex) || this._groupBy.sort.length ||  hasAggrFn) {
+        if ((this._orderBy.sort.length && !canUseOrderByIndex) || this._groupBy.sort.length || hasAggrFn) {
             this._stream = false;
         }
     }
