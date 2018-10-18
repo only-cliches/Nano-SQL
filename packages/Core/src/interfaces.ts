@@ -17,8 +17,8 @@ export interface NanoSQLConfig {
 
 export interface NanoSQLTableConfig {
     name: string;
-    model: NanoSQLDataModel[],
-    indexes?: {name: string, paths: string[]}[];
+    model: NanoSQLDataModel[];
+    indexes?: {name: string, path: string}[];
     mapReduce?: {
         title?: string;
         throttle?: number;
@@ -33,10 +33,15 @@ export interface NanoSQLTableConfig {
         };
         call: (evn: NanoSQLDatabaseEvent[]) => void;
     }[];
-    filter?: (row: any) => any,
-    actions?: NanoSQLActionOrView[],
-    views?: NanoSQLActionOrView[],
+    filter?: (row: any) => any;
+    actions?: NanoSQLActionOrView[];
+    views?: NanoSQLActionOrView[];
     props?: any[];
+}
+
+export interface NanoSQLSortBy {
+    sort: { path: string[], dir: string }[];
+    index: string;
 }
 
 export interface NanoSQLPlugin {
@@ -71,7 +76,9 @@ export interface NanoSQLAdapter {
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void);
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}) => void, complete: () => void, error: (err: any) => void);
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
+
+    readMultiPK(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onPK: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void);
 
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
@@ -95,7 +102,7 @@ export interface NanoSQLActionOrView {
 export interface NanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
-    call: (query: NanoSQLQuery, row: any, complete: (result: {result: any, row?: any, [key: string]: any}) => void, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => void; // function call
+    call: (query: NanoSQLQuery, row: any, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
     whereIndex?: (nSQL: any, query: NanoSQLQuery, fnArgs: string[], where: string[]) => WhereCondition | false;
     queryIndex?: (nSQL: any, query: NanoSQLQuery, where: WhereCondition) => Promise<{ [key: string]: any }>;
 }
@@ -197,12 +204,12 @@ export interface NanoSQLQuery {
     extend: {scope: string, args: any[]}[];
     queryID: string;
     comments: string[];
-    where?: any[] | ((row: {[key: string]: any}) => boolean);
+    where?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
     range?: number[];
     orm?: (string | ORMArgs)[];
     orderBy?: string[];
     groupBy?: string[];
-    having?: any[] | ((row: {[key: string]: any}) => boolean);
+    having?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
     join?: NanoSQLJoinArgs | NanoSQLJoinArgs[];
     limit?: number;
     offset?: number;
@@ -216,7 +223,7 @@ export interface NanoSQLQuery {
 export interface NanoSQLIndex {
     name: string;
     type: string;
-    paths: string[];
+    path: string[];
 }
 
 export interface SelectArgs {
@@ -237,8 +244,8 @@ export enum WhereType {
 export interface WhereCondition {
     index?: string;
     fnName?: string;
-    fnArgs: string[];
-    col?: string | string[];
+    fnArgs?: string[];
+    col?: string;
     comp: string;
     value: string | string[];
 }
@@ -246,7 +253,7 @@ export interface WhereCondition {
 export interface WhereArgs {
     type: WhereType;
     whereFn?: (row: { [name: string]: any }, index: number) => boolean;
-    fastWhere?: (WhereCondition|string|(WhereCondition|string)[])[];
+    fastWhere?: (WhereCondition|string)[];
     slowWhere?: (WhereCondition|string|(WhereCondition|string)[])[];
 }
 
@@ -268,7 +275,7 @@ export interface extendFilter extends abstractFilter {
 
 // tslint:disable-next-line
 export interface registerTableFilter extends abstractFilter {
-    result: NanoSQLTableConfig
+    result: NanoSQLTableConfig;
 }
 
 // tslint:disable-next-line

@@ -1,5 +1,5 @@
 import { NanoSQLInstance } from ".";
-import { crowDistance, objQuery, cast } from "./utilities";
+import { crowDistance, objQuery, cast, resolveObjPath, compareObjects } from "./utilities";
 import { NanoSQLQuery, NanoSQLIndex } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -11,7 +11,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         COUNT: {
             type: "A",
             aggregateStart: {result: 0, row: {}},
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 if (column && column !== "*") {
                     if (objQuery(column, row, isJoin)) {
                         prev.result++;
@@ -20,13 +20,13 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                     prev.result++;
                 }
                 prev.row = row;
-                complete(prev);
+                return prev;
             }
         },
         MAX: {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 let max = objQuery(column, row, isJoin) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
@@ -37,13 +37,13 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                         prev.row = row;
                     }
                 }
-                complete(prev);
+                return prev;
             }
         },
         MIN: {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 let min = objQuery(column, row, isJoin) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
@@ -54,94 +54,92 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                         prev.row = row;
                     }
                 }
-                complete(prev);
+                return prev;
             }
         },
         GREATEST: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, ...values: string[]) => {
+            call: (query, row, isJoin, prev, ...values: string[]) => {
                 const args = values.map(s => isNaN(s as any) ? objQuery(s, row, isJoin) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
-                complete({result: args[0]});
+                return {result: args[0]};
             }
         },
         LEAST: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, ...values: string[]) => {
+            call: (query, row, isJoin, prev, ...values: string[]) => {
                 const args = values.map(s => isNaN(s as any) ? objQuery(s, row, isJoin) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
-                complete({result: args[0]});
+                return {result: args[0]};
             }
         },
         AVG: {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
                 prev.row = row;
-                complete(prev);
+                return prev;
             }
         },
         SUM: {
             type: "A",
             aggregateStart: {result: 0, row: {}},
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
-                complete(prev);
+                return prev;
             }
         },
         LOWER: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 const value = String(objQuery(column, row, isJoin)).toLowerCase();
-                complete({result: value});
+                return {result: value};
             }
         },
         UPPER: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, column) => {
+            call: (query, row, isJoin, prev, column) => {
                 const value = String(objQuery(column, row, isJoin)).toUpperCase();
-                complete({result: value});
+                return {result: value};
             }
         },
         CAST: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, column, type) => {
-                complete({result: cast(type, objQuery(column, row, isJoin))});
+            call: (query, row, isJoin, prev, column, type) => {
+                return {result: cast(type, objQuery(column, row, isJoin))};
             }
         },
         LEVENSHTEIN: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, word, column) => {
+            call: (query, row, isJoin, prev, word, column) => {
                 const val = String(objQuery(column, row, isJoin) || "");
                 const key = val + "::" + word;
                 if (!wordLevenshtienCache[key]) {
                     wordLevenshtienCache[key] = levenshtein(val, word);
                 }
-                complete({result: wordLevenshtienCache[key]});
+                return {result: wordLevenshtienCache[key]};
             }
         },
         CROW: {
             type: "S",
-            call: (query, row, complete, isJoin, prev, gpsCol: string, lat: string, lon: string) => {
+            call: (query, row, isJoin, prev, gpsCol: string, lat: string, lon: string) => {
                 const latVal = objQuery(gpsCol + ".lat", row, isJoin);
                 const lonVal = objQuery(gpsCol + ".lon", row, isJoin);
-                complete({result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)});
+                return {result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)};
             },
             whereIndex: (nSQL, query, fnArgs, where) => {
                 if (where[1] === "<" || where[1] === "<=") {
-                    const indexes: NanoSQLIndex[] = typeof query.table === "string" ? nSQL.tables[query.table].indexes : [];
-                    const crowColumn = fnArgs[0];
+                    const indexes: {[name: string]: NanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
+                    const crowColumn = resolveObjPath(fnArgs[0]);
                     let crowCols: string[] = [];
-                    indexes.forEach((index) => {
-                        if (index.paths[0] === crowColumn + ".lat") {
-                            crowCols.push(index.name);
-                        }
-                        if (index.paths[0] === crowColumn + ".lon") {
-                            crowCols.push(index.name);
+                    Object.keys(indexes).forEach((k) => {
+                        const index = indexes[k];
+                        if (compareObjects(index.path.slice(0, index.path.length - 1), crowColumn)) {
+                            crowCols.push(index.name.replace("-lat", "").replace("-lon", ""));
                         }
                     });
                     if (crowCols.length === 2) {
@@ -165,9 +163,9 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
     Object.getOwnPropertyNames(Math).forEach((key) => {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
-            call: (query, row, complete, isJoin, prev, ...args: string[]) => {
+            call: (query, row, isJoin, prev, ...args: string[]) => {
                 const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? objQuery(a, row, isJoin) : a));
-                complete({result: Math[key].apply(null, fnArgs)});
+                return {result: Math[key].apply(null, fnArgs)};
             }
         };
     });
