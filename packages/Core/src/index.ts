@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort } from "./utilities";
 import { Observer } from "./observable";
 import { NanoSQLConfig, NanoSQLPlugin, NanoSQLFunction, NanoSQLActionOrView, NanoSQLDataModel, NanoSQLQuery, disconnectFilter, NanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, buildQuery, NanoSQLAdapter, willConnectFilter, NanoSQLJoinArgs, readyFilter, NanoSQLTableColumn, ORMArgs, WhereCondition, NanoSQLIndex, NanoSQLTableConfig, registerTableFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
@@ -82,13 +82,6 @@ export class NanoSQLInstance {
         selectedTable: string | any[] | (() => Promise<any[]>);
     };
 
-    public fnIndexes: {
-        [fnName: string]: {
-            whereParse: (nSQL: NanoSQLInstance, query: NanoSQLQuery, fnArgs: string[], where: string[]) => WhereCondition | false;
-            queryRows: (nSQL: NanoSQLInstance, query: NanoSQLQuery, where: WhereCondition) => Promise<{ [key: string]: any }>
-        }
-    };
-
     public indexTypes: {
         [type: string]: (value: any) => any;
     };
@@ -139,38 +132,6 @@ export class NanoSQLInstance {
             }
         };
 
-        this.fnIndexes = {
-            CROW: {
-                whereParse: (nSQL, query, fnArgs, where) => {
-                    if (where[1] === "<" || where[1] === "<=") {
-                        const indexes: NanoSQLIndex[] = typeof query.table === "string" ? nSQL.tables[query.table].indexes : [];
-                        const crowColumn = fnArgs[0];
-                        let crowCols: string[] = [];
-                        indexes.forEach((index) => {
-                            if (index.paths[0] === crowColumn + ".lat") {
-                                crowCols.push(index.name);
-                            }
-                            if (index.paths[0] === crowColumn + ".lon") {
-                                crowCols.push(index.name);
-                            }
-                        });
-                        if (crowCols.length === 2) {
-                            return {
-                                index: crowCols[0],
-                                fnName: "CROW",
-                                fnArgs: fnArgs,
-                                comp: where[1],
-                                value: where[2]
-                            };
-                        }
-                    }
-                    return false;
-                },
-                queryRows: (query, where) => {
-                    return new Promise((res, rej) => res([]));
-                }
-            }
-        };
         this._eventCBs = {
             Core: new ReallySmallEvents()
         };
@@ -1109,7 +1070,7 @@ export class NanoSQLInstance {
         return new _NanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
     }
 
-    public triggerQuery(query: NanoSQLQuery, onProgress: (row: any) => void, complete: () => void, error: (err: string) => void): void {
+    public triggerQuery(query: NanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void {
         if (this.state.connected === false && typeof query.table === "string") {
             error("nSQL: Can't do a query before the database is connected!");
             return;
@@ -1118,7 +1079,7 @@ export class NanoSQLInstance {
         this.doFilter<queryFilter, NanoSQLQuery>("query", { result: query }).then((setQuery) => {
             if (this.config.queue) {
                 queue.push(() => new Promise((res, rej) => {
-                    new _NanoSQLQuery(this, setQuery, onProgress, () => {
+                    new _NanoSQLQuery(this, setQuery, onRow, () => {
                         res();
                         complete();
                     }, (err) => {
@@ -1127,7 +1088,7 @@ export class NanoSQLInstance {
                     });
                 }));
             } else {
-                new _NanoSQLQuery(this, setQuery, onProgress, complete, error);
+                new _NanoSQLQuery(this, setQuery, onRow, complete, error);
             }
         }).catch(error);
     }
@@ -1254,9 +1215,8 @@ export class NanoSQLInstance {
         const exportTables = Object.keys(this.tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);
 
         return chainAsync(exportTables, (table: string, i, nextTable, err) => {
-            this.adapter.readMulti(table, "all", undefined, undefined, (row, nextRow) => {
+            this.adapter.readMulti(table, "all", undefined, undefined, false, (row) => {
                 onRow(table, row);
-                nextRow();
             }, nextTable, err || noop);
         });
     }
@@ -1699,8 +1659,8 @@ export class _NanoSQLQueryBuilder {
      * Examples:
      *
      * ```ts
-     * .orderBy({username:"asc"}) // order by username column, ascending
-     * .orderBy({balance:"desc",lastName:"asc"}) // order by balance descending, then lastName ascending.
+     * .orderBy(["username asc"]) // order by username column, ascending
+     * .orderBy(["balance desc", "lastName"}) // order by balance descending, then lastName ascending.
      * ```
      *
      * @param {Object} args
@@ -1708,7 +1668,7 @@ export class _NanoSQLQueryBuilder {
      *
      * @memberOf _NanoSQLQuery
      */
-    public orderBy(args: { [key: string]: "asc" | "desc" }): _NanoSQLQueryBuilder {
+    public orderBy(args: string[]): _NanoSQLQueryBuilder {
         this._query.orderBy = args;
         return this;
     }
@@ -1719,7 +1679,7 @@ export class _NanoSQLQueryBuilder {
      * Example:
      *
      * ```ts
-     * nSQL("users").query("select",["favoriteColor","count(*)"]).groupBy({"favoriteColor":"asc"}).exec();
+     * nSQL("users").query("select",["favoriteColor","count(*)"]).groupBy(["favoriteColor asc"]).exec();
      * ```
      *
      * This will provide a list of all favorite colors and how many each of them are in the db.
@@ -1729,7 +1689,7 @@ export class _NanoSQLQueryBuilder {
      *
      * @memberOf _NanoSQLQuery
      */
-    public groupBy(columns: { [key: string]: "asc" | "desc" }): _NanoSQLQueryBuilder {
+    public groupBy(columns: string[]): _NanoSQLQueryBuilder {
         this._query.groupBy = columns;
         return this;
     }

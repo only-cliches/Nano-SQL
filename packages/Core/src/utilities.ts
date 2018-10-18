@@ -32,6 +32,40 @@ export const _assign = (obj: any) => {
     return obj ? JSON.parse(JSON.stringify(obj)) : null;
 };
 
+
+/**
+ * Compare two javascript variables for equality.
+ * Works with primitives, arrays and objects recursively.
+ *
+ * @param {*} obj1
+ * @param {*} obj2
+ * @returns {boolean}
+ */
+export const compareObjects = (obj1: any, obj2: any): boolean => {
+    if (obj1 === obj2) return true;
+    if (typeof obj1 !== "object") return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
+    if (!obj1 || !obj2) return false; // if either object is undefined/false they don't match
+
+    const isArray = Array.isArray(obj1);
+    const keys = Object.keys(obj1);
+    // If sizes differ then we can skip further comparison
+    let matches = isArray ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
+
+    if (!matches) return false;
+
+    let i = keys.length;
+    while (i-- && matches) {
+        const key = keys[i];
+        if (typeof obj1[key] === "object") { // nested compare
+            matches = compareObjects(obj1[key], obj2[key]);
+        } else {
+            matches = obj1[key] === obj2[key];
+        }
+    }
+
+    return matches;
+};
+
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
@@ -370,7 +404,7 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
     }
     const path = pathQuery.indexOf("[") > -1 ?
         // handle complex mix of dots and brackets like "users.value[meta][value].length"
-        [].concat.apply([], pathQuery.split(".").map(v => v.match(/([^\[]+)|\[([^\]]+)\]\[/gmi) || v)).map(v => v.replace(/\[|\]/gmi, "")) :
+        pathQuery.split(/\.|\[/gmi).map(v => v.replace(/\]/gmi, "")) :
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
 
@@ -401,7 +435,7 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
  * @returns {*}
  */
 export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boolean): any => {
-    let val;
+
     const safeGet = (getPath: string[], pathIdx: number, object: any) => {
         if (!getPath[pathIdx] || !object) return object;
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx] as string]);

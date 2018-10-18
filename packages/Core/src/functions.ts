@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from ".";
 import { crowDistance, objQuery, cast } from "./utilities";
-import { NanoSQLQuery } from "./interfaces";
+import { NanoSQLQuery, NanoSQLIndex } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
 const wordLevenshtienCache: { [words: string]: number } = {};
@@ -60,14 +60,14 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         GREATEST: {
             type: "S",
             call: (query, row, complete, isJoin, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? s : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? objQuery(s, row, isJoin) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
                 complete({result: args[0]});
             }
         },
         LEAST: {
             type: "S",
             call: (query, row, complete, isJoin, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? s : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? objQuery(s, row, isJoin) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
                 complete({result: args[0]});
             }
         },
@@ -130,6 +130,34 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                 const latVal = objQuery(gpsCol + ".lat", row, isJoin);
                 const lonVal = objQuery(gpsCol + ".lon", row, isJoin);
                 complete({result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)});
+            },
+            whereIndex: (nSQL, query, fnArgs, where) => {
+                if (where[1] === "<" || where[1] === "<=") {
+                    const indexes: NanoSQLIndex[] = typeof query.table === "string" ? nSQL.tables[query.table].indexes : [];
+                    const crowColumn = fnArgs[0];
+                    let crowCols: string[] = [];
+                    indexes.forEach((index) => {
+                        if (index.paths[0] === crowColumn + ".lat") {
+                            crowCols.push(index.name);
+                        }
+                        if (index.paths[0] === crowColumn + ".lon") {
+                            crowCols.push(index.name);
+                        }
+                    });
+                    if (crowCols.length === 2) {
+                        return {
+                            index: crowCols[0],
+                            fnName: "CROW",
+                            fnArgs: fnArgs,
+                            comp: where[1],
+                            value: where[2]
+                        };
+                    }
+                }
+                return false;
+            },
+            queryIndex: (query, where) => {
+                return new Promise((res, rej) => res([]));
             }
         }
     };
