@@ -1,4 +1,4 @@
-import { NanoSQLAdapter, NanoSQLDataModel } from "../interfaces";
+import { NanoSQLAdapter, NanoSQLDataModel, NanoSQLTable } from "../interfaces";
 
 export class RocksDB implements NanoSQLAdapter {
 
@@ -13,11 +13,15 @@ export class RocksDB implements NanoSQLAdapter {
 
     }
 
-    makeTable(tableName: string, dataModels: NanoSQLDataModel[], complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: NanoSQLTable, complete: () => void, error: (err: any) => void) {
 
     }
 
-    destroyTable(table: string, complete: () => void, error: (err: any) => void) {
+    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
+
+    }
+
+    dropTable(table: string, complete: () => void, error: (err: any) => void) {
 
     }
 

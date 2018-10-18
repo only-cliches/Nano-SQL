@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from ".";
-import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex, WhereCondition, NanoSQLSortBy } from "./interfaces";
-import { objSort, objQuery, chainAsync, compareObjects, hash, resolveObjPath, setFast } from "./utilities";
+import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex, WhereCondition, NanoSQLSortBy, NanoSQLTableConfig, createTableFilter, NanoSQLDataModel, NanoSQLTableColumn } from "./interfaces";
+import { objSort, objQuery, chainAsync, compareObjects, hash, resolveObjPath, setFast, allAsync } from "./utilities";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -45,6 +45,16 @@ export class _NanoSQLQuery {
                 break;
             case "describe":
                 this._describe();
+                break;
+            case "drop":
+            case "drop table":
+                this.dropTable(this.query.table as string, this.complete, this.error);
+                break;
+            case "create table":
+                this.createTable(this.query.model as NanoSQLTableConfig, this.complete, this.error);
+                break;
+            case "alter table":
+                this.alterTable(this.query.model as NanoSQLTableConfig, this.complete, this.error);
                 break;
             default:
                 this.query.state = "error";
@@ -115,12 +125,183 @@ export class _NanoSQLQuery {
 
     }
 
+
+    public createTable(table: NanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
+        new Promise((res, rej) => {
+            let hasError = false;
+
+            const l = table.name;
+            if (!table.internal && (l.indexOf("_") === 0 || l.match(/\s/g) !== null || l.match(/[\(\)\]\[\.]/g) !== null)) {
+                rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
+                return;
+            }
+            table.model.forEach((model) => {
+                const modelData = model.key.split(":"); // [key, type];
+                if (modelData.length === 1) {
+                    modelData.push("any");
+                }
+                if (!modelData[0] || modelData[0].match(/[\(\)\]\[\.]/g) !== null || modelData[0].indexOf("_") === 0) {
+                    hasError = true;
+                    rej(`nSQL: Invalid Data Model at ${table.name}, ${JSON.stringify(model)}! https://docs.nanosql.io/setup/data-models`);
+                }
+            });
+            // replace white space in column names with dashes
+            table.model = table.model.map(k => ({
+                ...k,
+                name: k.key.replace(/\s+/g, "-")
+            }));
+
+            if (hasError) return;
+            res();
+        }).then(() => {
+            return this.nSQL.doFilter<createTableFilter, NanoSQLTableConfig>("createTable", { result: table });
+        }).then((table: NanoSQLTableConfig) => {
+
+            return new Promise((res, rej) => {
+
+                const setModels = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
+                    return dataModels.map(d => {
+                        const type = d.key.split(":")[1] || "any";
+                        if (type.indexOf("gps") === 0) {
+                            d.model = [
+                                { key: "lat:float", default: 0 },
+                                { key: "lon:float", default: 0 }
+                            ];
+                        }
+                        if (d.model) {
+                            d.model = setModels(d.model);
+                        }
+                        return d;
+                    });
+                };
+
+                const generateColumns = (dataModels: NanoSQLDataModel[]): NanoSQLTableColumn[] => {
+                    return dataModels.filter(d => d.key !== "*").map(d => ({
+                        key: d.key.split(":")[0],
+                        type: d.key.split(":")[1] || "any",
+                        default: d.default || null,
+                        notNull: d.props && d.props.indexOf("not_null()") !== -1 ? true : false,
+                        model: d.model ? generateColumns(d.model) : undefined
+                    }));
+                };
+
+                let hasError = false;
+                const computedDataModel = setModels(table.model);
+
+                this.nSQL.tables[table.name] = {
+                    model: computedDataModel,
+                    columns: generateColumns(computedDataModel),
+                    actions: table.actions || [],
+                    views: table.views || [],
+                    indexes: (table.indexes || []).map(i => ({
+                        name: i.name.split(":")[0],
+                        type: i.name.split(":")[1] || "string",
+                        path: resolveObjPath(i.path)
+                    })).reduce((p, c) => {
+                        const allowedTypes = Object.keys(this.nSQL.indexTypes);
+                        if (allowedTypes.indexOf(c.type) === -1) {
+                            hasError = true;
+                            rej(`Index "${c.name}" does not have a valid type!`);
+                            return p;
+                        }
+
+                        if (c.type.indexOf("gps") !== -1) {
+                            p[c.name + "-lat"] = { name: c.name + "-lat", type: "float", path: c.path.concat(["lat"]) };
+                            p[c.name + "-lon"] = { name: c.name + "-lon", type: "float", path: c.path.concat(["lon"]) };
+                        } else {
+                            p[c.name] = p;
+                        }
+                        return p;
+                    }, {}),
+                    pkType: table.model.reduce((p, c) => {
+                        if (c.props && c.props.indexOf("pk()") !== -1) return c.key.split(":")[1];
+                        return p;
+                    }, ""),
+                    pkCol: table.model.reduce((p, c) => {
+                        if (c.props && c.props.indexOf("pk()") !== -1) return c.key.split(":")[0];
+                        return p;
+                    }, ""),
+                    ai: table.model.reduce((p, c) => {
+                        if (c.props && c.props.indexOf("pk()") !== -1 && c.props.indexOf("ai()") !== -1) return true;
+                        return p;
+                    }, false)
+                };
+
+                // no primary key found, set one
+                if (this.nSQL.tables[table.name].pkCol === "") {
+                    this.nSQL.tables[table.name].pkCol = "_id_";
+                    this.nSQL.tables[table.name].pkType = "uuid";
+                    this.nSQL.tables[table.name].model.unshift({ key: "_id_:uuid", props: ["pk()"] });
+                    this.nSQL.tables[table.name].columns = generateColumns(this.nSQL.tables[table.name].model);
+                }
+
+                if (hasError) return;
+
+                let addTables = [table.name];
+                Object.keys(this.nSQL.tables[table.name].indexes).forEach((k, i) => {
+                    const index = this.nSQL.tables[table.name].indexes[k];
+                    const indexName = "_idx_" + table.name + "_" + index.name;
+                    addTables.push(indexName)
+                    this.nSQL.tables[indexName] = {
+                        model: [
+                            { key: `id:${index.type}`, props: ["pk()"] },
+                            { key: `pks:${this.nSQL.tables[table.name].pkType}[]` }
+                        ],
+                        columns: [
+                            { key: "id", type: index.type },
+                            { key: "pks", type: `${this.nSQL.tables[table.name].pkType}[]` }
+                        ],
+                        actions: [],
+                        views: [],
+                        indexes: {},
+                        pkType: index.type,
+                        pkCol: "id",
+                        ai: false
+                    };
+                });
+
+                allAsync(addTables, (table, i, next, err) => {
+                    this.nSQL.adapter.createTable(table, this.nSQL.tables[table], next as any, err);
+                }).then(res).catch(rej);
+            }).then(complete).catch(error);
+        });
+
+    }
+
+    public alterTable(table: NanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
+        this.nSQL.doFilter("alterTable", { result: table }).then((alteredTable: NanoSQLTableConfig) => {
+            let tablesToAlter = [alteredTable.name];
+            Object.keys(this.nSQL.tables[table.name].indexes).forEach((indexName) => {
+                tablesToAlter.push("_idx_" + alteredTable.name + "_" + indexName);
+            });
+
+            allAsync(tablesToAlter, (dropTable, i, next, err) => {
+                this.nSQL.adapter.disconnectTable(alteredTable.name, next as any, err);
+            }).then(() => {
+                this.createTable(alteredTable, complete, error);
+            }).catch(error);
+            
+        }).catch(error);
+    }
+
+    public dropTable(table: string, complete: () => void, error: (err: any) => void): void {
+        this.nSQL.doFilter("destroyTable", { result: table }).then((destroyTable: string) => {
+            let tablesToDrop = [destroyTable];
+            Object.keys(this.nSQL.tables[table].indexes).forEach((indexName) => {
+                tablesToDrop.push("_idx_" + destroyTable + "_" + indexName);
+            });
+            allAsync(tablesToDrop, (dropTable, i, next, err) => {
+                this.nSQL.adapter.dropTable(destroyTable, next as any, err);
+            }).then(complete).catch(error);
+        });
+    }
+
     private _onError(err: any) {
         this.query.state = "error";
         this.error(err);
     }
 
-    private _getByPKs(onlyPKs: boolean, fastWhere: WhereCondition, isReversed: boolean, orderByPK: boolean, onRow: (row: { [name: string]: any }, i: number) => void, complete: () => void): void {
+    private _getByPKs(onlyPKs: boolean, table: string, fastWhere: WhereCondition, isReversed: boolean, orderByPK: boolean, onRow: (row: { [name: string]: any }, i: number) => void, complete: () => void): void {
 
         switch (fastWhere.comp) {
             case "=":
@@ -128,14 +309,14 @@ export class _NanoSQLQuery {
                     onRow(fastWhere.value as any, 0);
                     complete();
                 } else {
-                    this.nSQL.adapter.read(this.query.table as string, fastWhere.value, (row) => {
+                    this.nSQL.adapter.read(table, fastWhere.value, (row) => {
                         onRow(row, 0);
                         complete();
                     }, this._onError);
                 }
                 break;
             case "BETWEEN":
-                (onlyPKs ? this.nSQL.adapter.readMultiPK : this.nSQL.adapter.readMulti)(this.query.table as string, "range", fastWhere.value[0], fastWhere.value[1], isReversed, (row, i) => {
+                (onlyPKs ? this.nSQL.adapter.readMultiPK : this.nSQL.adapter.readMulti)(table, "range", fastWhere.value[0], fastWhere.value[1], isReversed, (row, i) => {
                     onRow(row, i);
                 }, complete, this._onError);
                 break;
@@ -149,7 +330,7 @@ export class _NanoSQLQuery {
                     complete();
                 } else {
                     chainAsync(PKS, (pk, i, next) => {
-                        this.nSQL.adapter.read(this.query.table as string, pk, (row) => {
+                        this.nSQL.adapter.read(table, pk, (row) => {
                             onRow(row, i);
                             next();
                         }, this._onError);
@@ -172,7 +353,7 @@ export class _NanoSQLQuery {
                     (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.nSQL, this, fastWhere, false, onRow, complete);
                     // primary key
                 } else if (fastWhere.col === this.nSQL.tables[this.query.table as string].pkCol) {
-                    this._getByPKs(false, fastWhere, isReversed, this._pkOrderBy, onRow, complete);
+                    this._getByPKs(false, this.query.table as string, fastWhere, isReversed, this._pkOrderBy, onRow, complete);
                     // index
                 } else {
                     this._readIndex(false, fastWhere, onRow, complete);
@@ -197,7 +378,7 @@ export class _NanoSQLQuery {
                         (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.nSQL, this, fastWhere, true, addIndexBuffer, next);
                         // primary key
                     } else if (fastWhere.col === this.nSQL.tables[this.query.table as string].pkCol) {
-                        this._getByPKs(true, fastWhere, false, false, addIndexBuffer, next);
+                        this._getByPKs(true, this.query.table as string, fastWhere, false, false, addIndexBuffer, next);
                         // index
                     } else {
                         this._readIndex(true, fastWhere, addIndexBuffer, next);
@@ -209,7 +390,7 @@ export class _NanoSQLQuery {
                             getPKs.push(PK);
                         }
                     });
-                    this._getByPKs(false, {
+                    this._getByPKs(false, this.query.table as string, {
                         index: "_pk_",
                         col: this.nSQL.tables[this.query.table as string].pkCol,
                         comp: "IN",
@@ -246,7 +427,7 @@ export class _NanoSQLQuery {
             }
 
             // execute rows in the buffer
-            this._getByPKs(false, {
+            this._getByPKs(false, this.query.table as string, {
                 index: "_pk_",
                 col: this.nSQL.tables[this.query.table as string].pkCol,
                 comp: "IN",
@@ -259,11 +440,11 @@ export class _NanoSQLQuery {
             });
         };
 
-        const table = "_idx_" + fastWhere.index;
+        const table = "_idx_" + this.query.table + "_" + fastWhere.index;
         let indexBuffer: { id: any, pks: any[] }[] = [];
         let indexPKs: any[] = [];
         const isReversed = this._idxOrderBy && this._orderBy.sort[0].dir === "DESC";
-        this._getByPKs(false, fastWhere, isReversed, this._idxOrderBy, (row) => {
+        this._getByPKs(false, table, fastWhere, isReversed, this._idxOrderBy, (row) => {
             if (onlyPKs) {
                 indexPKs = indexPKs.concat(row.pks || []);
             } else {

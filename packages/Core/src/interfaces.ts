@@ -37,6 +37,7 @@ export interface NanoSQLTableConfig {
     actions?: NanoSQLActionOrView[];
     views?: NanoSQLActionOrView[];
     props?: any[];
+    internal?: boolean;
 }
 
 export interface NanoSQLSortBy {
@@ -64,11 +65,13 @@ export interface NanoSQLAdapter {
 
     connect(id: string, complete: () => void, error: (err: any) => void);
 
-    makeTable(tableName: string, dataModels: NanoSQLDataModel[], complete: () => void, error: (err: any) => void);
-
-    destroyTable(table: string, complete: () => void, error: (err: any) => void);
-
     disconnect(complete: () => void, error: (err: any) => void);
+
+    createTable(tableName: string, tableData: NanoSQLTable, complete: () => void, error: (err: any) => void);
+    
+    dropTable(table: string, complete: () => void, error: (err: any) => void);
+
+    disconnectTable(table: string, complete: () => void, error: (err: any) => void);
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
 
@@ -114,17 +117,32 @@ export interface NanoSQLFunction {
  * @interface DataModel
  */
 export interface NanoSQLDataModel {
-    name: string;
+    key: string;
     model?: NanoSQLDataModel[];
     default?: any;
     props?: any[];
+}
+
+export interface NanoSQLTable {
+    model: NanoSQLDataModel[],
+    columns: NanoSQLTableColumn[];
+    indexes: {
+        [name: string]: NanoSQLIndex;
+    };
+    filter?: (row: any) => any,
+    actions: NanoSQLActionOrView[],
+    views: NanoSQLActionOrView[],
+    pkType: string;
+    pkCol: string;
+    ai: boolean;
+    props?: any;
 }
 
 export interface NanoSQLTableColumn {
     key: string;
     type: string;
     model?: NanoSQLTableColumn[];
-    notNull: boolean;
+    notNull?: boolean;
     default?: any;
 }
 
@@ -214,9 +232,8 @@ export interface NanoSQLQuery {
     limit?: number;
     offset?: number;
     ttl?: number;
-    useIndex?: string;
     ttlCols?: string[];
-    noEvents?: boolean;
+    model?: NanoSQLTableConfig;
     [key: string]: any;
 }
 
@@ -274,7 +291,7 @@ export interface extendFilter extends abstractFilter {
 }
 
 // tslint:disable-next-line
-export interface registerTableFilter extends abstractFilter {
+export interface createTableFilter extends abstractFilter {
     result: NanoSQLTableConfig;
 }
 

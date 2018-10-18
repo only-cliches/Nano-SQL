@@ -1,4 +1,4 @@
-import { NanoSQLPlugin, NanoSQLAdapter, NanoSQLDataModel } from "../interfaces";
+import { NanoSQLPlugin, NanoSQLAdapter, NanoSQLDataModel, NanoSQLTable } from "../interfaces";
 
 export class IndexedDB implements NanoSQLAdapter {
 
@@ -13,11 +13,15 @@ export class IndexedDB implements NanoSQLAdapter {
 
     }
 
-    makeTable(tableName: string, dataModels: NanoSQLDataModel[], complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: NanoSQLTable, complete: () => void, error: (err: any) => void) {
 
     }
 
-    destroyTable(table: string, complete: () => void, error: (err: any) => void) {
+    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
+
+    }
+
+    dropTable(table: string, complete: () => void, error: (err: any) => void) {
 
     }
 
