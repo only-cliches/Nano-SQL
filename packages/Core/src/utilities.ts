@@ -344,6 +344,11 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean): any =>
     return newVal;
 };
 
+export const _maybeAssign = (obj: any): any => {
+    if (Object.isFrozen(obj)) return _assign(obj);
+    return obj;
+};
+
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
  *
@@ -419,6 +424,10 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
     return objectPathCache[cacheKey];
 };
 
+export const getFnValue = (row: any, str: string, isJoin: boolean): any => {
+    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"(.*)\"|\'(.*)\'/gmi, "$1") : objQuery(str, row, isJoin);
+};
+
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
@@ -434,14 +443,14 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
  * @param {boolean} [ignoreFirstPath]
  * @returns {*}
  */
-export const objQuery = (pathQuery: string, object: any, ignoreFirstPath?: boolean): any => {
+export const objQuery = (pathQuery: string|string[], object: any, ignoreFirstPath?: boolean): any => {
 
     const safeGet = (getPath: string[], pathIdx: number, object: any) => {
         if (!getPath[pathIdx] || !object) return object;
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx] as string]);
     };
 
-    return safeGet(resolveObjPath(pathQuery, ignoreFirstPath), 0, object);
+    return safeGet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery, ignoreFirstPath), 0, object);
 };
 
 let uid = 0;

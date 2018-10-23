@@ -72,6 +72,10 @@ export class NanoSQLInstance {
         selectedTable: string | any[] | (() => Promise<any[]>);
     };
 
+    public _queryCache: {
+        [id: string]: any[];
+    };
+
     public indexTypes: {
         [type: string]: (value: any) => any;
     };
@@ -100,12 +104,13 @@ export class NanoSQLInstance {
 
         this.tables = {};
         this.plugins = [];
+        this._queryCache = {};
 
         this.indexTypes = {
             string: (value: any) => {
                 return typeof value === "object" ? JSON.stringify(value) : String(value);
             },
-            gps: (value: any) => {
+            geo: (value: any) => {
                 return undefined;
             },
             float: (value: any) => {
@@ -150,6 +155,23 @@ export class NanoSQLInstance {
         }
     }
 
+
+    public getCache(id: string, args: {offset: number, limit: number}): any[] {
+        if (!this._queryCache[id]) {
+            throw new Error(`Cache "${id}" not found!`);
+        }
+        if (args) {
+            return this._queryCache[id].slice(args.offset, args.offset + args.limit);
+        } else {
+            return this._queryCache[id].slice();
+        }
+    }
+
+    public clearCache(id: string): boolean {
+        const exists = this._queryCache[id] !== undefined;
+        delete this._queryCache[id];
+        return exists;
+    }
 
     /**
      * Remove TTL from specific row
@@ -258,58 +280,6 @@ export class NanoSQLInstance {
 
         };
         getPage();
-    }
-
-    public registerRelation(name: string, relation: [string, "<=" | "<=>" | "=>", string]): Promise<any> {
-        return new Promise((res, rej) => {
-            if (!this.state.connected) {
-                rej("Must complete connect() before modifying relations!");
-                return;
-            }
-            return this.doFilter("registerRelation", { result: { name: name, rel: relation } });
-        }).then((result: { name: string, rel: string[] }) => {
-            return new Promise((res, rej) => {
-                const relation = {
-                    left: resolveObjPath(result.rel[0]),
-                    sync: result.rel[1] as any,
-                    right: resolveObjPath(result.rel[2])
-                };
-                if (["<=", "<=>", "=>"].indexOf(relation.sync) === -1 || relation.left.length < 2 || relation.right.length < 2) {
-                    rej("Invalid relation!");
-                    return;
-                }
-                const tables = Object.keys(this.tables);
-                if (tables.indexOf(relation.left[0]) === -1) {
-                    rej(`Relation error, can't find table ${relation.left[0]}!`);
-                    return;
-                }
-                if (tables.indexOf(relation.right[0]) === -1) {
-                    rej(`Relation error, can't find table ${relation.right[0]}!`);
-                    return;
-                }
-                this.relations[result.name] = relation;
-                res(this.relations[result.name]);
-            });
-        });
-    }
-
-    public destroyRelation(name: string): Promise<any> {
-        return new Promise((res, rej) => {
-            if (!this.state.connected) {
-                rej("Must complete connect() before modifying relations!");
-                return;
-            }
-            return this.doFilter("destroyRelation", { result: name });
-        }).then((result: string) => {
-            return new Promise((res, rej) => {
-                if (!this.relations[result]) {
-                    rej(`Relation ${result} not found!`);
-                    return;
-                }
-                delete this.relations[result];
-                res(result);
-            });
-        });
     }
 
     /**
@@ -499,9 +469,11 @@ export class NanoSQLInstance {
             });
             this.state.connected = true;
 
-            return allAsync([0, 1], (j, i, next, err) => {
+            const tables = ["_util", "_ttl"].concat((this.config.tables || []).map(t => t.name));
+
+            return allAsync(tables, (j, i, next, err) => {
                 switch (j) {
-                    case 0:
+                    case "_util":
                         this.triggerQuery({
                             ...buildQuery("create table", ""),
                             model: {
@@ -510,11 +482,11 @@ export class NanoSQLInstance {
                                     { key: "key:string", props: ["pk()"] },
                                     { key: "value:any" }
                                 ],
-                                internal: true
+                                _internal: true
                             }
                         }, noop, next as any, err);
                         break;
-                    case 1:
+                    case "_ttl":
                         this.triggerQuery({
                             ...buildQuery("create table", ""),
                             model: {
@@ -525,10 +497,20 @@ export class NanoSQLInstance {
                                     { key: "cols:string[]" },
                                     { key: "date:number" }
                                 ],
-                                internal: true
+                                _internal: true
                             },
                         }, noop, next as any, err);
                         break;
+                    default:
+                        const model = (this.config.tables || []).filter(t => t.name === j)[0];
+                        if (!model) {
+                            err("Table not found!");
+                            return;
+                        }
+                        this.triggerQuery({
+                            ...buildQuery("create table", ""),
+                            model: model,
+                        }, noop, next as any, err);
                 }
             });
         }).then(() => {
@@ -939,7 +921,7 @@ export class NanoSQLInstance {
         }
 
         this.doFilter<queryFilter, NanoSQLQuery>("query", { result: query }).then((setQuery) => {
-            if (this.config.queue) {
+            if (this.config.queue && !setQuery.skipQueue) {
                 queue.push(() => new Promise((res, rej) => {
                     new _NanoSQLQuery(this, setQuery, onRow, () => {
                         res();
@@ -1599,12 +1581,12 @@ export class _NanoSQLQueryBuilder {
         const err = "Join commands requires table and type arguments!";
         if (Array.isArray(args)) {
             args.forEach((arg) => {
-                if (!arg.table || !arg.type) {
+                if (!arg.with.table || !arg.type) {
                     this._error = err;
                 }
             });
         } else {
-            if (!args.table || !args.type) {
+            if (!args.with.table || !args.type) {
                 this._error = err;
             }
         }
@@ -1652,6 +1634,14 @@ export class _NanoSQLQueryBuilder {
      */
     public extend(scope: string, ...args: any[]): _NanoSQLQueryBuilder {
         this._query.extend.push({ scope: scope, args: args });
+        return this;
+    }
+
+    public union(queries: (() => Promise<any[]>)[], unionAll?: boolean): _NanoSQLQueryBuilder {
+        this._query.union = {
+            queries: queries,
+            type: unionAll ? "all" : "distinct"
+        };
         return this;
     }
 
@@ -1724,25 +1714,39 @@ export class _NanoSQLQueryBuilder {
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
     }
 
-    public model(model: NanoSQLTableConfig): _NanoSQLQueryBuilder {
-        this._query.model = model;
-        return this;
-    }
-
     public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
         this._db.triggerQuery(this._query, onRow, complete, err);
     }
 
+    public cache(): Promise<{id: string, total: number}> {
+        return new Promise((res, rej) => {
+            const id = uuid();
+            this.exec().then((rows) => {
+                this._db._queryCache[id] = rows;
+                res({
+                    id: id,
+                    total: rows.length
+                });
+            }).catch(rej);
+        });
+    }
+
     /**
- * Trigge ORM queries for all result rows.
- *
- * @param {((string|ORMArgs)[])} [ormArgs]
- * @returns {_NanoSQLQuery}
- *
- * @memberof _NanoSQLQuery
- */
+     * Trigge ORM queries for all result rows.
+     *
+     * @param {((string|ORMArgs)[])} [ormArgs]
+     * @returns {_NanoSQLQuery}
+     *
+     * @memberof _NanoSQLQuery
+     */
     public orm(ormArgs?: (string | ORMArgs)[]): _NanoSQLQueryBuilder {
         this._query.orm = ormArgs;
+        return this;
+    }
+
+    public from(table: string | any[] | (() => Promise<any[]>), AS?: string): _NanoSQLQueryBuilder {
+        this._query.table = table;
+        this._query.tableAS = AS || "";
         return this;
     }
 

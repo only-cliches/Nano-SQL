@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from ".";
-import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex, WhereCondition, NanoSQLSortBy, NanoSQLTableConfig, createTableFilter, NanoSQLDataModel, NanoSQLTableColumn } from "./interfaces";
-import { objSort, objQuery, chainAsync, compareObjects, hash, resolveObjPath, setFast, allAsync } from "./utilities";
+import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex, WhereCondition, NanoSQLSortBy, NanoSQLTableConfig, createTableFilter, NanoSQLDataModel, NanoSQLTableColumn, NanoSQLJoinArgs, buildQuery } from "./interfaces";
+import { objSort, objQuery, chainAsync, compareObjects, hash, resolveObjPath, setFast, allAsync, _maybeAssign, _assign } from "./utilities";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -12,6 +12,10 @@ export class _NanoSQLQuery {
     private _havingArgs: WhereArgs;
     private _pkOrderBy: boolean = false;
     private _idxOrderBy: boolean = false;
+    private _sortGroups: {
+        [groupKey: string]: any[];
+    } = {};
+    private _groupByColumns: string[];
 
     private _orderBy: NanoSQLSortBy;
     private _groupBy: NanoSQLSortBy;
@@ -19,7 +23,7 @@ export class _NanoSQLQuery {
     constructor(
         public nSQL: NanoSQLInstance,
         public query: NanoSQLQuery,
-        public progress: (row: any) => void,
+        public progress: (row: any, i: number) => void,
         public complete: () => void,
         public error: (err: any) => void
     ) {
@@ -30,9 +34,37 @@ export class _NanoSQLQuery {
             this.error(`Only "select" queries are available for this resource!`);
             return;
         }
+
+        if (typeof query.table === "string" && !this.nSQL.state.connected) {
+            this.query.state = "error";
+            this.error(`Can't execute query before the database has connected!`);
+            return;
+        }
+
+        const requireAction = (cb: () => void) => {
+            if (typeof this.query.table !== "string") {
+                this.query.state = "error";
+                this.error(`${this.query.action} query requires a string table argument!`);
+                return;
+            }
+            if (!this.query.actionArgs) {
+                this.query.state = "error";
+                this.error(`${this.query.action} query requires an additional argument!`);
+                return;
+            }
+            cb();
+        };
+
+        const finishQuery = () => {
+            if (this.query.state !== "error") {
+                this.query.state = "complete";
+                this.complete();
+            }
+        };
+
         switch (action) {
             case "select":
-                this._select();
+                this._select(finishQuery, this.error);
                 break;
             case "upsert":
                 this._upsert();
@@ -48,13 +80,29 @@ export class _NanoSQLQuery {
                 break;
             case "drop":
             case "drop table":
-                this.dropTable(this.query.table as string, this.complete, this.error);
+                this.dropTable(this.query.table as string, finishQuery, this.error);
                 break;
             case "create table":
-                this.createTable(this.query.model as NanoSQLTableConfig, this.complete, this.error);
+            case "create table if not exists":
+                requireAction(() => {
+                    this.createTable(this.query.actionArgs as NanoSQLTableConfig, finishQuery, this.error);
+                });
                 break;
             case "alter table":
-                this.alterTable(this.query.model as NanoSQLTableConfig, this.complete, this.error);
+                requireAction(() => {
+                    this.alterTable(this.query.actionArgs as NanoSQLTableConfig, finishQuery, this.error);
+                });
+                break;
+            case "create relation":
+                requireAction(() => {
+                    this._registerRelation(this.query.table as string, this.query.actionArgs as any, finishQuery, this.error);
+                });
+                break;
+            case "drop relation":
+                this._destroyRelation(this.query.table as string, finishQuery, this.error);
+                break;
+            case "rebuild index":
+                this._rebuildIndexes(this.query.table as string, finishQuery, this.error);
                 break;
             default:
                 this.query.state = "error";
@@ -62,17 +110,179 @@ export class _NanoSQLQuery {
         }
     }
 
-    private _select() {
-        this._whereArgs = this.query.where ? this._parseWhere(this.query.where, typeof this.query.table !== "string") : { type: WhereType.none };
-        this._havingArgs = this.query.having ? this._parseWhere(this.query.having, true) : { type: WhereType.none };
-        this._parseSelect();
-        if (this.query.state === "error") return;
+    /**
+     * Peform a join command.
+     *
+     * @internal
+     * @param {DBRow[]} rows
+     * @param {(rows: DBRow[]) => void} complete
+     * @returns {void}
+     * @memberof _MutateSelection
+     */
+    private _maybeJoin(joinData: NanoSQLJoinArgs[], leftRow: any, onRow: (rowData: any) => void, complete: () => void): void {
 
-        this._getRecords((row, i) => {
+        if (!joinData[0]) { // no join to perform, NEXT!
+            onRow(leftRow);
+            complete();
+            return;
+        }
 
-        }, () => {
 
-        });
+        const doJoin = (rowData: { [table: string]: any }, joinIdx: number, joinDone: () => void) => {
+            const join = joinData[joinIdx];
+            let joinRowCount = 0;
+            let rightHashes: any[] = [];
+            let pendingNestedJoins: number = 0;
+
+            if (join.type !== "cross" && !join.on) {
+                this.query.state = "error";
+                this.error("Non 'cross' joins require an 'on' parameter!");
+                return;
+            }
+
+            const noJoinAS = "Must use 'AS' when joining temporary tables!";
+
+            if (typeof join.with.table !== "string" && !join.with.as) {
+                this.query.state = "error";
+                this.error(noJoinAS);
+                return;
+            }
+
+            if (typeof this.query.table !== "string" && !this.query.tableAS) {
+                this.query.state = "error";
+                this.error(noJoinAS);
+                return;
+            }
+
+            // combine the joined data into a row record
+            const combineRows = (rData: any) => {
+                return Object.keys(rData).reduce((prev, cur) => {
+                    const row = rData[cur];
+                    if (!row) return prev;
+                    Object.keys(row).forEach((k) => {
+                        prev[cur + "." + k] = row[k];
+                    });
+                    return prev;
+                }, {});
+            };
+
+            // turn the "on" clause into a where statement we can pass into
+            // a where query on the right side table
+            const getWhere = (joinWhere: any[]): any[] => {
+                return (typeof joinWhere[0] === "string" ? [joinWhere] : joinWhere).map(j => {
+                    if (Array.isArray(j[0])) return getWhere(j); // nested where
+                    if (j === "AND" || j === "OR") return j;
+
+                    const leftWhere: any[] = resolveObjPath(j[0]);
+                    const rightWhere: any[] = resolveObjPath(j[2]);
+                    const swapWhere = leftWhere[0] === (this.query.tableAS || this.query.table);
+                    // swapWhere = true [leftTable.column, =, rightTable.column] => [rightWhere, =, objQuery(leftWhere)]
+                    // swapWhere = false [rightTable.column, =, leftTable.column] => [leftWhere, =, objQuery(rightWhere)]
+
+                    return [
+                        swapWhere ? rightWhere.slice(1).join(".") : leftWhere.slice(1).join("."),
+                        swapWhere ? (j[1].indexOf(">") !== -1 ? j[1].replace(">", "<") : j[1].replace("<", ">")) : j[1],
+                        objQuery(swapWhere ? leftWhere : rightWhere, rowData)
+                    ];
+                });
+            };
+
+            // found row to join, perform additional joins for this row or respond with the final joined row if no futher joins are needed.
+            const maybeJoinRow = (rData) => {
+                if (!joinData[joinIdx + 1]) { // no more joins, send joined row
+                    onRow(combineRows(rData));
+                } else { // more joins, nest on!
+                    pendingNestedJoins++;
+                    doJoin(rData, joinIdx + 1, () => {
+                        pendingNestedJoins--;
+                        maybeDone();
+                    });
+                }
+            };
+
+            const maybeDone = () => {
+                if (!pendingNestedJoins) {
+                    joinDone();
+                }
+            };
+
+            const withPK = typeof join.with.table === "string" ? this.nSQL.tables[join.with.table].pkCol : "";
+            const rightTable = String(join.with.as || join.with.table);
+            const leftTable = String(this.query.tableAS || this.query.table);
+
+            this.nSQL.triggerQuery({
+                ...buildQuery(join.with.table, "select"),
+                tableAS: join.with.as,
+                where: join.on && join.type !== "cross" ? getWhere(join.on) : undefined,
+                skipQueue: true
+            }, (row) => {
+                joinRowCount++;
+                if (join.type === "right" || join.type === "outer") {
+                    // keep track of which right side rows have been joined
+                    rightHashes.push(withPK ? row[withPK] : hash(JSON.stringify(row)));
+                }
+
+                maybeJoinRow({
+                    ...rowData,
+                    [rightTable]: row
+                });
+            }, () => {
+
+                switch (join.type) {
+                    case "left":
+                        if (joinRowCount === 0) {
+                            maybeJoinRow({
+                                ...rowData,
+                                [rightTable]: undefined
+                            });
+                        }
+                        maybeDone();
+                        break;
+                    case "inner":
+                    case "cross":
+                        maybeDone();
+                        break;
+                    case "outer":
+                    case "right":
+                        if (joinRowCount === 0 && join.type === "outer") {
+                            maybeJoinRow({
+                                ...rowData,
+                                [rightTable]: undefined
+                            });
+                        }
+
+                        // full table scan on right table :(
+                        this.nSQL.triggerQuery({
+                            ...buildQuery(join.with.table, "select"),
+                            skipQueue: true,
+                            where: withPK ? [withPK, "NOT IN", rightHashes] : undefined
+                        }, (row) => {
+                            if (withPK || rightHashes.indexOf(hash(JSON.stringify(row))) === -1) {
+                                maybeJoinRow({
+                                    ...rowData,
+                                    [leftTable]: undefined,
+                                    [rightTable]: row
+                                });
+                            }
+                        }, () => {
+                            maybeDone();
+                        }, (err) => {
+                            this.query.state = "error";
+                            this.error(err);
+                        });
+                        break;
+                }
+
+            }, (err) => {
+                this.query.state = "error";
+                this.error(err);
+            });
+        };
+
+        doJoin({ [String(this.query.tableAS || this.query.table)]: leftRow }, 0, complete);
+    }
+
+    private _select(complete: () => void, onError: (error: any) => void) {
         // Query order:
         // 1. Join / Index / Where Select
         // 2. Group By & Functions
@@ -81,12 +291,232 @@ export class _NanoSQLQuery {
         // 5. OrderBy
         // 6. Offset
         // 7. Limit
-        /*
-                if (this._stream) { // stream results directly to the client.
 
-                } else { // load query results into a buffer, perform order by/group by/aggregate function then stream the buffer to the client.
+        this._whereArgs = this.query.where ? this._parseWhere(this.query.where, typeof this.query.table !== "string" || typeof this.query.union !== "undefined") : { type: WhereType.none };
+        this._havingArgs = this.query.having ? this._parseWhere(this.query.having, true) : { type: WhereType.none };
+        this._parseSelect();
+        if (this.query.state === "error") return;
 
-                }*/
+        if ([this.query.orm, this.query.join, this.query.union].filter(l => l).length > 1) {
+            this.query.state = "error";
+            onError("Can only have one of orm, join or union!");
+            return;
+        }
+
+        const range = [(this.query.offset || 0), (this.query.offset || 0) + (this.query.limit || 0)];
+        const doRange = range[0] + range[1] > 0;
+
+        // UNION query
+        if (this.query.union) {
+            let hashes: any[] = [];
+            let columns: string[] = [];
+            let count = 0;
+            chainAsync(this.query.union.queries, (query, k, next) => {
+                query().then((rows) => {
+                    if (!columns.length) {
+                        columns = Object.keys(rows[0]);
+                    }
+                    if (this.query.where) {
+                        rows = rows.filter((r, i) => {
+                            return this._where(r, this._whereArgs.slowWhere as any[], false);
+                        });
+                    }
+                    rows = rows.map(r => {
+                        if (this.query.union && this.query.union.type === "distinct") {
+                            const rowHash = hash(JSON.stringify(r));
+                            if (k === 0) {
+                                hashes.push(rowHash);
+                            } else {
+                                if (hashes.indexOf(rowHash) !== -1) {
+                                    return undefined;
+                                } else {
+                                    hashes.push(rowHash);
+                                }
+                            }
+                        }
+                        return Object.keys(r).reduce((p, c, i) => {
+                            if (i < columns.length) {
+                                p[columns[i]] = r[c];
+                            }
+                            return p;
+                        }, {});
+                    }).filter(f => f);
+
+                    if (this.query.orderBy) {
+                        this._buffer = this._buffer.concat(rows.map(row => {
+                            const newRow = this._streamAS(row, false);
+                            const keep = this.query.having ? this._where(newRow, this._havingArgs.slowWhere as any[], false) : true;
+                            return keep ? newRow : undefined;
+                        }).filter(f => f));
+                    } else {
+                        rows.forEach((row, i) => {
+                            const newRow = this._streamAS(row, false);
+                            const keep = this.query.having ? this._where(newRow, this._havingArgs.slowWhere as any[], false) : true;
+                            if (!keep) {
+                                return;
+                            }
+                            if (doRange) {
+                                if (count >= range[0] && count < range[1]) {
+                                    this.progress(this._streamAS(row, false), count);
+                                }
+                            } else {
+                                this.progress(this._streamAS(row, false), count);
+                            }
+                            count++;
+                        });
+                    }
+                    next();
+                });
+            }).then(() => {
+                if (this.query.orderBy) {
+                    const sorted = this._buffer.sort(this._orderByRows);
+                    (doRange ? sorted.slice(range[0], range[1]) : sorted).forEach(this.progress);
+                }
+                complete();
+            });
+            return;
+        }
+
+        const joinData: NanoSQLJoinArgs[] = Array.isArray(this.query.join) ? this.query.join : [this.query.join as any];
+
+        let fastQuery = false;
+        let joinedRows = 0;
+        if (this._stream && !this.query.join && !this.query.orderBy && !this.query.having && !this.query.groupBy) {
+            fastQuery = true;
+        }
+
+        const maybeScanComplete = () => {
+            if (joinedRows === 0) {
+                if (fastQuery || this._stream) {
+                    complete();
+                    return;
+                }
+
+                // use buffer
+                // Group by, functions and AS
+                this._groupByRows();
+
+                if (this.query.having) { // having
+                    this._buffer = this._buffer.filter(row => {
+                        return this._where(row, this._havingArgs.slowWhere as any[], this.query.join !== undefined);
+                    });
+                }
+
+                if (this.query.orderBy) { // order by
+                    this._buffer.sort(this._orderByRows);
+                }
+
+                if (doRange) { // limit / offset
+                    this._buffer = this._buffer.slice(range[0], range[1]);
+                }
+
+                this._buffer.forEach((row, i) => {
+                    this.progress(row, range[0] + i);
+                });
+                complete();
+            }
+        };
+
+        // standard query path
+        this._getRecords((row, i) => { // SELECT rows
+            if (fastQuery) { // nothing fancy to do, just feed the rows to the client
+                if (doRange) {
+                    if (i >= range[0] && i < range[1]) {
+                        this.progress(this._selectArgs.length ? this._streamAS(row, false) : row, i);
+                    }
+                } else {
+                    this.progress(this._selectArgs.length ? this._streamAS(row, false) : row, i);
+                }
+                return;
+            }
+
+            row = _maybeAssign(row);
+            let count = 0;
+            joinedRows++;
+            this._maybeJoin(joinData, row, (row2) => { // JOIN as needed
+                if (this._stream) {
+                    // continue streaming results
+                    // skipping group by, order by and aggregate functions
+                    let keepRow = true;
+                    row2 = this._selectArgs.length ? this._streamAS(row2, this.query.join !== undefined) : row2;
+                    if (this.query.having) {
+                        keepRow = this._where(row2, this._havingArgs.slowWhere as any[], this.query.join !== undefined);
+                    }
+                    if (keepRow && doRange) {
+                        keepRow = count >= range[0] && count < range[1];
+                    }
+                    if (keepRow) {
+                        this.progress(row2, count);
+                    }
+                    count++;
+                } else {
+                    this._buffer.push(row2);
+                }
+            }, () => {
+                joinedRows--;
+                maybeScanComplete();
+            });
+        }, maybeScanComplete);
+    }
+
+    private _groupByRows() {
+
+        if (!this.query.groupBy) {
+            this._buffer = this._buffer.map(b => this._streamAS(b, this.query.join !== undefined));
+            return;
+        }
+
+
+        this._buffer.sort((a: any, b: any) => {
+            return this._sortObj(a, b, this._groupBy);
+        }).forEach((val, idx) => {
+            const groupByKey = this._groupBy.sort.map(k => String(objQuery(k.path, val, this.query.join !== undefined))).join(".");
+
+            if (!this._sortGroups[groupByKey]) {
+                this._sortGroups[groupByKey] = [];
+            }
+
+            this._sortGroups[groupByKey].push(val);
+        });
+
+        this._buffer = [];
+        if (this._hasAggrFn) {
+            // loop through the groups
+            Object.keys(this._sortGroups).forEach((groupKey) => {
+                // find aggregate functions
+                let resultFns = this._selectArgs.reduce((p, c) => {
+                    if (this.nSQL.functions[c.value].type === "A") {
+                        p[c.value] = {
+                            aggr: this.nSQL.functions[c.value].aggregateStart,
+                            args: c.args
+                        };
+                    }
+                    return p;
+                }, {});
+
+                let firstFn = Object.keys(resultFns)[0];
+
+                // calculate aggregate functions
+                this._sortGroups[groupKey].forEach((row, i) => {
+                    Object.keys(resultFns).forEach((fn) => {
+                        resultFns[fn].aggr = this.nSQL.functions[fn].call(this.query, row, this.query.join !== undefined, resultFns[fn].aggr, ...resultFns[fn].args);
+                    });
+                });
+
+                // calculate simple functions and AS back into buffer
+                this._buffer.push(this._selectArgs.reduce((prev, cur) => {
+                    prev[cur.as || cur.value] = cur.isFn && resultFns[cur.value] ? resultFns[cur.value].aggr.result : (cur.isFn ? this.nSQL.functions[cur.value].call(this.query, resultFns[firstFn].aggr.row, this.query.join !== undefined, {} as any, ...(cur.args || [])) : objQuery(cur.value, resultFns[firstFn].aggr.row));
+                    return prev;
+                }, {}));
+
+            });
+        } else {
+            Object.keys(this._sortGroups).forEach((groupKey) => {
+                this._sortGroups[groupKey].forEach((row) => {
+                    this._buffer.push(this._streamAS(row, this.query.join !== undefined));
+                });
+            });
+        }
     }
 
     private _upsert() {
@@ -109,8 +539,9 @@ export class _NanoSQLQuery {
         this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: WhereType.none };
         if (this.query.state === "error") return;
 
-        if (this._whereArgs.type === WhereType.none) { // drop all records
-
+        if (this._whereArgs.type === WhereType.none) { // no records selected, nothing to delete!
+            this.query.state = "error";
+            this.error("Can't do delete query without where condition!");
         } else { // find records and delete them
 
         }
@@ -125,13 +556,102 @@ export class _NanoSQLQuery {
 
     }
 
+    private _registerRelation(name: string, relation: [string, "<=" | "<=>" | "=>", string], complete: () => void, error: (err: any) => void) {
+        new Promise((res, rej) => {
+            return this.nSQL.doFilter("registerRelation", { result: { name: name, rel: relation } });
+        }).then((result: { name: string, rel: string[] }) => {
+            return new Promise((res, rej) => {
+                const relation = {
+                    left: resolveObjPath(result.rel[0]),
+                    sync: result.rel[1] as any,
+                    right: resolveObjPath(result.rel[2])
+                };
+                if (["<=", "<=>", "=>"].indexOf(relation.sync) === -1 || relation.left.length < 2 || relation.right.length < 2) {
+                    rej("Invalid relation!");
+                    return;
+                }
+                const tables = Object.keys(this.nSQL.tables);
+                if (tables.indexOf(relation.left[0]) === -1) {
+                    rej(`Relation error, can't find table ${relation.left[0]}!`);
+                    return;
+                }
+                if (tables.indexOf(relation.right[0]) === -1) {
+                    rej(`Relation error, can't find table ${relation.right[0]}!`);
+                    return;
+                }
+                this.nSQL.relations[result.name] = relation;
+                res(this.nSQL.relations[result.name]);
+            });
+        }).then(complete).catch(error);
+    }
+
+    private _destroyRelation(name: string, complete: () => void, error: (err: any) => void) {
+        new Promise((res, rej) => {
+            return this.nSQL.doFilter("destroyRelation", { result: name });
+        }).then((result: string) => {
+            return new Promise((res, rej) => {
+                if (!this.nSQL.relations[result]) {
+                    rej(`Relation ${result} not found!`);
+                    return;
+                }
+                delete this.nSQL.relations[result];
+                res(result);
+            });
+        }).then(complete).catch(error);
+    }
+
+    private _streamAS(row: any, isJoin: boolean): any {
+        if (this._selectArgs.length) {
+            let result = {};
+            this._selectArgs.forEach((arg) => {
+                if (!this.nSQL.functions[arg.value]) {
+                    this.query.state = "error";
+                    this.error(`Function ${arg.value} not found!`);
+                }
+                if (arg.isFn) {
+                    result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, isJoin, {} as any, ...(arg.args || []));
+                } else {
+                    result[arg.as || arg.value] = objQuery(arg.value, row, isJoin);
+                }
+            });
+            return result;
+        }
+        return row;
+    }
+
+    private _orderByRows(a: any, b: any): number {
+        return this._sortObj(a, b, this._orderBy);
+    }
+    /**
+     * Get the sort direction for two objects given the objects, columns and resolve paths.
+     *
+     * @internal
+     * @param {*} objA
+     * @param {*} objB
+     * @param NanoSQLSortBy columns
+     * @param {boolean} resolvePaths
+     * @returns {number}
+     * @memberof _MutateSelection
+     */
+    private _sortObj(objA: any, objB: any, columns: NanoSQLSortBy): number {
+        return columns.sort.reduce((prev, cur) => {
+            let A = objQuery(cur.path, objA);
+            let B = objQuery(cur.path, objB);
+            if (!prev) {
+                if (A === B) return 0;
+                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
+            } else {
+                return prev;
+            }
+        }, 0);
+    }
 
     public createTable(table: NanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
         new Promise((res, rej) => {
             let hasError = false;
 
             const l = table.name;
-            if (!table.internal && (l.indexOf("_") === 0 || l.match(/\s/g) !== null || l.match(/[\(\)\]\[\.]/g) !== null)) {
+            if (!table._internal && (l.indexOf("_") === 0 || l.match(/\s/g) !== null || l.match(/[\(\)\]\[\.]/g) !== null)) {
                 rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
                 return;
             }
@@ -162,7 +682,7 @@ export class _NanoSQLQuery {
                 const setModels = (dataModels: NanoSQLDataModel[]): NanoSQLDataModel[] => {
                     return dataModels.map(d => {
                         const type = d.key.split(":")[1] || "any";
-                        if (type.indexOf("gps") === 0) {
+                        if (type.indexOf("geo") === 0) {
                             d.model = [
                                 { key: "lat:float", default: 0 },
                                 { key: "lon:float", default: 0 }
@@ -205,7 +725,7 @@ export class _NanoSQLQuery {
                             return p;
                         }
 
-                        if (c.type.indexOf("gps") !== -1) {
+                        if (c.type.indexOf("geo") !== -1) {
                             p[c.name + "-lat"] = { name: c.name + "-lat", type: "float", path: c.path.concat(["lat"]) };
                             p[c.name + "-lon"] = { name: c.name + "-lon", type: "float", path: c.path.concat(["lon"]) };
                         } else {
@@ -241,14 +761,14 @@ export class _NanoSQLQuery {
                 Object.keys(this.nSQL.tables[table.name].indexes).forEach((k, i) => {
                     const index = this.nSQL.tables[table.name].indexes[k];
                     const indexName = "_idx_" + table.name + "_" + index.name;
-                    addTables.push(indexName)
+                    addTables.push(indexName);
                     this.nSQL.tables[indexName] = {
                         model: [
-                            { key: `id:${index.type}`, props: ["pk()"] },
+                            { key: `id:${index.type || "uuid"}`, props: ["pk()"] },
                             { key: `pks:${this.nSQL.tables[table.name].pkType}[]` }
                         ],
                         columns: [
-                            { key: "id", type: index.type },
+                            { key: "id", type: index.type || "uuid" },
                             { key: "pks", type: `${this.nSQL.tables[table.name].pkType}[]` }
                         ],
                         actions: [],
@@ -280,18 +800,24 @@ export class _NanoSQLQuery {
             }).then(() => {
                 this.createTable(alteredTable, complete, error);
             }).catch(error);
-            
+
         }).catch(error);
     }
 
     public dropTable(table: string, complete: () => void, error: (err: any) => void): void {
-        this.nSQL.doFilter("destroyTable", { result: table }).then((destroyTable: string) => {
-            let tablesToDrop = [destroyTable];
-            Object.keys(this.nSQL.tables[table].indexes).forEach((indexName) => {
-                tablesToDrop.push("_idx_" + destroyTable + "_" + indexName);
+        this.nSQL.doFilter("destroyTable", { result: [table] }).then((destroyTables: string[]) => {
+            let tablesToDrop = destroyTables;
+            destroyTables.forEach((table) => {
+                Object.keys(this.nSQL.tables[table].indexes).forEach((indexName) => {
+                    tablesToDrop.push("_idx_" + table + "_" + indexName);
+                });
             });
+
             allAsync(tablesToDrop, (dropTable, i, next, err) => {
-                this.nSQL.adapter.dropTable(destroyTable, next as any, err);
+                this.nSQL.adapter.dropTable(dropTable, () => {
+                    delete this.nSQL.tables[dropTable];
+                    next(dropTable);
+                }, err);
             }).then(complete).catch(error);
         });
     }
@@ -415,13 +941,22 @@ export class _NanoSQLQuery {
         let queryComplete: boolean = false;
         let bufferStarted: boolean = false;
         let counter = 0;
+        let processing = 0;
         const processBuffer = () => {
 
             if (!indexBuffer.length) {
                 if (queryComplete) { // buffer is empty and query is done, we're finshed
                     complete();
                 } else { // wait for next row to come into the buffer
-                    setFast(processBuffer);
+                    setFast(() => {
+                        processing++;
+                        if (processing > 1000) {
+                            // waiting literally forever for the next row
+                            setTimeout(processBuffer, Math.min(processing / 10, 1000));
+                        } else {
+                            processBuffer();
+                        }
+                    });
                 }
                 return;
             }
@@ -537,6 +1072,10 @@ export class _NanoSQLQuery {
         } else if (Array.isArray(this.query.table)) { // array
             scanRecords(this.query.table);
         }
+    }
+
+    private _rebuildIndexes(table: string, complete: () => void, error: (err: any) => void) {
+
     }
 
 
@@ -740,17 +1279,17 @@ export class _NanoSQLQuery {
         }
     } = {};
 
+    private _hasAggrFn: boolean;
+
     private _parseSelect() {
         const selectArgsKey = this.query.actionArgs && this.query.actionArgs.length ? JSON.stringify(this.query.actionArgs) : "";
-
-        let hasAggrFn = false;
 
         this._orderBy = this._parseSort(this.query.orderBy || [], typeof this.query.table === "string");
         this._groupBy = this._parseSort(this.query.groupBy || [], false);
 
         if (selectArgsKey) {
             if (_NanoSQLQuery._selectArgsMemoized[selectArgsKey]) {
-                hasAggrFn = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].hasAggrFn;
+                this._hasAggrFn = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].hasAggrFn;
                 this._selectArgs = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].args;
             } else {
                 (this.query.actionArgs || []).forEach((val: string) => {
@@ -764,7 +1303,7 @@ export class _NanoSQLQuery {
                             this.error(`Function "${fnName}" not found!`);
                         } else {
                             if (this.nSQL.functions[fnName].type === "A") {
-                                hasAggrFn = true;
+                                this._hasAggrFn = true;
                             }
                         }
                     } else {
@@ -772,7 +1311,7 @@ export class _NanoSQLQuery {
                     }
                 });
                 if (this.query.state !== "error") {
-                    _NanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: hasAggrFn, args: this._selectArgs };
+                    _NanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: this._hasAggrFn, args: this._selectArgs };
                 }
             }
 
@@ -793,7 +1332,7 @@ export class _NanoSQLQuery {
             }
         }
 
-        if ((this._orderBy.sort.length && !canUseOrderByIndex) || this._groupBy.sort.length || hasAggrFn) {
+        if ((this._orderBy.sort.length && !canUseOrderByIndex) || this._groupBy.sort.length || this._hasAggrFn) {
             this._stream = false;
         }
     }

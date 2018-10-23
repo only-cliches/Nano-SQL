@@ -12,32 +12,40 @@ export interface NanoSQLConfig {
     path?: string; // RocksDB path
     warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
+    tables?: NanoSQLTableConfig[];
+    relations?: {
+        [name: string]: [string, "<=" | "<=>" | "=>", string]
+    };
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
 
 export interface NanoSQLTableConfig {
     name: string;
     model: NanoSQLDataModel[];
-    indexes?: {name: string, path: string}[];
+    indexes?: {
+        name: string;
+        path: string;
+    }[];
     mapReduce?: {
-        title?: string;
+        name: string;
+        call: (evn: NanoSQLDatabaseEvent[]) => void;
         throttle?: number;
-        when: {
-            onEvents?: string | string[];
-            seconds?: number | number[];
+        onEvents?: string | string[];
+        onTimes?: {
+            second?: number | number[];
             minute?: number | number[];
             hour?: number | number[];
             weekDay?: number | number[];
+            week?: number | number[];
             date?: number | number[];
             month?: number | number[];
         };
-        call: (evn: NanoSQLDatabaseEvent[]) => void;
     }[];
     filter?: (row: any) => any;
     actions?: NanoSQLActionOrView[];
     views?: NanoSQLActionOrView[];
     props?: any[];
-    internal?: boolean;
+    _internal?: boolean;
 }
 
 export interface NanoSQLSortBy {
@@ -68,7 +76,7 @@ export interface NanoSQLAdapter {
     disconnect(complete: () => void, error: (err: any) => void);
 
     createTable(tableName: string, tableData: NanoSQLTable, complete: () => void, error: (err: any) => void);
-    
+
     dropTable(table: string, complete: () => void, error: (err: any) => void);
 
     disconnectTable(table: string, complete: () => void, error: (err: any) => void);
@@ -124,14 +132,14 @@ export interface NanoSQLDataModel {
 }
 
 export interface NanoSQLTable {
-    model: NanoSQLDataModel[],
+    model: NanoSQLDataModel[];
     columns: NanoSQLTableColumn[];
     indexes: {
         [name: string]: NanoSQLIndex;
     };
-    filter?: (row: any) => any,
-    actions: NanoSQLActionOrView[],
-    views: NanoSQLActionOrView[],
+    filter?: (row: any) => any;
+    actions: NanoSQLActionOrView[];
+    views: NanoSQLActionOrView[];
     pkType: string;
     pkCol: string;
     ai: boolean;
@@ -174,8 +182,11 @@ export interface NanoSQLDatabaseEvent {
  */
 export interface NanoSQLJoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
-    table: string;
-    where?: Array<string>;
+    with: {
+        table: string | any[] | (() => Promise<any[]>);
+        as?: string;
+    };
+    on?: any[];
 }
 
 export const buildQuery = (table: string | any[] | (() => Promise<any[]>), action: string): NanoSQLQuery => {
@@ -214,6 +225,7 @@ export interface ORMArgs {
 
 export interface NanoSQLQuery {
     table: string | any[] | (() => Promise<any[]>);
+    tableAS?: string;
     action: string;
     actionArgs?: {[key: string]: any};
     state: "pending" | "processing" | "complete" | "error";
@@ -233,7 +245,8 @@ export interface NanoSQLQuery {
     offset?: number;
     ttl?: number;
     ttlCols?: string[];
-    model?: NanoSQLTableConfig;
+    skipQueue?: boolean;
+    union?: {type: "all" | "distinct", queries: (() => Promise<any[]>)[]};
     [key: string]: any;
 }
 

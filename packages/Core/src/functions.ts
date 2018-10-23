@@ -1,5 +1,5 @@
 import { NanoSQLInstance } from ".";
-import { crowDistance, objQuery, cast, resolveObjPath, compareObjects } from "./utilities";
+import { crowDistance, objQuery, cast, resolveObjPath, compareObjects, getFnValue } from "./utilities";
 import { NanoSQLQuery, NanoSQLIndex, WhereCondition } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -60,14 +60,14 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         GREATEST: {
             type: "S",
             call: (query, row, isJoin, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? objQuery(s, row, isJoin) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s, isJoin) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
                 return {result: args[0]};
             }
         },
         LEAST: {
             type: "S",
             call: (query, row, isJoin, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? objQuery(s, row, isJoin) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s, isJoin) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
                 return {result: args[0]};
             }
         },
@@ -96,14 +96,14 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
         LOWER: {
             type: "S",
             call: (query, row, isJoin, prev, column) => {
-                const value = String(objQuery(column, row, isJoin)).toLowerCase();
+                const value = String(getFnValue(row, column, isJoin)).toLowerCase();
                 return {result: value};
             }
         },
         UPPER: {
             type: "S",
             call: (query, row, isJoin, prev, column) => {
-                const value = String(objQuery(column, row, isJoin)).toUpperCase();
+                const value = String(getFnValue(row, column, isJoin)).toUpperCase();
                 return {result: value};
             }
         },
@@ -113,13 +113,22 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                 return {result: cast(type, objQuery(column, row, isJoin))};
             }
         },
+        CONCAT: {
+            type: "S",
+            call: (query, row, isJoin, prev, ...values: string[]) => {
+                return {result: values.map(v => {
+                    return getFnValue(row, v, isJoin);
+                }).join("")};
+            }
+        },
         LEVENSHTEIN: {
             type: "S",
-            call: (query, row, isJoin, prev, word, column) => {
-                const val = String(objQuery(column, row, isJoin) || "");
-                const key = val + "::" + word;
+            call: (query, row, isJoin, prev, word1, word2) => {
+                const w1 = getFnValue(row, word1, isJoin);
+                const w2 = getFnValue(row, word2, isJoin);
+                const key = w1 + "::" + w2;
                 if (!wordLevenshtienCache[key]) {
-                    wordLevenshtienCache[key] = levenshtein(val, word);
+                    wordLevenshtienCache[key] = levenshtein(w1, w2);
                 }
                 return {result: wordLevenshtienCache[key]};
             }
