@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from ".";
 import { NanoSQLQuery, SelectArgs, WhereArgs, WhereType, NanoSQLIndex, WhereCondition, NanoSQLSortBy, NanoSQLTableConfig, createTableFilter, NanoSQLDataModel, NanoSQLTableColumn, NanoSQLJoinArgs, buildQuery } from "./interfaces";
-import { objSort, objQuery, chainAsync, compareObjects, hash, resolveObjPath, setFast, allAsync, _maybeAssign, _assign } from "./utilities";
+import { objSort, objQuery, chainAsync, compareObjects, hash, resolveObjPath, setFast, allAsync, _maybeAssign, _assign, cast } from "./utilities";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery {
@@ -70,7 +70,7 @@ export class _NanoSQLQuery {
                 this._upsert();
                 break;
             case "delete":
-                this._delete();
+                this._delete(this.progress, this.complete);
                 break;
             case "show tables":
                 this._showTables();
@@ -531,11 +531,15 @@ export class _NanoSQLQuery {
         if (this._whereArgs.type === WhereType.none) { // insert/update records directly
 
         } else { // find records and update them
+            this._getRecords((row, i) => {
 
+            }, () => {
+
+            })
         }
     }
 
-    private _delete() {
+    private _delete(onRow: (row: any, i: number) => void, complete: () => void) {
         this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: WhereType.none };
         if (this.query.state === "error") return;
 
@@ -543,17 +547,99 @@ export class _NanoSQLQuery {
             this.query.state = "error";
             this.error("Can't do delete query without where condition!");
         } else { // find records and delete them
+            let pendingRows: number = 0;
+            let delRows: number = 0;
+            let completed: boolean = false;
+            const table = this.nSQL.tables[this.query.table as string];
+            const maybeDone = () => {
+                if (completed && pendingRows === 0) {
+                    onRow({result: `${delRows} row(s) deleted`}, 0);
+                    complete();
+                }
+            }
+            this._getRecords((row, i) => {
+                pendingRows++;
+                this.nSQL.doFilter("deleteRow", {result: row}).then((delRow) => {
 
+                    const indexes = this._getIndexValues(table.indexes, row);
+                    
+                    allAsync(Object.keys(indexes).concat("_del_"), (indexName: string, i, next) => {
+                        if (indexName === "_del_") { // main row
+                            this.nSQL.adapter.delete(this.query.table as string, delRow[table.pkCol], () => {
+                                next(null);
+                            }, (err) => {
+                                this.query.state = "error";
+                                this.error(err);
+                            });
+                        } else { // secondary indexes
+                            const idxTable = "_idx_" + this.query.table + "_" + indexName;
+                            this.nSQL.adapter.read(idxTable, indexes[indexName], (idxRow) => {
+                                idxRow = _maybeAssign(idxRow);
+                                const idxOf = idxRow.pks.indexOf(row[table.pkCol]);
+                                if (idxOf !== -1) {
+                                    (idxRow.pks || []).splice(idxOf, 1);
+                                    this.nSQL.adapter.write(idxTable, indexes[indexName], idxRow, () => {
+                                        next(null);
+                                    }, () => {
+                                        next(null);
+                                    });
+                                } else {
+                                    next(null);
+                                }
+                            }, (err) => {
+                                next(null);
+                            })
+                        }
+                    }).then(() => {
+                        pendingRows--;
+                        delRows++;
+                        maybeDone();
+                    }).catch((err) => {
+                        this.query.state = "error";
+                        this.error(err);
+                    });
+
+                }).catch(() => {
+                    pendingRows--;
+                    maybeDone();
+                });
+            }, () => {
+                completed = true;
+                maybeDone();
+            })
         }
+    }
+
+    private _getIndexValues(indexes: {[name: string]: NanoSQLIndex}, row: any): {[indexName: string]: any} {
+        return Object.keys(indexes).reduce((prev, cur) => {
+            prev[cur] = cast(indexes[cur].type, objQuery(indexes[cur].path, row));
+            return prev;
+        }, {});
     }
 
 
     private _showTables() {
-
+        this.progress({
+            tables: Object.keys(this.nSQL.tables)
+        }, 0);
+        this.complete();
     }
 
     private _describe() {
-
+        if (typeof this.query.table !== "string") {
+            this.query.state = "error";
+            this.error("Can't call describe on that!");
+            return;
+        }
+        if (!this.nSQL.tables[this.query.table]) {
+            this.query.state = "error";
+            this.error(`Table ${this.query.table} not found!`);
+            return;
+        }
+        this.progress({
+            describe: _assign(this.nSQL.tables[this.query.table].columns)
+        }, 0);
+        this.complete();
     }
 
     private _registerRelation(name: string, relation: [string, "<=" | "<=>" | "=>", string], complete: () => void, error: (err: any) => void) {
