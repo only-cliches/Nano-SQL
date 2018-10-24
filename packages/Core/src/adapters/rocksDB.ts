@@ -1,6 +1,6 @@
-import { NanoSQLAdapter, NanoSQLDataModel, NanoSQLTable } from "../interfaces";
+import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable } from "../interfaces";
 
-export class RocksDB implements NanoSQLAdapter {
+export class RocksDB implements INanoSQLAdapter {
 
     // plugin?: NanoSQLPlugin;
     nSQL: any; // NanoSQLInstance;
@@ -13,7 +13,7 @@ export class RocksDB implements NanoSQLAdapter {
 
     }
 
-    createTable(tableName: string, tableData: NanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
 
     }
 
@@ -29,7 +29,7 @@ export class RocksDB implements NanoSQLAdapter {
 
     }
 
-    write(table: string, pk: any, row: {[key: string]: any}, complete: (row: {[key: string]: any}) => void, error: (err: any) => void) {
+    write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
 
     }
 

@@ -1,18 +1,18 @@
-import { NanoSQLDatabaseEvent, NanoSQLQuery } from "./interfaces";
+import { INanoSQLDatabaseEvent, INanoSQLQuery, INanoSQLObserver, INanoSQLObserverSubscriber, INanoSQLInstance } from "./interfaces";
 import { setFast } from "./utilities";
 
-export class Observer<T> {
+export class Observer<T> implements INanoSQLObserver<T> {
 
-    private _config: any[];
+    public _config: any[];
 
-    private _order: string[] = [];
+    public _order: string[] = [];
 
-    private _count: number = 0;
+    public _count: number = 0;
 
     constructor(
-        private _nSQL: any,
-        private _query: (ev?: NanoSQLDatabaseEvent) => NanoSQLQuery,
-        private _tables: string[]
+        public _nSQL: INanoSQLInstance,
+        public _query: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery,
+        public _tables: string[]
     ) {
         this._config = [];
     }
@@ -36,7 +36,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public distinct(keyFunc?: (obj: T, event?: NanoSQLDatabaseEvent) => any, compareFunc?: (key1: any, key2: any) => boolean) {
+    public distinct(keyFunc?: (obj: T, event?: INanoSQLDatabaseEvent) => any, compareFunc?: (key1: any, key2: any) => boolean) {
         this._config[this._order.length] = [
             keyFunc || ((obj) => obj),
             compareFunc || ((k1, k2) => k1 === k2)
@@ -52,7 +52,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public filter(fn: (obj: T, idx?: number, event?: NanoSQLDatabaseEvent) => boolean) {
+    public filter(fn: (obj: T, idx?: number, event?: INanoSQLDatabaseEvent) => boolean) {
         this._config[this._order.length] = fn;
         this._order.push("fltr");
         return this;
@@ -65,7 +65,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public map(fn: (obj: T, idx?: number, event?: NanoSQLDatabaseEvent) => any) {
+    public map(fn: (obj: T, idx?: number, event?: INanoSQLDatabaseEvent) => any) {
         this._config[this._order.length] = fn;
         this._order.push("mp");
         return this;
@@ -78,7 +78,7 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public first(fn?: (obj: T, idx?: number, event?: NanoSQLDatabaseEvent) => boolean) {
+    public first(fn?: (obj: T, idx?: number, event?: INanoSQLDatabaseEvent) => boolean) {
         this._config[this._order.length] = fn || ((obj, idx) => true);
         this._order.push("fst");
         return this;
@@ -112,7 +112,7 @@ export class Observer<T> {
     /**
      * Subscribe to the observer
      *
-     * @param {((value: T, event?: NanoSQLDatabaseEvent) => void | {
+     * @param {((value: T, event?: INanoSQLDatabaseEvent) => void | {
      *         next: (value: T, event?: DatabaseEvent) => void;
      *         error?: (error: any) => void;
      *         complete?: (value?: T, event?: DatabaseEvent) => void;
@@ -120,10 +120,10 @@ export class Observer<T> {
      * @returns
      * @memberof Observer
      */
-    public subscribe(callback: (value: T, event?: NanoSQLDatabaseEvent) => void | {
-        next: (value: T, event?: NanoSQLDatabaseEvent) => void;
+    public subscribe(callback: (value: T, event?: INanoSQLDatabaseEvent) => void | {
+        next: (value: T, event?: INanoSQLDatabaseEvent) => void;
         error?: (error: any) => void;
-        complete?: (value?: T, event?: NanoSQLDatabaseEvent) => void;
+        complete?: (value?: T, event?: INanoSQLDatabaseEvent) => void;
     }) {
         let prevValue: {
             [idx: number]: any;
@@ -140,7 +140,7 @@ export class Observer<T> {
             [step: number]: number;
         } = {};
 
-        return new ObserverSubscriber(this._nSQL, this._query, {
+        return new INanoSQLObserverSubscriber(this._nSQL, this._query, {
             next: (rows, event) => {
                 this._count++;
 
@@ -261,18 +261,21 @@ export class Observer<T> {
     }
 }
 
-export class ObserverSubscriber {
+export class ObserverSubscriber implements INanoSQLObserverSubscriber {
 
     public _closed: boolean;
+    public _nSQL: INanoSQLInstance;
+    public _getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery;
+    public _callback: {
+        next: (value: any, event: any) => void;
+        error: (error: any) => void;
+    };
+    public _tables: string[];
 
-    constructor(
-        private _nSQL: any,
-        private _getQuery: (ev?: NanoSQLDatabaseEvent) => NanoSQLQuery,
-        private _callback: {
+    constructor(_nSQL: INanoSQLInstance, _getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery, _callback: {
             next: (value: any, event: any) => void;
             error: (error: any) => void;
-        },
-        private _tables: string[]
+        }, _tables: string[]
     ) {
         this._closed = false;
         this.exec = this.exec.bind(this);
@@ -287,28 +290,28 @@ export class ObserverSubscriber {
         }
 
         this._tables.forEach((table) => {
-            this._nSQL.table(table).on("change", this.exec);
+            this._nSQL.selectTable(table).on("change", this.exec);
         });
     }
 
-    public exec(event?: NanoSQLDatabaseEvent) {
+    public exec(event?: INanoSQLDatabaseEvent) {
 
         setFast(() => {
             const q = this._getQuery(event);
             if (!q) return;
-
+/*
             this._nSQL.query("select").manualExec(q).then((rows) => {
                 this._callback.next(rows, event);
             }).catch((err) => {
                 this._callback.error(err);
-            });
+            });*/
         });
 
     }
 
     public unsubscribe() {
         this._tables.forEach((table) => {
-            this._nSQL.table(table).off("change", this.exec);
+            this._nSQL.selectTable(table).off("change", this.exec);
         });
         this._closed = true;
     }

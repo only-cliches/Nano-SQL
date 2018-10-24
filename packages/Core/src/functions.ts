@@ -1,11 +1,10 @@
-import { NanoSQLInstance } from ".";
 import { crowDistance, objQuery, cast, resolveObjPath, compareObjects, getFnValue } from "./utilities";
-import { NanoSQLQuery, NanoSQLIndex, WhereCondition } from "./interfaces";
+import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
 const wordLevenshtienCache: { [words: string]: number } = {};
 
-export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
+export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
 
     nSQL.functions = {
         COUNT: {
@@ -142,7 +141,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
             },
             whereIndex: (nSQL, query, fnArgs, where) => {
                 if (where[1] === ">" || where[1] === ">=") {
-                    const indexes: {[name: string]: NanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
+                    const indexes: {[name: string]: INanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     const crowColumn = resolveObjPath(fnArgs[0]);
                     let crowCols: string[] = [];
                     Object.keys(indexes).forEach((k) => {
@@ -163,7 +162,7 @@ export const attachDefaultFns = (nSQL: NanoSQLInstance) => {
                 }
                 return false;
             },
-            queryIndex: (nSQL: any, query: NanoSQLQuery, where: WhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => {
+            queryIndex: (nSQL: any, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => {
 
             }
         }

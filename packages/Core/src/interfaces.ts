@@ -1,34 +1,273 @@
-import { uuid } from "./utilities";
+import { ReallySmallEvents } from "really-small-events";
 
-export interface NanoSQLConfig {
+export declare class INanoSQLInstance {
+    config: INanoSQLConfig;
+    plugins: INanoSQLPlugin[];
+    adapter: INanoSQLAdapter;
+    version: number;
+    filters: {
+        [filterName: string]: ((inputArgs: any) => Promise<any>)[];
+    };
+    functions: {
+        [fnName: string]: INanoSQLFunction;
+    };
+    earthRadius: number;
+    tables: {
+        [tableName: string]: INanoSQLTable;
+    };
+    relations: {
+        [name: string]: {
+            left: string[];
+            sync: "<=" | "<=>" | "=>";
+            right: string[];
+        };
+    };
+    state: {
+        activeAV: string;
+        hasAnyEvents: boolean;
+        id: string;
+        pid: string;
+        peers: string[];
+        peerEvents: string[];
+        focused: boolean;
+        peerMode: boolean;
+        connected: boolean;
+        ready: boolean;
+        selectedTable: string | any[] | (() => Promise<any[]>);
+    };
+    _queryCache: {
+        [id: string]: any[];
+    };
+    indexTypes: {
+        [type: string]: (value: any) => any;
+    };
+    _eventCBs: {
+        Core: ReallySmallEvents;
+        [eventName: string]: ReallySmallEvents;
+    };
+    constructor();
+    doFilter<T, R>(filterName: string, args: T): Promise<R>;
+    getCache(id: string, args: {
+        offset: number;
+        limit: number;
+    }): any[];
+    clearCache(id: string): boolean;
+    clearTTL(primaryKey: any): Promise<any>;
+    expires(primaryKey: any): Promise<any>;
+    _ttlTimer;
+    _checkTTL(): void;
+    selectTable(table?: string | any[] | (() => Promise<any[]>)): INanoSQLInstance;
+    getPeers(): any;
+    _detectStorageMethod();
+    _initPlugins(config);
+    connect(config: INanoSQLConfig): Promise<any>;
+    _initPeers();
+    on(action: string, callBack: (event: INanoSQLDatabaseEvent) => void): INanoSQLInstance;
+    off(action: string, callBack: (event: INanoSQLDatabaseEvent, database: INanoSQLInstance) => void): INanoSQLInstance;
+    _refreshEventChecker(): INanoSQLInstance;
+    getView(viewName: string, viewArgs?: any): Promise<any>;
+    doAction(actionName: string, actionArgs: any): Promise<any>;
+    _doAV(AVType, table, AVName, AVargs);
+    query(action: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), args?: any): INanoSQLQueryBuilder;
+    triggerQuery(query: INanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
+    triggerEvent(eventData: INanoSQLDatabaseEvent): INanoSQLInstance;
+    default(replaceObj?: any, table?: string): {
+        [key: string]: any;
+    } | Error;
+    rawDump(tables: string[], onRow: (table: string, row: {
+        [key: string]: any;
+    }) => void): Promise<any>;
+    rawImport(tables: {
+        [table: string]: {
+            [key: string]: any;
+        }[];
+    }, onProgress?: (percent: number) => void): Promise<any>;
+    disconnect(): Promise<any>;
+    observable<T>(getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery, tablesToListen?: string[]): INanoSQLObserver<T>;
+    extend(scope: string, ...args: any[]): any | INanoSQLInstance;
+    loadJS(rows: {
+        [key: string]: any;
+    }[], onProgress?: (percent: number) => void): Promise<any[]>;
+    JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
+    csvToArray(text: string): any[];
+    CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
+    loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
+}
+
+export declare class INanoSQLQueryBuilder {
+    _db: INanoSQLInstance;
+    _error: string;
+    _AV: string;
+    _query: INanoSQLQuery;
+    static execMap: any;
+    constructor(db: INanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string);
+    where(args: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number, isJoin?: boolean) => boolean)): INanoSQLQueryBuilder;
+    orderBy(args: string[]): INanoSQLQueryBuilder;
+    groupBy(columns: string[]): INanoSQLQueryBuilder;
+    having(args: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number, isJoin?: boolean) => boolean)): INanoSQLQueryBuilder;
+    join(args: INanoSQLJoinArgs | INanoSQLJoinArgs[]): INanoSQLQueryBuilder;
+    limit(args: number): INanoSQLQueryBuilder;
+    comment(comment: string): INanoSQLQueryBuilder;
+    extend(scope: string, ...args: any[]): INanoSQLQueryBuilder;
+    union(queries: (() => Promise<any[]>)[], unionAll?: boolean): INanoSQLQueryBuilder;
+    offset(args: number): INanoSQLQueryBuilder;
+    emit(): INanoSQLQuery;
+    ttl(seconds?: number, cols?: string[]): INanoSQLQueryBuilder;
+    toCSV(headers?: boolean): any;
+    stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
+    cache(): Promise<{
+        id: string;
+        total: number;
+    }>;
+    orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
+    from(table: string | any[] | (() => Promise<any[]>), AS?: string): INanoSQLQueryBuilder;
+    exec(): Promise<{
+        [key: string]: any;
+    }[]>;
+}
+
+export declare class INanoSQLObserver<T> {
+    public _nSQL: INanoSQLInstance;
+    public _query: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery;
+    public _tables: string[];
+    public _config: any[];
+    public _order: string[];
+    public _count: number;
+    constructor(_nSQL: INanoSQLInstance, _query: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery, _tables: string[]);
+    debounce(ms: number): this;
+    distinct(keyFunc?: (obj: T, event?: INanoSQLDatabaseEvent) => any, compareFunc?: (key1: any, key2: any) => boolean): this;
+    filter(fn: (obj: T, idx?: number, event?: INanoSQLDatabaseEvent) => boolean): this;
+    map(fn: (obj: T, idx?: number, event?: INanoSQLDatabaseEvent) => any): this;
+    first(fn?: (obj: T, idx?: number, event?: INanoSQLDatabaseEvent) => boolean): this;
+    skip(num: number): this;
+    take(num: number): this;
+    subscribe(callback: (value: T, event?: INanoSQLDatabaseEvent) => void | {
+        next: (value: T, event?: INanoSQLDatabaseEvent) => void;
+        error?: (error: any) => void;
+        complete?: (value?: T, event?: INanoSQLDatabaseEvent) => void;
+    }): INanoSQLObserverSubscriber;
+}
+
+export declare class INanoSQLObserverSubscriber {
+    public _nSQL: INanoSQLInstance;
+    public _getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery;
+    public _callback: {
+        next: (value: any, event: any) => void;
+        error: (error: any) => void;
+    };
+    public _tables: string[];
+    _closed: boolean;
+    constructor(_nSQL: INanoSQLInstance, _getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery, _callback: {
+        next: (value: any, event: any) => void;
+        error: (error: any) => void;
+    }, _tables: string[]);
+    exec(event?: INanoSQLDatabaseEvent): void;
+    unsubscribe(): void;
+    closed(): boolean;
+}
+
+export declare class INanoSQLQueryExec {
+    nSQL: INanoSQLInstance;
+    query: INanoSQLQuery;
+    progress: (row: any, i: number) => void;
+    complete: () => void;
+    error: (err: any) => void;
+    _buffer: any[];
+    _stream: boolean;
+    _selectArgs: ISelectArgs[];
+    _whereArgs: IWhereArgs;
+    _havingArgs: IWhereArgs;
+    _pkOrderBy: boolean;
+    _idxOrderBy: boolean;
+    _sortGroups: {
+        [groupKey: string]: any[];
+    };
+    _groupByColumns: string[];
+    _orderBy: INanoSQLSortBy;
+    _groupBy: INanoSQLSortBy;
+    constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
+    _maybeJoin(joinData, leftRow, onRow, complete);
+    _select(complete, onError);
+    _groupByRows();
+    _upsert(onRow, complete);
+    _updateRow(newData, oldRow, complete, error);
+    _newRow(newRow, complete, error);
+    _delete(onRow, complete);
+    _getIndexValues(indexes, row);
+    _showTables();
+    _describe();
+    _registerRelation(name, relation, complete, error);
+    _destroyRelation(name, complete, error);
+    _streamAS(row, isJoin);
+    _orderByRows(a, b);
+    _sortObj(objA, objB, columns);
+    createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    dropTable(table: string, complete: () => void, error: (err: any) => void): void;
+    _onError(err);
+    _getByPKs(onlyPKs, table, fastWhere, isReversed, orderByPK, onRow, complete);
+    _fastQuery(onRow, complete);
+    _readIndex(onlyPKs, fastWhere, onRow, complete);
+    _getRecords(onRow, complete);
+    _rebuildIndexes(table, complete, error);
+    _where(singleRow, where, ignoreFirstPath);
+    static likeCache: {
+        [likeQuery: string]: RegExp;
+    };
+    _processLIKE(columnValue, givenValue);
+    _getColValue(where, wholeRow, isJoin);
+    _compare(where, wholeRow, isJoin);
+    static _sortMemoized: {
+        [key: string]: INanoSQLSortBy;
+    };
+    _parseSort(sort, checkforIndexes);
+    static _selectArgsMemoized: {
+        [key: string]: {
+            hasAggrFn: boolean;
+            args: ISelectArgs[];
+        };
+    };
+    _hasAggrFn;
+    _parseSelect();
+    static _whereMemoized: {
+        [key: string]: IWhereArgs;
+    };
+    _parseWhere(qWhere, ignoreIndexes?);
+}
+
+export interface INanoSQLConfig {
     id?: string;
     peer?: boolean;
     cache?: boolean;
     queue?: boolean;
-    mode?: string | NanoSQLAdapter;
-    plugins?: NanoSQLPlugin[];
+    mode?: string | INanoSQLAdapter;
+    plugins?: INanoSQLPlugin[];
     version?: number;
     size?: number; // size of WebSQL database
     path?: string; // RocksDB path
     warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
-    tables?: NanoSQLTableConfig[];
+    tables?: INanoSQLTableConfig[];
     relations?: {
         [name: string]: [string, "<=" | "<=>" | "=>", string]
     };
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
 
-export interface NanoSQLTableConfig {
+export interface INanoSQLTableConfig {
     name: string;
-    model: NanoSQLDataModel[];
+    model: INanoSQLDataModel[];
     indexes?: {
         name: string;
         path: string;
     }[];
     mapReduce?: {
         name: string;
-        call: (evn: NanoSQLDatabaseEvent[]) => void;
+        call: (evn: INanoSQLDatabaseEvent[]) => void;
         throttle?: number;
         onEvents?: string | string[];
         onTimes?: {
@@ -42,18 +281,18 @@ export interface NanoSQLTableConfig {
         };
     }[];
     filter?: (row: any) => any;
-    actions?: NanoSQLActionOrView[];
-    views?: NanoSQLActionOrView[];
+    actions?: INanoSQLActionOrView[];
+    views?: INanoSQLActionOrView[];
     props?: any[];
     _internal?: boolean;
 }
 
-export interface NanoSQLSortBy {
+export interface INanoSQLSortBy {
     sort: { path: string[], dir: string }[];
     index: string;
 }
 
-export interface NanoSQLPlugin {
+export interface INanoSQLPlugin {
     name: string;
     version: number;
     dependencies?: {
@@ -66,22 +305,22 @@ export interface NanoSQLPlugin {
     }[];
 }
 
-export interface NanoSQLAdapter {
+export interface INanoSQLAdapter {
 
-    plugin?: NanoSQLPlugin;
+    plugin?: INanoSQLPlugin;
     nSQL?: any; // NanoSQLInstance;
 
     connect(id: string, complete: () => void, error: (err: any) => void);
 
     disconnect(complete: () => void, error: (err: any) => void);
 
-    createTable(tableName: string, tableData: NanoSQLTable, complete: () => void, error: (err: any) => void);
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void);
 
     dropTable(table: string, complete: () => void, error: (err: any) => void);
 
     disconnectTable(table: string, complete: () => void, error: (err: any) => void);
 
-    write(table: string, pk: any, row: {[key: string]: any}, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
+    write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
 
     read(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
 
@@ -102,7 +341,7 @@ export interface NanoSQLAdapter {
  * @export
  * @interface ActionOrView
  */
-export interface NanoSQLActionOrView {
+export interface INanoSQLActionOrView {
     name: string;
     args?: string[];
     extend?: any;
@@ -110,12 +349,12 @@ export interface NanoSQLActionOrView {
 }
 
 
-export interface NanoSQLFunction {
+export interface INanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
-    call: (query: NanoSQLQuery, row: any, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
-    whereIndex?: (nSQL: any, query: NanoSQLQuery, fnArgs: string[], where: string[]) => WhereCondition | false;
-    queryIndex?: (nSQL: any, query: NanoSQLQuery, where: WhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
+    call: (query: INanoSQLQuery, row: any, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
+    whereIndex?: (nSQL: any, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
+    queryIndex?: (nSQL: any, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
 }
 
 /**
@@ -124,32 +363,32 @@ export interface NanoSQLFunction {
  * @export
  * @interface DataModel
  */
-export interface NanoSQLDataModel {
+export interface INanoSQLDataModel {
     key: string;
-    model?: NanoSQLDataModel[];
+    model?: INanoSQLDataModel[];
     default?: any;
     props?: any[];
 }
 
-export interface NanoSQLTable {
-    model: NanoSQLDataModel[];
-    columns: NanoSQLTableColumn[];
+export interface INanoSQLTable {
+    model: INanoSQLDataModel[];
+    columns: INanoSQLTableColumn[];
     indexes: {
-        [name: string]: NanoSQLIndex;
+        [name: string]: INanoSQLIndex;
     };
     filter?: (row: any) => any;
-    actions: NanoSQLActionOrView[];
-    views: NanoSQLActionOrView[];
+    actions: INanoSQLActionOrView[];
+    views: INanoSQLActionOrView[];
     pkType: string;
     pkCol: string;
     ai: boolean;
     props?: any;
 }
 
-export interface NanoSQLTableColumn {
+export interface INanoSQLTableColumn {
     key: string;
     type: string;
-    model?: NanoSQLTableColumn[];
+    model?: INanoSQLTableColumn[];
     notNull?: boolean;
     default?: any;
 }
@@ -160,7 +399,7 @@ export interface NanoSQLTableColumn {
  * @export
  * @interface DatabaseEvent
  */
-export interface NanoSQLDatabaseEvent {
+export interface INanoSQLDatabaseEvent {
     target: string;
     targetId: string;
     events: string[];
@@ -180,7 +419,7 @@ export interface NanoSQLDatabaseEvent {
  * @export
  * @interface JoinArgs
  */
-export interface NanoSQLJoinArgs {
+export interface INanoSQLJoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
     with: {
         table: string | any[] | (() => Promise<any[]>);
@@ -189,29 +428,16 @@ export interface NanoSQLJoinArgs {
     on?: any[];
 }
 
-export const buildQuery = (table: string | any[] | (() => Promise<any[]>), action: string): NanoSQLQuery => {
-    return {
-        table: table,
-        action: action,
-        state: "pending",
-        result: [],
-        time: Date.now(),
-        queryID: uuid(),
-        extend: [],
-        comments: []
-    };
-};
-
 /**
  * ORM arguments to query ORM data.
  *
  * @export
  * @interface ORMArgs
  */
-export interface ORMArgs {
+export interface IORMArgs {
     key: string;
     select?: string[];
-    orm?: (string | ORMArgs)[];
+    orm?: (string | IORMArgs)[];
     offset?: number;
     limit?: number;
     orderBy?: {
@@ -223,7 +449,7 @@ export interface ORMArgs {
     where?: (row: {[key: string]: any}, idx: number) => boolean | any[];
 }
 
-export interface NanoSQLQuery {
+export interface INanoSQLQuery {
     table: string | any[] | (() => Promise<any[]>);
     tableAS?: string;
     action: string;
@@ -236,11 +462,11 @@ export interface NanoSQLQuery {
     comments: string[];
     where?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
     range?: number[];
-    orm?: (string | ORMArgs)[];
+    orm?: (string | IORMArgs)[];
     orderBy?: string[];
     groupBy?: string[];
     having?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
-    join?: NanoSQLJoinArgs | NanoSQLJoinArgs[];
+    join?: INanoSQLJoinArgs | INanoSQLJoinArgs[];
     limit?: number;
     offset?: number;
     ttl?: number;
@@ -250,20 +476,20 @@ export interface NanoSQLQuery {
     [key: string]: any;
 }
 
-export interface NanoSQLIndex {
+export interface INanoSQLIndex {
     name: string;
     type: string;
     path: string[];
 }
 
-export interface SelectArgs {
+export interface ISelectArgs {
     isFn: boolean;
     value: string;
     as?: string;
     args?: string[];
 }
 
-export enum WhereType {
+export enum IWhereType {
     fast, // primary key or secondary index on all WHERE statements using nothing but AND with single dimensional WHERE
     medium, // fast query followed by AND with slow query (lets us grab optimized rows, then full table scan the optimized rows)
     slow, // full table scan
@@ -271,7 +497,7 @@ export enum WhereType {
     none // no where, return all rows
 }
 
-export interface WhereCondition {
+export interface IWhereCondition {
     index?: string;
     fnName?: string;
     fnArgs?: string[];
@@ -280,11 +506,11 @@ export interface WhereCondition {
     value: string | string[];
 }
 
-export interface WhereArgs {
-    type: WhereType;
+export interface IWhereArgs {
+    type: IWhereType;
     whereFn?: (row: { [name: string]: any }, index: number) => boolean;
-    fastWhere?: (WhereCondition|string)[];
-    slowWhere?: (WhereCondition|string|(WhereCondition|string)[])[];
+    fastWhere?: (IWhereCondition|string)[];
+    slowWhere?: (IWhereCondition|string|(IWhereCondition|string)[])[];
 }
 
 // tslint:disable-next-line
@@ -305,22 +531,22 @@ export interface extendFilter extends abstractFilter {
 
 // tslint:disable-next-line
 export interface createTableFilter extends abstractFilter {
-    result: NanoSQLTableConfig;
+    result: INanoSQLTableConfig;
 }
 
 // tslint:disable-next-line
 export interface queryFilter extends abstractFilter {
-    result: NanoSQLQuery;
+    result: INanoSQLQuery;
 }
 
 // tslint:disable-next-line
 export interface eventFilter extends abstractFilter {
-    result: NanoSQLDatabaseEvent;
+    result: INanoSQLDatabaseEvent;
 }
 
 // tslint:disable-next-line
 export interface config extends abstractFilter {
-    result: NanoSQLConfig;
+    result: INanoSQLConfig;
 }
 
 export interface AVFilterResult {
@@ -342,7 +568,7 @@ export interface viewFilter extends abstractFilter {
 
 // tslint:disable-next-line
 export interface configFilter extends abstractFilter {
-    result: NanoSQLConfig;
+    result: INanoSQLConfig;
 }
 
 // tslint:disable-next-line

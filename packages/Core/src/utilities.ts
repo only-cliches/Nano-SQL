@@ -1,3 +1,5 @@
+import { INanoSQLQuery } from "./interfaces";
+
 declare var global: any;
 
 
@@ -14,6 +16,19 @@ export interface timeId extends String {
 export interface timeIdms extends String {
 
 }
+
+export const buildQuery = (table: string | any[] | (() => Promise<any[]>), action: string): INanoSQLQuery => {
+    return {
+        table: table,
+        action: action,
+        state: "pending",
+        result: [],
+        time: Date.now(),
+        queryID: uuid(),
+        extend: [],
+        comments: []
+    };
+};
 
 export const noop = () => { };
 export const throwErr = (err: any) => {
