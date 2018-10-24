@@ -1,9 +1,15 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable } from "../interfaces";
+import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
 
 export class WebSQL implements INanoSQLAdapter {
 
-    // plugin?: NanoSQLPlugin;
-    nSQL: any; // NanoSQLInstance;
+    plugin: INanoSQLPlugin = {
+        name: "WebSQL Adapter",
+        version: 2.0,
+        dependencies: {
+            core: [2.0]
+        }
+    }
+    nSQL: INanoSQLInstance;
 
     constructor() {
 

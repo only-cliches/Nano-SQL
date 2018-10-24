@@ -3,11 +3,12 @@ import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throw
 import { Observer } from "./observable";
 import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IORMArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
 import { attachDefaultFns } from "./functions";
-import { SequentialTaskQueue } from "sequential-task-queue";
+import * as Limiter from "async-limiter";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
+import { _NanoSQLQueryBuilder } from "./query-builder";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -15,7 +16,7 @@ if (typeof global !== "undefined") {
 }
 
 const VERSION = 2.0;
-const queue = new SequentialTaskQueue();
+const Q = new Limiter({ concurrency: 1 });
 
 export class NanoSQL implements INanoSQLInstance {
 
@@ -146,7 +147,7 @@ export class NanoSQL implements INanoSQLInstance {
     }
 
 
-    public getCache(id: string, args: {offset: number, limit: number}): any[] {
+    public getCache(id: string, args: { offset: number, limit: number }): any[] {
         if (!this._queryCache[id]) {
             throw new Error(`Cache "${id}" not found!`);
         }
@@ -305,14 +306,16 @@ export class NanoSQL implements INanoSQLInstance {
             let filterObj: { [filterName: string]: any[] } = {};
 
             (config.plugins || []).forEach((plugin) => {
-                plugin.filters.forEach((filter) => {
+                (plugin.filters || []).forEach((filter) => {
                     if (!filterObj[filter.name]) {
                         filterObj[filter.name] = [];
                     }
+                    // prevent priority conflicts
                     let priority = filter.priority;
                     while (filterObj[filter.name][priority]) {
                         priority++;
                     }
+                    // set callback
                     filterObj[filter.name][priority] = filter.callback;
                 });
             });
@@ -331,7 +334,7 @@ export class NanoSQL implements INanoSQLInstance {
                 if (range.length === 1) {
                     return version >= range[0];
                 } else {
-                    return version >= range[0] && version <= range[1];
+                    return version >= range[0] && version < range[1];
                 }
             };
 
@@ -748,7 +751,7 @@ export class NanoSQL implements INanoSQLInstance {
                 AVName,
                 AVargs
             }
-        }).then((result) => {
+        }).then((result: AVFilterResult) => {
             const key = result.AVType === "Action" ? "actions" : "views";
 
             const selAV: INanoSQLActionOrView | null = this.tables[result.table][key].reduce((prev, cur) => {
@@ -778,15 +781,15 @@ export class NanoSQL implements INanoSQLInstance {
 
         this.doFilter<queryFilter, INanoSQLQuery>("query", { result: query }).then((setQuery) => {
             if (this.config.queue && !setQuery.skipQueue) {
-                queue.push(() => new Promise((res, rej) => {
+                Q.push((cb) => {
                     new _NanoSQLQuery(this, setQuery, onRow, () => {
-                        res();
+                        cb();
                         complete();
                     }, (err) => {
-                        res();
+                        cb();
                         error(err);
                     });
-                }));
+                });
             } else {
                 new _NanoSQLQuery(this, setQuery, onRow, complete, error);
             }
@@ -1075,169 +1078,4 @@ if (typeof window !== "undefined") {
         nSQL: nSQL,
         NanoSQLInstance: NanoSQL
     };
-}
-
-
-// tslint:disable-next-line
-export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
-
-    public _db: INanoSQLInstance;
-
-    public _error: string;
-
-    public _AV: string;
-
-    public _query: INanoSQLQuery;
-
-    public static execMap: any;
-
-    constructor(db: INanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string) {
-        this._db = db;
-
-        this._AV = actionOrView || "";
-
-        if (typeof queryAction === "string") {
-            this._query = {
-                ...buildQuery(table, queryAction),
-                comments: [],
-                state: "pending",
-                action: queryAction,
-                actionArgs: queryArgs,
-                result: []
-            };
-        } else {
-            this._query = {
-                ...buildQuery(table, ""),
-                ...queryAction(db),
-                state: "pending"
-            };
-        }
-    }
-
-    public where(args: any[] | ((row: { [key: string]: any }, i?: number, isJoin?: boolean) => boolean)): _NanoSQLQueryBuilder {
-        this._query.where = args;
-        return this;
-    }
-
-
-    public orderBy(args: string[]): _NanoSQLQueryBuilder {
-        this._query.orderBy = args;
-        return this;
-    }
-
-    public groupBy(columns: string[]): _NanoSQLQueryBuilder {
-        this._query.groupBy = columns;
-        return this;
-    }
-
-    public having(args: any[] | ((row: { [key: string]: any }, i?: number, isJoin?: boolean) => boolean)): _NanoSQLQueryBuilder {
-        this._query.having = args;
-        return this;
-    }
-
-
-    public join(args: INanoSQLJoinArgs | INanoSQLJoinArgs[]): _NanoSQLQueryBuilder {
-        const err = "Join commands requires table and type arguments!";
-        if (Array.isArray(args)) {
-            args.forEach((arg) => {
-                if (!arg.with.table || !arg.type) {
-                    this._error = err;
-                }
-            });
-        } else {
-            if (!args.with.table || !args.type) {
-                this._error = err;
-            }
-        }
-
-        this._query.join = args;
-        return this;
-    }
-
-
-    public limit(args: number): _NanoSQLQueryBuilder {
-        this._query.limit = args;
-        return this;
-    }
-
-    public comment(comment: string): _NanoSQLQueryBuilder {
-        this._query.comments.push(comment);
-        return this;
-    }
-
-    public extend(scope: string, ...args: any[]): _NanoSQLQueryBuilder {
-        this._query.extend.push({ scope: scope, args: args });
-        return this;
-    }
-
-    public union(queries: (() => Promise<any[]>)[], unionAll?: boolean): _NanoSQLQueryBuilder {
-        this._query.union = {
-            queries: queries,
-            type: unionAll ? "all" : "distinct"
-        };
-        return this;
-    }
-
-    public offset(args: number): _NanoSQLQueryBuilder {
-        this._query.offset = args;
-        return this;
-    }
-
-    public emit(): INanoSQLQuery {
-        return this._query;
-    }
-
-    public ttl(seconds: number = 60, cols?: string[]): _NanoSQLQueryBuilder {
-        if (this._query.action !== "upsert") {
-            throw new Error("nSQL: Can only do ttl on upsert queries!");
-        }
-        this._query.ttl = seconds;
-        this._query.ttlCols = cols || [];
-        return this;
-    }
-
-    public toCSV(headers?: boolean): any {
-        let t = this;
-        return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
-    }
-
-    public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
-        this._db.triggerQuery(this._query, onRow, complete, err);
-    }
-
-    public cache(): Promise<{id: string, total: number}> {
-        return new Promise((res, rej) => {
-            const id = uuid();
-            this.exec().then((rows) => {
-                this._db._queryCache[id] = rows;
-                res({
-                    id: id,
-                    total: rows.length
-                });
-            }).catch(rej);
-        });
-    }
-
-    public orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder {
-        this._query.orm = ormArgs;
-        return this;
-    }
-
-    public from(table: string | any[] | (() => Promise<any[]>), AS?: string): _NanoSQLQueryBuilder {
-        this._query.table = table;
-        this._query.tableAS = AS || "";
-        return this;
-    }
-
-    public exec(): Promise<{ [key: string]: any }[]> {
-
-        return new Promise((res, rej) => {
-            let buffer: any[] = [];
-            this.stream((row) => {
-                buffer.push(row);
-            }, () => {
-                res(buffer);
-            }, rej);
-        });
-    }
 }

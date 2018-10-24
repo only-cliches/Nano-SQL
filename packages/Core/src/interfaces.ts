@@ -298,7 +298,7 @@ export interface INanoSQLPlugin {
     dependencies?: {
         [packageName: string]: number[];
     };
-    filters: {
+    filters?: {
         name: string;
         priority: number;
         callback: (inputArgs: any) => Promise<any>;
@@ -307,8 +307,8 @@ export interface INanoSQLPlugin {
 
 export interface INanoSQLAdapter {
 
-    plugin?: INanoSQLPlugin;
-    nSQL?: any; // NanoSQLInstance;
+    plugin: INanoSQLPlugin;
+    nSQL: INanoSQLInstance;
 
     connect(id: string, complete: () => void, error: (err: any) => void);
 
@@ -353,8 +353,8 @@ export interface INanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
     call: (query: INanoSQLQuery, row: any, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
-    whereIndex?: (nSQL: any, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
-    queryIndex?: (nSQL: any, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
+    whereIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
+    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
 }
 
 /**
