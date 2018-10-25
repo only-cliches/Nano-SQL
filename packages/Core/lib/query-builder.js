@@ -93,9 +93,29 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._query.ttlCols = cols || [];
         return this;
     };
+    _NanoSQLQueryBuilder.prototype.orm = function (ormArgs) {
+        this._query.orm = ormArgs;
+        return this;
+    };
+    _NanoSQLQueryBuilder.prototype.from = function (table, asObj) {
+        this._query.table = table;
+        this._query.tableAS = asObj ? asObj.AS : "";
+        return this;
+    };
     _NanoSQLQueryBuilder.prototype.toCSV = function (headers) {
         var t = this;
         return t.exec().then(function (json) { return Promise.resolve(t._db.JSONtoCSV(json, headers)); });
+    };
+    _NanoSQLQueryBuilder.prototype.exec = function () {
+        var _this = this;
+        return new Promise(function (res, rej) {
+            var buffer = [];
+            _this.stream(function (row) {
+                buffer.push(row);
+            }, function () {
+                res(buffer);
+            }, rej);
+        });
     };
     _NanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
         this._db.triggerQuery(this._query, onRow, complete, err);
@@ -111,26 +131,6 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
                     total: rows.length
                 });
             }).catch(rej);
-        });
-    };
-    _NanoSQLQueryBuilder.prototype.orm = function (ormArgs) {
-        this._query.orm = ormArgs;
-        return this;
-    };
-    _NanoSQLQueryBuilder.prototype.from = function (table, AS) {
-        this._query.table = table;
-        this._query.tableAS = AS || "";
-        return this;
-    };
-    _NanoSQLQueryBuilder.prototype.exec = function () {
-        var _this = this;
-        return new Promise(function (res, rej) {
-            var buffer = [];
-            _this.stream(function (row) {
-                buffer.push(row);
-            }, function () {
-                res(buffer);
-            }, rej);
         });
     };
     return _NanoSQLQueryBuilder;

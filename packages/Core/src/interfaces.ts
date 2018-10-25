@@ -124,7 +124,7 @@ export declare class INanoSQLQueryBuilder {
         total: number;
     }>;
     orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
-    from(table: string | any[] | (() => Promise<any[]>), AS?: string): INanoSQLQueryBuilder;
+    from(table: string | any[] | (() => Promise<any[]>), asObj?: {AS: string}): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
@@ -335,12 +335,7 @@ export interface INanoSQLAdapter {
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void);
 }
 
-/**
- * This is the format used for actions and views
- *
- * @export
- * @interface ActionOrView
- */
+
 export interface INanoSQLActionOrView {
     name: string;
     args?: string[];
@@ -357,12 +352,6 @@ export interface INanoSQLFunction {
     queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
 }
 
-/**
- * You need an array of these to declare a data model.
- *
- * @export
- * @interface DataModel
- */
 export interface INanoSQLDataModel {
     key: string;
     model?: INanoSQLDataModel[];
@@ -393,12 +382,6 @@ export interface INanoSQLTableColumn {
     default?: any;
 }
 
-/**
- * Returned by the event listener when it's called.
- *
- * @export
- * @interface DatabaseEvent
- */
 export interface INanoSQLDatabaseEvent {
     target: string;
     targetId: string;
@@ -409,16 +392,6 @@ export interface INanoSQLDatabaseEvent {
     [key: string]: any;
 }
 
-/**
- * The arguments used for the join command.
- *
- * Type: join type to use
- * Query: A select query to use for the right side of the join
- * Where: Conditions to use to merge the data
- *
- * @export
- * @interface JoinArgs
- */
 export interface INanoSQLJoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
     with: {
@@ -428,12 +401,7 @@ export interface INanoSQLJoinArgs {
     on?: any[];
 }
 
-/**
- * ORM arguments to query ORM data.
- *
- * @export
- * @interface ORMArgs
- */
+
 export interface IORMArgs {
     key: string;
     select?: string[];
@@ -549,7 +517,7 @@ export interface config extends abstractFilter {
     result: INanoSQLConfig;
 }
 
-export interface AVFilterResult {
+export interface IAVFilterResult {
     AVType: "Action" | "View";
     table: string;
     AVName: string;
@@ -558,12 +526,12 @@ export interface AVFilterResult {
 
 // tslint:disable-next-line
 export interface actionFilter extends abstractFilter {
-    result: AVFilterResult;
+    result: IAVFilterResult;
 }
 
 // tslint:disable-next-line
 export interface viewFilter extends abstractFilter {
-    result: AVFilterResult;
+    result: IAVFilterResult;
 }
 
 // tslint:disable-next-line

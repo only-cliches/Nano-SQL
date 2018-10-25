@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, objQuery, buildQuery } from "./utilities";
 import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, AVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IORMArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
+import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IORMArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import * as Limiter from "async-limiter";
 import { _NanoSQLQuery } from "./query";
@@ -743,14 +743,14 @@ export class NanoSQL implements INanoSQLInstance {
 
     public _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any> {
         if (typeof this.state.selectedTable !== "string") return Promise.reject();
-        return this.doFilter<actionFilter, AVFilterResult>(AVType, {
+        return this.doFilter<actionFilter, IAVFilterResult>(AVType, {
             result: {
                 AVType,
                 table,
                 AVName,
                 AVargs
             }
-        }).then((result: AVFilterResult) => {
+        }).then((result: IAVFilterResult) => {
             const key = result.AVType === "Action" ? "actions" : "views";
 
             const selAV: INanoSQLActionOrView | null = this.tables[result.table][key].reduce((prev, cur) => {

@@ -119,9 +119,32 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
+    public orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder {
+        this._query.orm = ormArgs;
+        return this;
+    }
+
+    public from(table: string | any[] | (() => Promise<any[]>), asObj?: {AS: string}): _NanoSQLQueryBuilder {
+        this._query.table = table;
+        this._query.tableAS = asObj ? asObj.AS : "";
+        return this;
+    }
+
     public toCSV(headers?: boolean): any {
         let t = this;
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
+    }
+
+    public exec(): Promise<{ [key: string]: any }[]> {
+
+        return new Promise((res, rej) => {
+            let buffer: any[] = [];
+            this.stream((row) => {
+                buffer.push(row);
+            }, () => {
+                res(buffer);
+            }, rej);
+        });
     }
 
     public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
@@ -138,29 +161,6 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
                     total: rows.length
                 });
             }).catch(rej);
-        });
-    }
-
-    public orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder {
-        this._query.orm = ormArgs;
-        return this;
-    }
-
-    public from(table: string | any[] | (() => Promise<any[]>), AS?: string): _NanoSQLQueryBuilder {
-        this._query.table = table;
-        this._query.tableAS = AS || "";
-        return this;
-    }
-
-    public exec(): Promise<{ [key: string]: any }[]> {
-
-        return new Promise((res, rej) => {
-            let buffer: any[] = [];
-            this.stream((row) => {
-                buffer.push(row);
-            }, () => {
-                res(buffer);
-            }, rej);
         });
     }
 }

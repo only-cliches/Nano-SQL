@@ -22,15 +22,17 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     offset(args: number): _NanoSQLQueryBuilder;
     emit(): INanoSQLQuery;
     ttl(seconds?: number, cols?: string[]): _NanoSQLQueryBuilder;
+    orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder;
+    from(table: string | any[] | (() => Promise<any[]>), asObj?: {
+        AS: string;
+    }): _NanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
+    exec(): Promise<{
+        [key: string]: any;
+    }[]>;
     stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
     cache(): Promise<{
         id: string;
         total: number;
     }>;
-    orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder;
-    from(table: string | any[] | (() => Promise<any[]>), AS?: string): _NanoSQLQueryBuilder;
-    exec(): Promise<{
-        [key: string]: any;
-    }[]>;
 }
