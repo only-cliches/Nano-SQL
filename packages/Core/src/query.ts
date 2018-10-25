@@ -1008,7 +1008,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 });
 
                 allAsync(addTables, (table, i, next, err) => {
-                    this.nSQL.adapter.createTable(table, this.nSQL.tables[table], next as any, err);
+                    this.nSQL.adapter.createAndInitTable(table, this.nSQL.tables[table], next as any, err);
                 }).then(res).catch(rej);
             }).then(complete).catch(error);
         });

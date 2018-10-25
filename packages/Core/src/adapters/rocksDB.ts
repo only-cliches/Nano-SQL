@@ -8,7 +8,8 @@ export class RocksDB implements INanoSQLAdapter {
         dependencies: {
             core: [2.0]
         }
-    }
+    };
+
     nSQL: INanoSQLInstance;
 
     constructor() {
@@ -19,7 +20,7 @@ export class RocksDB implements INanoSQLAdapter {
 
     }
 
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
 
     }
 

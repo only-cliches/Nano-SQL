@@ -3,19 +3,21 @@ import { INanoSQLQuery } from "./interfaces";
 declare var global: any;
 
 
-export interface UUID extends String {
+export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?: number): number => {
 
-}
+    const start = startVal || 0;
+    const end = endVal || arr.length;
 
-// tslint:disable-next-line
-export interface timeId extends String {
+    if (arr[start] > value) return start;
+    if (arr[end] < value) return end + 1;
 
-}
-
-// tslint:disable-next-line
-export interface timeIdms extends String {
-
-}
+    const m = Math.floor((start + end) / 2);
+    if (value === arr[m]) return m;
+    if (end - 1 === start) return end;
+    if (value > arr[m]) return binarySearch(arr, value, m, end);
+    if (value < arr[m]) return binarySearch(arr, value, start, m);
+    return end;
+};
 
 export const buildQuery = (table: string | any[] | (() => Promise<any[]>), action: string): INanoSQLQuery => {
     return {

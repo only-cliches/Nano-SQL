@@ -314,7 +314,7 @@ export interface INanoSQLAdapter {
 
     disconnect(complete: () => void, error: (err: any) => void);
 
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void);
+    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void);
 
     dropTable(table: string, complete: () => void, error: (err: any) => void);
 
