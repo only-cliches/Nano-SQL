@@ -15,7 +15,7 @@ echo "(1/5) Clean Completed..."
 echo "(2/5) Node Build & Type Declarations Completed..."
 
 #browser build
-export NODE_ENV=production && ./node_modules/.bin/webpack --display-modules
+./node_modules/.bin/webpack -p --display-modules
 
 echo "(3/5) Browser Build Completed..."
 
@@ -25,7 +25,7 @@ touch docs/.nojekyll
 echo "(4/5) Docs Completed..."
 
 #copy from examples into dist folder
-yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
+#yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
 rm -rf src/*.js
 
 echo "(5/5) Cleaning up..."
@@ -35,4 +35,4 @@ echo "Build Completed. Size Info:"
 function size {
     echo $(cat dist/nano-sql.min.js) | gzip -9f | wc -c;
 }
-echo $(size) bytes;
+echo $(($(size)/1000)) Kb;

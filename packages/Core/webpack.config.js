@@ -2,7 +2,7 @@ const path = require('path');
 const webpack = require("webpack");
 const PATHS = {
     app: path.join(__dirname, 'src'),
-    build: path.join(__dirname)
+    build: path.join(__dirname, 'dist')
 };
 const nodeExternals = require('webpack-node-externals');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
@@ -24,6 +24,10 @@ const options = {
     },
     watchOptions: {
         aggregateTimeout: 500,
+    },
+    node: {
+        global: false,
+        process: false
     },
     resolve: {
         extensions: ['.ts', '.tsx', '.js']

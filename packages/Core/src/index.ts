@@ -732,18 +732,17 @@ export class NanoSQL implements INanoSQLInstance {
         return this;
     }
 
-    public getView(viewName: string, viewArgs: any = {}): Promise<any> {
-        if (typeof this.state.selectedTable !== "string") return Promise.reject();
-        return this._doAV("View", this.state.selectedTable, viewName, viewArgs);
+    public getView(viewName: string, viewArgs: any): Promise<any> {
+        return this._doAV("View", this.state.selectedTable as any, viewName, viewArgs);
     }
 
 
     public doAction(actionName: string, actionArgs: any): Promise<any> {
-        if (typeof this.state.selectedTable !== "string") return Promise.reject();
-        return this._doAV("Action", this.state.selectedTable, actionName, actionArgs);
+        return this._doAV("Action", this.state.selectedTable as any, actionName, actionArgs);
     }
 
     public _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any> {
+        if (typeof this.state.selectedTable !== "string") return Promise.reject();
         return this.doFilter<actionFilter, AVFilterResult>(AVType, {
             result: {
                 AVType,
