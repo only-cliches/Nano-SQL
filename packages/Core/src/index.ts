@@ -96,6 +96,7 @@ export class NanoSQL implements INanoSQLInstance {
         this.tables = {};
         this.plugins = [];
         this._queryCache = {};
+        this.filters = {};
 
         this.indexTypes = {
             string: (value: any) => {
@@ -373,12 +374,10 @@ export class NanoSQL implements INanoSQLInstance {
     public connect(config: INanoSQLConfig): Promise<any> {
         let t = this;
 
-        return new Promise((res, rej) => {
-            return this._initPlugins(config);
-        }).then(() => {
+        return this._initPlugins(config).then(() => {
             return this.doFilter<configFilter, INanoSQLConfig>("config", { result: config });
         }).then((conf: INanoSQLConfig) => {
-            this.state.id = config.id || "nSQL_DB";
+            this.state.id = conf.id || "nSQL_DB";
 
             this.config = conf;
 
@@ -446,8 +445,8 @@ export class NanoSQL implements INanoSQLInstance {
                 switch (j) {
                     case "_util":
                         this.triggerQuery({
-                            ...buildQuery("create table", ""),
-                            model: {
+                            ...buildQuery("", "create table"),
+                            actionArgs: {
                                 name: "_util",
                                 model: [
                                     { key: "key:string", props: ["pk()"] },
@@ -459,8 +458,8 @@ export class NanoSQL implements INanoSQLInstance {
                         break;
                     case "_ttl":
                         this.triggerQuery({
-                            ...buildQuery("create table", ""),
-                            model: {
+                            ...buildQuery("", "create table"),
+                            actionArgs: {
                                 name: "_ttl",
                                 model: [
                                     { key: "key:string", props: ["pk()"] },
@@ -469,7 +468,7 @@ export class NanoSQL implements INanoSQLInstance {
                                     { key: "date:number" }
                                 ],
                                 _internal: true
-                            },
+                            }
                         }, noop, next as any, err);
                         break;
                     default:
@@ -479,8 +478,8 @@ export class NanoSQL implements INanoSQLInstance {
                             return;
                         }
                         this.triggerQuery({
-                            ...buildQuery("create table", ""),
-                            model: model,
+                            ...buildQuery("", "create table"),
+                            actionArgs: model
                         }, noop, next as any, err);
                 }
             });
@@ -853,7 +852,7 @@ export class NanoSQL implements INanoSQLInstance {
                         newObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
                     }
                 } else {
-                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? cast(m.type, newObj[m.key]) : m.default;
+                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key]) : m.default;
                 }
                 if (m.notNull && newObj[m.key] === null) {
                     error = `Data error, ${m.key} cannot be null!`;

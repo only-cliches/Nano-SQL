@@ -20,7 +20,7 @@ const options = {
     devServer: {
         historyApiFallback: true,
         inline: false,
-        contentBase: "examples",
+        contentBase: "dist",
     },
     watchOptions: {
         aggregateTimeout: 500,
@@ -32,7 +32,7 @@ const options = {
     resolve: {
         extensions: ['.ts', '.tsx', '.js']
     },
-    plugins: [
+    plugins: process.env.NODE_ENV === "production" ? [
         new UglifyJSPlugin({
             uglifyOptions: {
                 mangle: {
@@ -40,38 +40,15 @@ const options = {
                 }
             }
         })
-    ],
+    ] : [],
     module: {
-        rules: [{
-                test: /\.ts$/,
-                loader: 'ts-loader'
-            },
+        rules: [
             {
                 test: /\.ts$/,
-                loader: "webpack-strip-block?start=NODE-START&end=NODE-END"
+                loader: 'ts-loader'
             }
         ]
     }
 };
-
-switch (process.env.NODE_ENV) {
-    case "production":
-        /*options.optimization = {
-            minimizer: [
-                new UglifyJSPlugin({
-                    uglifyOptions: {
-                        compress: {
-                            warnings: false,
-                            passes: 2
-                        },
-                        mangle: {
-                            props: { regex: new RegExp(/^_|Promise/) }
-                        }
-                    }
-                })
-            ]
-        };*/
-        break;
-}
 
 module.exports = options;

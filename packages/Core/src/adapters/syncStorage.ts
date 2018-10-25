@@ -1,5 +1,5 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-import { noop, deepFreeze, generateID, binarySearch } from "../utilities";
+import { noop, deepFreeze, generateID, binarySearch, _assign } from "../utilities";
 
 export class SyncStorage implements INanoSQLAdapter {
 
@@ -80,7 +80,9 @@ export class SyncStorage implements INanoSQLAdapter {
     }
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
+
         pk = pk || generateID(this.nSQL.tables[table].pkType, this.nSQL.tables[table].ai ? this._ai[table] + 1 : 0);
+
 
         if (this.nSQL.tables[table].ai) {
             this._ai[table] = Math.max(this._ai[table], pk);
@@ -95,11 +97,7 @@ export class SyncStorage implements INanoSQLAdapter {
             }
         }
 
-        row = {
-            [this.nSQL.tables[table].pkCol]: pk,
-            ...row
-        };
-
+        row[this.nSQL.tables[table].pkCol] = pk;
 
         if (this.useLS) {
             localStorage.setItem(this._id + "*" + table + "__" + pk, JSON.stringify(row));

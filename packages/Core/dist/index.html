@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Testing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="nano-sql.min.js"></script>
+    <script>
+        function test() {
+            nSQL().connect({
+                id: "test",
+                tables: [{
+                    name: "users",
+                    model: [{
+                            key: "id:uuid",
+                            props: ["pk()"]
+                        },
+                        {
+                            key: "name:string"
+                        },
+                        {
+                            key: "age:int",
+                            default: 18
+                        }
+                    ]
+                }],
+                indexes: {
+                    // age: "age"
+                }
+            }).then(() => {
+                return nSQL("users").query("upsert", [{name: "Billy", age: 20}, {name: "Scott", age: 30}, {name: "Jeb"}]).exec();
+            }).then(() => {
+                return nSQL("users").query("select").where(["age", "=", 20]).exec();
+            }).then((rows) => {
+                console.log(rows);
+            }).catch((err) => {
+                console.error(err);
+            })
+        }
+        test()
+    </script>
+</head>
+
+<body>
+
+</body>
+
+</html>

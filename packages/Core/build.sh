@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #clean up
-rm -rf dist/*.*
+rm -rf dist/*.js
 rm -rf *.d.ts
 rm -rf docs
 rm -rf lib

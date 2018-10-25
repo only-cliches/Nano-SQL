@@ -421,7 +421,7 @@ export interface INanoSQLQuery {
     table: string | any[] | (() => Promise<any[]>);
     tableAS?: string;
     action: string;
-    actionArgs?: {[key: string]: any};
+    actionArgs?: any;
     state: "pending" | "processing" | "complete" | "error";
     result: any[];
     time: number;

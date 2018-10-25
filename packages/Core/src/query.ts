@@ -28,6 +28,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     ) {
         this.query.state = "processing";
         const action = query.action.toLowerCase().trim();
+        this._orderByRows = this._orderByRows.bind(this);
         if (action !== "select" && typeof query.table !== "string") {
             this.query.state = "error";
             this.error(`Only "select" queries are available for this resource!`);
@@ -383,9 +384,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         if (this._stream && !this.query.join && !this.query.orderBy && !this.query.having && !this.query.groupBy) {
             fastQuery = true;
         }
+        let queryComplete = false;
 
         const maybeScanComplete = () => {
-            if (joinedRows === 0) {
+            if (joinedRows === 0 && queryComplete) {
+
                 if (fastQuery || this._stream) {
                     complete();
                     return;
@@ -455,7 +458,10 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 joinedRows--;
                 maybeScanComplete();
             });
-        }, maybeScanComplete);
+        }, () => {
+            queryComplete = true;
+            maybeScanComplete();
+        });
     }
 
     public _groupByRows() {
@@ -648,8 +654,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     }
 
     public _newRow(newRow: any, complete: (row: any) => void, error: (err: any) => void) {
+
         this.nSQL.doFilter("addRow", {result: newRow, query: this.query}).then((rowToAdd) => {
-            const indexes = this._getIndexValues(this.nSQL.tables[this.query.string as any].indexes, rowToAdd);
+            const indexes = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, rowToAdd);
             const table = this.nSQL.tables[this.query.table as string];
             const blankIndex = (id: any) => ({id: id, pks: []});
 
@@ -831,12 +838,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         if (this._selectArgs.length) {
             let result = {};
             this._selectArgs.forEach((arg) => {
-                if (!this.nSQL.functions[arg.value]) {
-                    this.query.state = "error";
-                    this.error(`Function ${arg.value} not found!`);
-                }
                 if (arg.isFn) {
-                    result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, isJoin, {} as any, ...(arg.args || []));
+                    if (!this.nSQL.functions[arg.value]) {
+                        this.query.state = "error";
+                        this.error(`Function ${arg.value} not found!`);
+                        return;
+                    }
+                    result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, isJoin, {} as any, ...(arg.args || [])).result;
                 } else {
                     result[arg.as || arg.value] = objQuery(arg.value, row, isJoin);
                 }
@@ -1468,7 +1476,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
     public static _sortMemoized: {
         [key: string]: INanoSQLSortBy;
-    };
+    } = {};
 
     public _parseSort(sort: string[], checkforIndexes: boolean): INanoSQLSortBy {
         const key = sort && sort.length ? hash(JSON.stringify(sort)) : "";
@@ -1566,7 +1574,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
     public static _whereMemoized: {
         [key: string]: IWhereArgs;
-    };
+    } = {};
 
     public _parseWhere(qWhere: any[] | ((row: { [key: string]: any }) => boolean), ignoreIndexes?: boolean): IWhereArgs {
         const where = qWhere || [];
@@ -1678,7 +1686,6 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         };
         let parsedWhere = recursiveParse(typeof where[0] === "string" ? [where] : where, 0);
 
-
         // discover where we have indexes we can use
         // the rest is a full table scan OR a scan of the index results
         // fastWhere = index query, slowWhere = row by row/full table scan
@@ -1706,7 +1713,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }
         // has at least some index values
         // "AND" or the end of the WHERE should follow the last index to use the indexes
-        if (lastFastIndx !== -1 && (parsedWhere[lastFastIndx] === "AND" || !parsedWhere[lastFastIndx])) {
+        if (lastFastIndx > 1 && (parsedWhere[lastFastIndx] === "AND" || !parsedWhere[lastFastIndx])) {
             const slowWhere = parsedWhere.slice(lastFastIndx + 1);
             _NanoSQLQuery._whereMemoized[key] = {
                 type: slowWhere.length ? IWhereType.medium : IWhereType.fast,

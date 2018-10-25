@@ -442,7 +442,7 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
 };
 
 export const getFnValue = (row: any, str: string, isJoin: boolean): any => {
-    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"(.*)\"|\'(.*)\'/gmi, "$1") : objQuery(str, row, isJoin);
+    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : objQuery(str, row, isJoin);
 };
 
 /**
