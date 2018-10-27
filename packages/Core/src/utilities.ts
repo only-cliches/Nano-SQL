@@ -289,7 +289,7 @@ export const isObject = (val: any): boolean => {
 
 export const objSort = (path?: string, rev?: boolean) => {
     return (a: any, b: any): number => {
-        const result = path ? (objQuery(path, a) > objQuery(path, b) ? -1 : 1) : (a > b ? -1 : 1);
+        const result = path ? (deepGet(path, a) > deepGet(path, b) ? -1 : 1) : (a > b ? -1 : 1);
         return rev ? result * -1 : result;
     };
 };
@@ -442,7 +442,28 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
 };
 
 export const getFnValue = (row: any, str: string, isJoin: boolean): any => {
-    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : objQuery(str, row, isJoin);
+    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : deepGet(str, row, isJoin);
+};
+
+export const deepSet = (pathQuery: string|string[], object: any, value: any, ignoreFirstPath?: boolean): any => {
+
+    const safeSet = (getPath: string[], pathIdx: number, setObj: any) => {
+        if (!getPath[pathIdx + 1]) { // end of path
+            setObj[getPath[pathIdx]] = value;
+            return;
+        } else if (!setObj[getPath[pathIdx]]) { // nested value doesn't exist yet
+            if (isNaN(getPath[pathIdx + 1] as any)) { // assume number queries are for arrays, otherwise an object
+                setObj[getPath[pathIdx]] = {};
+            } else {
+                setObj[getPath[pathIdx]] = [];
+            }
+        }
+        safeSet(getPath, pathIdx + 1, setObj[getPath[pathIdx] as string]);
+    };
+
+    safeSet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery, ignoreFirstPath), 0, object)
+
+    return object;
 };
 
 /**
@@ -460,7 +481,7 @@ export const getFnValue = (row: any, str: string, isJoin: boolean): any => {
  * @param {boolean} [ignoreFirstPath]
  * @returns {*}
  */
-export const objQuery = (pathQuery: string|string[], object: any, ignoreFirstPath?: boolean): any => {
+export const deepGet = (pathQuery: string|string[], object: any, ignoreFirstPath?: boolean): any => {
 
     const safeGet = (getPath: string[], pathIdx: number, object: any) => {
         if (!getPath[pathIdx] || !object) return object;

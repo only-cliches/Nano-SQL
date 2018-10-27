@@ -7,6 +7,8 @@
     <title>Testing</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="nano-sql.min.js"></script>
+    <script async src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.4.3/alasql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
     <script>
         function test() {
             nSQL().connect({
@@ -23,17 +25,27 @@
                         {
                             key: "age:int",
                             default: 18
+                        },
+                        {
+                            key: "meta:any",
+                            default: {}
                         }
+                    ],
+                    indexes: [
+                        // {key: "age:int", path: "age"}
                     ]
                 }],
-                indexes: {
-                    // age: "age"
-                }
             }).then(() => {
-                return nSQL("users").query("upsert", [{name: "Billy", age: 20}, {name: "Scott", age: 30}, {name: "Jeb"}]).exec();
+                return nSQL("users").query("upsert", [{name: "Billy", age: 20, meta: {color: "blue"}}, {name: "Scott", age: 30, meta: {color: "orange"}}, {name: "Jeb", meta: {color: "yellow"}}]).exec();
             }).then(() => {
-                return nSQL("users").query("select").where(["age", "=", 20]).exec();
+                console.time("sel");
+                return nSQL("users.meta.color[0]").query("upsert", ["black", "green"]).exec();
+            }).then((result) => {
+                console.log(result);
+                console.time("sel");
+                return nSQL("users").query("select").exec();
             }).then((rows) => {
+                console.timeEnd("sel");
                 console.log(rows);
             }).catch((err) => {
                 console.error(err);
@@ -44,7 +56,150 @@
 </head>
 
 <body>
+    <button onclick="testNanoSQL()">Test nanoSQL</button>
+    <button onclick="testAlaSQL()">Test alaSQL</button>
+    <script>
+        function makeid() {
+            var text = "";
+            var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
+            for (var i = 0; i < 10; i++)
+                text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+            return text;
+        }
+
+        function testAlaSQL() {
+            console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+
+            function runTest(complete) {
+
+                var mybase = new alasql.Database();
+                mybase.exec(
+                    `CREATE TABLE users (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    name TEXT,
+                    pass TEXT,
+                    email TEXT
+                )`
+                );
+
+
+                let i = 0;
+                var start = Date.now();
+                const w = () => {
+                    if (i < 100) {
+                        mybase.exec(`INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [makeid(), makeid(),
+                            makeid()
+                        ], () => {
+                            i++;
+                            Promise.resolve().then(w);
+                        });
+                    } else {
+
+                        // start = Date.now();
+                        // mybase.exec("UPDATE users SET name=? WHERE id BETWEEN 10 AND 30", [makeid()], (rows) => {
+                        // console.log("READ", (Date.now() - start))
+                        complete(Date.now() - start);
+                        // })
+                    }
+
+                }
+                w();
+            }
+
+
+            let k = 0;
+            let results = [];
+
+            function nextTest() {
+                if (k < 100) {
+                    runTest(function (result) {
+                        console.log(k + ": " + result)
+                        results.push(result);
+                        k++;
+                        Promise.resolve().then(nextTest);
+                    })
+                } else {
+                    console.log("AVG:" + results.reduce((prev, cur) => {
+                        return prev + cur;
+                    }, 0) / results.length);
+                }
+            }
+
+            nextTest();
+        }
+
+        function testNanoSQL() {
+            console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+
+            function runTest(complete) {
+
+                var db = new NanoSQL();
+                
+                    db.selectTable("users").connect({
+                        id: "test",
+                        tables: [
+                            {
+                                name: "users",
+                                model: [
+                                    {key: "id:int", props: ["pk()", "ai()"]},
+                                    {key: "name:any"},
+                                    {key: "pass:any"},
+                                    {key: "email:any"}
+                                ]
+                            }
+                        ]
+                    }).then(function () {
+                        var start = Date.now();
+                        let i = 0;
+                        const w = () => {
+                            if (i < 100) {
+                                db.query("upsert", {
+                                    name: makeid(),
+                                    pass: makeid(),
+                                    email: makeid()
+                                }).exec().then(() => {
+                                    i++;
+                                    Promise.resolve().then(w);
+                                    // setTimeout(w, 10);
+                                });
+                            } else {
+                                // start = Date.now();
+                                // db.table("users").query("upsert", {name: makeid()}).where(["id", "BETWEEN", [10, 30]]).exec().then(() => {
+                                complete((Date.now() - start));
+                                // });
+                                //console.log("WRITE", (new Date().getTime() - start))
+                            }
+
+                        }
+                        w();
+                    });
+            }
+            // runTest((time) => { console.log(time) });
+            // return;
+
+            let k = 0;
+            let results = [];
+
+            function nextTest() {
+                if (k < 100) {
+                    runTest(function (result) {
+                        console.log(k + ": " + result)
+                        results.push(result);
+                        k++;
+                        Promise.resolve().then(nextTest);
+                    })
+                } else {
+                    console.log("AVG:" + results.reduce((prev, cur) => {
+                        return prev + cur;
+                    }, 0) / results.length);
+                }
+            }
+
+            nextTest();
+        }
+    </script>
 </body>
 
 </html>

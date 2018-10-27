@@ -262,7 +262,7 @@ export interface INanoSQLTableConfig {
     name: string;
     model: INanoSQLDataModel[];
     indexes?: {
-        name: string;
+        key: string;
         path: string;
     }[];
     mapReduce?: {
@@ -500,6 +500,7 @@ export interface extendFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface createTableFilter extends abstractFilter {
     result: INanoSQLTableConfig;
+    query: INanoSQLQuery;
 }
 
 // tslint:disable-next-line

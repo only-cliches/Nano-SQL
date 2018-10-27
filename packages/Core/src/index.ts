@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, objQuery, buildQuery } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, deepGet, buildQuery } from "./utilities";
 import { Observer } from "./observable";
 import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IORMArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
 import { attachDefaultFns } from "./functions";

@@ -1,4 +1,4 @@
-import { crowDistance, objQuery, cast, resolveObjPath, compareObjects, getFnValue } from "./utilities";
+import { crowDistance, deepGet, cast, resolveObjPath, compareObjects, getFnValue } from "./utilities";
 import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -12,7 +12,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             aggregateStart: {result: 0, row: {}},
             call: (query, row, isJoin, prev, column) => {
                 if (column && column !== "*") {
-                    if (objQuery(column, row, isJoin)) {
+                    if (deepGet(column, row, isJoin)) {
                         prev.result++;
                     }
                 } else {
@@ -26,7 +26,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
             call: (query, row, isJoin, prev, column) => {
-                let max = objQuery(column, row, isJoin) || 0;
+                let max = deepGet(column, row, isJoin) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
                     prev.row = row;
@@ -43,7 +43,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
             call: (query, row, isJoin, prev, column) => {
-                let min = objQuery(column, row, isJoin) || 0;
+                let min = deepGet(column, row, isJoin) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
                     prev.row = row;
@@ -74,7 +74,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
             call: (query, row, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
+                const value = parseFloat(deepGet(column, row, isJoin) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -86,7 +86,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}},
             call: (query, row, isJoin, prev, column) => {
-                const value = parseFloat(objQuery(column, row, isJoin) || 0) || 0;
+                const value = parseFloat(deepGet(column, row, isJoin) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 return prev;
@@ -109,7 +109,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         CAST: {
             type: "S",
             call: (query, row, isJoin, prev, column, type) => {
-                return {result: cast(type, objQuery(column, row, isJoin))};
+                return {result: cast(type, deepGet(column, row, isJoin))};
             }
         },
         CONCAT: {
@@ -135,8 +135,8 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         CROW: {
             type: "S",
             call: (query, row, isJoin, prev, gpsCol: string, lat: string, lon: string) => {
-                const latVal = objQuery(gpsCol + ".lat", row, isJoin);
-                const lonVal = objQuery(gpsCol + ".lon", row, isJoin);
+                const latVal = deepGet(gpsCol + ".lat", row, isJoin);
+                const lonVal = deepGet(gpsCol + ".lon", row, isJoin);
                 return {result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)};
             },
             whereIndex: (nSQL, query, fnArgs, where) => {
@@ -172,7 +172,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: (query, row, isJoin, prev, ...args: string[]) => {
-                const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? objQuery(a, row, isJoin) : a));
+                const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? deepGet(a, row, isJoin) : a));
                 return {result: Math[key].apply(null, fnArgs)};
             }
         };
