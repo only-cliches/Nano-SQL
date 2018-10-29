@@ -1,10 +1,5 @@
 import { INanoSQLQuery } from "./interfaces";
-export interface UUID extends String {
-}
-export interface timeId extends String {
-}
-export interface timeIdms extends String {
-}
+export declare const binarySearch: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => number;
 export declare const buildQuery: (table: string | any[] | (() => Promise<any[]>), action: string) => INanoSQLQuery;
 export declare const noop: () => void;
 export declare const throwErr: (err: any) => never;
@@ -24,6 +19,19 @@ export declare const _assign: (obj: any) => any;
  * @returns {boolean}
  */
 export declare const compareObjects: (obj1: any, obj2: any) => boolean;
+export declare class NanoSQLBuffer {
+    processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
+    onError?: ((err: any) => void) | undefined;
+    onComplete?: (() => void) | undefined;
+    private _items;
+    private _going;
+    private _done;
+    private _count;
+    constructor(processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined, onError?: ((err: any) => void) | undefined, onComplete?: (() => void) | undefined);
+    private _progressBuffer;
+    finished(): void;
+    newItem(item: any): void;
+}
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
@@ -115,14 +123,6 @@ export declare const objSort: (path?: string | undefined, rev?: boolean | undefi
  * @returns {*}
  */
 export declare const cast: (type: string, val: any, allowUknownTypes?: boolean | undefined) => any;
-export declare const _maybeAssign: (obj: any) => any;
-/**
- * Recursively freeze a javascript object to prevent it from being modified.
- *
- * @param {*} obj
- * @returns
- */
-export declare const deepFreeze: (obj: any) => any;
 /**
  * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
  *
@@ -138,8 +138,16 @@ export declare const deepFreeze: (obj: any) => any;
  * @returns {number}
  */
 export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lon2: number, radius?: number) => number;
-export declare const resolveObjPath: (pathQuery: string, ignoreFirstPath?: boolean | undefined) => string[];
-export declare const getFnValue: (row: any, str: string, isJoin: boolean) => any;
+export declare const resolveObjPath: (pathQuery: string) => string[];
+export declare const getFnValue: (row: any, str: string) => any;
+/**
+ * Recursively freeze a javascript object to prevent it from being modified.
+ *
+ * @param {*} obj
+ * @returns
+ */
+export declare const deepFreeze: (obj: any) => any;
+export declare const deepSet: (pathQuery: string | string[], object: any, value: any) => any;
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
@@ -155,5 +163,6 @@ export declare const getFnValue: (row: any, str: string, isJoin: boolean) => any
  * @param {boolean} [ignoreFirstPath]
  * @returns {*}
  */
-export declare const objQuery: (pathQuery: string | string[], object: any, ignoreFirstPath?: boolean | undefined) => any;
+export declare const deepGet: (pathQuery: string | string[], object: any) => any;
+export declare const _maybeAssign: (obj: any) => any;
 export declare const setFast: (...args: any[]) => void;

@@ -11,7 +11,6 @@ var really_small_events_1 = require("really-small-events");
 var utilities_1 = require("./utilities");
 var observable_1 = require("./observable");
 var functions_1 = require("./functions");
-var Limiter = require("async-limiter");
 var query_1 = require("./query");
 var syncStorage_1 = require("./adapters/syncStorage");
 var webSQL_1 = require("./adapters/webSQL");
@@ -22,11 +21,11 @@ if (typeof global !== "undefined") {
     RocksDB = global._rocksDB;
 }
 var VERSION = 2.0;
-var Q = new Limiter({ concurrency: 1 });
 var NanoSQL = /** @class */ (function () {
     function NanoSQL() {
         this.version = VERSION;
         this.earthRadius = 6371;
+        this._Q = new utilities_1.NanoSQLBuffer();
         this.state = {
             activeAV: "",
             hasAnyEvents: false,
@@ -40,9 +39,13 @@ var NanoSQL = /** @class */ (function () {
             ready: false,
             selectedTable: ""
         };
+        this.config = {
+            id: "temp",
+            queue: false
+        };
         this.tables = {};
-        this.plugins = [];
         this._queryCache = {};
+        this.filters = {};
         this.indexTypes = {
             string: function (value) {
                 return typeof value === "object" ? JSON.stringify(value) : String(value);
@@ -284,13 +287,11 @@ var NanoSQL = /** @class */ (function () {
     NanoSQL.prototype.connect = function (config) {
         var _this = this;
         var t = this;
-        return new Promise(function (res, rej) {
-            return _this._initPlugins(config);
-        }).then(function () {
+        return this._initPlugins(config).then(function () {
             return _this.doFilter("config", { result: config });
         }).then(function (conf) {
-            _this.state.id = config.id || "nSQL_DB";
-            _this.config = conf;
+            _this.state.id = conf.id || "nSQL_DB";
+            _this.config = __assign({ plugins: [] }, conf);
             if (typeof window !== "undefined" && conf && conf.peer) {
                 _this.state.peerMode = true;
             }
@@ -347,7 +348,7 @@ var NanoSQL = /** @class */ (function () {
             return utilities_1.allAsync(tables, function (j, i, next, err) {
                 switch (j) {
                     case "_util":
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("create table", ""), { model: {
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("", "create table"), { actionArgs: {
                                 name: "_util",
                                 model: [
                                     { key: "key:string", props: ["pk()"] },
@@ -357,7 +358,7 @@ var NanoSQL = /** @class */ (function () {
                             } }), utilities_1.noop, next, err);
                         break;
                     case "_ttl":
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("create table", ""), { model: {
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("", "create table"), { actionArgs: {
                                 name: "_ttl",
                                 model: [
                                     { key: "key:string", props: ["pk()"] },
@@ -374,7 +375,7 @@ var NanoSQL = /** @class */ (function () {
                             err("Table not found!");
                             return;
                         }
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("create table", ""), { model: model }), utilities_1.noop, next, err);
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("", "create table"), { actionArgs: model }), utilities_1.noop, next, err);
                 }
             });
         }).then(function () {
@@ -642,17 +643,20 @@ var NanoSQL = /** @class */ (function () {
             error("nSQL: Can't do a query before the database is connected!");
             return;
         }
+        if (!this._Q.processItem) {
+            this._Q.processItem = function (item, i, done, err) {
+                new query_1._NanoSQLQuery(_this, item.query, item.onRow, function () {
+                    done();
+                    item.complete();
+                }, function (err) {
+                    done();
+                    item.error(err);
+                });
+            };
+        }
         this.doFilter("query", { result: query }).then(function (setQuery) {
             if (_this.config.queue && !setQuery.skipQueue) {
-                Q.push(function (cb) {
-                    new query_1._NanoSQLQuery(_this, setQuery, onRow, function () {
-                        cb();
-                        complete();
-                    }, function (err) {
-                        cb();
-                        error(err);
-                    });
-                });
+                _this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error });
             }
             else {
                 new query_1._NanoSQLQuery(_this, setQuery, onRow, complete, error);
@@ -717,7 +721,7 @@ var NanoSQL = /** @class */ (function () {
                     }
                 }
                 else {
-                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, newObj[m.key]) : m.default;
+                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key]) : m.default;
                 }
                 if (m.notNull && newObj[m.key] === null) {
                     error = "Data error, " + m.key + " cannot be null!";

@@ -11,7 +11,7 @@ var IndexedDB = /** @class */ (function () {
     }
     IndexedDB.prototype.connect = function (id, complete, error) {
     };
-    IndexedDB.prototype.createTable = function (tableName, tableData, complete, error) {
+    IndexedDB.prototype.createAndInitTable = function (tableName, tableData, complete, error) {
     };
     IndexedDB.prototype.disconnectTable = function (table, complete, error) {
     };

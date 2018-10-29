@@ -99,7 +99,7 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
     };
     _NanoSQLQueryBuilder.prototype.from = function (table, asObj) {
         this._query.table = table;
-        this._query.tableAS = asObj ? asObj.AS : "";
+        this._query.tableAS = asObj ? asObj.as : "";
         return this;
     };
     _NanoSQLQueryBuilder.prototype.toCSV = function (headers) {

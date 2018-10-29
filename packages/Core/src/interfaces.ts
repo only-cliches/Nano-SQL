@@ -2,7 +2,6 @@ import { ReallySmallEvents } from "really-small-events";
 
 export declare class INanoSQLInstance {
     config: INanoSQLConfig;
-    plugins: INanoSQLPlugin[];
     adapter: INanoSQLAdapter;
     version: number;
     filters: {
@@ -124,7 +123,7 @@ export declare class INanoSQLQueryBuilder {
         total: number;
     }>;
     orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
-    from(table: string | any[] | (() => Promise<any[]>), asObj?: {AS: string}): INanoSQLQueryBuilder;
+    from(table: string | any[] | (() => Promise<any[]>), asObj?: {as: string}): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
@@ -176,15 +175,16 @@ export declare class INanoSQLQueryExec {
     progress: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
-    _buffer: any[];
+    _queryBuffer: any[];
     _stream: boolean;
     _selectArgs: ISelectArgs[];
     _whereArgs: IWhereArgs;
     _havingArgs: IWhereArgs;
     _pkOrderBy: boolean;
     _idxOrderBy: boolean;
-    _sortGroups: {
-        [groupKey: string]: any[];
+    _sortGroups: any[][];
+    _sortGroupKeys: {
+        [groupKey: string]: number;
     };
     _groupByColumns: string[];
     _orderBy: INanoSQLSortBy;
@@ -193,10 +193,10 @@ export declare class INanoSQLQueryExec {
     _maybeJoin(joinData, leftRow, onRow, complete);
     _select(complete, onError);
     _groupByRows();
-    _upsert(onRow, complete);
+    _upsert(onRow, complete, error);
     _updateRow(newData, oldRow, complete, error);
     _newRow(newRow, complete, error);
-    _delete(onRow, complete);
+    _delete(onRow, complete, error);
     _getIndexValues(indexes, row);
     _showTables();
     _describe();
@@ -205,13 +205,12 @@ export declare class INanoSQLQueryExec {
     _streamAS(row, isJoin);
     _orderByRows(a, b);
     _sortObj(objA, objB, columns);
-    createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
-    alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
-    dropTable(table: string, complete: () => void, error: (err: any) => void): void;
+    _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    _alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err);
-    _getByPKs(onlyPKs, table, fastWhere, isReversed, orderByPK, onRow, complete);
+    _resolveFastWhere(onlyPKs, table, fastWhere, isReversed, orderByPK, onRow, complete);
     _fastQuery(onRow, complete);
-    _readIndex(onlyPKs, fastWhere, onRow, complete);
     _getRecords(onRow, complete);
     _rebuildIndexes(table, complete, error);
     _where(singleRow, where, ignoreFirstPath);
@@ -262,8 +261,8 @@ export interface INanoSQLTableConfig {
     name: string;
     model: INanoSQLDataModel[];
     indexes?: {
+        name: string;
         key: string;
-        path: string;
     }[];
     mapReduce?: {
         name: string;
@@ -347,7 +346,7 @@ export interface INanoSQLActionOrView {
 export interface INanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
-    call: (query: INanoSQLQuery, row: any, isJoin: boolean, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
+    call: (query: INanoSQLQuery, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
     whereIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
     queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
 }
@@ -447,6 +446,7 @@ export interface INanoSQLQuery {
 export interface INanoSQLIndex {
     name: string;
     type: string;
+    isArray: boolean;
     path: string[];
 }
 
@@ -467,6 +467,7 @@ export enum IWhereType {
 
 export interface IWhereCondition {
     index?: string;
+    indexArray?: boolean;
     fnName?: string;
     fnArgs?: string[];
     col?: string;
@@ -546,3 +547,10 @@ export interface willConnectFilter extends abstractFilter { }
 export interface readyFilter extends abstractFilter { }
 // tslint:disable-next-line
 export interface disconnectFilter extends abstractFilter { }
+// tslint:disable-next-line
+export interface customQueryFilter extends abstractFilter { 
+    query: INanoSQLQueryExec, 
+    onRow: (row: any, i: number) => void, 
+    complete: () => void;
+    error: (err: any) => void;
+}

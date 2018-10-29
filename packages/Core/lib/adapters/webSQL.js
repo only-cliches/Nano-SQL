@@ -11,7 +11,7 @@ var WebSQL = /** @class */ (function () {
     }
     WebSQL.prototype.connect = function (id, complete, error) {
     };
-    WebSQL.prototype.createTable = function (tableName, tableData, complete, error) {
+    WebSQL.prototype.createAndInitTable = function (tableName, tableData, complete, error) {
     };
     WebSQL.prototype.disconnectTable = function (table, complete, error) {
     };

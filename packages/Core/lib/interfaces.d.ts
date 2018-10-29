@@ -1,7 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 export declare class INanoSQLInstance {
     config: INanoSQLConfig;
-    plugins: INanoSQLPlugin[];
     adapter: INanoSQLAdapter;
     version: number;
     filters: {
@@ -123,7 +122,7 @@ export declare class INanoSQLQueryBuilder {
     }>;
     orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
     from(table: string | any[] | (() => Promise<any[]>), asObj?: {
-        AS: string;
+        as: string;
     }): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
@@ -173,15 +172,16 @@ export declare class INanoSQLQueryExec {
     progress: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
-    _buffer: any[];
+    _queryBuffer: any[];
     _stream: boolean;
     _selectArgs: ISelectArgs[];
     _whereArgs: IWhereArgs;
     _havingArgs: IWhereArgs;
     _pkOrderBy: boolean;
     _idxOrderBy: boolean;
-    _sortGroups: {
-        [groupKey: string]: any[];
+    _sortGroups: any[][];
+    _sortGroupKeys: {
+        [groupKey: string]: number;
     };
     _groupByColumns: string[];
     _orderBy: INanoSQLSortBy;
@@ -190,10 +190,10 @@ export declare class INanoSQLQueryExec {
     _maybeJoin(joinData: any, leftRow: any, onRow: any, complete: any): any;
     _select(complete: any, onError: any): any;
     _groupByRows(): any;
-    _upsert(onRow: any, complete: any): any;
+    _upsert(onRow: any, complete: any, error: any): any;
     _updateRow(newData: any, oldRow: any, complete: any, error: any): any;
     _newRow(newRow: any, complete: any, error: any): any;
-    _delete(onRow: any, complete: any): any;
+    _delete(onRow: any, complete: any, error: any): any;
     _getIndexValues(indexes: any, row: any): any;
     _showTables(): any;
     _describe(): any;
@@ -202,13 +202,12 @@ export declare class INanoSQLQueryExec {
     _streamAS(row: any, isJoin: any): any;
     _orderByRows(a: any, b: any): any;
     _sortObj(objA: any, objB: any, columns: any): any;
-    createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
-    alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
-    dropTable(table: string, complete: () => void, error: (err: any) => void): void;
+    _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    _alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err: any): any;
-    _getByPKs(onlyPKs: any, table: any, fastWhere: any, isReversed: any, orderByPK: any, onRow: any, complete: any): any;
+    _resolveFastWhere(onlyPKs: any, table: any, fastWhere: any, isReversed: any, orderByPK: any, onRow: any, complete: any): any;
     _fastQuery(onRow: any, complete: any): any;
-    _readIndex(onlyPKs: any, fastWhere: any, onRow: any, complete: any): any;
     _getRecords(onRow: any, complete: any): any;
     _rebuildIndexes(table: any, complete: any, error: any): any;
     _where(singleRow: any, where: any, ignoreFirstPath: any): any;
@@ -258,7 +257,7 @@ export interface INanoSQLTableConfig {
     model: INanoSQLDataModel[];
     indexes?: {
         name: string;
-        path: string;
+        key: string;
     }[];
     mapReduce?: {
         name: string;
@@ -305,7 +304,7 @@ export interface INanoSQLAdapter {
     nSQL: INanoSQLInstance;
     connect(id: string, complete: () => void, error: (err: any) => void): any;
     disconnect(complete: () => void, error: (err: any) => void): any;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): any;
+    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): any;
     dropTable(table: string, complete: () => void, error: (err: any) => void): any;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): any;
     write(table: string, pk: any, row: {
@@ -335,7 +334,7 @@ export interface INanoSQLFunction {
         row?: any;
         [key: string]: any;
     };
-    call: (query: INanoSQLQuery, row: any, isJoin: boolean, prev: {
+    call: (query: INanoSQLQuery, row: any, prev: {
         result: any;
         row?: any;
         [key: string]: any;
@@ -411,9 +410,7 @@ export interface INanoSQLQuery {
     table: string | any[] | (() => Promise<any[]>);
     tableAS?: string;
     action: string;
-    actionArgs?: {
-        [key: string]: any;
-    };
+    actionArgs?: any;
     state: "pending" | "processing" | "complete" | "error";
     result: any[];
     time: number;
@@ -448,6 +445,7 @@ export interface INanoSQLQuery {
 export interface INanoSQLIndex {
     name: string;
     type: string;
+    isArray: boolean;
     path: string[];
 }
 export interface ISelectArgs {
@@ -465,6 +463,7 @@ export declare enum IWhereType {
 }
 export interface IWhereCondition {
     index?: string;
+    indexArray?: boolean;
     fnName?: string;
     fnArgs?: string[];
     col?: string;
@@ -493,6 +492,7 @@ export interface extendFilter extends abstractFilter {
 }
 export interface createTableFilter extends abstractFilter {
     result: INanoSQLTableConfig;
+    query: INanoSQLQuery;
 }
 export interface queryFilter extends abstractFilter {
     result: INanoSQLQuery;
@@ -523,4 +523,10 @@ export interface willConnectFilter extends abstractFilter {
 export interface readyFilter extends abstractFilter {
 }
 export interface disconnectFilter extends abstractFilter {
+}
+export interface customQueryFilter extends abstractFilter {
+    query: INanoSQLQueryExec;
+    onRow: (row: any, i: number) => void;
+    complete: () => void;
+    error: (err: any) => void;
 }

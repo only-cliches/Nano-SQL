@@ -1,9 +1,8 @@
 import { ReallySmallEvents } from "really-small-events";
 import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder } from "./interfaces";
+import { INanoSQLConfig, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder } from "./interfaces";
 export declare class NanoSQL implements INanoSQLInstance {
     config: INanoSQLConfig;
-    plugins: INanoSQLPlugin[];
     adapter: INanoSQLAdapter;
     version: number;
     filters: {
@@ -46,6 +45,7 @@ export declare class NanoSQL implements INanoSQLInstance {
         Core: ReallySmallEvents;
         [eventName: string]: ReallySmallEvents;
     };
+    private _Q;
     constructor();
     doFilter<T, R>(filterName: string, args: T): Promise<R>;
     getCache(id: string, args: {

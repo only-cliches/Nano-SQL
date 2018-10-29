@@ -83,6 +83,56 @@ export const compareObjects = (obj1: any, obj2: any): boolean => {
     return matches;
 };
 
+export class NanoSQLBuffer {
+
+    private _items: any[] = [];
+    private _going: boolean = false;
+    private _done: boolean = false;
+    private _count: number = 0;
+
+    constructor(
+        public processItem?: (item: any, count: number, complete: () => void, error: (err: any) => void) => void,
+        public onError?: (err: any) => void,
+        public onComplete?: () => void
+    ) {
+        this._progressBuffer = this._progressBuffer.bind(this);
+    }
+
+    private _progressBuffer() {
+        if (this._done && !this._items.length) {
+            if (this.onComplete) this.onComplete();
+            return;
+        }
+        if (!this._items.length) {
+            this._going = false;
+            return;
+        }
+        const item = this._items.shift();
+        if (this.processItem) {
+            this.processItem(item, this._count, () => {
+                this._count++;
+                setFast(this._progressBuffer);
+            }, this.onError ? this.onError : noop);
+        }
+
+    }
+
+    public finished() {
+        this._done = true;
+        if (!this._going) {
+            if (this.onComplete) this.onComplete();
+        }
+    }
+
+    public newItem(item: any) {
+        this._items.push(item);
+        if (!this._going) {
+            this._going = true;
+            this._progressBuffer();
+        }
+    }
+}
+
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
@@ -361,29 +411,7 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean): any =>
     return newVal;
 };
 
-export const _maybeAssign = (obj: any): any => {
-    if (Object.isFrozen(obj)) return _assign(obj);
-    return obj;
-};
 
-/**
- * Recursively freeze a javascript object to prevent it from being modified.
- *
- * @param {*} obj
- * @returns
- */
-export const deepFreeze = (obj: any) => {
-
-    Object.getOwnPropertyNames(obj || {}).forEach((name) => {
-        const prop = obj[name];
-        if (typeof prop === "object" && prop !== null) {
-            obj[name] = deepFreeze(prop);
-        }
-    });
-
-    // Freeze self (no-op if already frozen)
-    return Object.freeze(obj);
-};
 
 /**
  * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
@@ -419,8 +447,8 @@ const objectPathCache: {
 } = {};
 
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
-export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): string[] => {
-    const cacheKey = pathQuery + (ignoreFirstPath ? "0" : "1");
+export const resolveObjPath = (pathQuery: string): string[] => {
+    const cacheKey = pathQuery;
     if (objectPathCache[cacheKey]) {
         return objectPathCache[cacheKey];
     }
@@ -431,21 +459,40 @@ export const resolveObjPath = (pathQuery: string, ignoreFirstPath?: boolean): st
         pathQuery.split(".");
 
     // handle joins where each row is defined as table.column
-    if (ignoreFirstPath) {
+    /*if (ignoreFirstPath) {
         const firstPath = path.shift() + "." + path.shift();
         path.unshift(firstPath);
-    }
+    }*/
 
     objectPathCache[cacheKey] = path;
 
     return objectPathCache[cacheKey];
 };
 
-export const getFnValue = (row: any, str: string, isJoin: boolean): any => {
-    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : deepGet(str, row, isJoin);
+export const getFnValue = (row: any, str: string): any => {
+    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : deepGet(str, row);
 };
 
-export const deepSet = (pathQuery: string|string[], object: any, value: any, ignoreFirstPath?: boolean): any => {
+/**
+ * Recursively freeze a javascript object to prevent it from being modified.
+ *
+ * @param {*} obj
+ * @returns
+ */
+export const deepFreeze = (obj: any) => {
+
+    Object.getOwnPropertyNames(obj || {}).forEach((name) => {
+        const prop = obj[name];
+        if (typeof prop === "object" && prop !== null) {
+            obj[name] = deepFreeze(prop);
+        }
+    });
+
+    // Freeze self (no-op if already frozen)
+    return Object.freeze(obj);
+};
+
+export const deepSet = (pathQuery: string|string[], object: any, value: any): any => {
 
     const safeSet = (getPath: string[], pathIdx: number, setObj: any) => {
         if (!getPath[pathIdx + 1]) { // end of path
@@ -461,7 +508,7 @@ export const deepSet = (pathQuery: string|string[], object: any, value: any, ign
         safeSet(getPath, pathIdx + 1, setObj[getPath[pathIdx] as string]);
     };
 
-    safeSet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery, ignoreFirstPath), 0, object)
+    safeSet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery), 0, object)
 
     return object;
 };
@@ -481,14 +528,19 @@ export const deepSet = (pathQuery: string|string[], object: any, value: any, ign
  * @param {boolean} [ignoreFirstPath]
  * @returns {*}
  */
-export const deepGet = (pathQuery: string|string[], object: any, ignoreFirstPath?: boolean): any => {
+export const deepGet = (pathQuery: string|string[], object: any): any => {
 
     const safeGet = (getPath: string[], pathIdx: number, object: any) => {
         if (!getPath[pathIdx] || !object) return object;
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx] as string]);
     };
 
-    return safeGet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery, ignoreFirstPath), 0, object);
+    return safeGet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery), 0, object);
+};
+
+export const _maybeAssign = (obj: any): any => {
+    if (Object.isFrozen(obj)) return _assign(obj);
+    return obj;
 };
 
 let uid = 0;

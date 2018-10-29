@@ -7,9 +7,9 @@ exports.attachDefaultFns = function (nSQL) {
         COUNT: {
             type: "A",
             aggregateStart: { result: 0, row: {} },
-            call: function (query, row, isJoin, prev, column) {
+            call: function (query, row, prev, column) {
                 if (column && column !== "*") {
-                    if (utilities_1.objQuery(column, row, isJoin)) {
+                    if (utilities_1.deepGet(column, row)) {
                         prev.result++;
                     }
                 }
@@ -23,8 +23,8 @@ exports.attachDefaultFns = function (nSQL) {
         MAX: {
             type: "A",
             aggregateStart: { result: undefined, row: {} },
-            call: function (query, row, isJoin, prev, column) {
-                var max = utilities_1.objQuery(column, row, isJoin) || 0;
+            call: function (query, row, prev, column) {
+                var max = utilities_1.deepGet(column, row) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
                     prev.row = row;
@@ -41,8 +41,8 @@ exports.attachDefaultFns = function (nSQL) {
         MIN: {
             type: "A",
             aggregateStart: { result: undefined, row: {} },
-            call: function (query, row, isJoin, prev, column) {
-                var min = utilities_1.objQuery(column, row, isJoin) || 0;
+            call: function (query, row, prev, column) {
+                var min = utilities_1.deepGet(column, row) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
                     prev.row = row;
@@ -58,31 +58,31 @@ exports.attachDefaultFns = function (nSQL) {
         },
         GREATEST: {
             type: "S",
-            call: function (query, row, isJoin, prev) {
+            call: function (query, row, prev) {
                 var values = [];
-                for (var _i = 4; _i < arguments.length; _i++) {
-                    values[_i - 4] = arguments[_i];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    values[_i - 3] = arguments[_i];
                 }
-                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(row, s, isJoin) : parseFloat(s); }).sort(function (a, b) { return a < b ? 1 : -1; });
+                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(row, s) : parseFloat(s); }).sort(function (a, b) { return a < b ? 1 : -1; });
                 return { result: args[0] };
             }
         },
         LEAST: {
             type: "S",
-            call: function (query, row, isJoin, prev) {
+            call: function (query, row, prev) {
                 var values = [];
-                for (var _i = 4; _i < arguments.length; _i++) {
-                    values[_i - 4] = arguments[_i];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    values[_i - 3] = arguments[_i];
                 }
-                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(row, s, isJoin) : parseFloat(s); }).sort(function (a, b) { return a > b ? 1 : -1; });
+                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(row, s) : parseFloat(s); }).sort(function (a, b) { return a > b ? 1 : -1; });
                 return { result: args[0] };
             }
         },
         AVG: {
             type: "A",
             aggregateStart: { result: 0, row: {}, total: 0, records: 0 },
-            call: function (query, row, isJoin, prev, column) {
-                var value = parseFloat(utilities_1.objQuery(column, row, isJoin) || 0) || 0;
+            call: function (query, row, prev, column) {
+                var value = parseFloat(utilities_1.deepGet(column, row) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -93,8 +93,8 @@ exports.attachDefaultFns = function (nSQL) {
         SUM: {
             type: "A",
             aggregateStart: { result: 0, row: {} },
-            call: function (query, row, isJoin, prev, column) {
-                var value = parseFloat(utilities_1.objQuery(column, row, isJoin) || 0) || 0;
+            call: function (query, row, prev, column) {
+                var value = parseFloat(utilities_1.deepGet(column, row) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 return prev;
@@ -102,41 +102,41 @@ exports.attachDefaultFns = function (nSQL) {
         },
         LOWER: {
             type: "S",
-            call: function (query, row, isJoin, prev, column) {
-                var value = String(utilities_1.getFnValue(row, column, isJoin)).toLowerCase();
+            call: function (query, row, prev, column) {
+                var value = String(utilities_1.getFnValue(row, column)).toLowerCase();
                 return { result: value };
             }
         },
         UPPER: {
             type: "S",
-            call: function (query, row, isJoin, prev, column) {
-                var value = String(utilities_1.getFnValue(row, column, isJoin)).toUpperCase();
+            call: function (query, row, prev, column) {
+                var value = String(utilities_1.getFnValue(row, column)).toUpperCase();
                 return { result: value };
             }
         },
         CAST: {
             type: "S",
-            call: function (query, row, isJoin, prev, column, type) {
-                return { result: utilities_1.cast(type, utilities_1.objQuery(column, row, isJoin)) };
+            call: function (query, row, prev, column, type) {
+                return { result: utilities_1.cast(type, utilities_1.deepGet(column, row)) };
             }
         },
         CONCAT: {
             type: "S",
-            call: function (query, row, isJoin, prev) {
+            call: function (query, row, prev) {
                 var values = [];
-                for (var _i = 4; _i < arguments.length; _i++) {
-                    values[_i - 4] = arguments[_i];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    values[_i - 3] = arguments[_i];
                 }
                 return { result: values.map(function (v) {
-                        return utilities_1.getFnValue(row, v, isJoin);
+                        return utilities_1.getFnValue(row, v);
                     }).join("") };
             }
         },
         LEVENSHTEIN: {
             type: "S",
-            call: function (query, row, isJoin, prev, word1, word2) {
-                var w1 = utilities_1.getFnValue(row, word1, isJoin);
-                var w2 = utilities_1.getFnValue(row, word2, isJoin);
+            call: function (query, row, prev, word1, word2) {
+                var w1 = utilities_1.getFnValue(row, word1);
+                var w2 = utilities_1.getFnValue(row, word2);
                 var key = w1 + "::" + w2;
                 if (!wordLevenshtienCache[key]) {
                     wordLevenshtienCache[key] = levenshtein(w1, w2);
@@ -146,9 +146,9 @@ exports.attachDefaultFns = function (nSQL) {
         },
         CROW: {
             type: "S",
-            call: function (query, row, isJoin, prev, gpsCol, lat, lon) {
-                var latVal = utilities_1.objQuery(gpsCol + ".lat", row, isJoin);
-                var lonVal = utilities_1.objQuery(gpsCol + ".lon", row, isJoin);
+            call: function (query, row, prev, gpsCol, lat, lon) {
+                var latVal = utilities_1.deepGet(gpsCol + ".lat", row);
+                var lonVal = utilities_1.deepGet(gpsCol + ".lon", row);
                 return { result: utilities_1.crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius) };
             },
             whereIndex: function (nSQL, query, fnArgs, where) {
@@ -181,12 +181,12 @@ exports.attachDefaultFns = function (nSQL) {
     Object.getOwnPropertyNames(Math).forEach(function (key) {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
-            call: function (query, row, isJoin, prev) {
+            call: function (query, row, prev) {
                 var args = [];
-                for (var _i = 4; _i < arguments.length; _i++) {
-                    args[_i - 4] = arguments[_i];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    args[_i - 3] = arguments[_i];
                 }
-                var fnArgs = args.map(function (a) { return parseFloat(isNaN(a) ? utilities_1.objQuery(a, row, isJoin) : a); });
+                var fnArgs = args.map(function (a) { return parseFloat(isNaN(a) ? utilities_1.deepGet(a, row) : a); });
                 return { result: Math[key].apply(null, fnArgs) };
             }
         };

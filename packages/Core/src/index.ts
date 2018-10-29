@@ -1,9 +1,8 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, deepGet, buildQuery } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer } from "./utilities";
 import { Observer } from "./observable";
 import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IORMArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
 import { attachDefaultFns } from "./functions";
-import * as Limiter from "async-limiter";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
@@ -16,13 +15,10 @@ if (typeof global !== "undefined") {
 }
 
 const VERSION = 2.0;
-const Q = new Limiter({ concurrency: 1 });
 
 export class NanoSQL implements INanoSQLInstance {
 
     public config: INanoSQLConfig;
-
-    public plugins: INanoSQLPlugin[];
 
     public adapter: INanoSQLAdapter;
 
@@ -77,6 +73,8 @@ export class NanoSQL implements INanoSQLInstance {
         [eventName: string]: ReallySmallEvents;
     };
 
+    private _Q = new NanoSQLBuffer();
+
     constructor() {
 
         this.state = {
@@ -93,8 +91,12 @@ export class NanoSQL implements INanoSQLInstance {
             selectedTable: ""
         };
 
+        this.config = {
+            id: "temp",
+            queue: false
+        };
+
         this.tables = {};
-        this.plugins = [];
         this._queryCache = {};
         this.filters = {};
 
@@ -379,7 +381,10 @@ export class NanoSQL implements INanoSQLInstance {
         }).then((conf: INanoSQLConfig) => {
             this.state.id = conf.id || "nSQL_DB";
 
-            this.config = conf;
+            this.config = {
+                plugins: [],
+                ...conf
+            }
 
             if (typeof window !== "undefined" && conf && conf.peer) {
                 this.state.peerMode = true;
@@ -777,17 +782,21 @@ export class NanoSQL implements INanoSQLInstance {
             return;
         }
 
+        if (!this._Q.processItem) {
+            this._Q.processItem = (item: {query: INanoSQLQuery, onRow: any, complete: any, error: any}, i, done, err) => {
+                new _NanoSQLQuery(this, item.query, item.onRow, () => {
+                    done();
+                    item.complete();
+                }, (err) => {
+                    done();
+                    item.error(err);
+                });
+            };
+        }
+
         this.doFilter<queryFilter, INanoSQLQuery>("query", { result: query }).then((setQuery) => {
             if (this.config.queue && !setQuery.skipQueue) {
-                Q.push((cb) => {
-                    new _NanoSQLQuery(this, setQuery, onRow, () => {
-                        cb();
-                        complete();
-                    }, (err) => {
-                        cb();
-                        error(err);
-                    });
-                });
+                this._Q.newItem({query: setQuery, onRow: onRow, complete: complete, error: error});
             } else {
                 new _NanoSQLQuery(this, setQuery, onRow, complete, error);
             }

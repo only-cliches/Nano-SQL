@@ -11,47 +11,88 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
     <script>
         function test() {
+
             nSQL().connect({
                 id: "test",
-                tables: [{
-                    name: "users",
-                    model: [{
-                            key: "id:uuid",
-                            props: ["pk()"]
-                        },
-                        {
-                            key: "name:string"
-                        },
-                        {
-                            key: "age:int",
-                            default: 18
-                        },
-                        {
-                            key: "meta:any",
-                            default: {}
-                        }
-                    ],
-                    indexes: [
-                        // {key: "age:int", path: "age"}
-                    ]
-                }],
+                tables: [
+                    {
+                        name: "users",
+                        model: [
+                            {
+                                key: "id:uuid",
+                                props: ["pk()"]
+                            },
+                            {
+                                key: "name:string"
+                            },
+                            {
+                                key: "age:int",
+                                default: 18
+                            },
+                            { 
+                                key: "meta:any",
+                                default: {}
+                            },
+                            {
+                                key: "tags:string[]",
+                                default: []
+                            }
+                        ],
+                        indexes: [
+                            { name: "Tags", key: "tags:string[]" },
+                            { name: "Age", key: "age:int" }
+                        ]
+                    }
+                ],
             }).then(() => {
-                return nSQL("users").query("upsert", [{name: "Billy", age: 20, meta: {color: "blue"}}, {name: "Scott", age: 30, meta: {color: "orange"}}, {name: "Jeb", meta: {color: "yellow"}}]).exec();
+                return nSQL("users").query("upsert", [{ name: "Billy", age: 20, meta: { color: "blue" }, tags: ["some", "tags", "here"] }, { name: "Scott", age: 30, meta: { color: "orange" }, tags: ["some"] }, { name: "Jeb", meta: { color: "yellow" } }]).exec();
             }).then(() => {
                 console.time("sel");
-                return nSQL("users.meta.color[0]").query("upsert", ["black", "green"]).exec();
+                return nSQL("users").query("upsert", { age: 21 }).where(["meta.color", "=", "blue"]).exec();
             }).then((result) => {
                 console.log(result);
                 console.time("sel");
-                return nSQL("users").query("select").exec();
+                console.log(nSQL());
+                return nSQL("users").query("select").where([["tags", "INTERSECT ALL", ["here", "some"]], "AND", ["age", "=", 21]]).exec();
             }).then((rows) => {
                 console.timeEnd("sel");
                 console.log(rows);
             }).catch((err) => {
                 console.error(err);
+            });
+            /*
+            nSQL().query("select", ["userId", "COUNT(*)"]).groupBy(["userId"]).from(() => {
+                return fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json());
+            }).exec().then((rows) => {
+                console.log("POSTS", rows);
             })
+/*
+            nSQL().query("select").from(() => {
+                return fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json());
+            }, { as: "posts" }).where(["userId", "=", 3]).join([
+                {
+                    type: "inner",
+                    with: {
+                        table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
+                        as: "comments"
+                    },
+                    on: ["posts.id", "=", "comments.postId"]
+                },
+                {
+                    type: "inner",
+                    with: {
+                        table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
+                        as: "users"
+                    },
+                    on: ["users.id", "=", "posts.userId"]
+                }
+            ])
+            .exec().then((rows) => {
+                console.log("POSTS", rows);
+            })*/
         }
-        test()
+        test();
+
     </script>
 </head>
 
@@ -90,7 +131,7 @@
                 const w = () => {
                     if (i < 100) {
                         mybase.exec(`INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [makeid(), makeid(),
-                            makeid()
+                        makeid()
                         ], () => {
                             i++;
                             Promise.resolve().then(w);
@@ -131,50 +172,51 @@
         }
 
         function testNanoSQL() {
-            console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+            console.log("Creating 100 in memory databases, writing 100 random rows to each.");
 
             function runTest(complete) {
 
                 var db = new NanoSQL();
-                
-                    db.selectTable("users").connect({
-                        id: "test",
-                        tables: [
-                            {
-                                name: "users",
-                                model: [
-                                    {key: "id:int", props: ["pk()", "ai()"]},
-                                    {key: "name:any"},
-                                    {key: "pass:any"},
-                                    {key: "email:any"}
-                                ]
-                            }
-                        ]
-                    }).then(function () {
-                        var start = Date.now();
-                        let i = 0;
-                        const w = () => {
-                            if (i < 100) {
-                                db.query("upsert", {
-                                    name: makeid(),
-                                    pass: makeid(),
-                                    email: makeid()
-                                }).exec().then(() => {
-                                    i++;
-                                    Promise.resolve().then(w);
-                                    // setTimeout(w, 10);
-                                });
-                            } else {
-                                // start = Date.now();
-                                // db.table("users").query("upsert", {name: makeid()}).where(["id", "BETWEEN", [10, 30]]).exec().then(() => {
-                                complete((Date.now() - start));
-                                // });
-                                //console.log("WRITE", (new Date().getTime() - start))
-                            }
 
+                db.selectTable("users").connect({
+                    id: "test",
+                    queue: false,
+                    tables: [
+                        {
+                            name: "users",
+                            model: [
+                                { key: "id:int", props: ["pk()", "ai()"] },
+                                { key: "name:any" },
+                                { key: "pass:any" },
+                                { key: "email:any" }
+                            ]
                         }
-                        w();
-                    });
+                    ]
+                }).then(function () {
+                    var start = Date.now();
+                    let i = 0;
+                    const w = () => {
+                        if (i < 100) {
+                            db.query("upsert", {
+                                name: makeid(),
+                                pass: makeid(),
+                                email: makeid()
+                            }).exec().then(() => {
+                                i++;
+                                Promise.resolve().then(w);
+                                // setTimeout(w, 10);
+                            });
+                        } else {
+                            // start = Date.now();
+                            // db.table("users").query("upsert", {name: makeid()}).where(["id", "BETWEEN", [10, 30]]).exec().then(() => {
+                            complete((Date.now() - start));
+                            // });
+                            //console.log("WRITE", (new Date().getTime() - start))
+                        }
+
+                    }
+                    w();
+                });
             }
             // runTest((time) => { console.log(time) });
             // return;

@@ -1,5 +1,5 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-import { noop, deepFreeze, generateID, binarySearch, _assign } from "../utilities";
+import { noop, deepFreeze, generateID, binarySearch, _assign, cast } from "../utilities";
 
 export class SyncStorage implements INanoSQLAdapter {
 
@@ -44,10 +44,10 @@ export class SyncStorage implements INanoSQLAdapter {
         this._index[tableName] = [];
         this._rows[tableName] = {};
         if (this.useLS) {
-            const index = localStorage.getItem(this._id + "*" + tableName + "_idx");
+            const index = localStorage.getItem(this._id + "->" + tableName + "_idx");
             if (index) {
                 this._index[tableName] = JSON.parse(index);
-                this._ai[tableName] = parseFloat(localStorage.getItem(this._id + "*" + tableName + "_ai") || "0");
+                this._ai[tableName] = parseFloat(localStorage.getItem(this._id + "->" + tableName + "_ai") || "0");
             }
         }
         complete();
@@ -62,13 +62,13 @@ export class SyncStorage implements INanoSQLAdapter {
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
         this._index[table].forEach((pk) => {
             if (this.useLS) {
-                localStorage.removeItem(this._id + "*" + table + "__" + pk);
+                localStorage.removeItem(this._id + "->" + table + "__" + pk);
             } else {
                 delete this._rows[table][pk as any];
             }
         });
         if (this.useLS) {
-            localStorage.removeItem(this._id + "*" + table + "_idx");
+            localStorage.removeItem(this._id + "->" + table + "_idx");
         }
         delete this._index[table];
         delete this._rows[table];
@@ -85,22 +85,22 @@ export class SyncStorage implements INanoSQLAdapter {
 
 
         if (this.nSQL.tables[table].ai) {
-            this._ai[table] = Math.max(this._ai[table], pk);
+            this._ai[table] = cast("int", Math.max(this._ai[table] || 0, pk));
         }
 
         if (this._index[table].indexOf(pk) === -1) {
             const loc = binarySearch(this._index[table], pk);
             this._index[table].splice(loc, 0, pk);
             if (this.useLS) {
-                localStorage.setItem(this._id + "*" + table + "_idx", JSON.stringify(this._index[table].keys()));
-                localStorage.setItem(this._id + "*" + table + "_ai", String(Math.max(this._ai[table], pk)));
+                localStorage.setItem(this._id + "->" + table + "_idx", JSON.stringify(this._index[table]));
+                localStorage.setItem(this._id + "->" + table + "_ai", String(cast("int", Math.max(this._ai[table] || 0, pk))));
             }
         }
 
         row[this.nSQL.tables[table].pkCol] = pk;
 
         if (this.useLS) {
-            localStorage.setItem(this._id + "*" + table + "__" + pk, JSON.stringify(row));
+            localStorage.setItem(this._id + "->" + table + "__" + pk, JSON.stringify(row));
             complete(row[this.nSQL.tables[table].pkCol]);
         } else {
             this._rows[table][pk as any] = deepFreeze(row);
@@ -110,7 +110,8 @@ export class SyncStorage implements INanoSQLAdapter {
 
     read(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void) {
         if (this.useLS) {
-            complete(JSON.parse(localStorage.getItem(this._id + "*" + table + "__" + pk) || "{}"));
+            const item = localStorage.getItem(this._id + "->" + table + "__" + pk);
+            complete(item ? JSON.parse(item) : undefined);
         } else {
             complete(this._rows[table][pk]);
         }
@@ -121,11 +122,11 @@ export class SyncStorage implements INanoSQLAdapter {
         if (idx !== -1) {
             this._index[table].splice(idx, 1);
             if (this.useLS) {
-                localStorage.setItem(this._id + "*" + table + "_idx", JSON.stringify(this._index[table].keys()));
+                localStorage.setItem(this._id + "->" + table + "_idx", JSON.stringify(this._index[table].keys()));
             }
         }
         if (this.useLS) {
-            localStorage.removeItem(this._id + "*" + table + "__" + pk);
+            localStorage.removeItem(this._id + "->" + table + "__" + pk);
         } else {
             delete this._rows[table][pk as any];
         }
@@ -154,7 +155,7 @@ export class SyncStorage implements INanoSQLAdapter {
                     onValue(pk, i);
                 } else {
                     if (this.useLS) {
-                        onValue(JSON.parse(localStorage.getItem(this._id + "*" + table + "__" + pk) || "{}"), i);
+                        onValue(JSON.parse(localStorage.getItem(this._id + "->" + table + "__" + pk) || "{}"), i);
                     } else {
                         onValue(this._rows[table][pk], i);
                     }

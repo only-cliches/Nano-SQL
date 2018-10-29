@@ -24,7 +24,7 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     ttl(seconds?: number, cols?: string[]): _NanoSQLQueryBuilder;
     orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder;
     from(table: string | any[] | (() => Promise<any[]>), asObj?: {
-        AS: string;
+        as: string;
     }): _NanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
     exec(): Promise<{

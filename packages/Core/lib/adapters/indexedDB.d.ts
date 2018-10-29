@@ -4,7 +4,7 @@ export declare class IndexedDB implements INanoSQLAdapter {
     nSQL: INanoSQLInstance;
     constructor();
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

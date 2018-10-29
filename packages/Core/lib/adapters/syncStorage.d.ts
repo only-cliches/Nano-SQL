@@ -3,9 +3,21 @@ export declare class SyncStorage implements INanoSQLAdapter {
     useLS?: boolean | undefined;
     plugin: INanoSQLPlugin;
     nSQL: INanoSQLInstance;
+    _index: {
+        [tableName: string]: any[];
+    };
+    _rows: {
+        [tableName: string]: {
+            [key: string]: any;
+        };
+    };
+    _id: string;
+    _ai: {
+        [tableName: string]: number;
+    };
     constructor(useLS?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;
@@ -20,6 +32,7 @@ export declare class SyncStorage implements INanoSQLAdapter {
         [key: string]: any;
     }, i: number) => void, complete: () => void, error: (err: any) => void): void;
     readMultiPK(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onPK: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
+    readMultiAbstract(pkOnly: boolean, table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onValue: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): void;
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void): void;
 }

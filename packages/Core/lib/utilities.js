@@ -1,4 +1,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.binarySearch = function (arr, value, startVal, endVal) {
+    var start = startVal || 0;
+    var end = endVal || arr.length;
+    if (arr[start] > value)
+        return start;
+    if (arr[end] < value)
+        return end + 1;
+    var m = Math.floor((start + end) / 2);
+    if (value === arr[m])
+        return m;
+    if (end - 1 === start)
+        return end;
+    if (value > arr[m])
+        return exports.binarySearch(arr, value, m, end);
+    if (value < arr[m])
+        return exports.binarySearch(arr, value, start, m);
+    return end;
+};
 exports.buildQuery = function (table, action) {
     return {
         table: table,
@@ -58,6 +76,53 @@ exports.compareObjects = function (obj1, obj2) {
     }
     return matches;
 };
+var NanoSQLBuffer = /** @class */ (function () {
+    function NanoSQLBuffer(processItem, onError, onComplete) {
+        this.processItem = processItem;
+        this.onError = onError;
+        this.onComplete = onComplete;
+        this._items = [];
+        this._going = false;
+        this._done = false;
+        this._count = 0;
+        this._progressBuffer = this._progressBuffer.bind(this);
+    }
+    NanoSQLBuffer.prototype._progressBuffer = function () {
+        var _this = this;
+        if (this._done && !this._items.length) {
+            if (this.onComplete)
+                this.onComplete();
+            return;
+        }
+        if (!this._items.length) {
+            this._going = false;
+            return;
+        }
+        var item = this._items.shift();
+        if (this.processItem) {
+            this.processItem(item, this._count, function () {
+                _this._count++;
+                exports.setFast(_this._progressBuffer);
+            }, this.onError ? this.onError : exports.noop);
+        }
+    };
+    NanoSQLBuffer.prototype.finished = function () {
+        this._done = true;
+        if (!this._going) {
+            if (this.onComplete)
+                this.onComplete();
+        }
+    };
+    NanoSQLBuffer.prototype.newItem = function (item) {
+        this._items.push(item);
+        if (!this._going) {
+            this._going = true;
+            this._progressBuffer();
+        }
+    };
+    return NanoSQLBuffer;
+}());
+exports.NanoSQLBuffer = NanoSQLBuffer;
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
@@ -257,7 +322,7 @@ exports.isObject = function (val) {
 };
 exports.objSort = function (path, rev) {
     return function (a, b) {
-        var result = path ? (exports.objQuery(path, a) > exports.objQuery(path, b) ? -1 : 1) : (a > b ? -1 : 1);
+        var result = path ? (exports.deepGet(path, a) > exports.deepGet(path, b) ? -1 : 1) : (a > b ? -1 : 1);
         return rev ? result * -1 : result;
     };
 };
@@ -320,27 +385,6 @@ exports.cast = function (type, val, allowUknownTypes) {
     }
     return newVal;
 };
-exports._maybeAssign = function (obj) {
-    if (Object.isFrozen(obj))
-        return exports._assign(obj);
-    return obj;
-};
-/**
- * Recursively freeze a javascript object to prevent it from being modified.
- *
- * @param {*} obj
- * @returns
- */
-exports.deepFreeze = function (obj) {
-    Object.getOwnPropertyNames(obj || {}).forEach(function (name) {
-        var prop = obj[name];
-        if (typeof prop === "object" && prop !== null) {
-            obj[name] = exports.deepFreeze(prop);
-        }
-    });
-    // Freeze self (no-op if already frozen)
-    return Object.freeze(obj);
-};
 /**
  * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
  *
@@ -370,8 +414,8 @@ exports.crowDistance = function (lat1, lon1, lat2, lon2, radius) {
 };
 var objectPathCache = {};
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
-exports.resolveObjPath = function (pathQuery, ignoreFirstPath) {
-    var cacheKey = pathQuery + (ignoreFirstPath ? "0" : "1");
+exports.resolveObjPath = function (pathQuery) {
+    var cacheKey = pathQuery;
     if (objectPathCache[cacheKey]) {
         return objectPathCache[cacheKey];
     }
@@ -381,15 +425,50 @@ exports.resolveObjPath = function (pathQuery, ignoreFirstPath) {
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
     // handle joins where each row is defined as table.column
-    if (ignoreFirstPath) {
-        var firstPath = path.shift() + "." + path.shift();
+    /*if (ignoreFirstPath) {
+        const firstPath = path.shift() + "." + path.shift();
         path.unshift(firstPath);
-    }
+    }*/
     objectPathCache[cacheKey] = path;
     return objectPathCache[cacheKey];
 };
-exports.getFnValue = function (row, str, isJoin) {
-    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"(.*)\"|\'(.*)\'/gmi, "$1") : exports.objQuery(str, row, isJoin);
+exports.getFnValue = function (row, str) {
+    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : exports.deepGet(str, row);
+};
+/**
+ * Recursively freeze a javascript object to prevent it from being modified.
+ *
+ * @param {*} obj
+ * @returns
+ */
+exports.deepFreeze = function (obj) {
+    Object.getOwnPropertyNames(obj || {}).forEach(function (name) {
+        var prop = obj[name];
+        if (typeof prop === "object" && prop !== null) {
+            obj[name] = exports.deepFreeze(prop);
+        }
+    });
+    // Freeze self (no-op if already frozen)
+    return Object.freeze(obj);
+};
+exports.deepSet = function (pathQuery, object, value) {
+    var safeSet = function (getPath, pathIdx, setObj) {
+        if (!getPath[pathIdx + 1]) { // end of path
+            setObj[getPath[pathIdx]] = value;
+            return;
+        }
+        else if (!setObj[getPath[pathIdx]]) { // nested value doesn't exist yet
+            if (isNaN(getPath[pathIdx + 1])) { // assume number queries are for arrays, otherwise an object
+                setObj[getPath[pathIdx]] = {};
+            }
+            else {
+                setObj[getPath[pathIdx]] = [];
+            }
+        }
+        safeSet(getPath, pathIdx + 1, setObj[getPath[pathIdx]]);
+    };
+    safeSet(Array.isArray(pathQuery) ? pathQuery : exports.resolveObjPath(pathQuery), 0, object);
+    return object;
 };
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
@@ -406,13 +485,18 @@ exports.getFnValue = function (row, str, isJoin) {
  * @param {boolean} [ignoreFirstPath]
  * @returns {*}
  */
-exports.objQuery = function (pathQuery, object, ignoreFirstPath) {
+exports.deepGet = function (pathQuery, object) {
     var safeGet = function (getPath, pathIdx, object) {
         if (!getPath[pathIdx] || !object)
             return object;
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx]]);
     };
-    return safeGet(Array.isArray(pathQuery) ? pathQuery : exports.resolveObjPath(pathQuery, ignoreFirstPath), 0, object);
+    return safeGet(Array.isArray(pathQuery) ? pathQuery : exports.resolveObjPath(pathQuery), 0, object);
+};
+exports._maybeAssign = function (obj) {
+    if (Object.isFrozen(obj))
+        return exports._assign(obj);
+    return obj;
 };
 var uid = 0;
 var storage = {};

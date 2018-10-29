@@ -10,9 +10,9 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         COUNT: {
             type: "A",
             aggregateStart: {result: 0, row: {}},
-            call: (query, row, isJoin, prev, column) => {
+            call: (query, row, prev, column) => {
                 if (column && column !== "*") {
-                    if (deepGet(column, row, isJoin)) {
+                    if (deepGet(column, row)) {
                         prev.result++;
                     }
                 } else {
@@ -25,8 +25,8 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         MAX: {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
-            call: (query, row, isJoin, prev, column) => {
-                let max = deepGet(column, row, isJoin) || 0;
+            call: (query, row, prev, column) => {
+                let max = deepGet(column, row) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
                     prev.row = row;
@@ -42,8 +42,8 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         MIN: {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
-            call: (query, row, isJoin, prev, column) => {
-                let min = deepGet(column, row, isJoin) || 0;
+            call: (query, row, prev, column) => {
+                let min = deepGet(column, row) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
                     prev.row = row;
@@ -58,23 +58,23 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         },
         GREATEST: {
             type: "S",
-            call: (query, row, isJoin, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s, isJoin) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
+            call: (query, row, prev, ...values: string[]) => {
+                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
                 return {result: args[0]};
             }
         },
         LEAST: {
             type: "S",
-            call: (query, row, isJoin, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s, isJoin) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
+            call: (query, row, prev, ...values: string[]) => {
+                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
                 return {result: args[0]};
             }
         },
         AVG: {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
-            call: (query, row, isJoin, prev, column) => {
-                const value = parseFloat(deepGet(column, row, isJoin) || 0) || 0;
+            call: (query, row, prev, column) => {
+                const value = parseFloat(deepGet(column, row) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -85,8 +85,8 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         SUM: {
             type: "A",
             aggregateStart: {result: 0, row: {}},
-            call: (query, row, isJoin, prev, column) => {
-                const value = parseFloat(deepGet(column, row, isJoin) || 0) || 0;
+            call: (query, row, prev, column) => {
+                const value = parseFloat(deepGet(column, row) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 return prev;
@@ -94,37 +94,37 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         },
         LOWER: {
             type: "S",
-            call: (query, row, isJoin, prev, column) => {
-                const value = String(getFnValue(row, column, isJoin)).toLowerCase();
+            call: (query, row, prev, column) => {
+                const value = String(getFnValue(row, column)).toLowerCase();
                 return {result: value};
             }
         },
         UPPER: {
             type: "S",
-            call: (query, row, isJoin, prev, column) => {
-                const value = String(getFnValue(row, column, isJoin)).toUpperCase();
+            call: (query, row, prev, column) => {
+                const value = String(getFnValue(row, column)).toUpperCase();
                 return {result: value};
             }
         },
         CAST: {
             type: "S",
-            call: (query, row, isJoin, prev, column, type) => {
-                return {result: cast(type, deepGet(column, row, isJoin))};
+            call: (query, row, prev, column, type) => {
+                return {result: cast(type, deepGet(column, row))};
             }
         },
         CONCAT: {
             type: "S",
-            call: (query, row, isJoin, prev, ...values: string[]) => {
+            call: (query, row, prev, ...values: string[]) => {
                 return {result: values.map(v => {
-                    return getFnValue(row, v, isJoin);
+                    return getFnValue(row, v);
                 }).join("")};
             }
         },
         LEVENSHTEIN: {
             type: "S",
-            call: (query, row, isJoin, prev, word1, word2) => {
-                const w1 = getFnValue(row, word1, isJoin);
-                const w2 = getFnValue(row, word2, isJoin);
+            call: (query, row, prev, word1, word2) => {
+                const w1 = getFnValue(row, word1);
+                const w2 = getFnValue(row, word2);
                 const key = w1 + "::" + w2;
                 if (!wordLevenshtienCache[key]) {
                     wordLevenshtienCache[key] = levenshtein(w1, w2);
@@ -134,9 +134,9 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         },
         CROW: {
             type: "S",
-            call: (query, row, isJoin, prev, gpsCol: string, lat: string, lon: string) => {
-                const latVal = deepGet(gpsCol + ".lat", row, isJoin);
-                const lonVal = deepGet(gpsCol + ".lon", row, isJoin);
+            call: (query, row, prev, gpsCol: string, lat: string, lon: string) => {
+                const latVal = deepGet(gpsCol + ".lat", row);
+                const lonVal = deepGet(gpsCol + ".lon", row);
                 return {result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)};
             },
             whereIndex: (nSQL, query, fnArgs, where) => {
@@ -171,8 +171,8 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
     Object.getOwnPropertyNames(Math).forEach((key) => {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
-            call: (query, row, isJoin, prev, ...args: string[]) => {
-                const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? deepGet(a, row, isJoin) : a));
+            call: (query, row, prev, ...args: string[]) => {
+                const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? deepGet(a, row) : a));
                 return {result: Math[key].apply(null, fnArgs)};
             }
         };
