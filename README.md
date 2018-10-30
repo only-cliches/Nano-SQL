@@ -32,7 +32,7 @@ nSQL().connect({
                 { key: "id:uuid", props: ["pk()"] },
                 { key: "name:string" },
                 { key: "age:int", default: 18 },
-                { key: "meta:obj[]", model: [
+                { key: "meta:obj", model: [
                     {key: "color:string"}
                 ] },
                 { key: "tags:string[]", default: [] }

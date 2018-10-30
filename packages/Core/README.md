@@ -32,7 +32,7 @@ nSQL().connect({
                 { key: "id:uuid", props: ["pk()"] },
                 { key: "name:string" },
                 { key: "age:int", default: 18 },
-                { key: "meta:obj[]", model: [
+                { key: "meta:obj", model: [
                     {key: "color:string"}
                 ] },
                 { key: "tags:string[]", default: [] }
@@ -63,6 +63,9 @@ nSQL().connect({
 - [ ] Core Tests
 - [ ] Adapter Tests
 - [ ] Indexed DB/WebSQL/RocksDB Adapters
+- [ ] 1.x migration script
+- [ ] 2.0 documentation
+- [ ] 2.0 release
 - [ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters
 - [ ] Net Plugin (Offline Syncing)
 - [ ] Search Plugin
