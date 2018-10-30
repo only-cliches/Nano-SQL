@@ -123,7 +123,10 @@ export declare class INanoSQLQueryBuilder {
         total: number;
     }>;
     orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
-    from(table: string | any[] | (() => Promise<any[]>), asObj?: {as: string}): INanoSQLQueryBuilder;
+    from(tableObj: {
+        table: string | any[] | (() => Promise<any[]>),
+        as?: string
+    }): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
