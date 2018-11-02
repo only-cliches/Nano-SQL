@@ -20,11 +20,34 @@ NPM Install
 npm i @nano-sql/core
 ```
 
-#Example
+#2.0 Progress
+- [x] Query Engine 
+- [x] Hook/Filter System
+- [x] Memory/Local Storage Adapter
+- [x] Graph Query Support
+- [ ] Event System
+- [ ] Core Tests
+- [ ] Adapter Tests
+- [ ] Indexed DB/WebSQL/RocksDB Adapters
+- [ ] 1.x migration script
+- [ ] 2.0 documentation
+- [ ] 2.0 release
+- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters
+- [ ] Net Plugin (Offline Syncing)
+- [ ] Search Plugin
+- [ ] History Plugin
+- [ ] SQLite Query Support
+- [ ] GraphQL Query Support
+- [ ] MongoDB Query Support
+- [ ] ReQL Query Support
+
+#Examples
 
 ```ts
+// Persistent Database
 nSQL().connect({
     id: "test",
+    mode: "PERM",
     tables: [
         {
             name: "users",
@@ -45,32 +68,116 @@ nSQL().connect({
         }
     ],
 }).then(() => {
-    return nSQL("users").query("upsert", {name: "Jeb", age: 20, meta: {}, tags: []}).exec();
+    return nSQL("users").query("upsert", {name: "Jeb", age: 20, meta: {color: "blue"}, tags: ["some", "tags", "here"]}).exec();
 }).then(() => {
     return nSQL("users").query("select").exec();
 }).then((rows) => {
     console.log(rows);
+    /*
+    [
+        {
+            "id": "64c611b8-0b1e-42f6-af52-5b8289834bba",
+            "name": "Billy",
+            "age": 21,
+            "meta": {
+                "color": "blue"
+            },
+            "tags": [
+                "some",
+                "tags",
+                "here"
+            ]
+        }
+    ]
+    */
+});
+
+
+// Join Queries
+nSQL().query("select", ["posts->id AS id", "posts->title AS title", "comments->name AS comment", "users->name AS name"]).from({ 
+    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+    as: "posts" 
+}).where(["userId", "=", 3]).join([
+    {
+        type: "inner",
+        with: {
+            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
+            as: "comments"
+        },
+        on: ["posts.id", "=", "comments.postId"]
+    },
+    {
+        type: "inner",
+        with: {
+            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
+            as: "users"
+        },
+        on: ["users.id", "=", "posts.userId"]
+    }
+])
+.exec().then((rows) => {
+    console.log(rows);
+    /*
+    [
+        {
+            "id": 21,
+            "title": "asperiores ea ipsam voluptatibus modi minima quia sint",
+            "comment": "perspiciatis magnam ut eum autem similique explicabo expedita",
+            "name": "Clementine Bauch"
+        },
+        {
+            "id": 21,
+            "title": "asperiores ea ipsam voluptatibus modi minima quia sint",
+            "comment": "officia ullam ut neque earum ipsa et fuga",
+            "name": "Clementine Bauch"
+        },
+        .....
+    ]
+    */
+})
+
+// Graph Queries
+nSQL().query("select", ["userId AS user", "title", "commentsTotal"]).from({
+    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json())
+    as: "posts"
+}).graph([
+    {
+        key: "author",
+        with: {
+            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
+            as: "author"
+        },
+        on: ["author.id", "=", "posts.userId"]
+    },
+    {
+        key: "comments",
+        select: ["COUNT(*) AS total"]
+        with: {
+            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
+            as: "author"
+        },
+        on: ["comments.postId", "=", "posts.id"]
+    },
+]).exec().then((rows) => {
+    console.log(rows);
+    /*
+    [
+        {
+            "user": {
+                "name": "Leanne Graham",
+                "phone": "1-770-736-8031 x56442"
+            },
+            "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+        },
+        {
+            "user": {
+                "name": "Leanne Graham",
+                "phone": "1-770-736-8031 x56442"
+            },
+            "title": "qui est esse"
+        }
+        .....
+    */
 })
 
 ```
-
-#2.0 Progress
-- [x] Query Engine
-- [x] Hook/Filter System
-- [x] Memory/Local Storage Adapter
-- [ ] ORM Updates
-- [ ] Event System
-- [ ] Core Tests
-- [ ] Adapter Tests
-- [ ] Indexed DB/WebSQL/RocksDB Adapters
-- [ ] 1.x migration script
-- [ ] 2.0 documentation
-- [ ] 2.0 release
-- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters
-- [ ] Net Plugin (Offline Syncing)
-- [ ] Search Plugin
-- [ ] History Plugin
-- [ ] SQLite Query Support
-- [ ] GraphQL Query Support
-- [ ] MongoDB Query Support
-- [ ] ReQL Query Support

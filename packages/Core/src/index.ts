@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer } from "./utilities";
 import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IORMArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
+import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -36,14 +36,6 @@ export class NanoSQL implements INanoSQLInstance {
 
     public tables: {
         [tableName: string]: INanoSQLTable;
-    };
-
-    public relations: {
-        [name: string]: {
-            left: string[];
-            sync: "<=" | "<=>" | "=>";
-            right: string[];
-        };
     };
 
     public state: {

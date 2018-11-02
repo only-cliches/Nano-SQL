@@ -29,7 +29,7 @@
                                 key: "age:int",
                                 default: 18
                             },
-                            { 
+                            {
                                 key: "meta:any",
                                 default: {}
                             },
@@ -56,20 +56,83 @@
                 return nSQL("users").query("select").where([["tags", "INTERSECT ALL", ["here", "some"]], "AND", ["age", "=", 21]]).exec();
             }).then((rows) => {
                 console.timeEnd("sel");
-                console.log(rows);
+                console.log(JSON.stringify(rows, null, 4));
             }).catch((err) => {
                 console.error(err);
+            });
+            /*
+            nSQL().query("select")
+                .from({
+                    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+                    as: "posts"
+                })
+                .where(["userId", "=", 3])
+                .graph([
+                    {
+                        key: "comments",
+                        with: {
+                            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
+                            as: "comments"
+                        },
+                        on: ["comments.postId", "=", "posts.id"],
+                        graph: [
+                            {
+                                key: "post",
+                                with: {
+                                    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+                                    as: "posts"
+                                },
+                                on: ["posts.id", "=", "comments.postId"],
+                            }
+                        ]
+                    },
+                    {
+                        key: "author",
+                        with: {
+                            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
+                            as: "author"
+                        },
+                        on: ["author.id", "=", "posts.userId"]
+                    },
+                ])
+                .exec().then((rows) => {
+                    console.log(rows);
+                })*/
+            nSQL().query("select", ["userId", "title", "comments[0].total AS commentsTotal", "author[0].name AS authorName"]).from({
+                table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+                as: "posts"
+            }).comment("top").graph([
+                {
+                    key: "author",
+                    with: {
+                        table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
+                        as: "author"
+                    },
+                    on: ["author.id", "=", "posts.userId"]
+                },
+                {
+                    key: "comments",
+                    select: ["COUNT(*) AS total"],
+                    with: {
+                        table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
+                        as: "comments"
+                    },
+                    on: ["comments.postId", "=", "posts.id"]
+                }
+            ]).exec().then((rows) => {
+                console.log(rows);
             });
             /*
             nSQL().query("select", ["userId", "COUNT(*)"]).groupBy(["userId"]).from(() => {
                 return fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json());
             }).exec().then((rows) => {
                 console.log("POSTS", rows);
-            })
+            })*/
 /*
-            nSQL().query("select").from(() => {
-                return fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json());
-            }, { as: "posts" }).where(["userId", "=", 3]).join([
+            nSQL().query("select").from({
+                table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+                as: "posts"
+            }).where(["userId", "=", 3]).join([
                 {
                     type: "inner",
                     with: {
@@ -87,9 +150,9 @@
                     on: ["users.id", "=", "posts.userId"]
                 }
             ])
-            .exec().then((rows) => {
-                console.log("POSTS", rows);
-            })*/
+                .exec().then((rows) => {
+                    console.log(rows);
+                })*/
         }
         test();
 

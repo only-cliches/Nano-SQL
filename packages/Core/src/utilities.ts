@@ -111,7 +111,7 @@ export class NanoSQLBuffer {
         if (this.processItem) {
             this.processItem(item, this._count, () => {
                 this._count++;
-                setFast(this._progressBuffer);
+                this._count % 500 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
             }, this.onError ? this.onError : noop);
         }
 
@@ -592,3 +592,4 @@ export const setFast = (() => {
             }
         };
 })();
+

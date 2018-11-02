@@ -14,13 +14,6 @@ export declare class INanoSQLInstance {
     tables: {
         [tableName: string]: INanoSQLTable;
     };
-    relations: {
-        [name: string]: {
-            left: string[];
-            sync: "<=" | "<=>" | "=>";
-            right: string[];
-        };
-    };
     state: {
         activeAV: string;
         hasAnyEvents: boolean;
@@ -122,11 +115,12 @@ export declare class INanoSQLQueryBuilder {
         id: string;
         total: number;
     }>;
-    orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
+    graph(graphArgs: IGraphArgs[]): INanoSQLQueryBuilder;
     from(tableObj: {
         table: string | any[] | (() => Promise<any[]>),
         as?: string
     }): INanoSQLQueryBuilder;
+    into(table: string): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
@@ -203,8 +197,6 @@ export declare class INanoSQLQueryExec {
     _getIndexValues(indexes, row);
     _showTables();
     _describe();
-    _registerRelation(name, relation, complete, error);
-    _destroyRelation(name, complete, error);
     _streamAS(row, isJoin);
     _orderByRows(a, b);
     _sortObj(objA, objB, columns);
@@ -404,19 +396,19 @@ export interface INanoSQLJoinArgs {
 }
 
 
-export interface IORMArgs {
+export interface IGraphArgs {
     key: string;
+    with: {
+        table: string | any[] | (() => Promise<any[]>);
+        as?: string;
+    };
     select?: string[];
-    orm?: (string | IORMArgs)[];
     offset?: number;
     limit?: number;
-    orderBy?: {
-        [column: string]: "asc" | "desc";
-    };
-    groupBy?: {
-        [column: string]: "asc" | "desc";
-    };
-    where?: (row: {[key: string]: any}, idx: number) => boolean | any[];
+    orderBy?: string[];
+    groupBy?: string[];
+    graph?: IGraphArgs[];
+    on?: (row: {[key: string]: any}, idx: number) => boolean | any[];
 }
 
 export interface INanoSQLQuery {
@@ -432,7 +424,7 @@ export interface INanoSQLQuery {
     comments: string[];
     where?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
     range?: number[];
-    orm?: (string | IORMArgs)[];
+    graph?: IGraphArgs[];
     orderBy?: string[];
     groupBy?: string[];
     having?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
