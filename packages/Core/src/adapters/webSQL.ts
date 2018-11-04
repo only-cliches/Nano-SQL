@@ -40,7 +40,7 @@ export class WebSQL implements INanoSQLAdapter {
 
     }
 
-    read(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void) {
+    read(table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) {
 
     }
 
@@ -48,11 +48,7 @@ export class WebSQL implements INanoSQLAdapter {
 
     }
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void) {
-
-    }
-
-    readMultiPK(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onPK: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void) {
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
 
     }
 

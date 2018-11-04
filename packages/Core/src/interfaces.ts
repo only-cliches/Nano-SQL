@@ -242,7 +242,7 @@ export interface INanoSQLConfig {
     plugins?: INanoSQLPlugin[];
     version?: number;
     size?: number; // size of WebSQL database
-    path?: string; // RocksDB path
+    path?: string | ((dbID: string, tableName: string) => {lvld: any, args?: any}); // RocksDB path
     warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
     tables?: INanoSQLTableConfig[];
@@ -316,13 +316,11 @@ export interface INanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
 
-    read(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void);
+    read(table: string, pk: any, complete: (row: {[key: string]: any} | undefined) => void, error: (err: any) => void);
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void);
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
-
-    readMultiPK(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onPK: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void);
 
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
@@ -343,7 +341,7 @@ export interface INanoSQLFunction {
     aggregateStart?: {result: any, row?: any, [key: string]: any};
     call: (query: INanoSQLQuery, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
     whereIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
-    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void) => void;
+    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
 }
 
 export interface INanoSQLDataModel {
@@ -364,6 +362,7 @@ export interface INanoSQLTable {
     views: INanoSQLActionOrView[];
     pkType: string;
     pkCol: string;
+    isPkNum: boolean;
     ai: boolean;
     props?: any;
 }
@@ -467,7 +466,7 @@ export interface IWhereCondition {
     fnArgs?: string[];
     col?: string;
     comp: string;
-    value: string | string[];
+    value: any;
 }
 
 export interface IWhereArgs {
@@ -543,9 +542,17 @@ export interface readyFilter extends abstractFilter { }
 // tslint:disable-next-line
 export interface disconnectFilter extends abstractFilter { }
 // tslint:disable-next-line
-export interface customQueryFilter extends abstractFilter { 
+export interface customQueryFilter extends abstractFilter {
+    result: undefined;
     query: INanoSQLQueryExec, 
     onRow: (row: any, i: number) => void, 
     complete: () => void;
     error: (err: any) => void;
+}
+// tslint:disable-next-line
+export interface customEventFilter extends abstractFilter { 
+    result: string;
+    selectedTable: string;
+    action: string;
+    on: boolean;
 }

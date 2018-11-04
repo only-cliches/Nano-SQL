@@ -85,10 +85,11 @@ export const compareObjects = (obj1: any, obj2: any): boolean => {
 
 export class NanoSQLBuffer {
 
-    private _items: any[] = [];
+    private _items: [any, undefined | ((item: any, complete: () => void, err?: (err: any) => void) => void)][] = [];
     private _going: boolean = false;
     private _done: boolean = false;
     private _count: number = 0;
+    private _triggeredComplete: boolean = false;
 
     constructor(
         public processItem?: (item: any, count: number, complete: () => void, error: (err: any) => void) => void,
@@ -99,33 +100,48 @@ export class NanoSQLBuffer {
     }
 
     private _progressBuffer() {
+        if (this._triggeredComplete) {
+            return;
+        }
         if (this._done && !this._items.length) {
+            this._triggeredComplete = true;
             if (this.onComplete) this.onComplete();
             return;
         }
+        // queue has paused
         if (!this._items.length) {
             this._going = false;
             return;
         }
-        const item = this._items.shift();
-        if (this.processItem) {
-            this.processItem(item, this._count, () => {
-                this._count++;
-                this._count % 500 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
-            }, this.onError ? this.onError : noop);
+
+        const next = () => {
+            this._count++;
+            this._count % 500 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
+        }
+
+        // process queue
+        const item = this._items.shift() || [];
+        if (item[1]) {
+            item[1](item[0], next, this.onError ? this.onError : noop);
+        } else if (this.processItem) {
+            this.processItem(item[0], this._count, next, this.onError ? this.onError : noop);
         }
 
     }
 
     public finished() {
         this._done = true;
+        if (this._triggeredComplete) {
+            return;
+        }
         if (!this._going) {
+            this._triggeredComplete = true;
             if (this.onComplete) this.onComplete();
         }
     }
 
-    public newItem(item: any) {
-        this._items.push(item);
+    public newItem(item: any, processFn?: (item: any, complete: () => void, err?: (error: any) => void) => void) {
+        this._items.push([item, processFn]);
         if (!this._going) {
             this._going = true;
             this._progressBuffer();

@@ -10,7 +10,7 @@ Super flexible database/datastore for the client, server & mobile devices.
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 </center>
 
-NanoSQL 2.0 is in BETA state right now, tons of (undocumented) breaking changes.
+NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes.
 
 The API is also not stable, not recommended for production environments.
 
@@ -22,7 +22,7 @@ NPM Install
 npm i @nano-sql/core
 ```
 
-#2.0 Progress
+# 2.0 Progress
 - [x] Query Engine 
 - [x] Hook/Filter System
 - [x] Memory/Local Storage Adapter
@@ -43,7 +43,7 @@ npm i @nano-sql/core
 - [ ] MongoDB Query Support
 - [ ] ReQL Query Support
 
-#Examples
+# Examples
 
 ```ts
 // Persistent Database

@@ -111,7 +111,7 @@
 		"really-small-events": "^1.1.0"
 	},
 	"optionalDependencies": {
-		"leveldown": "^4.0.0",
+		"rocksdb": "^3.0.2",
 		"levelup": "^2.0.2",
 		"int64-buffer": "^0.1.10"
 	},

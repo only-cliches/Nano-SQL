@@ -108,7 +108,7 @@ export class SyncStorage implements INanoSQLAdapter {
         }
     }
 
-    read(table: string, pk: any, complete: (row: {[key: string]: any}) => void, error: (err: any) => void) {
+    read(table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) {
         if (this.useLS) {
             const item = localStorage.getItem(this._id + "->" + table + "__" + pk);
             complete(item ? JSON.parse(item) : undefined);
@@ -133,15 +133,7 @@ export class SyncStorage implements INanoSQLAdapter {
         complete();
     }
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void) {
-        this.readMultiAbstract(false, table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error);
-    }
-
-    readMultiPK(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onPK: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void) {
-        this.readMultiAbstract(true, table, type, offsetOrLow, limitOrHeigh, reverse, onPK, complete, error);
-    }
-
-    readMultiAbstract(pkOnly: boolean, table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onValue: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void) {
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
         const doCheck = offsetOrLow || limitOrHeigh;
         const range = {
             "range":  [offsetOrLow, limitOrHeigh],
@@ -151,14 +143,10 @@ export class SyncStorage implements INanoSQLAdapter {
         this._index[table].forEach((pk, i) => {
             const read = !range ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
             if (read) {
-                if (pkOnly) {
-                    onValue(pk, i);
+                if (this.useLS) {
+                    onRow(JSON.parse(localStorage.getItem(this._id + "->" + table + "__" + pk) || "{}"), i);
                 } else {
-                    if (this.useLS) {
-                        onValue(JSON.parse(localStorage.getItem(this._id + "->" + table + "__" + pk) || "{}"), i);
-                    } else {
-                        onValue(this._rows[table][pk], i);
-                    }
+                    onRow(this._rows[table][pk], i);
                 }
             }
         });
