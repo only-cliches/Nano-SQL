@@ -1,4 +1,4 @@
-import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IORMArgs } from "./interfaces";
+import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IGraphArgs } from "./interfaces";
 export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     _db: INanoSQLInstance;
     _error: string;
@@ -22,10 +22,12 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     offset(args: number): _NanoSQLQueryBuilder;
     emit(): INanoSQLQuery;
     ttl(seconds?: number, cols?: string[]): _NanoSQLQueryBuilder;
-    orm(ormArgs?: (string | IORMArgs)[]): _NanoSQLQueryBuilder;
-    from(table: string | any[] | (() => Promise<any[]>), asObj?: {
-        as: string;
+    graph(ormArgs: IGraphArgs[]): _NanoSQLQueryBuilder;
+    from(tableObj: {
+        table: string | any[] | (() => Promise<any[]>);
+        as?: string;
     }): _NanoSQLQueryBuilder;
+    into(table: string): _NanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
     exec(): Promise<{
         [key: string]: any;

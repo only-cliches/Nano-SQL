@@ -482,15 +482,12 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 this.progress(this._selectArgs.length ? this._streamAS(graphRow) : graphRow, j);  
                 done();
             }, 0);
-            this.progress(this._selectArgs.length ? this._streamAS(row) : row, i);
-            done();
         }, this._onError, () => {
             selectBuffer.finished();
         });
 
         // query path start
         this._getRecords((row, i) => { // SELECT rows
-
             if (fastQuery) {
                 if (doRange ? (i >= range[0] && i < range[1]) : true) {
                     graphBuffer.newItem(row);

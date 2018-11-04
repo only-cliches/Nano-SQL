@@ -102,7 +102,7 @@ var NanoSQLBuffer = /** @class */ (function () {
         if (this.processItem) {
             this.processItem(item, this._count, function () {
                 _this._count++;
-                exports.setFast(_this._progressBuffer);
+                _this._count % 500 === 0 ? exports.setFast(_this._progressBuffer) : _this._progressBuffer();
             }, this.onError ? this.onError : exports.noop);
         }
     };

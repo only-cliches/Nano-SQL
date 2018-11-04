@@ -15,13 +15,6 @@ export declare class NanoSQL implements INanoSQLInstance {
     tables: {
         [tableName: string]: INanoSQLTable;
     };
-    relations: {
-        [name: string]: {
-            left: string[];
-            sync: "<=" | "<=>" | "=>";
-            right: string[];
-        };
-    };
     state: {
         activeAV: string;
         hasAnyEvents: boolean;

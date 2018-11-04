@@ -93,13 +93,17 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._query.ttlCols = cols || [];
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.orm = function (ormArgs) {
-        this._query.orm = ormArgs;
+    _NanoSQLQueryBuilder.prototype.graph = function (ormArgs) {
+        this._query.graph = ormArgs;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.from = function (table, asObj) {
+    _NanoSQLQueryBuilder.prototype.from = function (tableObj) {
+        this._query.table = tableObj.table;
+        this._query.tableAS = tableObj.as;
+        return this;
+    };
+    _NanoSQLQueryBuilder.prototype.into = function (table) {
         this._query.table = table;
-        this._query.tableAS = asObj ? asObj.as : "";
         return this;
     };
     _NanoSQLQueryBuilder.prototype.toCSV = function (headers) {

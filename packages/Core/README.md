@@ -12,8 +12,10 @@ Super flexible database/datastore for the client, server & mobile devices.
 
 NanoSQL 2.0 is in BETA state right now, tons of (undocumented) breaking changes.
 
+The API is also not stable, not recommended for production environments.
+
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc2/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc3/dist/nano-sql.min.js
 
 NPM Install
 ```sh
@@ -137,8 +139,8 @@ nSQL().query("select", ["posts->id AS id", "posts->title AS title", "comments->n
 })
 
 // Graph Queries
-nSQL().query("select", ["userId AS user", "title", "commentsTotal"]).from({
-    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json())
+nSQL().query("select", ["author[0].name AS author", "body", "comments[0].totalComments AS commentsTotal", "id", "title"]).from({
+    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
     as: "posts"
 }).graph([
     {
@@ -151,33 +153,30 @@ nSQL().query("select", ["userId AS user", "title", "commentsTotal"]).from({
     },
     {
         key: "comments",
-        select: ["COUNT(*) AS total"]
+        select: ["COUNT(*) as totalComments"],
         with: {
             table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
-            as: "author"
+            as: "comments"
         },
         on: ["comments.postId", "=", "posts.id"]
-    },
+    }
 ]).exec().then((rows) => {
     console.log(rows);
     /*
-    [
-        {
-            "user": {
-                "name": "Leanne Graham",
-                "phone": "1-770-736-8031 x56442"
-            },
-            "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
-        },
-        {
-            "user": {
-                "name": "Leanne Graham",
-                "phone": "1-770-736-8031 x56442"
-            },
-            "title": "qui est esse"
-        }
-        .....
+        "author": "Leanne Graham",
+        "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
+        "commentsTotal": 5,
+        "id": 1,
+        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+    },
+    {
+        "author": "Leanne Graham",
+        "body": "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla",
+        "commentsTotal": 5,
+        "id": 2,
+        "title": "qui est esse"
+    }
+    ...
     */
-})
-
+});
 ```

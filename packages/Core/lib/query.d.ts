@@ -1,4 +1,4 @@
-import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance } from "./interfaces";
+import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, IGraphArgs } from "./interfaces";
 export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     nSQL: INanoSQLInstance;
     query: INanoSQLQuery;
@@ -22,12 +22,19 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     upsertPath: string[];
     private _joinTableCache;
     private _joinTableCacheLoading;
+    _graphTableCache: {
+        [key: string]: any[];
+    };
+    private _graphTableCacheLoading;
     constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
+    _getTableCache(cacheKey: string, table: any, callback: (joinTable: any) => void): void;
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
+    _buildCombineWhere(graphWhere: any, graphTable: string, rowTable: string, rowData: any): any;
+    _graph(graphArgs: IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void, level: number): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;
-    private _writeIndex;
+    private _updateIndex;
     _newRow(newRow: any, complete: (row: any) => void, error: (err: any) => void): void;
     _delete(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _getIndexValues(indexes: {
@@ -37,8 +44,6 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     };
     _showTables(): void;
     _describe(): void;
-    _registerRelation(name: string, relation: [string, "<=" | "<=>" | "=>", string], complete: () => void, error: (err: any) => void): void;
-    _destroyRelation(name: string, complete: () => void, error: (err: any) => void): void;
     _streamAS(row: any): any;
     _orderByRows(a: any, b: any): number;
     _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;

@@ -13,13 +13,6 @@ export declare class INanoSQLInstance {
     tables: {
         [tableName: string]: INanoSQLTable;
     };
-    relations: {
-        [name: string]: {
-            left: string[];
-            sync: "<=" | "<=>" | "=>";
-            right: string[];
-        };
-    };
     state: {
         activeAV: string;
         hasAnyEvents: boolean;
@@ -120,10 +113,12 @@ export declare class INanoSQLQueryBuilder {
         id: string;
         total: number;
     }>;
-    orm(ormArgs?: (string | IORMArgs)[]): INanoSQLQueryBuilder;
-    from(table: string | any[] | (() => Promise<any[]>), asObj?: {
-        as: string;
+    graph(graphArgs: IGraphArgs[]): INanoSQLQueryBuilder;
+    from(tableObj: {
+        table: string | any[] | (() => Promise<any[]>);
+        as?: string;
     }): INanoSQLQueryBuilder;
+    into(table: string): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
@@ -197,8 +192,6 @@ export declare class INanoSQLQueryExec {
     _getIndexValues(indexes: any, row: any): any;
     _showTables(): any;
     _describe(): any;
-    _registerRelation(name: any, relation: any, complete: any, error: any): any;
-    _destroyRelation(name: any, complete: any, error: any): any;
     _streamAS(row: any, isJoin: any): any;
     _orderByRows(a: any, b: any): any;
     _sortObj(objA: any, objB: any, columns: any): any;
@@ -390,19 +383,19 @@ export interface INanoSQLJoinArgs {
     };
     on?: any[];
 }
-export interface IORMArgs {
+export interface IGraphArgs {
     key: string;
+    with: {
+        table: string | any[] | (() => Promise<any[]>);
+        as?: string;
+    };
     select?: string[];
-    orm?: (string | IORMArgs)[];
     offset?: number;
     limit?: number;
-    orderBy?: {
-        [column: string]: "asc" | "desc";
-    };
-    groupBy?: {
-        [column: string]: "asc" | "desc";
-    };
-    where?: (row: {
+    orderBy?: string[];
+    groupBy?: string[];
+    graph?: IGraphArgs[];
+    on?: (row: {
         [key: string]: any;
     }, idx: number) => boolean | any[];
 }
@@ -424,7 +417,7 @@ export interface INanoSQLQuery {
         [key: string]: any;
     }, i?: number, isJoin?: boolean) => boolean);
     range?: number[];
-    orm?: (string | IORMArgs)[];
+    graph?: IGraphArgs[];
     orderBy?: string[];
     groupBy?: string[];
     having?: any[] | ((row: {
