@@ -463,22 +463,16 @@ const objectPathCache: {
 } = {};
 
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
-export const resolveObjPath = (pathQuery: string): string[] => {
+export const resolvePath = (pathQuery: string): string[] => {
     const cacheKey = pathQuery;
     if (objectPathCache[cacheKey]) {
         return objectPathCache[cacheKey];
     }
-    const path = pathQuery.indexOf("[") > -1 ?
+    const path = pathQuery.indexOf("[") !== -1 ?
         // handle complex mix of dots and brackets like "users.value[meta][value].length"
         pathQuery.split(/\.|\[/gmi).map(v => v.replace(/\]/gmi, "")) :
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
-
-    // handle joins where each row is defined as table.column
-    /*if (ignoreFirstPath) {
-        const firstPath = path.shift() + "." + path.shift();
-        path.unshift(firstPath);
-    }*/
 
     objectPathCache[cacheKey] = path;
 
@@ -524,7 +518,7 @@ export const deepSet = (pathQuery: string|string[], object: any, value: any): an
         safeSet(getPath, pathIdx + 1, setObj[getPath[pathIdx] as string]);
     };
 
-    safeSet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery), 0, object)
+    safeSet(Array.isArray(pathQuery) ? pathQuery : resolvePath(pathQuery), 0, object)
 
     return object;
 };
@@ -532,12 +526,11 @@ export const deepSet = (pathQuery: string|string[], object: any, value: any): an
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
- * objQuery("hello", {hello: 2}, false) => 2
- * objQuery("hello.length", {hello: [0]}, false) => 1
- * objQuery("hello[0]", {hello: ["there"]}, false) => "there"
- * objQuery("hello[0].length", {hello: ["there"]}, false) => 5
- * objQuery("hello.color.length", {"hello.color": "blue"}, true) => 4
- * objQuery("hello.color.length", {hello: {color: "blue"}}, false) => 4
+ * objQuery("hello", {hello: 2}) => 2
+ * objQuery("hello.length", {hello: [0]}) => 1
+ * objQuery("hello[0]", {hello: ["there"]}) => "there"
+ * objQuery("hello[0].length", {hello: ["there"]}) => 5
+ * objQuery("hello.color.length", {"hello.color": "blue"}) => 4
  *
  * @param {string} pathQuery
  * @param {*} object
@@ -551,7 +544,7 @@ export const deepGet = (pathQuery: string|string[], object: any): any => {
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx] as string]);
     };
 
-    return safeGet(Array.isArray(pathQuery) ? pathQuery : resolveObjPath(pathQuery), 0, object);
+    return safeGet(Array.isArray(pathQuery) ? pathQuery : resolvePath(pathQuery), 0, object);
 };
 
 export const _maybeAssign = (obj: any): any => {

@@ -36,7 +36,7 @@ export class SyncStorage implements INanoSQLAdapter {
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
-        this._id = this.nSQL.config.id as string;
+        this._id = id;
         complete();
     }
 

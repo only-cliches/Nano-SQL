@@ -96,7 +96,7 @@ nSQL().connect({
 
 
 // Join Queries
-nSQL().query("select", ["posts->id AS id", "posts->title AS title", "comments->name AS comment", "users->name AS name"]).from({ 
+nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name AS comment", "users.name AS name"]).from({ 
     table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
     as: "posts" 
 }).where(["userId", "=", 3]).join([

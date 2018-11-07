@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolveObjPath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer, compareObjects } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer, compareObjects } from "./utilities";
 import { Observer } from "./observable";
 import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
@@ -681,7 +681,7 @@ export class NanoSQL implements INanoSQLInstance {
             case "change":
             case "delete":
             case "upsert":
-                const table = resolveObjPath(l);
+                const table = resolvePath(l);
                 if (!this._eventCBs[table[0]]) {
                     this._eventCBs[table[0]] = new ReallySmallEvents();
                 }
@@ -725,7 +725,7 @@ export class NanoSQL implements INanoSQLInstance {
             case "change":
             case "delete":
             case "upsert":
-                const table = resolveObjPath(l);
+                const table = resolvePath(l);
                 this._eventCBs[table[0]].off(action + ":" + table.join("."), callBack);
             default: 
                 this.doFilter<customEventFilter, string>("customEvent", {result: "", selectedTable: l, action: action, on: false}).then((nameSpace: string) => {
@@ -1096,7 +1096,7 @@ export const nSQL = (setTablePointer?: string | any[] | (() => Promise<any[]>)) 
 
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
-        nSQL: nSQL,
-        NanoSQLInstance: NanoSQL
+        nSQL: nSQL, 
+        NanoSQL: NanoSQL
     };
 }

@@ -139,15 +139,13 @@ export class RocksDB implements INanoSQLAdapter {
         }
         this._levelDBs[table].put(this.nSQL.tables[table].isPkNum ? new global._Int64BE(pk as any).toBuffer() : pk, JSON.stringify(row), (err) => {
             if (err) {
-                throw Error(err);
+                error(err);
             } else {
-                if (this.nSQL.tables[table].ai) {
-                    if (pk === this._ai[table]) {
-                        this._ai[table]++;
-                        this._levelDBs["_ai_store_"].put(table, this._ai[table]).then(() => {
-                            complete(pk);
-                        }).catch(error);
-                    }
+                if (this.nSQL.tables[table].ai && pk === this._ai[table]) {
+                    this._ai[table]++;
+                    this._levelDBs["_ai_store_"].put(table, this._ai[table]).then(() => {
+                        complete(pk);
+                    }).catch(error);
                 } else {
                     complete(pk);
                 }

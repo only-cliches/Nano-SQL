@@ -1,5 +1,5 @@
 import { INanoSQLQuery, ISelectArgs, IWhereArgs, IWhereType, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, createTableFilter, INanoSQLDataModel, INanoSQLTableColumn, INanoSQLJoinArgs, INanoSQLQueryExec, INanoSQLInstance, customQueryFilter, IGraphArgs, INanoSQLTable } from "./interfaces";
-import { deepGet, chainAsync, compareObjects, hash, resolveObjPath, setFast, allAsync, _maybeAssign, _assign, cast, buildQuery, deepSet, NanoSQLBuffer, noop } from "./utilities";
+import { deepGet, chainAsync, compareObjects, hash, resolvePath, setFast, allAsync, _maybeAssign, _assign, cast, buildQuery, deepSet, NanoSQLBuffer, noop } from "./utilities";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery implements INanoSQLQueryExec {
@@ -195,21 +195,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 return;
             }
 
-            // combine the joined data into a row record
-            const combineRows = (rData: any) => {
-                return Object.keys(rData).reduce((prev, cur) => {
-                    const row = rData[cur];
-                    if (!row) return prev;
-                    Object.keys(row).forEach((k) => {
-                        prev[cur + "->" + k] = row[k];
-                    });
-                    return prev;
-                }, {});
-            };
-
             const joinBuffer = new NanoSQLBuffer((rData, i, rDone, err) => {
                 if (!joinData[joinIdx + 1]) { // no more joins, send joined row
-                    onRow(combineRows(rData));
+                    onRow(rData);
                     rDone();
                 } else { // more joins, nest on!
                     doJoin(rData, joinIdx + 1, rDone);
@@ -405,7 +393,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             const graphBuffer = new NanoSQLBuffer((gRow, ct, nextGraph, err) => {
                 let keepRow = true;
                 if (this.query.having) {
-                    keepRow = this._where(this._selectArgs.length ? this._streamAS(gRow) : gRow, this._havingArgs.slowWhere as any[]);
+                    keepRow = this._where(this._streamAS(gRow), this._havingArgs.slowWhere as any[]);
                 }
                 if (keepRow && doRange) {
                     keepRow = rowCounter >= range[0] && rowCounter < range[1];
@@ -413,14 +401,14 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 
                 if (keepRow && this.query.graph) {
                     this._graph(this.query.graph || [], gRow, this.query.tableAS || this.query.table as string, rowCounter, (graphRow, j) => {
-                        this.progress(this._selectArgs.length ? this._streamAS(graphRow) : graphRow, j);
+                        this.progress(this._streamAS(graphRow), j);
                         rowCounter++;
                         nextGraph();
                     }, 0);
                     return;
                 }
                 if (keepRow) {
-                    this.progress(this._selectArgs.length ? this._streamAS(gRow) : gRow, rowCounter);
+                    this.progress(this._streamAS(gRow), rowCounter);
                 }
                 rowCounter++;
                 nextGraph();
@@ -479,7 +467,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         const graphBuffer = new NanoSQLBuffer((row, i, done, err) => {
             this._graph(this.query.graph || [], this.query.tableAS || this.query.table as string, row, i, (graphRow, j) => {
-                this.progress(this._selectArgs.length ? this._streamAS(graphRow) : graphRow, j);  
+                this.progress(this._streamAS(graphRow), j);  
                 done();
             }, 0);
         }, this._onError, () => {
@@ -556,7 +544,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
                 // calculate simple functions and AS back into buffer
                 this._queryBuffer.push(this._selectArgs.reduce((prev, cur, i) => {
-                    const col = cur.isFn ? `${cur.value}(${(cur.args || []).join(",")})` : cur.value;
+                    const col = cur.isFn ? `${cur.value}(${(cur.args || []).join(", ")})` : cur.value;
                     prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? this.nSQL.functions[cur.value].call(this.query, resultFns[firstFn.idx].aggr.row, {} as any, ...(cur.args || [])) : deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
                     return prev;
                 }, {}));
@@ -584,8 +572,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             if (Array.isArray(j[0])) return this._buildCombineWhere(j, graphTable, rowTable, rowData); // nested where
             if (j === "AND" || j === "OR") return j;
 
-            const leftWhere: any[] = resolveObjPath(j[0]);
-            const rightWhere: any[] = resolveObjPath(j[2]);
+            const leftWhere: any[] = resolvePath(j[0]);
+            const rightWhere: any[] = resolvePath(j[2]);
             const swapWhere = leftWhere[0] === rowTable;
 
             // swapWhere = true [leftTable.column, =, rightTable.column] => [rightWhere, =, objQuery(leftWhere)]
@@ -668,7 +656,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }
         // nested upsert
         if ((this.query.table as string).indexOf(".") !== -1 || (this.query.table as string).indexOf("[") !== -1) {
-            const path = resolveObjPath(this.query.table as string);
+            const path = resolvePath(this.query.table as string);
             this.query.table = path.shift() as string;
             this.upsertPath = path;
         }
@@ -933,8 +921,19 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         this.complete();
     }
 
+    public _combineRows(rData: any) {
+        return Object.keys(rData).reduce((prev, cur) => {
+            const row = rData[cur];
+            if (!row) return prev;
+            Object.keys(row).forEach((k) => {
+                prev[cur + "." + k] = row[k];
+            });
+            return prev;
+        }, {});
+    };
 
     public _streamAS(row: any): any {
+
         if (this._selectArgs.length) {
             let result = {};
             this._selectArgs.forEach((arg) => {
@@ -951,7 +950,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             });
             return result;
         }
-        return row;
+        return this.query.join ? this._combineRows(row) : row;
     }
 
     public _orderByRows(a: any, b: any): number {
@@ -1061,7 +1060,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         name: i.name.replace(/\W/g, '').replace(/\s+/g, "-").toLowerCase(),
                         type: (i.key.split(":")[1] || "string").replace(/\[\]/gmi, ""),
                         isArray: (i.key.split(":")[1] || "string").indexOf("[]") !== -1,
-                        path: resolveObjPath(i.key.split(":")[0])
+                        path: resolvePath(i.key.split(":")[0])
                     })).reduce((p, c) => {
                         const allowedTypes = Object.keys(this.nSQL.indexTypes);
                         if (allowedTypes.indexOf(c.type) === -1) {
@@ -1624,7 +1623,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         if (!key) return { sort: [], index: "" };
         if (_NanoSQLQuery._sortMemoized[key]) return _NanoSQLQuery._sortMemoized[key];
 
-        const result: { path: string[], dir: string }[] = sort.map(o => o.split(" ").map(s => s.trim())).reduce((p, c) => { return p.push({ path: resolveObjPath(c[0]), dir: (c[1] || "asc").toUpperCase() }), p; }, [] as any[]);
+        const result: { path: string[], dir: string }[] = sort.map(o => o.split(" ").map(s => s.trim())).reduce((p, c) => { return p.push({ path: resolvePath(c[0]), dir: (c[1] || "asc").toUpperCase() }), p; }, [] as any[]);
 
         let index = "";
         if (checkforIndexes && result.length === 1) {
@@ -1786,7 +1785,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
                     } else { // column select
                         let isIndexCol = false;
-                        const path = doIndex ? resolveObjPath(w[0]) : [];
+                        const path = doIndex ? resolvePath(w[0]) : [];
 
                         if (["=", "BETWEEN", "IN"].indexOf(w[1]) !== -1 && doIndex) {
                             // primary key select

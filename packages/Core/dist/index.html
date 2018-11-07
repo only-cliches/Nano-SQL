@@ -60,44 +60,8 @@
             }).catch((err) => {
                 console.error(err);
             });
-            /*
-            nSQL().query("select")
-                .from({
-                    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
-                    as: "posts"
-                })
-                .where(["userId", "=", 3])
-                .graph([
-                    {
-                        key: "comments",
-                        with: {
-                            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
-                            as: "comments"
-                        },
-                        on: ["comments.postId", "=", "posts.id"],
-                        graph: [
-                            {
-                                key: "post",
-                                with: {
-                                    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
-                                    as: "posts"
-                                },
-                                on: ["posts.id", "=", "comments.postId"],
-                            }
-                        ]
-                    },
-                    {
-                        key: "author",
-                        with: {
-                            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
-                            as: "author"
-                        },
-                        on: ["author.id", "=", "posts.userId"]
-                    },
-                ])
-                .exec().then((rows) => {
-                    console.log(rows);
-                })*/
+
+/*
             nSQL().query("select", ["author[0].name AS author", "body", "comments[0].totalComments AS commentsTotal", "id", "title"]).from({
                 table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
                 as: "posts"
@@ -122,13 +86,13 @@
             ]).exec().then((rows) => {
                 console.log(rows);
             });
-            /*
+            
             nSQL().query("select", ["userId", "COUNT(*)"]).groupBy(["userId"]).from(() => {
                 return fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json());
             }).exec().then((rows) => {
                 console.log("POSTS", rows);
             })*/
-/*
+            
             nSQL().query("select").from({
                 table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
                 as: "posts"
@@ -150,9 +114,9 @@
                     on: ["users.id", "=", "posts.userId"]
                 }
             ])
-                .exec().then((rows) => {
-                    console.log(rows);
-                })*/
+            .exec().then((rows) => {
+                console.log("POSTS", rows);
+            })
         }
         test();
 
