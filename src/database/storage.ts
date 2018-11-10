@@ -769,12 +769,12 @@ export class _NanoSQLStorage {
      */
     private _secondaryIndexKey(value: any): string | number {
         if (isObject(value) || Array.isArray(value)) {
-            return JSON.stringify(value).substr(0, 12);
+            return JSON.stringify(value);
         }
         if (typeof value === "number") {
             return value;
         }
-        return String(value).substr(0, 32);
+        return String(value);
     }
 
     /**

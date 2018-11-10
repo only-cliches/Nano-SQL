@@ -10,6 +10,10 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Remove built in Promise polyfill.
 
+## [1.7.9] 11-10-2018
+- Fixed secondary index truncation.
+- Fixed issue [#89](https://github.com/ClickSimply/Nano-SQL/issues/89), iOS/WebSQL support fixed.
+
 ## [1.7.8] 10-10-2018
 - Fixed CDN Link issue.
 
