@@ -1,3 +1,6 @@
+# [1.5.0] 11-10-2018
+- Fixed issue with too large SQL statements.
+
 # [1.3.1] 4-14-2018
 - Moved @types/webSQL to dependencies instead of devDependencies.
 
