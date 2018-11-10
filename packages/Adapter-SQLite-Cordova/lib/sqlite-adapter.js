@@ -30,8 +30,8 @@ var SQLiteStore = (function () {
         console.log("NanoSQL \"" + this._id + "\" using SQLite.");
         this._db = window["sqlitePlugin"].openDatabase({ name: this._id + "_db", location: "default" });
         utilities_1.fastALL(Object.keys(this._pkKey), function (table, i, nextKey) {
-            _this._sql(true, "CREATE TABLE IF NOT EXISTS " + table + " (id BLOB PRIMARY KEY UNIQUE, data TEXT)", [], function () {
-                _this._sql(false, "SELECT id FROM " + table, [], function (result) {
+            _this._sql(true, "CREATE TABLE IF NOT EXISTS \"" + table + "\" (id BLOB PRIMARY KEY UNIQUE, data TEXT)", [], function () {
+                _this._sql(false, "SELECT id FROM \"" + table + "\"", [], function (result) {
                     var idx = [];
                     for (var i_1 = 0; i_1 < result.rows.length; i_1++) {
                         idx.push(result.rows.item(i_1).id);
@@ -48,7 +48,7 @@ var SQLiteStore = (function () {
             throw Error("No table " + table + " found!");
         }
         else {
-            return table;
+            return "\"" + table + "\"";
         }
     };
     SQLiteStore.prototype.makeTable = function (tableName, dataModels) {

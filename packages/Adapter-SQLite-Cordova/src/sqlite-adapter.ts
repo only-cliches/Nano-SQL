@@ -55,8 +55,8 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         this._db = window["sqlitePlugin"].openDatabase({name: `${this._id}_db`, location: "default"});
 
         fastALL(Object.keys(this._pkKey), (table, i, nextKey) => {
-            this._sql(true, `CREATE TABLE IF NOT EXISTS ${table} (id BLOB PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
-                this._sql(false, `SELECT id FROM ${table}`, [], (result) => {
+            this._sql(true, `CREATE TABLE IF NOT EXISTS "${table}" (id BLOB PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
+                this._sql(false, `SELECT id FROM "${table}"`, [], (result) => {
                     let idx: any[] = [];
                     for (let i = 0; i < result.rows.length; i++) {
                         idx.push(result.rows.item(i).id);
@@ -83,7 +83,7 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         if (Object.keys(this._dbIndex).indexOf(table) === -1) {
             throw Error("No table " + table + " found!");
         } else {
-            return table;
+            return `"${table}"`;
         }
     }
 
