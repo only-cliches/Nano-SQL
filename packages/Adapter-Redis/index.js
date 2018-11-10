@@ -376,19 +376,21 @@ var RedisAdapter = (function () {
     RedisAdapter.prototype.drop = function (table, callback) {
         var _this = this;
         this._getDB(table).del(this._key(table, "_index"), function () {
-            var newIndex = new db_idx_1.DatabaseIndex();
-            newIndex.doAI = _this._dbIndex[table].doAI;
-            _this._dbIndex[table] = newIndex;
-            _this._pub.publish(_this._id, JSON.stringify({
-                source: _this._clientID,
-                type: "clr_idx",
-                event: {
-                    table: table
-                }
-            }));
             utilities_1.fastALL(_this._dbIndex[table].keys(), function (item, i, done) {
                 _this._getDB(table).del(item, done);
-            }).then(callback);
+            }).then(function () {
+                var newIndex = new db_idx_1.DatabaseIndex();
+                newIndex.doAI = _this._dbIndex[table].doAI;
+                _this._dbIndex[table] = newIndex;
+                _this._pub.publish(_this._id, JSON.stringify({
+                    source: _this._clientID,
+                    type: "clr_idx",
+                    event: {
+                        table: table
+                    }
+                }));
+                callback();
+            });
         });
     };
     RedisAdapter.prototype.getIndex = function (table, getLength, complete) {
