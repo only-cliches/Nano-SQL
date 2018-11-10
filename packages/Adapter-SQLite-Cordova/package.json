@@ -75,6 +75,6 @@
     },
     "dependencies": {
         "@types/websql": "0.0.27",
-        "nano-sql": "^1.6.3"
+        "nano-sql": "^1.7.7"
     }
 }

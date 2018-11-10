@@ -1,7 +1,7 @@
 import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 import { setFast } from "lie-ts";
-import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "nano-sql/lib/utilities";
+import { StdObject, hash, fastALL, fastCHAIN, splitArr, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "nano-sql/lib/utilities";
 import { DatabaseIndex } from "nano-sql/lib/database/db-idx";
 
 declare const cordova: any;
@@ -205,35 +205,55 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
 
         stmnt += " ORDER BY id";
 
-        this._sql(false, stmnt, getKeys.map(p => typeof p === "string" ? `'${p}'` : p), (result) => {
-            let i = 0;
-            const getRow = () => {
-                if (result.rows.length > i) {
-                    rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
-                        idx++;
-                        i++;
-                        i > 200 ? setFast(getRow) : getRow(); // handle maximum call stack error
-                    });
-                } else {
-                    complete();
-                }
-            };
-            getRow();
-        });
-
-
+        if (getKeys.length) {
+            this.batchRead(this._chkTable(table), getKeys, (result: any[]) => {
+                let i = 0;
+                const getRow = () => {
+                    if (result.length > i) {
+                        rowCallback(result[i], idx, () => {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        } else {
+            this._sql(false, stmnt, [], (result) => {
+                let i = 0;
+                const getRow = () => {
+                    if (result.rows.length > i) {
+                        rowCallback(JSON.parse(result.rows.item(i).data), idx, () => {
+                            idx++;
+                            i++;
+                            i % 500 === 0 ? setFast(getRow) : getRow(); // handle maximum call stack error
+                        });
+                    } else {
+                        complete();
+                    }
+                };
+                getRow();
+            });
+        }
     }
 
     public batchRead(table: string, pks: any[], callback: (rows: any[]) => void) {
-        this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${pks.map(p => "?").join(", ")}) ORDER BY id`, pks.map(p => typeof p === "string" ? `'${p}'` : p), (result) => {
-            let i = result.rows.length;
-            let rows: any[] = [];
-            while (i--) {
-                rows.unshift(JSON.parse(result.rows.item(i).data));
-            }
+        const useKeys = splitArr(pks, 500);
+        let rows: any[] = [];
+        fastCHAIN(useKeys, (keys, i, next) => {
+            this._sql(false, `SELECT data from ${this._chkTable(table)} WHERE id IN (${keys.map(p => "?").join(", ")}) ORDER BY id`, keys.map(p => typeof p === "string" ? `'${p}'` : p), (result) => {
+                let i = result.rows.length;
+                while (i--) {
+                    rows.push(JSON.parse(result.rows.item(i).data));
+                }
+                next();
+            });
+        }).then(() => {
             callback(rows);
         });
-
     }
 
     public drop(table: string, callback: () => void): void {
