@@ -2,16 +2,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 global._fs = require("fs");
 global._path = require("path");
 global._crypto = require("crypto");
+var rocksDB_1 = require("./adapters/rocksDB");
 try {
+    global._rocks = require("rocksdb");
     global._levelup = require("levelup");
-}
-catch (e) { }
-try {
-    global._leveldown = require("leveldown");
-}
-catch (e) { }
-try {
     global._Int64BE = require("int64-buffer").Uint64BE;
+    global._rocksAdapter = rocksDB_1.RocksDB;
 }
 catch (e) { }
 var index_1 = require("./index");

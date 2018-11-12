@@ -1,21 +1,19 @@
 import { INanoSQLAdapter, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-export declare class SyncStorage implements INanoSQLAdapter {
-    useLS?: boolean | undefined;
+export declare class RocksDB implements INanoSQLAdapter {
+    path?: string | ((dbID: string, tableName: string) => {
+        lvld: any;
+        args?: any;
+    }) | undefined;
     plugin: INanoSQLPlugin;
     nSQL: INanoSQLInstance;
-    _index: {
-        [tableName: string]: any[];
-    };
-    _rows: {
-        [tableName: string]: {
-            [key: string]: any;
-        };
-    };
-    _id: string;
-    _ai: {
-        [tableName: string]: number;
-    };
-    constructor(useLS?: boolean | undefined);
+    private _id;
+    private _lvlDown;
+    private _levelDBs;
+    private _ai;
+    constructor(path?: string | ((dbID: string, tableName: string) => {
+        lvld: any;
+        args?: any;
+    }) | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
@@ -27,10 +25,10 @@ export declare class SyncStorage implements INanoSQLAdapter {
     read(table: string, pk: any, complete: (row: {
         [key: string]: any;
     } | undefined) => void, error: (err: any) => void): void;
-    delete(table: string, pk: any, complete: () => void, error: (err: any) => void): void;
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {
         [key: string]: any;
     }, i: number) => void, complete: () => void, error: (err: any) => void): void;
+    delete(table: string, pk: any, complete: () => void, error: (err: any) => void): void;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): void;
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void): void;
 }

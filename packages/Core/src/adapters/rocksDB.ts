@@ -66,11 +66,13 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
-        const lvlDown = this._lvlDown(this._id, tableName);
+
         if (this._levelDBs[tableName]) {
             error(new Error(`Table ${tableName} already exists and is open!`));
             return;
         }
+
+        const lvlDown = this._lvlDown(this._id, tableName);
         global._levelup(lvlDown.lvld, lvlDown.args, (err, db) => {
             if (err) {
                 error(err);
@@ -134,9 +136,9 @@ export class RocksDB implements INanoSQLAdapter {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
-        if (row[this.nSQL.tables[table].pkCol] !== pk) {
-            row[this.nSQL.tables[table].pkCol] = pk;
-        }
+
+        row[this.nSQL.tables[table].pkCol] = pk;
+
         this._levelDBs[table].put(this.nSQL.tables[table].isPkNum ? new global._Int64BE(pk as any).toBuffer() : pk, JSON.stringify(row), (err) => {
             if (err) {
                 error(err);
@@ -175,11 +177,11 @@ export class RocksDB implements INanoSQLAdapter {
                 limit: type === "offset" ? offsetOrLow + limitOrHeigh : undefined
             })
             .on("data", (data) => {
-                i++;
                 if (type === "offset" && i < offsetOrLow) {
                     return;
                 }
                 onRow(JSON.parse(data), i - offsetOrLow);
+                i++;
             })
             .on("end", () => {
                 complete();

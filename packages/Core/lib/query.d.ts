@@ -20,8 +20,8 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _orderBy: INanoSQLSortBy;
     _groupBy: INanoSQLSortBy;
     upsertPath: string[];
-    private _joinTableCache;
-    private _joinTableCacheLoading;
+    private _TableCache;
+    private _TableCacheLoading;
     _graphTableCache: {
         [key: string]: any[];
     };
@@ -31,7 +31,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
     _buildCombineWhere(graphWhere: any, graphTable: string, rowTable: string, rowData: any): any;
-    _graph(graphArgs: IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void, level: number): void;
+    _graph(gArgs: IGraphArgs | IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void, level: number): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;
     private _updateIndex;
@@ -44,6 +44,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     };
     _showTables(): void;
     _describe(): void;
+    _combineRows(rData: any): {};
     _streamAS(row: any): any;
     _orderByRows(a: any, b: any): number;
     _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;

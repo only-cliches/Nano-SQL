@@ -18,7 +18,7 @@ var indexedDB_1 = require("./adapters/indexedDB");
 var query_builder_1 = require("./query-builder");
 var RocksDB;
 if (typeof global !== "undefined") {
-    RocksDB = global._rocksDB;
+    RocksDB = global._rocksAdapter;
 }
 var VERSION = 2.0;
 var NanoSQL = /** @class */ (function () {
@@ -67,7 +67,9 @@ var NanoSQL = /** @class */ (function () {
             }
         };
         this._eventCBs = {
-            Core: new really_small_events_1.ReallySmallEvents()
+            Core: {
+                "*": new really_small_events_1.ReallySmallEvents()
+            }
         };
         this._checkTTL = this._checkTTL.bind(this);
         functions_1.attachDefaultFns(this);
@@ -197,7 +199,7 @@ var NanoSQL = /** @class */ (function () {
     NanoSQL.prototype._detectStorageMethod = function () {
         // NodeJS
         if (typeof window === "undefined") {
-            return "ROCKS";
+            return "RKS";
         }
         // Browser
         // Safari / iOS always gets WebSQL (mobile and desktop)
@@ -205,7 +207,7 @@ var NanoSQL = /** @class */ (function () {
             return "WSQL";
         }
         // everyone else (FF + Chrome + Edge + IE)
-        // check for support for indexed db, web workers and blob
+        // check for support for indexed db
         if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
             return "IDB";
         }
@@ -317,9 +319,9 @@ var NanoSQL = /** @class */ (function () {
                         case "IDB":
                             _this.adapter = new indexedDB_1.IndexedDB();
                             break;
-                        case "ROCKS":
+                        case "RKS":
                         case "LVL":
-                            _this.adapter = new RocksDB();
+                            _this.adapter = new RocksDB(_this.config.path);
                             break;
                         default:
                             rej("Cannot find mode " + dbMode + "!");
@@ -340,6 +342,7 @@ var NanoSQL = /** @class */ (function () {
             _this.triggerEvent({
                 target: "Core",
                 targetId: _this.state.id,
+                path: "*",
                 events: ["connect"],
                 time: Date.now()
             });
@@ -440,6 +443,7 @@ var NanoSQL = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 _this.triggerEvent({
                     target: "Core",
+                    path: "*",
                     targetId: _this.state.id,
                     events: ["ready"],
                     time: Date.now()
@@ -543,50 +547,99 @@ var NanoSQL = /** @class */ (function () {
         });
     };
     NanoSQL.prototype.on = function (action, callBack) {
+        var _this = this;
         var t = this;
         var l = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
-        if (l.indexOf("Plugin:") !== -1) {
-            if (!this._eventCBs[l]) {
-                this._eventCBs[l] = new really_small_events_1.ReallySmallEvents();
-            }
-            this._eventCBs[l].on(action, callBack);
-            return t._refreshEventChecker();
-        }
         switch (action) {
             case "connect":
             case "ready":
             case "disconnect":
             case "peer-change":
             case "slow-query":
-                this._eventCBs.Core.on(action, callBack);
+                this._eventCBs.Core["*"].on(action, callBack);
                 break;
-            default:
-                var table = "Table:" + utilities_1.resolveObjPath(l).join(".");
-                if (!this._eventCBs[table]) {
-                    this._eventCBs[table] = new really_small_events_1.ReallySmallEvents();
+            case "select":
+            case "change":
+            case "delete":
+            case "upsert":
+            case "*":
+                var table = utilities_1.resolvePath(l);
+                if (!this._eventCBs[table[0]]) {
+                    this._eventCBs[table[0]] = {
+                        "*": new really_small_events_1.ReallySmallEvents()
+                    };
                 }
-                this._eventCBs[table].on(action, callBack);
+                var nestedPath = table.filter(function (v, i) { return i > 0; }).join(".") || "*";
+                if (!this._eventCBs[table[0]][nestedPath]) {
+                    this._eventCBs[table[0]][nestedPath] = new really_small_events_1.ReallySmallEvents();
+                }
+                this._eventCBs[table[0]][nestedPath].on(action, callBack);
+            default:
+                this.doFilter("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then(function (evData) {
+                    if (evData.nameSpace) {
+                        if (!_this._eventCBs[evData.nameSpace]) {
+                            _this._eventCBs[evData.nameSpace] = {
+                                "*": new really_small_events_1.ReallySmallEvents()
+                            };
+                        }
+                        if (!_this._eventCBs[evData.nameSpace][evData.path]) {
+                            _this._eventCBs[evData.nameSpace][evData.path] = new really_small_events_1.ReallySmallEvents();
+                        }
+                        _this._eventCBs[evData.nameSpace][evData.path].on(action, callBack);
+                    }
+                    else {
+                        throw new Error("Invalid event \"" + action + "\"!");
+                    }
+                    t._refreshEventChecker();
+                });
         }
         return t._refreshEventChecker();
     };
     NanoSQL.prototype.off = function (action, callBack) {
+        var _this = this;
         var t = this;
         var l = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
-        if (l.indexOf("Plugin:") !== -1) {
-            this._eventCBs[l].off(action, callBack);
-            return t._refreshEventChecker();
-        }
         switch (action) {
             case "connect":
             case "ready":
             case "disconnect":
             case "peer-change":
             case "slow-query":
-                this._eventCBs.Core.off(action, callBack);
+                this._eventCBs.Core["*"].off(action, callBack);
                 break;
+            case "select":
+            case "change":
+            case "delete":
+            case "upsert":
+                var table = utilities_1.resolvePath(l);
+                if (!this._eventCBs[table[0]]) {
+                    this._eventCBs[table[0]] = {
+                        "*": new really_small_events_1.ReallySmallEvents()
+                    };
+                }
+                var nestedPath = table.filter(function (v, i) { return i > 0; }).join(".") || "*";
+                if (!this._eventCBs[table[0]][nestedPath]) {
+                    this._eventCBs[table[0]][nestedPath] = new really_small_events_1.ReallySmallEvents();
+                }
+                this._eventCBs[table[0]][nestedPath].off(action, callBack);
             default:
-                var table = "Table:" + utilities_1.resolveObjPath(l).join(".");
-                this._eventCBs[table].off(action, callBack);
+                this.doFilter("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then(function (evData) {
+                    if (evData.nameSpace) {
+                        if (!_this._eventCBs[evData.nameSpace]) {
+                            _this._eventCBs[evData.nameSpace] = {
+                                "*": new really_small_events_1.ReallySmallEvents()
+                            };
+                        }
+                        if (!_this._eventCBs[evData.nameSpace][evData.path]) {
+                            _this._eventCBs[evData.nameSpace][evData.path] = new really_small_events_1.ReallySmallEvents();
+                        }
+                        _this._eventCBs[evData.nameSpace][evData.path].off(action, callBack);
+                    }
+                    else {
+                        throw new Error("Invalid event \"" + action + "\"!");
+                    }
+                    t._refreshEventChecker();
+                });
         }
         return t._refreshEventChecker();
     };
@@ -643,20 +696,17 @@ var NanoSQL = /** @class */ (function () {
             error("nSQL: Can't do a query before the database is connected!");
             return;
         }
-        if (!this._Q.processItem) {
-            this._Q.processItem = function (item, i, done, err) {
-                new query_1._NanoSQLQuery(_this, item.query, item.onRow, function () {
-                    done();
-                    item.complete();
-                }, function (err) {
-                    done();
-                    item.error(err);
-                });
-            };
-        }
         this.doFilter("query", { result: query }).then(function (setQuery) {
             if (_this.config.queue && !setQuery.skipQueue) {
-                _this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error });
+                _this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error }, function (item, done, err) {
+                    new query_1._NanoSQLQuery(_this, item.query, item.onRow, function () {
+                        done();
+                        item.complete();
+                    }, function (err) {
+                        done();
+                        item.error(err);
+                    });
+                });
             }
             else {
                 new query_1._NanoSQLQuery(_this, setQuery, onRow, complete, error);
@@ -666,10 +716,17 @@ var NanoSQL = /** @class */ (function () {
     NanoSQL.prototype.triggerEvent = function (eventData) {
         var _this = this;
         this.doFilter("event", { result: eventData }).then(function (event) {
-            if (_this.state.hasAnyEvents && _this._eventCBs[eventData.target]) {
+            if (_this.state.hasAnyEvents && _this._eventCBs[event.target] && _this._eventCBs[eventData.target][eventData.path]) {
                 utilities_1.setFast(function () {
                     eventData.events.forEach(function (event) {
-                        _this._eventCBs[eventData.target].trigger(event, eventData);
+                        if (eventData.path === "_all_") {
+                            Object.keys(_this._eventCBs[eventData.target]).forEach(function (path) {
+                                _this._eventCBs[eventData.target][path].trigger(event, eventData);
+                            });
+                        }
+                        else {
+                            _this._eventCBs[eventData.target][eventData.path].trigger(event, eventData);
+                        }
                     });
                 });
             }
@@ -934,7 +991,7 @@ exports.nSQL = function (setTablePointer) {
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
         nSQL: exports.nSQL,
-        NanoSQLInstance: NanoSQL
+        NanoSQL: NanoSQL
     };
 }
 //# sourceMappingURL=index.js.map

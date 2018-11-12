@@ -34,8 +34,8 @@ export declare class INanoSQLInstance {
         [type: string]: (value: any) => any;
     };
     _eventCBs: {
-        Core: ReallySmallEvents;
-        [eventName: string]: ReallySmallEvents;
+        Core: {[path: string]: ReallySmallEvents};
+        [eventName: string]: {[path: string]: ReallySmallEvents};
     };
     constructor();
     doFilter<T, R>(filterName: string, args: T): Promise<R>;
@@ -107,6 +107,7 @@ export declare class INanoSQLQueryBuilder {
     extend(scope: string, ...args: any[]): INanoSQLQueryBuilder;
     union(queries: (() => Promise<any[]>)[], unionAll?: boolean): INanoSQLQueryBuilder;
     offset(args: number): INanoSQLQueryBuilder;
+    tag(tag: string): INanoSQLQueryBuilder;
     emit(): INanoSQLQuery;
     ttl(seconds?: number, cols?: string[]): INanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
@@ -115,7 +116,7 @@ export declare class INanoSQLQueryBuilder {
         id: string;
         total: number;
     }>;
-    graph(graphArgs: IGraphArgs[]): INanoSQLQueryBuilder;
+    graph(graphArgs: IGraphArgs | IGraphArgs[]): INanoSQLQueryBuilder;
     from(tableObj: {
         table: string | any[] | (() => Promise<any[]>),
         as?: string
@@ -377,10 +378,10 @@ export interface INanoSQLTableColumn {
 
 export interface INanoSQLDatabaseEvent {
     target: string;
-    targetId: string;
+    path: string;
     events: string[];
     time: number;
-    result?: any[];
+    result?: any;
     actionOrView?: string;
     [key: string]: any;
 }
@@ -406,7 +407,7 @@ export interface IGraphArgs {
     limit?: number;
     orderBy?: string[];
     groupBy?: string[];
-    graph?: IGraphArgs[];
+    graph?: IGraphArgs | IGraphArgs[];
     on?: (row: {[key: string]: any}, idx: number) => boolean | any[];
 }
 
@@ -420,10 +421,11 @@ export interface INanoSQLQuery {
     time: number;
     extend: {scope: string, args: any[]}[];
     queryID: string;
+    tags: string[];
     comments: string[];
     where?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
     range?: number[];
-    graph?: IGraphArgs[];
+    graph?: IGraphArgs | IGraphArgs[];
     orderBy?: string[];
     groupBy?: string[];
     having?: any[] | ((row: {[key: string]: any}, i?: number, isJoin?: boolean) => boolean);
@@ -551,7 +553,7 @@ export interface customQueryFilter extends abstractFilter {
 }
 // tslint:disable-next-line
 export interface customEventFilter extends abstractFilter { 
-    result: string;
+    result: {nameSpace: string, path: string};
     selectedTable: string;
     action: string;
     on: boolean;

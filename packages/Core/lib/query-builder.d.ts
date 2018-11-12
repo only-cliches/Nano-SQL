@@ -17,6 +17,7 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     join(args: INanoSQLJoinArgs | INanoSQLJoinArgs[]): _NanoSQLQueryBuilder;
     limit(args: number): _NanoSQLQueryBuilder;
     comment(comment: string): _NanoSQLQueryBuilder;
+    tag(tag: string): _NanoSQLQueryBuilder;
     extend(scope: string, ...args: any[]): _NanoSQLQueryBuilder;
     union(queries: (() => Promise<any[]>)[], unionAll?: boolean): _NanoSQLQueryBuilder;
     offset(args: number): _NanoSQLQueryBuilder;

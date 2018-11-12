@@ -27,8 +27,6 @@ var WebSQL = /** @class */ (function () {
     };
     WebSQL.prototype.readMulti = function (table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error) {
     };
-    WebSQL.prototype.readMultiPK = function (table, type, offsetOrLow, limitOrHeigh, reverse, onPK, complete, error) {
-    };
     WebSQL.prototype.getIndex = function (table, complete, error) {
     };
     WebSQL.prototype.getNumberOfRecords = function (table, complete, error) {

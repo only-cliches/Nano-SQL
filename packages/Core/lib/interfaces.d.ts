@@ -33,8 +33,12 @@ export declare class INanoSQLInstance {
         [type: string]: (value: any) => any;
     };
     _eventCBs: {
-        Core: ReallySmallEvents;
-        [eventName: string]: ReallySmallEvents;
+        Core: {
+            [path: string]: ReallySmallEvents;
+        };
+        [eventName: string]: {
+            [path: string]: ReallySmallEvents;
+        };
     };
     constructor();
     doFilter<T, R>(filterName: string, args: T): Promise<R>;
@@ -105,6 +109,7 @@ export declare class INanoSQLQueryBuilder {
     extend(scope: string, ...args: any[]): INanoSQLQueryBuilder;
     union(queries: (() => Promise<any[]>)[], unionAll?: boolean): INanoSQLQueryBuilder;
     offset(args: number): INanoSQLQueryBuilder;
+    tag(tag: string): INanoSQLQueryBuilder;
     emit(): INanoSQLQuery;
     ttl(seconds?: number, cols?: string[]): INanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
@@ -113,7 +118,7 @@ export declare class INanoSQLQueryBuilder {
         id: string;
         total: number;
     }>;
-    graph(graphArgs: IGraphArgs[]): INanoSQLQueryBuilder;
+    graph(graphArgs: IGraphArgs | IGraphArgs[]): INanoSQLQueryBuilder;
     from(tableObj: {
         table: string | any[] | (() => Promise<any[]>);
         as?: string;
@@ -236,7 +241,10 @@ export interface INanoSQLConfig {
     plugins?: INanoSQLPlugin[];
     version?: number;
     size?: number;
-    path?: string;
+    path?: string | ((dbID: string, tableName: string) => {
+        lvld: any;
+        args?: any;
+    });
     warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
     tables?: INanoSQLTableConfig[];
@@ -305,12 +313,11 @@ export interface INanoSQLAdapter {
     }, complete: (pk: any) => void, error: (err: any) => void): any;
     read(table: string, pk: any, complete: (row: {
         [key: string]: any;
-    }) => void, error: (err: any) => void): any;
+    } | undefined) => void, error: (err: any) => void): any;
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void): any;
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {
         [key: string]: any;
     }, i: number) => void, complete: () => void, error: (err: any) => void): any;
-    readMultiPK(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onPK: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void): any;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): any;
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void): any;
 }
@@ -337,7 +344,7 @@ export interface INanoSQLFunction {
         [key: string]: any;
     };
     whereIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
-    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row: any, i: any) => void, complete: () => void) => void;
+    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row: any, i: any) => void, complete: () => void, error: (err: any) => void) => void;
 }
 export interface INanoSQLDataModel {
     key: string;
@@ -356,6 +363,7 @@ export interface INanoSQLTable {
     views: INanoSQLActionOrView[];
     pkType: string;
     pkCol: string;
+    isPkNum: boolean;
     ai: boolean;
     props?: any;
 }
@@ -368,10 +376,10 @@ export interface INanoSQLTableColumn {
 }
 export interface INanoSQLDatabaseEvent {
     target: string;
-    targetId: string;
+    path: string;
     events: string[];
     time: number;
-    result?: any[];
+    result?: any;
     actionOrView?: string;
     [key: string]: any;
 }
@@ -394,7 +402,7 @@ export interface IGraphArgs {
     limit?: number;
     orderBy?: string[];
     groupBy?: string[];
-    graph?: IGraphArgs[];
+    graph?: IGraphArgs | IGraphArgs[];
     on?: (row: {
         [key: string]: any;
     }, idx: number) => boolean | any[];
@@ -412,12 +420,13 @@ export interface INanoSQLQuery {
         args: any[];
     }[];
     queryID: string;
+    tags: string[];
     comments: string[];
     where?: any[] | ((row: {
         [key: string]: any;
     }, i?: number, isJoin?: boolean) => boolean);
     range?: number[];
-    graph?: IGraphArgs[];
+    graph?: IGraphArgs | IGraphArgs[];
     orderBy?: string[];
     groupBy?: string[];
     having?: any[] | ((row: {
@@ -461,7 +470,7 @@ export interface IWhereCondition {
     fnArgs?: string[];
     col?: string;
     comp: string;
-    value: string | string[];
+    value: any;
 }
 export interface IWhereArgs {
     type: IWhereType;
@@ -518,8 +527,18 @@ export interface readyFilter extends abstractFilter {
 export interface disconnectFilter extends abstractFilter {
 }
 export interface customQueryFilter extends abstractFilter {
+    result: undefined;
     query: INanoSQLQueryExec;
     onRow: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
+}
+export interface customEventFilter extends abstractFilter {
+    result: {
+        nameSpace: string;
+        path: string;
+    };
+    selectedTable: string;
+    action: string;
+    on: boolean;
 }

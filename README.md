@@ -10,27 +10,27 @@ Super flexible database/datastore for the client, server & mobile devices.
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 </center>
 
-NanoSQL 2.0 is in BETA state right now, tons of (undocumented) breaking changes.
+NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes.
 
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc3/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc4/dist/nano-sql.min.js
 
 NPM Install
 ```sh
 npm i @nano-sql/core
 ```
 
-#2.0 Progress
+# 2.0 Progress
 - [x] Query Engine 
 - [x] Hook/Filter System
 - [x] Memory/Local Storage Adapter
 - [x] Graph Query Support
-- [ ] Event System
+- [x] Event System
+- [ ] Indexed DB/WebSQL/RocksDB Adapters
 - [ ] Core Tests
 - [ ] Adapter Tests
-- [ ] Indexed DB/WebSQL/RocksDB Adapters
 - [ ] 1.x migration script
 - [ ] 2.0 documentation
 - [ ] 2.0 release
@@ -43,7 +43,7 @@ npm i @nano-sql/core
 - [ ] MongoDB Query Support
 - [ ] ReQL Query Support
 
-#Examples
+# Examples
 
 ```ts
 // Persistent Database
@@ -96,7 +96,7 @@ nSQL().connect({
 
 
 // Join Queries
-nSQL().query("select", ["posts->id AS id", "posts->title AS title", "comments->name AS comment", "users->name AS name"]).from({ 
+nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name AS comment", "users.name AS name"]).from({ 
     table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
     as: "posts" 
 }).where(["userId", "=", 3]).join([

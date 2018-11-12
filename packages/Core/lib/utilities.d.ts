@@ -18,7 +18,7 @@ export declare const _assign: (obj: any) => any;
  * @param {*} obj2
  * @returns {boolean}
  */
-export declare const compareObjects: (obj1: any, obj2: any) => boolean;
+export declare const doObjectsEqual: (obj1: any, obj2: any) => boolean;
 export declare class NanoSQLBuffer {
     processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
     onError?: ((err: any) => void) | undefined;
@@ -27,10 +27,11 @@ export declare class NanoSQLBuffer {
     private _going;
     private _done;
     private _count;
+    private _triggeredComplete;
     constructor(processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined, onError?: ((err: any) => void) | undefined, onComplete?: (() => void) | undefined);
     private _progressBuffer;
     finished(): void;
-    newItem(item: any): void;
+    newItem(item: any, processFn?: (item: any, complete: () => void, err?: (error: any) => void) => void): void;
 }
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
@@ -138,7 +139,7 @@ export declare const cast: (type: string, val: any, allowUknownTypes?: boolean |
  * @returns {number}
  */
 export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lon2: number, radius?: number) => number;
-export declare const resolveObjPath: (pathQuery: string) => string[];
+export declare const resolvePath: (pathQuery: string) => string[];
 export declare const getFnValue: (row: any, str: string) => any;
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
@@ -151,12 +152,11 @@ export declare const deepSet: (pathQuery: string | string[], object: any, value:
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
- * objQuery("hello", {hello: 2}, false) => 2
- * objQuery("hello.length", {hello: [0]}, false) => 1
- * objQuery("hello[0]", {hello: ["there"]}, false) => "there"
- * objQuery("hello[0].length", {hello: ["there"]}, false) => 5
- * objQuery("hello.color.length", {"hello.color": "blue"}, true) => 4
- * objQuery("hello.color.length", {hello: {color: "blue"}}, false) => 4
+ * objQuery("hello", {hello: 2}) => 2
+ * objQuery("hello.length", {hello: [0]}) => 1
+ * objQuery("hello[0]", {hello: ["there"]}) => "there"
+ * objQuery("hello[0].length", {hello: ["there"]}) => 5
+ * objQuery("hello.color.length", {"hello.color": "blue"}) => 4
  *
  * @param {string} pathQuery
  * @param {*} object

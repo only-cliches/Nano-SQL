@@ -152,13 +152,13 @@ exports.attachDefaultFns = function (nSQL) {
                 return { result: utilities_1.crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius) };
             },
             whereIndex: function (nSQL, query, fnArgs, where) {
-                if (where[1] === ">" || where[1] === ">=") {
+                if (where[1] === ">") {
                     var indexes_1 = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
-                    var crowColumn_1 = utilities_1.resolveObjPath(fnArgs[0]);
+                    var crowColumn_1 = utilities_1.resolvePath(fnArgs[0]);
                     var crowCols_1 = [];
                     Object.keys(indexes_1).forEach(function (k) {
                         var index = indexes_1[k];
-                        if (utilities_1.compareObjects(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
+                        if (utilities_1.doObjectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
                             crowCols_1.push(index.name.replace("-lat", "").replace("-lon", ""));
                         }
                     });
@@ -174,7 +174,56 @@ exports.attachDefaultFns = function (nSQL) {
                 }
                 return false;
             },
-            queryIndex: function (nSQL, query, where, onlyPKs, onRow, complete) {
+            queryIndex: function (nSQL, query, where, onlyPKs, onRow, complete, error) {
+                var latTable = "_idx_" + query.table + "_" + where.index + "-lat";
+                var lonTable = "_idx_" + query.table + "_" + where.index + "-lon";
+                var distance = parseFloat(where.value || "0");
+                var centerLat = parseFloat(where.fnArgs ? where.fnArgs[1] : "0");
+                var centerLon = parseFloat(where.fnArgs ? where.fnArgs[2] : "0");
+                // step 1: get a square that contains the radius circle for our search
+                // get latitudes that are distance north and distance south from the search point
+                var latRange = [-1, 1].map(function (i) {
+                    return centerLat + ((distance * i) / nSQL.earthRadius) * (180 * Math.PI);
+                });
+                // get the longitudes that are distance west and distance east from the search point
+                var lonRange = [-1, 1].map(function (i) {
+                    return centerLon + ((distance * i) / nSQL.earthRadius) * (180 * Math.PI) / Math.cos(centerLat * Math.PI / 180);
+                });
+                var pks = {};
+                utilities_1.allAsync([latTable, lonTable], function (table, i, next, error) {
+                    var ranges = i === 0 ? latRange : lonRange;
+                    nSQL.adapter.readMulti(table, "range", ranges[0], ranges[1], false, function (row, i) {
+                        row.pks.forEach(function (pk) {
+                            pks[pk] = Math.max(i, pks[pk] ? pks[pk] : 0);
+                        });
+                    }, function () {
+                        next(null);
+                    }, error);
+                }).then(function () {
+                    // step 2: get the square shaped selection of items
+                    var counter = 0;
+                    var readPKS = Object.keys(pks).filter(function (p) { return pks[p] === 1; });
+                    var crowBuffer = new utilities_1.NanoSQLBuffer(function (item, i, done, err) {
+                        // perform crow distance calculation on square selected group
+                        var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item);
+                        var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item);
+                        if (utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.earthRadius) < distance) {
+                            onRow(onlyPKs ? item[nSQL.tables[query.table].pkCol] : item, counter);
+                            counter++;
+                        }
+                        done();
+                    }, error, complete);
+                    utilities_1.allAsync(readPKS, function (pk, i, next, err) {
+                        nSQL.adapter.read(query.table, pk, function (row) {
+                            if (row) {
+                                crowBuffer.newItem(row);
+                            }
+                            next(null);
+                        }, error);
+                    }).catch(error).then(function () {
+                        crowBuffer.finished();
+                    });
+                }).catch(error);
             }
         }
     };

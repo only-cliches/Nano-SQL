@@ -27,8 +27,6 @@ var IndexedDB = /** @class */ (function () {
     };
     IndexedDB.prototype.readMulti = function (table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error) {
     };
-    IndexedDB.prototype.readMultiPK = function (table, type, offsetOrLow, limitOrHeigh, reverse, onPK, complete, error) {
-    };
     IndexedDB.prototype.getIndex = function (table, complete, error) {
     };
     IndexedDB.prototype.getNumberOfRecords = function (table, complete, error) {

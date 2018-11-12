@@ -15,7 +15,7 @@ var SyncStorage = /** @class */ (function () {
         this._ai = {};
     }
     SyncStorage.prototype.connect = function (id, complete, error) {
-        this._id = this.nSQL.config.id;
+        this._id = id;
         complete();
     };
     SyncStorage.prototype.createAndInitTable = function (tableName, tableData, complete, error) {
@@ -104,12 +104,6 @@ var SyncStorage = /** @class */ (function () {
         complete();
     };
     SyncStorage.prototype.readMulti = function (table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error) {
-        this.readMultiAbstract(false, table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error);
-    };
-    SyncStorage.prototype.readMultiPK = function (table, type, offsetOrLow, limitOrHeigh, reverse, onPK, complete, error) {
-        this.readMultiAbstract(true, table, type, offsetOrLow, limitOrHeigh, reverse, onPK, complete, error);
-    };
-    SyncStorage.prototype.readMultiAbstract = function (pkOnly, table, type, offsetOrLow, limitOrHeigh, reverse, onValue, complete, error) {
         var _this = this;
         var doCheck = offsetOrLow || limitOrHeigh;
         var range = {
@@ -120,16 +114,11 @@ var SyncStorage = /** @class */ (function () {
         this._index[table].forEach(function (pk, i) {
             var read = !range ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
             if (read) {
-                if (pkOnly) {
-                    onValue(pk, i);
+                if (_this.useLS) {
+                    onRow(JSON.parse(localStorage.getItem(_this._id + "->" + table + "__" + pk) || "{}"), i);
                 }
                 else {
-                    if (_this.useLS) {
-                        onValue(JSON.parse(localStorage.getItem(_this._id + "->" + table + "__" + pk) || "{}"), i);
-                    }
-                    else {
-                        onValue(_this._rows[table][pk], i);
-                    }
+                    onRow(_this._rows[table][pk], i);
                 }
             }
         });

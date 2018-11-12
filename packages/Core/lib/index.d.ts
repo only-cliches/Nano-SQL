@@ -35,8 +35,12 @@ export declare class NanoSQL implements INanoSQLInstance {
         [type: string]: (value: any) => any;
     };
     _eventCBs: {
-        Core: ReallySmallEvents;
-        [eventName: string]: ReallySmallEvents;
+        Core: {
+            [path: string]: ReallySmallEvents;
+        };
+        [eventName: string]: {
+            [path: string]: ReallySmallEvents;
+        };
     };
     private _Q;
     constructor();

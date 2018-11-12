@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer, compareObjects } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer, doObjectsEqual } from "./utilities";
 import { Observer } from "./observable";
 import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
@@ -61,13 +61,9 @@ export class NanoSQL implements INanoSQLInstance {
     };
 
     public _eventCBs: {
-        Core: ReallySmallEvents;
-        [eventName: string]: ReallySmallEvents;
+        Core: { [path: string]: ReallySmallEvents };
+        [eventName: string]: { [path: string]: ReallySmallEvents };
     };
-
-    public tableEventPaths: {
-        [table: string]: string[][];
-    }
 
     private _Q = new NanoSQLBuffer();
 
@@ -92,8 +88,6 @@ export class NanoSQL implements INanoSQLInstance {
             queue: false
         };
 
-
-        this.tableEventPaths = {};
         this.tables = {};
         this._queryCache = {};
         this.filters = {};
@@ -120,7 +114,9 @@ export class NanoSQL implements INanoSQLInstance {
         };
 
         this._eventCBs = {
-            Core: new ReallySmallEvents()
+            Core: {
+                "*": new ReallySmallEvents()
+            }
         };
         this._checkTTL = this._checkTTL.bind(this);
         attachDefaultFns(this);
@@ -437,6 +433,7 @@ export class NanoSQL implements INanoSQLInstance {
             this.triggerEvent({
                 target: "Core",
                 targetId: this.state.id,
+                path: "*",
                 events: ["connect"],
                 time: Date.now()
             });
@@ -556,6 +553,7 @@ export class NanoSQL implements INanoSQLInstance {
             return new Promise((res, rej) => {
                 this.triggerEvent({
                     target: "Core",
+                    path: "*",
                     targetId: this.state.id,
                     events: ["ready"],
                     time: Date.now()
@@ -675,30 +673,36 @@ export class NanoSQL implements INanoSQLInstance {
             case "disconnect":
             case "peer-change":
             case "slow-query":
-                this._eventCBs.Core.on(action, callBack);
+                this._eventCBs.Core["*"].on(action, callBack);
                 break;
             case "select":
             case "change":
             case "delete":
             case "upsert":
+            case "*":
                 const table = resolvePath(l);
                 if (!this._eventCBs[table[0]]) {
-                    this._eventCBs[table[0]] = new ReallySmallEvents();
+                    this._eventCBs[table[0]] = {
+                        "*": new ReallySmallEvents()
+                    };
                 }
-                this._eventCBs[table[0]].on(action + ":" + table.join("."), callBack);
-                if (!this.tableEventPaths[table[0]]) {
-                    this.tableEventPaths[table[0]] = [];
+                const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
+                if (!this._eventCBs[table[0]][nestedPath]) {
+                    this._eventCBs[table[0]][nestedPath] = new ReallySmallEvents();
                 }
-                if (this.tableEventPaths[table[0]].filter(s => compareObjects(s, table)).length === 0) {
-                    this.tableEventPaths[table[0]].push(table);
-                }
-            default: 
-                this.doFilter<customEventFilter, string>("customEvent", {result: "", selectedTable: l, action: action, on: true}).then((nameSpace) => {
-                    if (nameSpace) {
-                        if (!this._eventCBs[nameSpace]) {
-                            this._eventCBs[nameSpace] = new ReallySmallEvents();
+                this._eventCBs[table[0]][nestedPath].on(action, callBack);
+            default:
+                this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then((evData) => {
+                    if (evData.nameSpace) {
+                        if (!this._eventCBs[evData.nameSpace]) {
+                            this._eventCBs[evData.nameSpace] = {
+                                "*": new ReallySmallEvents()
+                            };
                         }
-                        this._eventCBs[nameSpace].on(action, callBack);
+                        if (!this._eventCBs[evData.nameSpace][evData.path]) {
+                            this._eventCBs[evData.nameSpace][evData.path] = new ReallySmallEvents();
+                        }
+                        this._eventCBs[evData.nameSpace][evData.path].on(action, callBack);
                     } else {
                         throw new Error(`Invalid event "${action}"!`);
                     }
@@ -719,18 +723,35 @@ export class NanoSQL implements INanoSQLInstance {
             case "disconnect":
             case "peer-change":
             case "slow-query":
-                this._eventCBs.Core.on(action, callBack);
+                this._eventCBs.Core["*"].off(action, callBack);
                 break;
             case "select":
             case "change":
             case "delete":
             case "upsert":
                 const table = resolvePath(l);
-                this._eventCBs[table[0]].off(action + ":" + table.join("."), callBack);
-            default: 
-                this.doFilter<customEventFilter, string>("customEvent", {result: "", selectedTable: l, action: action, on: false}).then((nameSpace: string) => {
-                    if (nameSpace) {
-                        this._eventCBs[nameSpace].off(action, callBack);
+                if (!this._eventCBs[table[0]]) {
+                    this._eventCBs[table[0]] = {
+                        "*": new ReallySmallEvents()
+                    };
+                }
+                const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
+                if (!this._eventCBs[table[0]][nestedPath]) {
+                    this._eventCBs[table[0]][nestedPath] = new ReallySmallEvents();
+                }
+                this._eventCBs[table[0]][nestedPath].off(action, callBack);
+            default:
+                this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then((evData) => {
+                    if (evData.nameSpace) {
+                        if (!this._eventCBs[evData.nameSpace]) {
+                            this._eventCBs[evData.nameSpace] = {
+                                "*": new ReallySmallEvents()
+                            };
+                        }
+                        if (!this._eventCBs[evData.nameSpace][evData.path]) {
+                            this._eventCBs[evData.nameSpace][evData.path] = new ReallySmallEvents();
+                        }
+                        this._eventCBs[evData.nameSpace][evData.path].off(action, callBack);
                     } else {
                         throw new Error(`Invalid event "${action}"!`);
                     }
@@ -802,7 +823,7 @@ export class NanoSQL implements INanoSQLInstance {
 
         this.doFilter<queryFilter, INanoSQLQuery>("query", { result: query }).then((setQuery) => {
             if (this.config.queue && !setQuery.skipQueue) {
-                this._Q.newItem({query: setQuery, onRow: onRow, complete: complete, error: error}, (item: {query: INanoSQLQuery, onRow: any, complete: any, error: any}, done, err) => {
+                this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error }, (item: { query: INanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
                     new _NanoSQLQuery(this, item.query, item.onRow, () => {
                         done();
                         item.complete();
@@ -820,10 +841,16 @@ export class NanoSQL implements INanoSQLInstance {
     public triggerEvent(eventData: INanoSQLDatabaseEvent): INanoSQLInstance {
 
         this.doFilter<eventFilter, INanoSQLDatabaseEvent>("event", { result: eventData }).then((event) => {
-            if (this.state.hasAnyEvents && this._eventCBs[event.target]) {
+            if (this.state.hasAnyEvents && this._eventCBs[event.target] && this._eventCBs[eventData.target][eventData.path]) {
                 setFast(() => {
                     eventData.events.forEach((event) => {
-                        this._eventCBs[eventData.target].trigger(event, eventData);
+                        if (eventData.path === "_all_") {
+                            Object.keys(this._eventCBs[eventData.target]).forEach((path) => {
+                                this._eventCBs[eventData.target][path].trigger(event, eventData);
+                            });
+                        } else {
+                            this._eventCBs[eventData.target][eventData.path].trigger(event, eventData);
+                        }
                     });
                 });
             }
@@ -1096,7 +1123,7 @@ export const nSQL = (setTablePointer?: string | any[] | (() => Promise<any[]>)) 
 
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
-        nSQL: nSQL, 
+        nSQL: nSQL,
         NanoSQL: NanoSQL
     };
 }

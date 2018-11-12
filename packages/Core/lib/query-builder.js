@@ -62,6 +62,10 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._query.comments.push(comment);
         return this;
     };
+    _NanoSQLQueryBuilder.prototype.tag = function (tag) {
+        this._query.tags.push(tag);
+        return this;
+    };
     _NanoSQLQueryBuilder.prototype.extend = function (scope) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {

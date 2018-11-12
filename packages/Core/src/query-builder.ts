@@ -88,6 +88,11 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
+    public tag(tag: string): _NanoSQLQueryBuilder {
+        this._query.tags.push(tag);
+        return this;
+    }
+ 
     public extend(scope: string, ...args: any[]): _NanoSQLQueryBuilder {
         this._query.extend.push({ scope: scope, args: args });
         return this;

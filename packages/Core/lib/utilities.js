@@ -26,7 +26,8 @@ exports.buildQuery = function (table, action) {
         time: Date.now(),
         queryID: exports.uuid(),
         extend: [],
-        comments: []
+        comments: [],
+        tags: []
     };
 };
 exports.noop = function () { };
@@ -51,7 +52,7 @@ exports._assign = function (obj) {
  * @param {*} obj2
  * @returns {boolean}
  */
-exports.compareObjects = function (obj1, obj2) {
+exports.doObjectsEqual = function (obj1, obj2) {
     if (obj1 === obj2)
         return true;
     if (typeof obj1 !== "object")
@@ -68,7 +69,7 @@ exports.compareObjects = function (obj1, obj2) {
     while (i-- && matches) {
         var key = keys[i];
         if (typeof obj1[key] === "object") { // nested compare
-            matches = exports.compareObjects(obj1[key], obj2[key]);
+            matches = exports.doObjectsEqual(obj1[key], obj2[key]);
         }
         else {
             matches = obj1[key] === obj2[key];
@@ -85,36 +86,51 @@ var NanoSQLBuffer = /** @class */ (function () {
         this._going = false;
         this._done = false;
         this._count = 0;
+        this._triggeredComplete = false;
         this._progressBuffer = this._progressBuffer.bind(this);
     }
     NanoSQLBuffer.prototype._progressBuffer = function () {
         var _this = this;
+        if (this._triggeredComplete) {
+            return;
+        }
         if (this._done && !this._items.length) {
+            this._triggeredComplete = true;
             if (this.onComplete)
                 this.onComplete();
             return;
         }
+        // queue has paused
         if (!this._items.length) {
             this._going = false;
             return;
         }
-        var item = this._items.shift();
-        if (this.processItem) {
-            this.processItem(item, this._count, function () {
-                _this._count++;
-                _this._count % 500 === 0 ? exports.setFast(_this._progressBuffer) : _this._progressBuffer();
-            }, this.onError ? this.onError : exports.noop);
+        var next = function () {
+            _this._count++;
+            _this._count % 500 === 0 ? exports.setFast(_this._progressBuffer) : _this._progressBuffer();
+        };
+        // process queue
+        var item = this._items.shift() || [];
+        if (item[1]) {
+            item[1](item[0], next, this.onError ? this.onError : exports.noop);
+        }
+        else if (this.processItem) {
+            this.processItem(item[0], this._count, next, this.onError ? this.onError : exports.noop);
         }
     };
     NanoSQLBuffer.prototype.finished = function () {
         this._done = true;
+        if (this._triggeredComplete) {
+            return;
+        }
         if (!this._going) {
+            this._triggeredComplete = true;
             if (this.onComplete)
                 this.onComplete();
         }
     };
-    NanoSQLBuffer.prototype.newItem = function (item) {
-        this._items.push(item);
+    NanoSQLBuffer.prototype.newItem = function (item, processFn) {
+        this._items.push([item, processFn]);
         if (!this._going) {
             this._going = true;
             this._progressBuffer();
@@ -414,21 +430,16 @@ exports.crowDistance = function (lat1, lon1, lat2, lon2, radius) {
 };
 var objectPathCache = {};
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
-exports.resolveObjPath = function (pathQuery) {
+exports.resolvePath = function (pathQuery) {
     var cacheKey = pathQuery;
     if (objectPathCache[cacheKey]) {
         return objectPathCache[cacheKey];
     }
-    var path = pathQuery.indexOf("[") > -1 ?
+    var path = pathQuery.indexOf("[") !== -1 ?
         // handle complex mix of dots and brackets like "users.value[meta][value].length"
         pathQuery.split(/\.|\[/gmi).map(function (v) { return v.replace(/\]/gmi, ""); }) :
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
-    // handle joins where each row is defined as table.column
-    /*if (ignoreFirstPath) {
-        const firstPath = path.shift() + "." + path.shift();
-        path.unshift(firstPath);
-    }*/
     objectPathCache[cacheKey] = path;
     return objectPathCache[cacheKey];
 };
@@ -467,18 +478,17 @@ exports.deepSet = function (pathQuery, object, value) {
         }
         safeSet(getPath, pathIdx + 1, setObj[getPath[pathIdx]]);
     };
-    safeSet(Array.isArray(pathQuery) ? pathQuery : exports.resolveObjPath(pathQuery), 0, object);
+    safeSet(Array.isArray(pathQuery) ? pathQuery : exports.resolvePath(pathQuery), 0, object);
     return object;
 };
 /**
  * Take an object and a string describing a path like "value.length" or "val[length]" and safely get that value in the object.
  *
- * objQuery("hello", {hello: 2}, false) => 2
- * objQuery("hello.length", {hello: [0]}, false) => 1
- * objQuery("hello[0]", {hello: ["there"]}, false) => "there"
- * objQuery("hello[0].length", {hello: ["there"]}, false) => 5
- * objQuery("hello.color.length", {"hello.color": "blue"}, true) => 4
- * objQuery("hello.color.length", {hello: {color: "blue"}}, false) => 4
+ * objQuery("hello", {hello: 2}) => 2
+ * objQuery("hello.length", {hello: [0]}) => 1
+ * objQuery("hello[0]", {hello: ["there"]}) => "there"
+ * objQuery("hello[0].length", {hello: ["there"]}) => 5
+ * objQuery("hello.color.length", {"hello.color": "blue"}) => 4
  *
  * @param {string} pathQuery
  * @param {*} object
@@ -491,7 +501,7 @@ exports.deepGet = function (pathQuery, object) {
             return object;
         return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx]]);
     };
-    return safeGet(Array.isArray(pathQuery) ? pathQuery : exports.resolveObjPath(pathQuery), 0, object);
+    return safeGet(Array.isArray(pathQuery) ? pathQuery : exports.resolvePath(pathQuery), 0, object);
 };
 exports._maybeAssign = function (obj) {
     if (Object.isFrozen(obj))
