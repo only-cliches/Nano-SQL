@@ -33,7 +33,7 @@ export declare class INanoSQLInstance {
     indexTypes: {
         [type: string]: (value: any) => any;
     };
-    _eventCBs: {
+    eventFNs: {
         Core: {[path: string]: ReallySmallEvents};
         [eventName: string]: {[path: string]: ReallySmallEvents};
     };
@@ -62,7 +62,7 @@ export declare class INanoSQLInstance {
     _doAV(AVType, table, AVName, AVargs);
     query(action: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), args?: any): INanoSQLQueryBuilder;
     triggerQuery(query: INanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
-    triggerEvent(eventData: INanoSQLDatabaseEvent): INanoSQLInstance;
+    triggerEvent(eventData: INanoSQLDatabaseEvent, ignoreStarTable?: boolean): INanoSQLInstance;
     default(replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
@@ -382,7 +382,6 @@ export interface INanoSQLDatabaseEvent {
     events: string[];
     time: number;
     result?: any;
-    actionOrView?: string;
     [key: string]: any;
 }
 

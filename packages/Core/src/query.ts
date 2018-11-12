@@ -1,5 +1,5 @@
 import { INanoSQLQuery, ISelectArgs, IWhereArgs, IWhereType, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, createTableFilter, INanoSQLDataModel, INanoSQLTableColumn, INanoSQLJoinArgs, INanoSQLQueryExec, INanoSQLInstance, customQueryFilter, IGraphArgs, INanoSQLTable } from "./interfaces";
-import { deepGet, chainAsync, doObjectsEqual, hash, resolvePath, setFast, allAsync, _maybeAssign, _assign, cast, buildQuery, deepSet, NanoSQLBuffer, noop } from "./utilities";
+import { deepGet, chainAsync, objectsEqual, hash, resolvePath, setFast, allAsync, _maybeAssign, _assign, cast, buildQuery, deepSet, NanoSQLBuffer, noop } from "./utilities";
 
 // tslint:disable-next-line
 export class _NanoSQLQuery implements INanoSQLQueryExec {
@@ -471,7 +471,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     events: ["select", "*"],
                     time: Date.now(),
                     result: row,
-                    actionOrView: this.query.action || this.query.view
+                    query: this.query
                 });
             }
         }, () => {
@@ -717,11 +717,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     time: Date.now(),
                     result: finalRow,
                     oldRow: oldRow,
-                    actionOrView: this.query.action || this.query.view
+                    query: this.query
                 });
-                Object.keys(this.nSQL._eventCBs[this.query.table as string]).forEach((path) => {
+                Object.keys(this.nSQL.eventFNs[this.query.table as string]).forEach((path) => {
                     if (path !== "*") {
-                        if (!doObjectsEqual(deepGet(path, oldRow), deepGet(path, finalRow))) {
+                        if (!objectsEqual(deepGet(path, oldRow), deepGet(path, finalRow))) {
                             this.nSQL.triggerEvent({
                                 target: this.query.table as string,
                                 path: path,
@@ -729,8 +729,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                                 time: Date.now(),
                                 result: finalRow,
                                 oldRow: oldRow,
-                                actionOrView: this.query.action || this.query.view
-                            });
+                                query: this.query
+                            }, true);
                         }
                     }
                 });
@@ -749,7 +749,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     }, err);
                 } else { // indexes
                     const idxTable = "_idx_" + this.query.table + "_" + indexName;
-                    if (doObjectsEqual(newIndexValues[indexName], oldIndexValues[indexName]) === false) { // only update changed index values
+                    if (objectsEqual(newIndexValues[indexName], oldIndexValues[indexName]) === false) { // only update changed index values
 
                         if (table.indexes[indexName].isArray) {
                             let addValues: any[] = newIndexValues[indexName].filter((v, i, s) => oldIndexValues[indexName].indexOf(v) === -1);
@@ -869,7 +869,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         events: ["change", "delete", "*"],
                         time: Date.now(),
                         result: row,
-                        actionOrView: this.query.action || this.query.view
+                        query: this.query
                     });
                 }
 
@@ -1226,6 +1226,10 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }
 
         const onIndexRow = (row, finished) => {
+            if (!row) {
+                finished();
+                return;
+            }
             if (isPKquery) { // primary key select
                 onRow(onlyGetPKs ? row[pkCol] : row, 0);
                 finished();
@@ -1603,9 +1607,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         switch (compare) {
             // if column equal to given value. Supports arrays, objects and primitives
-            case "=": return doObjectsEqual(givenValue, columnValue);
+            case "=": return objectsEqual(givenValue, columnValue);
             // if column not equal to given value. Supports arrays, objects and primitives
-            case "!=": return !doObjectsEqual(givenValue, columnValue);
+            case "!=": return !objectsEqual(givenValue, columnValue);
             // if column greather than given value
             case ">": return columnValue > givenValue;
             // if column less than given value
@@ -1662,7 +1666,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 const indexKeys = Object.keys(this.nSQL.tables[this.query.table as string].indexes);
                 let i = indexKeys.length;
                 while (i-- && !index) {
-                    if (doObjectsEqual(this.nSQL.tables[this.query.table as string].indexes[indexKeys[i]], result[0].path)) {
+                    if (objectsEqual(this.nSQL.tables[this.query.table as string].indexes[indexKeys[i]], result[0].path)) {
                         index = this.nSQL.tables[this.query.table as string].indexes[indexKeys[i]].name;
                     }
                 }
@@ -1729,7 +1733,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 this._pkOrderBy = true;
             }
         } else {
-            canUseOrderByIndex = this._orderBy.index.length && this._whereArgs.fastWhere && doObjectsEqual((this._whereArgs.fastWhere[0] as IWhereCondition).col, this._orderBy.sort[0].path) ? true : false;
+            canUseOrderByIndex = this._orderBy.index.length && this._whereArgs.fastWhere && objectsEqual((this._whereArgs.fastWhere[0] as IWhereCondition).col, this._orderBy.sort[0].path) ? true : false;
             if (canUseOrderByIndex) {
                 this._idxOrderBy = true;
             }
@@ -1827,7 +1831,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                                 });
                             } else { // check if we can use any index
                                 indexes.forEach((index) => {
-                                    if (isIndexCol === false && doObjectsEqual(index.path, path) && index.isArray === false) {
+                                    if (isIndexCol === false && objectsEqual(index.path, path) && index.isArray === false) {
                                         isIndexCol = true;
                                         p.push({
                                             index: index.name,
@@ -1842,7 +1846,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
                         if (doIndex && !isIndexCol && ["INCLUDES", "INTERSECT", "INTERSECT ALL"].indexOf(w[1]) !== -1) {
                             indexes.forEach((index) => {
-                                if (doObjectsEqual(index.path, path) && index.isArray === true) {
+                                if (objectsEqual(index.path, path) && index.isArray === true) {
                                     isIndexCol = true;
                                     p.push({
                                         index: index.name,

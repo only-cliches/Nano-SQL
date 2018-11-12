@@ -59,7 +59,7 @@ export const _assign = (obj: any) => {
  * @param {*} obj2
  * @returns {boolean}
  */
-export const doObjectsEqual = (obj1: any, obj2: any): boolean => {
+export const objectsEqual = (obj1: any, obj2: any): boolean => {
     if (obj1 === obj2) return true;
     if (typeof obj1 !== "object") return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
     if (!obj1 || !obj2) return false; // if either object is undefined/false they don't match
@@ -75,7 +75,7 @@ export const doObjectsEqual = (obj1: any, obj2: any): boolean => {
     while (i-- && matches) {
         const key = keys[i];
         if (typeof obj1[key] === "object") { // nested compare
-            matches = doObjectsEqual(obj1[key], obj2[key]);
+            matches = objectsEqual(obj1[key], obj2[key]);
         } else {
             matches = obj1[key] === obj2[key];
         }

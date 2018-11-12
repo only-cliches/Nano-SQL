@@ -45,15 +45,17 @@
                     }
                 ],
             }).then(() => {
+                nSQL("users.name").on("change", (ev) => {
+                    console.log("EVENT", ev);
+                })
                 return nSQL("users").query("upsert", [{ name: "Billy", age: 20, meta: { color: "blue" }, tags: ["some", "tags", "here"] }, { name: "Scott", age: 30, meta: { color: "orange" }, tags: ["some"] }, { name: "Jeb", meta: { color: "yellow" } }]).exec();
             }).then(() => {
-                console.time("sel");
-                return nSQL("users").query("upsert", { age: 21 }).where(["meta.color", "=", "blue"]).exec();
+                return nSQL("users").query("upsert", { name: 21 }).where(["meta.color", "=", "blue"]).exec();
             }).then((result) => {
                 console.log(result);
-                console.time("sel");
                 console.log(nSQL());
-                return nSQL("users").query("select").where([["tags", "INTERSECT ALL", ["here", "some"]], "AND", ["age", "=", 21]]).exec();
+                console.time("sel");
+                return nSQL("users").query("select").where(["age", "=", 20]).exec();
             }).then((rows) => {
                 console.timeEnd("sel");
                 console.log(JSON.stringify(rows, null, 4));

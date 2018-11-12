@@ -1,4 +1,4 @@
-import { crowDistance, deepGet, cast, resolvePath, doObjectsEqual, getFnValue, allAsync, _maybeAssign, NanoSQLBuffer, chainAsync } from "./utilities";
+import { crowDistance, deepGet, cast, resolvePath, objectsEqual, getFnValue, allAsync, _maybeAssign, NanoSQLBuffer, chainAsync } from "./utilities";
 import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -146,7 +146,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                     let crowCols: string[] = [];
                     Object.keys(indexes).forEach((k) => {
                         const index = indexes[k];
-                        if (doObjectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
+                        if (objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
                             crowCols.push(index.name.replace("-lat", "").replace("-lon", ""));
                         }
                     });
