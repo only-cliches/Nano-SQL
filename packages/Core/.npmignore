@@ -1,8 +1,8 @@
 /*
 
 !/src/
-!/build.sh
+!/dist/
+!/lib/
 !/LICENSE
-!/docs/
 !/package.json
 !/README.md

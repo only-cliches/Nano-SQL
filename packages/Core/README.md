@@ -15,7 +15,7 @@ NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes fr
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc5/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc6/dist/nano-sql.min.js
 
 NPM Install
 ```sh
