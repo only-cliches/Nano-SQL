@@ -1,4 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
+export declare const VERSION = 2;
 export declare class INanoSQLInstance {
     config: INanoSQLConfig;
     adapter: INanoSQLAdapter;
@@ -32,7 +33,7 @@ export declare class INanoSQLInstance {
     indexTypes: {
         [type: string]: (value: any) => any;
     };
-    _eventCBs: {
+    eventFNs: {
         Core: {
             [path: string]: ReallySmallEvents;
         };
@@ -65,7 +66,7 @@ export declare class INanoSQLInstance {
     _doAV(AVType: any, table: any, AVName: any, AVargs: any): any;
     query(action: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), args?: any): INanoSQLQueryBuilder;
     triggerQuery(query: INanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
-    triggerEvent(eventData: INanoSQLDatabaseEvent): INanoSQLInstance;
+    triggerEvent(eventData: INanoSQLDatabaseEvent, ignoreStarTable?: boolean): INanoSQLInstance;
     default(replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
@@ -124,6 +125,7 @@ export declare class INanoSQLQueryBuilder {
         as?: string;
     }): INanoSQLQueryBuilder;
     into(table: string): INanoSQLQueryBuilder;
+    on(table: string): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
@@ -297,7 +299,7 @@ export interface INanoSQLPlugin {
     filters?: {
         name: string;
         priority: number;
-        callback: (inputArgs: any) => Promise<any>;
+        call: (inputArgs: any) => Promise<any>;
     }[];
 }
 export interface INanoSQLAdapter {
@@ -315,7 +317,7 @@ export interface INanoSQLAdapter {
         [key: string]: any;
     } | undefined) => void, error: (err: any) => void): any;
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void): any;
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
         [key: string]: any;
     }, i: number) => void, complete: () => void, error: (err: any) => void): any;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): any;
@@ -380,7 +382,6 @@ export interface INanoSQLDatabaseEvent {
     events: string[];
     time: number;
     result?: any;
-    actionOrView?: string;
     [key: string]: any;
 }
 export interface INanoSQLJoinArgs {
@@ -488,6 +489,25 @@ export interface abstractFilter {
     };
     result?: any;
 }
+export interface SQLiteAbstractFns {
+    createAI: (complete: () => void, error: (err: any) => void) => void;
+    createTable: (table: string, doAI: boolean, ai: {
+        [table: string]: number;
+    }, complete: () => void, error: (err: any) => void) => void;
+    dropTable: (table: string, complete: () => void, error: (err: any) => void) => void;
+    write: (pkType: string, pkCol: string, table: string, pk: any, row: any, doAI: boolean, ai: {
+        [table: string]: number;
+    }, complete: (pk: any) => void, error: (err: any) => void) => void;
+    read: (table: string, pk: any, complete: (row: {
+        [key: string]: any;
+    } | undefined) => void, error: (err: any) => void) => void;
+    remove: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
+    getIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => void;
+    getNumberOfRecords: (table: string, complete: (length: number) => void, error: (err: any) => void) => void;
+    readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
+        [key: string]: any;
+    }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
+}
 export interface extendFilter extends abstractFilter {
     scope: string;
     args: any[];
@@ -541,4 +561,47 @@ export interface customEventFilter extends abstractFilter {
     selectedTable: string;
     action: string;
     on: boolean;
+}
+export interface adapterDidReadFilter extends abstractFilter {
+    result: any;
+    table: string;
+    pk: any;
+    i: number;
+    query: INanoSQLQuery;
+}
+export interface adapterWillReadFilter extends abstractFilter {
+    result: any;
+    table: string;
+    pk: any;
+    i: number;
+    query: INanoSQLQuery;
+}
+export interface adapterWillReadMultiFilter extends abstractFilter {
+    result: {
+        table: string;
+        type: string;
+        offsetOrLow?: number;
+        limitOrHigh?: number;
+        reverse?: boolean;
+    };
+    onRow: (row: {
+        [key: string]: any;
+    }, i: number) => void;
+    complete: () => void;
+    error: (err: any) => void;
+    query: INanoSQLQuery;
+}
+export interface adapterWillWriteFilter extends abstractFilter {
+    result: {
+        table: string;
+        pk: any;
+        row: any;
+    };
+    query: INanoSQLQuery;
+}
+export interface adapterDidWriteFilter extends abstractFilter {
+}
+export interface conformRowFilter extends abstractFilter {
+    result: any;
+    oldRow: any;
 }

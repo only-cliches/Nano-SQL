@@ -14,13 +14,31 @@
 
             nSQL().connect({
                 id: "test",
+                mode: "WSQL",
+                plugins: [
+                    {
+                        name: "testPlugin",
+                        version: 1,
+                        filters: [
+                            {
+                                name: "adapterWrite",
+                                priority: 100,
+                                call: (inputArgs) => {
+                                    return new Promise((res, rej) => {
+                                        res(inputArgs);
+                                    })
+                                }
+                            }
+                        ]
+                    }
+                ],
                 tables: [
                     {
                         name: "users",
                         model: [
                             {
-                                key: "id:uuid",
-                                props: ["pk()"]
+                                key: "id:int",
+                                props: ["pk()", "ai()"]
                             },
                             {
                                 key: "name:string"
@@ -55,10 +73,10 @@
                 console.log(result);
                 console.log(nSQL());
                 console.time("sel");
-                return nSQL("users").query("select").where(["age", "=", 20]).exec();
+                return nSQL("users").query("select").exec();
             }).then((rows) => {
                 console.timeEnd("sel");
-                console.log(JSON.stringify(rows, null, 4));
+                console.log(rows);
             }).catch((err) => {
                 console.error(err);
             });

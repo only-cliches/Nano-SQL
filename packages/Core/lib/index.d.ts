@@ -34,7 +34,7 @@ export declare class NanoSQL implements INanoSQLInstance {
     indexTypes: {
         [type: string]: (value: any) => any;
     };
-    _eventCBs: {
+    eventFNs: {
         Core: {
             [path: string]: ReallySmallEvents;
         };
@@ -68,7 +68,7 @@ export declare class NanoSQL implements INanoSQLInstance {
     _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any>;
     query(action: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), args?: any): INanoSQLQueryBuilder;
     triggerQuery(query: INanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
-    triggerEvent(eventData: INanoSQLDatabaseEvent): INanoSQLInstance;
+    triggerEvent(eventData: INanoSQLDatabaseEvent, ignoreStarTable?: boolean): INanoSQLInstance;
     default(replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;

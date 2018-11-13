@@ -1,5 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 
+export const VERSION = 2.0;
+
 export declare class INanoSQLInstance {
     config: INanoSQLConfig;
     adapter: INanoSQLAdapter;
@@ -122,6 +124,7 @@ export declare class INanoSQLQueryBuilder {
         as?: string
     }): INanoSQLQueryBuilder;
     into(table: string): INanoSQLQueryBuilder;
+    on(table: string): INanoSQLQueryBuilder;
     exec(): Promise<{
         [key: string]: any;
     }[]>;
@@ -296,7 +299,7 @@ export interface INanoSQLPlugin {
     filters?: {
         name: string;
         priority: number;
-        callback: (inputArgs: any) => Promise<any>;
+        call: (inputArgs: any) => Promise<any>;
     }[];
 }
 
@@ -321,7 +324,7 @@ export interface INanoSQLAdapter {
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void);
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
 
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
@@ -487,6 +490,24 @@ export interface abstractFilter {
     result?: any;
 }
 
+export interface SQLiteAbstractFns {
+    createAI: (complete: () => void, error: (err: any) => void) => void;
+    createTable: (table: string, doAI: boolean, ai: {
+        [table: string]: number;
+    }, complete: () => void, error: (err: any) => void) => void;
+    dropTable: (table: string, complete: () => void, error: (err: any) => void) => void;
+    write: (pkType: string, pkCol: string, table: string, pk: any, row: any, doAI: boolean, ai: {
+        [table: string]: number;
+    }, complete: (pk: any) => void, error: (err: any) => void) => void;
+    read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => void;
+    remove: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
+    getIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => void;
+    getNumberOfRecords: (table: string, complete: (length: number) => void, error: (err: any) => void) => void;
+    readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
+        [key: string]: any;
+    }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
+}
+
 // tslint:disable-next-line
 export interface extendFilter extends abstractFilter {
     scope: string;
@@ -556,4 +577,54 @@ export interface customEventFilter extends abstractFilter {
     selectedTable: string;
     action: string;
     on: boolean;
+}
+
+// tslint:disable-next-line
+export interface adapterDidReadFilter extends abstractFilter { 
+    result: any;
+    table: string;
+    pk: any;
+    i: number;
+    query: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterWillReadFilter extends abstractFilter { 
+    result: any;
+    table: string;
+    pk: any;
+    i: number;
+    query: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterWillReadMultiFilter extends abstractFilter {
+    result: {
+        table: string;
+        type: string;
+        offsetOrLow?: number;
+        limitOrHigh?: number;
+        reverse?: boolean;
+    };
+    onRow: (row: {[key: string]: any}, i: number) => void;
+    complete: () => void;
+    error: (err: any) => void;
+    query: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterWillWriteFilter extends abstractFilter { 
+    result: {table: string, pk: any, row: any};
+    query: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterDidWriteFilter extends abstractFilter { 
+
+}
+
+// tslint:disable-next-line
+export interface conformRowFilter extends abstractFilter { 
+    result: any;
+    oldRow: any;
 }

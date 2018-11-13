@@ -143,6 +143,11 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
+    public on(table: string): _NanoSQLQueryBuilder {
+        this._query.table = table;
+        return this;
+    }
+
     public toCSV(headers?: boolean): any {
         let t = this;
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
@@ -153,7 +158,9 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return new Promise((res, rej) => {
             let buffer: any[] = [];
             this.stream((row) => {
-                buffer.push(row);
+                if (row) {
+                    buffer.push(row);
+                }
             }, () => {
                 res(buffer);
             }, rej);

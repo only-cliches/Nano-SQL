@@ -1,4 +1,19 @@
-import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, IGraphArgs } from "./interfaces";
+import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, IGraphArgs, INanoSQLTable } from "./interfaces";
+import { NanoSQLQueue } from "./utilities";
+export declare const secondaryIndexQueue: {
+    [idAndTable: string]: NanoSQLQueue;
+};
+export declare const adapterFilters: (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
+    write: (table: string, pk: any, row: {
+        [key: string]: any;
+    }, complete: (pk: any) => void, error: (err: any) => void) => void;
+    read: (table: string, pk: any, complete: (row: {
+        [key: string]: any;
+    } | undefined) => void, error: (err: any) => void) => void;
+    readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
+        [key: string]: any;
+    }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
+};
 export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     nSQL: INanoSQLInstance;
     query: INanoSQLQuery;
@@ -27,6 +42,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     };
     private _graphTableCacheLoading;
     constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
+    _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void): void;
     _getTableCache(cacheKey: string, table: any, callback: (joinTable: any) => void): void;
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
@@ -34,9 +50,11 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _graph(gArgs: IGraphArgs | IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void, level: number): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;
+    private _diffUpdates;
     private _updateIndex;
     _newRow(newRow: any, complete: (row: any) => void, error: (err: any) => void): void;
     _delete(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
+    _removeRowAndIndexes(table: INanoSQLTable, row: any, complete: () => void, error: (err: any) => void): void;
     _getIndexValues(indexes: {
         [name: string]: INanoSQLIndex;
     }, row: any): {

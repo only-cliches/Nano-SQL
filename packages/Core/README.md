@@ -10,12 +10,12 @@ Super flexible database/datastore for the client, server & mobile devices.
 [![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 </center>
 
-NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes.
+NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes from 1.0.
 
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc4/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc5/dist/nano-sql.min.js
 
 NPM Install
 ```sh
@@ -28,7 +28,7 @@ npm i @nano-sql/core
 - [x] Memory/Local Storage Adapter
 - [x] Graph Query Support
 - [x] Event System
-- [ ] Indexed DB/WebSQL/RocksDB Adapters
+- [x] Indexed DB/WebSQL/RocksDB Adapters
 - [ ] Core Tests
 - [ ] Adapter Tests
 - [ ] 1.x migration script

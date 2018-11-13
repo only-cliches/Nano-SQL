@@ -1,4 +1,4 @@
-import { crowDistance, deepGet, cast, resolvePath, objectsEqual, getFnValue, allAsync, _maybeAssign, NanoSQLBuffer, chainAsync } from "./utilities";
+import { crowDistance, deepGet, cast, resolvePath, objectsEqual, getFnValue, allAsync, _maybeAssign, NanoSQLQueue, chainAsync } from "./utilities";
 import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -195,7 +195,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                     // step 2: get the square shaped selection of items
                     let counter = 0;
                     const readPKS = Object.keys(pks).filter(p => pks[p] === 1);
-                    const crowBuffer = new NanoSQLBuffer((item, i, done, err) => {
+                    const crowBuffer = new NanoSQLQueue((item, i, done, err) => {
                         // perform crow distance calculation on square selected group
                         const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item);
                         const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item);

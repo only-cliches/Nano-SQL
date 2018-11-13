@@ -1,5 +1,5 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-import { allAsync, NanoSQLBuffer, generateID, _maybeAssign } from "../utilities";
+import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
+import { allAsync, NanoSQLQueue, generateID, _maybeAssign } from "../utilities";
 
 declare const global: any;
 
@@ -7,10 +7,7 @@ export class RocksDB implements INanoSQLAdapter {
 
     plugin: INanoSQLPlugin = {
         name: "RocksDB Adapter",
-        version: 2.0,
-        dependencies: {
-            core: [2.0]
-        }
+        version: VERSION
     };
 
     nSQL: INanoSQLInstance;
@@ -98,7 +95,7 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
-        const del = new NanoSQLBuffer((item, i , next, err) => {
+        const del = new NanoSQLQueue((item, i , next, err) => {
             // remove all records
             this._levelDBs[table].del(item).then(next).catch(err);
         }, error, () => {
@@ -116,9 +113,6 @@ export class RocksDB implements INanoSQLAdapter {
                 error(err);
                 del.finished();
             })
-            .on('close', function () {
-                del.finished();
-            })
             .on('end', function () {
                 del.finished();
             });
@@ -131,11 +125,13 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
-        pk = pk || generateID(this.nSQL.tables[table].pkType, this._ai[table]);
-        if (!pk) {
+        pk = pk || generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
+        if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
+
+        this._ai[table] = Math.max(pk, this._ai[table]);
 
         row[this.nSQL.tables[table].pkCol] = pk;
 
@@ -143,8 +139,7 @@ export class RocksDB implements INanoSQLAdapter {
             if (err) {
                 error(err);
             } else {
-                if (this.nSQL.tables[table].ai && pk === this._ai[table]) {
-                    this._ai[table]++;
+                if (this.nSQL.tables[table].ai) {
                     this._levelDBs["_ai_store_"].put(table, this._ai[table]).then(() => {
                         complete(pk);
                     }).catch(error);
@@ -165,16 +160,16 @@ export class RocksDB implements INanoSQLAdapter {
         });
     }
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
         const isPkNum = this.nSQL.tables[table].isPkNum;
 
         let i = 0;
         this._levelDBs[table]
             .createValueStream({
                 gte: type === "range" ? (isPkNum ? new global._Int64BE(offsetOrLow as any).toBuffer() : offsetOrLow) : undefined,
-                lte: type === "range" ? (isPkNum ? new global._Int64BE(limitOrHeigh as any).toBuffer() : limitOrHeigh) : undefined,
+                lte: type === "range" ? (isPkNum ? new global._Int64BE(limitOrHigh as any).toBuffer() : limitOrHigh) : undefined,
                 reverse: reverse,
-                limit: type === "offset" ? offsetOrLow + limitOrHeigh : undefined
+                limit: type === "offset" ? offsetOrLow + limitOrHigh : undefined
             })
             .on("data", (data) => {
                 if (type === "offset" && i < offsetOrLow) {

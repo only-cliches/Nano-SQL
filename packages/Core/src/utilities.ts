@@ -64,10 +64,9 @@ export const objectsEqual = (obj1: any, obj2: any): boolean => {
     if (typeof obj1 !== "object") return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
     if (!obj1 || !obj2) return false; // if either object is undefined/false they don't match
 
-    const isArray = Array.isArray(obj1);
     const keys = Object.keys(obj1);
     // If sizes differ then we can skip further comparison
-    let matches = isArray ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
+    let matches = Array.isArray(obj1) ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
 
     if (!matches) return false;
 
@@ -84,7 +83,7 @@ export const objectsEqual = (obj1: any, obj2: any): boolean => {
     return matches;
 };
 
-export class NanoSQLBuffer {
+export class NanoSQLQueue {
 
     private _items: [any, undefined | ((item: any, complete: () => void, err?: (err: any) => void) => void)][] = [];
     private _going: boolean = false;
@@ -117,7 +116,7 @@ export class NanoSQLBuffer {
 
         const next = () => {
             this._count++;
-            this._count % 500 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
+            this._count % 100 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
         }
 
         // process queue

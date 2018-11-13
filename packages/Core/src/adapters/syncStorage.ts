@@ -1,14 +1,11 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
+import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
 import { noop, deepFreeze, generateID, binarySearch, _assign, cast } from "../utilities";
 
 export class SyncStorage implements INanoSQLAdapter {
 
     plugin: INanoSQLPlugin = {
         name: "Sync Storage Adapter",
-        version: 2.0,
-        dependencies: {
-            core: [2.0]
-        }
+        version: VERSION
     };
 
     nSQL: INanoSQLInstance;
@@ -81,11 +78,17 @@ export class SyncStorage implements INanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
 
-        pk = pk || generateID(this.nSQL.tables[table].pkType, this.nSQL.tables[table].ai ? this._ai[table] + 1 : 0);
+        pk = pk || generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
 
+        if (typeof pk === "undefined") {
+            error(new Error("Can't add a row without a primary key!"));
+            return;
+        }
+
+        this._ai[table] = Math.max(pk, this._ai[table]);
 
         if (this.nSQL.tables[table].ai) {
-            this._ai[table] = cast("int", Math.max(this._ai[table] || 0, pk));
+            this._ai[table] = Math.max(this._ai[table] || 0, pk);
         }
 
         if (this._index[table].indexOf(pk) === -1) {
@@ -93,7 +96,7 @@ export class SyncStorage implements INanoSQLAdapter {
             this._index[table].splice(loc, 0, pk);
             if (this.useLS) {
                 localStorage.setItem(this._id + "->" + table + "_idx", JSON.stringify(this._index[table]));
-                localStorage.setItem(this._id + "->" + table + "_ai", String(cast("int", Math.max(this._ai[table] || 0, pk))));
+                localStorage.setItem(this._id + "->" + table + "_ai", String(this._ai[table]));
             }
         }
 
@@ -133,11 +136,11 @@ export class SyncStorage implements INanoSQLAdapter {
         complete();
     }
 
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
-        const doCheck = offsetOrLow || limitOrHeigh;
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
+        const doCheck = offsetOrLow || limitOrHigh;
         const range = {
-            "range":  [offsetOrLow, limitOrHeigh],
-            "offset": [offsetOrLow, offsetOrLow + limitOrHeigh],
+            "range":  [offsetOrLow, limitOrHigh],
+            "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
             "all": false
         }[type];
         this._index[table].forEach((pk, i) => {

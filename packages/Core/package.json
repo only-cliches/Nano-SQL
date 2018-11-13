@@ -1,6 +1,6 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.0.0-rc4",
+	"version": "2.0.0-rc5",
 	"description": "NoSQL Everywhere",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",

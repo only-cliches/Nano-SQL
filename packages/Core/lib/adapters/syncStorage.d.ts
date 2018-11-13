@@ -28,7 +28,7 @@ export declare class SyncStorage implements INanoSQLAdapter {
         [key: string]: any;
     } | undefined) => void, error: (err: any) => void): void;
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void): void;
-    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHeigh: any, reverse: boolean, onRow: (row: {
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
         [key: string]: any;
     }, i: number) => void, complete: () => void, error: (err: any) => void): void;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): void;

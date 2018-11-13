@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var really_small_events_1 = require("really-small-events");
 var utilities_1 = require("./utilities");
 var observable_1 = require("./observable");
+var interfaces_1 = require("./interfaces");
 var functions_1 = require("./functions");
 var query_1 = require("./query");
 var syncStorage_1 = require("./adapters/syncStorage");
@@ -20,12 +21,11 @@ var RocksDB;
 if (typeof global !== "undefined") {
     RocksDB = global._rocksAdapter;
 }
-var VERSION = 2.0;
 var NanoSQL = /** @class */ (function () {
     function NanoSQL() {
-        this.version = VERSION;
+        this.version = interfaces_1.VERSION;
         this.earthRadius = 6371;
-        this._Q = new utilities_1.NanoSQLBuffer();
+        this._Q = new utilities_1.NanoSQLQueue();
         this.state = {
             activeAV: "",
             hasAnyEvents: false,
@@ -66,10 +66,11 @@ var NanoSQL = /** @class */ (function () {
                 return isNaN(float) ? 0 : float;
             }
         };
-        this._eventCBs = {
+        this.eventFNs = {
             Core: {
                 "*": new really_small_events_1.ReallySmallEvents()
-            }
+            },
+            "*": { "*": new really_small_events_1.ReallySmallEvents() }
         };
         this._checkTTL = this._checkTTL.bind(this);
         functions_1.attachDefaultFns(this);
@@ -199,7 +200,7 @@ var NanoSQL = /** @class */ (function () {
     NanoSQL.prototype._detectStorageMethod = function () {
         // NodeJS
         if (typeof window === "undefined") {
-            return "RKS";
+            return "ROKS";
         }
         // Browser
         // Safari / iOS always gets WebSQL (mobile and desktop)
@@ -234,7 +235,7 @@ var NanoSQL = /** @class */ (function () {
                         priority++;
                     }
                     // set callback
-                    filterObj[filter.name][priority] = filter.callback;
+                    filterObj[filter.name][priority] = filter.call;
                 });
             });
             Object.keys(filterObj).forEach(function (filterName) {
@@ -262,7 +263,7 @@ var NanoSQL = /** @class */ (function () {
                     var dependencies_1 = plugin.dependencies || {};
                     Object.keys(plugin.dependencies).forEach(function (pluginName, i, next) {
                         if (pluginName === "core") {
-                            if (!checkVersionRange(VERSION, dependencies_1[pluginName])) {
+                            if (!checkVersionRange(interfaces_1.VERSION, dependencies_1[pluginName])) {
                                 hasError = true;
                                 rej("Plugin \"" + plugin.name + "\" requires a different core version of nano-sql!");
                             }
@@ -317,7 +318,7 @@ var NanoSQL = /** @class */ (function () {
                             _this.adapter = new webSQL_1.WebSQL();
                             break;
                         case "IDB":
-                            _this.adapter = new indexedDB_1.IndexedDB();
+                            _this.adapter = new indexedDB_1.IndexedDB(_this.config.version);
                             break;
                         case "RKS":
                         case "LVL":
@@ -390,7 +391,7 @@ var NanoSQL = /** @class */ (function () {
                         currentVersion = row.value;
                 }, function () {
                     if (!currentVersion || currentVersion < 2.0) {
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("_util", "upsert"), { actionArgs: { key: "version", value: VERSION } }), utilities_1.noop, res, rej);
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("_util", "upsert"), { actionArgs: { key: "version", value: interfaces_1.VERSION } }), utilities_1.noop, res, rej);
                     }
                     else {
                         // no migration code right now
@@ -556,7 +557,7 @@ var NanoSQL = /** @class */ (function () {
             case "disconnect":
             case "peer-change":
             case "slow-query":
-                this._eventCBs.Core["*"].on(action, callBack);
+                this.eventFNs.Core["*"].on(action, callBack);
                 break;
             case "select":
             case "change":
@@ -564,28 +565,29 @@ var NanoSQL = /** @class */ (function () {
             case "upsert":
             case "*":
                 var table = utilities_1.resolvePath(l);
-                if (!this._eventCBs[table[0]]) {
-                    this._eventCBs[table[0]] = {
+                if (!this.eventFNs[table[0]]) {
+                    this.eventFNs[table[0]] = {
                         "*": new really_small_events_1.ReallySmallEvents()
                     };
                 }
                 var nestedPath = table.filter(function (v, i) { return i > 0; }).join(".") || "*";
-                if (!this._eventCBs[table[0]][nestedPath]) {
-                    this._eventCBs[table[0]][nestedPath] = new really_small_events_1.ReallySmallEvents();
+                if (!this.eventFNs[table[0]][nestedPath]) {
+                    this.eventFNs[table[0]][nestedPath] = new really_small_events_1.ReallySmallEvents();
                 }
-                this._eventCBs[table[0]][nestedPath].on(action, callBack);
+                this.eventFNs[table[0]][nestedPath].on(action, callBack);
+                break;
             default:
                 this.doFilter("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then(function (evData) {
                     if (evData.nameSpace) {
-                        if (!_this._eventCBs[evData.nameSpace]) {
-                            _this._eventCBs[evData.nameSpace] = {
+                        if (!_this.eventFNs[evData.nameSpace]) {
+                            _this.eventFNs[evData.nameSpace] = {
                                 "*": new really_small_events_1.ReallySmallEvents()
                             };
                         }
-                        if (!_this._eventCBs[evData.nameSpace][evData.path]) {
-                            _this._eventCBs[evData.nameSpace][evData.path] = new really_small_events_1.ReallySmallEvents();
+                        if (!_this.eventFNs[evData.nameSpace][evData.path]) {
+                            _this.eventFNs[evData.nameSpace][evData.path] = new really_small_events_1.ReallySmallEvents();
                         }
-                        _this._eventCBs[evData.nameSpace][evData.path].on(action, callBack);
+                        _this.eventFNs[evData.nameSpace][evData.path].on(action, callBack);
                     }
                     else {
                         throw new Error("Invalid event \"" + action + "\"!");
@@ -605,35 +607,36 @@ var NanoSQL = /** @class */ (function () {
             case "disconnect":
             case "peer-change":
             case "slow-query":
-                this._eventCBs.Core["*"].off(action, callBack);
+                this.eventFNs.Core["*"].off(action, callBack);
                 break;
             case "select":
             case "change":
             case "delete":
             case "upsert":
                 var table = utilities_1.resolvePath(l);
-                if (!this._eventCBs[table[0]]) {
-                    this._eventCBs[table[0]] = {
+                if (!this.eventFNs[table[0]]) {
+                    this.eventFNs[table[0]] = {
                         "*": new really_small_events_1.ReallySmallEvents()
                     };
                 }
                 var nestedPath = table.filter(function (v, i) { return i > 0; }).join(".") || "*";
-                if (!this._eventCBs[table[0]][nestedPath]) {
-                    this._eventCBs[table[0]][nestedPath] = new really_small_events_1.ReallySmallEvents();
+                if (!this.eventFNs[table[0]][nestedPath]) {
+                    this.eventFNs[table[0]][nestedPath] = new really_small_events_1.ReallySmallEvents();
                 }
-                this._eventCBs[table[0]][nestedPath].off(action, callBack);
+                this.eventFNs[table[0]][nestedPath].off(action, callBack);
+                break;
             default:
                 this.doFilter("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then(function (evData) {
                     if (evData.nameSpace) {
-                        if (!_this._eventCBs[evData.nameSpace]) {
-                            _this._eventCBs[evData.nameSpace] = {
+                        if (!_this.eventFNs[evData.nameSpace]) {
+                            _this.eventFNs[evData.nameSpace] = {
                                 "*": new really_small_events_1.ReallySmallEvents()
                             };
                         }
-                        if (!_this._eventCBs[evData.nameSpace][evData.path]) {
-                            _this._eventCBs[evData.nameSpace][evData.path] = new really_small_events_1.ReallySmallEvents();
+                        if (!_this.eventFNs[evData.nameSpace][evData.path]) {
+                            _this.eventFNs[evData.nameSpace][evData.path] = new really_small_events_1.ReallySmallEvents();
                         }
-                        _this._eventCBs[evData.nameSpace][evData.path].off(action, callBack);
+                        _this.eventFNs[evData.nameSpace][evData.path].off(action, callBack);
                     }
                     else {
                         throw new Error("Invalid event \"" + action + "\"!");
@@ -645,11 +648,11 @@ var NanoSQL = /** @class */ (function () {
     };
     NanoSQL.prototype._refreshEventChecker = function () {
         var _this = this;
-        this.state.hasAnyEvents = Object.keys(this._eventCBs).reduce(function (prev, cur) {
+        this.state.hasAnyEvents = Object.keys(this.eventFNs).reduce(function (prev, cur) {
             if (prev === true)
                 return true;
-            var length = Object.keys(_this._eventCBs[cur].eventListeners).reduce(function (p, c) {
-                return _this._eventCBs[cur].eventListeners[c].length + p;
+            var length = Object.keys(_this.eventFNs[cur]).reduce(function (p, key) {
+                return Object.keys(_this.eventFNs[cur][key].eventListeners).length + p;
             }, 0);
             return length > 0 ? true : prev;
         }, false);
@@ -664,7 +667,7 @@ var NanoSQL = /** @class */ (function () {
     NanoSQL.prototype._doAV = function (AVType, table, AVName, AVargs) {
         var _this = this;
         if (typeof this.state.selectedTable !== "string")
-            return Promise.reject();
+            return Promise.reject("Can't do Action/View with selected table!");
         return this.doFilter(AVType, {
             result: {
                 AVType: AVType,
@@ -713,19 +716,28 @@ var NanoSQL = /** @class */ (function () {
             }
         }).catch(error);
     };
-    NanoSQL.prototype.triggerEvent = function (eventData) {
+    NanoSQL.prototype.triggerEvent = function (eventData, ignoreStarTable) {
         var _this = this;
         this.doFilter("event", { result: eventData }).then(function (event) {
-            if (_this.state.hasAnyEvents && _this._eventCBs[event.target] && _this._eventCBs[eventData.target][eventData.path]) {
+            if (_this.state.hasAnyEvents) {
                 utilities_1.setFast(function () {
-                    eventData.events.forEach(function (event) {
-                        if (eventData.path === "_all_") {
-                            Object.keys(_this._eventCBs[eventData.target]).forEach(function (path) {
-                                _this._eventCBs[eventData.target][path].trigger(event, eventData);
+                    event.events.forEach(function (evnt) {
+                        if (!ignoreStarTable) {
+                            Object.keys(_this.eventFNs["*"]).forEach(function (path) {
+                                _this.eventFNs["*"][path].trigger(evnt, event);
+                            });
+                        }
+                        if (!_this.eventFNs[event.target])
+                            return;
+                        if (event.path === "_all_") {
+                            Object.keys(_this.eventFNs[event.target]).forEach(function (path) {
+                                _this.eventFNs[event.target][path].trigger(evnt, event);
                             });
                         }
                         else {
-                            _this._eventCBs[eventData.target][eventData.path].trigger(event, eventData);
+                            if (!_this.eventFNs[event.target][event.path])
+                                return;
+                            _this.eventFNs[event.target][event.path].trigger(evnt, event);
                         }
                     });
                 });

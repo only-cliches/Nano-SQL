@@ -18,8 +18,8 @@ export declare const _assign: (obj: any) => any;
  * @param {*} obj2
  * @returns {boolean}
  */
-export declare const doObjectsEqual: (obj1: any, obj2: any) => boolean;
-export declare class NanoSQLBuffer {
+export declare const objectsEqual: (obj1: any, obj2: any) => boolean;
+export declare class NanoSQLQueue {
     processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
     onError?: ((err: any) => void) | undefined;
     onComplete?: (() => void) | undefined;

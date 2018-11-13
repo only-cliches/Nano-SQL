@@ -1,4 +1,5 @@
 Object.defineProperty(exports, "__esModule", { value: true });
+var interfaces_1 = require("../interfaces");
 var utilities_1 = require("../utilities");
 var RocksDB = /** @class */ (function () {
     function RocksDB(path) {
@@ -6,10 +7,7 @@ var RocksDB = /** @class */ (function () {
         this.path = path;
         this.plugin = {
             name: "RocksDB Adapter",
-            version: 2.0,
-            dependencies: {
-                core: [2.0]
-            }
+            version: interfaces_1.VERSION
         };
         this._levelDBs = {};
         this._ai = {};
@@ -79,7 +77,7 @@ var RocksDB = /** @class */ (function () {
     };
     RocksDB.prototype.dropTable = function (table, complete, error) {
         var _this = this;
-        var del = new utilities_1.NanoSQLBuffer(function (item, i, next, err) {
+        var del = new utilities_1.NanoSQLQueue(function (item, i, next, err) {
             // remove all records
             _this._levelDBs[table].del(item).then(next).catch(err);
         }, error, function () {
@@ -97,9 +95,6 @@ var RocksDB = /** @class */ (function () {
             error(err);
             del.finished();
         })
-            .on('close', function () {
-            del.finished();
-        })
             .on('end', function () {
             del.finished();
         });
@@ -112,19 +107,19 @@ var RocksDB = /** @class */ (function () {
     };
     RocksDB.prototype.write = function (table, pk, row, complete, error) {
         var _this = this;
-        pk = pk || utilities_1.generateID(this.nSQL.tables[table].pkType, this._ai[table]);
-        if (!pk) {
+        pk = pk || utilities_1.generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
+        if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
+        this._ai[table] = Math.max(pk, this._ai[table]);
         row[this.nSQL.tables[table].pkCol] = pk;
         this._levelDBs[table].put(this.nSQL.tables[table].isPkNum ? new global._Int64BE(pk).toBuffer() : pk, JSON.stringify(row), function (err) {
             if (err) {
                 error(err);
             }
             else {
-                if (_this.nSQL.tables[table].ai && pk === _this._ai[table]) {
-                    _this._ai[table]++;
+                if (_this.nSQL.tables[table].ai) {
                     _this._levelDBs["_ai_store_"].put(table, _this._ai[table]).then(function () {
                         complete(pk);
                     }).catch(error);
@@ -145,15 +140,15 @@ var RocksDB = /** @class */ (function () {
             }
         });
     };
-    RocksDB.prototype.readMulti = function (table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error) {
+    RocksDB.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
         var isPkNum = this.nSQL.tables[table].isPkNum;
         var i = 0;
         this._levelDBs[table]
             .createValueStream({
             gte: type === "range" ? (isPkNum ? new global._Int64BE(offsetOrLow).toBuffer() : offsetOrLow) : undefined,
-            lte: type === "range" ? (isPkNum ? new global._Int64BE(limitOrHeigh).toBuffer() : limitOrHeigh) : undefined,
+            lte: type === "range" ? (isPkNum ? new global._Int64BE(limitOrHigh).toBuffer() : limitOrHigh) : undefined,
             reverse: reverse,
-            limit: type === "offset" ? offsetOrLow + limitOrHeigh : undefined
+            limit: type === "offset" ? offsetOrLow + limitOrHigh : undefined
         })
             .on("data", function (data) {
             if (type === "offset" && i < offsetOrLow) {

@@ -52,24 +52,23 @@ exports._assign = function (obj) {
  * @param {*} obj2
  * @returns {boolean}
  */
-exports.doObjectsEqual = function (obj1, obj2) {
+exports.objectsEqual = function (obj1, obj2) {
     if (obj1 === obj2)
         return true;
     if (typeof obj1 !== "object")
         return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
     if (!obj1 || !obj2)
         return false; // if either object is undefined/false they don't match
-    var isArray = Array.isArray(obj1);
     var keys = Object.keys(obj1);
     // If sizes differ then we can skip further comparison
-    var matches = isArray ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
+    var matches = Array.isArray(obj1) ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
     if (!matches)
         return false;
     var i = keys.length;
     while (i-- && matches) {
         var key = keys[i];
         if (typeof obj1[key] === "object") { // nested compare
-            matches = exports.doObjectsEqual(obj1[key], obj2[key]);
+            matches = exports.objectsEqual(obj1[key], obj2[key]);
         }
         else {
             matches = obj1[key] === obj2[key];
@@ -77,8 +76,8 @@ exports.doObjectsEqual = function (obj1, obj2) {
     }
     return matches;
 };
-var NanoSQLBuffer = /** @class */ (function () {
-    function NanoSQLBuffer(processItem, onError, onComplete) {
+var NanoSQLQueue = /** @class */ (function () {
+    function NanoSQLQueue(processItem, onError, onComplete) {
         this.processItem = processItem;
         this.onError = onError;
         this.onComplete = onComplete;
@@ -89,7 +88,7 @@ var NanoSQLBuffer = /** @class */ (function () {
         this._triggeredComplete = false;
         this._progressBuffer = this._progressBuffer.bind(this);
     }
-    NanoSQLBuffer.prototype._progressBuffer = function () {
+    NanoSQLQueue.prototype._progressBuffer = function () {
         var _this = this;
         if (this._triggeredComplete) {
             return;
@@ -107,7 +106,7 @@ var NanoSQLBuffer = /** @class */ (function () {
         }
         var next = function () {
             _this._count++;
-            _this._count % 500 === 0 ? exports.setFast(_this._progressBuffer) : _this._progressBuffer();
+            _this._count % 100 === 0 ? exports.setFast(_this._progressBuffer) : _this._progressBuffer();
         };
         // process queue
         var item = this._items.shift() || [];
@@ -118,7 +117,7 @@ var NanoSQLBuffer = /** @class */ (function () {
             this.processItem(item[0], this._count, next, this.onError ? this.onError : exports.noop);
         }
     };
-    NanoSQLBuffer.prototype.finished = function () {
+    NanoSQLQueue.prototype.finished = function () {
         this._done = true;
         if (this._triggeredComplete) {
             return;
@@ -129,16 +128,16 @@ var NanoSQLBuffer = /** @class */ (function () {
                 this.onComplete();
         }
     };
-    NanoSQLBuffer.prototype.newItem = function (item, processFn) {
+    NanoSQLQueue.prototype.newItem = function (item, processFn) {
         this._items.push([item, processFn]);
         if (!this._going) {
             this._going = true;
             this._progressBuffer();
         }
     };
-    return NanoSQLBuffer;
+    return NanoSQLQueue;
 }());
-exports.NanoSQLBuffer = NanoSQLBuffer;
+exports.NanoSQLQueue = NanoSQLQueue;
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *

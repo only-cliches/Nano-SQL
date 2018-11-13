@@ -1,14 +1,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
+var interfaces_1 = require("../interfaces");
 var utilities_1 = require("../utilities");
 var SyncStorage = /** @class */ (function () {
     function SyncStorage(useLS) {
         this.useLS = useLS;
         this.plugin = {
             name: "Sync Storage Adapter",
-            version: 2.0,
-            dependencies: {
-                core: [2.0]
-            }
+            version: interfaces_1.VERSION
         };
         this._index = {};
         this._rows = {};
@@ -56,16 +54,21 @@ var SyncStorage = /** @class */ (function () {
         complete();
     };
     SyncStorage.prototype.write = function (table, pk, row, complete, error) {
-        pk = pk || utilities_1.generateID(this.nSQL.tables[table].pkType, this.nSQL.tables[table].ai ? this._ai[table] + 1 : 0);
+        pk = pk || utilities_1.generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
+        if (typeof pk === "undefined") {
+            error(new Error("Can't add a row without a primary key!"));
+            return;
+        }
+        this._ai[table] = Math.max(pk, this._ai[table]);
         if (this.nSQL.tables[table].ai) {
-            this._ai[table] = utilities_1.cast("int", Math.max(this._ai[table] || 0, pk));
+            this._ai[table] = Math.max(this._ai[table] || 0, pk);
         }
         if (this._index[table].indexOf(pk) === -1) {
             var loc = utilities_1.binarySearch(this._index[table], pk);
             this._index[table].splice(loc, 0, pk);
             if (this.useLS) {
                 localStorage.setItem(this._id + "->" + table + "_idx", JSON.stringify(this._index[table]));
-                localStorage.setItem(this._id + "->" + table + "_ai", String(utilities_1.cast("int", Math.max(this._ai[table] || 0, pk))));
+                localStorage.setItem(this._id + "->" + table + "_ai", String(this._ai[table]));
             }
         }
         row[this.nSQL.tables[table].pkCol] = pk;
@@ -103,12 +106,12 @@ var SyncStorage = /** @class */ (function () {
         }
         complete();
     };
-    SyncStorage.prototype.readMulti = function (table, type, offsetOrLow, limitOrHeigh, reverse, onRow, complete, error) {
+    SyncStorage.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
         var _this = this;
-        var doCheck = offsetOrLow || limitOrHeigh;
+        var doCheck = offsetOrLow || limitOrHigh;
         var range = {
-            "range": [offsetOrLow, limitOrHeigh],
-            "offset": [offsetOrLow, offsetOrLow + limitOrHeigh],
+            "range": [offsetOrLow, limitOrHigh],
+            "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
             "all": false
         }[type];
         this._index[table].forEach(function (pk, i) {

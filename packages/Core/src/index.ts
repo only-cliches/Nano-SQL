@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, NanoSQLBuffer, objectsEqual } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, NanoSQLQueue, objectsEqual } from "./utilities";
 import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter } from "./interfaces";
+import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -13,8 +13,6 @@ let RocksDB: any;
 if (typeof global !== "undefined") {
     RocksDB = (global as any)._rocksAdapter;
 }
-
-const VERSION = 2.0;
 
 export class NanoSQL implements INanoSQLInstance {
 
@@ -65,7 +63,7 @@ export class NanoSQL implements INanoSQLInstance {
         [eventName: string]: { [path: string]: ReallySmallEvents };
     };
 
-    private _Q = new NanoSQLBuffer();
+    private _Q = new NanoSQLQueue();
 
     constructor() {
 
@@ -270,7 +268,7 @@ export class NanoSQL implements INanoSQLInstance {
 
         // NodeJS
         if (typeof window === "undefined") {
-            return "RKS";
+            return "ROKS";
         }
 
         // Browser
@@ -314,7 +312,7 @@ export class NanoSQL implements INanoSQLInstance {
                         priority++;
                     }
                     // set callback
-                    filterObj[filter.name][priority] = filter.callback;
+                    filterObj[filter.name][priority] = filter.call;
                 });
             });
 
@@ -406,7 +404,7 @@ export class NanoSQL implements INanoSQLInstance {
                             this.adapter = new WebSQL();
                             break;
                         case "IDB":
-                            this.adapter = new IndexedDB();
+                            this.adapter = new IndexedDB(this.config.version);
                             break;
                         case "RKS":
                         case "LVL":
@@ -788,7 +786,7 @@ export class NanoSQL implements INanoSQLInstance {
     }
 
     public _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any> {
-        if (typeof this.state.selectedTable !== "string") return Promise.reject();
+        if (typeof this.state.selectedTable !== "string") return Promise.reject("Can't do Action/View with selected table!");
         return this.doFilter<actionFilter, IAVFilterResult>(AVType, {
             result: {
                 AVType,
