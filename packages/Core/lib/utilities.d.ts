@@ -1,6 +1,19 @@
-import { INanoSQLQuery } from "./interfaces";
+import { INanoSQLQuery, INanoSQLInstance, TableQueryResult } from "./interfaces";
 export declare const binarySearch: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => number;
-export declare const buildQuery: (table: string | any[] | (() => Promise<any[]>), action: string) => INanoSQLQuery;
+export declare const buildQuery: (table: string | any[] | ((where?: any[] | ((row: {
+    [key: string]: any;
+}, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>), action: string) => INanoSQLQuery;
+export declare const adapterFilters: (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
+    write: (table: string, pk: any, row: {
+        [key: string]: any;
+    }, complete: (pk: any) => void, error: (err: any) => void) => void;
+    read: (table: string, pk: any, complete: (row: {
+        [key: string]: any;
+    } | undefined) => void, error: (err: any) => void) => void;
+    readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
+        [key: string]: any;
+    }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
+};
 export declare const noop: () => void;
 export declare const throwErr: (err: any) => never;
 /**
@@ -18,8 +31,8 @@ export declare const _assign: (obj: any) => any;
  * @param {*} obj2
  * @returns {boolean}
  */
-export declare const objectsEqual: (obj1: any, obj2: any) => boolean;
-export declare class NanoSQLQueue {
+export declare const _objectsEqual: (obj1: any, obj2: any) => boolean;
+export declare class _NanoSQLQueue {
     processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
     onError?: ((err: any) => void) | undefined;
     onComplete?: (() => void) | undefined;

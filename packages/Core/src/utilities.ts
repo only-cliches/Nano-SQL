@@ -1,4 +1,4 @@
-import { INanoSQLQuery } from "./interfaces";
+import { INanoSQLQuery, adapterWillWriteFilter, INanoSQLInstance, adapterDidWriteFilter, adapterWillReadFilter, adapterDidReadFilter, adapterWillReadMultiFilter, TableQueryResult } from "./interfaces";
 
 declare var global: any;
 
@@ -19,7 +19,7 @@ export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?:
     return end;
 };
 
-export const buildQuery = (table: string | any[] | (() => Promise<any[]>), action: string): INanoSQLQuery => {
+export const buildQuery = (table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): INanoSQLQuery => {
     return {
         table: table,
         action: action,
@@ -30,6 +30,54 @@ export const buildQuery = (table: string | any[] | (() => Promise<any[]>), actio
         extend: [],
         comments: [],
         tags: []
+    };
+};
+
+export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
+    return {
+        write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
+            nSQL.doFilter<adapterWillWriteFilter, { table: string, pk: any, row: any }>("adapterWillWrite", { result: { table, pk, row }, query }).then((result) => {
+                if (!result) return; // filter took over write
+                nSQL.adapter.write(result.table, result.pk, result.row, (pk) => {
+                    nSQL.doFilter<adapterDidWriteFilter, any>("adapterDidWrite", { result: pk }).then((setPK: any) => {
+                        complete(setPK);
+                    }).catch(error);
+                }, error);
+            }).catch(error);
+        },
+        read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
+            nSQL.doFilter<adapterWillReadFilter, any>("adapterWillRead", { result: undefined, table, pk, i: 0, query }).then((resultRow: any) => {
+                if (resultRow) { // filter took over adapter read
+                    complete(resultRow);
+                } else {
+                    nSQL.adapter.read(table, pk, (row) => {
+                        nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk, i: 0, query }).then((resultRow: any) => {
+                            complete(resultRow);
+                        }).catch(error);
+                    }, error);
+                }
+            });
+        },
+        readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
+
+            const readBuffer = new _NanoSQLQueue((item, idx, done, err) => {
+                const pk = nSQL.tables[table].pkCol;
+                nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: item, table, pk: item[pk], i: idx, query }).then((resultRow: any) => {
+                    onRow(resultRow, idx);
+                    done();
+                }).catch(err);
+            }, error, complete);
+
+            nSQL.doFilter<adapterWillReadMultiFilter, any>("adapterWillReadMulti", { result: { table, type, offsetOrLow, limitOrHigh, reverse }, onRow, complete, error, query }).then((result) => {
+                if (!result) return;
+                nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, (row) => {
+                    readBuffer.newItem(row);
+                }, () => {
+                    readBuffer.finished();
+                }, readBuffer.onError as any);
+            });
+
+        }
     };
 };
 
@@ -59,7 +107,7 @@ export const _assign = (obj: any) => {
  * @param {*} obj2
  * @returns {boolean}
  */
-export const objectsEqual = (obj1: any, obj2: any): boolean => {
+export const _objectsEqual = (obj1: any, obj2: any): boolean => {
     if (obj1 === obj2) return true;
     if (typeof obj1 !== "object") return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
     if (!obj1 || !obj2) return false; // if either object is undefined/false they don't match
@@ -74,7 +122,7 @@ export const objectsEqual = (obj1: any, obj2: any): boolean => {
     while (i-- && matches) {
         const key = keys[i];
         if (typeof obj1[key] === "object") { // nested compare
-            matches = objectsEqual(obj1[key], obj2[key]);
+            matches = _objectsEqual(obj1[key], obj2[key]);
         } else {
             matches = obj1[key] === obj2[key];
         }
@@ -83,7 +131,8 @@ export const objectsEqual = (obj1: any, obj2: any): boolean => {
     return matches;
 };
 
-export class NanoSQLQueue {
+// tslint:disable-next-line
+export class _NanoSQLQueue {
 
     private _items: [any, undefined | ((item: any, complete: () => void, err?: (err: any) => void) => void)][] = [];
     private _going: boolean = false;
@@ -117,7 +166,7 @@ export class NanoSQLQueue {
         const next = () => {
             this._count++;
             this._count % 100 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
-        }
+        };
 
         // process queue
         const item = this._items.shift() || [];
@@ -518,7 +567,7 @@ export const deepSet = (pathQuery: string|string[], object: any, value: any): an
         safeSet(getPath, pathIdx + 1, setObj[getPath[pathIdx] as string]);
     };
 
-    safeSet(Array.isArray(pathQuery) ? pathQuery : resolvePath(pathQuery), 0, object)
+    safeSet(Array.isArray(pathQuery) ? pathQuery : resolvePath(pathQuery), 0, object);
 
     return object;
 };

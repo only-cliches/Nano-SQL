@@ -25,7 +25,9 @@ export declare class INanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        selectedTable: string | any[] | (() => Promise<any[]>);
+        selectedTable: string | any[] | ((where?: any[] | ((row: {
+            [key: string]: any;
+        }, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
     _queryCache: {
         [id: string]: any[];
@@ -52,7 +54,9 @@ export declare class INanoSQLInstance {
     expires(primaryKey: any): Promise<any>;
     _ttlTimer: any;
     _checkTTL(): void;
-    selectTable(table?: string | any[] | (() => Promise<any[]>)): INanoSQLInstance;
+    selectTable(table?: string | any[] | ((where?: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number) => boolean)) => Promise<TableQueryResult>)): INanoSQLInstance;
     getPeers(): any;
     _detectStorageMethod(): any;
     _initPlugins(config: any): any;
@@ -98,12 +102,12 @@ export declare class INanoSQLQueryBuilder {
     constructor(db: INanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string);
     where(args: any[] | ((row: {
         [key: string]: any;
-    }, i?: number, isJoin?: boolean) => boolean)): INanoSQLQueryBuilder;
+    }, i?: number) => boolean)): INanoSQLQueryBuilder;
     orderBy(args: string[]): INanoSQLQueryBuilder;
     groupBy(columns: string[]): INanoSQLQueryBuilder;
     having(args: any[] | ((row: {
         [key: string]: any;
-    }, i?: number, isJoin?: boolean) => boolean)): INanoSQLQueryBuilder;
+    }, i?: number) => boolean)): INanoSQLQueryBuilder;
     join(args: INanoSQLJoinArgs | INanoSQLJoinArgs[]): INanoSQLQueryBuilder;
     limit(args: number): INanoSQLQueryBuilder;
     comment(comment: string): INanoSQLQueryBuilder;
@@ -121,7 +125,9 @@ export declare class INanoSQLQueryBuilder {
     }>;
     graph(graphArgs: IGraphArgs | IGraphArgs[]): INanoSQLQueryBuilder;
     from(tableObj: {
-        table: string | any[] | (() => Promise<any[]>);
+        table: string | any[] | ((where?: any[] | ((row: {
+            [key: string]: any;
+        }, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string;
     }): INanoSQLQueryBuilder;
     into(table: string): INanoSQLQueryBuilder;
@@ -250,9 +256,6 @@ export interface INanoSQLConfig {
     warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
     tables?: INanoSQLTableConfig[];
-    relations?: {
-        [name: string]: [string, "<=" | "<=>" | "=>", string];
-    };
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
 export interface INanoSQLTableConfig {
@@ -387,7 +390,9 @@ export interface INanoSQLDatabaseEvent {
 export interface INanoSQLJoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
     with: {
-        table: string | any[] | (() => Promise<any[]>);
+        table: string | any[] | ((where?: any[] | ((row: {
+            [key: string]: any;
+        }, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string;
     };
     on?: any[];
@@ -395,10 +400,13 @@ export interface INanoSQLJoinArgs {
 export interface IGraphArgs {
     key: string;
     with: {
-        table: string | any[] | (() => Promise<any[]>);
+        table: string | any[] | ((where?: any[] | ((row: {
+            [key: string]: any;
+        }, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string;
     };
     select?: string[];
+    single?: boolean;
     offset?: number;
     limit?: number;
     orderBy?: string[];
@@ -409,7 +417,9 @@ export interface IGraphArgs {
     }, idx: number) => boolean | any[];
 }
 export interface INanoSQLQuery {
-    table: string | any[] | (() => Promise<any[]>);
+    table: string | any[] | ((where?: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number) => boolean)) => Promise<TableQueryResult>);
     tableAS?: string;
     action: string;
     actionArgs?: any;
@@ -425,14 +435,14 @@ export interface INanoSQLQuery {
     comments: string[];
     where?: any[] | ((row: {
         [key: string]: any;
-    }, i?: number, isJoin?: boolean) => boolean);
+    }, i?: number) => boolean);
     range?: number[];
     graph?: IGraphArgs | IGraphArgs[];
     orderBy?: string[];
     groupBy?: string[];
     having?: any[] | ((row: {
         [key: string]: any;
-    }, i?: number, isJoin?: boolean) => boolean);
+    }, i?: number) => boolean);
     join?: INanoSQLJoinArgs | INanoSQLJoinArgs[];
     limit?: number;
     offset?: number;
@@ -443,6 +453,7 @@ export interface INanoSQLQuery {
         type: "all" | "distinct";
         queries: (() => Promise<any[]>)[];
     };
+    cacheID?: string;
     [key: string]: any;
 }
 export interface INanoSQLIndex {
@@ -512,7 +523,7 @@ export interface extendFilter extends abstractFilter {
     scope: string;
     args: any[];
 }
-export interface createTableFilter extends abstractFilter {
+export interface configTableFilter extends abstractFilter {
     result: INanoSQLTableConfig;
     query: INanoSQLQuery;
 }
@@ -530,6 +541,11 @@ export interface IAVFilterResult {
     table: string;
     AVName: string;
     AVargs: any;
+}
+export interface TableQueryResult {
+    rows: string | any[];
+    filtered: boolean;
+    cache?: boolean;
 }
 export interface actionFilter extends abstractFilter {
     result: IAVFilterResult;
@@ -604,4 +620,29 @@ export interface adapterDidWriteFilter extends abstractFilter {
 export interface conformRowFilter extends abstractFilter {
     result: any;
     oldRow: any;
+}
+export interface deleteRowFilter extends abstractFilter {
+    query: INanoSQLQuery;
+}
+export interface addRowFilter extends abstractFilter {
+    query: INanoSQLQuery;
+}
+export interface updateRowFilter extends abstractFilter {
+    query: INanoSQLQuery;
+    row: any;
+}
+export interface dropTableFilter extends abstractFilter {
+    query: INanoSQLQuery;
+    result: string;
+}
+export interface alterTableFilter extends abstractFilter {
+    query: INanoSQLQuery;
+    result: INanoSQLTableConfig;
+}
+export interface addTableFilter extends abstractFilter {
+    query: INanoSQLQuery;
+    result: {
+        name: string;
+        conf: INanoSQLTable;
+    };
 }

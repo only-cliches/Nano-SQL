@@ -1,4 +1,4 @@
-Super flexible database/datastore for the client, server & mobile devices.
+Universal database for the client, server & mobile devices.  It's like Lego for databases.
 <center>
 <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
 
@@ -15,7 +15,7 @@ NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes fr
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc6/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc7/dist/nano-sql.min.js
 
 NPM Install
 ```sh
@@ -94,16 +94,57 @@ nSQL().connect({
     */
 });
 
+// Graph Queries
+nSQL().query("select", ["author[0].name AS author", "body", "comments[0].totalComments AS commentsTotal", "id", "title"]).from({
+    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()).then(j => ({rows: j, cache: true})),
+    as: "posts"
+}).graph([
+    {
+        key: "author",
+        with: {
+            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()).then(j => ({rows: j, cache: true})),
+            as: "author"
+        },
+        on: ["author.id", "=", "posts.userId"]
+    },
+    {
+        key: "comments",
+        select: ["COUNT(*) as totalComments"],
+        with: {
+            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()).then(j => ({rows: j, cache: true})),
+            as: "comments"
+        },
+        on: ["comments.postId", "=", "posts.id"]
+    }
+]).exec().then((rows) => {
+    console.log(rows);
+    /*
+        "author": "Leanne Graham",
+        "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
+        "commentsTotal": 5,
+        "id": 1,
+        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+    },
+    {
+        "author": "Leanne Graham",
+        "body": "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla",
+        "commentsTotal": 5,
+        "id": 2,
+        "title": "qui est esse"
+    }
+    ...
+    */
+});
 
 // Join Queries
 nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name AS comment", "users.name AS name"]).from({ 
-    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()).then(j => ({rows: j, cache: true})),
     as: "posts" 
 }).where(["userId", "=", 3]).join([
     {
         type: "inner",
         with: {
-            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
+            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()).then(j => ({rows: j, cache: true})),
             as: "comments"
         },
         on: ["posts.id", "=", "comments.postId"]
@@ -111,7 +152,7 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
     {
         type: "inner",
         with: {
-            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
+            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()).then(j => ({rows: j, cache: true})),
             as: "users"
         },
         on: ["users.id", "=", "posts.userId"]
@@ -137,46 +178,4 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
     ]
     */
 })
-
-// Graph Queries
-nSQL().query("select", ["author[0].name AS author", "body", "comments[0].totalComments AS commentsTotal", "id", "title"]).from({
-    table: () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
-    as: "posts"
-}).graph([
-    {
-        key: "author",
-        with: {
-            table: () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()),
-            as: "author"
-        },
-        on: ["author.id", "=", "posts.userId"]
-    },
-    {
-        key: "comments",
-        select: ["COUNT(*) as totalComments"],
-        with: {
-            table: () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()),
-            as: "comments"
-        },
-        on: ["comments.postId", "=", "posts.id"]
-    }
-]).exec().then((rows) => {
-    console.log(rows);
-    /*
-        "author": "Leanne Graham",
-        "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
-        "commentsTotal": 5,
-        "id": 1,
-        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
-    },
-    {
-        "author": "Leanne Graham",
-        "body": "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla",
-        "commentsTotal": 5,
-        "id": 2,
-        "title": "qui est esse"
-    }
-    ...
-    */
-});
 ```

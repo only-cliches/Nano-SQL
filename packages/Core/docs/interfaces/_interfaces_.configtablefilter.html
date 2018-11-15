@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>NanoSQL_Adapter_Test | @nano-sql/core</title>
+	<title>configTableFilter | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,13 +54,13 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="../modules/_adapter_test_.html">&quot;adapter-test&quot;</a>
+					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
 				</li>
 				<li>
-					<a href="_adapter_test_.nanosql_adapter_test.html">NanoSQL_Adapter_Test</a>
+					<a href="_interfaces_.configtablefilter.html">configTableFilter</a>
 				</li>
 			</ul>
-			<h1>Class NanoSQL_Adapter_Test</h1>
+			<h1>Interface configTableFilter</h1>
 		</div>
 	</div>
 </header>
@@ -71,7 +71,12 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">NanoSQL_Adapter_Test</span>
+						<a href="_interfaces_.abstractfilter.html" class="tsd-signature-type">abstractFilter</a>
+						<ul class="tsd-hierarchy">
+							<li>
+								<span class="target">configTableFilter</span>
+							</li>
+						</ul>
 					</li>
 				</ul>
 			</section>
@@ -80,69 +85,47 @@
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section ">
-							<h3>Constructors</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_adapter_test_.nanosql_adapter_test.html#constructor" class="tsd-kind-icon">constructor</a></li>
-							</ul>
-						</section>
-						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_adapter_test_.nanosql_adapter_test.html#adapter" class="tsd-kind-icon">adapter</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_adapter_test_.nanosql_adapter_test.html#args" class="tsd-kind-icon">args</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.configtablefilter.html#abort" class="tsd-kind-icon">abort</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.configtablefilter.html#query" class="tsd-kind-icon">query</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.configtablefilter.html#result" class="tsd-kind-icon">result</a></li>
 							</ul>
 						</section>
 					</div>
 				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Constructors</h2>
-				<section class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class">
-					<a name="constructor" class="tsd-anchor"></a>
-					<h3>constructor</h3>
-					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">new <wbr>NanoSQL_<wbr><wbr>Adapter_<wbr><wbr>Test<span class="tsd-signature-symbol">(</span>adapter<span class="tsd-signature-symbol">: </span><a href="../interfaces/_interfaces_.inanosqladapter.html" class="tsd-signature-type">INanoSQLAdapter</a>, args<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_adapter_test_.nanosql_adapter_test.html" class="tsd-signature-type">NanoSQL_Adapter_Test</a></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/4b0ec32/packages/Core/src/adapter-test.ts#L4">adapter-test.ts:4</a></li>
-								</ul>
-							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>adapter: <a href="../interfaces/_interfaces_.inanosqladapter.html" class="tsd-signature-type">INanoSQLAdapter</a></h5>
-								</li>
-								<li>
-									<h5>args: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_adapter_test_.nanosql_adapter_test.html" class="tsd-signature-type">NanoSQL_Adapter_Test</a></h4>
-						</li>
-					</ul>
-				</section>
-			</section>
-			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="adapter" class="tsd-anchor"></a>
-					<h3>adapter</h3>
-					<div class="tsd-signature tsd-kind-icon">adapter<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_interfaces_.inanosqladapter.html" class="tsd-signature-type">INanoSQLAdapter</a></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+					<a name="abort" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> abort</h3>
+					<div class="tsd-signature tsd-kind-icon">abort<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
+						<p>Inherited from <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#abort">abort</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/4b0ec32/packages/Core/src/adapter-test.ts#L7">adapter-test.ts:7</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/1059a15/packages/Core/src/interfaces.ts#L484">interfaces.ts:484</a></li>
 						</ul>
 					</aside>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
-					<a name="args" class="tsd-anchor"></a>
-					<h3>args</h3>
-					<div class="tsd-signature tsd-kind-icon">args<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="query" class="tsd-anchor"></a>
+					<h3>query</h3>
+					<div class="tsd-signature tsd-kind-icon">query<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqlquery.html" class="tsd-signature-type">INanoSQLQuery</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/4b0ec32/packages/Core/src/adapter-test.ts#L8">adapter-test.ts:8</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/1059a15/packages/Core/src/interfaces.ts#L519">interfaces.ts:519</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
+					<a name="result" class="tsd-anchor"></a>
+					<h3>result</h3>
+					<div class="tsd-signature tsd-kind-icon">result<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqltableconfig.html" class="tsd-signature-type">INanoSQLTableConfig</a></div>
+					<aside class="tsd-sources">
+						<p>Overrides <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#result">result</a></p>
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/1059a15/packages/Core/src/interfaces.ts#L518">interfaces.ts:518</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -154,7 +137,7 @@
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
-					<li class="current tsd-kind-external-module">
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_adapter_test_.html">"adapter-<wbr>test"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
@@ -166,7 +149,7 @@
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_node_.html">"index-<wbr>node"</a>
 					</li>
-					<li class=" tsd-kind-external-module">
+					<li class="current tsd-kind-external-module">
 						<a href="../modules/_interfaces_.html">"interfaces"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
@@ -187,17 +170,17 @@
 				<ul class="before-current">
 				</ul>
 				<ul class="current">
-					<li class="current tsd-kind-class tsd-parent-kind-external-module">
-						<a href="_adapter_test_.nanosql_adapter_test.html" class="tsd-kind-icon">NanoSQL_<wbr><wbr>Adapter_<wbr><wbr>Test</a>
+					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
+						<a href="_interfaces_.configtablefilter.html" class="tsd-kind-icon">config<wbr>Table<wbr>Filter</a>
 						<ul>
-							<li class=" tsd-kind-constructor tsd-parent-kind-class">
-								<a href="_adapter_test_.nanosql_adapter_test.html#constructor" class="tsd-kind-icon">constructor</a>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+								<a href="_interfaces_.configtablefilter.html#abort" class="tsd-kind-icon">abort</a>
 							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_adapter_test_.nanosql_adapter_test.html#adapter" class="tsd-kind-icon">adapter</a>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.configtablefilter.html#query" class="tsd-kind-icon">query</a>
 							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class">
-								<a href="_adapter_test_.nanosql_adapter_test.html#args" class="tsd-kind-icon">args</a>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
+								<a href="_interfaces_.configtablefilter.html#result" class="tsd-kind-icon">result</a>
 							</li>
 						</ul>
 					</li>

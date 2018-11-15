@@ -1,6 +1,6 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.0.0-rc6",
+	"version": "2.0.0-rc7",
 	"description": "NoSQL Everywhere",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",
@@ -8,7 +8,8 @@
 		"dist": "npm-run-all lint test build",
 		"rollup-test": "rollup -c",
 		"serve": "webpack-dev-server --mode=development",
-		"build": "bash build.sh",
+		"bundle":"cross-env NODE_ENV=production webpack -p --display-modules",
+		"release": "bash release.sh",
 		"test": "mocha -r ts-node/register tests/index.ts",
 		"lint": "tslint -p ./tsconfig.json \"./src/**/*.ts\""
 	},
@@ -24,6 +25,7 @@
 		"@types/node": "^10.5.2",
 		"@types/websql": "0.0.27",
 		"chai": "^4.1.2",
+		"cross-env": "^5.2.0",
 		"http-server": "^0.11.1",
 		"lerna": "2.11.0",
 		"mocha": "^5.2.0",
@@ -35,7 +37,7 @@
 		"rollup-plugin-replace": "^2.1.0",
 		"rollup-plugin-typescript": "^1.0.0",
 		"rollup-plugin-uglify": "^6.0.0",
-		"sql.js": "^0.5.0",
+		"sqlite3": "^4.0.4",
 		"ts-loader": "^4.4.2",
 		"ts-node": "^7.0.0",
 		"tslib": "^1.9.3",
@@ -102,7 +104,9 @@
 		"rxjs",
 		"pwa",
 		"rx",
-		"fuzzy"
+		"fuzzy",
+		"graph",
+		"graphql"
 	],
 	"author": "Scott Lott <Scott@ClickSimply.com>",
 	"license": "MIT",

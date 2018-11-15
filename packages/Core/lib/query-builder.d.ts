@@ -1,19 +1,21 @@
-import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IGraphArgs } from "./interfaces";
+import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IGraphArgs, TableQueryResult } from "./interfaces";
 export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     _db: INanoSQLInstance;
     _error: string;
     _AV: string;
     _query: INanoSQLQuery;
     static execMap: any;
-    constructor(db: INanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string);
+    constructor(db: INanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string);
     where(args: any[] | ((row: {
         [key: string]: any;
-    }, i?: number, isJoin?: boolean) => boolean)): _NanoSQLQueryBuilder;
+    }, i?: number) => boolean)): _NanoSQLQueryBuilder;
     orderBy(args: string[]): _NanoSQLQueryBuilder;
     groupBy(columns: string[]): _NanoSQLQueryBuilder;
     having(args: any[] | ((row: {
         [key: string]: any;
-    }, i?: number, isJoin?: boolean) => boolean)): _NanoSQLQueryBuilder;
+    }, i?: number) => boolean)): _NanoSQLQueryBuilder;
     join(args: INanoSQLJoinArgs | INanoSQLJoinArgs[]): _NanoSQLQueryBuilder;
     limit(args: number): _NanoSQLQueryBuilder;
     comment(comment: string): _NanoSQLQueryBuilder;
@@ -25,7 +27,9 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     ttl(seconds?: number, cols?: string[]): _NanoSQLQueryBuilder;
     graph(ormArgs: IGraphArgs[]): _NanoSQLQueryBuilder;
     from(tableObj: {
-        table: string | any[] | (() => Promise<any[]>);
+        table: string | any[] | ((where?: any[] | ((row: {
+            [key: string]: any;
+        }, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string;
     }): _NanoSQLQueryBuilder;
     into(table: string): _NanoSQLQueryBuilder;

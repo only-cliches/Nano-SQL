@@ -14,7 +14,7 @@ export class IndexedDB implements INanoSQLAdapter {
     private _id: any;
     private _ai: {
         [key: string]: number;
-    }
+    };
 
     constructor(public version?: number) {
         this._db = {};
@@ -80,7 +80,7 @@ export class IndexedDB implements INanoSQLAdapter {
         const objectStoreRequest = tx.objectStore(table).clear();
         objectStoreRequest.onsuccess = () => {
             this.disconnectTable(table, complete, error);
-        }
+        };
     }
 
     disconnect(complete: () => void, error: (err: any) => void) {
@@ -128,7 +128,7 @@ export class IndexedDB implements INanoSQLAdapter {
             const singleReq = store.get(pk);
             singleReq.onerror = () => {
                 complete(undefined);
-            }
+            };
             singleReq.onsuccess = () => {
                 complete(singleReq.result);
             };

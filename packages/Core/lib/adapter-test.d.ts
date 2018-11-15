@@ -1,5 +1,5 @@
 import { INanoSQLAdapter } from "./interfaces";
-export declare class NanoSQL_Adapter_Test {
+export declare class NanoSQLAdapterTest {
     adapter: INanoSQLAdapter;
     args: any[];
     constructor(adapter: INanoSQLAdapter, args: any[]);

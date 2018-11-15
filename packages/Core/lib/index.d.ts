@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder } from "./interfaces";
+import { INanoSQLConfig, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
 export declare class NanoSQL implements INanoSQLInstance {
     config: INanoSQLConfig;
     adapter: INanoSQLAdapter;
@@ -26,7 +26,9 @@ export declare class NanoSQL implements INanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        selectedTable: string | any[] | (() => Promise<any[]>);
+        selectedTable: string | any[] | ((where?: any[] | ((row: {
+            [key: string]: any;
+        }, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
     _queryCache: {
         [id: string]: any[];
@@ -54,7 +56,9 @@ export declare class NanoSQL implements INanoSQLInstance {
     expires(primaryKey: any): Promise<any>;
     _ttlTimer: any;
     _checkTTL(): void;
-    selectTable(table?: string | any[] | (() => Promise<any[]>)): INanoSQLInstance;
+    selectTable(table?: string | any[] | ((where?: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number) => boolean)) => Promise<TableQueryResult>)): INanoSQLInstance;
     getPeers(): any;
     _detectStorageMethod(): string;
     _initPlugins(config: INanoSQLConfig): Promise<any>;
@@ -91,4 +95,6 @@ export declare class NanoSQL implements INanoSQLInstance {
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
     loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
 }
-export declare const nSQL: (setTablePointer?: string | any[] | (() => Promise<any[]>) | undefined) => INanoSQLInstance;
+export declare const nSQL: (table?: string | any[] | ((where?: any[] | ((row: {
+    [key: string]: any;
+}, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>) | undefined) => INanoSQLInstance;

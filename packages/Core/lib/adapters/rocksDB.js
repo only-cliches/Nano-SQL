@@ -77,25 +77,25 @@ var RocksDB = /** @class */ (function () {
     };
     RocksDB.prototype.dropTable = function (table, complete, error) {
         var _this = this;
-        var del = new utilities_1.NanoSQLQueue(function (item, i, next, err) {
+        var del = new utilities_1._NanoSQLQueue(function (item, i, next, err) {
             // remove all records
             _this._levelDBs[table].del(item).then(next).catch(err);
         }, error, function () {
-            // delete auto increment 
+            // delete auto increment
             _this._levelDBs["_ai_store_"].del(table).then(function () {
-                //disconnect
+                // disconnect
                 _this.disconnectTable(table, complete, error);
             }).catch(error);
         });
         this._levelDBs[table].createReadStream({ values: false })
-            .on('data', function (data) {
+            .on("data", function (data) {
             del.newItem(data.key);
         })
-            .on('error', function (err) {
+            .on("error", function (err) {
             error(err);
             del.finished();
         })
-            .on('end', function () {
+            .on("end", function () {
             del.finished();
         });
     };

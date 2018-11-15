@@ -2,7 +2,7 @@ import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INan
 import { isAndroid, generateID, setFast } from "../utilities";
 
 export const SQLiteAbstract = (
-    _query:(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void) => void,
+    _query: (allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void) => void,
     _batchSize: number
 ): SQLiteAbstractFns => {
     let tables: string[] = [];
@@ -12,7 +12,7 @@ export const SQLiteAbstract = (
         } else {
             return `"${table}"`;
         }
-    }
+    };
     return {
         createAI: (complete: () => void, error: (err: any) => void) => {
             _query(true, `CREATE TABLE IF NOT EXISTS "_ai" (id TEXT PRIMARY KEY UNIQUE, inc BIGINT)`, [], complete, error);
@@ -51,11 +51,11 @@ export const SQLiteAbstract = (
                 error(new Error("Can't add a row without a primary key!"));
                 return;
             }
-    
+
             ai[table] = Math.max(pk, ai[table]);
             row[pkCol] = pk;
             const rowStr = JSON.stringify(row);
-            
+
             _query(true, `INSERT INTO ${checkTable(table)} (id, data) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET data = ?`, [pk, rowStr, rowStr], () => {
                 if (doAI) {
                     _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
@@ -96,16 +96,16 @@ export const SQLiteAbstract = (
         },
         readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
             let stmnt = `SELECT data FROM ${checkTable(table)}`;
-    
+
             if (type === "range") {
-                stmnt += ` WHERE id >= ? AND id < ?`
+                stmnt += ` WHERE id >= ? AND id < ?`;
             }
             if (reverse) {
                 stmnt += ` ORDER BY id DESC`;
             } else {
                 stmnt += ` ORDER BY id`;
             }
-    
+
             // get rows in batches to prevent from filling JS memory
             let batchNum = 0;
             const nextBatch = () => {
@@ -125,7 +125,7 @@ export const SQLiteAbstract = (
                 } else {
                     query += ` LIMIT ${_batchSize} OFFSET ${batchNum * _batchSize}`;
                 }
-    
+
                 _query(false, query, type === "range" ? [offsetOrLow, limitOrHigh] : [], (result) => {
                     if (!result.rows.length) {
                         complete();
@@ -141,11 +141,11 @@ export const SQLiteAbstract = (
                         complete();
                     }
                 }, error);
-            }
+            };
             nextBatch();
         }
-    }
-}
+    };
+};
 
 
 export class WebSQL implements INanoSQLAdapter {
@@ -172,7 +172,7 @@ export class WebSQL implements INanoSQLAdapter {
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
-        let isCompleting:boolean = false;
+        let isCompleting: boolean = false;
         this._db = window.openDatabase(this._id, String(this.nSQL.config.version) || "1.0", this._id, (isAndroid ? 5000000 : this._size));
         setFast(() => {
             this._sqlite.createAI(complete, error);
@@ -180,7 +180,7 @@ export class WebSQL implements INanoSQLAdapter {
     }
 
     createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
-        this._sqlite.createTable(tableName, this.nSQL.tables[tableName].ai, this._ai, complete, error);
+        this._sqlite.createTable(tableName, tableData.ai, this._ai, complete, error);
     }
 
     _query(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void): void {

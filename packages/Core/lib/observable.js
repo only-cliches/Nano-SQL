@@ -95,17 +95,6 @@ var Observer = /** @class */ (function () {
         this._order.push("tk");
         return this;
     };
-    /**
-     * Subscribe to the observer
-     *
-     * @param {((value: T, event?: INanoSQLDatabaseEvent) => void | {
-     *         next: (value: T, event?: DatabaseEvent) => void;
-     *         error?: (error: any) => void;
-     *         complete?: (value?: T, event?: DatabaseEvent) => void;
-     *     })} callback
-     * @returns
-     * @memberof Observer
-     */
     Observer.prototype.subscribe = function (callback) {
         var _this = this;
         var prevValue = {};

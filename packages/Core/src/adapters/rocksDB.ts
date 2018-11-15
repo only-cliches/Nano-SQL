@@ -1,5 +1,5 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
-import { allAsync, NanoSQLQueue, generateID, _maybeAssign } from "../utilities";
+import { allAsync, _NanoSQLQueue, generateID, _maybeAssign } from "../utilities";
 
 declare const global: any;
 
@@ -19,7 +19,7 @@ export class RocksDB implements INanoSQLAdapter {
     };
     private _ai: {
         [key: string]: number;
-    }
+    };
 
     constructor(
         public path?: string | ((dbID: string, tableName: string) => { lvld: any, args?: any })
@@ -59,7 +59,7 @@ export class RocksDB implements INanoSQLAdapter {
             }
             this._levelDBs[tableName] = db;
             complete();
-        })
+        });
     }
 
     createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
@@ -80,7 +80,7 @@ export class RocksDB implements INanoSQLAdapter {
                 this._ai[tableName] = value || 1;
                 complete();
             });
-        })
+        });
     }
 
     disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
@@ -95,25 +95,25 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
-        const del = new NanoSQLQueue((item, i , next, err) => {
+        const del = new _NanoSQLQueue((item, i , next, err) => {
             // remove all records
             this._levelDBs[table].del(item).then(next).catch(err);
         }, error, () => {
-            // delete auto increment 
+            // delete auto increment
             this._levelDBs["_ai_store_"].del(table).then(() => {
-                //disconnect
+                // disconnect
                 this.disconnectTable(table, complete, error);
             }).catch(error);
         });
         this._levelDBs[table].createReadStream({ values: false })
-            .on('data', function (data) {
+            .on("data", function (data) {
                 del.newItem(data.key);
             })
-            .on('error', function (err) {
+            .on("error", function (err) {
                 error(err);
                 del.finished();
             })
-            .on('end', function () {
+            .on("end", function () {
                 del.finished();
             });
     }
@@ -199,7 +199,7 @@ export class RocksDB implements INanoSQLAdapter {
         this._levelDBs[table]
             .createKeyStream()
             .on("data", (pk) => {
-                index.push(this.nSQL.tables[table].isPkNum ? new global._Int64BE(pk as any).toBuffer() : pk)
+                index.push(this.nSQL.tables[table].isPkNum ? new global._Int64BE(pk as any).toBuffer() : pk);
             })
             .on("end", () => {
                 complete(index);
@@ -208,7 +208,7 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
-        
+
         let count = 0;
         this._levelDBs[table]
             .createKeyStream()

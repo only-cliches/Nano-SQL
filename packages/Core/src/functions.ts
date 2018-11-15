@@ -1,4 +1,4 @@
-import { crowDistance, deepGet, cast, resolvePath, objectsEqual, getFnValue, allAsync, _maybeAssign, NanoSQLQueue, chainAsync } from "./utilities";
+import { crowDistance, deepGet, cast, resolvePath, _objectsEqual, getFnValue, allAsync, _maybeAssign, _NanoSQLQueue, chainAsync } from "./utilities";
 import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -146,7 +146,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                     let crowCols: string[] = [];
                     Object.keys(indexes).forEach((k) => {
                         const index = indexes[k];
-                        if (objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
+                        if (_objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
                             crowCols.push(index.name.replace("-lat", "").replace("-lon", ""));
                         }
                     });
@@ -165,17 +165,17 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             queryIndex: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err) => void) => {
                 const latTable = `_idx_${query.table as string}_${where.index}-lat`;
                 const lonTable = `_idx_${query.table as string}_${where.index}-lon`;
-    
+
                 const distance = parseFloat(where.value || "0");
                 const centerLat = parseFloat(where.fnArgs ? where.fnArgs[1] : "0");
                 const centerLon = parseFloat(where.fnArgs ? where.fnArgs[2] : "0");
-                
+
                 // step 1: get a square that contains the radius circle for our search
                 // get latitudes that are distance north and distance south from the search point
                 const latRange = [-1, 1].map((i) => {
                     return centerLat + ((distance * i) / nSQL.earthRadius) * (180 * Math.PI);
                 });
-    
+
                 // get the longitudes that are distance west and distance east from the search point
                 const lonRange = [-1, 1].map((i) => {
                     return centerLon + ((distance * i) / nSQL.earthRadius) * (180 * Math.PI) / Math.cos(centerLat * Math.PI / 180);
@@ -195,7 +195,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                     // step 2: get the square shaped selection of items
                     let counter = 0;
                     const readPKS = Object.keys(pks).filter(p => pks[p] === 1);
-                    const crowBuffer = new NanoSQLQueue((item, i, done, err) => {
+                    const crowBuffer = new _NanoSQLQueue((item, i, done, err) => {
                         // perform crow distance calculation on square selected group
                         const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item);
                         const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item);
@@ -214,7 +214,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         }, error);
                     }).catch(error).then(() => {
                         crowBuffer.finished();
-                    })
+                    });
                 }).catch(error);
             }
         }

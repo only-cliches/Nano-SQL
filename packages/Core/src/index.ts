@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, NanoSQLQueue, objectsEqual } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual } from "./utilities";
 import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, createTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION } from "./interfaces";
+import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -47,7 +47,7 @@ export class NanoSQL implements INanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        selectedTable: string | any[] | (() => Promise<any[]>);
+        selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
 
     public _queryCache: {
@@ -63,7 +63,7 @@ export class NanoSQL implements INanoSQLInstance {
         [eventName: string]: { [path: string]: ReallySmallEvents };
     };
 
-    private _Q = new NanoSQLQueue();
+    private _Q = new _NanoSQLQueue();
 
     constructor() {
 
@@ -255,7 +255,7 @@ export class NanoSQL implements INanoSQLInstance {
         getPage();
     }
 
-    public selectTable(table?: string | any[] | (() => Promise<any[]>)): INanoSQLInstance {
+    public selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): INanoSQLInstance {
         if (table) this.state.selectedTable = table;
         return this;
     }
@@ -268,7 +268,7 @@ export class NanoSQL implements INanoSQLInstance {
 
         // NodeJS
         if (typeof window === "undefined") {
-            return "ROKS";
+            return "RKS";
         }
 
         // Browser
@@ -377,7 +377,7 @@ export class NanoSQL implements INanoSQLInstance {
             this.config = {
                 plugins: [],
                 ...conf
-            }
+            };
 
             if (typeof window !== "undefined" && conf && conf.peer) {
                 this.state.peerMode = true;
@@ -592,7 +592,7 @@ export class NanoSQL implements INanoSQLInstance {
                 this.state.peerEvents.push(ev.query.queryID || "");
                 this.triggerEvent({
                     ...ev,
-                    types: ["peer-change"]
+                    types: ["peer change"]
                 });
                 setFast(() => {
                     this.triggerEvent(ev);
@@ -670,7 +670,7 @@ export class NanoSQL implements INanoSQLInstance {
             case "connect":
             case "ready":
             case "disconnect":
-            case "peer-change":
+            case "peer change":
             case "slow-query":
                 this.eventFNs.Core["*"].on(action, callBack);
                 break;
@@ -721,8 +721,8 @@ export class NanoSQL implements INanoSQLInstance {
             case "connect":
             case "ready":
             case "disconnect":
-            case "peer-change":
-            case "slow-query":
+            case "peer change":
+            case "slow query":
                 this.eventFNs.Core["*"].off(action, callBack);
                 break;
             case "select":
@@ -1125,8 +1125,8 @@ export class NanoSQL implements INanoSQLInstance {
  */
 let _NanoSQLStatic = new NanoSQL();
 
-export const nSQL = (setTablePointer?: string | any[] | (() => Promise<any[]>)) => {
-    return _NanoSQLStatic.selectTable(setTablePointer);
+export const nSQL = (table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)) => {
+    return _NanoSQLStatic.selectTable(table);
 };
 
 if (typeof window !== "undefined") {

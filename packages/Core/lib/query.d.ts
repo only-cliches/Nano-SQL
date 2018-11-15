@@ -1,18 +1,7 @@
-import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, IGraphArgs, INanoSQLTable } from "./interfaces";
-import { NanoSQLQueue } from "./utilities";
+import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, IGraphArgs, INanoSQLTable, TableQueryResult } from "./interfaces";
+import { _NanoSQLQueue } from "./utilities";
 export declare const secondaryIndexQueue: {
-    [idAndTable: string]: NanoSQLQueue;
-};
-export declare const adapterFilters: (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
-    write: (table: string, pk: any, row: {
-        [key: string]: any;
-    }, complete: (pk: any) => void, error: (err: any) => void) => void;
-    read: (table: string, pk: any, complete: (row: {
-        [key: string]: any;
-    } | undefined) => void, error: (err: any) => void) => void;
-    readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
-        [key: string]: any;
-    }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
+    [idAndTable: string]: _NanoSQLQueue;
 };
 export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     nSQL: INanoSQLInstance;
@@ -35,19 +24,15 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _orderBy: INanoSQLSortBy;
     _groupBy: INanoSQLSortBy;
     upsertPath: string[];
-    private _TableCache;
-    private _TableCacheLoading;
-    _graphTableCache: {
-        [key: string]: any[];
-    };
-    private _graphTableCacheLoading;
     constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
     _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void): void;
-    _getTableCache(cacheKey: string, table: any, callback: (joinTable: any) => void): void;
+    _getTable(tableName: string, whereCond: any[] | ((row: {
+        [key: string]: any;
+    }, i?: number) => boolean) | undefined, table: any, callback: (result: TableQueryResult) => void): void;
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
     _buildCombineWhere(graphWhere: any, graphTable: string, rowTable: string, rowData: any): any;
-    _graph(gArgs: IGraphArgs | IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void, level: number): void;
+    _graph(gArgs: IGraphArgs | IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;
     private _diffUpdates;

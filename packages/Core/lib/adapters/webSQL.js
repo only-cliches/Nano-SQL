@@ -168,7 +168,7 @@ var WebSQL = /** @class */ (function () {
         });
     };
     WebSQL.prototype.createAndInitTable = function (tableName, tableData, complete, error) {
-        this._sqlite.createTable(tableName, this.nSQL.tables[tableName].ai, this._ai, complete, error);
+        this._sqlite.createTable(tableName, tableData.ai, this._ai, complete, error);
     };
     WebSQL.prototype._query = function (allowWrite, sql, args, complete, error) {
         var doTransaction = function (tx) {

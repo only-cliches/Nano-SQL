@@ -158,7 +158,7 @@ exports.attachDefaultFns = function (nSQL) {
                     var crowCols_1 = [];
                     Object.keys(indexes_1).forEach(function (k) {
                         var index = indexes_1[k];
-                        if (utilities_1.objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
+                        if (utilities_1._objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
                             crowCols_1.push(index.name.replace("-lat", "").replace("-lon", ""));
                         }
                     });
@@ -203,7 +203,7 @@ exports.attachDefaultFns = function (nSQL) {
                     // step 2: get the square shaped selection of items
                     var counter = 0;
                     var readPKS = Object.keys(pks).filter(function (p) { return pks[p] === 1; });
-                    var crowBuffer = new utilities_1.NanoSQLQueue(function (item, i, done, err) {
+                    var crowBuffer = new utilities_1._NanoSQLQueue(function (item, i, done, err) {
                         // perform crow distance calculation on square selected group
                         var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item);
                         var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item);

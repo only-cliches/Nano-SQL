@@ -1,4 +1,4 @@
-import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IGraphArgs } from "./interfaces";
+import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IGraphArgs, TableQueryResult } from "./interfaces";
 import { buildQuery, uuid } from "./utilities";
 
 // tslint:disable-next-line
@@ -14,7 +14,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
 
     public static execMap: any;
 
-    constructor(db: INanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string) {
+    constructor(db: INanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string) {
         this._db = db;
 
         this._AV = actionOrView || "";
@@ -37,7 +37,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         }
     }
 
-    public where(args: any[] | ((row: { [key: string]: any }, i?: number, isJoin?: boolean) => boolean)): _NanoSQLQueryBuilder {
+    public where(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _NanoSQLQueryBuilder {
         this._query.where = args;
         return this;
     }
@@ -53,7 +53,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
-    public having(args: any[] | ((row: { [key: string]: any }, i?: number, isJoin?: boolean) => boolean)): _NanoSQLQueryBuilder {
+    public having(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _NanoSQLQueryBuilder {
         this._query.having = args;
         return this;
     }
@@ -92,7 +92,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         this._query.tags.push(tag);
         return this;
     }
- 
+
     public extend(scope: string, ...args: any[]): _NanoSQLQueryBuilder {
         this._query.extend.push({ scope: scope, args: args });
         return this;
@@ -130,7 +130,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     }
 
     public from(tableObj: {
-        table: string | any[] | (() => Promise<any[]>),
+        table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string
     }): _NanoSQLQueryBuilder {
         this._query.table = tableObj.table;

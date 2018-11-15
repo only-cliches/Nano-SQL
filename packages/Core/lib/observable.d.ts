@@ -61,17 +61,6 @@ export declare class Observer<T> implements INanoSQLObserver<T> {
      * @memberof Observer
      */
     take(num: number): this;
-    /**
-     * Subscribe to the observer
-     *
-     * @param {((value: T, event?: INanoSQLDatabaseEvent) => void | {
-     *         next: (value: T, event?: DatabaseEvent) => void;
-     *         error?: (error: any) => void;
-     *         complete?: (value?: T, event?: DatabaseEvent) => void;
-     *     })} callback
-     * @returns
-     * @memberof Observer
-     */
     subscribe(callback: (value: T, event?: INanoSQLDatabaseEvent) => void | {
         next: (value: T, event?: INanoSQLDatabaseEvent) => void;
         error?: (error: any) => void;

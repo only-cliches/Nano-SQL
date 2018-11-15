@@ -25,7 +25,7 @@ var NanoSQL = /** @class */ (function () {
     function NanoSQL() {
         this.version = interfaces_1.VERSION;
         this.earthRadius = 6371;
-        this._Q = new utilities_1.NanoSQLQueue();
+        this._Q = new utilities_1._NanoSQLQueue();
         this.state = {
             activeAV: "",
             hasAnyEvents: false,
@@ -200,7 +200,7 @@ var NanoSQL = /** @class */ (function () {
     NanoSQL.prototype._detectStorageMethod = function () {
         // NodeJS
         if (typeof window === "undefined") {
-            return "ROKS";
+            return "RKS";
         }
         // Browser
         // Safari / iOS always gets WebSQL (mobile and desktop)
@@ -480,7 +480,7 @@ var NanoSQL = /** @class */ (function () {
                 localStorage.removeItem(e.key);
                 var ev_1 = JSON.parse(e.newValue || "{}");
                 _this.state.peerEvents.push(ev_1.query.queryID || "");
-                _this.triggerEvent(__assign({}, ev_1, { types: ["peer-change"] }));
+                _this.triggerEvent(__assign({}, ev_1, { types: ["peer change"] }));
                 utilities_1.setFast(function () {
                     _this.triggerEvent(ev_1);
                 });
@@ -555,7 +555,7 @@ var NanoSQL = /** @class */ (function () {
             case "connect":
             case "ready":
             case "disconnect":
-            case "peer-change":
+            case "peer change":
             case "slow-query":
                 this.eventFNs.Core["*"].on(action, callBack);
                 break;
@@ -605,8 +605,8 @@ var NanoSQL = /** @class */ (function () {
             case "connect":
             case "ready":
             case "disconnect":
-            case "peer-change":
-            case "slow-query":
+            case "peer change":
+            case "slow query":
                 this.eventFNs.Core["*"].off(action, callBack);
                 break;
             case "select":
@@ -997,8 +997,8 @@ exports.NanoSQL = NanoSQL;
  * @internal
  */
 var _NanoSQLStatic = new NanoSQL();
-exports.nSQL = function (setTablePointer) {
-    return _NanoSQLStatic.selectTable(setTablePointer);
+exports.nSQL = function (table) {
+    return _NanoSQLStatic.selectTable(table);
 };
 if (typeof window !== "undefined") {
     window["nano-sql"] = {

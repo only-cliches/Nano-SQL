@@ -30,6 +30,53 @@ exports.buildQuery = function (table, action) {
         tags: []
     };
 };
+exports.adapterFilters = function (nSQL, query) {
+    return {
+        write: function (table, pk, row, complete, error) {
+            nSQL.doFilter("adapterWillWrite", { result: { table: table, pk: pk, row: row }, query: query }).then(function (result) {
+                if (!result)
+                    return; // filter took over write
+                nSQL.adapter.write(result.table, result.pk, result.row, function (pk) {
+                    nSQL.doFilter("adapterDidWrite", { result: pk }).then(function (setPK) {
+                        complete(setPK);
+                    }).catch(error);
+                }, error);
+            }).catch(error);
+        },
+        read: function (table, pk, complete, error) {
+            nSQL.doFilter("adapterWillRead", { result: undefined, table: table, pk: pk, i: 0, query: query }).then(function (resultRow) {
+                if (resultRow) { // filter took over adapter read
+                    complete(resultRow);
+                }
+                else {
+                    nSQL.adapter.read(table, pk, function (row) {
+                        nSQL.doFilter("adapterDidRead", { result: row, table: table, pk: pk, i: 0, query: query }).then(function (resultRow) {
+                            complete(resultRow);
+                        }).catch(error);
+                    }, error);
+                }
+            });
+        },
+        readMulti: function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
+            var readBuffer = new _NanoSQLQueue(function (item, idx, done, err) {
+                var pk = nSQL.tables[table].pkCol;
+                nSQL.doFilter("adapterDidRead", { result: item, table: table, pk: item[pk], i: idx, query: query }).then(function (resultRow) {
+                    onRow(resultRow, idx);
+                    done();
+                }).catch(err);
+            }, error, complete);
+            nSQL.doFilter("adapterWillReadMulti", { result: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse }, onRow: onRow, complete: complete, error: error, query: query }).then(function (result) {
+                if (!result)
+                    return;
+                nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, function (row) {
+                    readBuffer.newItem(row);
+                }, function () {
+                    readBuffer.finished();
+                }, readBuffer.onError);
+            });
+        }
+    };
+};
 exports.noop = function () { };
 exports.throwErr = function (err) {
     throw new Error(err);
@@ -52,7 +99,7 @@ exports._assign = function (obj) {
  * @param {*} obj2
  * @returns {boolean}
  */
-exports.objectsEqual = function (obj1, obj2) {
+exports._objectsEqual = function (obj1, obj2) {
     if (obj1 === obj2)
         return true;
     if (typeof obj1 !== "object")
@@ -68,7 +115,7 @@ exports.objectsEqual = function (obj1, obj2) {
     while (i-- && matches) {
         var key = keys[i];
         if (typeof obj1[key] === "object") { // nested compare
-            matches = exports.objectsEqual(obj1[key], obj2[key]);
+            matches = exports._objectsEqual(obj1[key], obj2[key]);
         }
         else {
             matches = obj1[key] === obj2[key];
@@ -76,8 +123,9 @@ exports.objectsEqual = function (obj1, obj2) {
     }
     return matches;
 };
-var NanoSQLQueue = /** @class */ (function () {
-    function NanoSQLQueue(processItem, onError, onComplete) {
+// tslint:disable-next-line
+var _NanoSQLQueue = /** @class */ (function () {
+    function _NanoSQLQueue(processItem, onError, onComplete) {
         this.processItem = processItem;
         this.onError = onError;
         this.onComplete = onComplete;
@@ -88,7 +136,7 @@ var NanoSQLQueue = /** @class */ (function () {
         this._triggeredComplete = false;
         this._progressBuffer = this._progressBuffer.bind(this);
     }
-    NanoSQLQueue.prototype._progressBuffer = function () {
+    _NanoSQLQueue.prototype._progressBuffer = function () {
         var _this = this;
         if (this._triggeredComplete) {
             return;
@@ -117,7 +165,7 @@ var NanoSQLQueue = /** @class */ (function () {
             this.processItem(item[0], this._count, next, this.onError ? this.onError : exports.noop);
         }
     };
-    NanoSQLQueue.prototype.finished = function () {
+    _NanoSQLQueue.prototype.finished = function () {
         this._done = true;
         if (this._triggeredComplete) {
             return;
@@ -128,16 +176,16 @@ var NanoSQLQueue = /** @class */ (function () {
                 this.onComplete();
         }
     };
-    NanoSQLQueue.prototype.newItem = function (item, processFn) {
+    _NanoSQLQueue.prototype.newItem = function (item, processFn) {
         this._items.push([item, processFn]);
         if (!this._going) {
             this._going = true;
             this._progressBuffer();
         }
     };
-    return NanoSQLQueue;
+    return _NanoSQLQueue;
 }());
-exports.NanoSQLQueue = NanoSQLQueue;
+exports._NanoSQLQueue = _NanoSQLQueue;
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
