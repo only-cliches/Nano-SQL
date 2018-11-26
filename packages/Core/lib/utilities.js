@@ -17,6 +17,13 @@ exports.binarySearch = function (arr, value, startVal, endVal) {
         return exports.binarySearch(arr, value, start, m);
     return end;
 };
+exports.titleCase = function (str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+exports.getWeekOfYear = function (d) {
+    var onejan = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil((((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
+};
 exports.buildQuery = function (table, action) {
     return {
         table: table,
@@ -33,39 +40,39 @@ exports.buildQuery = function (table, action) {
 exports.adapterFilters = function (nSQL, query) {
     return {
         write: function (table, pk, row, complete, error) {
-            nSQL.doFilter("adapterWillWrite", { result: { table: table, pk: pk, row: row }, query: query }).then(function (result) {
+            nSQL.doFilter("adapterWillWrite", { result: { table: table, pk: pk, row: row }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over write
                 nSQL.adapter.write(result.table, result.pk, result.row, function (pk) {
-                    nSQL.doFilter("adapterDidWrite", { result: pk }).then(function (setPK) {
+                    nSQL.doFilter("adapterDidWrite", { result: pk }, function (setPK) {
                         complete(setPK);
-                    }).catch(error);
+                    }, error);
                 }, error);
-            }).catch(error);
+            }, error);
         },
         read: function (table, pk, complete, error) {
-            nSQL.doFilter("adapterWillRead", { result: undefined, table: table, pk: pk, i: 0, query: query }).then(function (resultRow) {
+            nSQL.doFilter("adapterWillRead", { result: undefined, table: table, pk: pk, i: 0, query: query }, function (resultRow) {
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
                 }
                 else {
                     nSQL.adapter.read(table, pk, function (row) {
-                        nSQL.doFilter("adapterDidRead", { result: row, table: table, pk: pk, i: 0, query: query }).then(function (resultRow) {
+                        nSQL.doFilter("adapterDidRead", { result: row, table: table, pk: pk, i: 0, query: query }, function (resultRow) {
                             complete(resultRow);
-                        }).catch(error);
+                        }, error);
                     }, error);
                 }
-            });
+            }, error);
         },
         readMulti: function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
             var readBuffer = new _NanoSQLQueue(function (item, idx, done, err) {
                 var pk = nSQL.tables[table].pkCol;
-                nSQL.doFilter("adapterDidRead", { result: item, table: table, pk: item[pk], i: idx, query: query }).then(function (resultRow) {
+                nSQL.doFilter("adapterDidRead", { result: item, table: table, pk: item[pk], i: idx, query: query }, function (resultRow) {
                     onRow(resultRow, idx);
                     done();
-                }).catch(err);
+                }, error);
             }, error, complete);
-            nSQL.doFilter("adapterWillReadMulti", { result: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse }, onRow: onRow, complete: complete, error: error, query: query }).then(function (result) {
+            nSQL.doFilter("adapterWillReadMulti", { result: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse }, onRow: onRow, complete: complete, error: error, query: query }, function (result) {
                 if (!result)
                     return;
                 nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, function (row) {
@@ -73,7 +80,7 @@ exports.adapterFilters = function (nSQL, query) {
                 }, function () {
                     readBuffer.finished();
                 }, readBuffer.onError);
-            });
+            }, readBuffer.onError);
         }
     };
 };
@@ -81,7 +88,6 @@ exports.noop = function () { };
 exports.throwErr = function (err) {
     throw new Error(err);
 };
-// export const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
 /**
  * Object.assign, but faster.
  *
@@ -264,7 +270,7 @@ exports.random16Bits = function () {
         }
     }
 };
-exports.throttle = function (func, limit) {
+exports.throttle = function (scope, func, limit) {
     var waiting = false;
     return function () {
         var args = [];
@@ -275,7 +281,7 @@ exports.throttle = function (func, limit) {
             return;
         waiting = true;
         setTimeout(function () {
-            func.apply(null, args);
+            func.apply(scope, args);
             waiting = false;
         }, limit);
     };
@@ -434,7 +440,7 @@ exports.cast = function (type, val, allowUknownTypes) {
             case "obj":
             case "map": return exports.isObject(castVal) ? castVal : {};
             case "boolean":
-            case "bool": return castVal === true || castVal === 1;
+            case "bool": return castVal === true || castVal === 1 ? true : false;
         }
         // doesn't match known types, return null;
         return allowUknownTypes ? val : null;

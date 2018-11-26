@@ -1,4 +1,4 @@
-import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, IGraphArgs, TableQueryResult } from "./interfaces";
+import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, INanoSQLGraphArgs, TableQueryResult } from "./interfaces";
 import { buildQuery, uuid } from "./utilities";
 
 // tslint:disable-next-line
@@ -124,7 +124,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
-    public graph(ormArgs: IGraphArgs[]): _NanoSQLQueryBuilder {
+    public graph(ormArgs: INanoSQLGraphArgs[]): _NanoSQLQueryBuilder {
         this._query.graph = ormArgs;
         return this;
     }

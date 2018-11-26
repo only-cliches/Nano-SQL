@@ -1,12 +1,11 @@
 import { ReallySmallEvents } from "really-small-events";
-import { Observer } from "./observable";
 import { INanoSQLConfig, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
 export declare class NanoSQL implements INanoSQLInstance {
     config: INanoSQLConfig;
     adapter: INanoSQLAdapter;
     version: number;
     filters: {
-        [filterName: string]: ((inputArgs: any) => Promise<any>)[];
+        [filterName: string]: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
     };
     functions: {
         [fnName: string]: INanoSQLFunction;
@@ -26,6 +25,12 @@ export declare class NanoSQL implements INanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
+        runMR: {
+            [table: string]: {
+                [mrName: string]: (...args: any[]) => void;
+            };
+        };
+        MRTimer: any;
         selectedTable: string | any[] | ((where?: any[] | ((row: {
             [key: string]: any;
         }, i?: number) => boolean)) => Promise<TableQueryResult>);
@@ -46,7 +51,7 @@ export declare class NanoSQL implements INanoSQLInstance {
     };
     private _Q;
     constructor();
-    doFilter<T, R>(filterName: string, args: T): Promise<R>;
+    doFilter<T, R>(filterName: string, args: T, complete: (result: R) => void, cancelled: (abortInfo: any) => void): void;
     getCache(id: string, args: {
         offset: number;
         limit: number;
@@ -64,6 +69,12 @@ export declare class NanoSQL implements INanoSQLInstance {
     _initPlugins(config: INanoSQLConfig): Promise<any>;
     connect(config: INanoSQLConfig): Promise<any>;
     _initPeers(): void;
+    every(args: {
+        length: number;
+        every?: number;
+        offset?: number;
+    }): number[];
+    triggerMapReduce(cb?: (event: INanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
     on(action: string, callBack: (event: INanoSQLDatabaseEvent) => void): INanoSQLInstance;
     off(action: string, callBack: (event: INanoSQLDatabaseEvent, database: INanoSQLInstance) => void): INanoSQLInstance;
     _refreshEventChecker(): INanoSQLInstance;
@@ -85,7 +96,6 @@ export declare class NanoSQL implements INanoSQLInstance {
         }[];
     }, onProgress?: (percent: number) => void): Promise<any>;
     disconnect(): Promise<{}>;
-    observable<T>(getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery, tablesToListen?: string[]): Observer<T>;
     extend(scope: string, ...args: any[]): any | NanoSQL;
     loadJS(rows: {
         [key: string]: any;

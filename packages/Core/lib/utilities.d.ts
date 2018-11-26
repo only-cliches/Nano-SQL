@@ -1,5 +1,7 @@
 import { INanoSQLQuery, INanoSQLInstance, TableQueryResult } from "./interfaces";
 export declare const binarySearch: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => number;
+export declare const titleCase: (str: string) => string;
+export declare const getWeekOfYear: (d: Date) => number;
 export declare const buildQuery: (table: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
 }, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>), action: string) => INanoSQLQuery;
@@ -53,7 +55,7 @@ export declare class _NanoSQLQueue {
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export declare const chainAsync: (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err?: ((err: any) => void) | undefined) => void) => Promise<any[]>;
+export declare const chainAsync: (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err?: ((err?: any) => void) | undefined) => void) => Promise<any[]>;
 /**
  * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
  *
@@ -71,7 +73,7 @@ export declare const isAndroid: boolean;
  * @returns {number}
  */
 export declare const random16Bits: () => number;
-export declare const throttle: (func: any, limit: number) => (...args: any[]) => void;
+export declare const throttle: (scope: any, func: any, limit: number) => (...args: any[]) => void;
 /**
  * Generate a TimeID for use in the database.
  *

@@ -16,7 +16,7 @@
                 id: "test",
                 mode: "PERM",
                 plugins: [
-                    {
+                    /*{
                         name: "testPlugin",
                         version: 1,
                         filters: [
@@ -30,36 +30,22 @@
                                 }
                             }
                         ]
-                    }
+                    }*/
                 ],
                 tables: [
                     {
                         name: "users",
-                        model: [
-                            {
-                                key: "id:uuid",
-                                props: ["pk()"]
-                            },
-                            {
-                                key: "name:string"
-                            },
-                            {
-                                key: "age:int",
-                                default: 18
-                            },
-                            {
-                                key: "meta:any",
-                                default: {}
-                            },
-                            {
-                                key: "tags:string[]",
-                                default: []
-                            }
-                        ],
-                        indexes: [
-                            { name: "Tags", key: "tags:string[]" },
-                            { name: "Age", key: "age:int" }
-                        ]
+                        model: {
+                            "id:uuid": {pk: true},
+                            "name:string": {},
+                            "age:int": {},
+                            "meta:any": {},
+                            "tags:string[]": {}
+                        },
+                        indexes: {
+                            "Tags:string[]": "tags",
+                            "Age:int": "age"
+                        }
                     }
                 ],
             }).then(() => {
@@ -70,10 +56,10 @@
             }).then(() => {
                 return nSQL("users").query("upsert", { name: 21 }).where(["meta.color", "=", "blue"]).exec();
             }).then((result) => {
-                console.log(result);*/
-                console.log(nSQL());
+                console.log(result);
+                console.log(nSQL());*/
                 console.time("sel");
-                return nSQL("users").query("select").exec();
+                return nSQL("users").query("select").where(["age", "=", 20]).exec();
             }).then((rows) => {
                 console.timeEnd("sel");
                 console.log(rows);

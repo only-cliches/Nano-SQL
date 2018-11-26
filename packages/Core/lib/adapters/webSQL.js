@@ -1,8 +1,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var interfaces_1 = require("../interfaces");
 var utilities_1 = require("../utilities");
+var tables = [];
 exports.SQLiteAbstract = function (_query, _batchSize) {
-    var tables = [];
     var checkTable = function (table) {
         if (tables.indexOf(table) === -1) {
             throw Error("No table " + table + " found!");

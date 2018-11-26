@@ -1,7 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual } from "./utilities";
-import { Observer } from "./observable";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, IGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult } from "./interfaces";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual, titleCase, getWeekOfYear, throttle } from "./utilities";
+import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, INanoSQLGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, mapReduceFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -23,7 +22,7 @@ export class NanoSQL implements INanoSQLInstance {
     public version: number = VERSION;
 
     public filters: {
-        [filterName: string]: ((inputArgs: any) => Promise<any>)[]
+        [filterName: string]: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
     };
 
     public functions: {
@@ -47,6 +46,8 @@ export class NanoSQL implements INanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
+        runMR: {[table: string]: {[mrName: string]: (...args: any[]) => void}};
+        MRTimer: any;
         selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
 
@@ -78,6 +79,8 @@ export class NanoSQL implements INanoSQLInstance {
             peerMode: false,
             connected: false,
             ready: false,
+            MRTimer: undefined,
+            runMR: {},
             selectedTable: ""
         };
 
@@ -121,24 +124,20 @@ export class NanoSQL implements INanoSQLInstance {
         attachDefaultFns(this);
     }
 
-    public doFilter<T, R>(filterName: string, args: T): Promise<R> {
+    public doFilter<T, R>(filterName: string, args: T, complete: (result: R) => void, cancelled: (abortInfo: any) => void): void {
         if (this.filters[filterName]) {
-            return new Promise((res, rej) => {
-                chainAsync(this.filters[filterName], (item, i, nextFilter) => {
-                    this.filters[filterName][i](args).then((newArgs) => {
-                        args = newArgs;
-                        if (newArgs.abort) {
-                            rej(newArgs.abort);
-                        } else {
-                            nextFilter();
-                        }
-                    });
-                }).then(() => {
-                    res((args as any).result);
+            chainAsync(this.filters[filterName], (item, i, nextFilter) => {
+                this.filters[filterName][i](args, (newArgs) => {
+                    args = newArgs;
+                    nextFilter();
+                }, (abortInfo) => {
+                    cancelled(abortInfo);
                 });
+            }).then(() => {
+                complete((args as any).result);
             });
         } else {
-            return Promise.resolve((args as any).result);
+            complete((args as any).result);
         }
     }
 
@@ -370,7 +369,9 @@ export class NanoSQL implements INanoSQLInstance {
         let t = this;
 
         return this._initPlugins(config).then(() => {
-            return this.doFilter<configFilter, INanoSQLConfig>("config", { result: config });
+            return new Promise((res, rej) => {
+                this.doFilter<configFilter, INanoSQLConfig>("config", { result: config }, res, rej);
+            });
         }).then((conf: INanoSQLConfig) => {
             this.state.id = conf.id || "nSQL_DB";
 
@@ -382,7 +383,9 @@ export class NanoSQL implements INanoSQLInstance {
             if (typeof window !== "undefined" && conf && conf.peer) {
                 this.state.peerMode = true;
             }
-            return this.doFilter<willConnectFilter, {}>("willConnect", { result: {} });
+            return new Promise((res, rej) => {
+                this.doFilter<willConnectFilter, {}>("willConnect", { result: {} }, res, rej);
+            });
         }).then(() => {
             // setup and connect adapter
             return new Promise((res, rej) => {
@@ -401,7 +404,7 @@ export class NanoSQL implements INanoSQLInstance {
                             this.adapter = new SyncStorage(true);
                             break;
                         case "WSQL":
-                            this.adapter = new WebSQL();
+                            this.adapter = new WebSQL(this.config.size);
                             break;
                         case "IDB":
                             this.adapter = new IndexedDB(this.config.version);
@@ -437,6 +440,8 @@ export class NanoSQL implements INanoSQLInstance {
                 time: Date.now()
             });
             this.state.connected = true;
+
+            this.triggerMapReduce = this.triggerMapReduce.bind(this);
 
             const tables = ["_util", "_ttl"].concat((this.config.tables || []).map(t => t.name));
 
@@ -661,6 +666,136 @@ export class NanoSQL implements INanoSQLInstance {
         });
     }
 
+    public every(args: {length: number, every?: number, offset?: number}): number[] {
+        let i = 0;
+        let arr: number[] = [];
+        while (i <= args.length) {
+            if (args.every) {
+                if (i % args.every === 0) {
+                    arr.push(i + (args.offset || 0));
+                }
+            } else {
+                arr.push(i + (args.offset || 0));
+            }
+            i++;
+        }
+        return arr;
+    }
+
+    public triggerMapReduce(cb?: (event: INanoSQLDatabaseEvent) => void, table?: string, name?: string) {
+
+        if (table && name) {
+            if (!this.tables[table]) return;
+            if (!this.tables[table].mapReduce) return;
+            if (!this.state.runMR[table]) return;
+            if (!this.state.runMR[table][name]) return;
+            const event = {
+                target: "Core",
+                path: table + "." + name,
+                events: ["map reduce"],
+                time: Date.now(),
+            };
+            if (cb) {
+                cb(event);
+            }
+            this.state.runMR[table][name](event);
+            return;
+        }
+
+        Object.keys(this.tables).forEach((table) => {
+            if (this.tables[table].mapReduce) {
+                if (!this.state.runMR[table]) return;
+                (this.tables[table].mapReduce || []).forEach((mr) => {
+                    if (!this.state.runMR[table][mr.name]) return;
+                    if (mr.onTimes) {
+                        let runMR = true;
+
+                        // handle zeroing out timer options below the developer choice.
+                        // example: developer sends in to trigger at midnight every day
+                        // sets seconds and minutes to zero so it'll only trigger
+                        // once that day instead of every second of midnight
+                        let keyStart: number = -1;
+                        let fillKeys: string[] = [];
+                        let fillObj: any = {};
+                        ["seconds", "minutes", "hours", "weekDay", "weekOfYear", "date", "month"].forEach((dateKey, i) => {
+                            if (!(mr.onTimes as any)[dateKey]) {
+                                fillKeys.push(dateKey);
+                                return;
+                            }
+                            if (keyStart === -1) {
+                                keyStart = 1;
+                                fillKeys.forEach((key) => {
+                                    switch (key) {
+                                        case "seconds":
+                                        case "minutes":
+                                        case "hours":
+                                            fillObj[key] = [0];
+                                        break;
+                                        case "weekDay":
+                                            // only need to set to beginning of week
+                                            // if a weekOfYear property is set
+                                            if ((mr.onTimes as any).weekOfYear) {
+                                                fillObj[key] = [0];
+                                            }
+                                        break;
+                                        case "weekOfYear":
+
+                                        break;
+                                        case "date":
+                                            fillObj[key] = [1];
+                                        break;
+                                        case "month":
+
+                                        break;
+                                    }
+                                });
+                            }
+                        });
+
+                        const date = new Date();
+                        Object.keys({
+                            ...mr.onTimes,
+                            ...fillObj
+                        }).forEach((time) => {
+                            const checkTimes: number[] = Array.isArray((mr.onTimes as any)[time]) ? (mr.onTimes as any)[time] : [(mr.onTimes as any)[time]];
+                            if (!checkTimes.length) return;
+                            switch (time) {
+                                case "weekDay":
+                                    if (checkTimes.indexOf(date.getDay()) === -1) {
+                                        runMR = false;
+                                    }
+                                break;
+                                case "weekOfYear":
+                                    if (checkTimes.indexOf(getWeekOfYear(date)) === -1) {
+                                        runMR = false;
+                                    }
+                                break;
+                                default:
+                                    const q = "get" + titleCase(time);
+                                    if (date[q] && checkTimes.indexOf(date[q]()) === -1) {
+                                        runMR = false;
+                                    }
+                            }
+                        });
+
+                        if (runMR) {
+                            const event = {
+                                target: "Core",
+                                path: table + "." + mr.name,
+                                events: ["map reduce"],
+                                time: Date.now(),
+                            };
+                            if (cb) {
+                                cb(event);
+                            }
+                            this.state.runMR[table][mr.name](event);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
 
     public on(action: string, callBack: (event: INanoSQLDatabaseEvent) => void): INanoSQLInstance {
         let t = this;
@@ -671,7 +806,8 @@ export class NanoSQL implements INanoSQLInstance {
             case "ready":
             case "disconnect":
             case "peer change":
-            case "slow-query":
+            case "slow query":
+            case "map reduce":
                 this.eventFNs.Core["*"].on(action, callBack);
                 break;
             case "select":
@@ -692,7 +828,9 @@ export class NanoSQL implements INanoSQLInstance {
                 this.eventFNs[table[0]][nestedPath].on(action, callBack);
                 break;
             default:
-                this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then((evData) => {
+                new Promise((res, rej) => {
+                    this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                }).then((evData: { nameSpace: string, path: string }) => {
                     if (evData.nameSpace) {
                         if (!this.eventFNs[evData.nameSpace]) {
                             this.eventFNs[evData.nameSpace] = {
@@ -723,6 +861,7 @@ export class NanoSQL implements INanoSQLInstance {
             case "disconnect":
             case "peer change":
             case "slow query":
+            case "map reduce":
                 this.eventFNs.Core["*"].off(action, callBack);
                 break;
             case "select":
@@ -742,7 +881,7 @@ export class NanoSQL implements INanoSQLInstance {
                 this.eventFNs[table[0]][nestedPath].off(action, callBack);
                 break;
             default:
-                this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }).then((evData) => {
+                this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, (evData) => {
                     if (evData.nameSpace) {
                         if (!this.eventFNs[evData.nameSpace]) {
                             this.eventFNs[evData.nameSpace] = {
@@ -757,7 +896,7 @@ export class NanoSQL implements INanoSQLInstance {
                         throw new Error(`Invalid event "${action}"!`);
                     }
                     t._refreshEventChecker();
-                });
+                }, () => {});
         }
 
         return t._refreshEventChecker();
@@ -787,13 +926,15 @@ export class NanoSQL implements INanoSQLInstance {
 
     public _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any> {
         if (typeof this.state.selectedTable !== "string") return Promise.reject("Can't do Action/View with selected table!");
-        return this.doFilter<actionFilter, IAVFilterResult>(AVType, {
-            result: {
-                AVType,
-                table,
-                AVName,
-                AVargs
-            }
+        return new Promise((res, rej) => {
+            this.doFilter<actionFilter, IAVFilterResult>(AVType, {
+                result: {
+                    AVType,
+                    table,
+                    AVName,
+                    AVargs
+                }
+            }, res, rej);
         }).then((result: IAVFilterResult) => {
             const key = result.AVType === "Action" ? "actions" : "views";
 
@@ -822,7 +963,8 @@ export class NanoSQL implements INanoSQLInstance {
             return;
         }
 
-        this.doFilter<queryFilter, INanoSQLQuery>("query", { result: query }).then((setQuery) => {
+        this.doFilter<queryFilter, INanoSQLQuery>("query", { result: query }, (setQuery) => {
+
             if (this.config.queue && !setQuery.skipQueue) {
                 this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error }, (item: { query: INanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
                     new _NanoSQLQuery(this, item.query, item.onRow, () => {
@@ -834,14 +976,16 @@ export class NanoSQL implements INanoSQLInstance {
                     });
                 });
             } else {
-                new _NanoSQLQuery(this, setQuery, onRow, complete, error);
+                new _NanoSQLQuery(this, setQuery, (row) => {
+                    onRow(row);
+                }, complete, error);
             }
-        }).catch(error);
+        }, error);
     }
 
     public triggerEvent(eventData: INanoSQLDatabaseEvent, ignoreStarTable?: boolean): INanoSQLInstance {
 
-        this.doFilter<eventFilter, INanoSQLDatabaseEvent>("event", { result: eventData }).then((event) => {
+        this.doFilter<eventFilter, INanoSQLDatabaseEvent>("event", { result: eventData }, (event) => {
             if (this.state.hasAnyEvents) {
                 setFast(() => {
                     event.events.forEach((evnt) => {
@@ -862,7 +1006,7 @@ export class NanoSQL implements INanoSQLInstance {
                     });
                 });
             }
-        }).catch((err) => {
+        }, (err) => {
             console.error("Event suppressed", err);
         });
 
@@ -883,6 +1027,7 @@ export class NanoSQL implements INanoSQLInstance {
         let error = "";
         const resolveModel = (cols: INanoSQLTableColumn[], useObj?: any, nestedModel?: string): any => {
             let newObj = {};
+            useObj = useObj || {};
             if (nestedModel && nestedModel.length) {
                 if (nestedModel.indexOf("[]") !== -1) {
                     if (Array.isArray(useObj)) {
@@ -912,7 +1057,7 @@ export class NanoSQL implements INanoSQLInstance {
                 } else {
                     newObj[m.key] = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key]) : m.default;
                 }
-                if (m.notNull && newObj[m.key] === null) {
+                if (m.notNull && (newObj[m.key] === null || newObj[m.key] === undefined)) {
                     error = `Data error, ${m.key} cannot be null!`;
                 }
             });
@@ -970,17 +1115,17 @@ export class NanoSQL implements INanoSQLInstance {
     }
 
     public disconnect() {
-        return this.doFilter<disconnectFilter, undefined>("disconnect", {}).then(() => {
-            return new Promise((res, rej) => this.adapter.disconnect(res, rej));
+        return new Promise((res, rej) => {
+            this.doFilter<disconnectFilter, undefined>("disconnect", {}, () => {
+                this.adapter.disconnect(res, rej);
+            }, rej);
         });
     }
 
-    public observable<T>(getQuery: (ev?: INanoSQLDatabaseEvent) => INanoSQLQuery, tablesToListen?: string[]): Observer<T> {
-        return new Observer<T>(this, getQuery, tablesToListen || []);
-    }
-
     public extend(scope: string, ...args: any[]): any | NanoSQL {
-        return this.doFilter<extendFilter, { result: any }>("extend", { scope: scope, args: args, result: null });
+        return new Promise((res, rej) => {
+            this.doFilter<extendFilter, { result: any }>("extend", { scope: scope, args: args, result: null }, res, rej);
+        });
     }
 
     public loadJS(rows: { [key: string]: any }[], onProgress?: (percent: number) => void): Promise<any[]> {
@@ -990,7 +1135,20 @@ export class NanoSQL implements INanoSQLInstance {
         if (typeof table !== "string") {
             return Promise.reject("nSQL: Can't load JS into temporary table!");
         }
-        return Promise.resolve([]);
+        const total = rows.length;
+        let count = 0;
+        return chainAsync(rows, (row, i, next, err) => {
+            this.triggerQuery({
+                ...buildQuery(table, "upsert"),
+                actionArgs: row
+            }, (r) => {
+
+            }, () => {
+                count++;
+                if (onProgress) onProgress(((count / total) * 10000) / 100);
+                next();
+            }, err as any);
+        });
     }
 
     public JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string {
@@ -1011,7 +1169,7 @@ export class NanoSQL implements INanoSQLInstance {
         }
 
         if (printHeaders) {
-            csv.push(columnHeaders.join(","));
+            csv.push(columnHeaders.map(c => `"${c}"`).join(","));
         }
 
         json.forEach((row) => {
@@ -1030,7 +1188,7 @@ export class NanoSQL implements INanoSQLInstance {
                 return typeof row[k] === "object" ? "\"" + JSON.stringify(row[k]).replace(/\"/g, '\"\"') + "\"" : row[k];
             }).join(","));
         });
-        return csv.join("\r\n");
+        return csv.join("\n");
     }
 
     public csvToArray(text: string): any[] {
@@ -1061,7 +1219,7 @@ export class NanoSQL implements INanoSQLInstance {
         let fields: Array<string> = [];
         return csv.split(/\r?\n|\r|\t/gm).map((v, k) => {
             if (k === 0) {
-                fields = v.split(",");
+                fields = v.split(",").map(s => s.substring(1, s.length - 1));
                 return undefined;
             } else {
 

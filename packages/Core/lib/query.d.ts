@@ -1,4 +1,4 @@
-import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, IGraphArgs, INanoSQLTable, TableQueryResult } from "./interfaces";
+import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, INanoSQLGraphArgs, INanoSQLTable, TableQueryResult } from "./interfaces";
 import { _NanoSQLQueue } from "./utilities";
 export declare const secondaryIndexQueue: {
     [idAndTable: string]: _NanoSQLQueue;
@@ -24,6 +24,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _orderBy: INanoSQLSortBy;
     _groupBy: INanoSQLSortBy;
     upsertPath: string[];
+    private _startTime;
     constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
     _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void): void;
     _getTable(tableName: string, whereCond: any[] | ((row: {
@@ -32,7 +33,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
     _buildCombineWhere(graphWhere: any, graphTable: string, rowTable: string, rowData: any): any;
-    _graph(gArgs: IGraphArgs | IGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void): void;
+    _graph(gArgs: INanoSQLGraphArgs | INanoSQLGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;
     private _diffUpdates;
@@ -51,6 +52,8 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _streamAS(row: any): any;
     _orderByRows(a: any, b: any): number;
     _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    setMapReduce(newTableConfig?: INanoSQLTableConfig, oldConfig?: INanoSQLTable): void;
+    updateMRTimer(): void;
     _alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
     _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err: any): void;

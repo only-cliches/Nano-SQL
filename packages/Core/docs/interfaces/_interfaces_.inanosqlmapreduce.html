@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;observable&quot; | @nano-sql/core</title>
+	<title>INanoSQLMapReduce | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,28 +54,116 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="_observable_.html">&quot;observable&quot;</a>
+					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
+				</li>
+				<li>
+					<a href="_interfaces_.inanosqlmapreduce.html">INanoSQLMapReduce</a>
 				</li>
 			</ul>
-			<h1>External module &quot;observable&quot;</h1>
+			<h1>Interface INanoSQLMapReduce</h1>
 		</div>
 	</div>
 </header>
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-hierarchy">
+				<h3>Hierarchy</h3>
+				<ul class="tsd-hierarchy">
+					<li>
+						<span class="target">INanoSQLMapReduce</span>
+					</li>
+				</ul>
+			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section ">
-							<h3>Classes</h3>
+							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-has-type-parameter"><a href="../classes/_observable_.observer.html" class="tsd-kind-icon">Observer</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-external-module"><a href="../classes/_observable_.observersubscriber.html" class="tsd-kind-icon">Observer<wbr>Subscriber</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlmapreduce.html#call" class="tsd-kind-icon">call</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlmapreduce.html#name" class="tsd-kind-icon">name</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlmapreduce.html#onevents" class="tsd-kind-icon">on<wbr>Events</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlmapreduce.html#ontimes" class="tsd-kind-icon">on<wbr>Times</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlmapreduce.html#throttle" class="tsd-kind-icon">throttle</a></li>
 							</ul>
 						</section>
 					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Properties</h2>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="call" class="tsd-anchor"></a>
+					<h3>call</h3>
+					<div class="tsd-signature tsd-kind-icon">call<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/203969d/packages/Core/src/interfaces.ts#L233">interfaces.ts:233</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-siganture">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-property tsd-is-not-exported">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>evn<span class="tsd-signature-symbol">: </span><a href="_interfaces_.inanosqldatabaseevent.html" class="tsd-signature-type">INanoSQLDatabaseEvent</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></li>
+								</ul>
+								<ul class="tsd-descriptions">
+									<li class="tsd-description">
+										<h4 class="tsd-parameters-title">Parameters</h4>
+										<ul class="tsd-parameters">
+											<li>
+												<h5>evn: <a href="_interfaces_.inanosqldatabaseevent.html" class="tsd-signature-type">INanoSQLDatabaseEvent</a></h5>
+											</li>
+										</ul>
+										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">&gt;</span></h4>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="name" class="tsd-anchor"></a>
+					<h3>name</h3>
+					<div class="tsd-signature tsd-kind-icon">name<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/203969d/packages/Core/src/interfaces.ts#L232">interfaces.ts:232</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="onevents" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> on<wbr>Events</h3>
+					<div class="tsd-signature tsd-kind-icon">on<wbr>Events<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/203969d/packages/Core/src/interfaces.ts#L235">interfaces.ts:235</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="ontimes" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> on<wbr>Times</h3>
+					<div class="tsd-signature tsd-kind-icon">on<wbr>Times<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/203969d/packages/Core/src/interfaces.ts#L236">interfaces.ts:236</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="throttle" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> throttle</h3>
+					<div class="tsd-signature tsd-kind-icon">throttle<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/203969d/packages/Core/src/interfaces.ts#L234">interfaces.ts:234</a></li>
+						</ul>
+					</aside>
 				</section>
 			</section>
 		</div>
@@ -86,42 +174,57 @@
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_adapter_test_.html">"adapter-<wbr>test"</a>
+						<a href="../modules/_adapter_test_.html">"adapter-<wbr>test"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_functions_.html">"functions"</a>
+						<a href="../modules/_functions_.html">"functions"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_index_.html">"index"</a>
+						<a href="../modules/_index_.html">"index"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_index_node_.html">"index-<wbr>node"</a>
-					</li>
-					<li class=" tsd-kind-external-module">
-						<a href="_interfaces_.html">"interfaces"</a>
+						<a href="../modules/_index_node_.html">"index-<wbr>node"</a>
 					</li>
 					<li class="current tsd-kind-external-module">
-						<a href="_observable_.html">"observable"</a>
+						<a href="../modules/_interfaces_.html">"interfaces"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_query_.html">"query"</a>
+						<a href="../modules/_query_.html">"query"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_query_builder_.html">"query-<wbr>builder"</a>
+						<a href="../modules/_query_builder_.html">"query-<wbr>builder"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
-						<a href="_utilities_.html">"utilities"</a>
+						<a href="../modules/_utilities_.html">"utilities"</a>
 					</li>
 				</ul>
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
-					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-has-type-parameter">
-						<a href="../classes/_observable_.observer.html" class="tsd-kind-icon">Observer</a>
+				</ul>
+				<ul class="current">
+					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
+						<a href="_interfaces_.inanosqlmapreduce.html" class="tsd-kind-icon">INanoSQLMap<wbr>Reduce</a>
+						<ul>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlmapreduce.html#call" class="tsd-kind-icon">call</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlmapreduce.html#name" class="tsd-kind-icon">name</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlmapreduce.html#onevents" class="tsd-kind-icon">on<wbr>Events</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlmapreduce.html#ontimes" class="tsd-kind-icon">on<wbr>Times</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlmapreduce.html#throttle" class="tsd-kind-icon">throttle</a>
+							</li>
+						</ul>
 					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module">
-						<a href="../classes/_observable_.observersubscriber.html" class="tsd-kind-icon">Observer<wbr>Subscriber</a>
-					</li>
+				</ul>
+				<ul class="after-current">
 				</ul>
 			</nav>
 		</div>

@@ -19,6 +19,15 @@ export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?:
     return end;
 };
 
+export const titleCase = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+export const getWeekOfYear = (d: Date): number => {
+    const onejan = new Date(d.getFullYear(), 0, 1);
+    return Math.ceil( (((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7 );
+};
+
 export const buildQuery = (table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): INanoSQLQuery => {
     return {
         table: table,
@@ -36,46 +45,46 @@ export const buildQuery = (table: string | any[] | ((where?: any[] | ((row: {[ke
 export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
     return {
         write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterWillWriteFilter, { table: string, pk: any, row: any }>("adapterWillWrite", { result: { table, pk, row }, query }).then((result) => {
+            nSQL.doFilter<adapterWillWriteFilter, { table: string, pk: any, row: any }>("adapterWillWrite", { result: { table, pk, row }, query }, (result) => {
                 if (!result) return; // filter took over write
                 nSQL.adapter.write(result.table, result.pk, result.row, (pk) => {
-                    nSQL.doFilter<adapterDidWriteFilter, any>("adapterDidWrite", { result: pk }).then((setPK: any) => {
+                    nSQL.doFilter<adapterDidWriteFilter, any>("adapterDidWrite", { result: pk }, (setPK: any) => {
                         complete(setPK);
-                    }).catch(error);
+                    }, error as any);
                 }, error);
-            }).catch(error);
+            }, error as any);
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterWillReadFilter, any>("adapterWillRead", { result: undefined, table, pk, i: 0, query }).then((resultRow: any) => {
+            nSQL.doFilter<adapterWillReadFilter, any>("adapterWillRead", { result: undefined, table, pk, i: 0, query }, (resultRow) => {
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
                 } else {
                     nSQL.adapter.read(table, pk, (row) => {
-                        nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk, i: 0, query }).then((resultRow: any) => {
+                        nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk, i: 0, query }, (resultRow) => {
                             complete(resultRow);
-                        }).catch(error);
+                        }, error as any);
                     }, error);
                 }
-            });
+            }, error as any);
         },
         readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
 
             const readBuffer = new _NanoSQLQueue((item, idx, done, err) => {
                 const pk = nSQL.tables[table].pkCol;
-                nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: item, table, pk: item[pk], i: idx, query }).then((resultRow: any) => {
+                nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: item, table, pk: item[pk], i: idx, query }, (resultRow) => {
                     onRow(resultRow, idx);
                     done();
-                }).catch(err);
+                }, error as any);
             }, error, complete);
 
-            nSQL.doFilter<adapterWillReadMultiFilter, any>("adapterWillReadMulti", { result: { table, type, offsetOrLow, limitOrHigh, reverse }, onRow, complete, error, query }).then((result) => {
+            nSQL.doFilter<adapterWillReadMultiFilter, any>("adapterWillReadMulti", { result: { table, type, offsetOrLow, limitOrHigh, reverse }, onRow, complete, error, query }, (result) => {
                 if (!result) return;
                 nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, (row) => {
                     readBuffer.newItem(row);
                 }, () => {
                     readBuffer.finished();
                 }, readBuffer.onError as any);
-            });
+            }, readBuffer.onError as any);
 
         }
     };
@@ -85,8 +94,6 @@ export const noop = () => { };
 export const throwErr = (err: any) => {
     throw new Error(err);
 };
-
-// export const events = ["*", "change", "delete", "upsert", "drop", "select", "error", "peer-change"];
 
 /**
  * Object.assign, but faster.
@@ -205,7 +212,7 @@ export class _NanoSQLQueue {
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export const chainAsync = (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err?: (err: any) => void) => void): Promise<any[]> => {
+export const chainAsync = (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err?: (err?: any) => void) => void): Promise<any[]> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
             res([]);
@@ -279,13 +286,13 @@ export const random16Bits = (): number => {
     }
 };
 
-export const throttle = (func: any, limit: number) => {
+export const throttle = (scope: any, func: any, limit: number) => {
     let waiting = false;
     return (...args: any[]) => {
         if (waiting) return;
         waiting = true;
         setTimeout(() => {
-            func.apply(null, args);
+            func.apply(scope, args);
             waiting = false;
         }, limit);
     };
@@ -457,7 +464,7 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean): any =>
             case "obj":
             case "map": return isObject(castVal) ? castVal : {};
             case "boolean":
-            case "bool": return castVal === true || castVal === 1;
+            case "bool": return castVal === true || castVal === 1 ? true : false;
         }
 
         // doesn't match known types, return null;

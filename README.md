@@ -3,11 +3,10 @@ Universal database for the client, server & mobile devices.  It's like Lego for 
 <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
 
 
-[![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/nano-sql/blob/master/LICENSE)
+[![npm downloads](https://img.shields.io/npm/dm/@nano-sql.core/svg?style=flat-square)](https://www.npmjs.com/package/@nano-sql/)
+[![npm version](https://badge.fury.io/js/%40nano-sql%2Fcore.svg)](https://badge.fury.io/js/%40nano-sql%2Fcore)
+[![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
-[![npm downloads](https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square)](https://www.npmjs.com/package/nano-sql)
-
-[![NPM](https://nodei.co/npm/nano-sql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sql/)
 </center>
 
 NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes from 1.0.
@@ -15,7 +14,7 @@ NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes fr
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc7/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc8/dist/nano-sql.min.js
 
 NPM Install
 ```sh
@@ -53,20 +52,20 @@ nSQL().connect({
     tables: [
         {
             name: "users",
-            model: [
-                { key: "id:uuid", props: ["pk()"] },
-                { key: "name:string" },
-                { key: "age:int", default: 18 },
-                { key: "meta:obj", model: [
-                    {key: "color:string"}
-                ] },
-                { key: "tags:string[]", default: [] }
-            ],
-            indexes: [
-                { name: "Tags", key: "tags:string[]" },
-                { name: "Color", key: "meta.color:string" },
-                { name: "Age", key: "age:int"}
-            ]
+            model: {
+                "id:uuid": {pk: true},
+                "name:string": {},
+                "age:int": {},
+                "meta:obj": {
+                    model: {"color:string": {}}
+                },
+                "tags:string[]": {default: []}
+            }
+            indexes: {
+                "Tags:string[]": "tags",
+                "Color:string": "meta.color",
+                "Age:int": "age"
+            }
         }
     ],
 }).then(() => {

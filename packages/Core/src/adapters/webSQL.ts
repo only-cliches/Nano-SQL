@@ -1,11 +1,13 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION, SQLiteAbstractFns } from "../interfaces";
 import { isAndroid, generateID, setFast } from "../utilities";
 
+let tables: string[] = [];
+
 export const SQLiteAbstract = (
     _query: (allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void) => void,
     _batchSize: number
 ): SQLiteAbstractFns => {
-    let tables: string[] = [];
+
     const checkTable = (table: string): string => {
         if (tables.indexOf(table) === -1) {
             throw Error("No table " + table + " found!");
