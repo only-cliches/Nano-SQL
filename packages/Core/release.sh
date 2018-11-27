@@ -40,11 +40,12 @@ function run() {
     echo "${bold}(5/8) Browser Build Completed...${normal}"
 
     # Test rollup
-    npm run rollup-test 
-    rm nano-sql-rollup.min.js
+    npm run rollup-test
     if [ $? -eq 0 ]; then
+        rm nano-sql-rollup.min.js
         echo "${bold}(6/8) Rollup Bundle OK${normal}"
     else
+        rm nano-sql-rollup.min.js
         echo "${bold}Rollup Bundle Failed!${normal}"
         return;
     fi

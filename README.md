@@ -3,7 +3,7 @@ Universal database for the client, server & mobile devices.  It's like Lego for 
 <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
 
 
-[![npm downloads](https://img.shields.io/npm/dm/@nano-sql.core/svg?style=flat-square)](https://www.npmjs.com/package/@nano-sql/)
+[![npm downloads](https://img.shields.io/npm/dm/@nano-sql/core.svg?style=flat-square)](https://www.npmjs.com/package/@nano-sql/)
 [![npm version](https://badge.fury.io/js/%40nano-sql%2Fcore.svg)](https://badge.fury.io/js/%40nano-sql%2Fcore)
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
