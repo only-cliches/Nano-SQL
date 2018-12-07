@@ -377,7 +377,7 @@ var RedisAdapter = (function () {
         var _this = this;
         this._getDB(table).del(this._key(table, "_index"), function () {
             utilities_1.fastALL(_this._dbIndex[table].keys(), function (item, i, done) {
-                _this._getDB(table).del(item, done);
+                _this._getDB(table).del(_this._key(table, item), done);
             }).then(function () {
                 var newIndex = new db_idx_1.DatabaseIndex();
                 newIndex.doAI = _this._dbIndex[table].doAI;

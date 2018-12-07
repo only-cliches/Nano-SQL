@@ -522,7 +522,7 @@ export class RedisAdapter implements NanoSQLStorageAdapter {
         this._getDB(table).del(this._key(table, "_index"), () => {
 
             fastALL(this._dbIndex[table].keys(), (item, i, done) => {
-                this._getDB(table).del(item, done);
+                this._getDB(table).del(this._key(table, item), done);
             }).then(() => {
                 let newIndex = new DatabaseIndex();
                 newIndex.doAI = this._dbIndex[table].doAI;
