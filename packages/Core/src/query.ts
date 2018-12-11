@@ -1,6 +1,50 @@
-import { INanoSQLQuery, ISelectArgs, IWhereArgs, IWhereType, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, configTableFilter, INanoSQLDataModel, INanoSQLTableColumn, INanoSQLJoinArgs, INanoSQLQueryExec, INanoSQLInstance, customQueryFilter, INanoSQLGraphArgs, INanoSQLTable, adapterDidReadFilter, adapterWillWriteFilter, adapterWillReadFilter, adapterWillReadMultiFilter, adapterDidWriteFilter, conformRowFilter, deleteRowFilter, addRowFilter, updateRowFilter, dropTableFilter, alterTableFilter, addTableFilter, TableQueryResult, INanoSQLMapReduce, mapReduceFilter, INanoSQLDatabaseEvent } from "./interfaces";
-import { deepGet, chainAsync, _objectsEqual, hash, resolvePath, setFast, allAsync, _maybeAssign, _assign, cast, buildQuery, deepSet, _NanoSQLQueue, noop, uuid, adapterFilters, getFnValue, throttle } from "./utilities";
-import { timingSafeEqual } from "crypto";
+import { 
+    INanoSQLQuery, 
+    ISelectArgs, 
+    IWhereArgs, 
+    IWhereType, 
+    INanoSQLIndex, 
+    IWhereCondition, 
+    INanoSQLSortBy, 
+    INanoSQLTableConfig, 
+    configTableFilter, 
+    INanoSQLDataModel, 
+    INanoSQLTableColumn, 
+    INanoSQLJoinArgs, 
+    INanoSQLQueryExec, 
+    INanoSQLInstance, 
+    customQueryFilter, 
+    INanoSQLGraphArgs, 
+    INanoSQLTable, 
+    conformRowFilter, 
+    deleteRowFilter, 
+    addRowFilter, 
+    updateRowFilter, 
+    dropTableFilter, 
+    alterTableFilter, 
+    addTableFilter, 
+    TableQueryResult, 
+    INanoSQLMapReduce, 
+    mapReduceFilter, 
+    INanoSQLDatabaseEvent 
+} from "./interfaces";
+
+import { 
+    deepGet, 
+    chainAsync, 
+    _objectsEqual, 
+    hash, 
+    resolvePath, 
+    allAsync, 
+    _maybeAssign, 
+    _assign, 
+    buildQuery, 
+    deepSet, 
+    _NanoSQLQueue, 
+    uuid, 
+    adapterFilters, 
+    throttle 
+} from "./utilities";
 
 export const secondaryIndexQueue: { [idAndTable: string]: _NanoSQLQueue } = {};
 
@@ -1201,7 +1245,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             };
 
 
-            const generateColumns = (dataModels: INanoSQLDataModel): INanoSQLTableColumn[] => {
+            const generateColumns = (dataModels: INanoSQLDataModel, level: number): INanoSQLTableColumn[] => {
                 return Object.keys(dataModels).filter(d => d !== "*").map(d => ({
                     key: d.split(":")[0],
                     type: d.split(":")[1] || "any",
@@ -1209,7 +1253,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     pk: dataModels[d].pk,
                     default: dataModels[d].default,
                     notNull: dataModels[d].notNull,
-                    model: dataModels[d].model ? generateColumns(dataModels[d].model as any) : undefined
+                    model: dataModels[d].model ? generateColumns(dataModels[d].model as any, level + 1) : undefined
                 }));
             };
 
@@ -1227,7 +1271,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
             newConfigs[table.name] = {
                 model: computedDataModel,
-                columns: generateColumns(computedDataModel),
+                columns: generateColumns(computedDataModel, 0),
+                pkOffset: 0,
                 filter: table.filter,
                 mapReduce: table.mapReduce,
                 actions: table.actions || [],

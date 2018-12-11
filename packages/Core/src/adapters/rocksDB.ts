@@ -170,7 +170,7 @@ export class RocksDB implements INanoSQLAdapter {
 
         row[this.nSQL.tables[table].pkCol] = pk;
 
-        this._levelDBs[table].put(this.encodePk(table, pk), row, (err) => {
+        this._levelDBs[table].put(this._encodePk(table, pk), row, (err) => {
             if (err) {
                 error(err);
             } else {
@@ -186,7 +186,7 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     read(table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) {
-        this._levelDBs[table].get(this.encodePk(table, pk), (err, row) => {
+        this._levelDBs[table].get(this._encodePk(table, pk), (err, row) => {
             if (err) {
                 complete(undefined);
             } else {
@@ -201,8 +201,8 @@ export class RocksDB implements INanoSQLAdapter {
 
         this._levelDBs[table]
             .createValueStream(type === "range" ? {
-                gte: type === "range" ? this.encodePk(table, offsetOrLow) : undefined,
-                lt: type === "range" ? this.encodePk(table, limitOrHigh) : undefined,
+                gte: type === "range" ? this._encodePk(table, offsetOrLow) : undefined,
+                lt: type === "range" ? this._encodePk(table, limitOrHigh) : undefined,
                 reverse: reverse
             } : type === "offset" ? {
                 reverse: reverse,
@@ -248,16 +248,16 @@ export class RocksDB implements INanoSQLAdapter {
         }
     }
 
-    encodePk(table: string, pk: any): any {
+    _encodePk(table: string, pk: any): any {
         return this.nSQL.tables[table].isPkNum ? this._writeNumberBuffer(table, pk) : Buffer.from(pk, "utf-8");
     }
 
-    decodePK(table: string, pk: any): any {
+    _decodePK(table: string, pk: any): any {
         return this.nSQL.tables[table].isPkNum ? this._readNumberBuffer(table, pk) : new Buffer(pk).toString("utf-8");
     }
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void) {
-        this._levelDBs[table].del(this.encodePk(table, pk), (err) => {
+        this._levelDBs[table].del(this._encodePk(table, pk), (err) => {
             if (err) {
                 throw Error(err);
             } else {
@@ -271,7 +271,7 @@ export class RocksDB implements INanoSQLAdapter {
         this._levelDBs[table]
             .createKeyStream()
             .on("data", (pk) => {
-                index.push(this.decodePK(table, pk));
+                index.push(this._decodePK(table, pk));
             })
             .on("end", () => {
                 complete(index);

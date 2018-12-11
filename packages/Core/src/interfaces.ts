@@ -224,7 +224,8 @@ export interface INanoSQLDataModel {
         default?: any;
         model?: INanoSQLDataModel;
         notNull?: boolean;
-        // [key: string]: any;
+        pkOffset?: number;
+        [key: string]: any;
     };
 }
 
@@ -254,7 +255,9 @@ export interface INanoSQLTableConfig {
     filter?: (row: any) => any;
     actions?: INanoSQLActionOrView[];
     views?: INanoSQLActionOrView[];
-    props?: {[key: string]: any};
+    props?: {
+        [key: string]: any;
+    };
     _internal?: boolean;
 }
 
@@ -338,6 +341,7 @@ export interface INanoSQLTable {
     pkType: string;
     pkCol: string;
     isPkNum: boolean;
+    pkOffset: number;
     ai: boolean;
     props?: any;
 }
