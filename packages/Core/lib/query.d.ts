@@ -24,6 +24,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _orderBy: INanoSQLSortBy;
     _groupBy: INanoSQLSortBy;
     upsertPath: string[];
+    private _hasOrdered;
     private _startTime;
     constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
     _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void): void;

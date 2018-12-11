@@ -59,7 +59,6 @@ var SyncStorage = /** @class */ (function () {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
-        this._ai[table] = Math.max(pk, this._ai[table]);
         if (this.nSQL.tables[table].ai) {
             this._ai[table] = Math.max(this._ai[table] || 0, pk);
         }
@@ -114,8 +113,8 @@ var SyncStorage = /** @class */ (function () {
             "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
             "all": false
         }[type];
-        this._index[table].forEach(function (pk, i) {
-            var read = !range ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
+        this._index[table].slice().forEach(function (pk, i) {
+            var read = type === "all" ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
             if (read) {
                 if (_this.useLS) {
                     onRow(JSON.parse(localStorage.getItem(_this._id + "->" + table + "__" + pk) || "{}"), i);

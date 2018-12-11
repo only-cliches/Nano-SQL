@@ -19,10 +19,11 @@ export const SQLiteAbstract = (
         createAI: (complete: () => void, error: (err: any) => void) => {
             _query(true, `CREATE TABLE IF NOT EXISTS "_ai" (id TEXT PRIMARY KEY UNIQUE, inc BIGINT)`, [], complete, error);
         },
-        createTable: (table: string, doAI: boolean, ai: {[table: string]: number}, complete: () => void, error: (err: any) => void) => {
+        createTable: (table: string, tableData: INanoSQLTable, ai: {[table: string]: number}, complete: () => void, error: (err: any) => void) => {
             tables.push(table);
-            _query(true, `CREATE TABLE IF NOT EXISTS "${table}" (id BLOB PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
-                if (doAI) {
+
+            _query(true, `CREATE TABLE IF NOT EXISTS "${table}" (id ${tableData.isPkNum ? "REAL" : "TEXT"} PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
+                if (tableData.ai) {
                     _query(false, `SELECT "inc" FROM "_ai" WHERE id = ?`, [table], (result) => {
                         if (!result.rows.length) {
                             ai[table] = 0;
@@ -54,19 +55,35 @@ export const SQLiteAbstract = (
                 return;
             }
 
-            ai[table] = Math.max(pk, ai[table]);
+            if (doAI) ai[table] = Math.max(pk, ai[table]);
             row[pkCol] = pk;
             const rowStr = JSON.stringify(row);
 
-            _query(true, `INSERT INTO ${checkTable(table)} (id, data) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET data = ?`, [pk, rowStr, rowStr], () => {
-                if (doAI) {
-                    _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
-                        complete(pk);
+            _query(false, `SELECT * FROM ${checkTable(table)} WHERE id = ?`, [pk], (result) => {
+                if (result.rows.length) {
+                    _query(true, `UPDATE ${checkTable(table)} SET data = ? WHERE id = ?`, [rowStr, pk], () => {
+                        if (doAI && pk === ai[table]) {
+                            _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
+                                complete(pk);
+                            }, error);
+                        } else {
+                            complete(pk);
+                        }
                     }, error);
                 } else {
-                    complete(pk);
+                    _query(true, `INSERT INTO ${checkTable(table)} (id, data) VALUES (?, ?)`, [pk, rowStr], () => {
+                        if (doAI && pk === ai[table]) {
+                            _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
+                                complete(pk);
+                            }, error);
+                        } else {
+                            complete(pk);
+                        }
+                    }, error);
                 }
             }, error);
+
+
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
             _query(false, `SELECT data FROM ${checkTable(table)} WHERE id = ?`, [pk], (result) => {
@@ -182,7 +199,7 @@ export class WebSQL implements INanoSQLAdapter {
     }
 
     createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
-        this._sqlite.createTable(tableName, tableData.ai, this._ai, complete, error);
+        this._sqlite.createTable(tableName, tableData, this._ai, complete, error);
     }
 
     _query(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void): void {

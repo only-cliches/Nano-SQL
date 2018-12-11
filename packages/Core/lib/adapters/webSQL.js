@@ -15,10 +15,10 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
         createAI: function (complete, error) {
             _query(true, "CREATE TABLE IF NOT EXISTS \"_ai\" (id TEXT PRIMARY KEY UNIQUE, inc BIGINT)", [], complete, error);
         },
-        createTable: function (table, doAI, ai, complete, error) {
+        createTable: function (table, tableData, ai, complete, error) {
             tables.push(table);
-            _query(true, "CREATE TABLE IF NOT EXISTS \"" + table + "\" (id BLOB PRIMARY KEY UNIQUE, data TEXT)", [], function () {
-                if (doAI) {
+            _query(true, "CREATE TABLE IF NOT EXISTS \"" + table + "\" (id " + (tableData.isPkNum ? "REAL" : "TEXT") + " PRIMARY KEY UNIQUE, data TEXT)", [], function () {
+                if (tableData.ai) {
                     _query(false, "SELECT \"inc\" FROM \"_ai\" WHERE id = ?", [table], function (result) {
                         if (!result.rows.length) {
                             ai[table] = 0;
@@ -51,17 +51,34 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
                 error(new Error("Can't add a row without a primary key!"));
                 return;
             }
-            ai[table] = Math.max(pk, ai[table]);
+            if (doAI)
+                ai[table] = Math.max(pk, ai[table]);
             row[pkCol] = pk;
             var rowStr = JSON.stringify(row);
-            _query(true, "INSERT INTO " + checkTable(table) + " (id, data) VALUES (?, ?) ON CONFLICT (id) DO UPDATE SET data = ?", [pk, rowStr, rowStr], function () {
-                if (doAI) {
-                    _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
-                        complete(pk);
+            _query(false, "SELECT * FROM " + checkTable(table) + " WHERE id = ?", [pk], function (result) {
+                if (result.rows.length) {
+                    _query(true, "UPDATE " + checkTable(table) + " SET data = ? WHERE id = ?", [rowStr, pk], function () {
+                        if (doAI && pk === ai[table]) {
+                            _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
+                                complete(pk);
+                            }, error);
+                        }
+                        else {
+                            complete(pk);
+                        }
                     }, error);
                 }
                 else {
-                    complete(pk);
+                    _query(true, "INSERT INTO " + checkTable(table) + " (id, data) VALUES (?, ?)", [pk, rowStr], function () {
+                        if (doAI && pk === ai[table]) {
+                            _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
+                                complete(pk);
+                            }, error);
+                        }
+                        else {
+                            complete(pk);
+                        }
+                    }, error);
                 }
             }, error);
         },
@@ -168,7 +185,7 @@ var WebSQL = /** @class */ (function () {
         });
     };
     WebSQL.prototype.createAndInitTable = function (tableName, tableData, complete, error) {
-        this._sqlite.createTable(tableName, tableData.ai, this._ai, complete, error);
+        this._sqlite.createTable(tableName, tableData, this._ai, complete, error);
     };
     WebSQL.prototype._query = function (allowWrite, sql, args, complete, error) {
         var doTransaction = function (tx) {

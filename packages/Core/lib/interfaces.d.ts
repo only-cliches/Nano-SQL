@@ -289,6 +289,9 @@ export interface INanoSQLPlugin {
         call: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
     }[];
 }
+export interface INanoSQLAdapterConstructor {
+    new (...args: any[]): INanoSQLAdapter;
+}
 export interface INanoSQLAdapter {
     plugin: INanoSQLPlugin;
     nSQL: INanoSQLInstance;
@@ -481,7 +484,7 @@ export interface abstractFilter {
 }
 export interface SQLiteAbstractFns {
     createAI: (complete: () => void, error: (err: any) => void) => void;
-    createTable: (table: string, doAI: boolean, ai: {
+    createTable: (table: string, tableData: INanoSQLTable, ai: {
         [table: string]: number;
     }, complete: () => void, error: (err: any) => void) => void;
     dropTable: (table: string, complete: () => void, error: (err: any) => void) => void;

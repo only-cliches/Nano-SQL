@@ -48,6 +48,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     public _orderBy: INanoSQLSortBy;
     public _groupBy: INanoSQLSortBy;
     public upsertPath: string[];
+    private _hasOrdered: boolean;
     private _startTime: number;
 
     constructor(
@@ -489,7 +490,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         const joinData: INanoSQLJoinArgs[] = Array.isArray(this.query.join) ? this.query.join : [this.query.join as any];
 
         let joinedRows = 0;
-
+        let rowCounter2 = 0;
         const graphBuffer = new _NanoSQLQueue((gRow, ct, nextGraph, err) => {
             let keepRow = true;
             if (this.query.having) {
@@ -500,12 +501,12 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 if (this.query.graph) {
                     this._graph(this.query.graph || [], this.query.tableAS || this.query.table as string, gRow, rowCounter, (graphRow, j) => {
                         this.progress(this._streamAS(graphRow), j);
-                        rowCounter++;
+                        rowCounter2++;
                         nextGraph();
                     });
                 } else {
-                    this.progress(this._streamAS(gRow), rowCounter);
-                    rowCounter++;
+                    this.progress(this._streamAS(gRow), rowCounter2);
+                    rowCounter2++;
                     nextGraph();
                 }
             } else {
@@ -555,7 +556,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     });
                 }
 
-                if (this.query.orderBy) { // order by
+                if (this.query.orderBy && !this._hasOrdered) { // order by
                     this._queryBuffer.sort(this._orderByRows);
                 }
 
@@ -564,7 +565,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 }
 
                 this._queryBuffer.forEach((row, i) => {
-                    this.progress(row, range[0] + i);
+                    this.progress(row, i);
                 });
 
                 if (this.query.cacheID && this.query.cacheID === this.query.queryID) {
@@ -621,6 +622,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             this._sortGroups[key].push(val);
         });
 
+        if (this.query.orderBy) {
+            this._hasOrdered = true;
+            this._sortGroups = this._sortGroups.map((groupArr) => {
+                return groupArr.sort((a, b) => this._sortObj(a, b, this._orderBy));
+            });
+        }
+
         this._queryBuffer = [];
         if (this._hasAggrFn) {
             // loop through the groups
@@ -658,9 +666,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             });
         } else {
             this._sortGroups.forEach((group) => {
-                group.forEach((row) => {
-                    this._queryBuffer.push(this._streamAS(row));
-                });
+                this._queryBuffer.push(this._streamAS(group.pop()));
             });
         }
     }
@@ -1007,7 +1013,6 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         this.nSQL.doFilter<deleteRowFilter, any>("deleteRow", { result: row, query: this.query }, (delRow) => {
 
-
             allAsync(Object.keys(indexValues).concat(["__del__"]), (indexName: string, i, next) => {
                 if (indexName === "__del__") { // main row
                     this.nSQL.adapter.delete(this.query.table as string, delRow[table.pkCol], () => {
@@ -1129,11 +1134,14 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
      * @memberof _MutateSelection
      */
     public _sortObj(objA: any, objB: any, columns: INanoSQLSortBy): number {
+        const id = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table as any].pkCol : false;
+        const A_id = id ? objA[id] : false;
+        const B_id = id ? objB[id] : false;
         return columns.sort.reduce((prev, cur) => {
             let A = deepGet(cur.path, objA);
             let B = deepGet(cur.path, objB);
             if (!prev) {
-                if (A === B) return 0;
+                if (A === B) return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
                 return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
             } else {
                 return prev;

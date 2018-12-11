@@ -52,6 +52,9 @@ var IndexedDB = /** @class */ (function () {
         this._db[table].onerror = error;
         this._db[table].close();
         delete this._db[table];
+        localStorage.removeItem(this._id + "_" + table + "_idb_version");
+        localStorage.removeItem(this._id + "_" + table + "_idb_hash");
+        localStorage.removeItem(this._id + "_" + table + "_idb_ai");
         complete();
     };
     IndexedDB.prototype.dropTable = function (table, complete, error) {
@@ -122,7 +125,7 @@ var IndexedDB = /** @class */ (function () {
         var lowerLimit = doOffset ? offsetOrLow : 0;
         var upperLimit = lowerLimit + limitOrHigh;
         this.store(table, "readonly", function (tr, store) {
-            store.openCursor((type === "all" || doOffset) ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, true, false), reverse ? "prev" : "next").onsuccess = function (event) {
+            store.openCursor((type === "all" || doOffset) ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, true), reverse ? "prev" : "next").onsuccess = function (event) {
                 var cursor = event.target.result;
                 if (cursor) {
                     if (doOffset) {

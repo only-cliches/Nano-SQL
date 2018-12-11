@@ -10,6 +10,8 @@ import * as papaparse from "papaparse";
 
 declare const process: any;
 
+const doRace = false;
+
 export const maybeStringify = (obj) => typeof obj === "object" ? JSON.stringify(obj) : obj;
 
 export const JSON2CSV = (json: any[]): string => {
@@ -36,6 +38,14 @@ export const CSV2JSON = (csv: string): any[] => {
             return prev;
         }, {});
     });
+};
+
+export const cleanNsqlJoin = (rows: any[]): any[] => {
+    return rows.map(r => Object.keys(r).reduce((p, c) => {
+        const key: any = c.split(".").pop();
+        p[key] = r[c];
+        return p;
+    }, {}));
 };
 
 export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsql: (nSQL: INanoSQLInstance) => Promise<any>) => Promise<[any[], any[]]> }> {
@@ -215,6 +225,7 @@ export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsq
                 runQuery: (sql, sqlArgs, runNano) => {
                     return new Promise((res, rej) => {
 
+                        if (doRace) console.time("SQLITE");
                         db.all(sql || "SELECT * FROM users", sqlArgs, (err, result) => {
                             if (err) {
                                 rej(err);
@@ -242,7 +253,10 @@ export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsq
                                 }, {});
                             });
 
+                            if (doRace) console.timeEnd("SQLITE");
+                            if (doRace) console.time("nSQL");
                             runNano(nSQL).then((rows) => {
+                                if (doRace) console.timeEnd("nSQL");
                                 res([rows, sqlRows]);
                             });
                         });

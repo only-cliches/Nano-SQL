@@ -85,8 +85,6 @@ export class SyncStorage implements INanoSQLAdapter {
             return;
         }
 
-        this._ai[table] = Math.max(pk, this._ai[table]);
-
         if (this.nSQL.tables[table].ai) {
             this._ai[table] = Math.max(this._ai[table] || 0, pk);
         }
@@ -143,8 +141,9 @@ export class SyncStorage implements INanoSQLAdapter {
             "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
             "all": false
         }[type];
-        this._index[table].forEach((pk, i) => {
-            const read = !range ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
+
+        this._index[table].slice().forEach((pk, i) => {
+            const read = type === "all" ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
             if (read) {
                 if (this.useLS) {
                     onRow(JSON.parse(localStorage.getItem(this._id + "->" + table + "__" + pk) || "{}"), i);

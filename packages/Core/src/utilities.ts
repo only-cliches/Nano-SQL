@@ -164,6 +164,7 @@ export class _NanoSQLQueue {
             if (this.onComplete) this.onComplete();
             return;
         }
+
         // queue has paused
         if (!this._items.length) {
             this._going = false;

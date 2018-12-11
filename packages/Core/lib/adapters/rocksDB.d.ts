@@ -1,6 +1,7 @@
 import { INanoSQLAdapter, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
+export declare const rimraf: (dir_path: string) => void;
 export declare class RocksDB implements INanoSQLAdapter {
-    path?: string | ((dbID: string, tableName: string) => {
+    path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => {
         lvld: any;
         args?: any;
     }) | undefined;
@@ -10,7 +11,7 @@ export declare class RocksDB implements INanoSQLAdapter {
     private _lvlDown;
     private _levelDBs;
     private _ai;
-    constructor(path?: string | ((dbID: string, tableName: string) => {
+    constructor(path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => {
         lvld: any;
         args?: any;
     }) | undefined);
@@ -28,6 +29,10 @@ export declare class RocksDB implements INanoSQLAdapter {
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {
         [key: string]: any;
     }, i: number) => void, complete: () => void, error: (err: any) => void): void;
+    _writeNumberBuffer(table: string, num: number): any;
+    _readNumberBuffer(table: string, buff: any): number;
+    encodePk(table: string, pk: any): any;
+    decodePK(table: string, pk: any): any;
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void): void;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): void;
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void): void;

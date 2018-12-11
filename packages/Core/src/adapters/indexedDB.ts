@@ -70,6 +70,9 @@ export class IndexedDB implements INanoSQLAdapter {
         this._db[table].onerror = error;
         this._db[table].close();
         delete this._db[table];
+        localStorage.removeItem(this._id + "_" + table + "_idb_version");
+        localStorage.removeItem(this._id + "_" + table + "_idb_hash");
+        localStorage.removeItem(this._id + "_" + table + "_idb_ai");
         complete();
     }
 
@@ -152,7 +155,7 @@ export class IndexedDB implements INanoSQLAdapter {
         const lowerLimit = doOffset ? offsetOrLow : 0;
         const upperLimit = lowerLimit + limitOrHigh;
         this.store(table, "readonly", (tr, store) => {
-            store.openCursor((type === "all" || doOffset) ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, true, false), reverse ? "prev" : "next").onsuccess = (event: any) => {
+            store.openCursor((type === "all" || doOffset) ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, true), reverse ? "prev" : "next").onsuccess = (event: any) => {
                 const cursor: IDBCursorWithValue = event.target.result;
                 if (cursor) {
                     if (doOffset) {

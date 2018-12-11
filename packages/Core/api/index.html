@@ -1,0 +1,339 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>@nano-sql/core</title>
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.js" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">@nano-sql/core</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-only-exported" />
+							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="globals.html">Globals</a>
+				</li>
+			</ul>
+			<h1> @nano-sql/core</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<p>Universal database for the client, server &amp; mobile devices.  It&#39;s like Lego for databases.</p>
+				<center>
+					<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
+					<a href="https://www.npmjs.com/package/@nano-sql/core"><img src="https://img.shields.io/npm/dm/@nano-sql/core/svg?style=flat-square" alt="npm downloads"></a>
+					<a href="https://badge.fury.io/js/%40nano-sql%2Fcore"><img src="https://badge.fury.io/js/%40nano-sql%2Fcore.svg" alt="npm version"></a>
+					<a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
+					<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint">
+				</center>
+				<p>NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes from 1.0.</p>
+				<p>The API is also not stable, not recommended for production environments.</p>
+				<p>Current minified build:
+				<a href="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc9/dist/nano-sql.min.js">https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc9/dist/nano-sql.min.js</a></p>
+				<p>NPM Install</p>
+				<pre><code class="lang-sh">npm i @nano-sql/core
+</code></pre>
+				<h1 id="2-0-progress">2.0 Progress</h1>
+				<ul>
+					<li>[x] Query Engine </li>
+					<li>[x] Hook/Filter System</li>
+					<li>[x] Memory/Local Storage Adapter</li>
+					<li>[x] Graph Query Support</li>
+					<li>[x] Event System</li>
+					<li>[x] Indexed DB/WebSQL/RocksDB Adapters</li>
+					<li>[x] Core Tests</li>
+					<li>[x] Adapter Tests</li>
+					<li>[ ] 2.0 documentation</li>
+					<li>[ ] 2.0 release</li>
+					<li>[ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters</li>
+					<li>[ ] Net Plugin (Offline Syncing)</li>
+					<li>[ ] Search Plugin</li>
+					<li>[ ] History Plugin</li>
+					<li>[ ] SQLite Query Support</li>
+					<li>[ ] GraphQL Query Support</li>
+					<li>[ ] MongoDB Query Support</li>
+					<li>[ ] ReQL Query Support</li>
+				</ul>
+				<h1 id="examples">Examples</h1>
+				<pre><code class="lang-ts"><span class="hljs-comment">// Persistent Database</span>
+nSQL().connect({
+    id: <span class="hljs-string">"test"</span>,
+    mode: <span class="hljs-string">"PERM"</span>,
+    tables: [
+        {
+            name: <span class="hljs-string">"users"</span>,
+            model: {
+                <span class="hljs-string">"id:uuid"</span>: {pk: <span class="hljs-literal">true</span>},
+                <span class="hljs-string">"name:string"</span>: {},
+                <span class="hljs-string">"age:int"</span>: {},
+                <span class="hljs-string">"meta:obj"</span>: {
+                    model: {<span class="hljs-string">"color:string"</span>: {}}
+                },
+                <span class="hljs-string">"tags:string[]"</span>: {<span class="hljs-keyword">default</span>: []}
+            }
+            indexes: {
+                <span class="hljs-string">"Tags:string[]"</span>: <span class="hljs-string">"tags"</span>,
+                <span class="hljs-string">"Color:string"</span>: <span class="hljs-string">"meta.color"</span>,
+                <span class="hljs-string">"Age:int"</span>: <span class="hljs-string">"age"</span>
+            }
+        }
+    ],
+}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+    <span class="hljs-keyword">return</span> nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"upsert"</span>, {name: <span class="hljs-string">"Jeb"</span>, age: <span class="hljs-number">20</span>, meta: {color: <span class="hljs-string">"blue"</span>}, tags: [<span class="hljs-string">"some"</span>, <span class="hljs-string">"tags"</span>, <span class="hljs-string">"here"</span>]}).exec();
+}).then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+    <span class="hljs-keyword">return</span> nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).exec();
+}).then(<span class="hljs-function">(<span class="hljs-params">rows</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(rows);
+    <span class="hljs-comment">/*
+    [
+        {
+            "id": "64c611b8-0b1e-42f6-af52-5b8289834bba",
+            "name": "Billy",
+            "age": 21,
+            "meta": {
+                "color": "blue"
+            },
+            "tags": [
+                "some",
+                "tags",
+                "here"
+            ]
+        }
+    ]
+    */</span>
+});
+
+<span class="hljs-comment">// Graph Queries</span>
+nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-string">"author[0].name AS author"</span>, <span class="hljs-string">"body"</span>, <span class="hljs-string">"comments[0].totalComments AS commentsTotal"</span>, <span class="hljs-string">"id"</span>, <span class="hljs-string">"title"</span>]).from({
+    table: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> fetch(<span class="hljs-string">"https://jsonplaceholder.typicode.com/posts"</span>).then(<span class="hljs-function"><span class="hljs-params">d</span> =&gt;</span> d.json()).then(<span class="hljs-function"><span class="hljs-params">j</span> =&gt;</span> ({rows: j, cache: <span class="hljs-literal">true</span>})),
+    <span class="hljs-keyword">as</span>: <span class="hljs-string">"posts"</span>
+}).graph([
+    {
+        key: <span class="hljs-string">"author"</span>,
+        <span class="hljs-keyword">with</span>: {
+            table: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> fetch(<span class="hljs-string">"https://jsonplaceholder.typicode.com/users"</span>).then(<span class="hljs-function"><span class="hljs-params">d</span> =&gt;</span> d.json()).then(<span class="hljs-function"><span class="hljs-params">j</span> =&gt;</span> ({rows: j, cache: <span class="hljs-literal">true</span>})),
+            <span class="hljs-keyword">as</span>: <span class="hljs-string">"author"</span>
+        },
+        on: [<span class="hljs-string">"author.id"</span>, <span class="hljs-string">"="</span>, <span class="hljs-string">"posts.userId"</span>]
+    },
+    {
+        key: <span class="hljs-string">"comments"</span>,
+        select: [<span class="hljs-string">"COUNT(*) as totalComments"</span>],
+        <span class="hljs-keyword">with</span>: {
+            table: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> fetch(<span class="hljs-string">"https://jsonplaceholder.typicode.com/comments"</span>).then(<span class="hljs-function"><span class="hljs-params">d</span> =&gt;</span> d.json()).then(<span class="hljs-function"><span class="hljs-params">j</span> =&gt;</span> ({rows: j, cache: <span class="hljs-literal">true</span>})),
+            <span class="hljs-keyword">as</span>: <span class="hljs-string">"comments"</span>
+        },
+        on: [<span class="hljs-string">"comments.postId"</span>, <span class="hljs-string">"="</span>, <span class="hljs-string">"posts.id"</span>]
+    }
+]).exec().then(<span class="hljs-function">(<span class="hljs-params">rows</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(rows);
+    <span class="hljs-comment">/*
+        "author": "Leanne Graham",
+        "body": "quia et suscipit\nsuscipit recusandae consequuntur expedita et cum\nreprehenderit molestiae ut ut quas totam\nnostrum rerum est autem sunt rem eveniet architecto",
+        "commentsTotal": 5,
+        "id": 1,
+        "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+    },
+    {
+        "author": "Leanne Graham",
+        "body": "est rerum tempore vitae\nsequi sint nihil reprehenderit dolor beatae ea dolores neque\nfugiat blanditiis voluptate porro vel nihil molestiae ut reiciendis\nqui aperiam non debitis possimus qui neque nisi nulla",
+        "commentsTotal": 5,
+        "id": 2,
+        "title": "qui est esse"
+    }
+    ...
+    */</span>
+});
+
+<span class="hljs-comment">// Join Queries</span>
+nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-string">"posts.id AS id"</span>, <span class="hljs-string">"posts.title AS title"</span>, <span class="hljs-string">"comments.name AS comment"</span>, <span class="hljs-string">"users.name AS name"</span>]).from({ 
+    table: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> fetch(<span class="hljs-string">"https://jsonplaceholder.typicode.com/posts"</span>).then(<span class="hljs-function"><span class="hljs-params">d</span> =&gt;</span> d.json()).then(<span class="hljs-function"><span class="hljs-params">j</span> =&gt;</span> ({rows: j, cache: <span class="hljs-literal">true</span>})),
+    <span class="hljs-keyword">as</span>: <span class="hljs-string">"posts"</span> 
+}).where([<span class="hljs-string">"userId"</span>, <span class="hljs-string">"="</span>, <span class="hljs-number">3</span>]).join([
+    {
+        <span class="hljs-keyword">type</span>: <span class="hljs-string">"inner"</span>,
+        <span class="hljs-keyword">with</span>: {
+            table: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> fetch(<span class="hljs-string">"https://jsonplaceholder.typicode.com/comments"</span>).then(<span class="hljs-function"><span class="hljs-params">d</span> =&gt;</span> d.json()).then(<span class="hljs-function"><span class="hljs-params">j</span> =&gt;</span> ({rows: j, cache: <span class="hljs-literal">true</span>})),
+            <span class="hljs-keyword">as</span>: <span class="hljs-string">"comments"</span>
+        },
+        on: [<span class="hljs-string">"posts.id"</span>, <span class="hljs-string">"="</span>, <span class="hljs-string">"comments.postId"</span>]
+    },
+    {
+        <span class="hljs-keyword">type</span>: <span class="hljs-string">"inner"</span>,
+        <span class="hljs-keyword">with</span>: {
+            table: <span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> fetch(<span class="hljs-string">"https://jsonplaceholder.typicode.com/users"</span>).then(<span class="hljs-function"><span class="hljs-params">d</span> =&gt;</span> d.json()).then(<span class="hljs-function"><span class="hljs-params">j</span> =&gt;</span> ({rows: j, cache: <span class="hljs-literal">true</span>})),
+            <span class="hljs-keyword">as</span>: <span class="hljs-string">"users"</span>
+        },
+        on: [<span class="hljs-string">"users.id"</span>, <span class="hljs-string">"="</span>, <span class="hljs-string">"posts.userId"</span>]
+    }
+])
+.exec().then(<span class="hljs-function">(<span class="hljs-params">rows</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(rows);
+    <span class="hljs-comment">/*
+    [
+        {
+            "id": 21,
+            "title": "asperiores ea ipsam voluptatibus modi minima quia sint",
+            "comment": "perspiciatis magnam ut eum autem similique explicabo expedita",
+            "name": "Clementine Bauch"
+        },
+        {
+            "id": 21,
+            "title": "asperiores ea ipsam voluptatibus modi minima quia sint",
+            "comment": "officia ullam ut neque earum ipsa et fuga",
+            "name": "Clementine Bauch"
+        },
+        .....
+    ]
+    */</span>
+})
+</code></pre>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="globals  ">
+						<a href="globals.html"><em>Globals</em></a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_functions_.html">"functions"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_index_.html">"index"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_index_node_.html">"index-<wbr>node"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_interfaces_.html">"interfaces"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_query_.html">"query"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_query_builder_.html">"query-<wbr>builder"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_utilities_.html">"utilities"</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-module"><span class="tsd-kind-icon">Module</span></li>
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-index-signature"><span class="tsd-kind-icon">Index signature</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+				<li class="tsd-kind-enum-member"><span class="tsd-kind-icon">Enumeration member</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-enum"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-enum"><span class="tsd-kind-icon">Method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-interface"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-interface"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-interface"><span class="tsd-kind-icon">Method</span></li>
+				<li class="tsd-kind-index-signature tsd-parent-kind-interface"><span class="tsd-kind-icon">Index signature</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class"><span class="tsd-kind-icon">Accessor</span></li>
+				<li class="tsd-kind-index-signature tsd-parent-kind-class"><span class="tsd-kind-icon">Index signature</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-constructor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-protected"><span class="tsd-kind-icon">Protected accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li>
+				<li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private accessor</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static property</span></li>
+				<li class="tsd-kind-call-signature tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="http://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="assets/js/search.js"><' + '/script>');</script>
+</body>
+</html>

@@ -7,7 +7,8 @@ import { RocksDB } from "./adapters/rocksDB";
 try {
     global._rocks = require("rocksdb");
     global._levelup = require("levelup");
-    global._Int64BE = require("int64-buffer").Uint64BE;
+    global._encode = require("encoding-down");
+    global._lexint = require("lexicographic-integer-encoding")("hex", {strict: true});
     global._rocksAdapter = RocksDB;
 } catch (e) { }
 

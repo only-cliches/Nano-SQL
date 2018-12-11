@@ -3,7 +3,7 @@ Universal database for the client, server & mobile devices.  It's like Lego for 
 <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
 
 
-[![npm downloads](https://img.shields.io/npm/dm/@nano-sql.core/svg?style=flat-square)](https://www.npmjs.com/package/@nano-sql/)
+[![npm downloads](https://img.shields.io/npm/dm/@nano-sql/core/svg?style=flat-square)](https://www.npmjs.com/package/@nano-sql/core)
 [![npm version](https://badge.fury.io/js/%40nano-sql%2Fcore.svg)](https://badge.fury.io/js/%40nano-sql%2Fcore)
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
@@ -14,7 +14,7 @@ NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes fr
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc8/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc9/dist/nano-sql.min.js
 
 NPM Install
 ```sh
@@ -28,9 +28,8 @@ npm i @nano-sql/core
 - [x] Graph Query Support
 - [x] Event System
 - [x] Indexed DB/WebSQL/RocksDB Adapters
-- [ ] Core Tests
-- [ ] Adapter Tests
-- [ ] 1.x migration script
+- [x] Core Tests
+- [x] Adapter Tests
 - [ ] 2.0 documentation
 - [ ] 2.0 release
 - [ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters

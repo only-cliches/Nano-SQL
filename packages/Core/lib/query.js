@@ -423,6 +423,7 @@ var _NanoSQLQuery = /** @class */ (function () {
         }
         var joinData = Array.isArray(this.query.join) ? this.query.join : [this.query.join];
         var joinedRows = 0;
+        var rowCounter2 = 0;
         var graphBuffer = new utilities_1._NanoSQLQueue(function (gRow, ct, nextGraph, err) {
             var keepRow = true;
             if (_this.query.having) {
@@ -432,13 +433,13 @@ var _NanoSQLQuery = /** @class */ (function () {
                 if (_this.query.graph) {
                     _this._graph(_this.query.graph || [], _this.query.tableAS || _this.query.table, gRow, rowCounter, function (graphRow, j) {
                         _this.progress(_this._streamAS(graphRow), j);
-                        rowCounter++;
+                        rowCounter2++;
                         nextGraph();
                     });
                 }
                 else {
-                    _this.progress(_this._streamAS(gRow), rowCounter);
-                    rowCounter++;
+                    _this.progress(_this._streamAS(gRow), rowCounter2);
+                    rowCounter2++;
                     nextGraph();
                 }
             }
@@ -484,14 +485,14 @@ var _NanoSQLQuery = /** @class */ (function () {
                         return _this._where(row, _this._havingArgs.slowWhere);
                     });
                 }
-                if (_this.query.orderBy) { // order by
+                if (_this.query.orderBy && !_this._hasOrdered) { // order by
                     _this._queryBuffer.sort(_this._orderByRows);
                 }
                 if (doRange) { // limit / offset
                     _this._queryBuffer = _this._queryBuffer.slice(range[0], range[1]);
                 }
                 _this._queryBuffer.forEach(function (row, i) {
-                    _this.progress(row, range[0] + i);
+                    _this.progress(row, i);
                 });
                 if (_this.query.cacheID && _this.query.cacheID === _this.query.queryID) {
                     delete globalTableCache[_this.query.cacheID];
@@ -537,6 +538,12 @@ var _NanoSQLQuery = /** @class */ (function () {
             }
             _this._sortGroups[key].push(val);
         });
+        if (this.query.orderBy) {
+            this._hasOrdered = true;
+            this._sortGroups = this._sortGroups.map(function (groupArr) {
+                return groupArr.sort(function (a, b) { return _this._sortObj(a, b, _this._orderBy); });
+            });
+        }
         this._queryBuffer = [];
         if (this._hasAggrFn) {
             // loop through the groups
@@ -574,9 +581,7 @@ var _NanoSQLQuery = /** @class */ (function () {
         }
         else {
             this._sortGroups.forEach(function (group) {
-                group.forEach(function (row) {
-                    _this._queryBuffer.push(_this._streamAS(row));
-                });
+                _this._queryBuffer.push(_this._streamAS(group.pop()));
             });
         }
     };
@@ -1008,12 +1013,15 @@ var _NanoSQLQuery = /** @class */ (function () {
      * @memberof _MutateSelection
      */
     _NanoSQLQuery.prototype._sortObj = function (objA, objB, columns) {
+        var id = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : false;
+        var A_id = id ? objA[id] : false;
+        var B_id = id ? objB[id] : false;
         return columns.sort.reduce(function (prev, cur) {
             var A = utilities_1.deepGet(cur.path, objA);
             var B = utilities_1.deepGet(cur.path, objB);
             if (!prev) {
                 if (A === B)
-                    return 0;
+                    return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
                 return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
             }
             else {
