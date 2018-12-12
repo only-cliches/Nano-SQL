@@ -1337,10 +1337,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     ],
                     actions: [],
                     views: [],
-                    indexes: {},
+                    indexes: [],
                     isPkNum: ["number", "int", "float"].indexOf(index.type || "string") !== -1,
                     pkType: index.type,
                     pkCol: "id",
+                    pkOffset: 0,
                     ai: false
                 };
             });

@@ -1,6 +1,9 @@
 Universal database for the client, server & mobile devices.  It's like Lego for databases.
 <center>
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/1-standalone.png">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/2-serverclient.png">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/3-multiserverclient.png">
 
 
 [![npm downloads](https://img.shields.io/npm/dm/@nano-sql/core/svg?style=flat-square)](https://www.npmjs.com/package/@nano-sql/core)
@@ -56,14 +59,16 @@ nSQL().connect({
                 "name:string": {},
                 "age:int": {},
                 "meta:obj": {
-                    model: {"color:string": {}}
+                    model: {
+                        "color:string": {}
+                    }
                 },
                 "tags:string[]": {default: []}
             }
             indexes: {
-                "Tags:string[]": "tags",
-                "Color:string": "meta.color",
-                "Age:int": "age"
+                "tags:string[]": {},
+                "meta.color:string": {},
+                "age:int": {}
             }
         }
     ],

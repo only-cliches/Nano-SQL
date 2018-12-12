@@ -67,13 +67,12 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
                 }
             }, error as any);
         },
-        readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
+        readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number, nextRow: () => void) => void, complete: () => void, error: (err: any) => void) => {
 
             const readBuffer = new _NanoSQLQueue((item, idx, done, err) => {
                 const pk = nSQL.tables[table].pkCol;
                 nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: item, table, pk: item[pk], i: idx, query }, (resultRow) => {
-                    onRow(resultRow, idx);
-                    done();
+                    onRow(resultRow, idx, done);
                 }, error as any);
             }, error, complete);
 

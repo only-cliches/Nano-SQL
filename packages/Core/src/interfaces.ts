@@ -249,7 +249,7 @@ export interface INanoSQLTableConfig {
     name: string;
     model: INanoSQLDataModel;
     indexes?: {
-        [nameAndType: string]: string;
+        [colAndType: string]: {[prop: string]: any};
     };
     mapReduce?: INanoSQLMapReduce[];
     filter?: (row: any) => any;
@@ -331,9 +331,7 @@ export interface INanoSQLFunction {
 export interface INanoSQLTable {
     model: INanoSQLDataModel;
     columns: INanoSQLTableColumn[];
-    indexes: {
-        [name: string]: INanoSQLIndex;
-    };
+    indexes: INanoSQLIndex[];
     mapReduce?: INanoSQLMapReduce[];
     filter?: (row: any) => any;
     actions: INanoSQLActionOrView[];
@@ -419,9 +417,9 @@ export interface INanoSQLQuery {
 }
 
 export interface INanoSQLIndex {
-    name: string;
     type: string;
     isArray: boolean;
+    props: {[key: string]: any};
     path: string[];
 }
 
@@ -589,7 +587,7 @@ export interface adapterWillReadMultiFilter extends abstractFilter {
         limitOrHigh?: number;
         reverse?: boolean;
     };
-    onRow: (row: {[key: string]: any}, i: number) => void;
+    onRow: (row: {[key: string]: any}, i: number, nextRow: () => void) => void;
     complete: () => void;
     error: (err: any) => void;
     query: INanoSQLQuery;
