@@ -9,9 +9,9 @@ Universal database for the client, server & mobile devices.  It's like Lego for 
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 </center>
 
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/1-standalone-1.1.png">
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/2-serverclient-1.1.png">
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/3-multiserverclient-1.1.png">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/1-standalone-1.2.png">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/2-serverclient-1.2.png">
+<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/3-multiserverclient-1.2.png">
 
 NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes from 1.0.
 

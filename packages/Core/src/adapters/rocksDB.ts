@@ -70,7 +70,8 @@ export class RocksDB implements INanoSQLAdapter {
         const lvlDown = this._lvlDown(this._id, tableName, {
             model: {},
             columns: [],
-            indexes: {},
+            indexes: [],
+            pkOffset: 0,
             actions: [],
             views: [],
             pkType: "string",

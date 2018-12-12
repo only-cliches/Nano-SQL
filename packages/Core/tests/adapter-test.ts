@@ -83,7 +83,8 @@ export class TestAdapter {
                             type: "string"
                         }
                     ],
-                    indexes: {},
+                    indexes: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -150,7 +151,8 @@ export class TestAdapter {
                             type: "string"
                         }
                     ],
-                    indexes: {},
+                    indexes: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -262,7 +264,8 @@ export class TestAdapter {
                             type: "string"
                         }
                     ],
-                    indexes: {},
+                    indexes: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "uuid",
@@ -385,7 +388,8 @@ export class TestAdapter {
                             type: "string[]"
                         }
                     ],
-                    indexes: {},
+                    indexes: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -506,7 +510,8 @@ export class TestAdapter {
                                     type: "string"
                                 }
                             ],
-                            indexes: {},
+                            indexes: [],
+                            pkOffset: 0,
                             actions: [],
                             views: [],
                             pkType: {
@@ -544,7 +549,13 @@ export class TestAdapter {
                 adapter.write("test", null, {name: "Test"}, (pk) => {
                     const condition = equals(pk, 1);
                     myConsole.assert(condition, "Test Auto Incriment Integer.");
-                    condition ? res() : rej(pk);
+                    condition ? () => {
+                        adapter.read("test", 1, (row) => {
+                            const condition2 = equals(row.id, 1);
+                            myConsole.assert(condition2, "Select Integer Primary Key.");
+                            condition2 ? res() : rej();
+                        }, rej);
+                    } : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -553,7 +564,13 @@ export class TestAdapter {
                 adapter.write("test2", null, { name: "Test" }, (pk) => {
                     const condition = pk.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/);
                     myConsole.assert(condition, "Test UUID.");
-                    condition ? res() : rej(pk);
+                    condition ? () => {
+                        adapter.read("test2", pk, (row) => {
+                            const condition2 = equals(row.id, pk);
+                            myConsole.assert(condition2, "Select UUID Primary Key.");
+                            condition2 ? res() : rej();
+                        }, rej);
+                    } : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -562,7 +579,13 @@ export class TestAdapter {
                 adapter.write("test3", null, { name: "Test" }, (pk) => {
                     const condition = pk.match(/^\w{10}-\w{1,5}$/);
                     myConsole.assert(condition, "Test timeId.");
-                    condition ? res() : rej(pk);
+                    condition ? () => {
+                        adapter.read("test3", pk, (row) => {
+                            const condition2 = equals(row.id, pk);
+                            myConsole.assert(condition2, "Select timeId Primary Key.");
+                            condition2 ? res() : rej();
+                        }, rej);
+                    } : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -571,11 +594,17 @@ export class TestAdapter {
                 adapter.write("test4", null, { name: "Test" }, (pk) => {
                     const condition = pk.match(/^\w{13}-\w{1,5}$/);
                     myConsole.assert(condition, "Test timeIdms.");
-                    condition ? res() : rej(pk);
+                    condition ? () => {
+                        adapter.read("test4", pk, (row) => {
+                            const condition2 = equals(row.id, pk);
+                            myConsole.assert(condition2, "Select timeIdms Primary Key.");
+                            condition2 ? res() : rej();
+                        }, rej);
+                    } : rej(pk);
                 }, rej);
             });
         }).then(() => {
-            // Ordered Primary Key Test
+            // Ordered String Primary Key Test
             return new Promise((res, rej) => {
                 let UUIDs: any[] = [];
 
@@ -600,7 +629,7 @@ export class TestAdapter {
                 });
             });
         }).then(() => {
-            // Float PK Test
+            // Ordered Float PK Test
             return new Promise((res, rej) => {
                 let floats: any[] = [];
                 for (let i = 0; i < 20; i++) {
@@ -615,7 +644,13 @@ export class TestAdapter {
                     }, () => {
                         const condition = equals(rows, floats.sort((a, b) => a.id > b.id ? 1 : -1));
                         myConsole.assert(condition, "Test float primary keys.");
-                        condition ? res() : rej({
+                        condition ? () => {
+                            adapter.read("test6", floats[0].id, (row) => {
+                                const condition2 = equals(row.id, floats[0].id);
+                                myConsole.assert(condition2, "Select Float Primary Key.");
+                                condition2 ? res() : rej();
+                            }, rej);
+                        } : rej({
                             e: floats.sort((a, b) => a.id > b.id ? 1 : -1),
                             g: rows
                         });
