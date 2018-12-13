@@ -224,7 +224,7 @@ export interface INanoSQLDataModel {
         default?: any;
         model?: INanoSQLDataModel;
         notNull?: boolean;
-        pkOffset?: number;
+        offset?: number;
         [key: string]: any;
     };
 }
@@ -331,7 +331,9 @@ export interface INanoSQLFunction {
 export interface INanoSQLTable {
     model: INanoSQLDataModel;
     columns: INanoSQLTableColumn[];
-    indexes: INanoSQLIndex[];
+    indexes: {
+        [id: string]: INanoSQLIndex;
+    };
     mapReduce?: INanoSQLMapReduce[];
     filter?: (row: any) => any;
     actions: INanoSQLActionOrView[];
@@ -417,6 +419,7 @@ export interface INanoSQLQuery {
 }
 
 export interface INanoSQLIndex {
+    id: string;
     type: string;
     isArray: boolean;
     props: {[key: string]: any};

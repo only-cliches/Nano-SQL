@@ -44,7 +44,7 @@ export class TestAdapter {
             // console.log("✓ Range Read Tests Passed (uuid)");
             return this.Deletes();
         }).then(() => {
-            // console.log("✓ Delete Tests Passed");
+            //console.log("✓ Delete Tests Passed");
             // console.log("✓ All Tests Passed!******");
         });
         /*.catch((e) => {
@@ -83,7 +83,7 @@ export class TestAdapter {
                             type: "string"
                         }
                     ],
-                    indexes: [],
+                    indexes: {},
                     pkOffset: 0,
                     actions: [],
                     views: [],
@@ -151,7 +151,7 @@ export class TestAdapter {
                             type: "string"
                         }
                     ],
-                    indexes: [],
+                    indexes: {},
                     pkOffset: 0,
                     actions: [],
                     views: [],
@@ -264,7 +264,7 @@ export class TestAdapter {
                             type: "string"
                         }
                     ],
-                    indexes: [],
+                    indexes: {},
                     pkOffset: 0,
                     actions: [],
                     views: [],
@@ -388,7 +388,7 @@ export class TestAdapter {
                             type: "string[]"
                         }
                     ],
-                    indexes: [],
+                    indexes: {},
                     pkOffset: 0,
                     actions: [],
                     views: [],
@@ -510,7 +510,7 @@ export class TestAdapter {
                                     type: "string"
                                 }
                             ],
-                            indexes: [],
+                            indexes: {},
                             pkOffset: 0,
                             actions: [],
                             views: [],
@@ -549,13 +549,13 @@ export class TestAdapter {
                 adapter.write("test", null, {name: "Test"}, (pk) => {
                     const condition = equals(pk, 1);
                     myConsole.assert(condition, "Test Auto Incriment Integer.");
-                    condition ? () => {
-                        adapter.read("test", 1, (row) => {
+                    condition ? (() => {
+                        adapter.read("test", 1, (row: any) => {
                             const condition2 = equals(row.id, 1);
                             myConsole.assert(condition2, "Select Integer Primary Key.");
                             condition2 ? res() : rej();
                         }, rej);
-                    } : rej(pk);
+                    })() : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -564,13 +564,13 @@ export class TestAdapter {
                 adapter.write("test2", null, { name: "Test" }, (pk) => {
                     const condition = pk.match(/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/);
                     myConsole.assert(condition, "Test UUID.");
-                    condition ? () => {
-                        adapter.read("test2", pk, (row) => {
+                    condition ? (() => {
+                        adapter.read("test2", pk, (row: any) => {
                             const condition2 = equals(row.id, pk);
                             myConsole.assert(condition2, "Select UUID Primary Key.");
                             condition2 ? res() : rej();
                         }, rej);
-                    } : rej(pk);
+                    })() : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -579,13 +579,13 @@ export class TestAdapter {
                 adapter.write("test3", null, { name: "Test" }, (pk) => {
                     const condition = pk.match(/^\w{10}-\w{1,5}$/);
                     myConsole.assert(condition, "Test timeId.");
-                    condition ? () => {
-                        adapter.read("test3", pk, (row) => {
+                    condition ? (() => {
+                        adapter.read("test3", pk, (row: any) => {
                             const condition2 = equals(row.id, pk);
                             myConsole.assert(condition2, "Select timeId Primary Key.");
                             condition2 ? res() : rej();
                         }, rej);
-                    } : rej(pk);
+                    })() : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -594,13 +594,13 @@ export class TestAdapter {
                 adapter.write("test4", null, { name: "Test" }, (pk) => {
                     const condition = pk.match(/^\w{13}-\w{1,5}$/);
                     myConsole.assert(condition, "Test timeIdms.");
-                    condition ? () => {
-                        adapter.read("test4", pk, (row) => {
+                    condition ? (() => {
+                        adapter.read("test4", pk, (row: any) => {
                             const condition2 = equals(row.id, pk);
                             myConsole.assert(condition2, "Select timeIdms Primary Key.");
                             condition2 ? res() : rej();
                         }, rej);
-                    } : rej(pk);
+                    })() : rej(pk);
                 }, rej);
             });
         }).then(() => {
@@ -644,13 +644,13 @@ export class TestAdapter {
                     }, () => {
                         const condition = equals(rows, floats.sort((a, b) => a.id > b.id ? 1 : -1));
                         myConsole.assert(condition, "Test float primary keys.");
-                        condition ? () => {
-                            adapter.read("test6", floats[0].id, (row) => {
+                        condition ? (() => {
+                            adapter.read("test6", floats[0].id, (row: any) => {
                                 const condition2 = equals(row.id, floats[0].id);
                                 myConsole.assert(condition2, "Select Float Primary Key.");
                                 condition2 ? res() : rej();
                             }, rej);
-                        } : rej({
+                        })() : rej({
                             e: floats.sort((a, b) => a.id > b.id ? 1 : -1),
                             g: rows
                         });

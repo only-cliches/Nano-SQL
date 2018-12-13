@@ -59,7 +59,12 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
                 } else {
+
                     nSQL.adapter.read(table, pk, (row) => {
+                        if (!row) {
+                            complete(undefined);
+                            return;
+                        }
                         nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk, i: 0, query }, (resultRow) => {
                             complete(resultRow);
                         }, error as any);
@@ -67,12 +72,13 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
                 }
             }, error as any);
         },
-        readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number, nextRow: () => void) => void, complete: () => void, error: (err: any) => void) => {
+        readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
 
             const readBuffer = new _NanoSQLQueue((item, idx, done, err) => {
                 const pk = nSQL.tables[table].pkCol;
                 nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: item, table, pk: item[pk], i: idx, query }, (resultRow) => {
-                    onRow(resultRow, idx, done);
+                    onRow(resultRow, idx);
+                    done();
                 }, error as any);
             }, error, complete);
 
@@ -93,6 +99,9 @@ export const noop = () => { };
 export const throwErr = (err: any) => {
     throw new Error(err);
 };
+export const nan = (input: any): number => {
+    return isNaN(input) ? 0 : parseFloat(input);
+}
 
 /**
  * Object.assign, but faster.

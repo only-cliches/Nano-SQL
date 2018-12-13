@@ -141,13 +141,13 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             },
             whereIndex: (nSQL, query, fnArgs, where) => {
                 if (where[1] === ">") {
-                    const indexes: {[name: string]: INanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
+                    const indexes: {[id: string]: INanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     const crowColumn = resolvePath(fnArgs[0]);
                     let crowCols: string[] = [];
                     Object.keys(indexes).forEach((k) => {
                         const index = indexes[k];
                         if (_objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
-                            crowCols.push(index.name.replace("-lat", "").replace("-lon", ""));
+                            crowCols.push(k.replace("-lat", "").replace("-lon", ""));
                         }
                     });
                     if (crowCols.length === 2) {

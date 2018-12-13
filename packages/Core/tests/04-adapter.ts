@@ -23,50 +23,52 @@ const url = require("url");
 rimraf(path.join(__dirname, "db_123"));
 declare const RSE: any;
 
-webpack({
-    entry: {
-        "adapter-browser": [path.join(__dirname, "adapter-browser")],
-    },
-    output: {
-        path: PATHS.build,
-        filename: "[name].js",
-        libraryTarget: "umd",
-        umdNamedDefine: true
-    },
-    resolve: {
-        extensions: [".ts", ".tsx", ".js"]
-    },
-    module: {
-        rules: [
-            {
-                test: /\.ts$/,
-                loader: "ts-loader"
+
+describe("Adapter Tests", () => {
+    it("Sync Storage", (done: MochaDone) => {
+        new TestAdapter(SyncStorage, []).test().then(() => {
+            done();
+        }).catch((err) => {
+            done(new Error(err));
+        });
+    });
+    it("RocksDB Storage", (done: MochaDone) => {
+        new TestAdapter(RocksDB, []).test().then(() => {
+            done();
+        }).catch((err) => {
+            done(new Error(err));
+        });
+    });
+
+    it("WebSQL & IndexedDB", (done: MochaDone) => {
+
+        webpack({
+            entry: {
+                "adapter-browser": [path.join(__dirname, "adapter-browser")],
+            },
+            output: {
+                path: PATHS.build,
+                filename: "[name].js",
+                libraryTarget: "umd",
+                umdNamedDefine: true
+            },
+            resolve: {
+                extensions: [".ts", ".tsx", ".js"]
+            },
+            module: {
+                rules: [
+                    {
+                        test: /\.ts$/,
+                        loader: "ts-loader"
+                    }
+                ]
             }
-        ]
-    }
-}, (err, stats) => {
-    if (err || stats.hasErrors()) {
-        console.error(err);
-        return;
-    }
+        }, (err, stats) => {
+            if (err || stats.hasErrors()) {
+                console.error(err);
+                return;
+            }
 
-
-    describe("Adapter Tests", () => {
-        it("Sync Storage", (done: MochaDone) => {
-            new TestAdapter(SyncStorage, []).test().then(() => {
-                done();
-            }).catch((err) => {
-                done(new Error(err));
-            });
-        });
-        it("RocksDB Storage", (done: MochaDone) => {
-            new TestAdapter(RocksDB, []).test().then(() => {
-                done();
-            }).catch((err) => {
-                done(new Error(err));
-            });
-        });
-        it("WebSQL & IndexedDB", (done: MochaDone) => {
 
             const server = stoppable(http.createServer(function (req, res) {
 
@@ -145,7 +147,6 @@ webpack({
 
                 })();
             });
-        }).timeout(15000);
-    });
-
+        });
+    }).timeout(15000);
 });

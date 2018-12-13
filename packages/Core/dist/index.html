@@ -14,7 +14,7 @@
 
             nSQL().connect({
                 id: "test",
-                mode: "PERM",
+                // mode: "PERM",
                 plugins: [
                     /*{
                         name: "testPlugin",
@@ -43,21 +43,21 @@
                             "tags:string[]": {}
                         },
                         indexes: {
-                            "Tags:string[]": "tags",
-                            "Age:int": "age"
+                            "tags:string[]": {},
+                            "age:int": {offset: 50}
                         }
                     }
                 ],
             }).then(() => {
+                console.log(nSQL());
                 nSQL("users.name").on("change", (ev) => {
                     console.log("EVENT", ev);
                 })
-            /*    return nSQL("users").query("upsert", [{ name: "Billy", age: 20, meta: { color: "blue" }, tags: ["some", "tags", "here"] }, { name: "Scott", age: 30, meta: { color: "orange" }, tags: ["some"] }, { name: "Jeb", meta: { color: "yellow" } }]).exec();
+                return nSQL("users").query("upsert", [{ name: "Billy", age: 20, meta: { color: "blue" }, tags: ["some", "tags", "here"] }, { name: "Scott", age: 30, meta: { color: "orange" }, tags: ["some"] }, { name: "Jeb", meta: { color: "yellow" } }]).exec();
             }).then(() => {
                 return nSQL("users").query("upsert", { name: 21 }).where(["meta.color", "=", "blue"]).exec();
             }).then((result) => {
                 console.log(result);
-                console.log(nSQL());*/
                 console.time("sel");
                 return nSQL("users").query("select").where(["age", "=", 20]).exec();
             }).then((rows) => {

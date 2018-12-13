@@ -70,7 +70,7 @@ export class RocksDB implements INanoSQLAdapter {
         const lvlDown = this._lvlDown(this._id, tableName, {
             model: {},
             columns: [],
-            indexes: [],
+            indexes: {},
             pkOffset: 0,
             actions: [],
             views: [],
@@ -176,7 +176,7 @@ export class RocksDB implements INanoSQLAdapter {
                 error(err);
             } else {
                 if (this.nSQL.tables[table].ai) {
-                    this._levelDBs["_ai_store_"].put(Buffer.from(table, "utf-8"), {ai: this.nSQL.tables[table].ai}).then(() => {
+                    this._levelDBs["_ai_store_"].put(Buffer.from(table, "utf-8"), {ai: this._ai[table]}).then(() => {
                         complete(pk);
                     }).catch(error);
                 } else {

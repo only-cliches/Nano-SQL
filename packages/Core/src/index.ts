@@ -510,6 +510,7 @@ export class NanoSQL implements INanoSQLInstance {
                 }, rej);
             });
         }).then(() => {
+            
             // migrate user database version as needed
             return new Promise((res, rej) => {
                 if (!this.config.version) {
