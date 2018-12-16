@@ -29,6 +29,7 @@ var nSQLiteAdapter = (function () {
     function nSQLiteAdapter(filename, mode) {
         this._pkKey = {};
         this._dbIndex = {};
+        this._pkIsNum = {};
         this._filename = filename;
         this._mode = mode;
     }
@@ -42,7 +43,7 @@ var nSQLiteAdapter = (function () {
                 throw err;
             }
             utilities_1.fastALL(Object.keys(_this._pkKey), function (table, i, nextKey) {
-                _this._sql(true, "CREATE TABLE IF NOT EXISTS " + table + " (id BLOB PRIMARY KEY UNIQUE, data TEXT)", [], function () {
+                _this._sql(true, "CREATE TABLE IF NOT EXISTS " + table + " (id " + (_this._pkIsNum[table] ? "REAL" : "TEXT") + " PRIMARY KEY UNIQUE, data TEXT)", [], function () {
                     _this._sql(false, "SELECT id FROM " + table, [], function (result) {
                         var idx = [];
                         for (var i_1 = 0; i_1 < result.rows.length; i_1++) {
@@ -73,6 +74,9 @@ var nSQLiteAdapter = (function () {
                 _this._pkKey[tableName] = d.key;
                 if (d.props && utilities_1.intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
                     _this._dbIndex[tableName].doAI = true;
+                }
+                if (["number", "float", "int"].indexOf(_this._dbIndex[tableName].pkType) !== -1) {
+                    _this._pkIsNum[tableName] = true;
                 }
                 if (d.props && utilities_1.intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(_this._dbIndex[tableName].pkType) !== -1) {
                     _this._dbIndex[tableName].sortIndex = false;
@@ -186,7 +190,7 @@ var nSQLiteAdapter = (function () {
         }
         stmnt += " ORDER BY id";
         if (getKeys.length) {
-            this.batchRead(this._chkTable(table), getKeys, function (result) {
+            this.batchRead(table, getKeys, function (result) {
                 var i = 0;
                 var getRow = function () {
                     if (result.length > i) {

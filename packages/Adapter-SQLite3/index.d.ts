@@ -14,6 +14,7 @@ export declare class nSQLiteAdapter implements NanoSQLStorageAdapter {
     private _dbIndex;
     private _id;
     private _db;
+    private _pkIsNum;
     private _filename;
     private _mode;
     constructor(filename: ":memory:" | string, mode?: any);

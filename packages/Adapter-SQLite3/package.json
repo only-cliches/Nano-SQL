@@ -1,6 +1,6 @@
 {
     "name": "nano-sqlite",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "SQLite3 Driver for Nano SQL",
     "main": "index.js",
     "typings": "index.d.ts",

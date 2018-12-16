@@ -9,6 +9,7 @@ export declare const getMode: () => SQLiteStore | "PERM";
 export declare class SQLiteStore implements NanoSQLStorageAdapter {
     private _pkKey;
     private _dbIndex;
+    private _pkIsNum;
     private _id;
     private _db;
     constructor();
