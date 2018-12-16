@@ -34,6 +34,11 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         [tableName: string]: DatabaseIndex;
     };
 
+    private _pkIsNum: {
+        [tableName: string]: boolean;
+    };
+
+
     private _id: string;
 
     private _db: CordovaSQLiteDB;
@@ -41,6 +46,7 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
     constructor() {
         this._pkKey = {};
         this._dbIndex = {};
+        this._pkIsNum = {};
     }
 
     public setID(id: string) {
@@ -55,7 +61,7 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         this._db = window["sqlitePlugin"].openDatabase({name: `${this._id}_db`, location: "default"});
 
         fastALL(Object.keys(this._pkKey), (table, i, nextKey) => {
-            this._sql(true, `CREATE TABLE IF NOT EXISTS "${table}" (id BLOB PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
+            this._sql(true, `CREATE TABLE IF NOT EXISTS "${table}" (id ${this._pkIsNum[table] ? "REAL" : "TEXT"} PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
                 this._sql(false, `SELECT id FROM "${table}"`, [], (result) => {
                     let idx: any[] = [];
                     for (let i = 0; i < result.rows.length; i++) {
@@ -97,6 +103,10 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
 
                 if (d.props && intersect(["ai", "ai()"], d.props) && (d.type === "int" || d.type === "number")) {
                     this._dbIndex[tableName].doAI = true;
+                }
+
+                if (["number", "float", "int"].indexOf(this._dbIndex[tableName].pkType) !== -1) {
+                    this._pkIsNum[tableName] = true;
                 }
 
                 if (d.props && intersect(["ns", "ns()"], d.props) || ["uuid", "timeId", "timeIdms"].indexOf(this._dbIndex[tableName].pkType) !== -1) {
@@ -206,7 +216,7 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         stmnt += " ORDER BY id";
 
         if (getKeys.length) {
-            this.batchRead(this._chkTable(table), getKeys, (result: any[]) => {
+            this.batchRead(table, getKeys, (result: any[]) => {
                 let i = 0;
                 const getRow = () => {
                     if (result.length > i) {

@@ -722,7 +722,7 @@ export class _NanoSQLStorageQuery {
             this._getRows((rows) => {
 
                 if (rows.length) {
-
+                    num = rows.length;
 
                     // any changes to this table invalidates the cache
                     this._store._cache[this._query.table as any] = {};

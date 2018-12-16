@@ -294,6 +294,8 @@ export class ObserverSubscriber {
 
     public exec(event?: DatabaseEvent) {
 
+        if (this._closed) return;
+
         setFast(() => {
             const q = this._getQuery(event);
             if (!q) return;
@@ -308,10 +310,11 @@ export class ObserverSubscriber {
     }
 
     public unsubscribe() {
+        this._closed = true;
+
         this._tables.forEach((table) => {
             this._nSQL.table(table).off("change", this.exec);
         });
-        this._closed = true;
     }
 
     public closed() {

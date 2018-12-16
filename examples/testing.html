@@ -104,7 +104,7 @@
                         type: "any"
                     }])
                     .config({
-                        cache: false
+                        cache: false,
                     })
                     .connect().then(function () {
                         var start = Date.now();
@@ -310,7 +310,7 @@
                 props: ["ref=>orderIDs"]
             }])
             .config({
-                mode: "PERM",
+                mode: "WSQL",
                 // history: true,
                 // rebuildIndexes: true
                 // memory: false
@@ -404,7 +404,6 @@
                         nSQL("users")
                             .query("upsert", {name: "scott"})
                             .where(["id", "=", 2])
-                            .ttl(5, ["age"])
                             // .trieSearch("name", "je")
                             // .where(["age", "=", "NULL"])
                             // .orm(["orderIDs"])

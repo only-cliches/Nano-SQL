@@ -10,6 +10,12 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Remove built in Promise polyfill.
 
+## [1.8.0] 12-16-2018
+- Fixed issue [#97](https://github.com/ClickSimply/Nano-SQL/issues/97), observers shouldn't fire after unsubscribes.
+- Fixed issue [#94](https://github.com/ClickSimply/Nano-SQL/issues/94), SQLite related adapters now work with primary key selects when using numbers.
+- Fixed issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85), problem was identical to issue 94.
+- Fixed "x row(s) modified" bug.
+
 ## [1.7.9] 11-10-2018
 - Fixed secondary index truncation.
 - Fixed issue [#89](https://github.com/ClickSimply/Nano-SQL/issues/89), iOS/WebSQL support fixed.

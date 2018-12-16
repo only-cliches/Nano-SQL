@@ -11,6 +11,7 @@ import { DataModel } from "../index";
 export declare class _WebSQLStore implements NanoSQLStorageAdapter {
     private _pkKey;
     private _dbIndex;
+    private _pkIsNum;
     private _id;
     private _db;
     private _size;
