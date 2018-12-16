@@ -43,7 +43,8 @@ import {
     _NanoSQLQueue, 
     uuid, 
     adapterFilters, 
-    throttle 
+    throttle,
+    nan,
 } from "./utilities";
 
 export const secondaryIndexQueue: { [idAndTable: string]: _NanoSQLQueue } = {};
@@ -393,7 +394,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
                             // full table scan on right table :(
                             this.nSQL.triggerQuery({
-                                ...buildQuery(join.with.table, "select"),
+                                ...buildQuery(this.nSQL, join.with.table, "select"),
                                 skipQueue: true,
                                 cacheID: this.query.cacheID,
                                 where: withPK ? [withPK, "NOT IN", rightHashes] : undefined
@@ -420,7 +421,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     rowsDone();
                 } else {
                     this.nSQL.triggerQuery({
-                        ...buildQuery(joinTable.rows, "select"),
+                        ...buildQuery(this.nSQL, joinTable.rows, "select"),
                         tableAS: join.with.as,
                         cacheID: this.query.cacheID,
                         where: join.on && join.type !== "cross" ? this._buildCombineWhere(join.on, join.with.as || join.with.table as string, queryTable, rowData) : undefined,
@@ -563,7 +564,6 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         let rowCounter = 0;
         const selectBuffer = new _NanoSQLQueue((row, ct, next, err) => {
-            row = _maybeAssign(row);
 
             this._maybeJoin(joinData, row, (row2) => { // JOIN as needed
                 if (this._stream) {
@@ -777,7 +777,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     next(null);
                 } else {
                     this.nSQL.triggerQuery({
-                        ...buildQuery(graphTable.rows, "select"),
+                        ...buildQuery(this.nSQL, graphTable.rows, "select"),
                         tableAS: graph.with.as,
                         actionArgs: graph.select,
                         where: whereCond,
@@ -876,6 +876,16 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 ...upsertData
             }, this.query.table as string);
 
+            const eventRow = this.nSQL.tables[this.query.table as string].offsets.length ? _assign(finalRow) : finalRow;
+
+            if (this.nSQL.tables[this.query.table as string].offsets.length) {
+                let i = this.nSQL.tables[this.query.table as string].offsets.length;
+                const offsets = this.nSQL.tables[this.query.table as string].offsets;
+                while(i--) {
+                    deepSet(offsets[i].path, finalRow, nan(deepGet(offsets[i].path, finalRow)) + offsets[i].offset);
+                }
+            }
+
             this._diffUpdates(this.query.table as string, oldRow, finalRow, () => {
 
                 if (typeof this.query.table === "string") {
@@ -885,7 +895,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         events: ["upsert", "change", "*"],
                         time: Date.now(),
                         performance: Date.now() - this._startTime,
-                        result: finalRow,
+                        result: eventRow,
                         oldRow: oldRow,
                         query: this.query
                     });
@@ -899,7 +909,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                                         events: ["upsert", "change", "*"],
                                         time: Date.now(),
                                         performance: Date.now() - this._startTime,
-                                        result: finalRow,
+                                        result: eventRow,
                                         oldRow: oldRow,
                                         query: this.query
                                     }, true);
@@ -907,7 +917,6 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                             }
                         });
                     }
-
                 }
                 complete(finalRow);
             }, error);
@@ -918,7 +927,6 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         const newIndexValues = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, finalRow);
         const oldIndexValues = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, oldRow);
         const table = this.nSQL.tables[queryTable];
-
         allAsync(Object.keys(oldIndexValues).concat(["__pk__"]), (indexName: string, i, next, err) => {
             if (indexName === "__pk__") { // main row
                 adapterFilters(this.nSQL, this.query).write(queryTable, finalRow[table.pkCol], finalRow, (pk) => {
@@ -981,6 +989,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 } else {
                     if (position === -1) {
                         item.done();
+                        done();
                         return;
                     }
                     idxRowSet.pks.splice(position, 1);
@@ -1002,6 +1011,15 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             const table = this.nSQL.tables[this.query.table as string];
 
             rowToAdd = this.nSQL.default(_maybeAssign(this.upsertPath ? deepSet(this.upsertPath, {}, rowToAdd) : rowToAdd), this.query.table as string);
+
+            if (this.nSQL.tables[this.query.table as string].offsets.length) {
+                let i = this.nSQL.tables[this.query.table as string].offsets.length;
+                const offsets = this.nSQL.tables[this.query.table as string].offsets;
+                while(i--) {
+                    deepSet(offsets[i].path, rowToAdd, nan(deepGet(offsets[i].path, rowToAdd)) + offsets[i].offset);
+                }
+            }
+            
             const indexValues = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, rowToAdd);
             adapterFilters(this.nSQL, this.query).write(this.query.table as string, rowToAdd[table.pkCol], rowToAdd, (pk) => {
                 rowToAdd[table.pkCol] = pk;
@@ -1266,23 +1284,41 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 return p;
             }, "");
 
+            const generateOffsets = (): {path: string[], offset: number}[] => {
+                let offsets: {path: string[], offset: number}[] = [];
+                const pkOffset: {path: string[], offset: number} = Object.keys(table.model).reduce((prev, cur) => {
+                    if (table.model[cur] && table.model[cur].pk && table.model[cur].offset) {
+                        return {path: [cur.split(":")[0]], offset: table.model[cur].offset as number}
+                    }
+                    return prev;
+                }, {path: [], offset: 0});
+
+                if (pkOffset.offset) {
+                    offsets.push(pkOffset);
+                }
+
+                const tableIndexes = newConfigs[table.name].indexes || {};
+        
+                Object.keys(tableIndexes).forEach((index) => {
+                    if (tableIndexes[index].props && tableIndexes[index].props.offset) {
+                        offsets.push({path: tableIndexes[index].path, offset: tableIndexes[index].props.offset});
+                    }
+                });
+                return offsets;
+            }
+
             const indexes = table.indexes || {};
 
             newConfigs[table.name] = {
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
-                pkOffset: Object.keys(table.model).reduce((p, c) => {
-                    if (table.model[c] && table.model[c].pk) {
-                        return table.model[c].offset || 0;
-                    }
-                    return p;
-                }, 0),
+                offsets: [],
                 filter: table.filter,
                 mapReduce: table.mapReduce,
                 actions: table.actions || [],
                 views: table.views || [],
                 indexes: Object.keys(indexes).map(i => ({
-                    id: i.split(":")[0],
+                    id: resolvePath(i.split(":")[0]).join("."),
                     type: (i.split(":")[1] || "string").replace(/\[\]/gmi, ""),
                     isArray: (i.split(":")[1] || "string").indexOf("[]") !== -1,
                     path: resolvePath(i.split(":")[0]),
@@ -1295,15 +1331,15 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     }
 
                     if (c.type.indexOf("geo") !== -1) {
-                        p[c.id = "-lon"] = {
-                            id: c.id + "-lon",
+                        p[c.id + ".lon"] = {
+                            id: c.id + ".lon",
                             type: "float",
                             isArray: false,
                             path: c.path.concat(["lon"]),
                             props: {offset: 180}
                         }
-                        p[c.id = "-lat"] = {
-                            id: c.id + "-lat",
+                        p[c.id + ".lat"] = {
+                            id: c.id + ".lat",
                             type: "float",
                             isArray: false,
                             path: c.path.concat(["lat"]),
@@ -1326,6 +1362,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 }, false)
             };
 
+            newConfigs[table.name].offsets = generateOffsets();
+
             this.setMapReduce(table);
 
             // no primary key found, set one
@@ -1339,6 +1377,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             if (error && error.length) return Promise.reject(error);
 
             let addTables = [table.name];
+            // create secondary index tables
             Object.keys(newConfigs[table.name].indexes).forEach((k, i) => {
                 const index = newConfigs[table.name].indexes[k];
                 const indexName = "_idx_" + table.name + "_" + index.id;
@@ -1358,7 +1397,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     isPkNum: ["number", "int", "float"].indexOf(index.type || "string") !== -1,
                     pkType: index.type,
                     pkCol: "id",
-                    pkOffset: 0,
+                    offsets: index.props && index.props.offset ? [
+                        {path: ["id"], offset: index.props.offset}
+                    ] : [],
                     ai: false
                 };
             });
@@ -1684,18 +1725,30 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             complete();
         };
 
+        const filterOnRow = (row: any, i: number) => {
+            const row2 = _maybeAssign(row);
+            if (this.nSQL.tables[this.query.table as string].offsets.length) {
+                let i = this.nSQL.tables[this.query.table as string].offsets.length;
+                const offsets = this.nSQL.tables[this.query.table as string].offsets;
+                while(i--) {
+                    deepSet(offsets[i].path, row2, nan(deepGet(offsets[i].path, row2)) - offsets[i].offset);
+                }
+            }
+            onRow(row2, i);
+        }
+
         if (typeof this.query.table === "string") { // pull from local table, possibly use indexes
 
             switch (this._whereArgs.type) {
                 // primary key or secondary index select
                 case IWhereType.fast:
-                    this._fastQuery(onRow, complete);
+                    this._fastQuery(filterOnRow, complete);
                     break;
                 // primary key or secondary index followed by slow query
                 case IWhereType.medium:
                     this._fastQuery((row, i) => {
                         if (this._where(row, this._whereArgs.slowWhere as any)) {
-                            onRow(row, i);
+                            filterOnRow(row, i);
                         }
                     }, complete);
                     break;
@@ -1705,19 +1758,20 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 case IWhereType.fn:
                     const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
                     adapterFilters(this.nSQL, this.query).readMulti(this.query.table, "all", undefined, undefined, isReversed, (row, i) => {
-
                         if (this._whereArgs.type === IWhereType.slow) {
                             if (this._where(row, this._whereArgs.slowWhere as any)) {
-                                onRow(row, i);
+                                filterOnRow(row, i);
                             }
                         } else if (this._whereArgs.type === IWhereType.fn && this._whereArgs.whereFn) {
                             if (this._whereArgs.whereFn(row, i)) {
-                                onRow(row, i);
+                                filterOnRow(row, i);
                             }
                         } else {
-                            onRow(row, i);
+                            filterOnRow(row, i);
                         }
-                    }, complete, this._onError);
+                    }, () => {
+                        complete();
+                    }, this._onError);
                     break;
             }
 
@@ -2043,6 +2097,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     public static _whereMemoized: {
         [key: string]: IWhereArgs;
     } = {};
+
+
 
     public _parseWhere(qWhere: any[] | ((row: { [key: string]: any }) => boolean), ignoreIndexes?: boolean): IWhereArgs {
         const where = qWhere || [];

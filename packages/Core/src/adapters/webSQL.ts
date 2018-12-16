@@ -59,7 +59,7 @@ export const SQLiteAbstract = (
             row[pkCol] = pk;
             const rowStr = JSON.stringify(row);
 
-            _query(false, `SELECT * FROM ${checkTable(table)} WHERE id = ?`, [pk], (result) => {
+            _query(false, `SELECT id FROM ${checkTable(table)} WHERE id = ?`, [pk], (result) => {
                 if (result.rows.length) {
                     _query(true, `UPDATE ${checkTable(table)} SET data = ? WHERE id = ?`, [rowStr, pk], () => {
                         if (doAI && pk === ai[table]) {

@@ -1,5 +1,5 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
-import { allAsync, _NanoSQLQueue, generateID, _maybeAssign, setFast } from "../utilities";
+import { allAsync, _NanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan } from "../utilities";
 
 declare const global: any;
 
@@ -71,7 +71,7 @@ export class RocksDB implements INanoSQLAdapter {
             model: {},
             columns: [],
             indexes: {},
-            pkOffset: 0,
+            offsets: [],
             actions: [],
             views: [],
             pkType: "string",

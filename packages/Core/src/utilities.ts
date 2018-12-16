@@ -28,9 +28,10 @@ export const getWeekOfYear = (d: Date): number => {
     return Math.ceil( (((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7 );
 };
 
-export const buildQuery = (table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): INanoSQLQuery => {
+export const buildQuery = (nSQL: INanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): INanoSQLQuery => {
     return {
         table: table,
+        parent: nSQL,
         action: action,
         state: "pending",
         result: [],
@@ -45,6 +46,7 @@ export const buildQuery = (table: string | any[] | ((where?: any[] | ((row: {[ke
 export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
     return {
         write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
+            
             nSQL.doFilter<adapterWillWriteFilter, { table: string, pk: any, row: any }>("adapterWillWrite", { result: { table, pk, row }, query }, (result) => {
                 if (!result) return; // filter took over write
                 nSQL.adapter.write(result.table, result.pk, result.row, (pk) => {
@@ -55,16 +57,28 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
             }, error as any);
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
+
+            // shift primary key query by offset
+            if (nSQL.tables[table].offsets.length) {
+                let i = nSQL.tables[table].offsets.length;
+                const offsets = nSQL.tables[table].offsets;
+                while(i--) {
+                    if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
+                        pk += offsets[i].offset;
+                    }
+                }
+            }
+            
             nSQL.doFilter<adapterWillReadFilter, any>("adapterWillRead", { result: undefined, table, pk, i: 0, query }, (resultRow) => {
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
-                } else {
-
+                } else {                    
                     nSQL.adapter.read(table, pk, (row) => {
                         if (!row) {
                             complete(undefined);
                             return;
                         }
+
                         nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk, i: 0, query }, (resultRow) => {
                             complete(resultRow);
                         }, error as any);
@@ -81,6 +95,20 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
                     done();
                 }, error as any);
             }, error, complete);
+
+            // shift range query by offset
+            if (type === "range") {
+                if (nSQL.tables[table].offsets.length) {
+                    let i = nSQL.tables[table].offsets.length;
+                    const offsets = nSQL.tables[table].offsets;
+                    while(i--) {
+                        if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
+                            offsetOrLow += offsets[i].offset;
+                            limitOrHigh += offsets[i].offset;
+                        }
+                    }
+                }
+            }
 
             nSQL.doFilter<adapterWillReadMultiFilter, any>("adapterWillReadMulti", { result: { table, type, offsetOrLow, limitOrHigh, reverse }, onRow, complete, error, query }, (result) => {
                 if (!result) return;
@@ -110,7 +138,7 @@ export const nan = (input: any): number => {
  * @returns
  */
 export const _assign = (obj: any) => {
-    return obj ? JSON.parse(JSON.stringify(obj)) : null;
+    return obj ? JSON.parse(JSON.stringify(obj)) : obj;
 };
 
 
@@ -167,6 +195,8 @@ export class _NanoSQLQueue {
         if (this._triggeredComplete) {
             return;
         }
+
+        // quueue as finished
         if (this._done && !this._items.length) {
             this._triggeredComplete = true;
             if (this.onComplete) this.onComplete();
@@ -199,7 +229,7 @@ export class _NanoSQLQueue {
         if (this._triggeredComplete) {
             return;
         }
-        if (!this._going) {
+        if (!this._going && !this._items.length) {
             this._triggeredComplete = true;
             if (this.onComplete) this.onComplete();
         }
@@ -370,6 +400,7 @@ export const hash = (str: string): string => {
 
 const idTypes = {
     "int": (value) => value,
+    "float": (value) => value,
     "uuid": uuid,
     "timeId": () => timeid(),
     "timeIdms": () => timeid(true)
@@ -383,7 +414,7 @@ const idTypes = {
  * @returns {*}
  */
 export const generateID = (primaryKeyType: string, incrimentValue?: number): any => {
-    return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : "";
+    return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
 
 /**
@@ -544,8 +575,8 @@ export const resolvePath = (pathQuery: string): string[] => {
     return objectPathCache[cacheKey];
 };
 
-export const getFnValue = (row: any, str: string): any => {
-    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : deepGet(str, row);
+export const getFnValue = (query: INanoSQLQuery, row: any, valueOrPath: string): any => {
+    return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : deepGet(valueOrPath, row);
 };
 
 /**
@@ -613,8 +644,7 @@ export const deepGet = (pathQuery: string|string[], object: any): any => {
 };
 
 export const _maybeAssign = (obj: any): any => {
-    if (Object.isFrozen(obj)) return _assign(obj);
-    return obj;
+    return Object.isFrozen(obj) ? _assign(obj) : obj;
 };
 
 let uid = 0;

@@ -1,5 +1,5 @@
 import * as sqlite3 from "sqlite3";
-import { NanoSQL } from "../src/index";
+import { nanoSQL } from "../src/index";
 import { INanoSQLInstance } from "../src/interfaces";
 
 
@@ -49,7 +49,7 @@ export const cleanNsqlJoin = (rows: any[]): any[] => {
 };
 
 export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsql: (nSQL: INanoSQLInstance) => Promise<any>) => Promise<[any[], any[]]> }> {
-    const nSQL = new NanoSQL();
+    const nSQL = new nanoSQL();
     const db = new sqlite3.Database(":memory:");
 
     return new Promise((res, rej) => {

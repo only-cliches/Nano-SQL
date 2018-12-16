@@ -1,4 +1,4 @@
-import { crowDistance, deepGet, cast, resolvePath, _objectsEqual, getFnValue, allAsync, _maybeAssign, _NanoSQLQueue, chainAsync } from "./utilities";
+import { crowDistance, deepGet, cast, resolvePath, _objectsEqual, getFnValue, allAsync, _maybeAssign, _NanoSQLQueue, chainAsync, adapterFilters } from "./utilities";
 import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -12,7 +12,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             aggregateStart: {result: 0, row: {}},
             call: (query, row, prev, column) => {
                 if (column && column !== "*") {
-                    if (deepGet(column, row)) {
+                    if (getFnValue(query, row, column)) {
                         prev.result++;
                     }
                 } else {
@@ -26,7 +26,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
             call: (query, row, prev, column) => {
-                let max = deepGet(column, row) || 0;
+                let max = getFnValue(query, row, column) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
                     prev.row = row;
@@ -43,7 +43,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
             call: (query, row, prev, column) => {
-                let min = deepGet(column, row) || 0;
+                let min = getFnValue(query, row, column) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
                     prev.row = row;
@@ -59,14 +59,14 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         GREATEST: {
             type: "S",
             call: (query, row, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? getFnValue(query, row, s) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
                 return {result: args[0]};
             }
         },
         LEAST: {
             type: "S",
             call: (query, row, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? getFnValue(query, row, s) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
                 return {result: args[0]};
             }
         },
@@ -74,7 +74,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
             call: (query, row, prev, column) => {
-                const value = parseFloat(deepGet(column, row) || 0) || 0;
+                const value = parseFloat(getFnValue(query, row, column) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -86,7 +86,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}},
             call: (query, row, prev, column) => {
-                const value = parseFloat(deepGet(column, row) || 0) || 0;
+                const value = parseFloat(getFnValue(query, row, column) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 return prev;
@@ -95,14 +95,14 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         LOWER: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(row, column)).toLowerCase();
+                const value = String(getFnValue(query, row, column)).toLowerCase();
                 return {result: value};
             }
         },
         UPPER: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(row, column)).toUpperCase();
+                const value = String(getFnValue(query, row, column)).toUpperCase();
                 return {result: value};
             }
         },
@@ -116,15 +116,15 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "S",
             call: (query, row, prev, ...values: string[]) => {
                 return {result: values.map(v => {
-                    return getFnValue(row, v);
+                    return getFnValue(query, row, v);
                 }).join("")};
             }
         },
         LEVENSHTEIN: {
             type: "S",
             call: (query, row, prev, word1, word2) => {
-                const w1 = getFnValue(row, word1);
-                const w2 = getFnValue(row, word2);
+                const w1 = getFnValue(query, row, word1);
+                const w2 = getFnValue(query, row, word2);
                 const key = w1 + "::" + w2;
                 if (!wordLevenshtienCache[key]) {
                     wordLevenshtienCache[key] = levenshtein(w1, w2);
@@ -135,11 +135,11 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         CROW: {
             type: "S",
             call: (query, row, prev, gpsCol: string, lat: string, lon: string) => {
-                const latVal = deepGet(gpsCol + ".lat", row);
-                const lonVal = deepGet(gpsCol + ".lon", row);
+                const latVal = getFnValue(query, row, gpsCol + ".lat");
+                const lonVal = getFnValue(query, row, gpsCol + ".lon");
                 return {result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.earthRadius)};
             },
-            whereIndex: (nSQL, query, fnArgs, where) => {
+            whereIndex: (query, fnArgs, where) => {
                 if (where[1] === ">") {
                     const indexes: {[id: string]: INanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     const crowColumn = resolvePath(fnArgs[0]);
@@ -162,7 +162,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                 }
                 return false;
             },
-            queryIndex: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err) => void) => {
+            queryIndex: (query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err) => void) => {
                 const latTable = `_idx_${query.table as string}_${where.index}-lat`;
                 const lonTable = `_idx_${query.table as string}_${where.index}-lon`;
 
@@ -184,7 +184,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                 let pks: {[id: string]: number} = {};
                 allAsync([latTable, lonTable], (table, i, next, error) => {
                     const ranges = i === 0 ? latRange : lonRange;
-                    nSQL.adapter.readMulti(table, "range", ranges[0], ranges[1], false, (row, i) => {
+                    adapterFilters(nSQL, query).readMulti(table, "range", ranges[0], ranges[1], false, (row, i) => {
                         row.pks.forEach((pk) => {
                             pks[pk] = Math.max(i, pks[pk] ? pks[pk] : 0);
                         });
@@ -206,7 +206,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         done();
                     }, error, complete);
                     allAsync(readPKS, (pk, i, next, err) => {
-                        nSQL.adapter.read(query.table as string, pk, (row) => {
+                        adapterFilters(query.parent, query).read(query.table as string, pk, (row) => {
                             if (row) {
                                 crowBuffer.newItem(row);
                             }

@@ -13,7 +13,8 @@ if (typeof global !== "undefined") {
     RocksDB = (global as any)._rocksAdapter;
 }
 
-export class NanoSQL implements INanoSQLInstance {
+// tslint:disable-next-line
+export class nanoSQL implements INanoSQLInstance {
 
     public config: INanoSQLConfig;
 
@@ -163,7 +164,7 @@ export class NanoSQL implements INanoSQLInstance {
         const k = this.state.selectedTable + "." + primaryKey;
         return new Promise((res, rej) => {
             this.triggerQuery({
-                ...buildQuery("_ttl", "delete"),
+                ...buildQuery(this, "_ttl", "delete"),
                 where: ["key", "=", k]
             }, noop, res, rej);
         });
@@ -174,7 +175,7 @@ export class NanoSQL implements INanoSQLInstance {
             const k = this.state.selectedTable + "." + primaryKey;
             let rows: any[] = [];
             this.triggerQuery({
-                ...buildQuery("_ttl", "select"),
+                ...buildQuery(this, "_ttl", "select"),
                 where: ["key", "=", k]
             }, (row) => {
                 rows.push(row);
@@ -201,7 +202,7 @@ export class NanoSQL implements INanoSQLInstance {
         const getPage = () => {
             let rows: any[] = [];
             this.triggerQuery({
-                ...buildQuery("_ttl", "select"),
+                ...buildQuery(this, "_ttl", "select"),
                 limit: 20,
                 offset: 20 * page
             }, (row) => {
@@ -217,7 +218,7 @@ export class NanoSQL implements INanoSQLInstance {
                     if (row.date < Date.now()) {
                         const clearTTL = () => {
                             this.triggerQuery({
-                                ...buildQuery("_ttl", "delete"),
+                                ...buildQuery(this, "_ttl", "delete"),
                                 where: ["key", "=", row.key]
                             }, noop, next, throwErr);
                         };
@@ -230,13 +231,13 @@ export class NanoSQL implements INanoSQLInstance {
                                 upsertObj[col] = null;
                             });
                             this.triggerQuery({
-                                ...buildQuery(table, "upsert"),
+                                ...buildQuery(this, table, "upsert"),
                                 actionArgs: upsertObj,
                                 where: [this.tables[table].pkCol, "=", key]
                             }, noop, clearTTL, throwErr);
                         } else {
                             this.triggerQuery({
-                                ...buildQuery(table, "delete"),
+                                ...buildQuery(this, table, "delete"),
                                 where: [this.tables[table].pkCol, "=", key]
                             }, noop, clearTTL, throwErr);
                         }
@@ -449,7 +450,7 @@ export class NanoSQL implements INanoSQLInstance {
                 switch (j) {
                     case "_util":
                         this.triggerQuery({
-                            ...buildQuery("", "create table"),
+                            ...buildQuery(this, "", "create table"),
                             actionArgs: {
                                 name: "_util",
                                 model: [
@@ -462,7 +463,7 @@ export class NanoSQL implements INanoSQLInstance {
                         break;
                     case "_ttl":
                         this.triggerQuery({
-                            ...buildQuery("", "create table"),
+                            ...buildQuery(this, "", "create table"),
                             actionArgs: {
                                 name: "_ttl",
                                 model: [
@@ -482,7 +483,7 @@ export class NanoSQL implements INanoSQLInstance {
                             return;
                         }
                         this.triggerQuery({
-                            ...buildQuery("", "create table"),
+                            ...buildQuery(this, "", "create table"),
                             actionArgs: model
                         }, noop, next as any, err);
                 }
@@ -493,14 +494,14 @@ export class NanoSQL implements INanoSQLInstance {
             return new Promise((res, rej) => {
                 let currentVersion: number;
                 this.triggerQuery({
-                    ...buildQuery("_util", "select"),
+                    ...buildQuery(this, "_util", "select"),
                     where: ["key", "=", "version"]
                 }, (row) => {
                     if (row) currentVersion = row.value;
                 }, () => {
                     if (!currentVersion || currentVersion < 2.0) {
                         this.triggerQuery({
-                            ...buildQuery("_util", "upsert"),
+                            ...buildQuery(this, "_util", "upsert"),
                             actionArgs: { key: "version", value: VERSION }
                         }, noop, res, rej);
                     } else {
@@ -519,14 +520,14 @@ export class NanoSQL implements INanoSQLInstance {
                 }
                 let currentVersion: number;
                 this.triggerQuery({
-                    ...buildQuery("_util", "select"),
+                    ...buildQuery(this, "_util", "select"),
                     where: ["key", "=", "db-version"]
                 }, (row) => {
                     if (row) currentVersion = row.value;
                 }, () => {
                     const saveVersion = (version: number, complete, err) => {
                         this.triggerQuery({
-                            ...buildQuery("_util", "upsert"),
+                            ...buildQuery(this, "_util", "upsert"),
                             actionArgs: { key: "db-version", value: version }
                         }, noop, complete, err);
                     };
@@ -1123,7 +1124,7 @@ export class NanoSQL implements INanoSQLInstance {
         });
     }
 
-    public extend(scope: string, ...args: any[]): any | NanoSQL {
+    public extend(scope: string, ...args: any[]): any | nanoSQL {
         return new Promise((res, rej) => {
             this.doFilter<extendFilter, { result: any }>("extend", { scope: scope, args: args, result: null }, res, rej);
         });
@@ -1140,7 +1141,7 @@ export class NanoSQL implements INanoSQLInstance {
         let count = 0;
         return chainAsync(rows, (row, i, next, err) => {
             this.triggerQuery({
-                ...buildQuery(table, "upsert"),
+                ...buildQuery(this, table, "upsert"),
                 actionArgs: row
             }, (r) => {
 
@@ -1271,7 +1272,7 @@ export class NanoSQL implements INanoSQLInstance {
         return chainAsync(rowData, (row, i, nextRow, err) => {
             if (onProgress) onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
             this.triggerQuery({
-                ...buildQuery(table, "upsert"),
+                ...buildQuery(this, table, "upsert"),
                 actionArgs: row
             }, noop, nextRow, err || noop);
         });
@@ -1282,7 +1283,7 @@ export class NanoSQL implements INanoSQLInstance {
 /**
  * @internal
  */
-let _NanoSQLStatic = new NanoSQL();
+let _NanoSQLStatic = new nanoSQL();
 
 export const nSQL = (table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)) => {
     return _NanoSQLStatic.selectTable(table);
@@ -1291,6 +1292,6 @@ export const nSQL = (table?: string | any[] | ((where?: any[] | ((row: {[key: st
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
         nSQL: nSQL,
-        NanoSQL: NanoSQL
+        NanoSQL: nanoSQL
     };
 }

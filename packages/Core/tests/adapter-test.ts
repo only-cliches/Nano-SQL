@@ -19,7 +19,7 @@ import { myConsole, equals } from "./utils";
 import { chainAsync, uuid } from "../src/utilities";
 import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTableConfig, INanoSQLTable } from "../src/interfaces";
 import { SyncStorage } from "../src/adapters/syncStorage";
-import { NanoSQL } from "../src";
+import { nanoSQL } from "../src";
 
 export class TestAdapter {
 
@@ -62,7 +62,7 @@ export class TestAdapter {
 
     public Deletes() {
         const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new NanoSQL();
+        const nSQL: INanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         return new Promise((res, rej) => {
@@ -84,7 +84,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
+                    offsets: [],
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -129,7 +129,7 @@ export class TestAdapter {
 
     public RangeReads() {
         const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new NanoSQL();
+        const nSQL: INanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         let index: any[] = [];
@@ -152,7 +152,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
+                    offsets: [],
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -242,7 +242,7 @@ export class TestAdapter {
 
     public RangeReadsUUID() {
         const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new NanoSQL();
+        const nSQL: INanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         let index: any[] = [];
@@ -265,7 +265,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
+                    offsets: [],
                     actions: [],
                     views: [],
                     pkType: "uuid",
@@ -363,7 +363,7 @@ export class TestAdapter {
 
     public Writes() {
         const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new NanoSQL();
+        const nSQL: INanoSQLInstance = new nanoSQL();
 
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
@@ -389,7 +389,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
+                    offsets: [],
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -442,7 +442,7 @@ export class TestAdapter {
 
     public PrimaryKeys() {
         const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new NanoSQL();
+        const nSQL: INanoSQLInstance = new nanoSQL();
 
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
@@ -511,7 +511,7 @@ export class TestAdapter {
                                 }
                             ],
                             indexes: {},
-                            pkOffset: 0,
+                            offsets: [],
                             actions: [],
                             views: [],
                             pkType: {

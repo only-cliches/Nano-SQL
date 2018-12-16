@@ -2,7 +2,7 @@ import { expect, assert } from "chai";
 import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin } from "./init";
 import { comments, users, posts } from "./data";
-import { NanoSQL } from "../src";
+import { nanoSQL } from "../src";
 import { INanoSQLInstance } from "../src/interfaces";
 import { TestAdapter } from "./adapter-test";
 import { SyncStorage } from "../src/adapters/syncStorage";

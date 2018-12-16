@@ -21,7 +21,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
 
         if (typeof queryAction === "string") {
             this._query = {
-                ...buildQuery(table, queryAction),
+                ...buildQuery(db, table, queryAction),
                 comments: [],
                 state: "pending",
                 action: queryAction,
@@ -30,7 +30,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
             };
         } else {
             this._query = {
-                ...buildQuery(table, ""),
+                ...buildQuery(db, table, ""),
                 ...queryAction(db),
                 state: "pending"
             };

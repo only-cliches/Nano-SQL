@@ -245,22 +245,6 @@ export interface INanoSQLMapReduce {
     };
 }
 
-export interface INanoSQLTableConfig {
-    name: string;
-    model: INanoSQLDataModel;
-    indexes?: {
-        [colAndType: string]: {[prop: string]: any};
-    };
-    mapReduce?: INanoSQLMapReduce[];
-    filter?: (row: any) => any;
-    actions?: INanoSQLActionOrView[];
-    views?: INanoSQLActionOrView[];
-    props?: {
-        [key: string]: any;
-    };
-    _internal?: boolean;
-}
-
 export interface INanoSQLSortBy {
     sort: { path: string[], dir: string }[];
     index: string;
@@ -324,8 +308,24 @@ export interface INanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
     call: (query: INanoSQLQuery, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
-    whereIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
-    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
+    whereIndex?: (query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
+    queryIndex?: (query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
+}
+
+export interface INanoSQLTableConfig {
+    name: string;
+    model: INanoSQLDataModel;
+    indexes?: {
+        [colAndType: string]: {[prop: string]: any};
+    };
+    mapReduce?: INanoSQLMapReduce[];
+    filter?: (row: any) => any;
+    actions?: INanoSQLActionOrView[];
+    views?: INanoSQLActionOrView[];
+    props?: {
+        [key: string]: any;
+    };
+    _internal?: boolean;
 }
 
 export interface INanoSQLTable {
@@ -341,7 +341,7 @@ export interface INanoSQLTable {
     pkType: string;
     pkCol: string;
     isPkNum: boolean;
-    pkOffset: number;
+    offsets: {path: string[], offset: number}[];
     ai: boolean;
     props?: any;
 }
@@ -415,6 +415,7 @@ export interface INanoSQLQuery {
     skipQueue?: boolean;
     union?: {type: "all" | "distinct", queries: (() => Promise<any[]>)[]};
     cacheID?: string;
+    parent: INanoSQLInstance;
     [key: string]: any;
 }
 

@@ -54,7 +54,8 @@
                     console.log("EVENT", ev);
                 })
                 return nSQL("users").query("upsert", [{ name: "Billy", age: 20, meta: { color: "blue" }, tags: ["some", "tags", "here"] }, { name: "Scott", age: 30, meta: { color: "orange" }, tags: ["some"] }, { name: "Jeb", meta: { color: "yellow" } }]).exec();
-            }).then(() => {
+            }).then((result) => {
+                console.log("UPSERT", result);
                 return nSQL("users").query("upsert", { name: 21 }).where(["meta.color", "=", "blue"]).exec();
             }).then((result) => {
                 console.log(result);
