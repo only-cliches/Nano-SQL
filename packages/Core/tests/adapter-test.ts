@@ -175,13 +175,27 @@ export class TestAdapter {
                 }).then(res);
             });
         }).then(() => {
+            // Select a range of rows using a range of the index with reverse
+            return new Promise((res, rej) => {
+                let rows: any[] = [];
+                adapter.readMulti("test", "range", 10, 20, true, (row, idx) => {
+                    rows.push(row);
+                }, () => {
+                    const filterRows = allRows.filter(r => r.id >= 10 && r.id <= 20).reverse();
+                    const condition = equals(rows, filterRows);
+                    myConsole.assert(condition, "Select Range Test 1");
+                    condition ? res() : rej(rows);
+                }, rej);
+            });
+        }).then(() => {
             // Select a range of rows using a range of the index
             return new Promise((res, rej) => {
                 let rows: any[] = [];
                 adapter.readMulti("test", "range", 10, 20, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = equals(rows, allRows.filter(r => r.id >= 10 && r.id < 20));
+                    const filterRows = allRows.filter(r => r.id >= 10 && r.id <= 20);
+                    const condition = equals(rows, filterRows);
                     myConsole.assert(condition, "Select Range Test 1");
                     condition ? res() : rej(rows);
                 }, rej);
@@ -309,11 +323,11 @@ export class TestAdapter {
                 adapter.readMulti("test", "range", allRows[10].id, allRows[20].id, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = equals(rows, allRows.filter(r => r.id >= allRows[10].id && r.id < allRows[20].id));
+                    const condition = equals(rows, allRows.filter(r => r.id >= allRows[10].id && r.id <= allRows[20].id));
                     myConsole.assert(condition, "Select Range Test (Primary Key)");
                     condition ? res() : rej({
                         g: rows,
-                        e: allRows.filter(r => r.id >= allRows[10].id && r.id < allRows[20].id)
+                        e: allRows.filter(r => r.id >= allRows[10].id && r.id <= allRows[20].id)
                     });
                 }, rej);
             });

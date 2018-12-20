@@ -107,6 +107,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         this._startTime = Date.now();
         const action = query.action.toLowerCase().trim();
         this._orderByRows = this._orderByRows.bind(this);
+        this._onError = this._onError.bind(this);
         if (action !== "select" && typeof query.table !== "string") {
             this.query.state = "error";
             this.error(`Only "select" queries are available for this resource!`);
@@ -1540,7 +1541,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         // function
         if (fastWhere.index && fastWhere.fnName) {
-            (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.nSQL, this, fastWhere, onlyGetPKs, onRow, complete, this._onError);
+            (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.query, fastWhere, onlyGetPKs, onRow, complete, this._onError);
             return;
         }
 
@@ -1575,8 +1576,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         adapterFilters(this.nSQL, this.query).read(this.query.table as string, pk, (row) => {
                             if (row) {
                                 onRow(row, count);
-                                count++;
                             }
+                            count++;
                             next(null);
                         }, this.error);
                     }).then(finished);
@@ -1616,6 +1617,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             }
 
         } else {
+ 
             switch (fastWhere.comp) {
                 case "=":
                     if (onlyGetPKs && isPKquery) { // Get only pk of result rows AND it's a primary key query
@@ -1635,15 +1637,15 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     }, this._onError);
                     break;
                 case "IN":
-
                     const PKS = (isReversed ? (fastWhere.value as any[]).sort((a, b) => a < b ? 1 : -1) : (fastWhere.value as any[]).sort((a, b) => a > b ? 1 : -1));
                     if (onlyGetPKs && isPKquery) { // Get only pk of result rows AND it's a primary key query
                         PKS.forEach((pk, i) => onRow(pk, i));
                         complete();
                     } else {
-                        allAsync(PKS, (pkRead, ii, nextPK) => {
+                        chainAsync(PKS, (pkRead, ii, nextPK) => {
                             adapterFilters(this.nSQL, this.query).read(isPKquery ? this.query.table as string : indexTable, pkRead, (row) => {
                                 indexBuffer.newItem(row);
+                                nextPK();
                             }, this.error);
                         }).then(() => {
                             indexBuffer.finished();
@@ -1663,7 +1665,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 const fastWhere = this._whereArgs.fastWhere[0] as IWhereCondition;
                 const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
 
-                this._resolveFastWhere(false, fastWhere, isReversed, onRow, complete);
+                this._resolveFastWhere(false, fastWhere, isReversed, (row, i) => {
+                    onRow(row, i);
+                }, complete);
             } else {  // multiple conditions
                 let indexBuffer: { [pk: string]: number } = {};
                 let maxI = 0;
@@ -1726,6 +1730,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         };
 
         const filterOnRow = (row: any, i: number) => {
+
             const row2 = _maybeAssign(row);
             if (this.nSQL.tables[this.query.table as string].offsets.length) {
                 let i = this.nSQL.tables[this.query.table as string].offsets.length;
@@ -1757,6 +1762,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 case IWhereType.none:
                 case IWhereType.fn:
                     const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
+
                     adapterFilters(this.nSQL, this.query).readMulti(this.query.table, "all", undefined, undefined, isReversed, (row, i) => {
                         if (this._whereArgs.type === IWhereType.slow) {
                             if (this._where(row, this._whereArgs.slowWhere as any)) {
@@ -1913,7 +1919,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
     public _getColValue(where: IWhereCondition, wholeRow: any): any {
         if (where.fnName) {
-            return this.nSQL.functions[where.fnName].call(this.query, wholeRow, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }, ...(where.fnArgs || []));
+            const fnValue = this.nSQL.functions[where.fnName].call(this.query, wholeRow, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }, ...(where.fnArgs || []));
+            return (fnValue ? fnValue : {result: undefined}).result;
         } else {
             return deepGet(where.col as string, wholeRow);
         }
@@ -1981,6 +1988,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             case "NOT LIKE": return !this._processLIKE((columnValue || ""), givenValue);
             // if the column value is between two given numbers
             case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
+            // if the column value is not between two given numbers
+            case "NOT BETWEEN": return givenValue[0] >= columnValue || givenValue[1] <= columnValue;
             // if single value exists in array column
             case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
             // if single value does not exist in array column
@@ -2150,8 +2159,10 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                             this.error(`Function "${fnName}" not found!`);
                             return p;
                         }
+
                         if (doIndex && this.nSQL.functions[fnName] && this.nSQL.functions[fnName].whereIndex) {
-                            const indexFn = (this.nSQL.functions[fnName].whereIndex as any)(this.nSQL, this.query, fnArgs, w);
+                            const indexFn = (this.nSQL.functions[fnName].whereIndex as any)(this.query, fnArgs, w);
+
                             if (indexFn) {
                                 hasIndex = true;
                                 p.push(indexFn);
@@ -2168,6 +2179,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         }
 
                     } else { // column select
+
                         let isIndexCol = false;
                         const path = doIndex ? resolvePath(w[0]) : [];
 
@@ -2217,14 +2229,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                                 comp: w[1],
                                 value: w[2]
                             });
-                        }
-                        return p;
+                        }  
                     }
+                    return p;
                 }
             }, [] as any[]);
         };
         let parsedWhere = recursiveParse(typeof where[0] === "string" ? [where] : where, 0);
-
         // discover where we have indexes we can use
         // the rest is a full table scan OR a scan of the index results
         // fastWhere = index query, slowWhere = row by row/full table scan
@@ -2267,6 +2278,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 slowWhere: parsedWhere
             };
         }
+
         return _NanoSQLQuery._whereMemoized[key];
     }
 }

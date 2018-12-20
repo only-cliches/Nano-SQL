@@ -20,9 +20,7 @@ const stoppable = require("stoppable");
 const http = require("http");
 const url = require("url");
 
-rimraf(path.join(__dirname, "db_123"));
 declare const RSE: any;
-
 
 describe("Adapter Tests", () => {
     it("Sync Storage", (done: MochaDone) => {
@@ -34,12 +32,14 @@ describe("Adapter Tests", () => {
     });
     it("RocksDB Storage", (done: MochaDone) => {
         new TestAdapter(RocksDB, []).test().then(() => {
+            rimraf(path.join(__dirname, "../", "db_123"));
             done();
         }).catch((err) => {
+            rimraf(path.join(__dirname, "../", "db_123"));
             done(new Error(err));
         });
     });
-
+/*
     it("WebSQL & IndexedDB", (done: MochaDone) => {
 
         webpack({
@@ -124,7 +124,7 @@ describe("Adapter Tests", () => {
 
             server.listen(8080, "localhost", 511, () => {
                 (async () => {
-                    const browser = await puppeteer.launch();
+                    const browser = await puppeteer.launch({headless: false});
                     const page = await browser.newPage();
                     await page.bringToFront();
                     await page.goto("http://localhost:8080");
@@ -149,4 +149,5 @@ describe("Adapter Tests", () => {
             });
         });
     }).timeout(15000);
+*/
 });

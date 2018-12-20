@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual, titleCase, getWeekOfYear, throttle } from "./utilities";
-import { INanoSQLConfig, INanoSQLPlugin, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, INanoSQLGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, mapReduceFilter } from "./interfaces";
+import { INanoSQLConfig, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, INanoSQLGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, mapReduceFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _NanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -30,7 +30,7 @@ export class nanoSQL implements INanoSQLInstance {
         [fnName: string]: INanoSQLFunction;
     };
 
-    public earthRadius: number = 6371;
+    public planetRadius: number = 6371;
 
     public tables: {
         [tableName: string]: INanoSQLTable;
@@ -429,6 +429,10 @@ export class nanoSQL implements INanoSQLInstance {
                     this.adapter.nSQL = this;
                     this.adapter.connect(this.state.id, res, rej);
                 }).catch(rej);
+
+                if (this.config.planetRadius) {
+                    this.planetRadius = this.config.planetRadius;
+                }
 
             });
         }).then(() => {

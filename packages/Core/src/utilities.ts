@@ -8,12 +8,12 @@ export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?:
     const start = startVal || 0;
     const end = endVal || arr.length;
 
-    if (arr[start] > value) return start;
-    if (arr[end] < value) return end + 1;
+    if (arr[start] >= value) return start;
+    if (arr[end] <= value) return end + 1;
 
     const m = Math.floor((start + end) / 2);
-    if (value === arr[m]) return m;
-    if (end - 1 === start) return end;
+    if (value == arr[m]) return m;
+    if (end - 1 == start) return end;
     if (value > arr[m]) return binarySearch(arr, value, m, end);
     if (value < arr[m]) return binarySearch(arr, value, start, m);
     return end;
@@ -523,7 +523,13 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean): any =>
     return newVal;
 };
 
+export const rad2deg = (rad: number): number => {
+    return rad * 180 / Math.PI;
+}
 
+export const deg2rad = (deg: number): number => {
+    return deg * (Math.PI / 180);
+};
 
 /**
  * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
@@ -540,16 +546,13 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean): any =>
  * @returns {number}
  */
 export const crowDistance = (lat1: number, lon1: number, lat2: number, lon2: number, radius: number = 6371): number => {
-    const deg2rad = (deg: number): number => {
-        return deg * (Math.PI / 180);
-    };
 
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
     const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.pow(Math.sin(dLat / 2), 2) +
         Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        Math.pow(Math.sin(dLon / 2), 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return radius * c;
 };

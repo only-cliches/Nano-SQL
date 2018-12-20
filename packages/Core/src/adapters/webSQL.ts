@@ -117,7 +117,7 @@ export const SQLiteAbstract = (
             let stmnt = `SELECT data FROM ${checkTable(table)}`;
 
             if (type === "range") {
-                stmnt += ` WHERE id >= ? AND id < ?`;
+                stmnt += ` WHERE id >= ? AND id <= ?`;
             }
             if (reverse) {
                 stmnt += ` ORDER BY id DESC`;

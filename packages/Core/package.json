@@ -115,6 +115,7 @@
 	"author": "Scott Lott <Scott@ClickSimply.com>",
 	"license": "MIT",
 	"dependencies": {
+		"@turf/transform-translate": "^5.1.5",
 		"levenshtein-edit-distance": "^2.0.2",
 		"really-small-events": "^1.1.0"
 	},

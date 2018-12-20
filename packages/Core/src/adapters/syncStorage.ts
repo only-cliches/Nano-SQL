@@ -136,22 +136,49 @@ export class SyncStorage implements INanoSQLAdapter {
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
         const doCheck = offsetOrLow || limitOrHigh;
-        const range = {
+        const range: any[] = {
             "range":  [offsetOrLow, limitOrHigh],
             "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
-            "all": false
+            "all": []
         }[type];
 
-        this._index[table].slice().forEach((pk, i) => {
-            const read = type === "all" ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
-            if (read) {
-                if (this.useLS) {
-                    onRow(JSON.parse(localStorage.getItem(this._id + "->" + table + "__" + pk) || "{}"), i);
-                } else {
-                    onRow(this._rows[table][pk], i);
-                }
+
+        const idxArr: any[] = ((): any[] => {
+            switch(type) {
+                case "all":
+                case "offset":
+                    return type === "all" ? this._index[table].slice() : this._index[table].slice(range[0], range[1]);
+                case "range":
+                    let lowIdx = binarySearch(this._index[table], range[0]);
+                    let highIdx = binarySearch(this._index[table], range[1]);
+
+                    while(this._index[table][highIdx] > range[1]) {
+                        highIdx--;
+                    }
+
+                    while(this._index[table][lowIdx] < range[0]) {
+                        lowIdx++;
+                    }
+
+                    return this._index[table].slice(lowIdx, highIdx + 1);
+                    
+            }
+            return [];
+        })();
+
+        if (reverse) {
+            idxArr.reverse();
+        }
+
+        idxArr.forEach((pk, i) => {
+            if (this.useLS) {
+                onRow(JSON.parse(localStorage.getItem(this._id + "->" + table + "__" + pk) || "{}"), i);
+            } else {
+                onRow(this._rows[table][pk], i);
             }
         });
+        
+
         complete();
     }
 

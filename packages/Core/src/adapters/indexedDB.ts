@@ -154,24 +154,34 @@ export class IndexedDB implements INanoSQLAdapter {
         let count = 0;
         const lowerLimit = doOffset ? offsetOrLow : 0;
         const upperLimit = lowerLimit + limitOrHigh;
+        let advancing: boolean = true;
         this.store(table, "readonly", (tr, store) => {
-            store.openCursor((type === "all" || doOffset) ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, true), reverse ? "prev" : "next").onsuccess = (event: any) => {
+            store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = (event: any) => {
                 const cursor: IDBCursorWithValue = event.target.result;
-                if (cursor) {
-                    if (doOffset) {
-                        if (lowerLimit <= count && upperLimit > count) {
-                            onRow(cursor.value, count - offsetOrLow);
-                        }
-                    } else {
-                        onRow(cursor.value, count);
-                    }
-                    count++;
-                    cursor.continue();
-                } else {
+                if (!cursor) {
                     complete();
+                    return;
                 }
+
+                if (type === "offset") {
+                    if (advancing) {
+                        cursor.advance(lowerLimit);
+                        count = lowerLimit;
+                        advancing = false;
+                        return;
+                    }
+
+                    if (upperLimit > count) {
+                        onRow(cursor.value, count - offsetOrLow);
+                    }
+                } else {
+                    onRow(cursor.value, count);
+                }
+                count++;
+                cursor.continue();
             };
         }, error);
+
     }
 
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
@@ -193,15 +203,11 @@ export class IndexedDB implements INanoSQLAdapter {
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
         let count = 0;
         this.store(table, "readonly", (tr, store) => {
-            store.openCursor().onsuccess = (event: any) => {
-                const cursor: IDBCursorWithValue = event.target.result;
-                if (cursor) {
-                    count++;
-                    cursor.continue();
-                } else {
-                    complete(count);
-                }
-            };
+            const ctRequest = tr.objectStore(table).count();
+            ctRequest.onsuccess = () => {
+                complete(ctRequest.result);
+            }
+            ctRequest.onerror = error;
         }, error);
     }
 }

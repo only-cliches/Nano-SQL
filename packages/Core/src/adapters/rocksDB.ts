@@ -203,7 +203,7 @@ export class RocksDB implements INanoSQLAdapter {
         this._levelDBs[table]
             .createValueStream(type === "range" ? {
                 gte: type === "range" ? this._encodePk(table, offsetOrLow) : undefined,
-                lt: type === "range" ? this._encodePk(table, limitOrHigh) : undefined,
+                lte: type === "range" ? this._encodePk(table, limitOrHigh) : undefined,
                 reverse: reverse
             } : type === "offset" ? {
                 reverse: reverse,

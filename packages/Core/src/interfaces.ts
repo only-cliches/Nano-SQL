@@ -12,7 +12,7 @@ export declare class INanoSQLInstance {
     functions: {
         [fnName: string]: INanoSQLFunction;
     };
-    earthRadius: number;
+    planetRadius: number;
     tables: {
         [tableName: string]: INanoSQLTable;
     };
@@ -208,6 +208,7 @@ export interface INanoSQLConfig {
     queue?: boolean;
     mode?: string | INanoSQLAdapter;
     plugins?: INanoSQLPlugin[];
+    planetRadius?: number;
     version?: number;
     size?: number; // size of WebSQL database
     path?: string | ((dbID: string, tableName: string) => {lvld: any, args?: any}); // RocksDB path

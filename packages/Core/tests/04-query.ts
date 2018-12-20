@@ -1,0 +1,935 @@
+import { expect, assert } from "chai";
+import "mocha";
+import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
+import { comments, users, posts } from "./data";
+import { nanoSQL, nSQL as nSQLDefault } from "../src";
+import { INanoSQLInstance } from "../src/interfaces";
+import { uuid, crowDistance } from "../src/utilities";
+
+
+describe("Testing Other Features", () => {
+    it("Select Equals", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 50}
+        ]).query("select").where(["id", "=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Equals", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 50}}}
+        ]).query("select").where(["id.value.prop", "=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Not Equals", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 60}
+        ]).query("select").where(["id", "!=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Not Equals", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 60}}}
+        ]).query("select").where(["id.value.prop", "!=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Greater Than", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 60}
+        ]).query("select").where(["id", ">", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Greater Than", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 60}}}
+        ]).query("select").where(["id.value.prop", ">", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Greater Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 60}
+        ]).query("select").where(["id", ">=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Greater Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 60}}}
+        ]).query("select").where(["id.value.prop", ">=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Greater Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 50}
+        ]).query("select").where(["id", ">=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Greater Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 50}}}
+        ]).query("select").where(["id.value.prop", ">=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Less Than", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 30}
+        ]).query("select").where(["id", "<", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Less Than", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 30}}}
+        ]).query("select").where(["id.value.prop", "<", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Less Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 30}
+        ]).query("select").where(["id", "<=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Less Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 30}}}
+        ]).query("select").where(["id.value.prop", "<=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Less Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 50}
+        ]).query("select").where(["id", "<=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Less Than or Equal To", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 50}}}
+        ]).query("select").where(["id.value.prop", "<=", 50]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select In", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 20}
+        ]).query("select").where(["id", "IN", [20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select In", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 20}}}
+        ]).query("select").where(["id.value.prop", "IN", [20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select Not In", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 30}
+        ]).query("select").where(["id", "NOT IN", [20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select Not In", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 30}}}
+        ]).query("select").where(["id.value.prop", "NOT IN", [20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select LIKE", (done: MochaDone) => {
+        nSQLDefault([
+            {id: "billy"}
+        ]).query("select").where(["id", "LIKE", "bill%"]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select LIKE", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: "billy"}}}
+        ]).query("select").where(["id.value.prop", "LIKE", "bill%"]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select LIKE", (done: MochaDone) => {
+        nSQLDefault([
+            {id: "billy"}
+        ]).query("select").where(["id", "LIKE", "bill%"]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select LIKE", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: "billy"}}}
+        ]).query("select").where(["id.value.prop", "LIKE", "bill%"]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select BETWEEN", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 30}
+        ]).query("select").where(["id", "BETWEEN", [20, 50]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select BETWEEN", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 30}}}
+        ]).query("select").where(["id.value.prop", "BETWEEN", [20, 50]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select NOT BETWEEN", (done: MochaDone) => {
+        nSQLDefault([
+            {id: 60}
+        ]).query("select").where(["id", "NOT BETWEEN", [20, 50]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select NOT BETWEEN", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: 60}}}
+        ]).query("select").where(["id.value.prop", "NOT BETWEEN", [20, 50]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select INCLUDES", (done: MochaDone) => {
+        nSQLDefault([
+            {id: [10, 20, 30]}
+        ]).query("select").where(["id", "INCLUDES", 20]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select INCLUDES", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: [10, 20, 30]}}}
+        ]).query("select").where(["id.value.prop", "INCLUDES", 20]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select NOT INCLUDES", (done: MochaDone) => {
+        nSQLDefault([
+            {id: [10, 20, 30]}
+        ]).query("select").where(["id", "NOT INCLUDES", 25]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select NOT INCLUDES", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: [10, 20, 30]}}}
+        ]).query("select").where(["id.value.prop", "NOT INCLUDES", 25]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select INTERSECT", (done: MochaDone) => {
+        nSQLDefault([
+            {id: [10, 20, 30]}
+        ]).query("select").where(["id", "INTERSECT", [20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select INTERSECT", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: [10, 20, 30]}}}
+        ]).query("select").where(["id.value.prop", "INTERSECT", [20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select INTERSECT ALL", (done: MochaDone) => {
+        nSQLDefault([
+            {id: [10, 20, 30]}
+        ]).query("select").where(["id", "INTERSECT ALL", [10, 20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select INTERSECT ALL", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: [10, 20, 30]}}}
+        ]).query("select").where(["id.value.prop", "INTERSECT ALL", [10, 20]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Select NOT INTERSECT", (done: MochaDone) => {
+        nSQLDefault([
+            {id: [10, 20, 30]}
+        ]).query("select").where(["id", "NOT INTERSECT", [5, 15]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Nested Select NOT INTERSECT", (done: MochaDone) => {
+        nSQLDefault([
+            {id: {value: {prop: [10, 20, 30]}}}
+        ]).query("select").where(["id.value.prop", "NOT INTERSECT", [5, 15]]).exec().then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("PK & Normal Between behave identically.", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["id", "BETWEEN", [29, 49]]).exec();
+        }).then((pkRows) => {
+            nSQL.query("select").where(["num", "BETWEEN", [29, 49]]).exec().then((numRows) => {
+                try {
+                    expect(pkRows).to.deep.equal(numRows);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+    });
+
+    it("Change Events work", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            nSQL.on("change", () => {
+                try {
+                    expect(true).to.equal(true);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+            return nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec();
+        }).then((pkRows) => {
+
+        });
+    });
+
+    it("Secondary Index Test (Int)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: i});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num", "BETWEEN", [29, 49]]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.num >= 29 && i.num <= 49)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Test (Int 2)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: i});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num", "=", 30]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.num === 30)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Test (Int 3)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: i});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num", "IN", [30, 25, 21]]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => [30, 25, 21].indexOf(i.num) !== -1)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Test (Int Nested)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: {prop: i}});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:obj":{model: {
+                        "prop:int": {}
+                    }}
+                },
+                indexes: {
+                    "num.prop:int": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num.prop", "BETWEEN", [29, 49]]).exec();
+        }).then((idxRows) => {
+            const testRows = rows.filter(i => i.num.prop >= 29 && i.num.prop <= 49);
+            try {
+                expect(testRows).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Test (Compound Where)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: i + 10});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where([["id", "=", 20], "AND", ["num", "=", 30]]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.id === 20 && i.num === 30)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Test (Float)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 500; i ++) {
+            rows.push({id: i, num: Math.random()});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:float":{}
+                },
+                indexes: {
+                    "num:float": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num", "BETWEEN", [0.2, 0.7]]).orderBy(["num"]).exec();
+        }).then((idxRows) => {
+            const testRows = rows.filter(i => i.num >= 0.2 && i.num <= 0.7).sort((a, b) => a.num > b.num ? 1 : -1);
+            try {
+                expect(testRows).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Test (String)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: uuid()});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:string":{}
+                },
+                indexes: {
+                    "num:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num", "BETWEEN", ["b", "e"]]).orderBy(["id"]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.num >= "b" && i.num <= "e")).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Primary Key Offset", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i - 10, num: i});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true, offset: 20},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["id", "BETWEEN", [-10, 10]]).orderBy(["id"]).exec();
+        }).then((idxRows) => {
+            const testRows = rows.filter(i => i.id >= -10 && i.id <= 10);
+            try {
+                expect(testRows).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Offset", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: i - 10});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int": {offset: 20}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["num", "BETWEEN", [-10, 10]]).orderBy(["id"]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.num >= -10 && i.num <= 10)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Geo Data Type", (done: MochaDone) => {
+        const randomLoc = (): {lon: number, lat: number} => {
+            return {
+                lat: (Math.random() * 180) - 90,
+                lon: (Math.random() * 360) - 180
+            }
+        }
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 5000; i ++) {
+            rows.push({id: i, loc: randomLoc()});
+        }
+        const lat = (Math.random() * 180) - 90;
+        const lon = (Math.random() * 360) - 180;
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "loc:geo":{}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where([`CROW(loc, ${lat}, ${lon})`, "<", 800]).orderBy(["id"]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(rows.filter(i => {
+                    return crowDistance(lat, lon, i.loc.lat, i.loc.lon) < 800;
+                })).to.deep.equal(resultRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Geo Data Type (Indexed)", (done: MochaDone) => {
+        const randomLoc = (): {lon: number, lat: number} => {
+            return {lon: (Math.random() * 360) - 180, lat: (Math.random() * 180) - 90}
+        }
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 5000; i ++) {
+            rows.push({id: i, loc: randomLoc()});
+        }
+        const lat = (Math.random() * 180) - 90;
+        const lon = (Math.random() * 360) - 180;
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "loc:geo":{}
+                },
+                indexes: {
+                    "loc:geo": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where([`CROW(loc, ${lat}, ${lon})`, "<", 800]).orderBy(["id"]).exec();
+        }).then((resultRows) => {
+
+            const getGPS = (rows: any[]) => {
+                return rows.map(i => ({
+                    ...i,
+                    dist: crowDistance(lat, lon, i.loc.lat, i.loc.lon)
+                }));
+            }
+
+            const filterRows = getGPS(rows.filter(i => {
+                return crowDistance(lat, lon, i.loc.lat, i.loc.lon) < 800;
+            }));
+
+            resultRows = getGPS(resultRows);
+
+            try {
+                expect(filterRows).to.deep.equal(resultRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+});
