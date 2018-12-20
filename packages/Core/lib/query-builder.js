@@ -14,10 +14,10 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._db = db;
         this._AV = actionOrView || "";
         if (typeof queryAction === "string") {
-            this._query = __assign({}, utilities_1.buildQuery(table, queryAction), { comments: [], state: "pending", action: queryAction, actionArgs: queryArgs, result: [] });
+            this._query = __assign({}, utilities_1.buildQuery(db, table, queryAction), { comments: [], state: "pending", action: queryAction, actionArgs: queryArgs, result: [] });
         }
         else {
-            this._query = __assign({}, utilities_1.buildQuery(table, ""), queryAction(db), { state: "pending" });
+            this._query = __assign({}, utilities_1.buildQuery(db, table, ""), queryAction(db), { state: "pending" });
         }
     }
     _NanoSQLQueryBuilder.prototype.where = function (args) {

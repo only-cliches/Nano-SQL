@@ -43,7 +43,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _delete(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _removeRowAndIndexes(table: INanoSQLTable, row: any, complete: () => void, error: (err: any) => void): void;
     _getIndexValues(indexes: {
-        [name: string]: INanoSQLIndex;
+        [id: string]: INanoSQLIndex;
     }, row: any): {
         [indexName: string]: any;
     };

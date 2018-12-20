@@ -2,14 +2,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.binarySearch = function (arr, value, startVal, endVal) {
     var start = startVal || 0;
     var end = endVal || arr.length;
-    if (arr[start] > value)
+    if (arr[start] >= value)
         return start;
-    if (arr[end] < value)
+    if (arr[end] <= value)
         return end + 1;
     var m = Math.floor((start + end) / 2);
-    if (value === arr[m])
+    if (value == arr[m])
         return m;
-    if (end - 1 === start)
+    if (end - 1 == start)
         return end;
     if (value > arr[m])
         return exports.binarySearch(arr, value, m, end);
@@ -24,9 +24,10 @@ exports.getWeekOfYear = function (d) {
     var onejan = new Date(d.getFullYear(), 0, 1);
     return Math.ceil((((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
 };
-exports.buildQuery = function (table, action) {
+exports.buildQuery = function (nSQL, table, action) {
     return {
         table: table,
+        parent: nSQL,
         action: action,
         state: "pending",
         result: [],
@@ -51,12 +52,26 @@ exports.adapterFilters = function (nSQL, query) {
             }, error);
         },
         read: function (table, pk, complete, error) {
+            // shift primary key query by offset
+            if (nSQL.tables[table].offsets.length) {
+                var i = nSQL.tables[table].offsets.length;
+                var offsets = nSQL.tables[table].offsets;
+                while (i--) {
+                    if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
+                        pk += offsets[i].offset;
+                    }
+                }
+            }
             nSQL.doFilter("adapterWillRead", { result: undefined, table: table, pk: pk, i: 0, query: query }, function (resultRow) {
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
                 }
                 else {
                     nSQL.adapter.read(table, pk, function (row) {
+                        if (!row) {
+                            complete(undefined);
+                            return;
+                        }
                         nSQL.doFilter("adapterDidRead", { result: row, table: table, pk: pk, i: 0, query: query }, function (resultRow) {
                             complete(resultRow);
                         }, error);
@@ -72,6 +87,19 @@ exports.adapterFilters = function (nSQL, query) {
                     done();
                 }, error);
             }, error, complete);
+            // shift range query by offset
+            if (type === "range") {
+                if (nSQL.tables[table].offsets.length) {
+                    var i = nSQL.tables[table].offsets.length;
+                    var offsets = nSQL.tables[table].offsets;
+                    while (i--) {
+                        if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
+                            offsetOrLow += offsets[i].offset;
+                            limitOrHigh += offsets[i].offset;
+                        }
+                    }
+                }
+            }
             nSQL.doFilter("adapterWillReadMulti", { result: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse }, onRow: onRow, complete: complete, error: error, query: query }, function (result) {
                 if (!result)
                     return;
@@ -88,6 +116,9 @@ exports.noop = function () { };
 exports.throwErr = function (err) {
     throw new Error(err);
 };
+exports.nan = function (input) {
+    return isNaN(input) ? 0 : parseFloat(input);
+};
 /**
  * Object.assign, but faster.
  *
@@ -95,7 +126,7 @@ exports.throwErr = function (err) {
  * @returns
  */
 exports._assign = function (obj) {
-    return obj ? JSON.parse(JSON.stringify(obj)) : null;
+    return obj ? JSON.parse(JSON.stringify(obj)) : obj;
 };
 /**
  * Compare two javascript variables for equality.
@@ -147,6 +178,7 @@ var _NanoSQLQueue = /** @class */ (function () {
         if (this._triggeredComplete) {
             return;
         }
+        // quueue as finished
         if (this._done && !this._items.length) {
             this._triggeredComplete = true;
             if (this.onComplete)
@@ -176,7 +208,7 @@ var _NanoSQLQueue = /** @class */ (function () {
         if (this._triggeredComplete) {
             return;
         }
-        if (!this._going) {
+        if (!this._going && !this._items.length) {
             this._triggeredComplete = true;
             if (this.onComplete)
                 this.onComplete();
@@ -345,6 +377,7 @@ exports.hash = function (str) {
 };
 var idTypes = {
     "int": function (value) { return value; },
+    "float": function (value) { return value; },
     "uuid": exports.uuid,
     "timeId": function () { return exports.timeid(); },
     "timeIdms": function () { return exports.timeid(true); }
@@ -357,7 +390,7 @@ var idTypes = {
  * @returns {*}
  */
 exports.generateID = function (primaryKeyType, incrimentValue) {
-    return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : "";
+    return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
 /**
  * Clean the arguments from an object given an array of arguments and their types.
@@ -454,6 +487,12 @@ exports.cast = function (type, val, allowUknownTypes) {
     }
     return newVal;
 };
+exports.rad2deg = function (rad) {
+    return rad * 180 / Math.PI;
+};
+exports.deg2rad = function (deg) {
+    return deg * (Math.PI / 180);
+};
 /**
  * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
  *
@@ -470,14 +509,11 @@ exports.cast = function (type, val, allowUknownTypes) {
  */
 exports.crowDistance = function (lat1, lon1, lat2, lon2, radius) {
     if (radius === void 0) { radius = 6371; }
-    var deg2rad = function (deg) {
-        return deg * (Math.PI / 180);
-    };
-    var dLat = deg2rad(lat2 - lat1);
-    var dLon = deg2rad(lon2 - lon1);
-    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    var dLat = exports.deg2rad(lat2 - lat1);
+    var dLon = exports.deg2rad(lon2 - lon1);
+    var a = Math.pow(Math.sin(dLat / 2), 2) +
+        Math.cos(exports.deg2rad(lat1)) * Math.cos(exports.deg2rad(lat2)) *
+            Math.pow(Math.sin(dLon / 2), 2);
     var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return radius * c;
 };
@@ -496,8 +532,8 @@ exports.resolvePath = function (pathQuery) {
     objectPathCache[cacheKey] = path;
     return objectPathCache[cacheKey];
 };
-exports.getFnValue = function (row, str) {
-    return str.match(/\".*\"|\'.*\'/gmi) ? str.replace(/\"|\'/gmi, "") : exports.deepGet(str, row);
+exports.getFnValue = function (query, row, valueOrPath) {
+    return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : exports.deepGet(valueOrPath, row);
 };
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
@@ -557,9 +593,7 @@ exports.deepGet = function (pathQuery, object) {
     return safeGet(Array.isArray(pathQuery) ? pathQuery : exports.resolvePath(pathQuery), 0, object);
 };
 exports._maybeAssign = function (obj) {
-    if (Object.isFrozen(obj))
-        return exports._assign(obj);
-    return obj;
+    return Object.isFrozen(obj) ? exports._assign(obj) : obj;
 };
 var uid = 0;
 var storage = {};

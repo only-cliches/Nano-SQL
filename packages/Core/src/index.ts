@@ -1061,7 +1061,14 @@ export class nanoSQL implements INanoSQLInstance {
                         newObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
                     }
                 } else {
-                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key]) : m.default;
+                    let value = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key]) : m.default;
+                    if (typeof m.max !== "undefined" && value > m.max) {
+                        error = `Data error, column ${m.key} can't be greater than ${m.max}!`
+                    }
+                    if (typeof m.min !== "undefined" && value < m.min) {
+                        error = `Data error, column ${m.key} can't be less than ${m.min}!`
+                    }
+                    newObj[m.key] = value;
                 }
                 if (m.notNull && (newObj[m.key] === null || newObj[m.key] === undefined)) {
                     error = `Data error, ${m.key} cannot be null!`;

@@ -55,7 +55,7 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
                 ai[table] = Math.max(pk, ai[table]);
             row[pkCol] = pk;
             var rowStr = JSON.stringify(row);
-            _query(false, "SELECT * FROM " + checkTable(table) + " WHERE id = ?", [pk], function (result) {
+            _query(false, "SELECT id FROM " + checkTable(table) + " WHERE id = ?", [pk], function (result) {
                 if (result.rows.length) {
                     _query(true, "UPDATE " + checkTable(table) + " SET data = ? WHERE id = ?", [rowStr, pk], function () {
                         if (doAI && pk === ai[table]) {
@@ -114,7 +114,7 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
         readMulti: function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
             var stmnt = "SELECT data FROM " + checkTable(table);
             if (type === "range") {
-                stmnt += " WHERE id >= ? AND id < ?";
+                stmnt += " WHERE id >= ? AND id <= ?";
             }
             if (reverse) {
                 stmnt += " ORDER BY id DESC";

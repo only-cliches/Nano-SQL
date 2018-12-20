@@ -10,7 +10,7 @@ export declare class INanoSQLInstance {
     functions: {
         [fnName: string]: INanoSQLFunction;
     };
-    earthRadius: number;
+    planetRadius: number;
     tables: {
         [tableName: string]: INanoSQLTable;
     };
@@ -220,6 +220,7 @@ export interface INanoSQLConfig {
     queue?: boolean;
     mode?: string | INanoSQLAdapter;
     plugins?: INanoSQLPlugin[];
+    planetRadius?: number;
     version?: number;
     size?: number;
     path?: string | ((dbID: string, tableName: string) => {
@@ -238,6 +239,10 @@ export interface INanoSQLDataModel {
         default?: any;
         model?: INanoSQLDataModel;
         notNull?: boolean;
+        offset?: number;
+        max?: number;
+        min?: number;
+        [key: string]: any;
     };
 }
 export interface INanoSQLMapReduce {
@@ -254,21 +259,6 @@ export interface INanoSQLMapReduce {
         date?: number | number[];
         month?: number | number[];
     };
-}
-export interface INanoSQLTableConfig {
-    name: string;
-    model: INanoSQLDataModel;
-    indexes?: {
-        [nameAndType: string]: string;
-    };
-    mapReduce?: INanoSQLMapReduce[];
-    filter?: (row: any) => any;
-    actions?: INanoSQLActionOrView[];
-    views?: INanoSQLActionOrView[];
-    props?: {
-        [key: string]: any;
-    };
-    _internal?: boolean;
 }
 export interface INanoSQLSortBy {
     sort: {
@@ -335,14 +325,31 @@ export interface INanoSQLFunction {
         row?: any;
         [key: string]: any;
     };
-    whereIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
-    queryIndex?: (nSQL: INanoSQLInstance, query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row: any, i: any) => void, complete: () => void, error: (err: any) => void) => void;
+    whereIndex?: (query: INanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
+    queryIndex?: (query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row: any, i: any) => void, complete: () => void, error: (err: any) => void) => void;
+}
+export interface INanoSQLTableConfig {
+    name: string;
+    model: INanoSQLDataModel;
+    indexes?: {
+        [colAndType: string]: {
+            [prop: string]: any;
+        };
+    };
+    mapReduce?: INanoSQLMapReduce[];
+    filter?: (row: any) => any;
+    actions?: INanoSQLActionOrView[];
+    views?: INanoSQLActionOrView[];
+    props?: {
+        [key: string]: any;
+    };
+    _internal?: boolean;
 }
 export interface INanoSQLTable {
     model: INanoSQLDataModel;
     columns: INanoSQLTableColumn[];
     indexes: {
-        [name: string]: INanoSQLIndex;
+        [id: string]: INanoSQLIndex;
     };
     mapReduce?: INanoSQLMapReduce[];
     filter?: (row: any) => any;
@@ -351,6 +358,10 @@ export interface INanoSQLTable {
     pkType: string;
     pkCol: string;
     isPkNum: boolean;
+    offsets: {
+        path: string[];
+        offset: number;
+    }[];
     ai: boolean;
     props?: any;
 }
@@ -360,6 +371,8 @@ export interface INanoSQLTableColumn {
     model?: INanoSQLTableColumn[];
     notNull?: boolean;
     default?: any;
+    max?: number;
+    min?: number;
 }
 export interface INanoSQLDatabaseEvent {
     target: string;
@@ -436,12 +449,16 @@ export interface INanoSQLQuery {
         queries: (() => Promise<any[]>)[];
     };
     cacheID?: string;
+    parent: INanoSQLInstance;
     [key: string]: any;
 }
 export interface INanoSQLIndex {
-    name: string;
+    id: string;
     type: string;
     isArray: boolean;
+    props: {
+        [key: string]: any;
+    };
     path: string[];
 }
 export interface ISelectArgs {
@@ -584,7 +601,7 @@ export interface adapterWillReadMultiFilter extends abstractFilter {
     };
     onRow: (row: {
         [key: string]: any;
-    }, i: number) => void;
+    }, i: number, nextRow: () => void) => void;
     complete: () => void;
     error: (err: any) => void;
     query: INanoSQLQuery;

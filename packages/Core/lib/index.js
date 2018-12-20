@@ -20,10 +20,11 @@ var RocksDB;
 if (typeof global !== "undefined") {
     RocksDB = global._rocksAdapter;
 }
-var NanoSQL = /** @class */ (function () {
-    function NanoSQL() {
+// tslint:disable-next-line
+var nanoSQL = /** @class */ (function () {
+    function nanoSQL() {
         this.version = interfaces_1.VERSION;
-        this.earthRadius = 6371;
+        this.planetRadius = 6371;
         this._Q = new utilities_1._NanoSQLQueue();
         this.state = {
             activeAV: "",
@@ -76,7 +77,7 @@ var NanoSQL = /** @class */ (function () {
         this._checkTTL = this._checkTTL.bind(this);
         functions_1.attachDefaultFns(this);
     }
-    NanoSQL.prototype.doFilter = function (filterName, args, complete, cancelled) {
+    nanoSQL.prototype.doFilter = function (filterName, args, complete, cancelled) {
         var _this = this;
         if (this.filters[filterName]) {
             utilities_1.chainAsync(this.filters[filterName], function (item, i, nextFilter) {
@@ -94,7 +95,7 @@ var NanoSQL = /** @class */ (function () {
             complete(args.result);
         }
     };
-    NanoSQL.prototype.getCache = function (id, args) {
+    nanoSQL.prototype.getCache = function (id, args) {
         if (!this._queryCache[id]) {
             throw new Error("Cache \"" + id + "\" not found!");
         }
@@ -105,24 +106,24 @@ var NanoSQL = /** @class */ (function () {
             return this._queryCache[id].slice();
         }
     };
-    NanoSQL.prototype.clearCache = function (id) {
+    nanoSQL.prototype.clearCache = function (id) {
         var exists = this._queryCache[id] !== undefined;
         delete this._queryCache[id];
         return exists;
     };
-    NanoSQL.prototype.clearTTL = function (primaryKey) {
+    nanoSQL.prototype.clearTTL = function (primaryKey) {
         var _this = this;
         var k = this.state.selectedTable + "." + primaryKey;
         return new Promise(function (res, rej) {
-            _this.triggerQuery(__assign({}, utilities_1.buildQuery("_ttl", "delete"), { where: ["key", "=", k] }), utilities_1.noop, res, rej);
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_ttl", "delete"), { where: ["key", "=", k] }), utilities_1.noop, res, rej);
         });
     };
-    NanoSQL.prototype.expires = function (primaryKey) {
+    nanoSQL.prototype.expires = function (primaryKey) {
         var _this = this;
         return new Promise(function (res, rej) {
             var k = _this.state.selectedTable + "." + primaryKey;
             var rows = [];
-            _this.triggerQuery(__assign({}, utilities_1.buildQuery("_ttl", "select"), { where: ["key", "=", k] }), function (row) {
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_ttl", "select"), { where: ["key", "=", k] }), function (row) {
                 rows.push(row);
             }, function () {
                 if (!rows.length) {
@@ -134,7 +135,7 @@ var NanoSQL = /** @class */ (function () {
             }, rej);
         });
     };
-    NanoSQL.prototype._checkTTL = function () {
+    nanoSQL.prototype._checkTTL = function () {
         var _this = this;
         if (this.config.disableTTL)
             return;
@@ -145,7 +146,7 @@ var NanoSQL = /** @class */ (function () {
         var nextTTL = 0;
         var getPage = function () {
             var rows = [];
-            _this.triggerQuery(__assign({}, utilities_1.buildQuery("_ttl", "select"), { limit: 20, offset: 20 * page }), function (row) {
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_ttl", "select"), { limit: 20, offset: 20 * page }), function (row) {
                 rows.push(row);
             }, function () {
                 if (!rows.length) {
@@ -157,7 +158,7 @@ var NanoSQL = /** @class */ (function () {
                 utilities_1.chainAsync(rows, function (row, i, next) {
                     if (row.date < Date.now()) {
                         var clearTTL = function () {
-                            _this.triggerQuery(__assign({}, utilities_1.buildQuery("_ttl", "delete"), { where: ["key", "=", row.key] }), utilities_1.noop, next, utilities_1.throwErr);
+                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_ttl", "delete"), { where: ["key", "=", row.key] }), utilities_1.noop, next, utilities_1.throwErr);
                         };
                         var rowData = row.key.split(".");
                         var table = rowData[0];
@@ -167,10 +168,10 @@ var NanoSQL = /** @class */ (function () {
                             row.cols.forEach(function (col) {
                                 upsertObj_1[col] = null;
                             });
-                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(table, "upsert"), { actionArgs: upsertObj_1, where: [_this.tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
+                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: upsertObj_1, where: [_this.tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
                         }
                         else {
-                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(table, "delete"), { where: [_this.tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
+                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "delete"), { where: [_this.tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
                         }
                     }
                     else {
@@ -185,15 +186,15 @@ var NanoSQL = /** @class */ (function () {
         };
         getPage();
     };
-    NanoSQL.prototype.selectTable = function (table) {
+    nanoSQL.prototype.selectTable = function (table) {
         if (table)
             this.state.selectedTable = table;
         return this;
     };
-    NanoSQL.prototype.getPeers = function () {
+    nanoSQL.prototype.getPeers = function () {
         return JSON.parse(localStorage.getItem("nsql-peers-" + this.state.id) || "[]");
     };
-    NanoSQL.prototype._detectStorageMethod = function () {
+    nanoSQL.prototype._detectStorageMethod = function () {
         // NodeJS
         if (typeof window === "undefined") {
             return "RKS";
@@ -215,7 +216,7 @@ var NanoSQL = /** @class */ (function () {
         // nothing else works, we gotta do local storage. :(
         return "LS";
     };
-    NanoSQL.prototype._initPlugins = function (config) {
+    nanoSQL.prototype._initPlugins = function (config) {
         var _this = this;
         return new Promise(function (res, rej) {
             // Build plugin filters
@@ -283,7 +284,7 @@ var NanoSQL = /** @class */ (function () {
             }
         });
     };
-    NanoSQL.prototype.connect = function (config) {
+    nanoSQL.prototype.connect = function (config) {
         var _this = this;
         var t = this;
         return this._initPlugins(config).then(function () {
@@ -338,6 +339,9 @@ var NanoSQL = /** @class */ (function () {
                     _this.adapter.nSQL = _this;
                     _this.adapter.connect(_this.state.id, res, rej);
                 }).catch(rej);
+                if (_this.config.planetRadius) {
+                    _this.planetRadius = _this.config.planetRadius;
+                }
             });
         }).then(function () {
             _this.triggerEvent({
@@ -353,7 +357,7 @@ var NanoSQL = /** @class */ (function () {
             return utilities_1.allAsync(tables, function (j, i, next, err) {
                 switch (j) {
                     case "_util":
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("", "create table"), { actionArgs: {
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "", "create table"), { actionArgs: {
                                 name: "_util",
                                 model: [
                                     { key: "key:string", props: ["pk()"] },
@@ -363,7 +367,7 @@ var NanoSQL = /** @class */ (function () {
                             } }), utilities_1.noop, next, err);
                         break;
                     case "_ttl":
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("", "create table"), { actionArgs: {
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "", "create table"), { actionArgs: {
                                 name: "_ttl",
                                 model: [
                                     { key: "key:string", props: ["pk()"] },
@@ -380,19 +384,19 @@ var NanoSQL = /** @class */ (function () {
                             err("Table not found!");
                             return;
                         }
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("", "create table"), { actionArgs: model }), utilities_1.noop, next, err);
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "", "create table"), { actionArgs: model }), utilities_1.noop, next, err);
                 }
             });
         }).then(function () {
             // migrate nanosql version as needed
             return new Promise(function (res, rej) {
                 var currentVersion;
-                _this.triggerQuery(__assign({}, utilities_1.buildQuery("_util", "select"), { where: ["key", "=", "version"] }), function (row) {
+                _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "select"), { where: ["key", "=", "version"] }), function (row) {
                     if (row)
                         currentVersion = row.value;
                 }, function () {
                     if (!currentVersion || currentVersion < 2.0) {
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("_util", "upsert"), { actionArgs: { key: "version", value: interfaces_1.VERSION } }), utilities_1.noop, res, rej);
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "upsert"), { actionArgs: { key: "version", value: interfaces_1.VERSION } }), utilities_1.noop, res, rej);
                     }
                     else {
                         // no migration code right now
@@ -408,12 +412,12 @@ var NanoSQL = /** @class */ (function () {
                     return;
                 }
                 var currentVersion;
-                _this.triggerQuery(__assign({}, utilities_1.buildQuery("_util", "select"), { where: ["key", "=", "db-version"] }), function (row) {
+                _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "select"), { where: ["key", "=", "db-version"] }), function (row) {
                     if (row)
                         currentVersion = row.value;
                 }, function () {
                     var saveVersion = function (version, complete, err) {
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery("_util", "upsert"), { actionArgs: { key: "db-version", value: version } }), utilities_1.noop, complete, err);
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "upsert"), { actionArgs: { key: "db-version", value: version } }), utilities_1.noop, complete, err);
                     };
                     // nothing to migrate, just set version
                     if (!currentVersion) {
@@ -461,7 +465,7 @@ var NanoSQL = /** @class */ (function () {
             });
         });
     };
-    NanoSQL.prototype._initPeers = function () {
+    nanoSQL.prototype._initPeers = function () {
         var _this = this;
         var counter = 0;
         this.state.pid = utilities_1.uuid();
@@ -548,7 +552,7 @@ var NanoSQL = /** @class */ (function () {
             return false;
         });
     };
-    NanoSQL.prototype.every = function (args) {
+    nanoSQL.prototype.every = function (args) {
         var i = 0;
         var arr = [];
         while (i <= args.length) {
@@ -564,7 +568,7 @@ var NanoSQL = /** @class */ (function () {
         }
         return arr;
     };
-    NanoSQL.prototype.triggerMapReduce = function (cb, table, name) {
+    nanoSQL.prototype.triggerMapReduce = function (cb, table, name) {
         var _this = this;
         if (table && name) {
             if (!this.tables[table])
@@ -675,7 +679,7 @@ var NanoSQL = /** @class */ (function () {
             }
         });
     };
-    NanoSQL.prototype.on = function (action, callBack) {
+    nanoSQL.prototype.on = function (action, callBack) {
         var _this = this;
         var t = this;
         var l = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
@@ -728,7 +732,7 @@ var NanoSQL = /** @class */ (function () {
         }
         return t._refreshEventChecker();
     };
-    NanoSQL.prototype.off = function (action, callBack) {
+    nanoSQL.prototype.off = function (action, callBack) {
         var _this = this;
         var t = this;
         var l = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
@@ -778,7 +782,7 @@ var NanoSQL = /** @class */ (function () {
         }
         return t._refreshEventChecker();
     };
-    NanoSQL.prototype._refreshEventChecker = function () {
+    nanoSQL.prototype._refreshEventChecker = function () {
         var _this = this;
         this.state.hasAnyEvents = Object.keys(this.eventFNs).reduce(function (prev, cur) {
             if (prev === true)
@@ -790,13 +794,13 @@ var NanoSQL = /** @class */ (function () {
         }, false);
         return this;
     };
-    NanoSQL.prototype.getView = function (viewName, viewArgs) {
+    nanoSQL.prototype.getView = function (viewName, viewArgs) {
         return this._doAV("View", this.state.selectedTable, viewName, viewArgs);
     };
-    NanoSQL.prototype.doAction = function (actionName, actionArgs) {
+    nanoSQL.prototype.doAction = function (actionName, actionArgs) {
         return this._doAV("Action", this.state.selectedTable, actionName, actionArgs);
     };
-    NanoSQL.prototype._doAV = function (AVType, table, AVName, AVargs) {
+    nanoSQL.prototype._doAV = function (AVType, table, AVName, AVargs) {
         var _this = this;
         if (typeof this.state.selectedTable !== "string")
             return Promise.reject("Can't do Action/View with selected table!");
@@ -822,12 +826,12 @@ var NanoSQL = /** @class */ (function () {
             return selAV.call(selAV.args ? utilities_1.cleanArgs(selAV.args, result.AVargs) : {}, _this);
         });
     };
-    NanoSQL.prototype.query = function (action, args) {
+    nanoSQL.prototype.query = function (action, args) {
         var av = this.state.activeAV;
         this.state.activeAV = "";
         return new query_builder_1._NanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
     };
-    NanoSQL.prototype.triggerQuery = function (query, onRow, complete, error) {
+    nanoSQL.prototype.triggerQuery = function (query, onRow, complete, error) {
         var _this = this;
         if (!this.state.connected && typeof query.table === "string") {
             error("nSQL: Can't do a query before the database is connected!");
@@ -852,7 +856,7 @@ var NanoSQL = /** @class */ (function () {
             }
         }, error);
     };
-    NanoSQL.prototype.triggerEvent = function (eventData, ignoreStarTable) {
+    nanoSQL.prototype.triggerEvent = function (eventData, ignoreStarTable) {
         var _this = this;
         this.doFilter("event", { result: eventData }, function (event) {
             if (_this.state.hasAnyEvents) {
@@ -883,7 +887,7 @@ var NanoSQL = /** @class */ (function () {
         });
         return this;
     };
-    NanoSQL.prototype.default = function (replaceObj, table) {
+    nanoSQL.prototype.default = function (replaceObj, table) {
         replaceObj = replaceObj || {};
         if (!table && typeof this.state.selectedTable !== "string") {
             throw new Error("Must select table to generate defualts!");
@@ -927,7 +931,14 @@ var NanoSQL = /** @class */ (function () {
                     }
                 }
                 else {
-                    newObj[m.key] = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key]) : m.default;
+                    var value = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key]) : m.default;
+                    if (typeof m.max !== "undefined" && value > m.max) {
+                        error = "Data error, column " + m.key + " can't be greater than " + m.max + "!";
+                    }
+                    if (typeof m.min !== "undefined" && value < m.min) {
+                        error = "Data error, column " + m.key + " can't be less than " + m.min + "!";
+                    }
+                    newObj[m.key] = value;
                 }
                 if (m.notNull && (newObj[m.key] === null || newObj[m.key] === undefined)) {
                     error = "Data error, " + m.key + " cannot be null!";
@@ -945,7 +956,7 @@ var NanoSQL = /** @class */ (function () {
         };
         return resolveModel(this.tables[table].columns, replaceObj);
     };
-    NanoSQL.prototype.rawDump = function (tables, onRow) {
+    nanoSQL.prototype.rawDump = function (tables, onRow) {
         var _this = this;
         var exportTables = Object.keys(this.tables).filter(function (t) { return tables.length ? tables.indexOf(t) !== -1 : true; });
         return utilities_1.chainAsync(exportTables, function (table, i, nextTable, err) {
@@ -954,7 +965,7 @@ var NanoSQL = /** @class */ (function () {
             }, nextTable, err || utilities_1.noop);
         });
     };
-    NanoSQL.prototype.rawImport = function (tables, onProgress) {
+    nanoSQL.prototype.rawImport = function (tables, onProgress) {
         var _this = this;
         var progress = 0;
         var totalLength = Object.keys(tables).reduce(function (p, c) {
@@ -978,7 +989,7 @@ var NanoSQL = /** @class */ (function () {
             }).then(next).catch(err);
         });
     };
-    NanoSQL.prototype.disconnect = function () {
+    nanoSQL.prototype.disconnect = function () {
         var _this = this;
         return new Promise(function (res, rej) {
             _this.doFilter("disconnect", {}, function () {
@@ -986,7 +997,7 @@ var NanoSQL = /** @class */ (function () {
             }, rej);
         });
     };
-    NanoSQL.prototype.extend = function (scope) {
+    nanoSQL.prototype.extend = function (scope) {
         var _this = this;
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
@@ -996,7 +1007,7 @@ var NanoSQL = /** @class */ (function () {
             _this.doFilter("extend", { scope: scope, args: args, result: null }, res, rej);
         });
     };
-    NanoSQL.prototype.loadJS = function (rows, onProgress) {
+    nanoSQL.prototype.loadJS = function (rows, onProgress) {
         var _this = this;
         var table = this.state.selectedTable;
         if (typeof table !== "string") {
@@ -1005,7 +1016,7 @@ var NanoSQL = /** @class */ (function () {
         var total = rows.length;
         var count = 0;
         return utilities_1.chainAsync(rows, function (row, i, next, err) {
-            _this.triggerQuery(__assign({}, utilities_1.buildQuery(table, "upsert"), { actionArgs: row }), function (r) {
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: row }), function (r) {
             }, function () {
                 count++;
                 if (onProgress)
@@ -1014,7 +1025,7 @@ var NanoSQL = /** @class */ (function () {
             }, err);
         });
     };
-    NanoSQL.prototype.JSONtoCSV = function (json, printHeaders, useHeaders) {
+    nanoSQL.prototype.JSONtoCSV = function (json, printHeaders, useHeaders) {
         var csv = [];
         if (!json.length) {
             return "";
@@ -1052,7 +1063,7 @@ var NanoSQL = /** @class */ (function () {
         });
         return csv.join("\n");
     };
-    NanoSQL.prototype.csvToArray = function (text) {
+    nanoSQL.prototype.csvToArray = function (text) {
         // tslint:disable-next-line
         var p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
         for (var _i = 0, text_1 = text; _i < text_1.length; _i++) {
@@ -1081,7 +1092,7 @@ var NanoSQL = /** @class */ (function () {
         }
         return ret[0];
     };
-    NanoSQL.prototype.CSVtoJSON = function (csv, rowMap) {
+    nanoSQL.prototype.CSVtoJSON = function (csv, rowMap) {
         var _this = this;
         var t = this;
         var fields = [];
@@ -1127,7 +1138,7 @@ var NanoSQL = /** @class */ (function () {
             }
         }).filter(function (r) { return r; });
     };
-    NanoSQL.prototype.loadCSV = function (csv, rowMap, onProgress) {
+    nanoSQL.prototype.loadCSV = function (csv, rowMap, onProgress) {
         var _this = this;
         var table = this.state.selectedTable;
         if (typeof table !== "string") {
@@ -1137,23 +1148,23 @@ var NanoSQL = /** @class */ (function () {
         return utilities_1.chainAsync(rowData, function (row, i, nextRow, err) {
             if (onProgress)
                 onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
-            _this.triggerQuery(__assign({}, utilities_1.buildQuery(table, "upsert"), { actionArgs: row }), utilities_1.noop, nextRow, err || utilities_1.noop);
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: row }), utilities_1.noop, nextRow, err || utilities_1.noop);
         });
     };
-    return NanoSQL;
+    return nanoSQL;
 }());
-exports.NanoSQL = NanoSQL;
+exports.nanoSQL = nanoSQL;
 /**
  * @internal
  */
-var _NanoSQLStatic = new NanoSQL();
+var _NanoSQLStatic = new nanoSQL();
 exports.nSQL = function (table) {
     return _NanoSQLStatic.selectTable(table);
 };
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
         nSQL: exports.nSQL,
-        NanoSQL: NanoSQL
+        NanoSQL: nanoSQL
     };
 }
 //# sourceMappingURL=index.js.map

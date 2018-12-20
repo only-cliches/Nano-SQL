@@ -910,18 +910,50 @@ describe("Testing Other Features", () => {
             return nSQL.query("select").where([`CROW(loc, ${lat}, ${lon})`, "<", 800]).orderBy(["id"]).exec();
         }).then((resultRows) => {
 
-            const getGPS = (rows: any[]) => {
-                return rows.map(i => ({
-                    ...i,
-                    dist: crowDistance(lat, lon, i.loc.lat, i.loc.lon)
-                }));
-            }
-
-            const filterRows = getGPS(rows.filter(i => {
+            const filterRows = rows.filter(i => {
                 return crowDistance(lat, lon, i.loc.lat, i.loc.lon) < 800;
-            }));
+            });
 
-            resultRows = getGPS(resultRows);
+            try {
+                expect(filterRows).to.deep.equal(resultRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Geo Data Type (Indexed Pole Query)", (done: MochaDone) => {
+        const randomLoc = (): {lon: number, lat: number} => {
+            return {lon: (Math.random() * 360) - 180, lat: (Math.random() * 180) - 90}
+        }
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 5000; i ++) {
+            rows.push({id: i, loc: randomLoc()});
+        }
+        const lat = (Math.random() * 9) + 80;
+        const lon = (Math.random() * 360) - 180;
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "loc:geo":{}
+                },
+                indexes: {
+                    "loc:geo": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where([`CROW(loc, ${lat}, ${lon})`, "<", 800]).orderBy(["id"]).exec();
+        }).then((resultRows) => {
+
+            const filterRows = rows.filter(i => {
+                return crowDistance(lat, lon, i.loc.lat, i.loc.lon) < 800;
+            });
 
             try {
                 expect(filterRows).to.deep.equal(resultRows);

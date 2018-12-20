@@ -124,24 +124,30 @@ var IndexedDB = /** @class */ (function () {
         var count = 0;
         var lowerLimit = doOffset ? offsetOrLow : 0;
         var upperLimit = lowerLimit + limitOrHigh;
+        var advancing = true;
         this.store(table, "readonly", function (tr, store) {
-            store.openCursor((type === "all" || doOffset) ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, true), reverse ? "prev" : "next").onsuccess = function (event) {
+            store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = function (event) {
                 var cursor = event.target.result;
-                if (cursor) {
-                    if (doOffset) {
-                        if (lowerLimit <= count && upperLimit > count) {
-                            onRow(cursor.value, count - offsetOrLow);
-                        }
+                if (!cursor) {
+                    complete();
+                    return;
+                }
+                if (type === "offset") {
+                    if (advancing) {
+                        cursor.advance(lowerLimit);
+                        count = lowerLimit;
+                        advancing = false;
+                        return;
                     }
-                    else {
-                        onRow(cursor.value, count);
+                    if (upperLimit > count) {
+                        onRow(cursor.value, count - offsetOrLow);
                     }
-                    count++;
-                    cursor.continue();
                 }
                 else {
-                    complete();
+                    onRow(cursor.value, count);
                 }
+                count++;
+                cursor.continue();
             };
         }, error);
     };
@@ -164,16 +170,11 @@ var IndexedDB = /** @class */ (function () {
     IndexedDB.prototype.getNumberOfRecords = function (table, complete, error) {
         var count = 0;
         this.store(table, "readonly", function (tr, store) {
-            store.openCursor().onsuccess = function (event) {
-                var cursor = event.target.result;
-                if (cursor) {
-                    count++;
-                    cursor.continue();
-                }
-                else {
-                    complete(count);
-                }
+            var ctRequest = tr.objectStore(table).count();
+            ctRequest.onsuccess = function () {
+                complete(ctRequest.result);
             };
+            ctRequest.onerror = error;
         }, error);
     };
     return IndexedDB;

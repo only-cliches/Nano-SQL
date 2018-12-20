@@ -82,9 +82,10 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlindex.html#id" class="tsd-kind-icon">id</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlindex.html#isarray" class="tsd-kind-icon">is<wbr>Array</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlindex.html#name" class="tsd-kind-icon">name</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlindex.html#path" class="tsd-kind-icon">path</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlindex.html#props" class="tsd-kind-icon">props</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlindex.html#type" class="tsd-kind-icon">type</a></li>
 							</ul>
 						</section>
@@ -94,22 +95,22 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="id" class="tsd-anchor"></a>
+					<h3>id</h3>
+					<div class="tsd-signature tsd-kind-icon">id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/7fddc26/packages/Core/src/interfaces.ts#L428">interfaces.ts:428</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="isarray" class="tsd-anchor"></a>
 					<h3>is<wbr>Array</h3>
 					<div class="tsd-signature tsd-kind-icon">is<wbr>Array<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/6565581/packages/Core/src/interfaces.ts#L420">interfaces.ts:420</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="name" class="tsd-anchor"></a>
-					<h3>name</h3>
-					<div class="tsd-signature tsd-kind-icon">name<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/6565581/packages/Core/src/interfaces.ts#L418">interfaces.ts:418</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/7fddc26/packages/Core/src/interfaces.ts#L430">interfaces.ts:430</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -119,9 +120,27 @@
 					<div class="tsd-signature tsd-kind-icon">path<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/6565581/packages/Core/src/interfaces.ts#L421">interfaces.ts:421</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/7fddc26/packages/Core/src/interfaces.ts#L432">interfaces.ts:432</a></li>
 						</ul>
 					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="props" class="tsd-anchor"></a>
+					<h3>props</h3>
+					<div class="tsd-signature tsd-kind-icon">props<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/7fddc26/packages/Core/src/interfaces.ts#L431">interfaces.ts:431</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-index-signature">
+								<h5><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">any</span></h5>
+							</li>
+						</ul>
+					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
 					<a name="type" class="tsd-anchor"></a>
@@ -129,7 +148,7 @@
 					<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/6565581/packages/Core/src/interfaces.ts#L419">interfaces.ts:419</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/7fddc26/packages/Core/src/interfaces.ts#L429">interfaces.ts:429</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -172,13 +191,16 @@
 						<a href="_interfaces_.inanosqlindex.html" class="tsd-kind-icon">INanoSQLIndex</a>
 						<ul>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlindex.html#id" class="tsd-kind-icon">id</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_interfaces_.inanosqlindex.html#isarray" class="tsd-kind-icon">is<wbr>Array</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.inanosqlindex.html#name" class="tsd-kind-icon">name</a>
+								<a href="_interfaces_.inanosqlindex.html#path" class="tsd-kind-icon">path</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.inanosqlindex.html#path" class="tsd-kind-icon">path</a>
+								<a href="_interfaces_.inanosqlindex.html#props" class="tsd-kind-icon">props</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
 								<a href="_interfaces_.inanosqlindex.html#type" class="tsd-kind-icon">type</a>

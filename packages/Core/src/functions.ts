@@ -4,6 +4,13 @@ import * as levenshtein from "levenshtein-edit-distance";
 
 const wordLevenshtienCache: { [words: string]: number } = {};
 
+export interface ICrowIndexQuery {
+    key: any, 
+    num: number, 
+    lat: number, 
+    lon: number
+}
+
 export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
 
     nSQL.functions = {
@@ -176,39 +183,99 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                 const distanceDegrees = (distance / (nSQL.planetRadius * 2 * Math.PI)) * 360;
 
                 // get degrees north and south of search point
-                const latRange = [-1, 1].map(s => centerLat + (distanceDegrees * s));
+                let latRange = [-1, 1].map(s => centerLat + (distanceDegrees * s));
 
-                // get degrees east and west of search point
-                const lonRange = [-1, 1].map(s => {
-                    const equatorDegrees = (distanceDegrees * s);
-                    return centerLon + (equatorDegrees / Math.cos(deg2rad(centerLat)));
-                });
+                let lonRange: number[] = [];
 
-                let pks: {[id: string]: {key: any, num: number}} = {};
+                // check if latitude range is above/below the distance query
+                // that means we're querying near a pole
+                // if so, grab all longitudes
+                let poleQuery = false;
+                let extraLonRange: number[] = [];
+                const poleRange = Math.max(90 - distanceDegrees, 0);
 
-                allAsync([latTable, lonTable], (table, i, next, error) => {
-                    const ranges = i === 0 ? latRange : lonRange;
- 
+                if (Math.abs(latRange[0]) > poleRange || Math.abs(latRange[1]) > poleRange) {
+                    poleQuery = true;
+                    if (latRange[0] < poleRange * -1) {
+                        latRange = [-90, latRange[1]];
+                    }
+                    if (latRange[1] > poleRange) {
+                        latRange = [latRange[0], 90];
+                    }
+                } else {
+
+                    // get degrees east and west of search point
+                    lonRange = [-1, 1].map(s => {
+                        const equatorDegrees = ((distanceDegrees + 0.2) * s);
+                        return centerLon + (equatorDegrees / Math.cos(deg2rad(centerLat)));
+                    });
+                    // if range query happens to cross antimeridian
+                    // no need to check this for pole queries
+                    if (Math.abs(lonRange[0]) > 180) {
+                        // lonRange [-185, -170]
+                        // extraLonRange [175, 180]
+                        const diff = Math.abs(lonRange[0]) - 180;
+                        extraLonRange = [180 - diff, 180];
+                    }
+                    if (Math.abs(lonRange[1]) > 180) {
+                        // lonRange [175, 185]
+                        // extraLonRange [-180, -175]
+                        const diff = Math.abs(lonRange[1]) - 180;
+                        extraLonRange = [-180, -180 + diff];
+                    }
+                }
+
+                let pks: {[id: string]: ICrowIndexQuery} = {};
+
+                allAsync([latTable, lonTable, lonTable], (table, i, next, error) => {
+                    const ranges = [latRange, lonRange, extraLonRange][i];
+
+                    if (!ranges.length) {
+                        next(null);
+                        return;
+                    }
+
                     adapterFilters(nSQL, query).readMulti(table, "range", ranges[0], ranges[1], false, (row, i2) => {
                         let i3 = row.pks.length;
                         while (i3--) {
                             const pk = row.pks[i3];
                             if (!pks[pk]) {
-                                pks[pk] = {key: pk, num: 0};
+                                pks[pk] = {
+                                    key: pk,
+                                    lat: 0,
+                                    lon: 0,
+                                    num: 0
+                                };
                             } else {
                                 pks[pk].num++;
+                            }
+                            if (i === 0) {
+                                pks[pk].lat = row.id - 90;
+                            } else {
+                                pks[pk].lon = row.id - 180;
                             }
                         }
                     }, () => {
                         next(null);
                     }, error as any);
+
                 }).then(() => {
                     // step 2: get the square shaped selection of items
                     let counter = 0;
 
-                    const readPKS = Object.keys(pks).filter(p => pks[p].num).map(p => pks[p].key);
+                    const rowsToRead = Object.keys(pks).filter(p => {
+                        if (poleQuery) { // check all rows for pole query
+                            return true;
+                        }
+                        if (pks[p].num === 0) { // if not pole query and doesn't have both lat and lon values, ignore
+                            return false;
+                        }
+                        // confirm within distance for remaining rows
+                        const crowDist = crowDistance(pks[p].lat, pks[p].lon, centerLat, centerLon, nSQL.planetRadius);
+                        return condition === "<" ? crowDist < distance : crowDist <= distance;
+                    }).map(p => pks[p]);
 
-                    const crowBuffer = new _NanoSQLQueue((item, i, done, err) => {
+                    const poleQueryBuffer = poleQuery ? new _NanoSQLQueue((item, i, done, err) => {
                         // perform crow distance calculation on square selected group
                         const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item) - 90;
                         const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item) - 180;
@@ -220,16 +287,28 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                             counter++;
                         }
                         done();
-                    }, error, complete);
-                    allAsync(readPKS, (pk, i, next, err) => {
-                        adapterFilters(query.parent, query).read(query.table as string, pk, (row) => {
-                            if (row) {
-                                crowBuffer.newItem(row);
+                    }, error, complete) : undefined;
+
+                    allAsync(rowsToRead, (rowData: ICrowIndexQuery, i, next, err) => {
+                        if (!poleQuery && onlyPKs) {
+                            onRow(rowData.key, i);
+                            next(null);
+                            return;
+                        }
+                        adapterFilters(query.parent, query).read(query.table as string, rowData.key, (row) => {
+                            if (poleQuery) {
+                                if (poleQueryBuffer) poleQueryBuffer.newItem(row);
+                            } else {
+                                onRow(row, i);
                             }
                             next(null);
                         }, error);
                     }).catch(error).then(() => {
-                        crowBuffer.finished();
+                        if (poleQuery) {
+                            if (poleQueryBuffer) poleQueryBuffer.finished();
+                        } else {
+                            complete();
+                        }
                     });
                 }).catch(error);
             }

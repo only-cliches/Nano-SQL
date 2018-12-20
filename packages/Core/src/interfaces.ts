@@ -226,6 +226,8 @@ export interface INanoSQLDataModel {
         model?: INanoSQLDataModel;
         notNull?: boolean;
         offset?: number;
+        max?: number;
+        min?: number;
         [key: string]: any;
     };
 }
@@ -353,6 +355,8 @@ export interface INanoSQLTableColumn {
     model?: INanoSQLTableColumn[];
     notNull?: boolean;
     default?: any;
+    max?: number;
+    min?: number;
 }
 
 export interface INanoSQLDatabaseEvent {

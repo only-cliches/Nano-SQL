@@ -2,7 +2,7 @@ import { INanoSQLQuery, INanoSQLInstance, TableQueryResult } from "./interfaces"
 export declare const binarySearch: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => number;
 export declare const titleCase: (str: string) => string;
 export declare const getWeekOfYear: (d: Date) => number;
-export declare const buildQuery: (table: string | any[] | ((where?: any[] | ((row: {
+export declare const buildQuery: (nSQL: INanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
 }, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>), action: string) => INanoSQLQuery;
 export declare const adapterFilters: (nSQL: INanoSQLInstance, query: INanoSQLQuery) => {
@@ -18,6 +18,7 @@ export declare const adapterFilters: (nSQL: INanoSQLInstance, query: INanoSQLQue
 };
 export declare const noop: () => void;
 export declare const throwErr: (err: any) => never;
+export declare const nan: (input: any) => number;
 /**
  * Object.assign, but faster.
  *
@@ -139,6 +140,8 @@ export declare const objSort: (path?: string | undefined, rev?: boolean | undefi
  * @returns {*}
  */
 export declare const cast: (type: string, val: any, allowUknownTypes?: boolean | undefined) => any;
+export declare const rad2deg: (rad: number) => number;
+export declare const deg2rad: (deg: number) => number;
 /**
  * "As the crow flies" or Haversine formula, used to calculate the distance between two points on a sphere.
  *
@@ -155,7 +158,7 @@ export declare const cast: (type: string, val: any, allowUknownTypes?: boolean |
  */
 export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lon2: number, radius?: number) => number;
 export declare const resolvePath: (pathQuery: string) => string[];
-export declare const getFnValue: (row: any, str: string) => any;
+export declare const getFnValue: (query: INanoSQLQuery, row: any, valueOrPath: string) => any;
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
  *

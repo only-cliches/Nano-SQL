@@ -55,6 +55,7 @@ var RocksDB = /** @class */ (function () {
             model: {},
             columns: [],
             indexes: {},
+            offsets: [],
             actions: [],
             views: [],
             pkType: "string",
@@ -148,13 +149,13 @@ var RocksDB = /** @class */ (function () {
             this._ai[table] = Math.max(pk, this._ai[table]);
         }
         row[this.nSQL.tables[table].pkCol] = pk;
-        this._levelDBs[table].put(this.encodePk(table, pk), row, function (err) {
+        this._levelDBs[table].put(this._encodePk(table, pk), row, function (err) {
             if (err) {
                 error(err);
             }
             else {
                 if (_this.nSQL.tables[table].ai) {
-                    _this._levelDBs["_ai_store_"].put(Buffer.from(table, "utf-8"), { ai: _this.nSQL.tables[table].ai }).then(function () {
+                    _this._levelDBs["_ai_store_"].put(Buffer.from(table, "utf-8"), { ai: _this._ai[table] }).then(function () {
                         complete(pk);
                     }).catch(error);
                 }
@@ -165,7 +166,7 @@ var RocksDB = /** @class */ (function () {
         });
     };
     RocksDB.prototype.read = function (table, pk, complete, error) {
-        this._levelDBs[table].get(this.encodePk(table, pk), function (err, row) {
+        this._levelDBs[table].get(this._encodePk(table, pk), function (err, row) {
             if (err) {
                 complete(undefined);
             }
@@ -178,8 +179,8 @@ var RocksDB = /** @class */ (function () {
         var i = 0;
         this._levelDBs[table]
             .createValueStream(type === "range" ? {
-            gte: type === "range" ? this.encodePk(table, offsetOrLow) : undefined,
-            lt: type === "range" ? this.encodePk(table, limitOrHigh) : undefined,
+            gte: type === "range" ? this._encodePk(table, offsetOrLow) : undefined,
+            lte: type === "range" ? this._encodePk(table, limitOrHigh) : undefined,
             reverse: reverse
         } : type === "offset" ? {
             reverse: reverse,
@@ -220,14 +221,14 @@ var RocksDB = /** @class */ (function () {
                 return parseFloat(buffer.toString("utf-8"));
         }
     };
-    RocksDB.prototype.encodePk = function (table, pk) {
+    RocksDB.prototype._encodePk = function (table, pk) {
         return this.nSQL.tables[table].isPkNum ? this._writeNumberBuffer(table, pk) : Buffer.from(pk, "utf-8");
     };
-    RocksDB.prototype.decodePK = function (table, pk) {
+    RocksDB.prototype._decodePK = function (table, pk) {
         return this.nSQL.tables[table].isPkNum ? this._readNumberBuffer(table, pk) : new Buffer(pk).toString("utf-8");
     };
     RocksDB.prototype.delete = function (table, pk, complete, error) {
-        this._levelDBs[table].del(this.encodePk(table, pk), function (err) {
+        this._levelDBs[table].del(this._encodePk(table, pk), function (err) {
             if (err) {
                 throw Error(err);
             }
@@ -242,7 +243,7 @@ var RocksDB = /** @class */ (function () {
         this._levelDBs[table]
             .createKeyStream()
             .on("data", function (pk) {
-            index.push(_this.decodePK(table, pk));
+            index.push(_this._decodePK(table, pk));
         })
             .on("end", function () {
             complete(index);

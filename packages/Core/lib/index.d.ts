@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 import { INanoSQLConfig, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
-export declare class NanoSQL implements INanoSQLInstance {
+export declare class nanoSQL implements INanoSQLInstance {
     config: INanoSQLConfig;
     adapter: INanoSQLAdapter;
     version: number;
@@ -10,7 +10,7 @@ export declare class NanoSQL implements INanoSQLInstance {
     functions: {
         [fnName: string]: INanoSQLFunction;
     };
-    earthRadius: number;
+    planetRadius: number;
     tables: {
         [tableName: string]: INanoSQLTable;
     };
@@ -96,7 +96,7 @@ export declare class NanoSQL implements INanoSQLInstance {
         }[];
     }, onProgress?: (percent: number) => void): Promise<any>;
     disconnect(): Promise<{}>;
-    extend(scope: string, ...args: any[]): any | NanoSQL;
+    extend(scope: string, ...args: any[]): any | nanoSQL;
     loadJS(rows: {
         [key: string]: any;
     }[], onProgress?: (percent: number) => void): Promise<any[]>;

@@ -39,7 +39,7 @@ describe("Adapter Tests", () => {
             done(new Error(err));
         });
     });
-/*
+
     it("WebSQL & IndexedDB", (done: MochaDone) => {
 
         webpack({
@@ -124,7 +124,7 @@ describe("Adapter Tests", () => {
 
             server.listen(8080, "localhost", 511, () => {
                 (async () => {
-                    const browser = await puppeteer.launch({headless: false});
+                    const browser = await puppeteer.launch();
                     const page = await browser.newPage();
                     await page.bringToFront();
                     await page.goto("http://localhost:8080");
@@ -148,6 +148,6 @@ describe("Adapter Tests", () => {
                 })();
             });
         });
-    }).timeout(15000);
-*/
+    }).timeout(30000);
+
 });

@@ -17,7 +17,7 @@ NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes fr
 The API is also not stable, not recommended for production environments.
 
 Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc10/dist/nano-sql.min.js
+https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc11/dist/nano-sql.min.js
 
 NPM Install
 ```sh
@@ -35,7 +35,6 @@ npm i @nano-sql/core
 - [x] Adapter Tests
 - [ ] 2.0 documentation
 - [ ] 2.0 release
-- [ ] GraphQL Query Support
 - [ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters
 - [ ] Net Plugin (Offline Syncing)
 - [ ] Search Plugin

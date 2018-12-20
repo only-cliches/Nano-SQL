@@ -111,17 +111,35 @@ var SyncStorage = /** @class */ (function () {
         var range = {
             "range": [offsetOrLow, limitOrHigh],
             "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
-            "all": false
+            "all": []
         }[type];
-        this._index[table].slice().forEach(function (pk, i) {
-            var read = type === "all" ? true : (type === "range" ? pk >= range[0] && pk < range[1] : i >= range[0] && i < range[1]);
-            if (read) {
-                if (_this.useLS) {
-                    onRow(JSON.parse(localStorage.getItem(_this._id + "->" + table + "__" + pk) || "{}"), i);
-                }
-                else {
-                    onRow(_this._rows[table][pk], i);
-                }
+        var idxArr = (function () {
+            switch (type) {
+                case "all":
+                case "offset":
+                    return type === "all" ? _this._index[table].slice() : _this._index[table].slice(range[0], range[1]);
+                case "range":
+                    var lowIdx = utilities_1.binarySearch(_this._index[table], range[0]);
+                    var highIdx = utilities_1.binarySearch(_this._index[table], range[1]);
+                    while (_this._index[table][highIdx] > range[1]) {
+                        highIdx--;
+                    }
+                    while (_this._index[table][lowIdx] < range[0]) {
+                        lowIdx++;
+                    }
+                    return _this._index[table].slice(lowIdx, highIdx + 1);
+            }
+            return [];
+        })();
+        if (reverse) {
+            idxArr.reverse();
+        }
+        idxArr.forEach(function (pk, i) {
+            if (_this.useLS) {
+                onRow(JSON.parse(localStorage.getItem(_this._id + "->" + table + "__" + pk) || "{}"), i);
+            }
+            else {
+                onRow(_this._rows[table][pk], i);
             }
         });
         complete();

@@ -64,16 +64,18 @@
 			<div class="tsd-panel tsd-typography">
 				<p>Universal database for the client, server &amp; mobile devices.  It&#39;s like Lego for databases.</p>
 				<center>
-					<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/logo.png" alt="nanoSQL Logo">
-					<a href="https://www.npmjs.com/package/@nano-sql/core"><img src="https://img.shields.io/npm/dm/@nano-sql/core/svg?style=flat-square" alt="npm downloads"></a>
+					<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
 					<a href="https://badge.fury.io/js/%40nano-sql%2Fcore"><img src="https://badge.fury.io/js/%40nano-sql%2Fcore.svg" alt="npm version"></a>
 					<a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 					<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint">
 				</center>
+				<p><img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/1-standalone-1.4.jpg">
+					<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/2-serverclient-1.4.jpg">
+				<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/3-multiserverclient-1.4.jpg"></p>
 				<p>NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes from 1.0.</p>
 				<p>The API is also not stable, not recommended for production environments.</p>
 				<p>Current minified build:
-				<a href="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc9/dist/nano-sql.min.js">https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc9/dist/nano-sql.min.js</a></p>
+				<a href="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc11/dist/nano-sql.min.js">https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc11/dist/nano-sql.min.js</a></p>
 				<p>NPM Install</p>
 				<pre><code class="lang-sh">npm i @nano-sql/core
 </code></pre>
@@ -94,7 +96,6 @@
 					<li>[ ] Search Plugin</li>
 					<li>[ ] History Plugin</li>
 					<li>[ ] SQLite Query Support</li>
-					<li>[ ] GraphQL Query Support</li>
 					<li>[ ] MongoDB Query Support</li>
 					<li>[ ] ReQL Query Support</li>
 				</ul>
@@ -111,14 +112,16 @@ nSQL().connect({
                 <span class="hljs-string">"name:string"</span>: {},
                 <span class="hljs-string">"age:int"</span>: {},
                 <span class="hljs-string">"meta:obj"</span>: {
-                    model: {<span class="hljs-string">"color:string"</span>: {}}
+                    model: {
+                        <span class="hljs-string">"color:string"</span>: {}
+                    }
                 },
                 <span class="hljs-string">"tags:string[]"</span>: {<span class="hljs-keyword">default</span>: []}
             }
             indexes: {
-                <span class="hljs-string">"Tags:string[]"</span>: <span class="hljs-string">"tags"</span>,
-                <span class="hljs-string">"Color:string"</span>: <span class="hljs-string">"meta.color"</span>,
-                <span class="hljs-string">"Age:int"</span>: <span class="hljs-string">"age"</span>
+                <span class="hljs-string">"tags:string[]"</span>: {},
+                <span class="hljs-string">"meta.color:string"</span>: {},
+                <span class="hljs-string">"age:int"</span>: {}
             }
         }
     ],

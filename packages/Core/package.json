@@ -1,7 +1,7 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.0.0-rc10",
-	"description": "NoSQL Everywhere",
+	"version": "2.0.0-rc11",
+	"description": "Like Lego For Databases",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",
 	"scripts": {
@@ -115,7 +115,6 @@
 	"author": "Scott Lott <Scott@ClickSimply.com>",
 	"license": "MIT",
 	"dependencies": {
-		"@turf/transform-translate": "^5.1.5",
 		"levenshtein-edit-distance": "^2.0.2",
 		"really-small-events": "^1.1.0"
 	},
@@ -134,33 +133,6 @@
 			"additions": 381948,
 			"deletions": 285629,
 			"hireable": true
-		},
-		{
-			"name": "Jesús Ignacio Ortíz Beltrán",
-			"email": null,
-			"url": "https://github.com/Jesuso",
-			"contributions": 2,
-			"additions": 16438,
-			"deletions": 14927,
-			"hireable": true
-		},
-		{
-			"name": "Heri Sim",
-			"email": null,
-			"url": "https://github.com/heri16",
-			"contributions": 3,
-			"additions": 21,
-			"deletions": 9,
-			"hireable": true
-		},
-		{
-			"name": "Vikrant Pogula",
-			"email": null,
-			"url": "https://github.com/vikrantpogula",
-			"contributions": 3,
-			"additions": 1681,
-			"deletions": 1355,
-			"hireable": null
 		}
 	]
 }

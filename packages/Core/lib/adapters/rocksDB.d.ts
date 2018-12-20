@@ -31,8 +31,8 @@ export declare class RocksDB implements INanoSQLAdapter {
     }, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _writeNumberBuffer(table: string, num: number): any;
     _readNumberBuffer(table: string, buff: any): number;
-    encodePk(table: string, pk: any): any;
-    decodePK(table: string, pk: any): any;
+    _encodePk(table: string, pk: any): any;
+    _decodePK(table: string, pk: any): any;
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void): void;
     getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void): void;
     getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void): void;

@@ -1246,8 +1246,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         p[d] = {
                             default: {lat: 0, lon: 0},
                             model: {
-                                "lat:float": [],
-                                "lon:float": []
+                                "lat:float": {max: 90, min: -90},
+                                "lon:float": {max: 180, min: -180}
                             }
                         };
                     } else if (dataModel[d].model) {
@@ -1271,6 +1271,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     pk: dataModels[d].pk,
                     default: dataModels[d].default,
                     notNull: dataModels[d].notNull,
+                    max: dataModels[d].max,
+                    min: dataModels[d].min,
                     model: dataModels[d].model ? generateColumns(dataModels[d].model as any) : undefined
                 }));
             };
