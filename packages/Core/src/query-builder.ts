@@ -153,10 +153,11 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
     }
 
-    public exec(): Promise<{ [key: string]: any }[]> {
+    public exec(returnEvents?: boolean): Promise<{ [key: string]: any }[]> {
 
         return new Promise((res, rej) => {
             let buffer: any[] = [];
+            this._query.returnEvent = returnEvents;
             this.stream((row) => {
                 if (row) {
                     buffer.push(row);
@@ -165,6 +166,11 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
                 res(buffer);
             }, rej);
         });
+    }
+
+    public streamEvent(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
+        this._query.returnEvent = true;
+        this._db.triggerQuery(this._query, onRow, complete, err);
     }
 
     public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {

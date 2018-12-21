@@ -145,16 +145,19 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                 const latVal = getFnValue(query, row, gpsCol + ".lat");
                 const lonVal = getFnValue(query, row, gpsCol + ".lon");
 
-                return {result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius)};
+                return {
+                    result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius)
+                };
             },
-            whereIndex: (query, fnArgs, where) => {
+            checkIndex: (query, fnArgs, where) => {
                 if (where[1] === "<" || where[1] === "<=") {
                     const indexes: {[id: string]: INanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     const crowColumn = resolvePath(fnArgs[0]);
                     let crowCols: string[] = [];
+                    // find the lat/lon indexes for the crow calculation
                     Object.keys(indexes).forEach((k) => {
                         const index = indexes[k];
-                        if (_objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
+                        if (index.type === "float" && _objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
                             crowCols.push(k.replace(".lat", "").replace(".lon", ""));
                         }
                     });
@@ -179,19 +182,19 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                 const centerLat = parseFloat(where.fnArgs ? where.fnArgs[1] : "0");
                 const centerLon = parseFloat(where.fnArgs ? where.fnArgs[2] : "0");
 
-                // get distance in degrees
+                // get distance radius in degrees
                 const distanceDegrees = (distance / (nSQL.planetRadius * 2 * Math.PI)) * 360;
 
                 // get degrees north and south of search point
                 let latRange = [-1, 1].map(s => centerLat + (distanceDegrees * s));
 
                 let lonRange: number[] = [];
+                let extraLonRange: number[] = [];
 
                 // check if latitude range is above/below the distance query
                 // that means we're querying near a pole
                 // if so, grab all longitudes
                 let poleQuery = false;
-                let extraLonRange: number[] = [];
                 const poleRange = Math.max(90 - distanceDegrees, 0);
 
                 if (Math.abs(latRange[0]) > poleRange || Math.abs(latRange[1]) > poleRange) {
@@ -204,11 +207,14 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                     }
                 } else {
 
+                    const largestLat = Math.max(Math.abs(latRange[0]), Math.abs(latRange[1]));
+
                     // get degrees east and west of search point
                     lonRange = [-1, 1].map(s => {
-                        const equatorDegrees = ((distanceDegrees + 0.2) * s);
-                        return centerLon + (equatorDegrees / Math.cos(deg2rad(centerLat)));
+                        const equatorDegrees = distanceDegrees * s;
+                        return centerLon + (equatorDegrees / Math.cos(deg2rad(largestLat)));
                     });
+
                     // if range query happens to cross antimeridian
                     // no need to check this for pole queries
                     if (Math.abs(lonRange[0]) > 180) {
@@ -234,7 +240,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         next(null);
                         return;
                     }
-
+                    // read values from seconday index table
                     adapterFilters(nSQL, query).readMulti(table, "range", ranges[0], ranges[1], false, (row, i2) => {
                         let i3 = row.pks.length;
                         while (i3--) {
@@ -275,19 +281,6 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         return condition === "<" ? crowDist < distance : crowDist <= distance;
                     }).map(p => pks[p]);
 
-                    const poleQueryBuffer = poleQuery ? new _NanoSQLQueue((item, i, done, err) => {
-                        // perform crow distance calculation on square selected group
-                        const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item) - 90;
-                        const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item) - 180;
-
-                        const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
-                        const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
-                        if (doRow) {
-                            onRow(onlyPKs ? item[nSQL.tables[query.table as string].pkCol] : item, counter);
-                            counter++;
-                        }
-                        done();
-                    }, error, complete) : undefined;
 
                     allAsync(rowsToRead, (rowData: ICrowIndexQuery, i, next, err) => {
                         if (!poleQuery && onlyPKs) {
@@ -296,19 +289,28 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                             return;
                         }
                         adapterFilters(query.parent, query).read(query.table as string, rowData.key, (row) => {
+                            if (!row) { 
+                                next(null);
+                                return;
+                            }
                             if (poleQuery) {
-                                if (poleQueryBuffer) poleQueryBuffer.newItem(row);
+                                // perform crow distance calculation on square selected group
+                                const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
+                                const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
+
+                                const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
+                                const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
+                                if (doRow) {
+                                    onRow(onlyPKs ? row[nSQL.tables[query.table as string].pkCol] : row, counter);
+                                    counter++;
+                                }
                             } else {
                                 onRow(row, i);
                             }
                             next(null);
                         }, error);
                     }).catch(error).then(() => {
-                        if (poleQuery) {
-                            if (poleQueryBuffer) poleQueryBuffer.finished();
-                        } else {
-                            complete();
-                        }
+                        complete();
                     });
                 }).catch(error);
             }

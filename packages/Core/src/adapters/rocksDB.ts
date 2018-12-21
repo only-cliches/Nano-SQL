@@ -71,7 +71,7 @@ export class RocksDB implements INanoSQLAdapter {
             model: {},
             columns: [],
             indexes: {},
-            offsets: [],
+            pkOffset: 0,
             actions: [],
             views: [],
             pkType: "string",

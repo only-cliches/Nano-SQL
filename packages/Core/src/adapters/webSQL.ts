@@ -15,6 +15,7 @@ export const SQLiteAbstract = (
             return `"${table}"`;
         }
     };
+
     return {
         createAI: (complete: () => void, error: (err: any) => void) => {
             _query(true, `CREATE TABLE IF NOT EXISTS "_ai" (id TEXT PRIMARY KEY UNIQUE, inc BIGINT)`, [], complete, error);
@@ -117,7 +118,7 @@ export const SQLiteAbstract = (
             let stmnt = `SELECT data FROM ${checkTable(table)}`;
 
             if (type === "range") {
-                stmnt += ` WHERE id >= ? AND id <= ?`;
+                stmnt += ` WHERE id BETWEEN ? AND ?`;
             }
             if (reverse) {
                 stmnt += ` ORDER BY id DESC`;

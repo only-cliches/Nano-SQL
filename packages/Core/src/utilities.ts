@@ -1,4 +1,13 @@
-import { INanoSQLQuery, adapterWillWriteFilter, INanoSQLInstance, adapterDidWriteFilter, adapterWillReadFilter, adapterDidReadFilter, adapterWillReadMultiFilter, TableQueryResult } from "./interfaces";
+import { 
+    INanoSQLQuery, 
+    adapterWillWriteFilter, 
+    INanoSQLInstance, 
+    adapterDidWriteFilter, 
+    adapterWillReadFilter, 
+    adapterDidReadFilter, 
+    adapterWillReadMultiFilter, 
+    TableQueryResult 
+} from "./interfaces";
 
 declare var global: any;
 
@@ -58,28 +67,23 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
 
+            let key = pk;
             // shift primary key query by offset
-            if (nSQL.tables[table].offsets.length) {
-                let i = nSQL.tables[table].offsets.length;
-                const offsets = nSQL.tables[table].offsets;
-                while(i--) {
-                    if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
-                        pk += offsets[i].offset;
-                    }
-                }
+            if (nSQL.tables[table].pkOffset) {
+                key += nSQL.tables[table].pkOffset;
             }
             
-            nSQL.doFilter<adapterWillReadFilter, any>("adapterWillRead", { result: undefined, table, pk, i: 0, query }, (resultRow) => {
+            nSQL.doFilter<adapterWillReadFilter, any>("adapterWillRead", { result: undefined, table, pk: key, i: 0, query }, (resultRow) => {
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
                 } else {                    
-                    nSQL.adapter.read(table, pk, (row) => {
+                    nSQL.adapter.read(table, key, (row) => {
                         if (!row) {
                             complete(undefined);
                             return;
                         }
 
-                        nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk, i: 0, query }, (resultRow) => {
+                        nSQL.doFilter<adapterDidReadFilter, any>("adapterDidRead", { result: row, table, pk: key, i: 0, query }, (resultRow) => {
                             complete(resultRow);
                         }, error as any);
                     }, error);
@@ -96,21 +100,18 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
                 }, error as any);
             }, error, complete);
 
+            let lower = limitOrHigh;
+            let higher = offsetOrLow;
+
             // shift range query by offset
             if (type === "range") {
-                if (nSQL.tables[table].offsets.length) {
-                    let i = nSQL.tables[table].offsets.length;
-                    const offsets = nSQL.tables[table].offsets;
-                    while(i--) {
-                        if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
-                            offsetOrLow += offsets[i].offset;
-                            limitOrHigh += offsets[i].offset;
-                        }
-                    }
+                if (nSQL.tables[table].pkOffset) {
+                    lower += nSQL.tables[table].pkOffset;
+                    higher += nSQL.tables[table].pkOffset;
                 }
             }
 
-            nSQL.doFilter<adapterWillReadMultiFilter, any>("adapterWillReadMulti", { result: { table, type, offsetOrLow, limitOrHigh, reverse }, onRow, complete, error, query }, (result) => {
+            nSQL.doFilter<adapterWillReadMultiFilter, any>("adapterWillReadMulti", { result: { table, type, offsetOrLow: lower, limitOrHigh: higher, reverse }, onRow, complete, error, query }, (result) => {
                 if (!result) return;
                 nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, (row) => {
                     readBuffer.newItem(row);

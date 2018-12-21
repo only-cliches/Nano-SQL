@@ -502,6 +502,24 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Order By Function", (done: MochaDone) => {
+        let rows: any[] = [];
+        for (let i = 0; i < 50; i++) {
+            rows.push({value: Math.random() > 0.5 ? uuid() : uuid().toUpperCase()})
+        }
+        nSQLDefault(rows).query("select").orderBy(["UPPER(value) ASC"]).exec().then((result) => {
+            const sortedRows = rows.sort((a, b) => {
+                return a.value.toUpperCase() > b.value.toUpperCase() ? 1 : -1;
+            });
+            try {
+                expect(sortedRows).to.deep.equal(result);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("PK & Normal Between behave identically.", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
@@ -781,38 +799,6 @@ describe("Testing Other Features", () => {
         });
     });
 
-    it("Primary Key Offset", (done: MochaDone) => {
-        const nSQL = new nanoSQL();
-        let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i - 10, num: i});
-        }
-        nSQL.connect({
-            tables: [{
-                name: "test",
-                model: {
-                    "id:int":{pk: true, offset: 20},
-                    "num:int":{}
-                },
-                indexes: {
-                    "num:int": {}
-                }
-            }]
-        }).then(() => {
-            return nSQL.selectTable("test").loadJS(rows);
-        }).then(() => {
-            return nSQL.query("select").where(["id", "BETWEEN", [-10, 10]]).orderBy(["id"]).exec();
-        }).then((idxRows) => {
-            const testRows = rows.filter(i => i.id >= -10 && i.id <= 10);
-            try {
-                expect(testRows).to.deep.equal(idxRows);
-                done();
-            } catch (e) {
-                done(e);
-            }
-        });
-    });
-
     it("Secondary Index Offset", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
@@ -844,12 +830,12 @@ describe("Testing Other Features", () => {
         });
     });
 
-    it("Secondary Index Array", (done: MochaDone) => {
+    it("Secondary Index (Array)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
         let terms: any[] = [];
         for (let i = 0; i < 20; i ++) {
-            terms.push(Math.random() > 0.5 ? uuid() : Math.random());
+            terms.push(uuid());
         }
         for (let i = 1; i < 50; i ++) {
             rows.push({id: i, arr: terms.filter(v => Math.random() < 0.2)});
@@ -859,19 +845,58 @@ describe("Testing Other Features", () => {
                 name: "test",
                 model: {
                     "id:int":{pk: true},
-                    "arr:any[]":{}
+                    "arr:string[]":{}
                 },
                 indexes: {
-                    "arr:any[]": {}
+                    "arr:string[]": {}
                 }
             }]
         }).then(() => {
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
-            return nSQL.query("select").where(["arr", "INCLUDES", [-10, 10]]).orderBy(["id"]).exec();
+            return nSQL.query("select").where(["arr", "INCLUDES", terms[0]]).orderBy(["id"]).exec();
         }).then((idxRows) => {
             try {
-                expect(rows.filter(i => i.num >= -10 && i.num <= 10)).to.deep.equal(idxRows);
+                expect(rows.filter(i => i.arr.indexOf(terms[0]) !== -1)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index (Array Nested)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        let terms: any[] = [];
+        for (let i = 0; i < 20; i ++) {
+            terms.push(uuid());
+        }
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, prop: {arr: terms.filter(v => Math.random() < 0.2)}});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "prop:obj":{
+                        model: {
+                            "arr:string[]": {}
+                        }
+                    }
+                },
+                indexes: {
+                    "prop.arr:string[]": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["prop.arr", "INCLUDES", terms[0]]).orderBy(["id"]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.prop.arr.indexOf(terms[0]) !== -1)).to.deep.equal(idxRows);
                 done();
             } catch (e) {
                 done(e);
@@ -926,7 +951,7 @@ describe("Testing Other Features", () => {
         for (let i = 1; i < 5000; i ++) {
             rows.push({id: i, loc: randomLoc()});
         }
-        const lat = (Math.random() * 180) - 90;
+        const lat = (Math.random() * 140) - 70;
         const lon = (Math.random() * 360) - 180;
         nSQL.connect({
             tables: [{
