@@ -844,6 +844,41 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Secondary Index Array", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        let terms: any[] = [];
+        for (let i = 0; i < 20; i ++) {
+            terms.push(Math.random() > 0.5 ? uuid() : Math.random());
+        }
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, arr: terms.filter(v => Math.random() < 0.2)});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "arr:any[]":{}
+                },
+                indexes: {
+                    "arr:any[]": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["arr", "INCLUDES", [-10, 10]]).orderBy(["id"]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.num >= -10 && i.num <= 10)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("Geo Data Type", (done: MochaDone) => {
         const randomLoc = (): {lon: number, lat: number} => {
             return {
@@ -963,5 +998,7 @@ describe("Testing Other Features", () => {
             }
         });
     });
+
+
 
 });

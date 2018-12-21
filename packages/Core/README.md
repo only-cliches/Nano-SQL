@@ -35,7 +35,8 @@ npm i @nano-sql/core
 - [x] Adapter Tests
 - [ ] 2.0 documentation
 - [ ] 2.0 release
-- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL Adapters
+- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo Adapters
+- [ ] GraphQL Support
 - [ ] Net Plugin (Offline Syncing)
 - [ ] Search Plugin
 - [ ] History Plugin
