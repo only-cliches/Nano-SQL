@@ -114,7 +114,7 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
         readMulti: function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
             var stmnt = "SELECT data FROM " + checkTable(table);
             if (type === "range") {
-                stmnt += " WHERE id >= ? AND id <= ?";
+                stmnt += " WHERE id BETWEEN ? AND ?";
             }
             if (reverse) {
                 stmnt += " ORDER BY id DESC";

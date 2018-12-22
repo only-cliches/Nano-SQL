@@ -35,9 +35,10 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     into(table: string): _NanoSQLQueryBuilder;
     on(table: string): _NanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
-    exec(): Promise<{
+    exec(returnEvents?: boolean): Promise<{
         [key: string]: any;
     }[]>;
+    streamEvent(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
     stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
     cache(): Promise<{
         id: string;

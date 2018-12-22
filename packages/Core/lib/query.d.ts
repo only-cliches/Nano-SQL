@@ -26,6 +26,7 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     upsertPath: string[];
     private _hasOrdered;
     private _startTime;
+    private _indexesUsed;
     constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
     _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void): void;
     _getTable(tableName: string, whereCond: any[] | ((row: {

@@ -55,7 +55,7 @@ var RocksDB = /** @class */ (function () {
             model: {},
             columns: [],
             indexes: {},
-            offsets: [],
+            pkOffset: 0,
             actions: [],
             views: [],
             pkType: "string",

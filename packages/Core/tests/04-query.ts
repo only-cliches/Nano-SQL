@@ -8,6 +8,7 @@ import { uuid, crowDistance } from "../src/utilities";
 
 
 describe("Testing Other Features", () => {
+
     it("Select Equals", (done: MochaDone) => {
         nSQLDefault([
             {id: 50}
@@ -540,6 +541,7 @@ describe("Testing Other Features", () => {
             return nSQL.query("select").where(["id", "BETWEEN", [29, 49]]).exec();
         }).then((pkRows) => {
             nSQL.query("select").where(["num", "BETWEEN", [29, 49]]).exec().then((numRows) => {
+
                 try {
                     expect(pkRows).to.deep.equal(numRows);
                     done();
@@ -1023,7 +1025,5 @@ describe("Testing Other Features", () => {
             }
         });
     });
-
-
 
 });

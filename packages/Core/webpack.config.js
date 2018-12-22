@@ -17,6 +17,9 @@ const options = {
         libraryTarget: 'umd',
         umdNamedDefine: true
     },
+    externals: [
+        nodeExternals()
+    ],
     devServer: {
         historyApiFallback: true,
         inline: false,

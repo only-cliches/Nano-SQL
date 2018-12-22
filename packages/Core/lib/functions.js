@@ -149,16 +149,19 @@ exports.attachDefaultFns = function (nSQL) {
             call: function (query, row, prev, gpsCol, lat, lon) {
                 var latVal = utilities_1.getFnValue(query, row, gpsCol + ".lat");
                 var lonVal = utilities_1.getFnValue(query, row, gpsCol + ".lon");
-                return { result: utilities_1.crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius) };
+                return {
+                    result: utilities_1.crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius)
+                };
             },
-            whereIndex: function (query, fnArgs, where) {
+            checkIndex: function (query, fnArgs, where) {
                 if (where[1] === "<" || where[1] === "<=") {
                     var indexes_1 = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     var crowColumn_1 = utilities_1.resolvePath(fnArgs[0]);
                     var crowCols_1 = [];
+                    // find the lat/lon indexes for the crow calculation
                     Object.keys(indexes_1).forEach(function (k) {
                         var index = indexes_1[k];
-                        if (utilities_1._objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
+                        if (index.type === "float" && utilities_1._objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
                             crowCols_1.push(k.replace(".lat", "").replace(".lon", ""));
                         }
                     });
@@ -181,16 +184,16 @@ exports.attachDefaultFns = function (nSQL) {
                 var distance = parseFloat(where.value || "0");
                 var centerLat = parseFloat(where.fnArgs ? where.fnArgs[1] : "0");
                 var centerLon = parseFloat(where.fnArgs ? where.fnArgs[2] : "0");
-                // get distance in degrees
+                // get distance radius in degrees
                 var distanceDegrees = (distance / (nSQL.planetRadius * 2 * Math.PI)) * 360;
                 // get degrees north and south of search point
                 var latRange = [-1, 1].map(function (s) { return centerLat + (distanceDegrees * s); });
                 var lonRange = [];
+                var extraLonRange = [];
                 // check if latitude range is above/below the distance query
                 // that means we're querying near a pole
                 // if so, grab all longitudes
                 var poleQuery = false;
-                var extraLonRange = [];
                 var poleRange = Math.max(90 - distanceDegrees, 0);
                 if (Math.abs(latRange[0]) > poleRange || Math.abs(latRange[1]) > poleRange) {
                     poleQuery = true;
@@ -202,10 +205,11 @@ exports.attachDefaultFns = function (nSQL) {
                     }
                 }
                 else {
+                    var largestLat_1 = Math.max(Math.abs(latRange[0]), Math.abs(latRange[1]));
                     // get degrees east and west of search point
                     lonRange = [-1, 1].map(function (s) {
-                        var equatorDegrees = ((distanceDegrees + 0.2) * s);
-                        return centerLon + (equatorDegrees / Math.cos(utilities_1.deg2rad(centerLat)));
+                        var equatorDegrees = distanceDegrees * s;
+                        return centerLon + (equatorDegrees / Math.cos(utilities_1.deg2rad(largestLat_1)));
                     });
                     // if range query happens to cross antimeridian
                     // no need to check this for pole queries
@@ -229,6 +233,7 @@ exports.attachDefaultFns = function (nSQL) {
                         next(null);
                         return;
                     }
+                    // read values from seconday index table
                     utilities_1.adapterFilters(nSQL, query).readMulti(table, "range", ranges[0], ranges[1], false, function (row, i2) {
                         var i3 = row.pks.length;
                         while (i3--) {
@@ -268,18 +273,6 @@ exports.attachDefaultFns = function (nSQL) {
                         var crowDist = utilities_1.crowDistance(pks[p].lat, pks[p].lon, centerLat, centerLon, nSQL.planetRadius);
                         return condition === "<" ? crowDist < distance : crowDist <= distance;
                     }).map(function (p) { return pks[p]; });
-                    var poleQueryBuffer = poleQuery ? new utilities_1._NanoSQLQueue(function (item, i, done, err) {
-                        // perform crow distance calculation on square selected group
-                        var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", item) - 90;
-                        var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", item) - 180;
-                        var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
-                        var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
-                        if (doRow) {
-                            onRow(onlyPKs ? item[nSQL.tables[query.table].pkCol] : item, counter);
-                            counter++;
-                        }
-                        done();
-                    }, error, complete) : undefined;
                     utilities_1.allAsync(rowsToRead, function (rowData, i, next, err) {
                         if (!poleQuery && onlyPKs) {
                             onRow(rowData.key, i);
@@ -287,9 +280,20 @@ exports.attachDefaultFns = function (nSQL) {
                             return;
                         }
                         utilities_1.adapterFilters(query.parent, query).read(query.table, rowData.key, function (row) {
+                            if (!row) {
+                                next(null);
+                                return;
+                            }
                             if (poleQuery) {
-                                if (poleQueryBuffer)
-                                    poleQueryBuffer.newItem(row);
+                                // perform crow distance calculation on square selected group
+                                var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
+                                var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
+                                var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
+                                var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
+                                if (doRow) {
+                                    onRow(onlyPKs ? row[nSQL.tables[query.table].pkCol] : row, counter);
+                                    counter++;
+                                }
                             }
                             else {
                                 onRow(row, i);
@@ -297,13 +301,7 @@ exports.attachDefaultFns = function (nSQL) {
                             next(null);
                         }, error);
                     }).catch(error).then(function () {
-                        if (poleQuery) {
-                            if (poleQueryBuffer)
-                                poleQueryBuffer.finished();
-                        }
-                        else {
-                            complete();
-                        }
+                        complete();
                     });
                 }).catch(error);
             }

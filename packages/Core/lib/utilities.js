@@ -52,27 +52,22 @@ exports.adapterFilters = function (nSQL, query) {
             }, error);
         },
         read: function (table, pk, complete, error) {
+            var key = pk;
             // shift primary key query by offset
-            if (nSQL.tables[table].offsets.length) {
-                var i = nSQL.tables[table].offsets.length;
-                var offsets = nSQL.tables[table].offsets;
-                while (i--) {
-                    if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
-                        pk += offsets[i].offset;
-                    }
-                }
+            if (typeof key === "number" && nSQL.tables[table].pkOffset) {
+                key += nSQL.tables[table].pkOffset;
             }
-            nSQL.doFilter("adapterWillRead", { result: undefined, table: table, pk: pk, i: 0, query: query }, function (resultRow) {
+            nSQL.doFilter("adapterWillRead", { result: undefined, table: table, pk: key, i: 0, query: query }, function (resultRow) {
                 if (resultRow) { // filter took over adapter read
                     complete(resultRow);
                 }
                 else {
-                    nSQL.adapter.read(table, pk, function (row) {
+                    nSQL.adapter.read(table, key, function (row) {
                         if (!row) {
                             complete(undefined);
                             return;
                         }
-                        nSQL.doFilter("adapterDidRead", { result: row, table: table, pk: pk, i: 0, query: query }, function (resultRow) {
+                        nSQL.doFilter("adapterDidRead", { result: row, table: table, pk: key, i: 0, query: query }, function (resultRow) {
                             complete(resultRow);
                         }, error);
                     }, error);
@@ -87,20 +82,16 @@ exports.adapterFilters = function (nSQL, query) {
                     done();
                 }, error);
             }, error, complete);
+            var lower = offsetOrLow;
+            var higher = limitOrHigh;
             // shift range query by offset
-            if (type === "range") {
-                if (nSQL.tables[table].offsets.length) {
-                    var i = nSQL.tables[table].offsets.length;
-                    var offsets = nSQL.tables[table].offsets;
-                    while (i--) {
-                        if (offsets[i].path.length === 1 && nSQL.tables[table].pkCol === offsets[i].path[0]) {
-                            offsetOrLow += offsets[i].offset;
-                            limitOrHigh += offsets[i].offset;
-                        }
-                    }
+            if (typeof lower === "number" && typeof higher === "number" && type === "range") {
+                if (nSQL.tables[table].pkOffset) {
+                    lower += nSQL.tables[table].pkOffset;
+                    higher += nSQL.tables[table].pkOffset;
                 }
             }
-            nSQL.doFilter("adapterWillReadMulti", { result: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse }, onRow: onRow, complete: complete, error: error, query: query }, function (result) {
+            nSQL.doFilter("adapterWillReadMulti", { result: { table: table, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse }, onRow: onRow, complete: complete, error: error, query: query }, function (result) {
                 if (!result)
                     return;
                 nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, function (row) {

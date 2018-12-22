@@ -21,4 +21,4 @@ require("./01-import&export");
 require("./02-primarykeys");
 require("./03-sqlite");
 require("./04-query");
-// require("./05-adapters");
+require("./05-adapters");

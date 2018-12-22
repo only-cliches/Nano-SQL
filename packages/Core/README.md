@@ -2,27 +2,91 @@ Universal database for the client, server & mobile devices.  It's like Lego for 
 <center>
 <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
 
-
 [![npm version](https://badge.fury.io/js/%40nano-sql%2Fcore.svg)](https://badge.fury.io/js/%40nano-sql%2Fcore)
 [![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE)
 ![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
 </center>
 
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/1-standalone-1.4.jpg">
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/2-serverclient-1.4.jpg">
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/3-multiserverclient-1.4.jpg">
+# NOTICE: This is the IN PROGRESS readme for nanoSQL 2.0.  Some of these features are not in place yet.
+Scroll down for the todo list and it's progress.
 
-NanoSQL 2.0 is in BETA state right now, tons of undocumented breaking changes from 1.0.
+## nanoSQL is a database abstraction layer that: 
+1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).
+2. Use nanoSQL standalone, as the glue between your server and clients, or even with multi master servers.
+3. Supports many advanced features like Graph Queries, Map/Reduce, Indexing, and Geolocations.
+4. Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, more...).
 
-The API is also not stable, not recommended for production environments.
+### Identical API Everywhere
+Develop your application with an embedded database like RocsDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
-Current minified build:
-https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc11/dist/nano-sql.min.js
+### Data Model => Typescript Interface
+Automatically generate typescript interfaces from your data models.
 
-NPM Install
+### Offline Syncing
+Run nanoSQL on your server and client, then with little effort allow nanoSQL to handle the eventual consistency problems and keep both ends in sync with eachother.
+
+### Not Only NoSQL 
+Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
+
+### Flexible Data Models
+The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and do type casting only when you need it.
+
+### Other Cool Things
+Built in geolocation helpers, multi-tab sync, typescript support, full event system, CSV/JSON import & export, graph query support, and runs in every browser back to IE9!
+
+## Live Examples: [Express/NodeJS](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [React Native](https://docs.nanosql.io/examples/react-native) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
+
+
+## Browser Support
+
+![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
+--- | --- | --- | --- | --- | --- |
+Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
+
+## Database Support
+
+NanoSQL can save data to many different places, depending on the browser or environment it's being ran in.
+
+1. **Included In The Box**
+    - Memory
+    - Level DB
+    - Indexed DB
+    - WebSQL
+    - Local Storage
+
+2. **[SQLite (NodeJS)](#)**
+3. **[SQLite (Cordova)](#)**
+4. **[MySQL](#)**
+5. **[React Native](#)**
+6. **[Redis](#)**
+7. **[Amazon Dynamo DB](#)**
+
+[Documentation](https://docs.nanosql.io/)
+
+## Installation
+
 ```sh
-npm i @nano-sql/core
+npm i @nano-sql/core --save
 ```
+
+Using in Typescript/Babel project:
+
+```js
+import { nSQL } from "@nano-sql/core";
+```
+
+Using in Node:
+
+```js
+const nSQL = require("@nano-sql/core").nSQL;
+```
+
+To use directly in the browser, drop the tag below into your `<head>`.
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc12/dist/nano-sql.min.js"></script>
+```
+
 
 # 2.0 Progress
 - [x] Query Engine 

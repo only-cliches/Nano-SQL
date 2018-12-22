@@ -69,7 +69,7 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
 
             let key = pk;
             // shift primary key query by offset
-            if (nSQL.tables[table].pkOffset) {
+            if (typeof key === "number" && nSQL.tables[table].pkOffset) {
                 key += nSQL.tables[table].pkOffset;
             }
             
@@ -100,11 +100,11 @@ export const adapterFilters = (nSQL: INanoSQLInstance, query: INanoSQLQuery) => 
                 }, error as any);
             }, error, complete);
 
-            let lower = limitOrHigh;
-            let higher = offsetOrLow;
+            let lower = offsetOrLow;
+            let higher = limitOrHigh;
 
             // shift range query by offset
-            if (type === "range") {
+            if (typeof lower === "number" && typeof higher === "number" && type === "range") {
                 if (nSQL.tables[table].pkOffset) {
                     lower += nSQL.tables[table].pkOffset;
                     higher += nSQL.tables[table].pkOffset;

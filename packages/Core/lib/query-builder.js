@@ -118,10 +118,11 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         var t = this;
         return t.exec().then(function (json) { return Promise.resolve(t._db.JSONtoCSV(json, headers)); });
     };
-    _NanoSQLQueryBuilder.prototype.exec = function () {
+    _NanoSQLQueryBuilder.prototype.exec = function (returnEvents) {
         var _this = this;
         return new Promise(function (res, rej) {
             var buffer = [];
+            _this._query.returnEvent = returnEvents;
             _this.stream(function (row) {
                 if (row) {
                     buffer.push(row);
@@ -130,6 +131,10 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
                 res(buffer);
             }, rej);
         });
+    };
+    _NanoSQLQueryBuilder.prototype.streamEvent = function (onRow, complete, err) {
+        this._query.returnEvent = true;
+        this._db.triggerQuery(this._query, onRow, complete, err);
     };
     _NanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
         this._db.triggerQuery(this._query, onRow, complete, err);

@@ -14,7 +14,7 @@
 
             nSQL().connect({
                 id: "test",
-                mode: "WSQL",
+                // mode: "WSQL",
                 plugins: [
                     /*{
                         name: "testPlugin",
@@ -49,7 +49,7 @@
                     }
                 ],
             }).then(() => {
-            /*    console.log(nSQL());
+                console.log(nSQL());
                 nSQL("users.name").on("change", (ev) => {
                     console.log("EVENT", ev);
                 })
@@ -58,9 +58,9 @@
                 console.log("UPSERT", result);
                 return nSQL("users").query("upsert", { name: 21 }).where(["meta.color", "=", "blue"]).exec();
             }).then((result) => {
-                console.log(result);*/
+                console.log(result);
                 console.time("sel");
-                return nSQL("users").query("select").where(["age", "=", 20]).exec(true);
+                return nSQL("users").query("select").where(["age", "=", 20]).exec();
             }).then((rows) => {
                 console.timeEnd("sel");
                 console.log(rows);
