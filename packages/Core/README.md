@@ -14,10 +14,10 @@ Scroll down for the todo list and it's progress.
 1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).
 2. Use nanoSQL standalone, as the glue between your server and clients, or even with multi master servers.
 3. Supports many advanced features like Graph Queries, Map/Reduce, Indexing, and Geolocations.
-4. Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, more...).
+4. Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, etc...).
 
 ### Identical API Everywhere
-Develop your application with an embedded database like RocsDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
+Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
 ### Data Model => Typescript Interface
 Automatically generate typescript interfaces from your data models.
@@ -61,7 +61,7 @@ NanoSQL can save data to many different places, depending on the browser or envi
 6. **[Redis](#)**
 7. **[Amazon Dynamo DB](#)**
 
-[Documentation](https://docs.nanosql.io/)
+[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html)
 
 ## Installation
 
@@ -84,9 +84,11 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc12/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc13/dist/nano-sql.min.js"></script>
 ```
 
+## Important
+If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
 
 # 2.0 Progress
 - [x] Query Engine 

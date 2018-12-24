@@ -19,7 +19,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             aggregateStart: {result: 0, row: {}},
             call: (query, row, prev, column) => {
                 if (column && column !== "*") {
-                    if (getFnValue(query, row, column)) {
+                    if (getFnValue(row, column)) {
                         prev.result++;
                     }
                 } else {
@@ -33,7 +33,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
             call: (query, row, prev, column) => {
-                let max = getFnValue(query, row, column) || 0;
+                let max = getFnValue(row, column) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
                     prev.row = row;
@@ -50,7 +50,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: undefined, row: {}},
             call: (query, row, prev, column) => {
-                let min = getFnValue(query, row, column) || 0;
+                let min = getFnValue(row, column) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
                     prev.row = row;
@@ -66,14 +66,14 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         GREATEST: {
             type: "S",
             call: (query, row, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? getFnValue(query, row, s) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s) : parseFloat(s)).sort((a, b) => a < b ? 1 : -1);
                 return {result: args[0]};
             }
         },
         LEAST: {
             type: "S",
             call: (query, row, prev, ...values: string[]) => {
-                const args = values.map(s => isNaN(s as any) ? getFnValue(query, row, s) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
+                const args = values.map(s => isNaN(s as any) ? getFnValue(row, s) : parseFloat(s)).sort((a, b) => a > b ? 1 : -1);
                 return {result: args[0]};
             }
         },
@@ -81,7 +81,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}, total: 0, records: 0},
             call: (query, row, prev, column) => {
-                const value = parseFloat(getFnValue(query, row, column) || 0) || 0;
+                const value = parseFloat(getFnValue(row, column) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -93,7 +93,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "A",
             aggregateStart: {result: 0, row: {}},
             call: (query, row, prev, column) => {
-                const value = parseFloat(getFnValue(query, row, column) || 0) || 0;
+                const value = parseFloat(getFnValue(row, column) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 return prev;
@@ -102,14 +102,14 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         LOWER: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(query, row, column)).toLowerCase();
+                const value = String(getFnValue(row, column)).toLowerCase();
                 return {result: value};
             }
         },
         UPPER: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(query, row, column)).toUpperCase();
+                const value = String(getFnValue(row, column)).toUpperCase();
                 return {result: value};
             }
         },
@@ -123,15 +123,15 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             type: "S",
             call: (query, row, prev, ...values: string[]) => {
                 return {result: values.map(v => {
-                    return getFnValue(query, row, v);
+                    return getFnValue(row, v);
                 }).join("")};
             }
         },
         LEVENSHTEIN: {
             type: "S",
             call: (query, row, prev, word1, word2) => {
-                const w1 = getFnValue(query, row, word1);
-                const w2 = getFnValue(query, row, word2);
+                const w1 = getFnValue(row, word1);
+                const w2 = getFnValue(row, word2);
                 const key = w1 + "::" + w2;
                 if (!wordLevenshtienCache[key]) {
                     wordLevenshtienCache[key] = levenshtein(w1, w2);
@@ -142,8 +142,8 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
         CROW: {
             type: "S",
             call: (query, row, prev, gpsCol: string, lat: string, lon: string) => {
-                const latVal = getFnValue(query, row, gpsCol + ".lat");
-                const lonVal = getFnValue(query, row, gpsCol + ".lon");
+                const latVal = getFnValue(row, gpsCol + ".lat");
+                const lonVal = getFnValue(row, gpsCol + ".lon");
 
                 return {
                     result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius)
@@ -281,32 +281,38 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         return condition === "<" ? crowDist < distance : crowDist <= distance;
                     }).map(p => pks[p]);
 
+                    if (!poleQuery && onlyPKs) {
+                        rowsToRead.forEach((rowData, k) => {
+                            onRow(rowData.key, k);
+                        });
+                        return;
+                    }
+
 
                     allAsync(rowsToRead, (rowData: ICrowIndexQuery, i, next, err) => {
-                        if (!poleQuery && onlyPKs) {
-                            onRow(rowData.key, i);
-                            next(null);
-                            return;
-                        }
+
                         adapterFilters(query.parent, query).read(query.table as string, rowData.key, (row) => {
                             if (!row) { 
                                 next(null);
                                 return;
                             }
-                            if (poleQuery) {
-                                // perform crow distance calculation on square selected group
-                                const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
-                                const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
-
-                                const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
-                                const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
-                                if (doRow) {
-                                    onRow(onlyPKs ? row[nSQL.tables[query.table as string].pkCol] : row, counter);
-                                    counter++;
-                                }
-                            } else {
+                            if (!poleQuery) {
                                 onRow(row, i);
+                                next(null);
+                                return;
                             }
+
+                            // perform crow distance calculation on square selected group
+                            const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
+                            const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
+
+                            const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
+                            const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
+                            if (doRow) {
+                                onRow(onlyPKs ? row[nSQL.tables[query.table as string].pkCol] : row, counter);
+                                counter++;
+                            }
+
                             next(null);
                         }, error);
                     }).catch(error).then(() => {

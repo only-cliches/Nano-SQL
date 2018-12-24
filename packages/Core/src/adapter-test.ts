@@ -15,13 +15,12 @@
  *
  */
 
-import { myConsole, equals } from "./utils";
-import { chainAsync, uuid } from "../src/utilities";
-import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTableConfig, INanoSQLTable } from "../src/interfaces";
-import { SyncStorage } from "../src/adapters/syncStorage";
-import { nanoSQL } from "../src";
+import { myConsole, equals } from "../tests/utils";
+import { chainAsync, uuid } from "./utilities";
+import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTableConfig, INanoSQLTable } from "./interfaces";
+import { nanoSQL } from ".";
 
-export class TestAdapter {
+export class nanoSQLAdapterTest {
 
     constructor(
         public adapter: INanoSQLAdapterConstructor,
@@ -68,7 +67,7 @@ export class TestAdapter {
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
-                TestAdapter.newTable(adapter, nSQL, "test", {
+                nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -84,7 +83,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    offsets: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -136,7 +135,7 @@ export class TestAdapter {
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
-                TestAdapter.newTable(adapter, nSQL, "test", {
+                nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -152,7 +151,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    offsets: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -263,7 +262,7 @@ export class TestAdapter {
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
-                TestAdapter.newTable(adapter, nSQL, "test", {
+                nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     model: {
                         "id:uuid": {pk: true},
                         "name:string": {}
@@ -279,7 +278,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    offsets: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "uuid",
@@ -382,7 +381,7 @@ export class TestAdapter {
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
-                TestAdapter.newTable(adapter, nSQL, "test", {
+                nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     model: {
                         "id:int": {pk: true, ai: true},
                         "name:string": {},
@@ -403,7 +402,7 @@ export class TestAdapter {
                         }
                     ],
                     indexes: {},
-                    offsets: [],
+                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -465,7 +464,7 @@ export class TestAdapter {
                     "test", "test2", "test3", "test4", "test5", "test6"
                 ].map(t => {
                     return new Promise((res2, rej2) => {
-                        TestAdapter.newTable(adapter, nSQL, t, {
+                        nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
                             model: {
                                 "test": {
                                     "id:int": {pk: true, ai: true},
@@ -525,7 +524,7 @@ export class TestAdapter {
                                 }
                             ],
                             indexes: {},
-                            offsets: [],
+                            pkOffset: 0,
                             actions: [],
                             views: [],
                             pkType: {

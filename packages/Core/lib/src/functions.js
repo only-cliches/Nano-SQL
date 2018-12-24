@@ -9,7 +9,7 @@ exports.attachDefaultFns = function (nSQL) {
             aggregateStart: { result: 0, row: {} },
             call: function (query, row, prev, column) {
                 if (column && column !== "*") {
-                    if (utilities_1.getFnValue(query, row, column)) {
+                    if (utilities_1.getFnValue(row, column)) {
                         prev.result++;
                     }
                 }
@@ -24,7 +24,7 @@ exports.attachDefaultFns = function (nSQL) {
             type: "A",
             aggregateStart: { result: undefined, row: {} },
             call: function (query, row, prev, column) {
-                var max = utilities_1.getFnValue(query, row, column) || 0;
+                var max = utilities_1.getFnValue(row, column) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = max;
                     prev.row = row;
@@ -42,7 +42,7 @@ exports.attachDefaultFns = function (nSQL) {
             type: "A",
             aggregateStart: { result: undefined, row: {} },
             call: function (query, row, prev, column) {
-                var min = utilities_1.getFnValue(query, row, column) || 0;
+                var min = utilities_1.getFnValue(row, column) || 0;
                 if (typeof prev.result === "undefined") {
                     prev.result = min;
                     prev.row = row;
@@ -63,7 +63,7 @@ exports.attachDefaultFns = function (nSQL) {
                 for (var _i = 3; _i < arguments.length; _i++) {
                     values[_i - 3] = arguments[_i];
                 }
-                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(query, row, s) : parseFloat(s); }).sort(function (a, b) { return a < b ? 1 : -1; });
+                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(row, s) : parseFloat(s); }).sort(function (a, b) { return a < b ? 1 : -1; });
                 return { result: args[0] };
             }
         },
@@ -74,7 +74,7 @@ exports.attachDefaultFns = function (nSQL) {
                 for (var _i = 3; _i < arguments.length; _i++) {
                     values[_i - 3] = arguments[_i];
                 }
-                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(query, row, s) : parseFloat(s); }).sort(function (a, b) { return a > b ? 1 : -1; });
+                var args = values.map(function (s) { return isNaN(s) ? utilities_1.getFnValue(row, s) : parseFloat(s); }).sort(function (a, b) { return a > b ? 1 : -1; });
                 return { result: args[0] };
             }
         },
@@ -82,7 +82,7 @@ exports.attachDefaultFns = function (nSQL) {
             type: "A",
             aggregateStart: { result: 0, row: {}, total: 0, records: 0 },
             call: function (query, row, prev, column) {
-                var value = parseFloat(utilities_1.getFnValue(query, row, column) || 0) || 0;
+                var value = parseFloat(utilities_1.getFnValue(row, column) || 0) || 0;
                 prev.total += isNaN(value) ? 0 : value;
                 prev.records++;
                 prev.result = prev.total / prev.records;
@@ -94,7 +94,7 @@ exports.attachDefaultFns = function (nSQL) {
             type: "A",
             aggregateStart: { result: 0, row: {} },
             call: function (query, row, prev, column) {
-                var value = parseFloat(utilities_1.getFnValue(query, row, column) || 0) || 0;
+                var value = parseFloat(utilities_1.getFnValue(row, column) || 0) || 0;
                 prev.result += isNaN(value) ? 0 : value;
                 prev.row = row;
                 return prev;
@@ -103,14 +103,14 @@ exports.attachDefaultFns = function (nSQL) {
         LOWER: {
             type: "S",
             call: function (query, row, prev, column) {
-                var value = String(utilities_1.getFnValue(query, row, column)).toLowerCase();
+                var value = String(utilities_1.getFnValue(row, column)).toLowerCase();
                 return { result: value };
             }
         },
         UPPER: {
             type: "S",
             call: function (query, row, prev, column) {
-                var value = String(utilities_1.getFnValue(query, row, column)).toUpperCase();
+                var value = String(utilities_1.getFnValue(row, column)).toUpperCase();
                 return { result: value };
             }
         },
@@ -128,15 +128,15 @@ exports.attachDefaultFns = function (nSQL) {
                     values[_i - 3] = arguments[_i];
                 }
                 return { result: values.map(function (v) {
-                        return utilities_1.getFnValue(query, row, v);
+                        return utilities_1.getFnValue(row, v);
                     }).join("") };
             }
         },
         LEVENSHTEIN: {
             type: "S",
             call: function (query, row, prev, word1, word2) {
-                var w1 = utilities_1.getFnValue(query, row, word1);
-                var w2 = utilities_1.getFnValue(query, row, word2);
+                var w1 = utilities_1.getFnValue(row, word1);
+                var w2 = utilities_1.getFnValue(row, word2);
                 var key = w1 + "::" + w2;
                 if (!wordLevenshtienCache[key]) {
                     wordLevenshtienCache[key] = levenshtein(w1, w2);
@@ -147,8 +147,8 @@ exports.attachDefaultFns = function (nSQL) {
         CROW: {
             type: "S",
             call: function (query, row, prev, gpsCol, lat, lon) {
-                var latVal = utilities_1.getFnValue(query, row, gpsCol + ".lat");
-                var lonVal = utilities_1.getFnValue(query, row, gpsCol + ".lon");
+                var latVal = utilities_1.getFnValue(row, gpsCol + ".lat");
+                var lonVal = utilities_1.getFnValue(row, gpsCol + ".lon");
                 return {
                     result: utilities_1.crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius)
                 };
@@ -273,30 +273,31 @@ exports.attachDefaultFns = function (nSQL) {
                         var crowDist = utilities_1.crowDistance(pks[p].lat, pks[p].lon, centerLat, centerLon, nSQL.planetRadius);
                         return condition === "<" ? crowDist < distance : crowDist <= distance;
                     }).map(function (p) { return pks[p]; });
+                    if (!poleQuery && onlyPKs) {
+                        rowsToRead.forEach(function (rowData, k) {
+                            onRow(rowData.key, k);
+                        });
+                        return;
+                    }
                     utilities_1.allAsync(rowsToRead, function (rowData, i, next, err) {
-                        if (!poleQuery && onlyPKs) {
-                            onRow(rowData.key, i);
-                            next(null);
-                            return;
-                        }
                         utilities_1.adapterFilters(query.parent, query).read(query.table, rowData.key, function (row) {
                             if (!row) {
                                 next(null);
                                 return;
                             }
-                            if (poleQuery) {
-                                // perform crow distance calculation on square selected group
-                                var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
-                                var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
-                                var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
-                                var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
-                                if (doRow) {
-                                    onRow(onlyPKs ? row[nSQL.tables[query.table].pkCol] : row, counter);
-                                    counter++;
-                                }
-                            }
-                            else {
+                            if (!poleQuery) {
                                 onRow(row, i);
+                                next(null);
+                                return;
+                            }
+                            // perform crow distance calculation on square selected group
+                            var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
+                            var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
+                            var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
+                            var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
+                            if (doRow) {
+                                onRow(onlyPKs ? row[nSQL.tables[query.table].pkCol] : row, counter);
+                                counter++;
                             }
                             next(null);
                         }, error);

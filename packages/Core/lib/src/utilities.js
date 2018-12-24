@@ -320,7 +320,11 @@ exports.timeid = function (ms) {
     while (time.length < (ms ? 13 : 10)) {
         time = "0" + time;
     }
-    return time + "-" + (exports.random16Bits() + exports.random16Bits()).toString(16);
+    var seed = (exports.random16Bits() + exports.random16Bits()).toString(16);
+    while (seed.length < 5) {
+        seed = "0" + seed;
+    }
+    return time + "-" + seed;
 };
 /**
  * See if two arrays intersect.
@@ -366,13 +370,6 @@ exports.hash = function (str) {
     }
     return (hash >>> 0).toString(16);
 };
-var idTypes = {
-    "int": function (value) { return value; },
-    "float": function (value) { return value; },
-    "uuid": exports.uuid,
-    "timeId": function () { return exports.timeid(); },
-    "timeIdms": function () { return exports.timeid(true); }
-};
 /**
  * Generate a row ID given the primary key type.
  *
@@ -381,6 +378,13 @@ var idTypes = {
  * @returns {*}
  */
 exports.generateID = function (primaryKeyType, incrimentValue) {
+    var idTypes = {
+        "int": function (value) { return value; },
+        "float": function (value) { return value; },
+        "uuid": exports.uuid,
+        "timeId": function () { return exports.timeid(); },
+        "timeIdms": function () { return exports.timeid(true); }
+    };
     return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
 /**
@@ -505,8 +509,7 @@ exports.crowDistance = function (lat1, lon1, lat2, lon2, radius) {
     var a = Math.pow(Math.sin(dLat / 2), 2) +
         Math.cos(exports.deg2rad(lat1)) * Math.cos(exports.deg2rad(lat2)) *
             Math.pow(Math.sin(dLon / 2), 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return radius * c;
+    return radius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 var objectPathCache = {};
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
@@ -523,7 +526,7 @@ exports.resolvePath = function (pathQuery) {
     objectPathCache[cacheKey] = path;
     return objectPathCache[cacheKey];
 };
-exports.getFnValue = function (query, row, valueOrPath) {
+exports.getFnValue = function (row, valueOrPath) {
     return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : exports.deepGet(valueOrPath, row);
 };
 /**

@@ -328,7 +328,7 @@ export const random16Bits = (): number => {
 
 export const throttle = (scope: any, func: any, limit: number) => {
     let waiting = false;
-    return (...args: any[]) => {
+    return (...args: any[]) => {  
         if (waiting) return;
         waiting = true;
         setTimeout(() => {
@@ -350,7 +350,11 @@ export const timeid = (ms?: boolean): string => {
     while (time.length < (ms ? 13 : 10)) {
         time = "0" + time;
     }
-    return time + "-" + (random16Bits() + random16Bits()).toString(16);
+    let seed = (random16Bits() + random16Bits()).toString(16);
+    while (seed.length < 5) {
+        seed = "0" + seed;
+    }
+    return time + "-" + seed;
 };
 
 /**
@@ -399,14 +403,6 @@ export const hash = (str: string): string => {
     return (hash >>> 0).toString(16);
 };
 
-const idTypes = {
-    "int": (value) => value,
-    "float": (value) => value,
-    "uuid": uuid,
-    "timeId": () => timeid(),
-    "timeIdms": () => timeid(true)
-};
-
 /**
  * Generate a row ID given the primary key type.
  *
@@ -415,6 +411,14 @@ const idTypes = {
  * @returns {*}
  */
 export const generateID = (primaryKeyType: string, incrimentValue?: number): any => {
+    const idTypes = {
+        "int": (value) => value,
+        "float": (value) => value,
+        "uuid": uuid,
+        "timeId": () => timeid(),
+        "timeIdms": () => timeid(true)
+    }
+
     return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
 
@@ -554,8 +558,7 @@ export const crowDistance = (lat1: number, lon1: number, lat2: number, lon2: num
         Math.pow(Math.sin(dLat / 2), 2) +
         Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
         Math.pow(Math.sin(dLon / 2), 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return radius * c;
+    return radius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
 const objectPathCache: {
@@ -579,7 +582,7 @@ export const resolvePath = (pathQuery: string): string[] => {
     return objectPathCache[cacheKey];
 };
 
-export const getFnValue = (query: INanoSQLQuery, row: any, valueOrPath: string): any => {
+export const getFnValue = (row: any, valueOrPath: string): any => {
     return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : deepGet(valueOrPath, row);
 };
 

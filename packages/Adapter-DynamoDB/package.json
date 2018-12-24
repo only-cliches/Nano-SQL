@@ -1,0 +1,19 @@
+{
+  "name": "@nano-sql/adapter-dynamo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nano-sql/core": "^2.0.0-rc12",
+    "aws-sdk": "^2.382.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18"
+  }
+}

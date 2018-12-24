@@ -158,7 +158,7 @@ export declare const deg2rad: (deg: number) => number;
  */
 export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lon2: number, radius?: number) => number;
 export declare const resolvePath: (pathQuery: string) => string[];
-export declare const getFnValue: (query: INanoSQLQuery, row: any, valueOrPath: string) => any;
+export declare const getFnValue: (row: any, valueOrPath: string) => any;
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
  *
