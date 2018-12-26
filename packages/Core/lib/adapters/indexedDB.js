@@ -150,12 +150,13 @@ var IndexedDB = /** @class */ (function (_super) {
                 }
                 if (type === "offset") {
                     if (advancing) {
-                        cursor.advance(lowerLimit);
-                        count = lowerLimit;
+                        var lower = reverse ? lowerLimit + 1 : lowerLimit;
+                        cursor.advance(lower);
+                        count = lower;
                         advancing = false;
                         return;
                     }
-                    if (upperLimit > count) {
+                    if (reverse ? upperLimit >= count : upperLimit > count) {
                         onRow(cursor.value, count - offsetOrLow);
                     }
                 }

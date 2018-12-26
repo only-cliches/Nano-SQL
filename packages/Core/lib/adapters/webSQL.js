@@ -138,12 +138,14 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
             var nextBatch = function () {
                 var query = stmnt;
                 if (type === "offset") {
-                    if (limitOrHigh <= _batchSize) {
-                        query += " LIMIT " + limitOrHigh + " OFFSET " + offsetOrLow;
+                    var lower = reverse ? offsetOrLow + 1 : offsetOrLow;
+                    var higher = limitOrHigh;
+                    if (higher <= _batchSize) {
+                        query += " LIMIT " + higher + " OFFSET " + lower;
                     }
                     else {
-                        var actualLimit = Math.min(_batchSize, limitOrHigh - (batchNum * _batchSize));
-                        var actualOffset = offsetOrLow + (batchNum * _batchSize);
+                        var actualLimit = Math.min(_batchSize, higher - (batchNum * _batchSize));
+                        var actualOffset = lower + (batchNum * _batchSize);
                         if (actualLimit <= 0) {
                             complete();
                             return;

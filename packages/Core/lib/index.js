@@ -1169,6 +1169,7 @@ if (typeof window !== "undefined") {
     };
 }
 /*
+// used test browser adapters with live reload
 let errors = 0;
 console.log("Testing IndexedDB");
 new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {

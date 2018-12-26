@@ -41,7 +41,7 @@ describe("Adapter Tests", () => {
             done(new Error(err));
         });
     });
-/*
+
     it("WebSQL & IndexedDB", (done: MochaDone) => {
 
         webpack({
@@ -151,5 +151,5 @@ describe("Adapter Tests", () => {
             });
         });
     }).timeout(30000);
-*/
+
 });

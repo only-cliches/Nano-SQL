@@ -62,6 +62,9 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return _this.Deletes();
         }).then(function () {
             console.log("✓ Delete Tests Passed");
+            return _this.SecondayIndexes();
+        }).then(function () {
+            console.log("✓ Secondary Index Passed");
             console.log("✓ All Tests Passed!******");
         });
         /*.catch((e) => {
@@ -137,6 +140,149 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 adapter.dropTable("test", function () {
                     adapter.disconnect(res, rej);
+                }, rej);
+            });
+        });
+    };
+    nanoSQLAdapterTest.prototype.SecondayIndexes = function () {
+        var _a;
+        var adapter = new ((_a = this.adapter).bind.apply(_a, [void 0].concat(this.args)))();
+        var nSQL = new _1.nanoSQL();
+        var allRows = [];
+        return new Promise(function (res, rej) {
+            adapter.nSQL = nSQL;
+            adapter.connect("123", function () {
+                nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "name:string": {}
+                    },
+                    columns: [
+                        {
+                            key: "id",
+                            type: "int"
+                        },
+                        {
+                            key: "name",
+                            type: "string"
+                        }
+                    ],
+                    indexes: {
+                        "name": {
+                            id: "name",
+                            isArray: false,
+                            type: "string",
+                            path: ["name"],
+                            props: {}
+                        }
+                    },
+                    pkOffset: 0,
+                    actions: [],
+                    views: [],
+                    pkType: "int",
+                    pkCol: "id",
+                    isPkNum: true,
+                    ai: true
+                }, res, rej);
+            }, rej);
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                var titles = [];
+                for (var i = 0; i < 500; i++) {
+                    var num = (i + 1);
+                    if (num <= 9) {
+                        num = "00" + num;
+                    }
+                    else if (num <= 99) {
+                        num = "0" + num;
+                    }
+                    allRows.push({ id: i + 1, name: "Title " + num });
+                }
+                adapter.createIndex("_idx_test_name", "string", function () {
+                    utilities_1.chainAsync(allRows, function (row, i, done) {
+                        adapter.write("test", null, row, function () {
+                            adapter.addIndexValue("_idx_test_name", row.id, row.name, done, rej);
+                        }, rej);
+                    }).then(res);
+                }, rej);
+            });
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                // read secondary index
+                var pks = [];
+                adapter.readIndexKey("_idx_test_name", "Title 005", function (pk) {
+                    pks.push(pk);
+                }, function () {
+                    var condition = utilities_1._objectsEqual(pks, [5]);
+                    exports.myConsole.assert(condition, "Secondary Index Single Read");
+                    condition ? res() : rej({ e: [5], g: pks });
+                }, rej);
+            });
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                // read range secondary index
+                var pks = [];
+                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", false, function (pk, value) {
+                    pks.push(pk);
+                }, function () {
+                    var filterRows = allRows.filter(function (r) { return r.name >= "Title 004" && r.name <= "Title 020"; }).map(function (r) { return r.id; });
+                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    exports.myConsole.assert(condition, "Secondary Index Range Read");
+                    condition ? res() : rej({ e: filterRows, g: pks });
+                }, rej);
+            });
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                // read offset secondary index
+                var pks = [];
+                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, false, function (pk) {
+                    pks.push(pk);
+                }, function () {
+                    var filterRows = allRows.filter(function (r, i) { return i >= 10 && i < 30; }).map(function (r) { return r.id; });
+                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    exports.myConsole.assert(condition, "Secondary Index Offset Read");
+                    condition ? res() : rej({ e: filterRows, g: pks });
+                }, rej);
+            });
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                // read range secondary index
+                var pks = [];
+                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", true, function (pk, value) {
+                    pks.push(pk);
+                }, function () {
+                    var filterRows = allRows.filter(function (r) { return r.name >= "Title 004" && r.name <= "Title 020"; }).map(function (r) { return r.id; }).reverse();
+                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    exports.myConsole.assert(condition, "Secondary Index Range Read Reverse");
+                    condition ? res() : rej({ e: filterRows, g: pks });
+                }, rej);
+            });
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                // read offset secondary index
+                var pks = [];
+                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, true, function (pk) {
+                    pks.push(pk);
+                }, function () {
+                    var filterRows = allRows.filter(function (r, i) { return i >= 469 && i < 489; }).map(function (r) { return r.id; }).reverse();
+                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    exports.myConsole.assert(condition, "Secondary Index Offset Read Reverse");
+                    condition ? res() : rej({ e: filterRows, g: pks });
+                }, rej);
+            });
+        }).then(function () {
+            return new Promise(function (res, rej) {
+                // read offset secondary index
+                var pks = [];
+                adapter.deleteIndexValue("_idx_test_name", 10, "Title 010", function () {
+                    adapter.readIndexKeys("_idx_test_name", "all", undefined, undefined, false, function (pk) {
+                        pks.push(pk);
+                    }, function () {
+                        var filterRows = allRows.filter(function (r) { return r.id !== 10; }).map(function (r) { return r.id; });
+                        var condition = utilities_1._objectsEqual(pks, filterRows);
+                        exports.myConsole.assert(condition, "Secondary Index Remove Value");
+                        condition ? res() : rej({ e: filterRows, g: pks });
+                    }, rej);
                 }, rej);
             });
         });

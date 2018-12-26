@@ -62,8 +62,11 @@ export class nanoSQLAdapterTest {
             return this.Deletes();
         }).then(() => {
             console.log("✓ Delete Tests Passed");
+            return this.SecondayIndexes();
+        }).then(() => {
+            console.log("✓ Secondary Index Passed");
             console.log("✓ All Tests Passed!******");
-        });
+        })
         /*.catch((e) => {
             console.error("Test Failed", e);
         });*/
@@ -140,6 +143,151 @@ export class nanoSQLAdapterTest {
                 adapter.dropTable("test", () => {
                     adapter.disconnect(res, rej);
                 }, rej);
+            });
+        });
+    }
+
+    public SecondayIndexes() {
+        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: INanoSQLInstance = new nanoSQL();
+
+        let allRows: any[] = [];
+        return new Promise((res, rej) => {
+            adapter.nSQL = nSQL;
+            adapter.connect("123", () => {
+                nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    model: {
+                        "id:int": {ai: true, pk: true},
+                        "name:string": {}
+                    },
+                    columns: [
+                        {
+                            key: "id",
+                            type: "int"
+                        },
+                        {
+                            key: "name",
+                            type: "string"
+                        }
+                    ],
+                    indexes: {
+                        "name": {
+                            id: "name",
+                            isArray: false,
+                            type: "string",
+                            path: ["name"],
+                            props: {}
+                        }
+                    },
+                    pkOffset: 0,
+                    actions: [],
+                    views: [],
+                    pkType: "int",
+                    pkCol: "id",
+                    isPkNum: true,
+                    ai: true
+                }, res, rej);
+            }, rej);
+        }).then(() => {
+            return new Promise((res, rej) => {
+                let titles: any[] = [];
+                for (let i = 0; i < 500; i++) {
+                    let num: any = (i + 1);
+                    if (num <= 9) {
+                        num = "00" + num;
+                    } else if (num <= 99) {
+                        num = "0" + num;
+                    }
+                    allRows.push({id: i + 1, name: "Title " + num});
+                }
+                adapter.createIndex("_idx_test_name", "string", () => {
+                    chainAsync(allRows, (row, i, done) => {
+                        adapter.write("test", null, row, () => {
+                            adapter.addIndexValue("_idx_test_name", row.id, row.name, done, rej);
+                        }, rej);
+                    }).then(res);
+                }, rej);
+
+            });
+        }).then(() => {
+            return new Promise((res, rej) => {
+                // read secondary index
+                let pks: any[] = [];
+                adapter.readIndexKey("_idx_test_name", "Title 005", (pk) => {
+                    pks.push(pk);
+                }, () => {
+                    const condition = _objectsEqual(pks, [5]);
+                    myConsole.assert(condition, "Secondary Index Single Read");
+                    condition ? res() : rej({e: [5], g: pks});
+                }, rej);    
+            });
+        }).then(() => {
+            return new Promise((res, rej) => {
+                // read range secondary index
+                let pks: any[] = [];
+                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", false, (pk, value) => {
+                    pks.push(pk);
+                }, () => {
+                    const filterRows = allRows.filter(r => r.name >= "Title 004" && r.name <= "Title 020").map(r => r.id);
+                    const condition = _objectsEqual(pks, filterRows);
+                    myConsole.assert(condition, "Secondary Index Range Read");
+                    condition ? res() : rej({e: filterRows, g: pks});
+                }, rej); 
+            });
+        }).then(() => {
+            return new Promise((res, rej) => {
+                // read offset secondary index
+                let pks: any[] = [];
+                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, false, (pk) => {
+                    pks.push(pk);
+                }, () => {
+                    const filterRows = allRows.filter((r, i) => i >= 10 && i < 30).map(r => r.id);
+                    const condition = _objectsEqual(pks, filterRows);
+                    myConsole.assert(condition, "Secondary Index Offset Read");
+                    condition ? res() : rej({e: filterRows, g: pks});
+                }, rej); 
+            });
+        }).then(() => {
+            return new Promise((res, rej) => {
+                // read range secondary index
+                let pks: any[] = [];
+                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", true, (pk, value) => {
+                    pks.push(pk);
+                }, () => {
+                    const filterRows = allRows.filter(r => r.name >= "Title 004" && r.name <= "Title 020").map(r => r.id).reverse();
+                    const condition = _objectsEqual(pks, filterRows);
+                    myConsole.assert(condition, "Secondary Index Range Read Reverse");
+                    condition ? res() : rej({e: filterRows, g: pks});
+                }, rej); 
+            });
+        }).then(() => {
+            return new Promise((res, rej) => {
+                // read offset secondary index
+                let pks: any[] = [];
+                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, true, (pk) => {
+                    pks.push(pk);
+                }, () => {
+                    const filterRows = allRows.filter((r, i) => i >= 469 && i < 489).map(r => r.id).reverse();
+                    const condition = _objectsEqual(pks, filterRows);
+                    myConsole.assert(condition, "Secondary Index Offset Read Reverse");
+                    condition ? res() : rej({e: filterRows, g: pks});
+                }, rej); 
+            });
+        }).then(() => {
+            return new Promise((res, rej) => {
+                // read offset secondary index
+                let pks: any[] = [];
+                adapter.deleteIndexValue("_idx_test_name", 10, "Title 010", () => {
+                    adapter.readIndexKeys("_idx_test_name", "all", undefined, undefined, false, (pk) => {
+                        pks.push(pk);
+                    }, () => {
+                        const filterRows = allRows.filter(r => r.id !== 10).map(r => r.id);
+                        const condition = _objectsEqual(pks, filterRows);
+                        myConsole.assert(condition, "Secondary Index Remove Value");
+                        condition ? res() : rej({e: filterRows, g: pks});
+                    }, rej); 
+                }, rej);
+
             });
         });
     }

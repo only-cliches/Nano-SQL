@@ -23,6 +23,7 @@ export declare class nanoSQLAdapterTest {
     test(): Promise<void>;
     static newTable(adapter: INanoSQLAdapter, nSQL: INanoSQLInstance, tableName: string, tableConfig: INanoSQLTable, complete: () => void, error: () => void): void;
     Deletes(): Promise<{}>;
+    SecondayIndexes(): Promise<{}>;
     RangeReads(): Promise<{}>;
     RangeReadsUUID(): Promise<{}>;
     Writes(): Promise<{}>;

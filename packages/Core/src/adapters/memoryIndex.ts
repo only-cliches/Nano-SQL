@@ -97,7 +97,7 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
             if (idx === -1) {
                 complete();
             } else {
-                this.indexes[indexName][value].splice(key, 1);
+                this.indexes[indexName][value].splice(idx, 1);
                 this.write(indexName, value, {
                     id: value,
                     pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]

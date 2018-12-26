@@ -7,7 +7,6 @@ import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 import { _NanoSQLQueryBuilder } from "./query-builder";
-import { nanoSQLAdapterTest } from "./adapter-test";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -1312,7 +1311,9 @@ if (typeof window !== "undefined") {
         NanoSQL: nanoSQL
     };
 }
+
 /*
+// used test browser adapters with live reload
 let errors = 0;
 console.log("Testing IndexedDB");
 new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {

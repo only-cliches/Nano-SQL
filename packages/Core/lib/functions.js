@@ -286,7 +286,7 @@ exports.attachDefaultFns = function (nSQL) {
                                 next(null);
                                 return;
                             }
-                            // perform crow distance calculation on square selected group
+                            // perform crow distance calculation on pole locations
                             var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
                             var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
                             var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);

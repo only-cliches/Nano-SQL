@@ -1001,42 +1001,14 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         const newItem: updateIndex = { indexTable, value, pk, addToIndex, done, err, query: this.query, nSQL: this.nSQL };
 
         secondaryIndexQueue[this.nSQL.state.id + this.query.table].newItem(newItem, (item: updateIndex, done, error) => {
-            if (item.addToIndex) {
-                adapterFilters(item.nSQL, item.query).addIndexValue(item.indexTable, item.pk, item.value, () => {
-                    item.done();         
-                    done();
-                }, item.err);
-            } else {
-                adapterFilters(item.nSQL, item.query).deleteIndexValue(item.indexTable, item.pk, item.value, () => {
-                    item.done();
-                    done();
-                }, item.err);
-            }
-            /*
-            const blankIndex = (id: any) => ({ id: id, pks: [] });
-            adapterFilters(item.nSQL, item.query).read(item.indexTable, item.value, (idxRow) => {
-                const idxRowSet = _maybeAssign(idxRow || blankIndex(item.value));
-                const position = idxRowSet.pks.indexOf(item.pk);
-                if (item.addToIndex) {
-                    if (position === -1) {
-                        idxRowSet.pks.push(item.pk);
-                    }
-                } else {
-                    if (position === -1) {
-                        item.done();
-                        done();
-                        return;
-                    }
-                    idxRowSet.pks.splice(position, 1);
-                }
-                adapterFilters(item.nSQL, item.query).write(item.indexTable, item.value, idxRowSet, () => {
-                    item.done();
-                    done();
-                }, (err) => {
-                    item.err();
-                    if (error) error(err);
-                });
-            }, item.err);*/
+            const fn = item.addToIndex ? adapterFilters(item.nSQL, item.query).addIndexValue : adapterFilters(item.nSQL, item.query).deleteIndexValue;
+            fn(item.indexTable, item.pk, item.value, () => {
+                item.done();
+                done();
+            }, (err) => {
+                item.err(err);
+                done();
+            });
         });
     }
 
@@ -1391,31 +1363,6 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             if (error && error.length) return Promise.reject(error);
 
             let addTables = [table.name].concat(Object.keys(newConfigs[table.name].indexes));
-            /*
-            // create secondary index tables
-            Object.keys(newConfigs[table.name].indexes).forEach((k, i) => {
-                const index = newConfigs[table.name].indexes[k];
-                const indexName = "_idx_" + table.name + "_" + index.id;
-                addTables.push(indexName);
-                newConfigs[indexName] = {
-                    model: {
-                        [`id:${index.type || "string"}`]: {pk: true},
-                        [`pks:${newConfigs[table.name].pkType}[]`]: {}
-                    },
-                    columns: [
-                        { key: "id", type: index.type || "string" },
-                        { key: "pks", type: `${newConfigs[table.name].pkType}[]` }
-                    ],
-                    actions: [],
-                    views: [],
-                    indexes: {},
-                    isPkNum: ["number", "int", "float"].indexOf(index.type || "string") !== -1,
-                    pkType: index.type,
-                    pkCol: "id",
-                    pkOffset: index.props.offset || 0,
-                    ai: false
-                };
-            });*/
 
             secondaryIndexQueue[this.nSQL.state.id + table.name] = new _NanoSQLQueue();
 
@@ -1542,12 +1489,16 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             this.setMapReduce(undefined, this.nSQL.tables[this.query.table as string]);
 
             allAsync(tablesToDrop, (dropTable, i, next, err) => {
-                adapterFilters(this.nSQL, this.query).disconnectTable(dropTable, () => {
-                    adapterFilters(this.nSQL, this.query).dropTable(dropTable, () => {
-                        delete this.nSQL.tables[dropTable];
-                        next(dropTable);
+                if (i === 0) {
+                    adapterFilters(this.nSQL, this.query).disconnectTable(dropTable, () => {
+                        adapterFilters(this.nSQL, this.query).dropTable(dropTable, () => {
+                            delete this.nSQL.tables[dropTable];
+                            next(dropTable);
+                        }, err);
                     }, err);
-                }, err);
+                } else {
+                    adapterFilters(this.nSQL, this.query).deleteIndex(dropTable, next as any, err);
+                }
             }).then(() => {
                 complete();
                 this.updateMRTimer();

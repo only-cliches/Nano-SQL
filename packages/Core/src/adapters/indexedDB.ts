@@ -171,13 +171,14 @@ export class IndexedDB extends NanoSQLMemoryIndex {
 
                 if (type === "offset") {
                     if (advancing) {
-                        cursor.advance(lowerLimit);
-                        count = lowerLimit;
+                        const lower = reverse ? lowerLimit + 1 : lowerLimit;
+                        cursor.advance(lower);
+                        count = lower;
                         advancing = false;
                         return;
                     }
 
-                    if (upperLimit > count) {
+                    if (reverse ? upperLimit >= count : upperLimit > count) {
                         onRow(cursor.value, count - offsetOrLow);
                     }
                 } else {

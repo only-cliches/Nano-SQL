@@ -288,17 +288,18 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                     allAsync(rowsToRead, (rowData: ICrowIndexQuery, i, next, err) => {
 
                         adapterFilters(query.parent, query).read(query.table as string, rowData.key, (row) => {
-                            if (!row) { 
+                            if (!row) {
                                 next(null);
                                 return;
                             }
+
                             if (!poleQuery) {
                                 onRow(row, i);
                                 next(null);
                                 return;
                             }
 
-                            // perform crow distance calculation on square selected group
+                            // perform crow distance calculation on pole locations
                             const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
                             const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
 

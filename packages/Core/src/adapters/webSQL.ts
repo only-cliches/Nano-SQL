@@ -132,11 +132,13 @@ export const SQLiteAbstract = (
             const nextBatch = () => {
                 let query = stmnt;
                 if (type === "offset") {
-                    if (limitOrHigh <= _batchSize) {
-                        query += ` LIMIT ${limitOrHigh} OFFSET ${offsetOrLow}`;
+                    const lower = reverse ? offsetOrLow + 1 : offsetOrLow;
+                    const higher = limitOrHigh;
+                    if (higher <= _batchSize) {
+                        query += ` LIMIT ${higher} OFFSET ${lower}`;
                     } else {
-                        const actualLimit = Math.min(_batchSize, limitOrHigh - (batchNum * _batchSize));
-                        const actualOffset = offsetOrLow + (batchNum * _batchSize);
+                        const actualLimit = Math.min(_batchSize, higher - (batchNum * _batchSize));
+                        const actualOffset = lower + (batchNum * _batchSize);
                         if (actualLimit <= 0) {
                             complete();
                             return;
