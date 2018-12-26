@@ -1,7 +1,8 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
-import { noop, deepFreeze, generateID, binarySearch, _assign, cast } from "../utilities";
+import { noop, deepFreeze, generateID, binarySearch, _assign, cast, blankTableDefinition } from "../utilities";
+import { NanoSQLMemoryIndex } from "./memoryIndex";
 
-export class SyncStorage implements INanoSQLAdapter {
+export class SyncStorage  extends NanoSQLMemoryIndex {
 
     plugin: INanoSQLPlugin = {
         name: "Sync Storage Adapter",
@@ -26,10 +27,16 @@ export class SyncStorage implements INanoSQLAdapter {
         [tableName: string]: number;
     };
 
+    _tableConfigs: {
+        [tableName: string]: INanoSQLTable;
+    }
+
     constructor(public useLS?: boolean) {
+        super(true);
         this._index = {};
         this._rows = {};
         this._ai = {};
+        this._tableConfigs = {};
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
@@ -37,9 +44,10 @@ export class SyncStorage implements INanoSQLAdapter {
         complete();
     }
 
-    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
         this._index[tableName] = [];
         this._rows[tableName] = {};
+        this._tableConfigs[tableName] = tableData;
         if (this.useLS) {
             const index = localStorage.getItem(this._id + "->" + tableName + "_idx");
             if (index) {
@@ -78,19 +86,19 @@ export class SyncStorage implements INanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
 
-        pk = pk || generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
+        pk = pk || generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
 
         if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
 
-        if (this.nSQL.tables[table].ai) {
+        if (this._tableConfigs[table].ai) {
             this._ai[table] = Math.max(this._ai[table] || 0, pk);
         }
 
         if (this._index[table].indexOf(pk) === -1) {
-            const loc = binarySearch(this._index[table], pk);
+            const loc = binarySearch(this._index[table], pk, false);
             this._index[table].splice(loc, 0, pk);
             if (this.useLS) {
                 localStorage.setItem(this._id + "->" + table + "_idx", JSON.stringify(this._index[table]));
@@ -98,14 +106,14 @@ export class SyncStorage implements INanoSQLAdapter {
             }
         }
 
-        row[this.nSQL.tables[table].pkCol] = pk;
+        row[this._tableConfigs[table].pkCol] = pk;
 
         if (this.useLS) {
             localStorage.setItem(this._id + "->" + table + "__" + pk, JSON.stringify(row));
-            complete(row[this.nSQL.tables[table].pkCol]);
+            complete(row[this._tableConfigs[table].pkCol]);
         } else {
             this._rows[table][pk as any] = deepFreeze(row);
-            complete(row[this.nSQL.tables[table].pkCol]);
+            complete(row[this._tableConfigs[table].pkCol]);
         }
     }
 
@@ -135,8 +143,8 @@ export class SyncStorage implements INanoSQLAdapter {
     }
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
-        const doCheck = offsetOrLow || limitOrHigh;
-        const range: any[] = {
+
+        let range: any[] = {
             "range":  [offsetOrLow, limitOrHigh],
             "offset": [offsetOrLow, offsetOrLow + limitOrHigh],
             "all": []
@@ -146,11 +154,13 @@ export class SyncStorage implements INanoSQLAdapter {
         const idxArr: any[] = ((): any[] => {
             switch(type) {
                 case "all":
+                    return this._index[table].slice();
                 case "offset":
-                    return type === "all" ? this._index[table].slice() : this._index[table].slice(range[0], range[1]);
+                    const l = this._index[table].length - 1;
+                    return reverse ? this._index[table].slice(l - range[1], l - range[0]) : this._index[table].slice(range[0], range[1]);
                 case "range":
-                    let lowIdx = binarySearch(this._index[table], range[0]);
-                    let highIdx = binarySearch(this._index[table], range[1]);
+                    let lowIdx = binarySearch(this._index[table], range[0], false);
+                    let highIdx = binarySearch(this._index[table], range[1], false);
 
                     while(this._index[table][highIdx] > range[1]) {
                         highIdx--;
@@ -166,6 +176,7 @@ export class SyncStorage implements INanoSQLAdapter {
             return [];
         })();
 
+
         if (reverse) {
             idxArr.reverse();
         }
@@ -178,15 +189,14 @@ export class SyncStorage implements INanoSQLAdapter {
             }
         });
         
-
         complete();
     }
 
-    getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
         complete(this._index[table].slice());
     }
 
-    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
         complete(this._index[table].length);
     }
 }

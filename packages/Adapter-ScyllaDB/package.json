@@ -1,0 +1,24 @@
+{
+  "name": "@nano-sql/adapter-scylladb",
+  "version": "2.0.0",
+  "description": "",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "ts-node src/test",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cassandra-driver": "^4.0.0"
+  },
+  "peerDependencies": {
+    "@nano-sql/core": "2.X"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
+  }
+}

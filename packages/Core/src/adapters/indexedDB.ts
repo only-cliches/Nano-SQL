@@ -1,7 +1,8 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
 import { hash, generateID, cast } from "../utilities";
+import { NanoSQLMemoryIndex } from "./memoryIndex";
 
-export class IndexedDB implements INanoSQLAdapter {
+export class IndexedDB extends NanoSQLMemoryIndex {
 
     plugin: INanoSQLPlugin = {
         name: "IndexedDB Adapter",
@@ -15,10 +16,15 @@ export class IndexedDB implements INanoSQLAdapter {
     private _ai: {
         [key: string]: number;
     };
+    private _tableConfigs: {
+        [tableName: string]: INanoSQLTable;
+    }
 
     constructor(public version?: number) {
+        super();
         this._db = {};
         this._ai = {};
+        this._tableConfigs = {};
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
@@ -26,10 +32,10 @@ export class IndexedDB implements INanoSQLAdapter {
         complete();
     }
 
-    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
 
         let version = 1;
-
+        this._tableConfigs[tableName] = tableData;
         const dataModelHash = hash(JSON.stringify(tableData.columns));
         if (this.version) { // manually handled by developer
             version = this.version;
@@ -98,7 +104,7 @@ export class IndexedDB implements INanoSQLAdapter {
     }
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
-        pk = pk || generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
+        pk = pk || generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
 
         if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
@@ -107,12 +113,12 @@ export class IndexedDB implements INanoSQLAdapter {
 
         this._ai[table] = Math.max(pk, this._ai[table]);
 
-        if (this.nSQL.tables[table].ai) {
+        if (this._tableConfigs[table].ai) {
             this._ai[table] = cast("int", Math.max(this._ai[table] || 0, pk));
             localStorage.setItem(this._id + "_" + table + "_idb_ai", String(this._ai[table]));
         }
 
-        row[this.nSQL.tables[table].pkCol] = pk;
+        row[this._tableConfigs[table].pkCol] = pk;
 
         this.store(table, "readwrite", (transaction, store) => {
             try {
@@ -184,13 +190,13 @@ export class IndexedDB implements INanoSQLAdapter {
 
     }
 
-    getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
         let index: any[] = [];
         this.store(table, "readonly", (tr, store) => {
             store.openCursor().onsuccess = (event: any) => {
                 const cursor: IDBCursorWithValue = event.target.result;
                 if (cursor) {
-                    index.push(cursor.value[this.nSQL.tables[table].pkCol]);
+                    index.push(cursor.value[this._tableConfigs[table].pkCol]);
                     cursor.continue();
                 } else {
                     complete(index);
@@ -200,7 +206,7 @@ export class IndexedDB implements INanoSQLAdapter {
 
     }
 
-    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
         let count = 0;
         this.store(table, "readonly", (tr, store) => {
             const ctRequest = tr.objectStore(table).count();

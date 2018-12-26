@@ -49,7 +49,7 @@ NanoSQL can save data to many different places, depending on the browser or envi
 
 1. **Included In The Box**
     - Memory
-    - Level DB
+    - Rocks DB
     - Indexed DB
     - WebSQL
     - Local Storage
@@ -84,7 +84,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc13/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc15/dist/nano-sql.min.js"></script>
 ```
 
 ## Important
@@ -101,7 +101,7 @@ If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](
 - [x] Adapter Tests
 - [ ] 2.0 documentation
 - [ ] 2.0 release
-- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo Adapters
+- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters
 - [ ] GraphQL Support
 - [ ] Net Plugin (Offline Syncing)
 - [ ] Search Plugin

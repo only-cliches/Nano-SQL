@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual, titleCase, getWeekOfYear, throttle } from "./utilities";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual, titleCase, getWeekOfYear, throttle, adapterFilters } from "./utilities";
 import { INanoSQLConfig, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, INanoSQLGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, mapReduceFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _NanoSQLQuery } from "./query";
@@ -7,6 +7,7 @@ import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 import { _NanoSQLQueryBuilder } from "./query-builder";
+import { nanoSQLAdapterTest } from "./adapter-test";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -29,6 +30,10 @@ export class nanoSQL implements INanoSQLInstance {
     public functions: {
         [fnName: string]: INanoSQLFunction;
     };
+
+    public indexes: {
+        [indexName: string]: INanoSQLIndex;
+    }
 
     public planetRadius: number = 6371;
 
@@ -93,6 +98,7 @@ export class nanoSQL implements INanoSQLInstance {
         this.tables = {};
         this._queryCache = {};
         this.filters = {};
+        this.indexes = {};
 
         this.indexTypes = {
             string: (value: any) => {
@@ -427,7 +433,7 @@ export class nanoSQL implements INanoSQLInstance {
 
                 this._initPlugins(this.config).then(() => {
                     this.adapter.nSQL = this;
-                    this.adapter.connect(this.state.id, res, rej);
+                    adapterFilters(this).connect(this.state.id, res, rej);
                 }).catch(rej);
 
                 if (this.config.planetRadius) {
@@ -1094,7 +1100,7 @@ export class nanoSQL implements INanoSQLInstance {
         const exportTables = Object.keys(this.tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);
 
         return chainAsync(exportTables, (table: string, i, nextTable, err) => {
-            this.adapter.readMulti(table, "all", undefined, undefined, false, (row) => {
+            adapterFilters(this).readMulti(table, "all", undefined, undefined, false, (row) => {
                 onRow(table, row);
             }, nextTable, err || noop);
         });
@@ -1118,7 +1124,7 @@ export class nanoSQL implements INanoSQLInstance {
                     rowErr("No primary key found, can't import: " + JSON.stringify(row));
                     return;
                 }
-                this.adapter.write(table, row[pk], row, (newRow) => {
+                adapterFilters(this).write(table, row[pk], row, (newRow) => {
                     nextRow();
                     progress++;
                     if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
@@ -1130,7 +1136,7 @@ export class nanoSQL implements INanoSQLInstance {
     public disconnect() {
         return new Promise((res, rej) => {
             this.doFilter<disconnectFilter, undefined>("disconnect", {}, () => {
-                this.adapter.disconnect(res, rej);
+                adapterFilters(this).disconnect(res, rej);
             }, rej);
         });
     }
@@ -1306,3 +1312,18 @@ if (typeof window !== "undefined") {
         NanoSQL: nanoSQL
     };
 }
+/*
+let errors = 0;
+console.log("Testing IndexedDB");
+new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {
+    console.log("Testing WebSQL");
+    new nanoSQLAdapterTest(WebSQL, []).test().then(() => {
+        console.log("Tests Complete");
+    }).catch((err) => {
+        console.error(err);
+        errors++;
+    });
+}).catch((err) => {
+    console.error(err);
+    errors++;
+});*/

@@ -1,5 +1,6 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
-import { allAsync, _NanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan } from "../utilities";
+import { allAsync, _NanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan, blankTableDefinition } from "../utilities";
+import { NanoSQLMemoryIndex } from "./memoryIndex";
 
 declare const global: any;
 
@@ -17,7 +18,7 @@ export const rimraf = (dir_path: string) => {
     }
 };
 
-export class RocksDB implements INanoSQLAdapter {
+export class RocksDB extends NanoSQLMemoryIndex {
 
     plugin: INanoSQLPlugin = {
         name: "RocksDB Adapter",
@@ -35,11 +36,17 @@ export class RocksDB implements INanoSQLAdapter {
         [key: string]: number;
     };
 
+    private _tableConfigs: {
+        [tableName: string]: INanoSQLTable;
+    }
+
     constructor(
         public path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => { lvld: any, args?: any })
     ) {
+        super();
         this._levelDBs = {};
         this._ai = {};
+        this._tableConfigs = {};
 
         if (typeof this.path === "string" || typeof this.path === "undefined") {
             this._lvlDown = ((dbId: string, tableName: string, tableData: INanoSQLTable) => {
@@ -67,19 +74,11 @@ export class RocksDB implements INanoSQLAdapter {
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
         const tableName = "_ai_store_";
-        const lvlDown = this._lvlDown(this._id, tableName, {
-            model: {},
-            columns: [],
-            indexes: {},
-            pkOffset: 0,
-            actions: [],
-            views: [],
-            pkType: "string",
-            pkCol: "",
-            isPkNum: true,
-            ai: true
+        const lvlDownAI = this._lvlDown(this._id, tableName, {
+            ...blankTableDefinition,
+            pkType: "string"
         });
-        global._levelup(lvlDown.lvld, lvlDown.args, (err, db) => {
+        global._levelup(lvlDownAI.lvld, lvlDownAI.args, (err, db) => {
             if (err) {
                 error(err);
                 return;
@@ -89,12 +88,13 @@ export class RocksDB implements INanoSQLAdapter {
         });
     }
 
-    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
 
         if (this._levelDBs[tableName]) {
             error(new Error(`Table ${tableName} already exists and is open!`));
             return;
         }
+        this._tableConfigs[tableName] = tableData;
 
         const lvlDown = this._lvlDown(this._id, tableName, tableData);
         global._levelup(lvlDown.lvld, lvlDown.args, (err, db) => {
@@ -111,45 +111,28 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-
         this._levelDBs[table].close((err) => {
             if (err) {
                 error(err);
-            } else {
-                delete this._levelDBs[table];
-                try {
-                    rimraf(global._path.join((this.path || "."), "db_" + this._id, table));
-                } catch (e) {
-
-                }
-                complete();
+                return;
             }
+            delete this._levelDBs[table];
+            complete();
         });
     }
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
-
-        const del = new _NanoSQLQueue((item, i , next, err) => {
-            // remove all records
-            this._levelDBs[table].del(item).then(next).catch(err);
-        }, error, () => {
-            // delete auto increment
-            this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(() => {
-                // disconnect
-                this.disconnectTable(table, complete, error);
-            }).catch(error);
-        });
-        this._levelDBs[table].createReadStream({ values: false })
-            .on("data", function (data) {
-                del.newItem(data);
-            })
-            .on("error", function (err) {
-                error(err);
-                del.finished();
-            })
-            .on("end", function () {
-                del.finished();
-            });
+        this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(() => {
+            this.disconnectTable(table, () => {
+                try {
+                    rimraf(global._path.join((this.path || "."), "db_" + this._id, table));
+                } catch (e) {
+                    error(e);
+                    return;
+                }
+                complete();
+            }, error);
+        }).catch(error);
     }
 
     disconnect(complete: () => void, error: (err: any) => void) {
@@ -159,23 +142,23 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
-        pk = pk || generateID(this.nSQL.tables[table].pkType, this._ai[table] + 1);
+        pk = pk || generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
         if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
 
-        if (this.nSQL.tables[table].ai) {
+        if (this._tableConfigs[table].ai) {
             this._ai[table] = Math.max(pk, this._ai[table]);
         }
 
-        row[this.nSQL.tables[table].pkCol] = pk;
+        row[this._tableConfigs[table].pkCol] = pk;
 
         this._levelDBs[table].put(this._encodePk(table, pk), row, (err) => {
             if (err) {
                 error(err);
             } else {
-                if (this.nSQL.tables[table].ai) {
+                if (this._tableConfigs[table].ai) {
                     this._levelDBs["_ai_store_"].put(Buffer.from(table, "utf-8"), {ai: this._ai[table]}).then(() => {
                         complete(pk);
                     }).catch(error);
@@ -207,16 +190,17 @@ export class RocksDB implements INanoSQLAdapter {
                 reverse: reverse
             } : type === "offset" ? {
                 reverse: reverse,
-                limit: type === "offset" ? (offsetOrLow + limitOrHigh) : undefined
+                limit: type === "offset" ? (offsetOrLow + limitOrHigh + (reverse ? 1 : 0)) : undefined
             } : {
                 reverse: reverse,
             })
             .on("data", (data) => {
-                i++;
-                if (type === "offset" && i < offsetOrLow + 1) {
+                if (type === "offset" && (reverse ? i < offsetOrLow + 1 : i < offsetOrLow)) {
+                    i++;
                     return;
                 }
                 onRow(data, i);
+                i++;
             })
             .on("end", () => {
                 complete();
@@ -226,7 +210,7 @@ export class RocksDB implements INanoSQLAdapter {
 
     _writeNumberBuffer(table: string, num: number): any {
 
-        switch (this.nSQL.tables[table].pkType) {
+        switch (this._tableConfigs[table].pkType) {
             case "int":
                 return num;
             // case "float":
@@ -238,7 +222,7 @@ export class RocksDB implements INanoSQLAdapter {
 
     _readNumberBuffer(table: string, buff: any): number {
 
-        switch (this.nSQL.tables[table].pkType) {
+        switch (this._tableConfigs[table].pkType) {
             case "int":
                 return buff;
             // case "float":
@@ -250,11 +234,11 @@ export class RocksDB implements INanoSQLAdapter {
     }
 
     _encodePk(table: string, pk: any): any {
-        return this.nSQL.tables[table].isPkNum ? this._writeNumberBuffer(table, pk) : Buffer.from(pk, "utf-8");
+        return this._tableConfigs[table].isPkNum ? this._writeNumberBuffer(table, pk) : Buffer.from(pk, "utf-8");
     }
 
     _decodePK(table: string, pk: any): any {
-        return this.nSQL.tables[table].isPkNum ? this._readNumberBuffer(table, pk) : new Buffer(pk).toString("utf-8");
+        return this._tableConfigs[table].isPkNum ? this._readNumberBuffer(table, pk) : new Buffer(pk).toString("utf-8");
     }
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void) {
@@ -267,7 +251,7 @@ export class RocksDB implements INanoSQLAdapter {
         });
     }
 
-    getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
         let index: any[] = [];
         this._levelDBs[table]
             .createKeyStream()
@@ -280,7 +264,7 @@ export class RocksDB implements INanoSQLAdapter {
             .on("error", error);
     }
 
-    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
 
         let count = 0;
         this._levelDBs[table]

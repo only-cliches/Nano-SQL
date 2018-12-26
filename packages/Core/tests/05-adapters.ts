@@ -4,7 +4,7 @@ import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL } from "../src";
 import { INanoSQLInstance } from "../src/interfaces";
-import { TestAdapter } from "./adapter-test";
+import { nanoSQLAdapterTest } from "../src/adapter-test";
 import { SyncStorage } from "../src/adapters/syncStorage";
 import { RocksDB, rimraf } from "../src/adapters/rocksDB";
 
@@ -24,22 +24,24 @@ declare const RSE: any;
 
 describe("Adapter Tests", () => {
     it("Sync Storage", (done: MochaDone) => {
-        new TestAdapter(SyncStorage, []).test().then(() => {
+        new nanoSQLAdapterTest(SyncStorage, []).test().then(() => {
             done();
         }).catch((err) => {
+            console.log(err);
             done(new Error(err));
         });
     });
     it("RocksDB Storage", (done: MochaDone) => {
-        new TestAdapter(RocksDB, []).test().then(() => {
+        new nanoSQLAdapterTest(RocksDB, []).test().then(() => {
             rimraf(path.join(__dirname, "../", "db_123"));
             done();
         }).catch((err) => {
+            console.log(err);
             rimraf(path.join(__dirname, "../", "db_123"));
             done(new Error(err));
         });
     });
-
+/*
     it("WebSQL & IndexedDB", (done: MochaDone) => {
 
         webpack({
@@ -149,5 +151,5 @@ describe("Adapter Tests", () => {
             });
         });
     }).timeout(30000);
-
+*/
 });

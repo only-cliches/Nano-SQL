@@ -18,7 +18,7 @@ const options = {
         umdNamedDefine: true
     },
     externals: [
-        nodeExternals()
+        // nodeExternals()
     ],
     devServer: {
         historyApiFallback: true,

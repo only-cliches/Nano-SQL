@@ -15,10 +15,28 @@
  *
  */
 
-import { myConsole, equals } from "../tests/utils";
-import { chainAsync, uuid } from "./utilities";
-import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTableConfig, INanoSQLTable } from "./interfaces";
+import { chainAsync, uuid, _objectsEqual } from "./utilities";
+import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTable } from "./interfaces";
 import { nanoSQL } from ".";
+
+export const myConsole = Object.create(console, {
+    assert: {
+        value: function assert(assertion, message, ...args) {
+            if (typeof window === "undefined") {
+                try {
+                    console.assert(assertion, message, ...args);
+                } catch (err) {
+                    console.error(err.stack);
+                }
+            } else {
+                console.assert(assertion, message, ...args);
+            }
+        },
+        configurable: true,
+        enumerable: true,
+        writable: true,
+    },
+});
 
 export class nanoSQLAdapterTest {
 
@@ -31,20 +49,20 @@ export class nanoSQLAdapterTest {
 
     public test() {
         return this.PrimaryKeys().then(() => {
-            // console.log("✓ Primary Key Tests Passed");
+            console.log("✓ Primary Key Tests Passed");
             return this.Writes();
         }).then(() => {
-            // console.log("✓ Write Tests Passed");
+            console.log("✓ Write Tests Passed");
             return this.RangeReads();
         }).then(() => {
-            // console.log("✓ Range Read Tests Passed (number)");
+            console.log("✓ Range Read Tests Passed (number)");
             return this.RangeReadsUUID();
         }).then(() => {
-            // console.log("✓ Range Read Tests Passed (uuid)");
+            console.log("✓ Range Read Tests Passed (uuid)");
             return this.Deletes();
         }).then(() => {
-            //console.log("✓ Delete Tests Passed");
-            // console.log("✓ All Tests Passed!******");
+            console.log("✓ Delete Tests Passed");
+            console.log("✓ All Tests Passed!******");
         });
         /*.catch((e) => {
             console.error("Test Failed", e);
@@ -53,7 +71,7 @@ export class nanoSQLAdapterTest {
 
     public static newTable(adapter: INanoSQLAdapter, nSQL: INanoSQLInstance, tableName: string, tableConfig: INanoSQLTable, complete: () => void, error: () => void) {
         adapter.nSQL = nSQL;
-        adapter.createAndInitTable(tableName, tableConfig, () => {
+        adapter.createTable(tableName, tableConfig, () => {
             nSQL.tables[tableName] = tableConfig;
             complete();
         }, error);
@@ -111,9 +129,9 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test", "all", undefined, undefined, false, (row, idx) => {
                         rows.push(row);
                     }, () => {
-                        const condition = equals(rows, allRows.filter(r => r.id !== 3));
+                        const condition = _objectsEqual(rows, allRows.filter(r => r.id !== 3));
                         myConsole.assert(condition, "Delete Test");
-                        condition ? res() : rej(rows);
+                        condition ? res() : rej({e: allRows.filter(r => r.id !== 3), g: rows });
                     }, rej);
                 }, rej);
             });
@@ -181,9 +199,35 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     const filterRows = allRows.filter(r => r.id >= 10 && r.id <= 20).reverse();
-                    const condition = equals(rows, filterRows);
-                    myConsole.assert(condition, "Select Range Test 1");
-                    condition ? res() : rej(rows);
+                    const condition = _objectsEqual(rows, filterRows);
+                    myConsole.assert(condition, "Select Range Test (Reverse)");
+                    condition ? res() : rej({e: filterRows, g: rows});
+                }, rej);
+            });
+        }).then(() => {
+            // Select a range of rows using a range of the index with reverse
+            return new Promise((res, rej) => {
+                let rows: any[] = [];
+                adapter.readMulti("test", "offset", 10, 20, true, (row, idx) => {
+                    rows.push(row);
+                }, () => {
+                    const filterRows = allRows.filter((r, i) => i >= 499 - 30 && i < 499 - 10).reverse();
+                    const condition = _objectsEqual(rows, filterRows);
+                    myConsole.assert(condition, "Select Offset Test (Reverse)");
+                    condition ? res() : rej({e: filterRows, g: rows});
+                }, rej);
+            });
+        }).then(() => {
+            // Select a range of rows using a range of the index with reverse
+            return new Promise((res, rej) => {
+                let rows: any[] = [];
+                adapter.readMulti("test", "all", undefined, undefined, true, (row, idx) => {
+                    rows.push(row);
+                }, () => {
+                    const filterRows = allRows.slice().reverse();
+                    const condition = _objectsEqual(rows, filterRows);
+                    myConsole.assert(condition, "Select All Rows Test (reverse)");
+                    condition ? res() : rej({e: filterRows, g: rows});
                 }, rej);
             });
         }).then(() => {
@@ -194,9 +238,9 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     const filterRows = allRows.filter(r => r.id >= 10 && r.id <= 20);
-                    const condition = equals(rows, filterRows);
-                    myConsole.assert(condition, "Select Range Test 1");
-                    condition ? res() : rej(rows);
+                    const condition = _objectsEqual(rows, filterRows);
+                    myConsole.assert(condition, "Select Range Test 2");
+                    condition ? res() : rej({e: filterRows, g: rows});
                 }, rej);
             });
         }).then(() => {
@@ -206,7 +250,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "offset", 10, 20, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = equals(rows, allRows.filter(r => r.id > 10 && r.id <= 30));
+                    const condition = _objectsEqual(rows, allRows.filter(r => r.id > 10 && r.id <= 30));
                     myConsole.assert(condition, "Select Offset / Limit Test");
                     condition ? res() : rej({g: rows, e: allRows.filter(r => r.id > 10 && r.id <= 30)});
                 }, rej);
@@ -218,16 +262,16 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "all", undefined, undefined, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = equals(rows, allRows);
+                    const condition = _objectsEqual(rows, allRows);
                     myConsole.assert(condition, "Select Entire Table");
-                    condition ? res() : rej(rows);
+                    condition ? res() : rej({e: allRows, g: rows});
                 }, rej);
             });
         }).then(() => {
             // Select index
             return new Promise((res, rej) => {
-                adapter.getIndex("test", (idx) => {
-                    const condition = equals(idx, index);
+                adapter.getTableIndex("test", (idx) => {
+                    const condition = _objectsEqual(idx, index);
                     myConsole.assert(condition, "Select Index Test");
                     condition ? res() : rej({
                         e: index,
@@ -238,10 +282,10 @@ export class nanoSQLAdapterTest {
         }).then(() => {
             // Select index length
             return new Promise((res, rej) => {
-                adapter.getNumberOfRecords("test", (idx) => {
+                adapter.getTableIndexLength("test", (idx) => {
                     const condition = idx === 500;
                     myConsole.assert(condition, "Select Index Length Test");
-                    condition ? res() : rej(idx);
+                    condition ? res() : rej({e: 500, g: idx});
                 }, rej);
             });
         }).then(() => {
@@ -310,7 +354,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "offset", 10, 20, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = equals(rows, allRows.filter((r, i) => i >= 10 && i < 30));
+                    const condition = _objectsEqual(rows, allRows.filter((r, i) => i >= 10 && i < 30));
                     myConsole.assert(condition, "Select Range Test 2");
                     condition ? res() : rej({g: rows, e: allRows.filter((r, i) => i >= 10 && i < 30)});
                 }, rej);
@@ -322,7 +366,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "range", allRows[10].id, allRows[20].id, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = equals(rows, allRows.filter(r => r.id >= allRows[10].id && r.id <= allRows[20].id));
+                    const condition = _objectsEqual(rows, allRows.filter(r => r.id >= allRows[10].id && r.id <= allRows[20].id));
                     myConsole.assert(condition, "Select Range Test (Primary Key)");
                     condition ? res() : rej({
                         g: rows,
@@ -339,16 +383,16 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     // console.timeEnd("READ");
-                    const condition = equals(rows, allRows);
+                    const condition = _objectsEqual(rows, allRows);
                     myConsole.assert(condition, "Select Entire Table Test");
-                    condition ? res() : rej(rows);
+                    condition ? res() : rej({e: allRows, g: rows});
                 }, rej);
             });
         }).then(() => {
             // Select index
             return new Promise((res, rej) => {
-                adapter.getIndex("test", (idx) => {
-                    const condition = equals(idx, index);
+                adapter.getTableIndex("test", (idx) => {
+                    const condition = _objectsEqual(idx, index);
                     myConsole.assert(condition, "Select Index Test");
                     condition ? res() : rej({
                         e: index,
@@ -359,10 +403,10 @@ export class nanoSQLAdapterTest {
         }).then(() => {
             // Select index length
             return new Promise((res, rej) => {
-                adapter.getNumberOfRecords("test", (len) => {
+                adapter.getTableIndexLength("test", (len) => {
                     const condition = len === 500;
                     myConsole.assert(condition, "Select Index Length Test");
-                    condition ? res() : rej(len);
+                    condition ? res() : rej({e: 500, g: len});
                 }, rej);
             });
         }).then(() => {
@@ -416,9 +460,10 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 adapter.write("test", null, { name: "Test", posts: [1, 2]}, (pk) => {
                     adapter.read("test", pk, (row) => {
-                        const condition = equals(row, {name: "Test", id: 1, posts: [1, 2]});
+                        const expectRow = {name: "Test", id: 1, posts: [1, 2]};
+                        const condition = _objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Insert Test");
-                        condition ? res() : rej(row);
+                        condition ? res() : rej({e: expectRow, g: row});
                     }, rej);
                 }, rej);
             });
@@ -427,9 +472,10 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 adapter.write("test", 1, {id: 1, name: "Testing", posts: [1, 2]}, (pk) => {
                     adapter.read("test", pk, (row) => {
-                        const condition = equals(row, {name: "Testing", id: 1, posts: [1, 2]});
+                        const expectRow = {name: "Testing", id: 1, posts: [1, 2]};
+                        const condition = _objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Update Test");
-                        condition ? res() : rej(row);
+                        condition ? res() : rej({e: expectRow, g: row});
                     }, rej);
                 }, rej);
             });
@@ -438,9 +484,10 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 adapter.write("test", 1, {id: 1, name: "Testing"}, (pk) => {
                     adapter.read("test", pk, (row) => {
-                        const condition = equals(row, {name: "Testing", id: 1});
+                        const expectRow = {name: "Testing", id: 1};
+                        const condition = _objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Replace Test");
-                        condition ? res() : rej(row);
+                        condition ? res() : rej({e: expectRow, g: row});
                     }, rej);
                 }, rej);
             });
@@ -560,13 +607,13 @@ export class nanoSQLAdapterTest {
             // Auto incriment test
             return new Promise((res, rej) => {
                 adapter.write("test", null, {name: "Test"}, (pk) => {
-                    const condition = equals(pk, 1);
+                    const condition = _objectsEqual(pk, 1);
                     myConsole.assert(condition, "Test Auto Incriment Integer.");
                     condition ? (() => {
                         adapter.read("test", 1, (row: any) => {
-                            const condition2 = equals(row.id, 1);
+                            const condition2 = _objectsEqual(row.id, 1);
                             myConsole.assert(condition2, "Select Integer Primary Key.");
-                            condition2 ? res() : rej();
+                            condition2 ? res() : rej({e: 1, g: row.id});
                         }, rej);
                     })() : rej(pk);
                 }, rej);
@@ -579,11 +626,11 @@ export class nanoSQLAdapterTest {
                     myConsole.assert(condition, "Test UUID.");
                     condition ? (() => {
                         adapter.read("test2", pk, (row: any) => {
-                            const condition2 = equals(row.id, pk);
+                            const condition2 = _objectsEqual(row.id, pk);
                             myConsole.assert(condition2, "Select UUID Primary Key.");
-                            condition2 ? res() : rej();
+                            condition2 ? res() : rej({e: pk, g: row.id});
                         }, rej);
-                    })() : rej(pk);
+                    })() : rej({e: "valid uuid", g: pk});
                 }, rej);
             });
         }).then(() => {
@@ -594,11 +641,11 @@ export class nanoSQLAdapterTest {
                     myConsole.assert(condition, "Test timeId.");
                     condition ? (() => {
                         adapter.read("test3", pk, (row: any) => {
-                            const condition2 = equals(row.id, pk);
+                            const condition2 = _objectsEqual(row.id, pk);
                             myConsole.assert(condition2, "Select timeId Primary Key.");
-                            condition2 ? res() : rej();
+                            condition2 ? res() : rej({e: pk, g: row.id});
                         }, rej);
-                    })() : rej(pk);
+                    })() : rej({e: "valid timeid", g: pk});
                 }, rej);
             });
         }).then(() => {
@@ -609,11 +656,11 @@ export class nanoSQLAdapterTest {
                     myConsole.assert(condition, "Test timeIdms.");
                     condition ? (() => {
                         adapter.read("test4", pk, (row: any) => {
-                            const condition2 = equals(row.id, pk);
+                            const condition2 = _objectsEqual(row.id, pk);
                             myConsole.assert(condition2, "Select timeIdms Primary Key.");
-                            condition2 ? res() : rej();
+                            condition2 ? res() : rej({e: pk, g: row.id});
                         }, rej);
-                    })() : rej(pk);
+                    })() : rej({e: "valid timeidms", g: pk});
                 }, rej);
             });
         }).then(() => {
@@ -635,7 +682,7 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test5", "all", undefined, undefined, false, (row, idx) => {
                         keys.push(row.id);
                     }, () => {
-                        const condition = equals(keys, UUIDs);
+                        const condition = _objectsEqual(keys, UUIDs);
                         myConsole.assert(condition, "Test Sorted Primary Keys.");
                         condition ? res() : rej({e: UUIDs, g: keys});
                     }, rej);
@@ -655,13 +702,13 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test6", "all", undefined, undefined, false, (row) => {
                         rows.push(row);
                     }, () => {
-                        const condition = equals(rows, floats.sort((a, b) => a.id > b.id ? 1 : -1));
+                        const condition = _objectsEqual(rows, floats.sort((a, b) => a.id > b.id ? 1 : -1));
                         myConsole.assert(condition, "Test float primary keys.");
                         condition ? (() => {
                             adapter.read("test6", floats[0].id, (row: any) => {
-                                const condition2 = equals(row.id, floats[0].id);
+                                const condition2 = _objectsEqual(row.id, floats[0].id);
                                 myConsole.assert(condition2, "Select Float Primary Key.");
-                                condition2 ? res() : rej();
+                                condition2 ? res() : rej({e: floats[0].id, g: row.id});
                             }, rej);
                         })() : rej({
                             e: floats.sort((a, b) => a.id > b.id ? 1 : -1),

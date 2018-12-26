@@ -12,6 +12,9 @@ export declare class INanoSQLInstance {
     functions: {
         [fnName: string]: INanoSQLFunction;
     };
+    indexes: {
+        [indexName: string]: INanoSQLIndex;
+    }
     planetRadius: number;
     tables: {
         [tableName: string]: INanoSQLTable;
@@ -282,7 +285,7 @@ export interface INanoSQLAdapter {
 
     disconnect(complete: () => void, error: (err: any) => void);
 
-    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void);
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void);
 
     dropTable(table: string, complete: () => void, error: (err: any) => void);
 
@@ -296,9 +299,21 @@ export interface INanoSQLAdapter {
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
 
-    getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
-    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void);
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void);
+
+    createIndex(indexName: string, type: string, complete: () => void, error: (err: any) => void);
+
+    deleteIndex(indexName: string, complete: () => void, error: (err: any) => void);
+
+    addIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void);
+
+    deleteIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void);
+
+    readIndexKey(table: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void);
+
+    readIndexKeys(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any) => void, complete: () => void, error: (err: any) => void);
 }
 
 
@@ -574,47 +589,183 @@ export interface customEventFilter extends abstractFilter {
 }
 
 // tslint:disable-next-line
-export interface adapterDidReadFilter extends abstractFilter { 
-    result: any;
-    table: string;
-    pk: any;
-    i: number;
-    query: INanoSQLQuery;
+export interface adapterReadFilter extends abstractFilter { 
+    result: { table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void }
+    query?: INanoSQLQuery;
 }
 
 // tslint:disable-next-line
-export interface adapterWillReadFilter extends abstractFilter { 
-    result: any;
-    table: string;
-    pk: any;
-    i: number;
-    query: INanoSQLQuery;
-}
-
-// tslint:disable-next-line
-export interface adapterWillReadMultiFilter extends abstractFilter {
+export interface adapterReadMultiFilter extends abstractFilter {
     result: {
-        table: string;
-        type: string;
-        offsetOrLow?: number;
-        limitOrHigh?: number;
-        reverse?: boolean;
+        table: string, 
+        type: "range" | "offset" | "all", 
+        offsetOrLow: any, 
+        limitOrHigh: any, 
+        reverse: boolean, 
+        onRow: (row: { [key: string]: any }, i: number) => void, 
+        complete: () => void, 
+        error: (err: any) => void
     };
-    onRow: (row: {[key: string]: any}, i: number, nextRow: () => void) => void;
-    complete: () => void;
-    error: (err: any) => void;
-    query: INanoSQLQuery;
+    query?: INanoSQLQuery;
 }
 
 // tslint:disable-next-line
-export interface adapterWillWriteFilter extends abstractFilter { 
-    result: {table: string, pk: any, row: any};
-    query: INanoSQLQuery;
+export interface adapterWriteFilter extends abstractFilter { 
+    result: {table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void};
+    query?: INanoSQLQuery;
 }
 
 // tslint:disable-next-line
-export interface adapterDidWriteFilter extends abstractFilter { 
+export interface adapterConnectFilter extends abstractFilter {
+    result: {
+        id: string, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
 
+// tslint:disable-next-line
+export interface adapterDisconnectFilter extends abstractFilter {
+    result: {
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterCreateTableFilter extends abstractFilter {
+    result: {
+        tableName: string, 
+        tableData: INanoSQLTable, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterDropTableFilter extends abstractFilter {
+    result: {
+        table: string, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterDisconnectTableFilter extends abstractFilter {
+    result: {
+        table: string, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterDeleteFilter extends abstractFilter {
+    result: {
+        table: string, 
+        pk: any,
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterGetTableIndexFilter extends abstractFilter {
+    result: {
+        table: string, 
+        complete: (index: any[]) => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterGetTableIndexLengthFilter extends abstractFilter {
+    result: {
+        table: string, 
+        complete: (index: number) => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterCreateIndexFilter extends abstractFilter {
+    result: {
+        indexName: string, 
+        type: string, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterDeleteIndexFilter extends abstractFilter {
+    result: {
+        indexName: string, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterAddIndexValueFilter extends abstractFilter {
+    result: {
+        indexName: string, 
+        key: any, 
+        value: any, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterDeleteIndexValueFilter extends abstractFilter {
+    result: {
+        indexName: string, 
+        key: any, 
+        value: any, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterReadIndexKeyFilter extends abstractFilter {
+    result: {
+        table: string, 
+        pk: any, 
+        onRowPK: (key: any) => void, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
+}
+
+// tslint:disable-next-line
+export interface adapterReadIndexKeysFilter extends abstractFilter {
+    result: {
+        table: string, 
+        type: "range" | "offset" | "all", 
+        offsetOrLow: any, 
+        limitOrHigh: any, 
+        reverse: boolean, 
+        onRowPK: (key: any, id: any) => void, 
+        complete: () => void, 
+        error: (err: any) => void
+    }
+    query?: INanoSQLQuery;
 }
 
 // tslint:disable-next-line

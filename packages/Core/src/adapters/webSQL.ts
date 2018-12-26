@@ -1,5 +1,6 @@
 import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION, SQLiteAbstractFns } from "../interfaces";
 import { isAndroid, generateID, setFast } from "../utilities";
+import { NanoSQLMemoryIndex } from "./memoryIndex";
 
 let tables: string[] = [];
 
@@ -168,7 +169,7 @@ export const SQLiteAbstract = (
 };
 
 
-export class WebSQL implements INanoSQLAdapter {
+export class WebSQL  extends NanoSQLMemoryIndex {
 
     plugin: INanoSQLPlugin = {
         name: "WebSQL Adapter",
@@ -182,11 +183,16 @@ export class WebSQL implements INanoSQLAdapter {
     private _db: Database;
     private _ai: {[table: string]: number};
     private _sqlite: SQLiteAbstractFns;
+    private _tableConfigs: {
+        [tableName: string]: INanoSQLTable;
+    }
 
     constructor(size?: number, batchSize?: number) {
+        super();
         this._size = (size || 0) * 1000 * 1000;
         this._ai = {};
         this._query = this._query.bind(this);
+        this._tableConfigs = {};
         this._sqlite = SQLiteAbstract(this._query, batchSize || 500);
     }
 
@@ -199,7 +205,8 @@ export class WebSQL implements INanoSQLAdapter {
         });
     }
 
-    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+        this._tableConfigs[tableName] = tableData;
         this._sqlite.createTable(tableName, tableData, this._ai, complete, error);
     }
 
@@ -232,7 +239,7 @@ export class WebSQL implements INanoSQLAdapter {
     }
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
-        this._sqlite.write(this.nSQL.tables[table].pkType, this.nSQL.tables[table].pkCol, table, pk, row, this.nSQL.tables[table].ai, this._ai, complete, error);
+        this._sqlite.write(this._tableConfigs[table].pkType, this._tableConfigs[table].pkCol, table, pk, row, this._tableConfigs[table].ai, this._ai, complete, error);
     }
 
     read(table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) {
@@ -247,11 +254,11 @@ export class WebSQL implements INanoSQLAdapter {
         this._sqlite.readMulti(table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error);
     }
 
-    getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
         this._sqlite.getIndex(table, complete, error);
     }
 
-    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
         this._sqlite.getNumberOfRecords(table, complete, error);
     }
 }

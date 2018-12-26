@@ -1,19 +1,25 @@
 {
-  "name": "@nano-sql/adapter-dynamo",
-  "version": "1.0.0",
+  "name": "@nano-sql/adapter-dynamodb",
+  "version": "2.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node src/test",
+    "build": "tsc"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
   "dependencies": {
-    "@nano-sql/core": "^2.0.0-rc12",
     "aws-sdk": "^2.382.0"
   },
+  "peerDependencies": {
+    "@nano-sql/core": "2.X"
+  },
   "devDependencies": {
-    "@types/node": "^10.12.18"
+    "@types/node": "^10.12.18",
+    "dynamodb-localhost": "0.0.7",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
   }
 }

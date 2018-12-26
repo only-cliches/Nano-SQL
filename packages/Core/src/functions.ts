@@ -241,25 +241,21 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         return;
                     }
                     // read values from seconday index table
-                    adapterFilters(nSQL, query).readMulti(table, "range", ranges[0], ranges[1], false, (row, i2) => {
-                        let i3 = row.pks.length;
-                        while (i3--) {
-                            const pk = row.pks[i3];
-                            if (!pks[pk]) {
-                                pks[pk] = {
-                                    key: pk,
-                                    lat: 0,
-                                    lon: 0,
-                                    num: 0
-                                };
-                            } else {
-                                pks[pk].num++;
-                            }
-                            if (i === 0) {
-                                pks[pk].lat = row.id - 90;
-                            } else {
-                                pks[pk].lon = row.id - 180;
-                            }
+                    adapterFilters(nSQL, query).readIndexKeys(table, "range", ranges[0], ranges[1], false, (pk, id) => {
+                        if (!pks[pk]) {
+                            pks[pk] = {
+                                key: pk,
+                                lat: 0,
+                                lon: 0,
+                                num: 0
+                            };
+                        } else {
+                            pks[pk].num++;
+                        }
+                        if (i === 0) {
+                            pks[pk].lat = id - 90;
+                        } else {
+                            pks[pk].lon = id - 180;
                         }
                     }, () => {
                         next(null);
