@@ -13,6 +13,7 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
     function NanoSQLMemoryIndex(assign) {
         this.assign = assign;
         this.indexes = {};
+        this.indexLoaded = {};
     }
     NanoSQLMemoryIndex.prototype.connect = function (id, complete, error) {
         error(exports.err);
@@ -51,9 +52,19 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
         var _this = this;
         this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: "id", isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
             _this.indexes[indexName] = {};
-            _this.readMulti(indexName, "all", undefined, undefined, false, function (row) {
-                _this.indexes[indexName][row.id] = row.pks || [];
-            }, complete, error);
+            _this.indexLoaded[indexName] = false;
+            complete();
+            _this.nSQL.doFilter("loadIndexCache", { result: { load: true }, index: indexName }, function (result) {
+                if (result.load) {
+                    _this.readMulti(indexName, "all", undefined, undefined, false, function (row) {
+                        if (!_this.indexes[indexName][row.id]) {
+                            _this.indexes[indexName][row.id] = row.pks || [];
+                        }
+                    }, function () {
+                        _this.indexLoaded[indexName] = true;
+                    }, error);
+                }
+            }, error);
         }, error);
     };
     NanoSQLMemoryIndex.prototype.deleteIndex = function (indexName, complete, error) {
@@ -61,6 +72,26 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
         this.dropTable(indexName, complete, error);
     };
     NanoSQLMemoryIndex.prototype.addIndexValue = function (indexName, key, value, complete, error) {
+        var _this = this;
+        if (!this.indexLoaded[indexName]) {
+            this.read(indexName, value, function (row) {
+                var pks = row ? row.pks : [];
+                pks = _this.assign ? utilities_1._assign(pks) : pks;
+                if (pks.length === 0) {
+                    pks.push(key);
+                }
+                else {
+                    var idx = utilities_1.binarySearch(pks, key, false);
+                    pks.splice(idx, 0, key);
+                }
+                _this.indexes[indexName][value] = pks;
+                _this.write(indexName, value, {
+                    id: key,
+                    pks: _this.assign ? utilities_1._assign(_this.indexes[indexName][value]) : _this.indexes[indexName][value]
+                }, complete, error);
+            }, error);
+            return;
+        }
         if (!this.indexes[indexName][value]) {
             this.indexes[indexName][value] = [];
             this.indexes[indexName][value].push(key);
@@ -75,6 +106,33 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
         }, complete, error);
     };
     NanoSQLMemoryIndex.prototype.deleteIndexValue = function (indexName, key, value, complete, error) {
+        var _this = this;
+        if (!this.indexLoaded[indexName]) {
+            this.read(indexName, value, function (row) {
+                var pks = row ? row.pks : [];
+                pks = _this.assign ? utilities_1._assign(pks) : pks;
+                if (pks.length === 0) {
+                    complete();
+                    return;
+                }
+                else {
+                    var idx = pks.length < 100 ? pks.indexOf(key) : utilities_1.binarySearch(pks, key, true);
+                    if (idx === -1) {
+                        complete();
+                        return;
+                    }
+                    else {
+                        pks.splice(idx, 1);
+                    }
+                }
+                _this.indexes[indexName][value] = pks;
+                _this.write(indexName, value, {
+                    id: key,
+                    pks: _this.assign ? utilities_1._assign(_this.indexes[indexName][value]) : _this.indexes[indexName][value]
+                }, complete, error);
+            }, error);
+            return;
+        }
         if (!this.indexes[indexName][value]) {
             complete();
         }

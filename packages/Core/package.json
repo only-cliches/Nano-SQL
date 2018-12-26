@@ -1,6 +1,6 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.0.0-rc16",
+	"version": "2.0.0-rc17",
 	"description": "Like Lego For Databases",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",

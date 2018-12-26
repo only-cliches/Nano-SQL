@@ -32,7 +32,7 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
 ### Other Cool Things
-Built in geolocation helpers, multi-tab sync, typescript support, full event system, CSV/JSON import & export, graph query support, and runs in every browser back to IE9!
+Built in geolocation indexing, query functions, multi-tab sync, typescript support, event system, CSV/JSON import & export, graph query support, and runs in every browser back to IE9!
 
 ## Live Examples: [Express/NodeJS](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [React Native](https://docs.nanosql.io/examples/react-native) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
 
@@ -84,7 +84,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc16/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc17/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

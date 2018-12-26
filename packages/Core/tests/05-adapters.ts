@@ -150,6 +150,6 @@ describe("Adapter Tests", () => {
                 })();
             });
         });
-    }).timeout(30000);
+    }).timeout(60000);
 
 });

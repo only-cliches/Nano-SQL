@@ -1,4 +1,4 @@
-import { INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLPlugin } from "../interfaces";
+import { INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLPlugin, loadIndexCacheFilter } from "../interfaces";
 import { binarySearch, blankTableDefinition, _assign } from "../utilities";
 
 export const err = new Error("Memory index doesn't support this action!");
@@ -13,8 +13,13 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
         }
     }
 
+    indexLoaded: {
+        [indexName: string]: boolean;
+    }
+
     constructor(public assign?: boolean) {
         this.indexes = {};
+        this.indexLoaded = {};
     }
     connect(id: string, complete: () => void, error: (err: any) => void) {
         error(err);
@@ -64,9 +69,20 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
             isPkNum: ["float", "int", "number"].indexOf(type) !== -1
         }, () => {
             this.indexes[indexName] = {};
-            this.readMulti(indexName, "all", undefined, undefined, false, (row) => {
-                this.indexes[indexName][row.id] = row.pks || [];
-            }, complete, error);
+            this.indexLoaded[indexName] = false;
+            complete();
+            this.nSQL.doFilter<loadIndexCacheFilter, {load: boolean, indexName: string}>("loadIndexCache", {result: {load: true}, index: indexName}, (result) => {
+                if (result.load) {
+                    this.readMulti(indexName, "all", undefined, undefined, false, (row) => {
+                        if (!this.indexes[indexName][row.id]) {
+                            this.indexes[indexName][row.id] = row.pks || [];
+                        }
+                    }, () => {
+                        this.indexLoaded[indexName] = true;
+                    }, error);
+                }
+            }, error);
+
         }, error);
     }
 
@@ -76,6 +92,25 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
     }
 
     addIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) {
+        if (!this.indexLoaded[indexName]) {
+            this.read(indexName, value, (row) => {
+                let pks = row ? row.pks : [];
+                pks = this.assign ? _assign(pks) : pks;
+                if (pks.length === 0) {
+                    pks.push(key);
+                } else {
+                    const idx = binarySearch(pks, key, false);
+                    pks.splice(idx, 0, key);
+                }
+                this.indexes[indexName][value] = pks;
+                this.write(indexName, value, {
+                    id: key,
+                    pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+                }, complete, error);
+            }, error);
+            return;
+        }
+        
         if (!this.indexes[indexName][value]) {
             this.indexes[indexName][value] = [];
             this.indexes[indexName][value].push(key);
@@ -90,6 +125,30 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
     }
 
     deleteIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) {
+        if (!this.indexLoaded[indexName]) {
+            this.read(indexName, value, (row) => {
+                let pks = row ? row.pks : [];
+                pks = this.assign ? _assign(pks) : pks;
+                if (pks.length === 0) {
+                    complete();
+                    return;
+                } else {
+                    const idx = pks.length < 100 ? pks.indexOf(key) : binarySearch(pks, key, true);
+                    if (idx === -1) {
+                        complete();
+                        return;
+                    } else {
+                        pks.splice(idx, 1);
+                    }
+                }
+                this.indexes[indexName][value] = pks;
+                this.write(indexName, value, {
+                    id: key,
+                    pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+                }, complete, error);
+            }, error);
+            return;
+        }
         if (!this.indexes[indexName][value]) {
             complete();
         } else {

@@ -747,6 +747,12 @@ export interface adapterReadIndexKeysFilter extends abstractFilter {
     };
     query?: INanoSQLQuery;
 }
+export interface loadIndexCacheFilter extends abstractFilter {
+    result: {
+        load: boolean;
+    };
+    index: string;
+}
 export interface conformRowFilter extends abstractFilter {
     result: any;
     oldRow: any;

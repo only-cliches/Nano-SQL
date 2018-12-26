@@ -9,6 +9,9 @@ export declare class NanoSQLMemoryIndex implements INanoSQLAdapter {
             [key: string]: any[];
         };
     };
+    indexLoaded: {
+        [indexName: string]: boolean;
+    };
     constructor(assign?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

@@ -769,6 +769,12 @@ export interface adapterReadIndexKeysFilter extends abstractFilter {
 }
 
 // tslint:disable-next-line
+export interface loadIndexCacheFilter extends abstractFilter { 
+    result: {load: boolean};
+    index: string;
+}
+
+// tslint:disable-next-line
 export interface conformRowFilter extends abstractFilter { 
     result: any;
     oldRow: any;
