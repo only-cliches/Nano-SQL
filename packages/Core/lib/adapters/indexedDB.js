@@ -15,7 +15,7 @@ var memoryIndex_1 = require("./memoryIndex");
 var IndexedDB = /** @class */ (function (_super) {
     __extends(IndexedDB, _super);
     function IndexedDB(version) {
-        var _this = _super.call(this) || this;
+        var _this = _super.call(this, false, false) || this;
         _this.version = version;
         _this.plugin = {
             name: "IndexedDB Adapter",

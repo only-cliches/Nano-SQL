@@ -2,6 +2,7 @@ import { INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLPlugin } from
 export declare const err: Error;
 export declare class NanoSQLMemoryIndex implements INanoSQLAdapter {
     assign?: boolean | undefined;
+    useCache?: boolean | undefined;
     plugin: INanoSQLPlugin;
     nSQL: INanoSQLInstance;
     indexes: {
@@ -12,7 +13,10 @@ export declare class NanoSQLMemoryIndex implements INanoSQLAdapter {
     indexLoaded: {
         [indexName: string]: boolean;
     };
-    constructor(assign?: boolean | undefined);
+    useCacheIndexes: {
+        [indexName: string]: boolean;
+    };
+    constructor(assign?: boolean | undefined, useCache?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;
     createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;

@@ -17,9 +17,14 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
         [indexName: string]: boolean;
     }
 
-    constructor(public assign?: boolean) {
+    useCacheIndexes: {
+        [indexName: string]: boolean;
+    }
+
+    constructor(public assign?: boolean, public useCache?: boolean) {
         this.indexes = {};
         this.indexLoaded = {};
+        this.useCacheIndexes = {};
     }
     connect(id: string, complete: () => void, error: (err: any) => void) {
         error(err);
@@ -70,8 +75,10 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
         }, () => {
             this.indexes[indexName] = {};
             this.indexLoaded[indexName] = false;
+            this.useCacheIndexes[indexName] = this.useCache || false;
             complete();
-            this.nSQL.doFilter<loadIndexCacheFilter, {load: boolean, indexName: string}>("loadIndexCache", {result: {load: true}, index: indexName}, (result) => {
+            this.nSQL.doFilter<loadIndexCacheFilter, {load: boolean, indexName: string}>("loadIndexCache", {result: {load: this.useCache || false}, index: indexName}, (result) => {
+                this.useCacheIndexes[indexName] = result.load;
                 if (result.load) {
                     this.readMulti(indexName, "all", undefined, undefined, false, (row) => {
                         if (!this.indexes[indexName][row.id]) {
@@ -102,10 +109,13 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
                     const idx = binarySearch(pks, key, false);
                     pks.splice(idx, 0, key);
                 }
-                this.indexes[indexName][value] = pks;
+                if (this.useCacheIndexes[indexName]) {
+                    this.indexes[indexName][value] = pks;
+                }
+                
                 this.write(indexName, value, {
                     id: key,
-                    pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+                    pks: this.assign ? _assign(pks) : pks
                 }, complete, error);
             }, error);
             return;
@@ -141,10 +151,13 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
                         pks.splice(idx, 1);
                     }
                 }
-                this.indexes[indexName][value] = pks;
+                if (this.useCacheIndexes[indexName]) {
+                    this.indexes[indexName][value] = pks;
+                }
+                
                 this.write(indexName, value, {
                     id: key,
-                    pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+                    pks: this.assign ? _assign(pks) : pks
                 }, complete, error);
             }, error);
             return;

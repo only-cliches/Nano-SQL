@@ -32,7 +32,7 @@ export class SyncStorage  extends NanoSQLMemoryIndex {
     }
 
     constructor(public useLS?: boolean) {
-        super(true);
+        super(true, false);
         this._index = {};
         this._rows = {};
         this._ai = {};

@@ -338,7 +338,12 @@ var nanoSQL = /** @class */ (function () {
                 }
                 _this._initPlugins(_this.config).then(function () {
                     _this.adapter.nSQL = _this;
-                    utilities_1.adapterFilters(_this).connect(_this.state.id, res, rej);
+                    utilities_1.adapterFilters(_this).connect(_this.state.id, function () {
+                        _this.doFilter("postConnect", { result: _this.config }, function (config) {
+                            _this.config = config;
+                            res();
+                        }, rej);
+                    }, rej);
                 }).catch(rej);
                 if (_this.config.planetRadius) {
                     _this.planetRadius = _this.config.planetRadius;

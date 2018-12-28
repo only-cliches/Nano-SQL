@@ -296,7 +296,7 @@ exports.attachDefaultFns = function (nSQL) {
                                 counter++;
                             }
                             next(null);
-                        }, error);
+                        }, err);
                     }).catch(error).then(function () {
                         complete();
                     });

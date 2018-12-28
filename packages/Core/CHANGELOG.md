@@ -1,20 +1,51 @@
 # Change Log
 
 ## 2.0 TODO
-- Remove query filter callback in favor of pure promise implemintation.
-- Split out history, fuzzy search, orm and denormalization into seperate plugins.
-- Move LevelDB to RocksDB.
-- Rewrite upsert/delete engine to perform updates one row at a time.
-- Add custom hook/action/filter system so plugins can interact in custom, undeclared ways.
-- Move query/storage engine from plugin to standard exection path.
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
-- Remove built in Promise polyfill.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
-- Relations plugin includes ORM and Denormalization features.
-- Add query plugin type to support GraphQL, SQLite3, ReQL and MongoDB QL.
-- Add `.from` and `.into` query modifiers, `.from` allows nested queries with a function or overwrites `.table`.
-- Add `.doQuery` function to core that performs queries using nanosql query json.
-- Add `https://github.com/benjamine/jsondiffpatch` for version control of the distributed network.
+
+## [2.0.0]
+- Complete rewrite of the whole library from the ground up.  Previous plugins and adapters developed for nanoSQL 1.X will NOT work for 2.X versions.
+- Changed config, table model, view, and action setup format.  View [Migration Docs](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
+- Removed all ORM features, tries, history, observables and fuzzy search from core.
+- Added `CROW` function as well as geo spatial index feature for fast `CROW` queries.
+- You can now upsert nested values.  `nSQL("Table.column.nested.value").query("upsert", newValue).where([...]).exec()..`
+- You can now return the query event instead of the result by passing `true` into `.exec()..`.
+- Added support for `.graph` queries, they work very similar to the old ORM system but are far more flexible.
+- Added support for querying tables returned from a promise. `nSQL(() => fetch("records.json").then(d => d.json())).query("select")..stuff....exec()...`.  This also lets you nest nanoSQL queries.
+- Added support for querying promise based tables in `union`, `join` and `graph` queries.
+- Added support for nested indexes and array indexes.
+- You can no longer use `idx` in the props of the data model to declare secondary indexes, must use separate `indexes` property. [Migration Docs](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0)
+- Added filter system with over 40 filter hooks to control and modify data/query flow with plugins.
+- New Stream API allows data to be streamed directly from the database without caching result sets into memory. `nSQL().query("select")...stream(onRow, onComplete, onError)`.  Results will be cached regardless if Group By, Order By, and/or aggregate functions are used.  
+- Upsert/Delete queries no longer load their entire result set into memory before performing their action, uses the stream api internally.
+- Added UNION query support.
+- `limit().offset()` queries now do the same as the `.range()` query modifier use to do when there aren't orderby/groupby arguments.  `.range()` is also no longer supported.
+- `union`, `join` and `graph` queries now use indexes when possible/available.
+- Added MapReduce support.
+- Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/functions.ts).
+- Events can now target nested row values. `nSQL("Table.column.nested.value").on("change", () => {})`.
+- Plugins and adapters can declare core/plugin version dependencies which are validated at runtime.
+- Added new index `offset` feature.  Primary keys (used for the secondary indexes) often don't support negative values, the offset feature lets you index negative values that are less than the offset value provided in the index config.
+- Swapped out LevelDB for RocksDB.
+- Primary key indexes are no longer kept in memory for better performance.
+- Database adapters can now support secondary index specific features.
+- Query types that are also supported by SQLite are tested against SQLite for consistency.
+- All javascript `Math` functions are supported in queries.
+- Changed OrderBy and GroupBy syntax: `nSQL("table").query("select").orderBy(["col1 ASC", "col2 DESC"]).exec()...`.
+- OrderBy and GroupBy now support query functions: `nSQL("table").query("select").orderBy(["UPPER(col1) DESC"]).exec()..`
+- All functions are supported in SELECT or WHERE arguments.  `nSQL("table").query("select", ["UPPER(name)"]).exec()...` or `nSQL("table").query("select").where(["UPPER(name)", "=", "NAME"]).exec()`...
+- Secondary indexes, primary indexes and slow queries can now be mixed in the same WHERE condition and still get good performance.  Secondary indexes and primary key queries must come before slow queries to see the speed improvements.
+- OrderBy & GroupBy now use fast indexed sorting IF the column being sorted is indexed.
+- You can now cache result sets and paginate the cache at will.  Cached results do not get updated and represent a copy of the data at the time it was read.
+- Events are now triggered per row and not per query.  For example, if a query modified 100 rows you would have previously gotten 1 event from the query notifying you of the 100 changed rows.  You will now get 100 separate change events.  Each database event has the query object that triggered the event in the event data, allowing you to group together events from the same query.
+- You can now use `.into`, `.on`, and `.from` as a table selector in your queries: `nSQL().query("upsert", {data}).into("myTable").exec().then..`.
+- `.from` can be used to alias one table to another name in join, graph, and union queries. `nSQL().query("select").from({table: "myTable", as: "posts"}).join(...).exec()...`.
+- `.from` can also be used to load table data from a promise and alias it to a table name: `nSQL().query("select").from({table: () => Promise, as: "posts"}).join(...).exec()...`.
+- `connect` event now fires when the database adapter connects, not when nanoSQL is ready.  There is a new `ready` event that fires when queries are ready to go.
+- You can now drop and add tables to nanoSQL while it's running using queries.
+- Added new `conform rows` query that pulls every row from a given table, conforms it to the current data model, then puts the row back.
+- Added new `rebuild indexes` query to trigger index rebuilds.
 
 ## [1.7.6] 8-10-2018
 - Fixed issue with CSV export headers.

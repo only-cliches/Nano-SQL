@@ -240,6 +240,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                         next(null);
                         return;
                     }
+
                     // read values from seconday index table
                     adapterFilters(nSQL, query).readIndexKeys(table, "range", ranges[0], ranges[1], false, (pk, id) => {
                         if (!pks[pk]) {
@@ -311,7 +312,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                             }
 
                             next(null);
-                        }, error);
+                        }, err);
                     }).catch(error).then(() => {
                         complete();
                     });

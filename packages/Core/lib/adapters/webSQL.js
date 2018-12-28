@@ -180,7 +180,7 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
 var WebSQL = /** @class */ (function (_super) {
     __extends(WebSQL, _super);
     function WebSQL(size, batchSize) {
-        var _this = _super.call(this) || this;
+        var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "WebSQL Adapter",
             version: interfaces_1.VERSION

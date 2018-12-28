@@ -37,11 +37,23 @@ exports.rimraf = function (dir_path) {
 var RocksDB = /** @class */ (function (_super) {
     __extends(RocksDB, _super);
     function RocksDB(path) {
-        var _this = _super.call(this) || this;
+        var _this = _super.call(this, false, true) || this;
         _this.path = path;
         _this.plugin = {
             name: "RocksDB Adapter",
-            version: interfaces_1.VERSION
+            version: interfaces_1.VERSION,
+            filters: [
+                {
+                    name: "postConnect",
+                    priority: 1000,
+                    call: function (args, complete, cancel) {
+                        if (typeof args.result.queue === "undefined") {
+                            args.result.queue = false;
+                        }
+                        complete(args);
+                    }
+                }
+            ]
         };
         _this._levelDBs = {};
         _this._ai = {};

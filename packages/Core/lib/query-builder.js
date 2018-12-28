@@ -102,8 +102,13 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         return this;
     };
     _NanoSQLQueryBuilder.prototype.from = function (tableObj) {
-        this._query.table = tableObj.table;
-        this._query.tableAS = tableObj.as;
+        if (typeof tableObj === "string") {
+            this._query.table = tableObj;
+        }
+        else {
+            this._query.table = tableObj.table;
+            this._query.tableAS = tableObj.as;
+        }
         return this;
     };
     _NanoSQLQueryBuilder.prototype.into = function (table) {

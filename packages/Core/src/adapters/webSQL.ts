@@ -190,7 +190,7 @@ export class WebSQL  extends NanoSQLMemoryIndex {
     }
 
     constructor(size?: number, batchSize?: number) {
-        super();
+        super(false, false);
         this._size = (size || 0) * 1000 * 1000;
         this._ai = {};
         this._query = this._query.bind(this);

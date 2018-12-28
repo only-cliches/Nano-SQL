@@ -1,4 +1,4 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
+import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION, postConnectFilter } from "../interfaces";
 import { allAsync, _NanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan, blankTableDefinition } from "../utilities";
 import { NanoSQLMemoryIndex } from "./memoryIndex";
 
@@ -22,7 +22,19 @@ export class RocksDB extends NanoSQLMemoryIndex {
 
     plugin: INanoSQLPlugin = {
         name: "RocksDB Adapter",
-        version: VERSION
+        version: VERSION,
+        filters: [
+            {
+                name: "postConnect",
+                priority: 1000,
+                call: (args: postConnectFilter, complete: (args: postConnectFilter) => void, cancel: (info: any) => void) => {
+                    if (typeof args.result.queue === "undefined") {
+                        args.result.queue = false;
+                    }
+                    complete(args);
+                }
+            }
+        ]
     };
 
     nSQL: INanoSQLInstance;
@@ -43,7 +55,7 @@ export class RocksDB extends NanoSQLMemoryIndex {
     constructor(
         public path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => { lvld: any, args?: any })
     ) {
-        super();
+        super(false, true);
         this._levelDBs = {};
         this._ai = {};
         this._tableConfigs = {};

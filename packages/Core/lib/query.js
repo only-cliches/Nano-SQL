@@ -1114,6 +1114,8 @@ var _NanoSQLQuery = /** @class */ (function () {
                 return p;
             }, "");
             var indexes = table.indexes || {};
+            if (typeof table.model !== "string") {
+            }
             newConfigs[table.name] = {
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
@@ -1154,13 +1156,12 @@ var _NanoSQLQuery = /** @class */ (function () {
                     }
                     return p;
                 }, {}),
-                pkType: pkType,
-                pkCol: Object.keys(table.model).reduce(function (p, c) {
+                pkType: table.primaryKey ? table.primaryKey.split(":")[1] : pkType,
+                pkCol: table.primaryKey ? table.primaryKey.split(":")[0] : Object.keys(table.model).reduce(function (p, c) {
                     if (table.model[c] && table.model[c].pk)
                         return c.split(":")[0];
                     return p;
                 }, ""),
-                pkOffset: 0,
                 isPkNum: ["number", "int", "float"].indexOf(pkType) !== -1,
                 ai: Object.keys(table.model).reduce(function (p, c) {
                     if (table.model[c] && table.model[c].ai)

@@ -10,10 +10,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("../utilities");
 exports.err = new Error("Memory index doesn't support this action!");
 var NanoSQLMemoryIndex = /** @class */ (function () {
-    function NanoSQLMemoryIndex(assign) {
+    function NanoSQLMemoryIndex(assign, useCache) {
         this.assign = assign;
+        this.useCache = useCache;
         this.indexes = {};
         this.indexLoaded = {};
+        this.useCacheIndexes = {};
     }
     NanoSQLMemoryIndex.prototype.connect = function (id, complete, error) {
         error(exports.err);
@@ -53,8 +55,10 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
         this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: "id", isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
             _this.indexes[indexName] = {};
             _this.indexLoaded[indexName] = false;
+            _this.useCacheIndexes[indexName] = _this.useCache || false;
             complete();
-            _this.nSQL.doFilter("loadIndexCache", { result: { load: true }, index: indexName }, function (result) {
+            _this.nSQL.doFilter("loadIndexCache", { result: { load: _this.useCache || false }, index: indexName }, function (result) {
+                _this.useCacheIndexes[indexName] = result.load;
                 if (result.load) {
                     _this.readMulti(indexName, "all", undefined, undefined, false, function (row) {
                         if (!_this.indexes[indexName][row.id]) {
@@ -84,10 +88,12 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
                     var idx = utilities_1.binarySearch(pks, key, false);
                     pks.splice(idx, 0, key);
                 }
-                _this.indexes[indexName][value] = pks;
+                if (_this.useCacheIndexes[indexName]) {
+                    _this.indexes[indexName][value] = pks;
+                }
                 _this.write(indexName, value, {
                     id: key,
-                    pks: _this.assign ? utilities_1._assign(_this.indexes[indexName][value]) : _this.indexes[indexName][value]
+                    pks: _this.assign ? utilities_1._assign(pks) : pks
                 }, complete, error);
             }, error);
             return;
@@ -125,10 +131,12 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
                         pks.splice(idx, 1);
                     }
                 }
-                _this.indexes[indexName][value] = pks;
+                if (_this.useCacheIndexes[indexName]) {
+                    _this.indexes[indexName][value] = pks;
+                }
                 _this.write(indexName, value, {
                     id: key,
-                    pks: _this.assign ? utilities_1._assign(_this.indexes[indexName][value]) : _this.indexes[indexName][value]
+                    pks: _this.assign ? utilities_1._assign(pks) : pks
                 }, complete, error);
             }, error);
             return;

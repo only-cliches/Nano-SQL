@@ -215,11 +215,12 @@ export interface INanoSQLConfig {
     version?: number;
     size?: number; // size of WebSQL database
     path?: string | ((dbID: string, tableName: string) => {lvld: any, args?: any}); // RocksDB path
-    warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
     tables?: INanoSQLTableConfig[];
+    types?: {[typeName: string]: string[]};
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
+
 
 export interface INanoSQLDataModel {
     [colAndType: string]: {
@@ -268,7 +269,7 @@ export interface INanoSQLPlugin {
     filters?: {
         name: string;
         priority: number;
-        call: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
+        call: (inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void;
     }[];
 }
 
@@ -335,7 +336,8 @@ export interface INanoSQLFunction {
 
 export interface INanoSQLTableConfig {
     name: string;
-    model: INanoSQLDataModel;
+    model: INanoSQLDataModel | string;
+    primaryKey?: string;
     indexes?: {
         [colAndType: string]: {[prop: string]: any};
     };
@@ -361,7 +363,6 @@ export interface INanoSQLTable {
     views: INanoSQLActionOrView[];
     pkType: string;
     pkCol: string;
-    pkOffset: number;
     isPkNum: boolean;
     ai: boolean;
     props?: any;
@@ -819,4 +820,9 @@ export interface mapReduceFilter extends abstractFilter {
     result: boolean;
     table: string;
     mr: INanoSQLMapReduce;
+}
+
+// tslint:disable-next-line
+export interface postConnectFilter extends abstractFilter {
+    result: INanoSQLConfig;
 }

@@ -230,9 +230,11 @@ export interface INanoSQLConfig {
         lvld: any;
         args?: any;
     });
-    warnOnSlowQueries?: boolean;
     disableTTL?: boolean;
     tables?: INanoSQLTableConfig[];
+    types?: {
+        [typeName: string]: string[];
+    };
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
 export interface INanoSQLDataModel {
@@ -279,7 +281,7 @@ export interface INanoSQLPlugin {
     filters?: {
         name: string;
         priority: number;
-        call: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
+        call: (inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void;
     }[];
 }
 export interface INanoSQLAdapterConstructor {
@@ -339,7 +341,8 @@ export interface INanoSQLFunction {
 }
 export interface INanoSQLTableConfig {
     name: string;
-    model: INanoSQLDataModel;
+    model: INanoSQLDataModel | string;
+    primaryKey?: string;
     indexes?: {
         [colAndType: string]: {
             [prop: string]: any;
@@ -366,7 +369,6 @@ export interface INanoSQLTable {
     views: INanoSQLActionOrView[];
     pkType: string;
     pkCol: string;
-    pkOffset: number;
     isPkNum: boolean;
     ai: boolean;
     props?: any;
@@ -786,4 +788,7 @@ export interface mapReduceFilter extends abstractFilter {
     result: boolean;
     table: string;
     mr: INanoSQLMapReduce;
+}
+export interface postConnectFilter extends abstractFilter {
+    result: INanoSQLConfig;
 }

@@ -15,7 +15,7 @@ var memoryIndex_1 = require("./memoryIndex");
 var SyncStorage = /** @class */ (function (_super) {
     __extends(SyncStorage, _super);
     function SyncStorage(useLS) {
-        var _this = _super.call(this, true) || this;
+        var _this = _super.call(this, true, false) || this;
         _this.useLS = useLS;
         _this.plugin = {
             name: "Sync Storage Adapter",

@@ -37,7 +37,7 @@
                     console.timeEnd("CONNECT");
                     /*let startT = new Date()
                     let rows = [];
-                    for (let i = 0; i < 40000; i ++) {
+                    for (let i = 0; i < 100000; i ++) {
                         rows.push({
                             name: faker.fake("{{company.companyName}}"),
                             description: faker.fake("{{company.bs}}"),
@@ -52,10 +52,12 @@
                     nSQL("Project").query("select", ["COUNT(*)"]).exec().then((result) => {
                         console.timeEnd("READ");
                         console.log(result);
-                        console.time("WRITE");
-                        nSQL("Project").loadJS(rows).then(() => {
+                        /*console.time("WRITE");
+                        nSQL("Project").loadJS(rows, (p) => {
+                            console.log(p);
+                        }).then(() => {
                             console.timeEnd("WRITE");
-                        });
+                        });*/
                     });
                 })
             /*

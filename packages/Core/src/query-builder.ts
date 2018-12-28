@@ -132,9 +132,13 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     public from(tableObj: {
         table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string
-    }): _NanoSQLQueryBuilder {
-        this._query.table = tableObj.table;
-        this._query.tableAS = tableObj.as;
+    } | string): _NanoSQLQueryBuilder {
+        if (typeof tableObj === "string") {
+            this._query.table = tableObj;
+        } else {
+            this._query.table = tableObj.table;
+            this._query.tableAS = tableObj.as;
+        }
         return this;
     }
 

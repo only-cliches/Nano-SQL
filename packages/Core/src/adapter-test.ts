@@ -104,7 +104,6 @@ export class nanoSQLAdapterTest {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -179,7 +178,6 @@ export class nanoSQLAdapterTest {
                             props: {}
                         }
                     },
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -317,7 +315,6 @@ export class nanoSQLAdapterTest {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -470,7 +467,6 @@ export class nanoSQLAdapterTest {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "uuid",
@@ -594,7 +590,6 @@ export class nanoSQLAdapterTest {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
@@ -719,7 +714,6 @@ export class nanoSQLAdapterTest {
                                 }
                             ],
                             indexes: {},
-                            pkOffset: 0,
                             actions: [],
                             views: [],
                             pkType: {

@@ -21,7 +21,7 @@ export class IndexedDB extends NanoSQLMemoryIndex {
     }
 
     constructor(public version?: number) {
-        super();
+        super(false, false);
         this._db = {};
         this._ai = {};
         this._tableConfigs = {};

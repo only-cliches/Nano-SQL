@@ -31,7 +31,7 @@ export declare class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
             [key: string]: any;
         }, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string;
-    }): _NanoSQLQueryBuilder;
+    } | string): _NanoSQLQueryBuilder;
     into(table: string): _NanoSQLQueryBuilder;
     on(table: string): _NanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;

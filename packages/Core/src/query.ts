@@ -1247,6 +1247,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 this.nSQL.doFilter<configTableFilter, INanoSQLTableConfig>("configTable", { result: table, query: this.query }, res, rej);
             });
         }).then((table: INanoSQLTableConfig) => {
+
             const setModels = (dataModel: INanoSQLDataModel): INanoSQLDataModel => {
                 return Object.keys(dataModel).reduce((p, d) => {
                     const type = d.split(":")[1] || "any";
@@ -1295,7 +1296,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 return p;
             }, "");
 
-            const indexes = table.indexes || {};
+            let indexes = table.indexes || {};
+
+            if (typeof table.model !== "string") {
+
+            }
 
             newConfigs[table.name] = {
                 model: computedDataModel,
@@ -1337,12 +1342,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     }
                     return p;
                 }, {} as {[id: string]: INanoSQLIndex}),
-                pkType: pkType,
-                pkCol: Object.keys(table.model).reduce((p, c) => {
+                pkType: table.primaryKey ? table.primaryKey.split(":")[1] : pkType,
+                pkCol: table.primaryKey ? table.primaryKey.split(":")[0]  : Object.keys(table.model).reduce((p, c) => {
                     if (table.model[c] && table.model[c].pk) return c.split(":")[0];
                     return p;
                 }, ""),
-                pkOffset: 0,
                 isPkNum: ["number", "int", "float"].indexOf(pkType) !== -1,
                 ai: Object.keys(table.model).reduce((p, c) => {
                     if (table.model[c] && table.model[c].ai) return true;
