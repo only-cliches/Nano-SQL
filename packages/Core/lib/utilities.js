@@ -3,11 +3,10 @@ exports.blankTableDefinition = {
     model: {},
     columns: [],
     indexes: {},
-    pkOffset: 0,
     actions: [],
     views: [],
     pkType: "string",
-    pkCol: "",
+    pkCol: [],
     isPkNum: false,
     ai: false
 };
@@ -149,6 +148,10 @@ exports.adapterFilters = function (nSQL, query) {
             }, error);
         },
         deleteIndex: function (indexName, complete, error) {
+            if (!nSQL.indexes[indexName]) {
+                error({ error: "Index " + indexName + " not found!" });
+                return;
+            }
             nSQL.doFilter("adapterDeleteIndex", { result: { indexName: indexName, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
@@ -156,10 +159,14 @@ exports.adapterFilters = function (nSQL, query) {
             }, error);
         },
         addIndexValue: function (indexName, key, value, complete, error) {
+            if (!nSQL.indexes[indexName]) {
+                error({ error: "Index " + indexName + " not found!" });
+                return;
+            }
             var key2 = value;
             // shift primary key query by offset
             if (typeof key2 === "number" && nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                key2 += nSQL.indexes[indexName].props.offset;
+                key2 += nSQL.indexes[indexName].props.offset || 0;
             }
             nSQL.doFilter("adapterAddIndexValue", { result: { indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
@@ -168,10 +175,14 @@ exports.adapterFilters = function (nSQL, query) {
             }, error);
         },
         deleteIndexValue: function (indexName, key, value, complete, error) {
+            if (!nSQL.indexes[indexName]) {
+                error({ error: "Index " + indexName + " not found!" });
+                return;
+            }
             var key2 = value;
             // shift primary key query by offset
             if (typeof key2 === "number" && nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                key2 += nSQL.indexes[indexName].props.offset;
+                key2 += nSQL.indexes[indexName].props.offset || 0;
             }
             nSQL.doFilter("adapterDeleteIndexValue", { result: { indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
@@ -179,13 +190,17 @@ exports.adapterFilters = function (nSQL, query) {
                 nSQL.adapter.deleteIndexValue(result.indexName, result.key, result.value, result.complete, result.error);
             }, error);
         },
-        readIndexKey: function (table, pk, onRowPK, complete, error) {
+        readIndexKey: function (indexName, pk, onRowPK, complete, error) {
+            if (!nSQL.indexes[indexName]) {
+                error({ error: "Index " + indexName + " not found!" });
+                return;
+            }
             var key = pk;
             // shift primary key query by offset
-            if (typeof key === "number" && nSQL.indexes[table].props && nSQL.indexes[table].props.offset) {
-                key += nSQL.indexes[table].props.offset;
+            if (typeof key === "number" && nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
+                key += nSQL.indexes[indexName].props.offset || 0;
             }
-            nSQL.doFilter("adapterReadIndexKey", { result: { table: table, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterReadIndexKey", { result: { table: indexName, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
                 nSQL.adapter.readIndexKey(result.table, result.pk, result.onRowPK, result.complete, result.error);
@@ -194,11 +209,15 @@ exports.adapterFilters = function (nSQL, query) {
         readIndexKeys: function (indexName, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
             var lower = offsetOrLow;
             var higher = limitOrHigh;
+            if (!nSQL.indexes[indexName]) {
+                error({ error: "Index " + indexName + " not found!" });
+                return;
+            }
             // shift range query by offset
             if (typeof lower === "number" && typeof higher === "number" && type === "range") {
                 if (nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                    lower += nSQL.indexes[indexName].props.offset;
-                    higher += nSQL.indexes[indexName].props.offset;
+                    lower += nSQL.indexes[indexName].props.offset || 0;
+                    higher += nSQL.indexes[indexName].props.offset || 0;
                 }
             }
             nSQL.doFilter("adapterReadIndexKey", { result: { table: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
@@ -258,8 +277,8 @@ exports._objectsEqual = function (obj1, obj2) {
     return matches;
 };
 // tslint:disable-next-line
-var _NanoSQLQueue = /** @class */ (function () {
-    function _NanoSQLQueue(processItem, onError, onComplete) {
+var _nanoSQLQueue = /** @class */ (function () {
+    function _nanoSQLQueue(processItem, onError, onComplete) {
         this.processItem = processItem;
         this.onError = onError;
         this.onComplete = onComplete;
@@ -270,7 +289,7 @@ var _NanoSQLQueue = /** @class */ (function () {
         this._triggeredComplete = false;
         this._progressBuffer = this._progressBuffer.bind(this);
     }
-    _NanoSQLQueue.prototype._progressBuffer = function () {
+    _nanoSQLQueue.prototype._progressBuffer = function () {
         var _this = this;
         if (this._triggeredComplete) {
             return;
@@ -300,7 +319,7 @@ var _NanoSQLQueue = /** @class */ (function () {
             this.processItem(item[0], this._count, next, this.onError ? this.onError : exports.noop);
         }
     };
-    _NanoSQLQueue.prototype.finished = function () {
+    _nanoSQLQueue.prototype.finished = function () {
         this._done = true;
         if (this._triggeredComplete) {
             return;
@@ -311,16 +330,16 @@ var _NanoSQLQueue = /** @class */ (function () {
                 this.onComplete();
         }
     };
-    _NanoSQLQueue.prototype.newItem = function (item, processFn) {
+    _nanoSQLQueue.prototype.newItem = function (item, processFn) {
         this._items.push([item, processFn]);
         if (!this._going) {
             this._going = true;
             this._progressBuffer();
         }
     };
-    return _NanoSQLQueue;
+    return _nanoSQLQueue;
 }());
-exports._NanoSQLQueue = _NanoSQLQueue;
+exports._nanoSQLQueue = _nanoSQLQueue;
 /**
  * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
  *
@@ -500,13 +519,14 @@ exports.generateID = function (primaryKeyType, incrimentValue) {
  * @param {StdObject<any>} args
  * @returns {StdObject<any>}
  */
-exports.cleanArgs = function (argDeclarations, args) {
+exports.cleanArgs = function (argDeclarations, args, nSQL) {
     var a = {};
     var i = argDeclarations.length;
+    var customTypes = Object.keys(nSQL.config.types || {});
     while (i--) {
         var k2 = argDeclarations[i].split(":");
         if (k2.length > 1) {
-            a[k2[0]] = exports.cast(k2[1], args[k2[0]] || undefined, true);
+            a[k2[0]] = exports.cast(k2[1], args[k2[0]] || undefined, true, nSQL);
         }
         else {
             a[k2[0]] = args[k2[0]] || undefined;
@@ -536,8 +556,8 @@ exports.objSort = function (path, rev) {
  * @param {*} [val]
  * @returns {*}
  */
-exports.cast = function (type, val, allowUknownTypes) {
-    if (type === "any" || type === "blob")
+exports.cast = function (type, val, allowUknownTypes, nSQL) {
+    if (type === "any" || type === "blob" || type === "*")
         return val;
     // recursively cast arrays
     if (type.indexOf("[]") !== -1) {
@@ -559,6 +579,33 @@ exports.cast = function (type, val, allowUknownTypes) {
         "`": "&#x60;",
         "=": "&#x3D;"
     };
+    var types = nSQL ? nSQL.config.types || {} : {};
+    // custom type found
+    if (Object.keys(types).indexOf(type) !== -1) {
+        if (exports.isObject(val)) {
+            var keys_1 = [];
+            var customType_1 = "";
+            var returnObj_1 = types[type].reduce(function (prev, cur) {
+                var key = cur.split(":");
+                if (cur.indexOf("*") !== -1) {
+                    customType_1 = cur[1] || "*";
+                    return prev;
+                }
+                keys_1.push(key[0]);
+                prev[key[0]] = exports.cast(key[1], val[key[0]], allowUknownTypes, nSQL);
+                return prev;
+            }, {});
+            if (customType_1 && customType_1.length) {
+                Object.keys(val).forEach(function (key) {
+                    if (keys_1.indexOf(key) === -1) {
+                        returnObj_1[key] = exports.cast(customType_1, val[key], allowUknownTypes, nSQL);
+                    }
+                });
+            }
+            return returnObj_1;
+        }
+        return {};
+    }
     var doCast = function (castType, castVal) {
         switch (castType) {
             case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, function (s) { return entityMap[s]; });
@@ -620,6 +667,8 @@ exports.crowDistance = function (lat1, lon1, lat2, lon2, radius) {
 var objectPathCache = {};
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
 exports.resolvePath = function (pathQuery) {
+    if (!pathQuery || !pathQuery)
+        return [];
     var cacheKey = pathQuery;
     if (objectPathCache[cacheKey]) {
         return objectPathCache[cacheKey];

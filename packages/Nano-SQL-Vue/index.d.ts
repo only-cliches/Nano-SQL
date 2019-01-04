@@ -1,8 +1,8 @@
-import { NanoSQLInstance, DatabaseEvent } from "nano-sql";
+import { nanoSQLInstance, DatabaseEvent } from "nano-sql";
 export declare const nSQLVue: (props: {
     tables: string[];
     callback: (event: DatabaseEvent, complete: (any: any) => void) => void;
-    store?: NanoSQLInstance;
+    store?: nanoSQLInstance;
 }) => {
     methods: {
         _nSQLDoRunUpdate: (event: any) => void;

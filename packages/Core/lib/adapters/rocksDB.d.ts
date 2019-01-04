@@ -1,24 +1,24 @@
-import { INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
+import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "../interfaces";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
 export declare const rimraf: (dir_path: string) => void;
-export declare class RocksDB extends NanoSQLMemoryIndex {
-    path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => {
+export declare class RocksDB extends nanoSQLMemoryIndex {
+    path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => {
         lvld: any;
         args?: any;
     }) | undefined;
-    plugin: INanoSQLPlugin;
-    nSQL: INanoSQLInstance;
+    plugin: InanoSQLPlugin;
+    nSQL: InanoSQLInstance;
     private _id;
     private _lvlDown;
     private _levelDBs;
     private _ai;
     private _tableConfigs;
-    constructor(path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => {
+    constructor(path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => {
         lvld: any;
         args?: any;
     }) | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

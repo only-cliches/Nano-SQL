@@ -1,10 +1,10 @@
 /// <reference types="websql" />
-import { INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, SQLiteAbstractFns } from "../interfaces";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
+import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, SQLiteAbstractFns } from "../interfaces";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
 export declare const SQLiteAbstract: (_query: (allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void) => void, _batchSize: number) => SQLiteAbstractFns;
-export declare class WebSQL extends NanoSQLMemoryIndex {
-    plugin: INanoSQLPlugin;
-    nSQL: INanoSQLInstance;
+export declare class WebSQL extends nanoSQLMemoryIndex {
+    plugin: InanoSQLPlugin;
+    nSQL: InanoSQLInstance;
     private _size;
     private _id;
     private _db;
@@ -13,7 +13,7 @@ export declare class WebSQL extends NanoSQLMemoryIndex {
     private _tableConfigs;
     constructor(size?: number, batchSize?: number);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     _query(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;

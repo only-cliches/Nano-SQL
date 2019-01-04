@@ -1,8 +1,8 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
-import { DataModel, NanoSQLInstance } from "nano-sql/lib/index";
+import { nanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
+import { DataModel, nanoSQLInstance } from "nano-sql/lib/index";
 import { Promise } from "lie-ts";
 import * as redis from "redis";
-export declare class RedisAdapter implements NanoSQLStorageAdapter {
+export declare class RedisAdapter implements nanoSQLStorageAdapter {
     connectArgs: redis.ClientOpts;
     opts: {
         multipleDBs?: boolean | undefined;
@@ -47,5 +47,5 @@ export declare class RedisAdapter implements NanoSQLStorageAdapter {
     getIndex(table: string, getLength: boolean, complete: (index) => void): void;
     destroy(complete: () => void): void;
     sub(type: string, callback: (eventData: any) => void): void;
-    setNSQL(nsql: NanoSQLInstance): void;
+    setNSQL(nsql: nanoSQLInstance): void;
 }

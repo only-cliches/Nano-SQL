@@ -1,5 +1,5 @@
-import { crowDistance, deepGet, cast, resolvePath, _objectsEqual, getFnValue, allAsync, _maybeAssign, _NanoSQLQueue, chainAsync, adapterFilters, deg2rad, rad2deg } from "./utilities";
-import { INanoSQLQuery, INanoSQLIndex, IWhereCondition, INanoSQLInstance } from "./interfaces";
+import { crowDistance, deepGet, cast, resolvePath, _objectsEqual, getFnValue, allAsync, _maybeAssign, _nanoSQLQueue, chainAsync, adapterFilters, deg2rad, rad2deg } from "./utilities";
+import { InanoSQLQuery, InanoSQLIndex, IWhereCondition, InanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
 const wordLevenshtienCache: { [words: string]: number } = {};
@@ -11,7 +11,7 @@ export interface ICrowIndexQuery {
     lon: number
 }
 
-export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
+export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
 
     nSQL.functions = {
         COUNT: {
@@ -151,7 +151,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
             },
             checkIndex: (query, fnArgs, where) => {
                 if (where[1] === "<" || where[1] === "<=") {
-                    const indexes: {[id: string]: INanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
+                    const indexes: {[id: string]: InanoSQLIndex} = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
                     const crowColumn = resolvePath(fnArgs[0]);
                     let crowCols: string[] = [];
                     // find the lat/lon indexes for the crow calculation
@@ -173,7 +173,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                 }
                 return false;
             },
-            queryIndex: (query: INanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err) => void) => {
+            queryIndex: (query: InanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err) => void) => {
                 const latTable = `_idx_${query.table as string}_${where.index}.lat`;
                 const lonTable = `_idx_${query.table as string}_${where.index}.lon`;
                 const condition = where.comp;
@@ -307,7 +307,7 @@ export const attachDefaultFns = (nSQL: INanoSQLInstance) => {
                             const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
                             const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
                             if (doRow) {
-                                onRow(onlyPKs ? row[nSQL.tables[query.table as string].pkCol] : row, counter);
+                                onRow(onlyPKs ? deepGet(nSQL.tables[query.table as string].pkCol, row) : row, counter);
                                 counter++;
                             }
 

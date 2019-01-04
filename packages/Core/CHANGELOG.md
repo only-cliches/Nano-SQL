@@ -15,21 +15,21 @@
 - Added support for querying tables returned from a promise. `nSQL(() => fetch("records.json").then(d => d.json())).query("select")..stuff....exec()...`.  This also lets you nest nanoSQL queries.
 - Added support for querying promise based tables in `union`, `join` and `graph` queries.
 - Added support for nested indexes and array indexes.
-- You can no longer use `idx` in the props of the data model to declare secondary indexes, must use separate `indexes` property. [Migration Docs](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0)
-- Added filter system with over 40 filter hooks to control and modify data/query flow with plugins.
+- Added filter system with over 40 hooks to control and modify data/query flow with plugins.
 - New Stream API allows data to be streamed directly from the database without caching result sets into memory. `nSQL().query("select")...stream(onRow, onComplete, onError)`.  Results will be cached regardless if Group By, Order By, and/or aggregate functions are used.  
 - Upsert/Delete queries no longer load their entire result set into memory before performing their action, uses the stream api internally.
 - Added UNION query support.
-- `limit().offset()` queries now do the same as the `.range()` query modifier use to do when there aren't orderby/groupby arguments.  `.range()` is also no longer supported.
+- `limit().offset()` queries now do the same as the `.range()` query modifier use to do when there aren't orderby/groupby arguments.  
+- `.range()` is also no longer supported.
 - `union`, `join` and `graph` queries now use indexes when possible/available.
 - Added MapReduce support.
 - Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/functions.ts).
 - Events can now target nested row values. `nSQL("Table.column.nested.value").on("change", () => {})`.
 - Plugins and adapters can declare core/plugin version dependencies which are validated at runtime.
-- Added new index `offset` feature.  Primary keys (used for the secondary indexes) often don't support negative values, the offset feature lets you index negative values that are less than the offset value provided in the index config.
+- Added new index `offset` feature for secondary indexes.  Primary keys (used for the secondary indexes) often don't support negative values, the offset feature lets you index negative values that are less than the offset value provided in the index config.
 - Swapped out LevelDB for RocksDB.
 - Primary key indexes are no longer kept in memory for better performance.
-- Database adapters can now support secondary index specific features.
+- Database adapters now support secondary index specific features.
 - Query types that are also supported by SQLite are tested against SQLite for consistency.
 - All javascript `Math` functions are supported in queries.
 - Changed OrderBy and GroupBy syntax: `nSQL("table").query("select").orderBy(["col1 ASC", "col2 DESC"]).exec()...`.

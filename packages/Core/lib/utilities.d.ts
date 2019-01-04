@@ -1,12 +1,12 @@
-import { INanoSQLQuery, INanoSQLInstance, TableQueryResult, INanoSQLTable } from "./interfaces";
-export declare const blankTableDefinition: INanoSQLTable;
+import { InanoSQLQuery, InanoSQLInstance, TableQueryResult, InanoSQLTable } from "./interfaces";
+export declare const blankTableDefinition: InanoSQLTable;
 export declare const binarySearch: (arr: any[], value: any, indexOf: boolean, startVal?: number | undefined, endVal?: number | undefined) => number;
 export declare const titleCase: (str: string) => string;
 export declare const getWeekOfYear: (d: Date) => number;
-export declare const buildQuery: (nSQL: INanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {
+export declare const buildQuery: (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
-}, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>), action: string) => INanoSQLQuery;
-export declare const adapterFilters: (nSQL: INanoSQLInstance, query?: INanoSQLQuery | undefined) => {
+}, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>), action: string) => InanoSQLQuery;
+export declare const adapterFilters: (nSQL: InanoSQLInstance, query?: InanoSQLQuery | undefined) => {
     write: (table: string, pk: any, row: {
         [key: string]: any;
     }, complete: (pk: any) => void, error: (err: any) => void) => void;
@@ -18,7 +18,7 @@ export declare const adapterFilters: (nSQL: INanoSQLInstance, query?: INanoSQLQu
     }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
     connect: (id: string, complete: () => void, error: (err: any) => void) => void;
     disconnect: (complete: () => void, error: (err: any) => void) => void;
-    createTable: (tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) => void;
+    createTable: (tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => void;
     dropTable: (table: string, complete: () => void, error: (err: any) => void) => void;
     disconnectTable: (table: string, complete: () => void, error: (err: any) => void) => void;
     delete: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
@@ -28,7 +28,7 @@ export declare const adapterFilters: (nSQL: INanoSQLInstance, query?: INanoSQLQu
     deleteIndex: (indexName: string, complete: () => void, error: (err: any) => void) => void;
     addIndexValue: (indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => void;
     deleteIndexValue: (indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => void;
-    readIndexKey: (table: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => void;
+    readIndexKey: (indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => void;
     readIndexKeys: (indexName: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) => void;
 };
 export declare const noop: () => void;
@@ -50,7 +50,7 @@ export declare const _assign: (obj: any) => any;
  * @returns {boolean}
  */
 export declare const _objectsEqual: (obj1: any, obj2: any) => boolean;
-export declare class _NanoSQLQueue {
+export declare class _nanoSQLQueue {
     processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
     onError?: ((err: any) => void) | undefined;
     onComplete?: (() => void) | undefined;
@@ -136,7 +136,7 @@ export declare const generateID: (primaryKeyType: string, incrimentValue?: numbe
  */
 export declare const cleanArgs: (argDeclarations: string[], args: {
     [key: string]: any;
-}) => {
+}, nSQL: InanoSQLInstance) => {
     [key: string]: any;
 };
 /**
@@ -154,7 +154,7 @@ export declare const objSort: (path?: string | undefined, rev?: boolean | undefi
  * @param {*} [val]
  * @returns {*}
  */
-export declare const cast: (type: string, val: any, allowUknownTypes?: boolean | undefined) => any;
+export declare const cast: (type: string, val: any, allowUknownTypes?: boolean | undefined, nSQL?: InanoSQLInstance | undefined) => any;
 export declare const rad2deg: (rad: number) => number;
 export declare const deg2rad: (deg: number) => number;
 /**

@@ -1,4 +1,4 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
+import { nanoSQLStorageAdapter, DBKey, DBRow, _nanoSQLStorage } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "nano-sql/lib/utilities";
@@ -32,10 +32,10 @@ export class SQLiteResult {
  *
  * @export
  * @class _SyncStore
- * @implements {NanoSQLStorageAdapter}
+ * @implements {nanoSQLStorageAdapter}
  */
 // tslint:disable-next-line
-export class nSQLiteAdapter implements NanoSQLStorageAdapter {
+export class nSQLiteAdapter implements nanoSQLStorageAdapter {
 
 
     private _pkKey: {

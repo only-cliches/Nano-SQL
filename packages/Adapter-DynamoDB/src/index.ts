@@ -1,5 +1,5 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "@nano-sql/core/lib/interfaces";
-import { _NanoSQLQueue, generateID, _maybeAssign, setFast } from "@nano-sql/core/lib/utilities";
+import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "@nano-sql/core/lib/interfaces";
+import { _nanoSQLQueue, generateID, _maybeAssign, setFast } from "@nano-sql/core/lib/utilities";
 import * as AWS from "aws-sdk";
 
 export interface DynamoAdapterArgs {
@@ -24,14 +24,14 @@ export interface DynamoAdapterConfig {
 
 export const copy = (e) => e;
 
-export class DynamoDB implements INanoSQLAdapter {
+export class DynamoDB implements InanoSQLAdapter {
 
-    plugin: INanoSQLPlugin = {
+    plugin: InanoSQLPlugin = {
         name: "DynamoDB Adapter",
         version: 2.0
     };
 
-    nSQL: INanoSQLInstance;
+    nSQL: InanoSQLInstance;
 
     private _id: string;
     private _db: AWS.DynamoDB;
@@ -73,7 +73,7 @@ export class DynamoDB implements INanoSQLAdapter {
         return this._id + "." + tableName;
     }
 
-    createAndInitTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createAndInitTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
 
         this._db.listTables().promise().then((tables) => {
             const exists = (tables.TableNames || []).filter(t => t === this.table(tableName)).length > 0;

@@ -1,20 +1,20 @@
-import { INanoSQLQueryBuilder, INanoSQLInstance, INanoSQLQuery, INanoSQLJoinArgs, INanoSQLGraphArgs, TableQueryResult } from "./interfaces";
+import { InanoSQLQueryBuilder, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
 import { buildQuery, uuid } from "./utilities";
 
 // tslint:disable-next-line
-export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
+export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
-    public _db: INanoSQLInstance;
+    public _db: InanoSQLInstance;
 
     public _error: string;
 
     public _AV: string;
 
-    public _query: INanoSQLQuery;
+    public _query: InanoSQLQuery;
 
     public static execMap: any;
 
-    constructor(db: INanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), queryArgs?: any, actionOrView?: string) {
+    constructor(db: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), queryArgs?: any, actionOrView?: string) {
         this._db = db;
 
         this._AV = actionOrView || "";
@@ -37,29 +37,29 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         }
     }
 
-    public where(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _NanoSQLQueryBuilder {
+    public where(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _nanoSQLQueryBuilder {
         this._query.where = args;
         return this;
     }
 
 
-    public orderBy(args: string[]): _NanoSQLQueryBuilder {
+    public orderBy(args: string[]): _nanoSQLQueryBuilder {
         this._query.orderBy = args;
         return this;
     }
 
-    public groupBy(columns: string[]): _NanoSQLQueryBuilder {
+    public groupBy(columns: string[]): _nanoSQLQueryBuilder {
         this._query.groupBy = columns;
         return this;
     }
 
-    public having(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _NanoSQLQueryBuilder {
+    public having(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _nanoSQLQueryBuilder {
         this._query.having = args;
         return this;
     }
 
 
-    public join(args: INanoSQLJoinArgs | INanoSQLJoinArgs[]): _NanoSQLQueryBuilder {
+    public join(args: InanoSQLJoinArgs | InanoSQLJoinArgs[]): _nanoSQLQueryBuilder {
         const err = "Join commands requires table and type arguments!";
         if (Array.isArray(args)) {
             args.forEach((arg) => {
@@ -78,27 +78,27 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     }
 
 
-    public limit(args: number): _NanoSQLQueryBuilder {
+    public limit(args: number): _nanoSQLQueryBuilder {
         this._query.limit = args;
         return this;
     }
 
-    public comment(comment: string): _NanoSQLQueryBuilder {
+    public comment(comment: string): _nanoSQLQueryBuilder {
         this._query.comments.push(comment);
         return this;
     }
 
-    public tag(tag: string): _NanoSQLQueryBuilder {
+    public tag(tag: string): _nanoSQLQueryBuilder {
         this._query.tags.push(tag);
         return this;
     }
 
-    public extend(scope: string, ...args: any[]): _NanoSQLQueryBuilder {
+    public extend(scope: string, ...args: any[]): _nanoSQLQueryBuilder {
         this._query.extend.push({ scope: scope, args: args });
         return this;
     }
 
-    public union(queries: (() => Promise<any[]>)[], unionAll?: boolean): _NanoSQLQueryBuilder {
+    public union(queries: (() => Promise<any[]>)[], unionAll?: boolean): _nanoSQLQueryBuilder {
         this._query.union = {
             queries: queries,
             type: unionAll ? "all" : "distinct"
@@ -106,16 +106,16 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
-    public offset(args: number): _NanoSQLQueryBuilder {
+    public offset(args: number): _nanoSQLQueryBuilder {
         this._query.offset = args;
         return this;
     }
 
-    public emit(): INanoSQLQuery {
+    public emit(): InanoSQLQuery {
         return this._query;
     }
 
-    public ttl(seconds: number = 60, cols?: string[]): _NanoSQLQueryBuilder {
+    public ttl(seconds: number = 60, cols?: string[]): _nanoSQLQueryBuilder {
         if (this._query.action !== "upsert") {
             throw new Error("nSQL: Can only do ttl on upsert queries!");
         }
@@ -124,7 +124,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
-    public graph(ormArgs: INanoSQLGraphArgs[]): _NanoSQLQueryBuilder {
+    public graph(ormArgs: InanoSQLGraphArgs[]): _nanoSQLQueryBuilder {
         this._query.graph = ormArgs;
         return this;
     }
@@ -132,7 +132,7 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
     public from(tableObj: {
         table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string
-    } | string): _NanoSQLQueryBuilder {
+    } | string): _nanoSQLQueryBuilder {
         if (typeof tableObj === "string") {
             this._query.table = tableObj;
         } else {
@@ -142,12 +142,12 @@ export class _NanoSQLQueryBuilder implements INanoSQLQueryBuilder {
         return this;
     }
 
-    public into(table: string): _NanoSQLQueryBuilder {
+    public into(table: string): _nanoSQLQueryBuilder {
         this._query.table = table;
         return this;
     }
 
-    public on(table: string): _NanoSQLQueryBuilder {
+    public on(table: string): _nanoSQLQueryBuilder {
         this._query.table = table;
         return this;
     }

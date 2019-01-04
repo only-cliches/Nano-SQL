@@ -64,32 +64,24 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
             }
             if (doAI)
                 ai[table] = Math.max(pk, ai[table]);
-            row[pkCol] = pk;
+            utilities_1.deepSet(pkCol, row, pk);
             var rowStr = JSON.stringify(row);
-            _query(false, "SELECT id FROM " + checkTable(table) + " WHERE id = ?", [pk], function (result) {
-                if (result.rows.length) {
-                    _query(true, "UPDATE " + checkTable(table) + " SET data = ? WHERE id = ?", [rowStr, pk], function () {
-                        if (doAI && pk === ai[table]) {
-                            _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
-                                complete(pk);
-                            }, error);
-                        }
-                        else {
-                            complete(pk);
-                        }
+            var afterWrite = function () {
+                if (doAI && pk === ai[table]) {
+                    _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
+                        complete(pk);
                     }, error);
                 }
                 else {
-                    _query(true, "INSERT INTO " + checkTable(table) + " (id, data) VALUES (?, ?)", [pk, rowStr], function () {
-                        if (doAI && pk === ai[table]) {
-                            _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
-                                complete(pk);
-                            }, error);
-                        }
-                        else {
-                            complete(pk);
-                        }
-                    }, error);
+                    complete(pk);
+                }
+            };
+            _query(false, "SELECT id FROM " + checkTable(table) + " WHERE id = ?", [pk], function (result) {
+                if (result.rows.length) {
+                    _query(true, "UPDATE " + checkTable(table) + " SET data = ? WHERE id = ?", [rowStr, pk], afterWrite, error);
+                }
+                else {
+                    _query(true, "INSERT INTO " + checkTable(table) + " (id, data) VALUES (?, ?)", [pk, rowStr], afterWrite, error);
                 }
             }, error);
         },
@@ -195,7 +187,6 @@ var WebSQL = /** @class */ (function (_super) {
     WebSQL.prototype.connect = function (id, complete, error) {
         var _this = this;
         this._id = id;
-        var isCompleting = false;
         this._db = window.openDatabase(this._id, String(this.nSQL.config.version) || "1.0", this._id, (utilities_1.isAndroid ? 5000000 : this._size));
         utilities_1.setFast(function () {
             _this._sqlite.createAI(complete, error);
@@ -249,6 +240,6 @@ var WebSQL = /** @class */ (function (_super) {
         this._sqlite.getNumberOfRecords(table, complete, error);
     };
     return WebSQL;
-}(memoryIndex_1.NanoSQLMemoryIndex));
+}(memoryIndex_1.nanoSQLMemoryIndex));
 exports.WebSQL = WebSQL;
 //# sourceMappingURL=webSQL.js.map

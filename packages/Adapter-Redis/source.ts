@@ -1,5 +1,5 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
-import { DataModel, NanoSQLInstance } from "nano-sql/lib/index";
+import { nanoSQLStorageAdapter, DBKey, DBRow, _nanoSQLStorage } from "nano-sql/lib/database/storage";
+import { DataModel, nanoSQLInstance } from "nano-sql/lib/index";
 import { setFast, Promise } from "lie-ts";
 import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, intersect, isAndroid } from "nano-sql/lib/utilities";
 import * as redis from "redis";
@@ -11,10 +11,10 @@ import { RSE } from "really-small-events";
  *
  * @export
  * @class _SyncStore
- * @implements {NanoSQLStorageAdapter}
+ * @implements {nanoSQLStorageAdapter}
  */
 // tslint:disable-next-line
-export class RedisAdapter implements NanoSQLStorageAdapter {
+export class RedisAdapter implements nanoSQLStorageAdapter {
 
 
     private _pkKey: {
@@ -560,7 +560,7 @@ export class RedisAdapter implements NanoSQLStorageAdapter {
         RSE.on(type, callback);
     }
 
-    public setNSQL(nsql: NanoSQLInstance) {
+    public setNSQL(nsql: nanoSQLInstance) {
         /**
          * Uses redis pub/sub to maintain event system across clients
          */

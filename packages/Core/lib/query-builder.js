@@ -9,8 +9,8 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("./utilities");
 // tslint:disable-next-line
-var _NanoSQLQueryBuilder = /** @class */ (function () {
-    function _NanoSQLQueryBuilder(db, table, queryAction, queryArgs, actionOrView) {
+var _nanoSQLQueryBuilder = /** @class */ (function () {
+    function _nanoSQLQueryBuilder(db, table, queryAction, queryArgs, actionOrView) {
         this._db = db;
         this._AV = actionOrView || "";
         if (typeof queryAction === "string") {
@@ -20,23 +20,23 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
             this._query = __assign({}, utilities_1.buildQuery(db, table, ""), queryAction(db), { state: "pending" });
         }
     }
-    _NanoSQLQueryBuilder.prototype.where = function (args) {
+    _nanoSQLQueryBuilder.prototype.where = function (args) {
         this._query.where = args;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.orderBy = function (args) {
+    _nanoSQLQueryBuilder.prototype.orderBy = function (args) {
         this._query.orderBy = args;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.groupBy = function (columns) {
+    _nanoSQLQueryBuilder.prototype.groupBy = function (columns) {
         this._query.groupBy = columns;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.having = function (args) {
+    _nanoSQLQueryBuilder.prototype.having = function (args) {
         this._query.having = args;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.join = function (args) {
+    _nanoSQLQueryBuilder.prototype.join = function (args) {
         var _this = this;
         var err = "Join commands requires table and type arguments!";
         if (Array.isArray(args)) {
@@ -54,19 +54,19 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._query.join = args;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.limit = function (args) {
+    _nanoSQLQueryBuilder.prototype.limit = function (args) {
         this._query.limit = args;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.comment = function (comment) {
+    _nanoSQLQueryBuilder.prototype.comment = function (comment) {
         this._query.comments.push(comment);
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.tag = function (tag) {
+    _nanoSQLQueryBuilder.prototype.tag = function (tag) {
         this._query.tags.push(tag);
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.extend = function (scope) {
+    _nanoSQLQueryBuilder.prototype.extend = function (scope) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
@@ -74,21 +74,21 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._query.extend.push({ scope: scope, args: args });
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.union = function (queries, unionAll) {
+    _nanoSQLQueryBuilder.prototype.union = function (queries, unionAll) {
         this._query.union = {
             queries: queries,
             type: unionAll ? "all" : "distinct"
         };
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.offset = function (args) {
+    _nanoSQLQueryBuilder.prototype.offset = function (args) {
         this._query.offset = args;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.emit = function () {
+    _nanoSQLQueryBuilder.prototype.emit = function () {
         return this._query;
     };
-    _NanoSQLQueryBuilder.prototype.ttl = function (seconds, cols) {
+    _nanoSQLQueryBuilder.prototype.ttl = function (seconds, cols) {
         if (seconds === void 0) { seconds = 60; }
         if (this._query.action !== "upsert") {
             throw new Error("nSQL: Can only do ttl on upsert queries!");
@@ -97,11 +97,11 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         this._query.ttlCols = cols || [];
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.graph = function (ormArgs) {
+    _nanoSQLQueryBuilder.prototype.graph = function (ormArgs) {
         this._query.graph = ormArgs;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.from = function (tableObj) {
+    _nanoSQLQueryBuilder.prototype.from = function (tableObj) {
         if (typeof tableObj === "string") {
             this._query.table = tableObj;
         }
@@ -111,19 +111,19 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
         }
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.into = function (table) {
+    _nanoSQLQueryBuilder.prototype.into = function (table) {
         this._query.table = table;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.on = function (table) {
+    _nanoSQLQueryBuilder.prototype.on = function (table) {
         this._query.table = table;
         return this;
     };
-    _NanoSQLQueryBuilder.prototype.toCSV = function (headers) {
+    _nanoSQLQueryBuilder.prototype.toCSV = function (headers) {
         var t = this;
         return t.exec().then(function (json) { return Promise.resolve(t._db.JSONtoCSV(json, headers)); });
     };
-    _NanoSQLQueryBuilder.prototype.exec = function (returnEvents) {
+    _nanoSQLQueryBuilder.prototype.exec = function (returnEvents) {
         var _this = this;
         return new Promise(function (res, rej) {
             var buffer = [];
@@ -137,14 +137,14 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
             }, rej);
         });
     };
-    _NanoSQLQueryBuilder.prototype.streamEvent = function (onRow, complete, err) {
+    _nanoSQLQueryBuilder.prototype.streamEvent = function (onRow, complete, err) {
         this._query.returnEvent = true;
         this._db.triggerQuery(this._query, onRow, complete, err);
     };
-    _NanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
+    _nanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
         this._db.triggerQuery(this._query, onRow, complete, err);
     };
-    _NanoSQLQueryBuilder.prototype.cache = function () {
+    _nanoSQLQueryBuilder.prototype.cache = function () {
         var _this = this;
         return new Promise(function (res, rej) {
             var id = utilities_1.uuid();
@@ -157,7 +157,7 @@ var _NanoSQLQueryBuilder = /** @class */ (function () {
             }).catch(rej);
         });
     };
-    return _NanoSQLQueryBuilder;
+    return _nanoSQLQueryBuilder;
 }());
-exports._NanoSQLQueryBuilder = _NanoSQLQueryBuilder;
+exports._nanoSQLQueryBuilder = _nanoSQLQueryBuilder;
 //# sourceMappingURL=query-builder.js.map

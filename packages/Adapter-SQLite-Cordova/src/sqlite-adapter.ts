@@ -1,4 +1,4 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
+import { nanoSQLStorageAdapter, DBKey, DBRow, _nanoSQLStorage } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, isAndroid, intersect } from "nano-sql/lib/utilities";
@@ -20,10 +20,10 @@ export const getMode = () => {
  *
  * @export
  * @class _SyncStore
- * @implements {NanoSQLStorageAdapter}
+ * @implements {nanoSQLStorageAdapter}
  */
 // tslint:disable-next-line
-export class SQLiteStore implements NanoSQLStorageAdapter {
+export class SQLiteStore implements nanoSQLStorageAdapter {
 
 
     private _pkKey: {
@@ -51,7 +51,7 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
         }
-        console.log(`NanoSQL "${this._id}" using SQLite.`);
+        console.log(`nanoSQL "${this._id}" using SQLite.`);
         this._db = window["sqlitePlugin"].openDatabase({name: `${this._id}_db`, location: "default"});
 
         fastALL(Object.keys(this._pkKey), (table, i, nextKey) => {

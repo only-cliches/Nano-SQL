@@ -14,14 +14,14 @@
  * 3. npm run test-browser then navigate to localhost::8080. Test results will be in the console.
  *
  */
-import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTable } from "./interfaces";
+import { InanoSQLAdapter, InanoSQLAdapterConstructor, InanoSQLInstance, InanoSQLTable } from "./interfaces";
 export declare const myConsole: any;
 export declare class nanoSQLAdapterTest {
-    adapter: INanoSQLAdapterConstructor;
+    adapter: InanoSQLAdapterConstructor;
     args: any[];
-    constructor(adapter: INanoSQLAdapterConstructor, args: any[]);
+    constructor(adapter: InanoSQLAdapterConstructor, args: any[]);
     test(): Promise<void>;
-    static newTable(adapter: INanoSQLAdapter, nSQL: INanoSQLInstance, tableName: string, tableConfig: INanoSQLTable, complete: () => void, error: () => void): void;
+    static newTable(adapter: InanoSQLAdapter, nSQL: InanoSQLInstance, tableName: string, tableConfig: InanoSQLTable, complete: () => void, error: () => void): void;
     Deletes(): Promise<{}>;
     SecondayIndexes(): Promise<{}>;
     RangeReads(): Promise<{}>;

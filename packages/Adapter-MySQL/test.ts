@@ -1,4 +1,4 @@
-import { TestAdapter } from "NanoSQL-Adapter-Test";
+import { TestAdapter } from "nanoSQL-Adapter-Test";
 import { MySQLAdapter } from "./source";
 
 new TestAdapter(MySQLAdapter, [{

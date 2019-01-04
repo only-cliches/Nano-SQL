@@ -1,4 +1,4 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
+import { nanoSQLStorageAdapter, DBKey, DBRow, _nanoSQLStorage } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 import { setFast } from "lie-ts";
 import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, intersect, isAndroid } from "nano-sql/lib/utilities";
@@ -43,9 +43,9 @@ export class SQLResult {
  *
  * @export
  * @class _SyncStore
- * @implements {NanoSQLStorageAdapter}
+ * @implements {nanoSQLStorageAdapter}
  */
-export class MySQLAdapter implements NanoSQLStorageAdapter {
+export class MySQLAdapter implements nanoSQLStorageAdapter {
 
 
     private _pkKey: {

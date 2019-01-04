@@ -9,50 +9,50 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("../utilities");
 exports.err = new Error("Memory index doesn't support this action!");
-var NanoSQLMemoryIndex = /** @class */ (function () {
-    function NanoSQLMemoryIndex(assign, useCache) {
+var nanoSQLMemoryIndex = /** @class */ (function () {
+    function nanoSQLMemoryIndex(assign, useCache) {
         this.assign = assign;
         this.useCache = useCache;
         this.indexes = {};
         this.indexLoaded = {};
         this.useCacheIndexes = {};
     }
-    NanoSQLMemoryIndex.prototype.connect = function (id, complete, error) {
+    nanoSQLMemoryIndex.prototype.connect = function (id, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.disconnect = function (complete, error) {
+    nanoSQLMemoryIndex.prototype.disconnect = function (complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.createTable = function (tableName, tableData, complete, error) {
+    nanoSQLMemoryIndex.prototype.createTable = function (tableName, tableData, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.dropTable = function (table, complete, error) {
+    nanoSQLMemoryIndex.prototype.dropTable = function (table, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.disconnectTable = function (table, complete, error) {
+    nanoSQLMemoryIndex.prototype.disconnectTable = function (table, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.write = function (table, pk, row, complete, error) {
+    nanoSQLMemoryIndex.prototype.write = function (table, pk, row, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.read = function (table, pk, complete, error) {
+    nanoSQLMemoryIndex.prototype.read = function (table, pk, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.delete = function (table, pk, complete, error) {
+    nanoSQLMemoryIndex.prototype.delete = function (table, pk, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
+    nanoSQLMemoryIndex.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.getTableIndex = function (table, complete, error) {
+    nanoSQLMemoryIndex.prototype.getTableIndex = function (table, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.getTableIndexLength = function (table, complete, error) {
+    nanoSQLMemoryIndex.prototype.getTableIndexLength = function (table, complete, error) {
         error(exports.err);
     };
-    NanoSQLMemoryIndex.prototype.createIndex = function (indexName, type, complete, error) {
+    nanoSQLMemoryIndex.prototype.createIndex = function (indexName, type, complete, error) {
         var _this = this;
-        this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: "id", isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
+        this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: ["id"], isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
             _this.indexes[indexName] = {};
             _this.indexLoaded[indexName] = false;
             _this.useCacheIndexes[indexName] = _this.useCache || false;
@@ -71,11 +71,11 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
             }, error);
         }, error);
     };
-    NanoSQLMemoryIndex.prototype.deleteIndex = function (indexName, complete, error) {
+    nanoSQLMemoryIndex.prototype.deleteIndex = function (indexName, complete, error) {
         delete this.indexes[indexName];
         this.dropTable(indexName, complete, error);
     };
-    NanoSQLMemoryIndex.prototype.addIndexValue = function (indexName, key, value, complete, error) {
+    nanoSQLMemoryIndex.prototype.addIndexValue = function (indexName, key, value, complete, error) {
         var _this = this;
         if (!this.indexLoaded[indexName]) {
             this.read(indexName, value, function (row) {
@@ -111,7 +111,7 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
             pks: this.assign ? utilities_1._assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
         }, complete, error);
     };
-    NanoSQLMemoryIndex.prototype.deleteIndexValue = function (indexName, key, value, complete, error) {
+    nanoSQLMemoryIndex.prototype.deleteIndexValue = function (indexName, key, value, complete, error) {
         var _this = this;
         if (!this.indexLoaded[indexName]) {
             this.read(indexName, value, function (row) {
@@ -158,7 +158,7 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
             }
         }
     };
-    NanoSQLMemoryIndex.prototype.readIndexKey = function (table, pk, onRowPK, complete, error) {
+    nanoSQLMemoryIndex.prototype.readIndexKey = function (table, pk, onRowPK, complete, error) {
         this.read(table, pk, function (row) {
             if (!row) {
                 complete();
@@ -168,7 +168,7 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
             complete();
         }, error);
     };
-    NanoSQLMemoryIndex.prototype.readIndexKeys = function (table, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
+    nanoSQLMemoryIndex.prototype.readIndexKeys = function (table, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
         this.readMulti(table, type, offsetOrLow, limitOrHigh, reverse, function (index) {
             if (!index)
                 return;
@@ -177,7 +177,7 @@ var NanoSQLMemoryIndex = /** @class */ (function () {
             });
         }, complete, error);
     };
-    return NanoSQLMemoryIndex;
+    return nanoSQLMemoryIndex;
 }());
-exports.NanoSQLMemoryIndex = NanoSQLMemoryIndex;
+exports.nanoSQLMemoryIndex = nanoSQLMemoryIndex;
 //# sourceMappingURL=memoryIndex.js.map

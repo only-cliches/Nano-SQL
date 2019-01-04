@@ -157,7 +157,7 @@ var RocksDB = /** @class */ (function (_super) {
         if (this._tableConfigs[table].ai) {
             this._ai[table] = Math.max(pk, this._ai[table]);
         }
-        row[this._tableConfigs[table].pkCol] = pk;
+        utilities_1.deepSet(this._tableConfigs[table].pkCol, row, pk);
         this._levelDBs[table].put(this._encodePk(table, pk), row, function (err) {
             if (err) {
                 error(err);
@@ -273,6 +273,6 @@ var RocksDB = /** @class */ (function (_super) {
             .on("error", error);
     };
     return RocksDB;
-}(memoryIndex_1.NanoSQLMemoryIndex));
+}(memoryIndex_1.nanoSQLMemoryIndex));
 exports.RocksDB = RocksDB;
 //# sourceMappingURL=rocksDB.js.map

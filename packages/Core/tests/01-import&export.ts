@@ -3,7 +3,7 @@ import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON  } from "./init";
 import { comments, users, posts } from "./data";
 import { nSQL } from "../src";
-import { INanoSQLInstance } from "../src/interfaces";
+import { InanoSQLInstance } from "../src/interfaces";
 
 
 describe("Import/Export", () => {
@@ -40,7 +40,7 @@ describe("Import/Export", () => {
 
         it("Imported CSV should match original data.", (done: MochaDone) => {
             TestDBs().then((result) => {
-                let nanoSQL: INanoSQLInstance;
+                let nanoSQL: InanoSQLInstance;
                 result.runQuery(``, [], (nSQL) => {
                     nanoSQL = nSQL;
                     return nSQL.selectTable("users").query("delete").exec();

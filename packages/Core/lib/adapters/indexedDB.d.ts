@@ -1,16 +1,16 @@
-import { INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
-export declare class IndexedDB extends NanoSQLMemoryIndex {
+import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "../interfaces";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
+export declare class IndexedDB extends nanoSQLMemoryIndex {
     version?: number | undefined;
-    plugin: INanoSQLPlugin;
-    nSQL: INanoSQLInstance;
+    plugin: InanoSQLPlugin;
+    nSQL: InanoSQLInstance;
     private _db;
     private _id;
     private _ai;
     private _tableConfigs;
     constructor(version?: number | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

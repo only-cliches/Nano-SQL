@@ -1,11 +1,11 @@
-import { INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLPlugin, loadIndexCacheFilter } from "../interfaces";
+import { InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLPlugin, loadIndexCacheFilter } from "../interfaces";
 import { binarySearch, blankTableDefinition, _assign } from "../utilities";
 
 export const err = new Error("Memory index doesn't support this action!");
 
-export class NanoSQLMemoryIndex implements INanoSQLAdapter {
-    plugin: INanoSQLPlugin;
-    nSQL: INanoSQLInstance;
+export class nanoSQLMemoryIndex implements InanoSQLAdapter {
+    plugin: InanoSQLPlugin;
+    nSQL: InanoSQLInstance;
 
     indexes: {
         [indexName: string]: {
@@ -32,7 +32,7 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
     disconnect(complete: () => void, error: (err: any) => void) {
         error(err);
     }
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
         error(err);
     }
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
@@ -70,7 +70,7 @@ export class NanoSQLMemoryIndex implements INanoSQLAdapter {
         this.createTable(indexName, {
             ...blankTableDefinition,
             pkType: type,
-            pkCol: "id",
+            pkCol: ["id"],
             isPkNum: ["float", "int", "number"].indexOf(type) !== -1
         }, () => {
             this.indexes[indexName] = {};

@@ -1,10 +1,10 @@
-import { INanoSQLAdapter, INanoSQLTable, INanoSQLInstance, INanoSQLPlugin } from "../interfaces";
+import { InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLPlugin } from "../interfaces";
 export declare const err: Error;
-export declare class NanoSQLMemoryIndex implements INanoSQLAdapter {
+export declare class nanoSQLMemoryIndex implements InanoSQLAdapter {
     assign?: boolean | undefined;
     useCache?: boolean | undefined;
-    plugin: INanoSQLPlugin;
-    nSQL: INanoSQLInstance;
+    plugin: InanoSQLPlugin;
+    nSQL: InanoSQLInstance;
     indexes: {
         [indexName: string]: {
             [key: string]: any[];
@@ -19,7 +19,7 @@ export declare class NanoSQLMemoryIndex implements INanoSQLAdapter {
     constructor(assign?: boolean | undefined, useCache?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     write(table: string, pk: any, row: {

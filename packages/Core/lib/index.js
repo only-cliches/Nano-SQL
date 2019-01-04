@@ -25,7 +25,7 @@ var nanoSQL = /** @class */ (function () {
     function nanoSQL() {
         this.version = interfaces_1.VERSION;
         this.planetRadius = 6371;
-        this._Q = new utilities_1._NanoSQLQueue();
+        this._Q = new utilities_1._nanoSQLQueue();
         this.state = {
             activeAV: "",
             hasAnyEvents: false,
@@ -801,10 +801,10 @@ var nanoSQL = /** @class */ (function () {
         return this;
     };
     nanoSQL.prototype.getView = function (viewName, viewArgs) {
-        return this._doAV("View", this.state.selectedTable, viewName, viewArgs);
+        return this._doAV("v", this.state.selectedTable, viewName, viewArgs);
     };
     nanoSQL.prototype.doAction = function (actionName, actionArgs) {
-        return this._doAV("Action", this.state.selectedTable, actionName, actionArgs);
+        return this._doAV("a", this.state.selectedTable, actionName, actionArgs);
     };
     nanoSQL.prototype._doAV = function (AVType, table, AVName, AVargs) {
         var _this = this;
@@ -820,7 +820,7 @@ var nanoSQL = /** @class */ (function () {
                 }
             }, res, rej);
         }).then(function (result) {
-            var key = result.AVType === "Action" ? "actions" : "views";
+            var key = result.AVType === "a" ? "actions" : "views";
             var selAV = _this.tables[result.table][key].reduce(function (prev, cur) {
                 if (cur.name === result.AVName)
                     return cur;
@@ -829,13 +829,13 @@ var nanoSQL = /** @class */ (function () {
             if (!selAV) {
                 return new Promise(function (res, rej) { return rej(result.AVType + " \"" + result.AVName + "\" Not Found!"); });
             }
-            return selAV.call(selAV.args ? utilities_1.cleanArgs(selAV.args, result.AVargs) : {}, _this);
+            return selAV.call(selAV.args ? utilities_1.cleanArgs(selAV.args, result.AVargs, _this) : {}, _this);
         });
     };
     nanoSQL.prototype.query = function (action, args) {
         var av = this.state.activeAV;
         this.state.activeAV = "";
-        return new query_builder_1._NanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
+        return new query_builder_1._nanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
     };
     nanoSQL.prototype.triggerQuery = function (query, onRow, complete, error) {
         var _this = this;
@@ -846,7 +846,7 @@ var nanoSQL = /** @class */ (function () {
         this.doFilter("query", { result: query }, function (setQuery) {
             if (_this.config.queue && !setQuery.skipQueue) {
                 _this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error }, function (item, done, err) {
-                    new query_1._NanoSQLQuery(_this, item.query, item.onRow, function () {
+                    new query_1._nanoSQLQuery(_this, item.query, item.onRow, function () {
                         done();
                         item.complete();
                     }, function (err) {
@@ -856,7 +856,7 @@ var nanoSQL = /** @class */ (function () {
                 });
             }
             else {
-                new query_1._NanoSQLQuery(_this, setQuery, function (row) {
+                new query_1._nanoSQLQuery(_this, setQuery, function (row) {
                     onRow(row);
                 }, complete, error);
             }
@@ -894,6 +894,7 @@ var nanoSQL = /** @class */ (function () {
         return this;
     };
     nanoSQL.prototype.default = function (replaceObj, table) {
+        var _this = this;
         replaceObj = replaceObj || {};
         if (!table && typeof this.state.selectedTable !== "string") {
             throw new Error("Must select table to generate defualts!");
@@ -937,7 +938,7 @@ var nanoSQL = /** @class */ (function () {
                     }
                 }
                 else {
-                    var value = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key]) : m.default;
+                    var value = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key], false, _this) : m.default;
                     if (typeof m.max !== "undefined" && value > m.max) {
                         error = "Data error, column " + m.key + " can't be greater than " + m.max + "!";
                     }
@@ -982,11 +983,11 @@ var nanoSQL = /** @class */ (function () {
         return utilities_1.chainAsync(importTables, function (table, i, next, err) {
             var pk = _this.tables[table].pkCol;
             utilities_1.chainAsync(tables[table], function (row, ii, nextRow, rowErr) {
-                if (!row[pk] && rowErr) {
+                if (!utilities_1.deepGet(pk, row) && rowErr) {
                     rowErr("No primary key found, can't import: " + JSON.stringify(row));
                     return;
                 }
-                utilities_1.adapterFilters(_this).write(table, row[pk], row, function (newRow) {
+                utilities_1.adapterFilters(_this).write(table, utilities_1.deepGet(pk, row), row, function (newRow) {
                     nextRow();
                     progress++;
                     if (onProgress)
@@ -1163,14 +1164,14 @@ exports.nanoSQL = nanoSQL;
 /**
  * @internal
  */
-var _NanoSQLStatic = new nanoSQL();
+var _nanoSQLStatic = new nanoSQL();
 exports.nSQL = function (table) {
-    return _NanoSQLStatic.selectTable(table);
+    return _nanoSQLStatic.selectTable(table);
 };
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
         nSQL: exports.nSQL,
-        NanoSQL: nanoSQL
+        nanoSQL: nanoSQL
     };
 }
 /*

@@ -1,4 +1,4 @@
-import { nSQL, NanoSQLInstance } from "nano-sql";
+import { nSQL, nanoSQLInstance } from "nano-sql";
 import { getMode } from "./sqlite-adapter";
 import { Promise } from "lie-ts";
 
@@ -6,19 +6,19 @@ declare const cordova: any;
 
 declare global {
     interface Window {
-        nSQL: (table?: string) => NanoSQLInstance
+        nSQL: (table?: string) => nanoSQLInstance
     }
 }
 
-export class initNanoSQL {
+export class initnanoSQL {
 
     private _noGlobal: boolean;
 
-    private _nsql: NanoSQLInstance;
+    private _nsql: nanoSQLInstance;
 
-    constructor(setup: (nSQL: (table?: string) => NanoSQLInstance) => void, doNotSetGlobal?: boolean) {
+    constructor(setup: (nSQL: (table?: string) => nanoSQLInstance) => void, doNotSetGlobal?: boolean) {
         this._noGlobal = doNotSetGlobal || false;
-        this._nsql = new NanoSQLInstance();
+        this._nsql = new nanoSQLInstance();
         setup((table?: string) => {
             return this._nsql.table(table);
         });

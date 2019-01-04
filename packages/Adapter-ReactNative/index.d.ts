@@ -1,6 +1,6 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
-import { DataModel, NanoSQLInstance } from "nano-sql/lib/index";
-export declare class ReactNativeAdapter implements NanoSQLStorageAdapter {
+import { nanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
+import { DataModel, nanoSQLInstance } from "nano-sql/lib/index";
+export declare class ReactNativeAdapter implements nanoSQLStorageAdapter {
     private _id;
     private _pkKey;
     private _dbIndex;
@@ -19,5 +19,5 @@ export declare class ReactNativeAdapter implements NanoSQLStorageAdapter {
     drop(table: string, callback: () => void): void;
     getIndex(table: string, getLength: boolean, complete: (index) => void): void;
     destroy(complete: () => void): void;
-    setNSQL(nsql: NanoSQLInstance): void;
+    setNSQL(nsql: nanoSQLInstance): void;
 }

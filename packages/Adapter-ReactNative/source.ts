@@ -1,11 +1,11 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow, _NanoSQLStorage } from "nano-sql/lib/database/storage";
-import { DataModel, NanoSQLInstance } from "nano-sql/lib/index";
+import { nanoSQLStorageAdapter, DBKey, DBRow, _nanoSQLStorage } from "nano-sql/lib/database/storage";
+import { DataModel, nanoSQLInstance } from "nano-sql/lib/index";
 import { StdObject, hash, fastALL, fastCHAIN, deepFreeze, uuid, timeid, _assign, generateID, intersect } from "nano-sql/lib/utilities";
 import { AsyncStorage } from "react-native";
 import { setFast } from "lie-ts";
 import { DatabaseIndex } from "nano-sql/lib/database/db-idx";
 
-export class ReactNativeAdapter implements NanoSQLStorageAdapter {
+export class ReactNativeAdapter implements nanoSQLStorageAdapter {
 
     private _id: string;
 
@@ -298,10 +298,10 @@ export class ReactNativeAdapter implements NanoSQLStorageAdapter {
      * OPTIONAL METHOD
      * Provides the nano-sql instance this adapter is attached to.
      * 
-     * @param {NanoSQLInstance} nsql 
+     * @param {nanoSQLInstance} nsql 
      * @memberof SampleAdapter
      */
-    public setNSQL(nsql: NanoSQLInstance) {
+    public setNSQL(nsql: nanoSQLInstance) {
 
     }
 }

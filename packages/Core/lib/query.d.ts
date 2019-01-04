@@ -1,11 +1,11 @@
-import { INanoSQLQuery, ISelectArgs, IWhereArgs, INanoSQLIndex, IWhereCondition, INanoSQLSortBy, INanoSQLTableConfig, INanoSQLQueryExec, INanoSQLInstance, INanoSQLGraphArgs, INanoSQLTable, TableQueryResult } from "./interfaces";
-import { _NanoSQLQueue } from "./utilities";
+import { InanoSQLQuery, ISelectArgs, IWhereArgs, InanoSQLIndex, IWhereCondition, InanoSQLSortBy, InanoSQLTableConfig, InanoSQLQueryExec, InanoSQLInstance, InanoSQLGraphArgs, InanoSQLTable, TableQueryResult } from "./interfaces";
+import { _nanoSQLQueue } from "./utilities";
 export declare const secondaryIndexQueue: {
-    [idAndTable: string]: _NanoSQLQueue;
+    [idAndTable: string]: _nanoSQLQueue;
 };
-export declare class _NanoSQLQuery implements INanoSQLQueryExec {
-    nSQL: INanoSQLInstance;
-    query: INanoSQLQuery;
+export declare class _nanoSQLQuery implements InanoSQLQueryExec {
+    nSQL: InanoSQLInstance;
+    query: InanoSQLQuery;
     progress: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
@@ -21,13 +21,13 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
         [groupKey: string]: number;
     };
     _groupByColumns: string[];
-    _orderBy: INanoSQLSortBy;
-    _groupBy: INanoSQLSortBy;
+    _orderBy: InanoSQLSortBy;
+    _groupBy: InanoSQLSortBy;
     upsertPath: string[];
     private _hasOrdered;
     private _startTime;
     private _indexesUsed;
-    constructor(nSQL: INanoSQLInstance, query: INanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
+    constructor(nSQL: InanoSQLInstance, query: InanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
     _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void): void;
     _getTable(tableName: string, whereCond: any[] | ((row: {
         [key: string]: any;
@@ -35,16 +35,17 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
     _buildCombineWhere(graphWhere: any, graphTable: string, rowTable: string, rowData: any): any;
-    _graph(gArgs: INanoSQLGraphArgs | INanoSQLGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void): void;
+    _graph(gArgs: InanoSQLGraphArgs | InanoSQLGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;
+    private _checkUniqueIndexes;
     private _diffUpdates;
     private _updateIndex;
     _newRow(newRow: any, complete: (row: any) => void, error: (err: any) => void): void;
     _delete(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
-    _removeRowAndIndexes(table: INanoSQLTable, row: any, complete: () => void, error: (err: any) => void): void;
+    _removeRowAndIndexes(table: InanoSQLTable, row: any, complete: (rowOrEv: any) => void, error: (err: any) => void): void;
     _getIndexValues(indexes: {
-        [id: string]: INanoSQLIndex;
+        [id: string]: InanoSQLIndex;
     }, row: any): {
         [indexName: string]: any;
     };
@@ -53,10 +54,10 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
     _combineRows(rData: any): {};
     _streamAS(row: any): any;
     _orderByRows(a: any, b: any): number;
-    _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
-    setMapReduce(newTableConfig?: INanoSQLTableConfig, oldConfig?: INanoSQLTable): void;
+    _createTable(table: InanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    setMapReduce(newTableConfig?: InanoSQLTableConfig, oldConfig?: InanoSQLTable): void;
     updateMRTimer(): void;
-    _alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    _alterTable(table: InanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
     _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err: any): void;
     _resolveFastWhere(onlyGetPKs: any, fastWhere: IWhereCondition, isReversed: boolean, onRow: (row: {
@@ -88,9 +89,9 @@ export declare class _NanoSQLQuery implements INanoSQLQueryExec {
      */
     _compare(where: IWhereCondition, wholeRow: any): boolean;
     static _sortMemoized: {
-        [key: string]: INanoSQLSortBy;
+        [key: string]: InanoSQLSortBy;
     };
-    _parseSort(sort: string[], checkforIndexes: boolean): INanoSQLSortBy;
+    _parseSort(sort: string[], checkforIndexes: boolean): InanoSQLSortBy;
     static _selectArgsMemoized: {
         [key: string]: {
             hasAggrFn: boolean;

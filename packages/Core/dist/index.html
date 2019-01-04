@@ -13,54 +13,7 @@
     <script>
         function test() {
 
-            console.time("CONNECT");
-            nSQL().connect({
-                    mode: "IDB",
-                    tables: [{
-                        name: "Project",
-                        model: {
-                            "id:uuid": {
-                                pk: true
-                            },
-                            "name:string": {},
-                            "description:string": {},
-                            "owner:string": {},
-                            "team_id:int": {}
-                        },
-                        indexes: {
-                            "owner:string": {}
-                        }
-                    }]
-                })
-                .then(() => { // connection takes 12sec to connect
-
-                    console.timeEnd("CONNECT");
-                    /*let startT = new Date()
-                    let rows = [];
-                    for (let i = 0; i < 100000; i ++) {
-                        rows.push({
-                            name: faker.fake("{{company.companyName}}"),
-                            description: faker.fake("{{company.bs}}"),
-                            owner: faker.fake("{{name.lastName}}, {{name.firstName}} {{name.suffix}}"),
-                            team_id: Math.round(Math.random() * 500)
-                        })
-                    }
-                    console.log("Faked Data Generated");*/
-                    
-                    // writes at 1 record / 2 ms
-                    console.time("READ");
-                    nSQL("Project").query("select", ["COUNT(*)"]).exec().then((result) => {
-                        console.timeEnd("READ");
-                        console.log(result);
-                        /*console.time("WRITE");
-                        nSQL("Project").loadJS(rows, (p) => {
-                            console.log(p);
-                        }).then(() => {
-                            console.timeEnd("WRITE");
-                        });*/
-                    });
-                })
-            /*
+            
                         nSQL().connect({
                             id: "test",
                             // mode: "WSQL",

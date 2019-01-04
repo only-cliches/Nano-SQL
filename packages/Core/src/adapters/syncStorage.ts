@@ -1,15 +1,15 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION } from "../interfaces";
-import { noop, deepFreeze, generateID, binarySearch, _assign, cast, blankTableDefinition } from "../utilities";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
+import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "../interfaces";
+import { noop, deepFreeze, generateID, binarySearch, _assign, cast, blankTableDefinition, deepSet } from "../utilities";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
 
-export class SyncStorage  extends NanoSQLMemoryIndex {
+export class SyncStorage  extends nanoSQLMemoryIndex {
 
-    plugin: INanoSQLPlugin = {
+    plugin: InanoSQLPlugin = {
         name: "Sync Storage Adapter",
         version: VERSION
     };
 
-    nSQL: INanoSQLInstance;
+    nSQL: InanoSQLInstance;
 
     _index: {
         [tableName: string]: any[];
@@ -28,7 +28,7 @@ export class SyncStorage  extends NanoSQLMemoryIndex {
     };
 
     _tableConfigs: {
-        [tableName: string]: INanoSQLTable;
+        [tableName: string]: InanoSQLTable;
     }
 
     constructor(public useLS?: boolean) {
@@ -44,7 +44,7 @@ export class SyncStorage  extends NanoSQLMemoryIndex {
         complete();
     }
 
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
         this._index[tableName] = [];
         this._rows[tableName] = {};
         this._tableConfigs[tableName] = tableData;
@@ -106,14 +106,14 @@ export class SyncStorage  extends NanoSQLMemoryIndex {
             }
         }
 
-        row[this._tableConfigs[table].pkCol] = pk;
+        deepSet(this._tableConfigs[table].pkCol, row, pk);
 
         if (this.useLS) {
             localStorage.setItem(this._id + "->" + table + "__" + pk, JSON.stringify(row));
-            complete(row[this._tableConfigs[table].pkCol]);
+            complete(pk);
         } else {
             this._rows[table][pk as any] = deepFreeze(row);
-            complete(row[this._tableConfigs[table].pkCol]);
+            complete(pk);
         }
     }
 

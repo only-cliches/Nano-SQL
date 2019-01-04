@@ -86,14 +86,14 @@ var SyncStorage = /** @class */ (function (_super) {
                 localStorage.setItem(this._id + "->" + table + "_ai", String(this._ai[table]));
             }
         }
-        row[this._tableConfigs[table].pkCol] = pk;
+        utilities_1.deepSet(this._tableConfigs[table].pkCol, row, pk);
         if (this.useLS) {
             localStorage.setItem(this._id + "->" + table + "__" + pk, JSON.stringify(row));
-            complete(row[this._tableConfigs[table].pkCol]);
+            complete(pk);
         }
         else {
             this._rows[table][pk] = utilities_1.deepFreeze(row);
-            complete(row[this._tableConfigs[table].pkCol]);
+            complete(pk);
         }
     };
     SyncStorage.prototype.read = function (table, pk, complete, error) {
@@ -168,6 +168,6 @@ var SyncStorage = /** @class */ (function (_super) {
         complete(this._index[table].length);
     };
     return SyncStorage;
-}(memoryIndex_1.NanoSQLMemoryIndex));
+}(memoryIndex_1.nanoSQLMemoryIndex));
 exports.SyncStorage = SyncStorage;
 //# sourceMappingURL=syncStorage.js.map

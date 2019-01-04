@@ -1,12 +1,12 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _NanoSQLQueue, _objectsEqual, titleCase, getWeekOfYear, throttle, adapterFilters } from "./utilities";
-import { INanoSQLConfig, INanoSQLFunction, INanoSQLActionOrView, INanoSQLDataModel, INanoSQLQuery, disconnectFilter, INanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, INanoSQLAdapter, willConnectFilter, INanoSQLJoinArgs, readyFilter, INanoSQLTableColumn, INanoSQLGraphArgs, IWhereCondition, INanoSQLIndex, INanoSQLTableConfig, configTableFilter, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, INanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, mapReduceFilter, postConnectFilter } from "./interfaces";
+import { _assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _nanoSQLQueue, _objectsEqual, titleCase, getWeekOfYear, throttle, adapterFilters } from "./utilities";
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, mapReduceFilter, postConnectFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
-import { _NanoSQLQuery } from "./query";
+import { _nanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
 import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
-import { _NanoSQLQueryBuilder } from "./query-builder";
+import { _nanoSQLQueryBuilder } from "./query-builder";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -14,11 +14,11 @@ if (typeof global !== "undefined") {
 }
 
 // tslint:disable-next-line
-export class nanoSQL implements INanoSQLInstance {
+export class nanoSQL implements InanoSQLInstance {
 
-    public config: INanoSQLConfig;
+    public config: InanoSQLConfig;
 
-    public adapter: INanoSQLAdapter;
+    public adapter: InanoSQLAdapter;
 
     public version: number = VERSION;
 
@@ -27,17 +27,17 @@ export class nanoSQL implements INanoSQLInstance {
     };
 
     public functions: {
-        [fnName: string]: INanoSQLFunction;
+        [fnName: string]: InanoSQLFunction;
     };
 
     public indexes: {
-        [indexName: string]: INanoSQLIndex;
+        [indexName: string]: InanoSQLIndex;
     }
 
     public planetRadius: number = 6371;
 
     public tables: {
-        [tableName: string]: INanoSQLTable;
+        [tableName: string]: InanoSQLTable;
     };
 
     public state: {
@@ -69,7 +69,7 @@ export class nanoSQL implements INanoSQLInstance {
         [eventName: string]: { [path: string]: ReallySmallEvents };
     };
 
-    private _Q = new _NanoSQLQueue();
+    private _Q = new _nanoSQLQueue();
 
     constructor() {
 
@@ -260,7 +260,7 @@ export class nanoSQL implements INanoSQLInstance {
         getPage();
     }
 
-    public selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): INanoSQLInstance {
+    public selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance {
         if (table) this.state.selectedTable = table;
         return this;
     }
@@ -299,7 +299,7 @@ export class nanoSQL implements INanoSQLInstance {
 
     }
 
-    public _initPlugins(config: INanoSQLConfig): Promise<any> {
+    public _initPlugins(config: InanoSQLConfig): Promise<any> {
         return new Promise((res, rej) => {
 
 
@@ -371,14 +371,14 @@ export class nanoSQL implements INanoSQLInstance {
         });
     }
 
-    public connect(config: INanoSQLConfig): Promise<any> {
+    public connect(config: InanoSQLConfig): Promise<any> {
         let t = this;
 
         return this._initPlugins(config).then(() => {
             return new Promise((res, rej) => {
-                this.doFilter<configFilter, INanoSQLConfig>("config", { result: config }, res, rej);
+                this.doFilter<configFilter, InanoSQLConfig>("config", { result: config }, res, rej);
             });
-        }).then((conf: INanoSQLConfig) => {
+        }).then((conf: InanoSQLConfig) => {
             this.state.id = conf.id || "nSQL_DB";
 
             this.config = {
@@ -433,7 +433,7 @@ export class nanoSQL implements INanoSQLInstance {
                 this._initPlugins(this.config).then(() => {
                     this.adapter.nSQL = this;
                     adapterFilters(this).connect(this.state.id, () => {
-                        this.doFilter<postConnectFilter, INanoSQLConfig>("postConnect", {result: this.config}, (config) => {
+                        this.doFilter<postConnectFilter, InanoSQLConfig>("postConnect", {result: this.config}, (config) => {
                             this.config = config;
                             res();
                         }, rej)
@@ -609,7 +609,7 @@ export class nanoSQL implements INanoSQLInstance {
             // recieved event from another peer
             if (e.key && e.key.indexOf(this.state.pid + ".") === 0) {
                 localStorage.removeItem(e.key);
-                const ev: INanoSQLDatabaseEvent = JSON.parse(e.newValue || "{}");
+                const ev: InanoSQLDatabaseEvent = JSON.parse(e.newValue || "{}");
                 this.state.peerEvents.push(ev.query.queryID || "");
                 this.triggerEvent({
                     ...ev,
@@ -698,7 +698,7 @@ export class nanoSQL implements INanoSQLInstance {
         return arr;
     }
 
-    public triggerMapReduce(cb?: (event: INanoSQLDatabaseEvent) => void, table?: string, name?: string) {
+    public triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string) {
 
         if (table && name) {
             if (!this.tables[table]) return;
@@ -813,7 +813,7 @@ export class nanoSQL implements INanoSQLInstance {
     }
 
 
-    public on(action: string, callBack: (event: INanoSQLDatabaseEvent) => void): INanoSQLInstance {
+    public on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance {
         let t = this;
         let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
@@ -867,7 +867,7 @@ export class nanoSQL implements INanoSQLInstance {
         return t._refreshEventChecker();
     }
 
-    public off(action: string, callBack: (event: INanoSQLDatabaseEvent, database: INanoSQLInstance) => void): INanoSQLInstance {
+    public off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance {
         let t = this;
         let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
@@ -918,7 +918,7 @@ export class nanoSQL implements INanoSQLInstance {
         return t._refreshEventChecker();
     }
 
-    public _refreshEventChecker(): INanoSQLInstance {
+    public _refreshEventChecker(): InanoSQLInstance {
 
         this.state.hasAnyEvents = Object.keys(this.eventFNs).reduce((prev, cur) => {
             if (prev === true) return true;
@@ -932,15 +932,15 @@ export class nanoSQL implements INanoSQLInstance {
     }
 
     public getView(viewName: string, viewArgs: any): Promise<any> {
-        return this._doAV("View", this.state.selectedTable as any, viewName, viewArgs);
+        return this._doAV("v", this.state.selectedTable as any, viewName, viewArgs);
     }
 
 
     public doAction(actionName: string, actionArgs: any): Promise<any> {
-        return this._doAV("Action", this.state.selectedTable as any, actionName, actionArgs);
+        return this._doAV("a", this.state.selectedTable as any, actionName, actionArgs);
     }
 
-    public _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any> {
+    public _doAV(AVType: "a" | "v", table: string, AVName: string, AVargs: any): Promise<any> {
         if (typeof this.state.selectedTable !== "string") return Promise.reject("Can't do Action/View with selected table!");
         return new Promise((res, rej) => {
             this.doFilter<actionFilter, IAVFilterResult>(AVType, {
@@ -952,9 +952,9 @@ export class nanoSQL implements INanoSQLInstance {
                 }
             }, res, rej);
         }).then((result: IAVFilterResult) => {
-            const key = result.AVType === "Action" ? "actions" : "views";
+            const key = result.AVType === "a" ? "actions" : "views";
 
-            const selAV: INanoSQLActionOrView | null = this.tables[result.table][key].reduce((prev, cur) => {
+            const selAV: InanoSQLActionOrView | null = this.tables[result.table][key].reduce((prev, cur) => {
                 if (cur.name === result.AVName) return cur;
                 return prev;
             }, null as any);
@@ -963,27 +963,27 @@ export class nanoSQL implements INanoSQLInstance {
                 return new Promise((res, rej) => rej(`${result.AVType} "${result.AVName}" Not Found!`));
             }
 
-            return selAV.call(selAV.args ? cleanArgs(selAV.args, result.AVargs) : {}, this);
+            return selAV.call(selAV.args ? cleanArgs(selAV.args, result.AVargs, this) : {}, this);
         });
     }
 
-    public query(action: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), args?: any): INanoSQLQueryBuilder {
+    public query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder {
         const av = this.state.activeAV;
         this.state.activeAV = "";
-        return new _NanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
+        return new _nanoSQLQueryBuilder(this, this.state.selectedTable, action, args, av);
     }
 
-    public triggerQuery(query: INanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void {
+    public triggerQuery(query: InanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void {
         if (!this.state.connected && typeof query.table === "string") {
             error("nSQL: Can't do a query before the database is connected!");
             return;
         }
 
-        this.doFilter<queryFilter, INanoSQLQuery>("query", { result: query }, (setQuery) => {
+        this.doFilter<queryFilter, InanoSQLQuery>("query", { result: query }, (setQuery) => {
 
             if (this.config.queue && !setQuery.skipQueue) {
-                this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error }, (item: { query: INanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
-                    new _NanoSQLQuery(this, item.query, item.onRow, () => {
+                this._Q.newItem({ query: setQuery, onRow: onRow, complete: complete, error: error }, (item: { query: InanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
+                    new _nanoSQLQuery(this, item.query, item.onRow, () => {
                         done();
                         item.complete();
                     }, (err) => {
@@ -992,16 +992,16 @@ export class nanoSQL implements INanoSQLInstance {
                     });
                 });
             } else {
-                new _NanoSQLQuery(this, setQuery, (row) => {
+                new _nanoSQLQuery(this, setQuery, (row) => {
                     onRow(row);
                 }, complete, error);
             }
         }, error);
     }
 
-    public triggerEvent(eventData: INanoSQLDatabaseEvent, ignoreStarTable?: boolean): INanoSQLInstance {
+    public triggerEvent(eventData: InanoSQLDatabaseEvent, ignoreStarTable?: boolean): InanoSQLInstance {
 
-        this.doFilter<eventFilter, INanoSQLDatabaseEvent>("event", { result: eventData }, (event) => {
+        this.doFilter<eventFilter, InanoSQLDatabaseEvent>("event", { result: eventData }, (event) => {
             if (this.state.hasAnyEvents) {
                 setFast(() => {
                     event.events.forEach((evnt) => {
@@ -1041,7 +1041,7 @@ export class nanoSQL implements INanoSQLInstance {
         }
 
         let error = "";
-        const resolveModel = (cols: INanoSQLTableColumn[], useObj?: any, nestedModel?: string): any => {
+        const resolveModel = (cols: InanoSQLTableColumn[], useObj?: any, nestedModel?: string): any => {
             let newObj = {};
             useObj = useObj || {};
             if (nestedModel && nestedModel.length) {
@@ -1071,7 +1071,7 @@ export class nanoSQL implements INanoSQLInstance {
                         newObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
                     }
                 } else {
-                    let value = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key]) : m.default;
+                    let value = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key], false, this) : m.default;
                     if (typeof m.max !== "undefined" && value > m.max) {
                         error = `Data error, column ${m.key} can't be greater than ${m.max}!`
                     }
@@ -1124,11 +1124,11 @@ export class nanoSQL implements INanoSQLInstance {
         return chainAsync(importTables, (table, i, next, err) => {
             const pk = this.tables[table].pkCol;
             chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
-                if (!row[pk] && rowErr) {
+                if (!deepGet(pk, row) && rowErr) {
                     rowErr("No primary key found, can't import: " + JSON.stringify(row));
                     return;
                 }
-                adapterFilters(this).write(table, row[pk], row, (newRow) => {
+                adapterFilters(this).write(table, deepGet(pk, row), row, (newRow) => {
                     nextRow();
                     progress++;
                     if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
@@ -1304,16 +1304,16 @@ export class nanoSQL implements INanoSQLInstance {
 /**
  * @internal
  */
-let _NanoSQLStatic = new nanoSQL();
+let _nanoSQLStatic = new nanoSQL();
 
 export const nSQL = (table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)) => {
-    return _NanoSQLStatic.selectTable(table);
+    return _nanoSQLStatic.selectTable(table);
 };
 
 if (typeof window !== "undefined") {
     window["nano-sql"] = {
         nSQL: nSQL,
-        NanoSQL: nanoSQL
+        nanoSQL: nanoSQL
     };
 }
 

@@ -3,7 +3,7 @@ import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
-import { INanoSQLInstance } from "../src/interfaces";
+import { InanoSQLInstance } from "../src/interfaces";
 import { uuid, crowDistance } from "../src/utilities";
 
 
@@ -550,6 +550,42 @@ describe("Testing Other Features", () => {
                 }
             });
         });
+    });
+
+    it("Unique Secondary Indexes", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        const queryFinished = (withError?: boolean) => {
+            try {
+                expect(withError).to.equal(true);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int":{unique: true}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("upsert", {id: 60, num: 40}).exec();
+        }).then((pkRows) => {
+            queryFinished(false);
+        }).catch((err) => {
+            queryFinished(true);
+        })
     });
 
     it("Change Events work", (done: MochaDone) => {

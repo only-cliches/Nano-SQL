@@ -102,11 +102,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -176,11 +175,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                             props: {}
                         }
                     },
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -312,11 +310,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -463,11 +460,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "uuid",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: false,
                     ai: false
                 }, res, rej);
@@ -585,11 +581,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                         }
                     ],
                     indexes: {},
-                    pkOffset: 0,
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -646,7 +641,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 Promise.all([
-                    "test", "test2", "test3", "test4", "test5", "test6"
+                    "test", "test2", "test3", "test4", "test5", "test6", "test7"
                 ].map(function (t) {
                     return new Promise(function (res2, rej2) {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
@@ -673,6 +668,12 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 },
                                 "test6": {
                                     "id:float": { pk: true },
+                                    "name:string": {}
+                                },
+                                "test7": {
+                                    "nested:obj": {
+                                        model: { "id:int": { pk: true } }
+                                    },
                                     "name:string": {}
                                 }
                             }[t],
@@ -701,6 +702,12 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                     "test6": {
                                         key: "id",
                                         type: "float"
+                                    },
+                                    "test7": {
+                                        key: "nested",
+                                        model: [
+                                            { key: "id", type: "int" }
+                                        ]
                                     }
                                 }[t],
                                 {
@@ -709,7 +716,6 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 }
                             ],
                             indexes: {},
-                            pkOffset: 0,
                             actions: [],
                             views: [],
                             pkType: {
@@ -718,16 +724,18 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 test3: "timeId",
                                 test4: "timeIdms",
                                 test5: "uuid",
-                                test6: "float"
+                                test6: "float",
+                                test7: "int"
                             }[t],
-                            pkCol: "id",
+                            pkCol: t === "test7" ? ["nested", "id"] : ["id"],
                             isPkNum: {
                                 test: true,
                                 test2: false,
                                 test3: false,
                                 test4: false,
                                 test5: false,
-                                test6: true
+                                test6: true,
+                                test7: true
                             }[t],
                             ai: {
                                 test: true,
@@ -735,7 +743,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 test3: false,
                                 test4: false,
                                 test5: false,
-                                test6: false
+                                test6: false,
+                                test7: false
                             }[t]
                         }, res2, rej2);
                     });
@@ -852,8 +861,37 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 }).catch(rej);
             });
         }).then(function () {
+            // Nested PK Test
+            return new Promise(function (res, rej) {
+                var nestedPKRows = [];
+                for (var i = 1; i < 20; i++) {
+                    nestedPKRows.push({ nested: { id: i }, name: "Test " + i });
+                }
+                utilities_1.chainAsync(nestedPKRows, function (row, i, next) {
+                    adapter.write("test7", row.nested.id, row, next, rej);
+                }).then(function () {
+                    var rows = [];
+                    adapter.readMulti("test7", "all", undefined, undefined, false, function (row) {
+                        rows.push(row);
+                    }, function () {
+                        var condition = utilities_1._objectsEqual(rows, nestedPKRows);
+                        exports.myConsole.assert(condition, "Test Nested primary keys.");
+                        condition ? (function () {
+                            adapter.read("test7", nestedPKRows[2].nested.id, function (row) {
+                                var condition2 = utilities_1._objectsEqual(row.nested.id, nestedPKRows[2].nested.id);
+                                exports.myConsole.assert(condition2, "Select Nested Primary Key.");
+                                condition2 ? res() : rej({ e: nestedPKRows[0].nested.id, g: row.id });
+                            }, rej);
+                        })() : rej({
+                            e: nestedPKRows.sort(function (a, b) { return a.id > b.id ? 1 : -1; }),
+                            g: rows
+                        });
+                    }, rej);
+                }).catch(rej);
+            });
+        }).then(function () {
             return Promise.all([
-                "test", "test2", "test3", "test4", "test5", "test6"
+                "test", "test2", "test3", "test4", "test5", "test6", "test7"
             ].map(function (table) { return new Promise(function (res, rej) {
                 adapter.dropTable(table, res, rej);
             }); })).then(function () {

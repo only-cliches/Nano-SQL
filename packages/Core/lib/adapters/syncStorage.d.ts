@@ -1,9 +1,9 @@
-import { INanoSQLTable, INanoSQLPlugin, INanoSQLInstance } from "../interfaces";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
-export declare class SyncStorage extends NanoSQLMemoryIndex {
+import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "../interfaces";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
+export declare class SyncStorage extends nanoSQLMemoryIndex {
     useLS?: boolean | undefined;
-    plugin: INanoSQLPlugin;
-    nSQL: INanoSQLInstance;
+    plugin: InanoSQLPlugin;
+    nSQL: InanoSQLInstance;
     _index: {
         [tableName: string]: any[];
     };
@@ -17,11 +17,11 @@ export declare class SyncStorage extends NanoSQLMemoryIndex {
         [tableName: string]: number;
     };
     _tableConfigs: {
-        [tableName: string]: INanoSQLTable;
+        [tableName: string]: InanoSQLTable;
     };
     constructor(useLS?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void): void;
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

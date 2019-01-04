@@ -292,7 +292,7 @@ exports.attachDefaultFns = function (nSQL) {
                             var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
                             var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
                             if (doRow) {
-                                onRow(onlyPKs ? row[nSQL.tables[query.table].pkCol] : row, counter);
+                                onRow(onlyPKs ? utilities_1.deepGet(nSQL.tables[query.table].pkCol, row) : row, counter);
                                 counter++;
                             }
                             next(null);

@@ -55,7 +55,7 @@ var IndexedDB = /** @class */ (function (_super) {
         idb.onupgradeneeded = function (event) {
             _this._db[tableName] = event.target.result;
             if (!_this._db[tableName].objectStoreNames.contains(tableName)) {
-                _this._db[tableName].createObjectStore(tableName, { keyPath: tableData.pkCol });
+                _this._db[tableName].createObjectStore(tableName, { keyPath: tableData.pkCol.join(".") });
             }
         };
         // Called once the database is connected
@@ -103,7 +103,7 @@ var IndexedDB = /** @class */ (function (_super) {
             this._ai[table] = utilities_1.cast("int", Math.max(this._ai[table] || 0, pk));
             localStorage.setItem(this._id + "_" + table + "_idb_ai", String(this._ai[table]));
         }
-        row[this._tableConfigs[table].pkCol] = pk;
+        utilities_1.deepSet(this._tableConfigs[table].pkCol, row, pk);
         this.store(table, "readwrite", function (transaction, store) {
             try {
                 store.put(row).onsuccess = function () {
@@ -118,7 +118,7 @@ var IndexedDB = /** @class */ (function (_super) {
     IndexedDB.prototype.read = function (table, pk, complete, error) {
         this.store(table, "readonly", function (transaction, store) {
             var singleReq = store.get(pk);
-            singleReq.onerror = function () {
+            singleReq.onerror = function (err) {
                 complete(undefined);
             };
             singleReq.onsuccess = function () {
@@ -175,7 +175,7 @@ var IndexedDB = /** @class */ (function (_super) {
             store.openCursor().onsuccess = function (event) {
                 var cursor = event.target.result;
                 if (cursor) {
-                    index.push(cursor.value[_this._tableConfigs[table].pkCol]);
+                    index.push(utilities_1.deepGet(_this._tableConfigs[table].pkCol, cursor.value));
                     cursor.continue();
                 }
                 else {
@@ -195,6 +195,6 @@ var IndexedDB = /** @class */ (function (_super) {
         }, error);
     };
     return IndexedDB;
-}(memoryIndex_1.NanoSQLMemoryIndex));
+}(memoryIndex_1.nanoSQLMemoryIndex));
 exports.IndexedDB = IndexedDB;
 //# sourceMappingURL=indexedDB.js.map

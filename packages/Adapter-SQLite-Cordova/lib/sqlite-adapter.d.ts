@@ -1,12 +1,12 @@
 /// <reference types="websql" />
-import { NanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
+import { nanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 export interface CordovaSQLiteDB {
     sqlBatch: (queries: (string | any[])[], onSuccess: () => void, onFail: (err: Error) => void) => void;
     executeSql: (sql: string, vars: any[], onSuccess: (result: SQLResultSet) => void, onFail: (err: Error) => void) => void;
 }
 export declare const getMode: () => SQLiteStore | "PERM";
-export declare class SQLiteStore implements NanoSQLStorageAdapter {
+export declare class SQLiteStore implements nanoSQLStorageAdapter {
     private _pkKey;
     private _dbIndex;
     private _id;

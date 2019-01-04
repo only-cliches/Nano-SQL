@@ -1,13 +1,13 @@
-import { NanoSQLInstance } from "nano-sql";
+import { nanoSQLInstance } from "nano-sql";
 import { Promise } from "lie-ts";
 declare global  {
     interface Window {
-        nSQL: (table?: string) => NanoSQLInstance;
+        nSQL: (table?: string) => nanoSQLInstance;
     }
 }
-export declare class initNanoSQL {
+export declare class initnanoSQL {
     private _noGlobal;
     private _nsql;
-    constructor(setup: (nSQL: (table?: string) => NanoSQLInstance) => void, doNotSetGlobal?: boolean);
+    constructor(setup: (nSQL: (table?: string) => nanoSQLInstance) => void, doNotSetGlobal?: boolean);
     connect(): Promise<any>;
 }

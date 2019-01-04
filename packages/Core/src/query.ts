@@ -1,21 +1,21 @@
 import { 
-    INanoSQLQuery, 
+    InanoSQLQuery, 
     ISelectArgs, 
     IWhereArgs, 
     IWhereType, 
-    INanoSQLIndex, 
+    InanoSQLIndex, 
     IWhereCondition, 
-    INanoSQLSortBy, 
-    INanoSQLTableConfig, 
+    InanoSQLSortBy, 
+    InanoSQLTableConfig, 
     configTableFilter, 
-    INanoSQLDataModel, 
-    INanoSQLTableColumn, 
-    INanoSQLJoinArgs, 
-    INanoSQLQueryExec, 
-    INanoSQLInstance, 
+    InanoSQLDataModel, 
+    InanoSQLTableColumn, 
+    InanoSQLJoinArgs, 
+    InanoSQLQueryExec, 
+    InanoSQLInstance, 
     customQueryFilter, 
-    INanoSQLGraphArgs, 
-    INanoSQLTable, 
+    InanoSQLGraphArgs, 
+    InanoSQLTable, 
     conformRowFilter, 
     deleteRowFilter, 
     addRowFilter, 
@@ -24,9 +24,9 @@ import {
     alterTableFilter, 
     addTableFilter, 
     TableQueryResult, 
-    INanoSQLMapReduce, 
+    InanoSQLMapReduce, 
     mapReduceFilter, 
-    INanoSQLDatabaseEvent 
+    InanoSQLDatabaseEvent 
 } from "./interfaces";
 
 import { 
@@ -40,14 +40,14 @@ import {
     _assign, 
     buildQuery, 
     deepSet, 
-    _NanoSQLQueue, 
+    _nanoSQLQueue, 
     uuid, 
     adapterFilters, 
     throttle,
     nan,
 } from "./utilities";
 
-export const secondaryIndexQueue: { [idAndTable: string]: _NanoSQLQueue } = {};
+export const secondaryIndexQueue: { [idAndTable: string]: _nanoSQLQueue } = {};
 
 const globalTableCache: {
     [cacheID: string]: {
@@ -60,8 +60,8 @@ const globalTableCache: {
 } = {};
 
 class MapReduceFilterFn {
-    init(nSQL: INanoSQLInstance, table: string, mr: INanoSQLMapReduce) {
-        return (event: INanoSQLDatabaseEvent) => {
+    init(nSQL: InanoSQLInstance, table: string, mr: InanoSQLMapReduce) {
+        return (event: InanoSQLDatabaseEvent) => {
             nSQL.doFilter<mapReduceFilter, boolean>("mapReduce", {result: true, table: table, mr: mr}, (doMR) => {
                 if (doMR) {
                     nSQL.triggerEvent(event, true);
@@ -75,7 +75,7 @@ class MapReduceFilterFn {
 }
 
 // tslint:disable-next-line
-export class _NanoSQLQuery implements INanoSQLQueryExec {
+export class _nanoSQLQuery implements InanoSQLQueryExec {
 
     public _queryBuffer: any[] = [];
     public _stream: boolean = true;
@@ -90,16 +90,16 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     } = {};
     public _groupByColumns: string[];
 
-    public _orderBy: INanoSQLSortBy;
-    public _groupBy: INanoSQLSortBy;
+    public _orderBy: InanoSQLSortBy;
+    public _groupBy: InanoSQLSortBy;
     public upsertPath: string[];
     private _hasOrdered: boolean;
     private _startTime: number;
     private _indexesUsed: any[];
 
     constructor(
-        public nSQL: INanoSQLInstance,
-        public query: INanoSQLQuery,
+        public nSQL: InanoSQLInstance,
+        public query: InanoSQLQuery,
         public progress: (row: any, i: number) => void,
         public complete: () => void,
         public error: (err: any) => void
@@ -170,12 +170,12 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             case "create table":
             case "create table if not exists":
                 requireQueryOpts(true, () => {
-                    this._createTable(this.query.actionArgs as INanoSQLTableConfig, finishQuery, this.error);
+                    this._createTable(this.query.actionArgs as InanoSQLTableConfig, finishQuery, this.error);
                 });
                 break;
             case "alter table":
                 requireQueryOpts(true, () => {
-                    this._alterTable(this.query.actionArgs as INanoSQLTableConfig, finishQuery, this.error);
+                    this._alterTable(this.query.actionArgs as InanoSQLTableConfig, finishQuery, this.error);
                 });
                 break;
             case "rebuild indexes":
@@ -208,7 +208,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             return;
         }
         let count = 0;
-        const conformQueue = new _NanoSQLQueue((item, i, done, err) => {
+        const conformQueue = new _nanoSQLQueue((item, i, done, err) => {
             const newRow = this.nSQL.default(item, conformTable);
             this.nSQL.doFilter<conformRowFilter, any>("conformRow", { result: newRow, oldRow: item }, (setRow) => {
                 this._diffUpdates(this.query.table as string, item, setRow, () => {
@@ -306,7 +306,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
      * @returns {void}
      * @memberof _MutateSelection
      */
-    public _maybeJoin(joinData: INanoSQLJoinArgs[], leftRow: any, onRow: (rowData: any) => void, complete: () => void): void {
+    public _maybeJoin(joinData: InanoSQLJoinArgs[], leftRow: any, onRow: (rowData: any) => void, complete: () => void): void {
 
         if (!joinData[0]) { // no join to perform, NEXT!
             onRow(leftRow);
@@ -341,7 +341,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 return;
             }
 
-            const joinBuffer = new _NanoSQLQueue((rData, i, rDone, err) => {
+            const joinBuffer = new _nanoSQLQueue((rData, i, rDone, err) => {
 
                 if (!joinData[joinIdx + 1]) { // no more joins, send joined row
                     onRow(rData);
@@ -352,7 +352,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             }, this.error, joinDone);
 
 
-            const withPK = typeof join.with.table === "string" ? this.nSQL.tables[join.with.table].pkCol : "";
+            const withPK = typeof join.with.table === "string" ? this.nSQL.tables[join.with.table].pkCol : [];
             const rightTable = String(join.with.as || join.with.table);
             const leftTable = String(this.query.tableAS || this.query.table);
 
@@ -365,7 +365,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     joinRowCount++;
                     if (join.type === "right" || join.type === "outer") {
                         // keep track of which right side rows have been joined
-                        rightHashes.push(withPK ? row[withPK] : hash(JSON.stringify(row)));
+                        rightHashes.push(withPK ? deepGet(withPK, row) : hash(JSON.stringify(row)));
                     }
                     joinBuffer.newItem({
                         ...rowData,
@@ -536,11 +536,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             return;
         }
 
-        const joinData: INanoSQLJoinArgs[] = Array.isArray(this.query.join) ? this.query.join : [this.query.join as any];
+        const joinData: InanoSQLJoinArgs[] = Array.isArray(this.query.join) ? this.query.join : [this.query.join as any];
 
         let joinedRows = 0;
         let rowCounter2 = 0;
-        const graphBuffer = new _NanoSQLQueue((gRow, ct, nextGraph, err) => {
+        const graphBuffer = new _nanoSQLQueue((gRow, ct, nextGraph, err) => {
             if (this.query.graph) {
                 this._graph(this.query.graph || [], this.query.tableAS || this.query.table as string, gRow, rowCounter, (graphRow, j) => {
                     const finalRow = this._streamAS(graphRow);
@@ -567,7 +567,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         });
 
         let rowCounter = 0;
-        const selectBuffer = new _NanoSQLQueue((row, ct, next, err) => {
+        const selectBuffer = new _nanoSQLQueue((row, ct, next, err) => {
 
             this._maybeJoin(joinData, row, (row2) => { // JOIN as needed
                 if (this._stream) {
@@ -756,7 +756,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         });
     }
 
-    public _graph(gArgs: INanoSQLGraphArgs | INanoSQLGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void) {
+    public _graph(gArgs: InanoSQLGraphArgs | InanoSQLGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void) {
 
         const graphArgs = Array.isArray(gArgs) ? gArgs : [gArgs];
 
@@ -765,7 +765,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             return;
         }
 
-        allAsync(graphArgs, (graph: INanoSQLGraphArgs, i, next) => {
+        allAsync(graphArgs, (graph: InanoSQLGraphArgs, i, next) => {
             const noGraphAs = new Error("Must use 'AS' when graphing temporary tables!");
 
             if (typeof graph.with.table !== "string" && !graph.with.as) {
@@ -848,19 +848,30 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         if (this._whereArgs.type === IWhereType.none) { // insert/update records directly
 
             allAsync(upsertRecords, (row, i, next, error) => {
-                if (row[table.pkCol]) {
-                    adapterFilters(this.nSQL, this.query).read(this.query.table as string, row[table.pkCol], (oldRow) => {
+                const pkVal = deepGet(table.pkCol, row);
+
+                if (pkVal) {
+                    adapterFilters(this.nSQL, this.query).read(this.query.table as string, pkVal, (oldRow) => {
                         if (oldRow) {
-                            this._updateRow(row, oldRow, next, error);
+                            this._updateRow(row, oldRow, (eventOrNewRow) => {
+                                onRow(eventOrNewRow, i);
+                                next(null);
+                            }, error);
                         } else {
-                            this._newRow(row, next, error);
+                            this._newRow(row, () => {
+                                onRow({oldRow: undefined, newRow: row}, i);
+                                next(null);
+                            }, error);
                         }
                     }, error);
                 } else {
-                    this._newRow(row, next, error);
+                    this._newRow(row, (newRow) => {
+                        onRow(newRow, i);
+                        next(null);
+                    }, error);
+                    
                 }
             }).then(() => {
-                onRow({ result: `${upsertRecords.length} row(s) upserted` }, 0);
                 complete();
             }).catch(this._onError);
         } else { // find records and update them
@@ -871,11 +882,14 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             }
 
             let updatedRecords = 0;
-            const upsertBuffer = new _NanoSQLQueue((row, i, done, err) => {
+            const upsertBuffer = new _nanoSQLQueue((row, i, done, err) => {
                 updatedRecords++;
-                this._updateRow(upsertRecords[0], row, done, err);
+                this._updateRow(upsertRecords[0], row, (evOrRow) => {
+                    onRow(evOrRow, i);
+                    done();
+                }, err);
             }, error, () => {
-                onRow({ result: `${updatedRecords} row(s) upserted` }, 0);
+                // onRow({ result: `${updatedRecords} row(s) upserted` }, 0);
                 complete();
             });
             this._getRecords((row, i) => {
@@ -934,55 +948,80 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }, error);
     }
 
+    private _checkUniqueIndexes(table: string, pk: any, oldRow: any, newIndexValues: {[index: string]: any}, done: () => void, error: (err: any) => void) {
+        allAsync(Object.keys(newIndexValues), (index, i, next, err) => {
+            const indexProps = this.nSQL.tables[this.query.table as any].indexes[index].props || {};
+            if (indexProps && indexProps.unique) { // check for unique
+                const indexTable = `_idx_${table}_${index}`;
+                let indexPKs: any[] = [];
+                adapterFilters(this.nSQL, this.query).readIndexKey(indexTable, newIndexValues[index], (rowPK) => {
+                    if (rowPK !== pk) indexPKs.push(rowPK);
+                }, () => {
+                    if (indexPKs.length > 0) {
+                        err({error: "Unique Index Collision!", row: oldRow, query: this.query});
+                    } else {
+                        next(null);
+                    }
+                }, err);
+            } else { // no need to check for unique
+                next(null);
+            }
+        }).then(done).catch(error);
+    }
+
     private _diffUpdates(queryTable: string, oldRow: any, finalRow: any, done: () => void, error: (err: any) => void) {
         const newIndexValues = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, finalRow);
         const oldIndexValues = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, oldRow);
         const table = this.nSQL.tables[queryTable];
-        allAsync(Object.keys(oldIndexValues).concat(["__pk__"]), (indexName: string, i, next, err) => {
-            if (indexName === "__pk__") { // main row
-                adapterFilters(this.nSQL, this.query).write(queryTable, finalRow[table.pkCol], finalRow, (pk) => {
-                    finalRow[table.pkCol] = pk;
-                    next(null);
-                }, err);
-            } else { // indexes
-                const idxTable = "_idx_" + this.query.table + "_" + indexName;
-                if (_objectsEqual(newIndexValues[indexName], oldIndexValues[indexName]) === false) { // only update changed index values
 
-                    if (table.indexes[indexName].isArray) {
-                        let addValues: any[] = newIndexValues[indexName].filter((v, i, s) => oldIndexValues[indexName].indexOf(v) === -1);
-                        let removeValues: any[] = oldIndexValues[indexName].filter((v, i, s) => newIndexValues[indexName].indexOf(v) === -1);
-                        allAsync([addValues, removeValues], (arrayOfValues, j, nextValues) => {
-                            if (!arrayOfValues.length) {
-                                nextValues(null);
-                                return;
-                            }
-                            allAsync(arrayOfValues, (value, i, nextArr) => {
-                                this._updateIndex(idxTable, value, finalRow[table.pkCol], j === 0, () => {
-                                    nextArr(null);
-                                }, err);
-                            }).then(nextValues);
-                        }).then(next);
+        this._checkUniqueIndexes(queryTable, deepGet(table.pkCol, oldRow), oldRow, newIndexValues, () => {
+
+            allAsync(Object.keys(oldIndexValues).concat(["__pk__"]), (indexName: string, i, next, err) => {
+                if (indexName === "__pk__") { // main row
+                    adapterFilters(this.nSQL, this.query).write(queryTable, deepGet(table.pkCol, finalRow), finalRow, (pk) => {
+                        deepSet(table.pkCol, finalRow, pk);
+                        next(null);
+                    }, err);
+                } else { // indexes
+                    const idxTable = "_idx_" + this.query.table + "_" + indexName;
+                    if (_objectsEqual(newIndexValues[indexName], oldIndexValues[indexName]) === false) { // only update changed index values
+
+                        if (table.indexes[indexName].isArray) {
+                            let addValues: any[] = newIndexValues[indexName].filter((v, i, s) => oldIndexValues[indexName].indexOf(v) === -1);
+                            let removeValues: any[] = oldIndexValues[indexName].filter((v, i, s) => newIndexValues[indexName].indexOf(v) === -1);
+                            allAsync([addValues, removeValues], (arrayOfValues, j, nextValues) => {
+                                if (!arrayOfValues.length) {
+                                    nextValues(null);
+                                    return;
+                                }
+                                allAsync(arrayOfValues, (value, i, nextArr) => {
+                                    this._updateIndex(idxTable, value, deepGet(table.pkCol, finalRow), j === 0, () => {
+                                        nextArr(null);
+                                    }, err);
+                                }).then(nextValues);
+                            }).then(next);
+                        } else {
+                            allAsync(["rm", "add"], (job, i, nextJob) => {
+                                switch (job) {
+                                    case "add": // add new index value
+                                        this._updateIndex(idxTable, newIndexValues[indexName], deepGet(table.pkCol, finalRow), true, () => {
+                                            nextJob(null);
+                                        }, err);
+                                        break;
+                                    case "rm": // remove old index value
+                                        this._updateIndex(idxTable, oldIndexValues[indexName], deepGet(table.pkCol, finalRow), false, () => {
+                                            nextJob(null);
+                                        }, err);
+                                        break;
+                                }
+                            }).then(next);
+                        }
                     } else {
-                        allAsync(["rm", "add"], (job, i, nextJob) => {
-                            switch (job) {
-                                case "add": // add new index value
-                                    this._updateIndex(idxTable, newIndexValues[indexName], finalRow[table.pkCol], true, () => {
-                                        nextJob(null);
-                                    }, err);
-                                    break;
-                                case "rm": // remove old index value
-                                    this._updateIndex(idxTable, oldIndexValues[indexName], finalRow[table.pkCol], false, () => {
-                                        nextJob(null);
-                                    }, err);
-                                    break;
-                            }
-                        }).then(next);
+                        next(null);
                     }
-                } else {
-                    next(null);
                 }
-            }
-        }).then(done).catch(error);
+            }).then(done).catch(error);
+        }, error);
     }
 
     private _updateIndex(indexTable: string, value: any, pk: any, addToIndex: boolean, done: () => void, err: (error) => void) {
@@ -994,8 +1033,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             addToIndex: boolean,
             done: () => void,
             err: (err: any) => void,
-            query: INanoSQLQuery,
-            nSQL: INanoSQLInstance
+            query: InanoSQLQuery,
+            nSQL: InanoSQLInstance
         }
 
         const newItem: updateIndex = { indexTable, value, pk, addToIndex, done, err, query: this.query, nSQL: this.nSQL };
@@ -1021,28 +1060,45 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             
             const indexValues = this._getIndexValues(this.nSQL.tables[this.query.table as any].indexes, rowToAdd);
 
-            adapterFilters(this.nSQL, this.query).write(this.query.table as string, rowToAdd[table.pkCol], rowToAdd, (pk) => {
-                rowToAdd[table.pkCol] = pk;
+            this._checkUniqueIndexes(this.query.table as string, deepGet(table.pkCol, rowToAdd), rowToAdd, indexValues, () => {
 
-                allAsync(Object.keys(indexValues), (indexName: string, i, next, err) => {
-                    const idxTable = "_idx_" + this.query.table + "_" + indexName;
-                    if (table.indexes[indexName].isArray) {
-                        const arrayOfValues = indexValues[indexName] || [];
-                        allAsync(arrayOfValues, (value, i, nextArr) => {
-                            this._updateIndex(idxTable, value, rowToAdd[table.pkCol], true, () => {
-                                nextArr(null);
+                adapterFilters(this.nSQL, this.query).write(this.query.table as string, deepGet(table.pkCol, rowToAdd), rowToAdd, (pk) => {
+                    deepSet(table.pkCol, rowToAdd, pk)
+
+                    allAsync(Object.keys(indexValues), (indexName: string, i, next, err) => {
+                        const idxTable = "_idx_" + this.query.table + "_" + indexName;
+                        if (table.indexes[indexName].isArray) {
+                            const arrayOfValues = indexValues[indexName] || [];
+                            allAsync(arrayOfValues, (value, i, nextArr) => {
+                                this._updateIndex(idxTable, value, deepGet(table.pkCol, rowToAdd), true, () => {
+                                    nextArr(null);
+                                }, err);
+                            }).then(() => {
+                                next(null);
+                            }).catch(err);
+                        } else {
+                            this._updateIndex(idxTable, indexValues[indexName], deepGet(table.pkCol, rowToAdd), true, () => {
+                                next(null);
                             }, err);
-                        }).then(() => {
-                            next(null);
-                        }).catch(err);
-                    } else {
-                        this._updateIndex(idxTable, indexValues[indexName], rowToAdd[table.pkCol], true, () => {
-                            next(null);
-                        }, err);
-                    }
-                }).then(() => {
-                    complete(rowToAdd);
-                });
+                        }
+                    }).then(() => {
+                        const changeEvent = {
+                            target: this.query.table as string,
+                            path: "*",
+                            events: ["upsert", "*"],
+                            time: Date.now(),
+                            performance: Date.now() - this._startTime,
+                            result: rowToAdd,
+                            oldRow: undefined,
+                            query: this.query,
+                            indexes: this._indexesUsed
+                        };
+                        if (typeof this.query.table === "string") {
+                            this.nSQL.triggerEvent(changeEvent);
+                        }
+                        complete(this.query.returnEvent ? changeEvent : rowToAdd);
+                    });
+                }, error);
             }, error);
         }, error);
     }
@@ -1054,12 +1110,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         let delRows: number = 0;
 
         const table = this.nSQL.tables[this.query.table as string];
-        const deleteBuffer = new _NanoSQLQueue((row, i, done, err) => {
-            onRow(undefined, delRows);
-            delRows++;
-            this._removeRowAndIndexes(table, row, done, err);
+        const deleteBuffer = new _nanoSQLQueue((row, i, done, err) => {
+            this._removeRowAndIndexes(table, row, (delRowOrEvent) => {
+                onRow(delRowOrEvent, i);
+                done();
+            }, err);
         }, error, () => {
-            onRow({ result: `${delRows} row(s) deleted` }, delRows);
+            // onRow({ result: `${delRows} row(s) deleted` }, delRows);
             complete();
         });
 
@@ -1071,14 +1128,14 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
     }
 
-    public _removeRowAndIndexes(table: INanoSQLTable, row: any, complete: () => void, error: (err: any) => void) {
+    public _removeRowAndIndexes(table: InanoSQLTable, row: any, complete: (rowOrEv: any) => void, error: (err: any) => void) {
         const indexValues = this._getIndexValues(table.indexes, row);
 
         this.nSQL.doFilter<deleteRowFilter, any>("deleteRow", { result: row, query: this.query }, (delRow) => {
 
             allAsync(Object.keys(indexValues).concat(["__del__"]), (indexName: string, i, next) => {
                 if (indexName === "__del__") { // main row
-                    adapterFilters(this.nSQL, this.query).delete(this.query.table as string, delRow[table.pkCol], () => {
+                    adapterFilters(this.nSQL, this.query).delete(this.query.table as string, deepGet(table.pkCol, delRow), () => {
                         next(null);
                     }, (err) => {
                         this.query.state = "error";
@@ -1090,35 +1147,36 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     if (table.indexes[indexName].isArray) {
                         const arrayOfValues = indexValues[indexName] || [];
                         allAsync(arrayOfValues, (value, i, nextArr) => {
-                            this._updateIndex(idxTable, value, delRow[table.pkCol], false, () => {
+                            this._updateIndex(idxTable, value, deepGet(table.pkCol, delRow), false, () => {
                                 nextArr(null);
                             }, error);
                         }).then(next);
                     } else {
-                        this._updateIndex(idxTable, indexValues[indexName], delRow[table.pkCol], false, () => {
+                        this._updateIndex(idxTable, indexValues[indexName], deepGet(table.pkCol, delRow), false, () => {
                             next(null);
                         }, this._onError);
                     }
                 }
             }).then(() => {
+                const event = {
+                    target: this.query.table as string,
+                    path: "_all_",
+                    events: ["change", "delete", "*"],
+                    time: Date.now(),
+                    performance: Date.now() - this._startTime,
+                    result: delRow,
+                    query: this.query,
+                    indexes: this._indexesUsed
+                };
                 if (typeof this.query.table === "string") {
-                    this.nSQL.triggerEvent({
-                        target: this.query.table as string,
-                        path: "_all_",
-                        events: ["change", "delete", "*"],
-                        time: Date.now(),
-                        performance: Date.now() - this._startTime,
-                        result: delRow,
-                        query: this.query,
-                        indexes: this._indexesUsed
-                    });
+                    this.nSQL.triggerEvent(event);
                 }
-                complete();
+                complete(this.query.returnEvent ? event : delRow);
             }).catch(error);
         }, error);
     }
 
-    public _getIndexValues(indexes: {[id: string]: INanoSQLIndex}, row: any): { [indexName: string]: any } {
+    public _getIndexValues(indexes: {[id: string]: InanoSQLIndex}, row: any): { [indexName: string]: any } {
         
         return Object.keys(indexes).reduce((prev, cur) => {
             // const idxTable = "_idx_" + this.query.table + "_" + cur;
@@ -1144,12 +1202,12 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     public _describe() {
         if (typeof this.query.table !== "string") {
             this.query.state = "error";
-            this.error("Can't call describe on that!");
+            this.error({error: "Can't call describe on that!", query: this.query});
             return;
         }
         if (!this.nSQL.tables[this.query.table]) {
             this.query.state = "error";
-            this.error(`Table ${this.query.table} not found!`);
+            this.error({error: `Table ${this.query.table} not found!`, query: this.query});
             return;
         }
         this.progress({
@@ -1176,7 +1234,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 if (arg.isFn) {
                     if (!this.nSQL.functions[arg.value]) {
                         this.query.state = "error";
-                        this.error(`Function ${arg.value} not found!`);
+                        this.error({error: `Function ${arg.value} not found!`, query: this.query});
                         return;
                     }
                     result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, {} as any, ...(arg.args || [])).result;
@@ -1198,15 +1256,15 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
      * @internal
      * @param {*} objA
      * @param {*} objB
-     * @param NanoSQLSortBy columns
+     * @param nanoSQLSortBy columns
      * @param {boolean} resolvePaths
      * @returns {number}
      * @memberof _MutateSelection
      */
-    public _sortObj(objA: any, objB: any, columns: INanoSQLSortBy): number {
-        const id = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table as any].pkCol : false;
-        const A_id = id ? objA[id] : false;
-        const B_id = id ? objB[id] : false;
+    public _sortObj(objA: any, objB: any, columns: InanoSQLSortBy): number {
+        const id = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table as any].pkCol : [];
+        const A_id = id.length ? deepGet(id, objA) : false;
+        const B_id = id.length ? deepGet(id, objB) : false;
         return columns.sort.reduce((prev, cur) => {
             let A = cur.fn ? this.nSQL.functions[cur.fn].call(this.query, objA, {result: undefined}, ...cur.path).result : deepGet(cur.path, objA);
             let B = cur.fn ? this.nSQL.functions[cur.fn].call(this.query, objB, {result: undefined}, ...cur.path).result : deepGet(cur.path, objB);
@@ -1219,13 +1277,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }, 0);
     }
 
-    public _createTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
+    public _createTable(table: InanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
         new Promise((res, rej) => {
             let hasError = false;
 
             const l = table.name;
             if (!table._internal && (l.indexOf("_") === 0 || l.match(/\s/g) !== null || l.match(/[\(\)\]\[\.]/g) !== null)) {
-                rej(`nSQL: Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`);
+                rej({error: `Invalid Table Name ${table.name}! https://docs.nanosql.io/setup/data-models`, query: this.query});
                 return;
             }
 
@@ -1236,7 +1294,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 }
                 if (!modelData[0] || modelData[0].match(/[\(\)\]\[\.]/g) !== null || modelData[0].indexOf("_") === 0) {
                     hasError = true;
-                    rej(`nSQL: Invalid Data Model at ${table.name + "." + col}! https://docs.nanosql.io/setup/data-models`);
+                    rej({error: `Invalid Data Model at ${table.name + "." + col}! https://docs.nanosql.io/setup/data-models`, query: this.query});
                 }
             });
 
@@ -1244,11 +1302,42 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             res();
         }).then(() => {
             return new Promise((res, rej) => {
-                this.nSQL.doFilter<configTableFilter, INanoSQLTableConfig>("configTable", { result: table, query: this.query }, res, rej);
+                this.nSQL.doFilter<configTableFilter, InanoSQLTableConfig>("configTable", { result: table, query: this.query }, res, rej);
             });
-        }).then((table: INanoSQLTableConfig) => {
+        }).then((table: InanoSQLTableConfig) => {
 
-            const setModels = (dataModel: INanoSQLDataModel): INanoSQLDataModel => {
+            const setModels = (dataModel: InanoSQLDataModel | string, level: number): InanoSQLDataModel|undefined => {
+                let model: InanoSQLDataModel = {};
+                if (typeof dataModel === "string") {
+                    let foundModel = false;
+                    const isArray = dataModel.indexOf("[]") !== -1;
+                    const type = dataModel.replace(/\[\]/gmi, "");
+                    if (level === 0 && isArray) {
+                        throw new Error(`Can't use array types as table definition.`);
+                    }
+                    
+                    model = Object.keys(this.nSQL.config.types || {}).reduce((prev, cur) => {
+                        if (cur === type[1]) {
+                            foundModel = true;
+                            (this.nSQL.config.types || {})[cur].forEach((key) => {
+                                prev[key] = {
+                                    model: setModels(key, level + 1)
+                                }
+                            });
+                        }
+                        return prev;
+                    }, {});
+
+                    if (foundModel === false) {
+                        if (level === 0) {
+                            throw new Error(`Type ${dataModel} not found!`);
+                        }
+                        return undefined;
+                    }
+                } else {
+                    model = dataModel as InanoSQLDataModel;
+                }
+                
                 return Object.keys(dataModel).reduce((p, d) => {
                     const type = d.split(":")[1] || "any";
                     if (type.indexOf("geo") === 0) {
@@ -1262,7 +1351,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     } else if (dataModel[d].model) {
                         p[d] = {
                             ...dataModel[d],
-                            model: setModels(dataModel[d].model as any)
+                            model: setModels(dataModel[d].model as any, level + 1)
                         };
                     } else {
                         p[d] = dataModel[d];
@@ -1272,7 +1361,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             };
 
 
-            const generateColumns = (dataModels: INanoSQLDataModel): INanoSQLTableColumn[] => {
+            const generateColumns = (dataModels: InanoSQLDataModel): InanoSQLTableColumn[] => {
                 return Object.keys(dataModels).filter(d => d !== "*").map(d => ({
                     key: d.split(":")[0],
                     type: d.split(":")[1] || "any",
@@ -1287,20 +1376,41 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
             };
 
             let error: string = "";
-            const computedDataModel = setModels(table.model);
+            const computedDataModel = setModels(table.model, 0) as InanoSQLDataModel;
 
-            let newConfigs: { [table: string]: INanoSQLTable } = {};
+            let newConfigs: { [table: string]: InanoSQLTable } = {};
 
-            const pkType = Object.keys(table.model).reduce((p, c) => {
-                if (table.model[c] && table.model[c].pk) return c.split(":")[1];
-                return p;
-            }, "");
+            const pkType = (model: InanoSQLDataModel | string): string => {
+                if (typeof model === "string") return "";
+                return Object.keys(model).reduce((p, c) => {
+                    if (model[c] && model[c].pk) {
+                        return c.split(":")[1];
+                    }
+                    if (!p.length && model[c].model) return pkType(model[c].model as any);
+                    return p;
+                }, "");
+            }
 
             let indexes = table.indexes || {};
-
-            if (typeof table.model !== "string") {
-
+            let ai: boolean = false;
+            const getPK = (path: string[], model: InanoSQLDataModel | string): string[] => {
+                if (typeof model === "string") return [];
+                let foundPK = false;
+                return Object.keys(model).reduce((p, c) => {
+                    if (model[c] && model[c].pk) {
+                        foundPK = true;
+                        if (model[c].ai) {
+                            ai = true;
+                        }
+                        p.push(c.split(":")[0]);
+                        return p;
+                    }
+                    if (!foundPK && model[c].model) return getPK(path.concat([c.split(":")[0]]), model[c].model as any);
+                    return p;
+                }, path);
             }
+
+            const tablePKType = table.primaryKey ? table.primaryKey.split(":")[1] : pkType(table.model);
 
             newConfigs[table.name] = {
                 model: computedDataModel,
@@ -1341,38 +1451,32 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                         p[c.id] = c;
                     }
                     return p;
-                }, {} as {[id: string]: INanoSQLIndex}),
-                pkType: table.primaryKey ? table.primaryKey.split(":")[1] : pkType,
-                pkCol: table.primaryKey ? table.primaryKey.split(":")[0]  : Object.keys(table.model).reduce((p, c) => {
-                    if (table.model[c] && table.model[c].pk) return c.split(":")[0];
-                    return p;
-                }, ""),
-                isPkNum: ["number", "int", "float"].indexOf(pkType) !== -1,
-                ai: Object.keys(table.model).reduce((p, c) => {
-                    if (table.model[c] && table.model[c].ai) return true;
-                    return p;
-                }, false)
+                }, {} as {[id: string]: InanoSQLIndex}),
+                pkType: tablePKType,
+                pkCol: table.primaryKey ? resolvePath(table.primaryKey.split(":")[0])  : getPK([], table.model),
+                isPkNum: ["number", "int", "float"].indexOf(tablePKType) !== -1,
+                ai: ai
             };
 
             this.setMapReduce(table);
 
             // no primary key found, set one
-            if (newConfigs[table.name].pkCol === "") {
-                newConfigs[table.name].pkCol = "_id";
+            if (newConfigs[table.name].pkCol.length === 0) {
+                newConfigs[table.name].pkCol = ["_id"];
                 newConfigs[table.name].pkType = "uuid";
                 newConfigs[table.name].model["_id:uuid"] = {pk: true};
-                newConfigs[table.name].columns = generateColumns(newConfigs[table.name].model);
+                newConfigs[table.name].columns = generateColumns(setModels(newConfigs[table.name].model, 0) as InanoSQLDataModel);
             }
 
             if (error && error.length) return Promise.reject(error);
 
             let addTables = [table.name].concat(Object.keys(newConfigs[table.name].indexes));
 
-            secondaryIndexQueue[this.nSQL.state.id + table.name] = new _NanoSQLQueue();
+            secondaryIndexQueue[this.nSQL.state.id + table.name] = new _nanoSQLQueue();
 
             return allAsync(addTables, (tableName, i, next, err) => {
                 if (i === 0) { // table
-                    this.nSQL.doFilter<addTableFilter, { name: string, conf: INanoSQLTable }>("addTable", { result: { name: tableName, conf: newConfigs[tableName] }, query: this.query }, (newTable) => {
+                    this.nSQL.doFilter<addTableFilter, { name: string, conf: InanoSQLTable }>("addTable", { result: { name: tableName, conf: newConfigs[tableName] }, query: this.query }, (newTable) => {
                         if (!newTable) {
                             next(null);
                             return;
@@ -1399,7 +1503,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
     }
 
-    public setMapReduce(newTableConfig?: INanoSQLTableConfig, oldConfig?: INanoSQLTable) {
+    public setMapReduce(newTableConfig?: InanoSQLTableConfig, oldConfig?: InanoSQLTable) {
         const table = this.query.table as string;
         if (typeof table !== "string") return;
 
@@ -1455,8 +1559,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }
     }
 
-    public _alterTable(table: INanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
-        this.nSQL.doFilter<alterTableFilter, INanoSQLTableConfig>("alterTable", { result: table, query: this.query }, (alteredTable) => {
+    public _alterTable(table: InanoSQLTableConfig, complete: () => void, error: (err: any) => void): void {
+        this.nSQL.doFilter<alterTableFilter, InanoSQLTableConfig>("alterTable", { result: table, query: this.query }, (alteredTable) => {
             if (!alteredTable) {
                 complete();
                 return;
@@ -1530,13 +1634,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         let count = 0;
 
-        const indexBuffer = new _NanoSQLQueue((pkOrRow, i, finished, err) => {
+        const indexBuffer = new _nanoSQLQueue((pkOrRow, i, finished, err) => {
             if (!pkOrRow) {
                 finished();
                 return;
             }
             if (isPKquery) { // primary key select
-                onRow(onlyGetPKs ? pkOrRow[pkCol] : pkOrRow, 0);
+                onRow(onlyGetPKs ? deepGet(pkCol, pkOrRow) : pkOrRow, 0);
                 finished();
             } else { // secondary index
                 if (onlyGetPKs) {
@@ -1694,7 +1798,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
                     this._resolveFastWhere(false, {
                         index: "_pk_",
-                        col: this.nSQL.tables[this.query.table as string].pkCol,
+                        col: this.nSQL.tables[this.query.table as string].pkCol.join("."),
                         comp: "IN",
                         value: getPKs
                     }, false, onRow, complete);
@@ -1786,7 +1890,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         const indexes = Object.keys(this.nSQL.tables[rebuildTables].indexes).map(r => "_idx_" + rebuildTables + "_" + r);
         if (this.query.where) { // rebuild only select rows (cant clean/remove index tables)
             let count = 0;
-            const readQueue = new _NanoSQLQueue((item, i, complete, error) => {
+            const readQueue = new _nanoSQLQueue((item, i, complete, error) => {
                 this._removeRowAndIndexes(this.nSQL.tables[rebuildTables], item, () => {
                     this._newRow(item, complete, error);
                     progress(undefined, count);
@@ -1813,7 +1917,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 // indexes are now empty
                 let count = 0;
                 secondaryIndexQueue[this.nSQL.state.id + rebuildTables].newItem(uuid(), (item, buffComplete, buffErr) => {
-                    const readQueue = new _NanoSQLQueue((row, i, complete, err) => {
+                    const readQueue = new _nanoSQLQueue((row, i, complete, err) => {
                         this._newRow(row, (finishedRow) => {
                             count++;
                             progress(undefined, i);
@@ -1880,9 +1984,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
     public static likeCache: { [likeQuery: string]: RegExp } = {};
 
     public _processLIKE(columnValue: string, givenValue: string): boolean {
-        if (!_NanoSQLQuery.likeCache[givenValue]) {
+        if (!_nanoSQLQuery.likeCache[givenValue]) {
             let prevChar = "";
-            _NanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(s => {
+            _nanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(s => {
                 if (prevChar === "\\") {
                     prevChar = s;
                     return s;
@@ -1895,12 +1999,12 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         }
         if (typeof columnValue !== "string") {
             if (typeof columnValue === "number") {
-                return String(columnValue).match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+                return String(columnValue).match(_nanoSQLQuery.likeCache[givenValue]) !== null;
             } else {
-                return JSON.stringify(columnValue).match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+                return JSON.stringify(columnValue).match(_nanoSQLQuery.likeCache[givenValue]) !== null;
             }
         }
-        return columnValue.match(_NanoSQLQuery.likeCache[givenValue]) !== null;
+        return columnValue.match(_nanoSQLQuery.likeCache[givenValue]) !== null;
     }
 
     public _getColValue(where: IWhereCondition, wholeRow: any): any {
@@ -1992,13 +2096,13 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
 
     public static _sortMemoized: {
-        [key: string]: INanoSQLSortBy;
+        [key: string]: InanoSQLSortBy;
     } = {};
 
-    public _parseSort(sort: string[], checkforIndexes: boolean): INanoSQLSortBy {
+    public _parseSort(sort: string[], checkforIndexes: boolean): InanoSQLSortBy {
         const key = sort && sort.length ? hash(JSON.stringify(sort)) : "";
         if (!key) return { sort: [], index: "" };
-        if (_NanoSQLQuery._sortMemoized[key]) return _NanoSQLQuery._sortMemoized[key];
+        if (_nanoSQLQuery._sortMemoized[key]) return _nanoSQLQuery._sortMemoized[key];
 
         let isThereFn = false;
         const result: { path: string[], dir: string }[] = sort.map(o => o.split(" ").map(s => s.trim())).reduce((p, c) => {
@@ -2022,8 +2126,8 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
         let index = "";
         if (checkforIndexes && isThereFn === false && result.length === 1) {
-            const pkKey: string = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : "";
-            if (result[0].path[0].length && result[0].path[0] === pkKey) {
+            const pkKey: string[] = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : [];
+            if (result[0].path[0].length && _objectsEqual(result[0].path, pkKey)) {
                 index = "_pk_";
             } else {
                 const indexKeys = Object.keys(this.nSQL.tables[this.query.table as string].indexes);
@@ -2035,11 +2139,11 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                 }
             }
         }
-        _NanoSQLQuery._sortMemoized[key] = {
+        _nanoSQLQuery._sortMemoized[key] = {
             sort: result,
             index: index
         };
-        return _NanoSQLQuery._sortMemoized[key];
+        return _nanoSQLQuery._sortMemoized[key];
     }
 
     public static _selectArgsMemoized: {
@@ -2058,9 +2162,9 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         this._groupBy = this._parseSort(this.query.groupBy || [], false);
 
         if (selectArgsKey) {
-            if (_NanoSQLQuery._selectArgsMemoized[selectArgsKey]) {
-                this._hasAggrFn = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].hasAggrFn;
-                this._selectArgs = _NanoSQLQuery._selectArgsMemoized[selectArgsKey].args;
+            if (_nanoSQLQuery._selectArgsMemoized[selectArgsKey]) {
+                this._hasAggrFn = _nanoSQLQuery._selectArgsMemoized[selectArgsKey].hasAggrFn;
+                this._selectArgs = _nanoSQLQuery._selectArgsMemoized[selectArgsKey].args;
             } else {
                 (this.query.actionArgs || []).forEach((val: string) => {
                     const splitVal = val.split(/\s+as\s+/i).map(s => s.trim());
@@ -2081,7 +2185,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
                     }
                 });
                 if (this.query.state !== "error") {
-                    _NanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: this._hasAggrFn, args: this._selectArgs };
+                    _nanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: this._hasAggrFn, args: this._selectArgs };
                 }
             }
 
@@ -2117,19 +2221,19 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         const where = qWhere || [];
         const key = JSON.stringify(where) + (ignoreIndexes ? "0" : "1");
 
-        if (_NanoSQLQuery._whereMemoized[key]) {
-            return _NanoSQLQuery._whereMemoized[key];
+        if (_nanoSQLQuery._whereMemoized[key]) {
+            return _nanoSQLQuery._whereMemoized[key];
         }
 
         if (typeof where === "function") {
             return { type: IWhereType.fn, whereFn: where };
         } else if (!where.length) {
-            _NanoSQLQuery._whereMemoized[key] = { type: IWhereType.none };
-            return _NanoSQLQuery._whereMemoized[key];
+            _nanoSQLQuery._whereMemoized[key] = { type: IWhereType.none };
+            return _nanoSQLQuery._whereMemoized[key];
         }
 
-        const indexes: INanoSQLIndex[] = typeof this.query.table === "string" ? Object.keys(this.nSQL.tables[this.query.table].indexes).map(k => this.nSQL.tables[this.query.table as string].indexes[k]) : [];
-        const pkKey: string = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : "";
+        const indexes: InanoSQLIndex[] = typeof this.query.table === "string" ? Object.keys(this.nSQL.tables[this.query.table].indexes).map(k => this.nSQL.tables[this.query.table as string].indexes[k]) : [];
+        const pkKey: string[] = typeof this.query.table === "string" ? this.nSQL.tables[this.query.table].pkCol : [];
 
         // find indexes and functions
         const recursiveParse = (ww: any[], level: number): (IWhereCondition | string)[] => {
@@ -2190,7 +2294,7 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
 
                         if (["=", "BETWEEN", "IN"].indexOf(w[1]) !== -1 && doIndex) {
                             // primary key select
-                            if (w[0] === pkKey) {
+                            if (_objectsEqual(path, pkKey)) {
                                 isIndexCol = true;
                                 this._indexesUsed.push(_assign(w));
                                 p.push({
@@ -2275,18 +2379,18 @@ export class _NanoSQLQuery implements INanoSQLQueryExec {
         // "AND" or the end of the WHERE should follow the last index to use the indexes
         if (lastFastIndx !== -1 && (parsedWhere[lastFastIndx] === "AND" || !parsedWhere[lastFastIndx])) {
             const slowWhere = parsedWhere.slice(lastFastIndx + 1);
-            _NanoSQLQuery._whereMemoized[key] = {
+            _nanoSQLQuery._whereMemoized[key] = {
                 type: slowWhere.length ? IWhereType.medium : IWhereType.fast,
                 slowWhere: slowWhere,
                 fastWhere: parsedWhere.slice(0, lastFastIndx)
             };
         } else {
-            _NanoSQLQuery._whereMemoized[key] = {
+            _nanoSQLQuery._whereMemoized[key] = {
                 type: IWhereType.slow,
                 slowWhere: parsedWhere
             };
         }
 
-        return _NanoSQLQuery._whereMemoized[key];
+        return _nanoSQLQuery._whereMemoized[key];
     }
 }

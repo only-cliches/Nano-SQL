@@ -16,7 +16,7 @@
  */
 
 import { chainAsync, uuid, _objectsEqual } from "./utilities";
-import { INanoSQLAdapter, INanoSQLAdapterConstructor, INanoSQLInstance, INanoSQLTable } from "./interfaces";
+import { InanoSQLAdapter, InanoSQLAdapterConstructor, InanoSQLInstance, InanoSQLTable } from "./interfaces";
 import { nanoSQL } from ".";
 
 export const myConsole = Object.create(console, {
@@ -41,7 +41,7 @@ export const myConsole = Object.create(console, {
 export class nanoSQLAdapterTest {
 
     constructor(
-        public adapter: INanoSQLAdapterConstructor,
+        public adapter: InanoSQLAdapterConstructor,
         public args: any[]
     ) {
 
@@ -72,7 +72,7 @@ export class nanoSQLAdapterTest {
         });*/
     }
 
-    public static newTable(adapter: INanoSQLAdapter, nSQL: INanoSQLInstance, tableName: string, tableConfig: INanoSQLTable, complete: () => void, error: () => void) {
+    public static newTable(adapter: InanoSQLAdapter, nSQL: InanoSQLInstance, tableName: string, tableConfig: InanoSQLTable, complete: () => void, error: () => void) {
         adapter.nSQL = nSQL;
         adapter.createTable(tableName, tableConfig, () => {
             nSQL.tables[tableName] = tableConfig;
@@ -81,8 +81,8 @@ export class nanoSQLAdapterTest {
     }
 
     public Deletes() {
-        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new nanoSQL();
+        const adapter: InanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: InanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         return new Promise((res, rej) => {
@@ -107,7 +107,7 @@ export class nanoSQLAdapterTest {
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -147,8 +147,8 @@ export class nanoSQLAdapterTest {
     }
 
     public SecondayIndexes() {
-        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new nanoSQL();
+        const adapter: InanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: InanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         return new Promise((res, rej) => {
@@ -181,7 +181,7 @@ export class nanoSQLAdapterTest {
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -291,8 +291,8 @@ export class nanoSQLAdapterTest {
     }
 
     public RangeReads() {
-        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new nanoSQL();
+        const adapter: InanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: InanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         let index: any[] = [];
@@ -318,7 +318,7 @@ export class nanoSQLAdapterTest {
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -443,8 +443,8 @@ export class nanoSQLAdapterTest {
     }
 
     public RangeReadsUUID() {
-        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new nanoSQL();
+        const adapter: InanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: InanoSQLInstance = new nanoSQL();
 
         let allRows: any[] = [];
         let index: any[] = [];
@@ -470,7 +470,7 @@ export class nanoSQLAdapterTest {
                     actions: [],
                     views: [],
                     pkType: "uuid",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: false,
                     ai: false
                 }, res, rej);
@@ -563,8 +563,8 @@ export class nanoSQLAdapterTest {
     }
 
     public Writes() {
-        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new nanoSQL();
+        const adapter: InanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: InanoSQLInstance = new nanoSQL();
 
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
@@ -593,7 +593,7 @@ export class nanoSQLAdapterTest {
                     actions: [],
                     views: [],
                     pkType: "int",
-                    pkCol: "id",
+                    pkCol: ["id"],
                     isPkNum: true,
                     ai: true
                 }, res, rej);
@@ -644,14 +644,14 @@ export class nanoSQLAdapterTest {
     }
 
     public PrimaryKeys() {
-        const adapter: INanoSQLAdapter = new this.adapter(...this.args);
-        const nSQL: INanoSQLInstance = new nanoSQL();
+        const adapter: InanoSQLAdapter = new this.adapter(...this.args);
+        const nSQL: InanoSQLInstance = new nanoSQL();
 
         return new Promise((res, rej) => {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 Promise.all([
-                    "test", "test2", "test3", "test4", "test5", "test6"
+                    "test", "test2", "test3", "test4", "test5", "test6", "test7"
                 ].map(t => {
                     return new Promise((res2, rej2) => {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
@@ -678,6 +678,12 @@ export class nanoSQLAdapterTest {
                                 },
                                 "test6": {
                                     "id:float": {pk: true},
+                                    "name:string": {}
+                                },
+                                "test7": {
+                                    "nested:obj": {
+                                        model: {"id:int": {pk: true}}
+                                    },
                                     "name:string": {}
                                 }
                             }[t],
@@ -706,6 +712,12 @@ export class nanoSQLAdapterTest {
                                     "test6": {
                                         key: "id",
                                         type: "float"
+                                    },
+                                    "test7": {
+                                        key: "nested",
+                                        model: [
+                                            {key: "id", type: "int"}
+                                        ]
                                     }
                                 }[t],
                                 {
@@ -722,16 +734,18 @@ export class nanoSQLAdapterTest {
                                 test3: "timeId",
                                 test4: "timeIdms",
                                 test5: "uuid",
-                                test6: "float"
+                                test6: "float",
+                                test7: "int"
                             }[t],
-                            pkCol: "id",
+                            pkCol: t === "test7" ? ["nested", "id"] : ["id"],
                             isPkNum: {
                                 test: true,
                                 test2: false,
                                 test3: false,
                                 test4: false,
                                 test5: false,
-                                test6: true
+                                test6: true,
+                                test7: true
                             }[t],
                             ai: {
                                 test: true,
@@ -739,7 +753,8 @@ export class nanoSQLAdapterTest {
                                 test3: false,
                                 test4: false,
                                 test5: false,
-                                test6: false
+                                test6: false,
+                                test7: false
                             }[t]
                         }, res2, rej2);
                     });
@@ -860,8 +875,37 @@ export class nanoSQLAdapterTest {
                 }).catch(rej);
             });
         }).then(() => {
+            // Nested PK Test
+            return new Promise((res, rej) => {
+                let nestedPKRows: any[] = [];
+                for (let i = 1; i < 20; i++) {
+                    nestedPKRows.push({nested: {id: i}, name: "Test " + i});
+                }
+                chainAsync(nestedPKRows, (row, i, next) => {
+                    adapter.write("test7", row.nested.id, row, next, rej);
+                }).then(() => {
+                    let rows: any[] = [];
+                    adapter.readMulti("test7", "all", undefined, undefined, false, (row) => {
+                        rows.push(row);
+                    }, () => {
+                        const condition = _objectsEqual(rows, nestedPKRows);
+                        myConsole.assert(condition, "Test Nested primary keys.");
+                        condition ? (() => {
+                            adapter.read("test7", nestedPKRows[2].nested.id, (row: any) => {
+                                const condition2 = _objectsEqual(row.nested.id, nestedPKRows[2].nested.id);
+                                myConsole.assert(condition2, "Select Nested Primary Key.");
+                                condition2 ? res() : rej({e: nestedPKRows[0].nested.id, g: row.id});
+                            }, rej);
+                        })() : rej({
+                            e: nestedPKRows.sort((a, b) => a.id > b.id ? 1 : -1),
+                            g: rows
+                        });
+                    }, rej);
+                }).catch(rej);
+            });
+        }).then(() => {
             return Promise.all([
-                "test", "test2", "test3", "test4", "test5", "test6"
+                "test", "test2", "test3", "test4", "test5", "test6", "test7"
             ].map(table => new Promise((res, rej) => {
                 adapter.dropTable(table, res, rej);
             }))).then(() => {

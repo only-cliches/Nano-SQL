@@ -1,6 +1,6 @@
-import { TestAdapter } from "NanoSQL-Adapter-Test";
+import { TestAdapter } from "nanoSQL-Adapter-Test";
 import { RedisAdapter } from "./source";
-import { nSQL, NanoSQLInstance } from "nano-sql";
+import { nSQL, nanoSQLInstance } from "nano-sql";
 import { uuid, fastALL } from "nano-sql/lib/utilities";
 
 new TestAdapter(RedisAdapter, [{

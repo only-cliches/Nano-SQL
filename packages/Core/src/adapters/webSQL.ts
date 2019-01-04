@@ -1,6 +1,6 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION, SQLiteAbstractFns } from "../interfaces";
-import { isAndroid, generateID, setFast } from "../utilities";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
+import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, SQLiteAbstractFns } from "../interfaces";
+import { isAndroid, generateID, setFast, deepSet } from "../utilities";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
 
 let tables: string[] = [];
 
@@ -21,9 +21,8 @@ export const SQLiteAbstract = (
         createAI: (complete: () => void, error: (err: any) => void) => {
             _query(true, `CREATE TABLE IF NOT EXISTS "_ai" (id TEXT PRIMARY KEY UNIQUE, inc BIGINT)`, [], complete, error);
         },
-        createTable: (table: string, tableData: INanoSQLTable, ai: {[table: string]: number}, complete: () => void, error: (err: any) => void) => {
+        createTable: (table: string, tableData: InanoSQLTable, ai: {[table: string]: number}, complete: () => void, error: (err: any) => void) => {
             tables.push(table);
-
             _query(true, `CREATE TABLE IF NOT EXISTS "${table}" (id ${tableData.isPkNum ? "REAL" : "TEXT"} PRIMARY KEY UNIQUE, data TEXT)`, [], () => {
                 if (tableData.ai) {
                     _query(false, `SELECT "inc" FROM "_ai" WHERE id = ?`, [table], (result) => {
@@ -50,7 +49,7 @@ export const SQLiteAbstract = (
                 }, error);
             }, error);
         },
-        write: (pkType: string, pkCol: string, table: string, pk: any, row: any, doAI: boolean, ai: {[table: string]: number}, complete: (pk: any) => void, error: (err: any) => void) => {
+        write: (pkType: string, pkCol: string[], table: string, pk: any, row: any, doAI: boolean, ai: {[table: string]: number}, complete: (pk: any) => void, error: (err: any) => void) => {
             pk = pk || generateID(pkType, ai[table] + 1);
             if (typeof pk === "undefined") {
                 error(new Error("Can't add a row without a primary key!"));
@@ -58,30 +57,24 @@ export const SQLiteAbstract = (
             }
 
             if (doAI) ai[table] = Math.max(pk, ai[table]);
-            row[pkCol] = pk;
+            deepSet(pkCol, row, pk);
             const rowStr = JSON.stringify(row);
+
+            const afterWrite = () => {
+                if (doAI && pk === ai[table]) {
+                    _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
+                        complete(pk);
+                    }, error);
+                } else {
+                    complete(pk);
+                }
+            }
 
             _query(false, `SELECT id FROM ${checkTable(table)} WHERE id = ?`, [pk], (result) => {
                 if (result.rows.length) {
-                    _query(true, `UPDATE ${checkTable(table)} SET data = ? WHERE id = ?`, [rowStr, pk], () => {
-                        if (doAI && pk === ai[table]) {
-                            _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
-                                complete(pk);
-                            }, error);
-                        } else {
-                            complete(pk);
-                        }
-                    }, error);
+                    _query(true, `UPDATE ${checkTable(table)} SET data = ? WHERE id = ?`, [rowStr, pk], afterWrite, error);
                 } else {
-                    _query(true, `INSERT INTO ${checkTable(table)} (id, data) VALUES (?, ?)`, [pk, rowStr], () => {
-                        if (doAI && pk === ai[table]) {
-                            _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
-                                complete(pk);
-                            }, error);
-                        } else {
-                            complete(pk);
-                        }
-                    }, error);
+                    _query(true, `INSERT INTO ${checkTable(table)} (id, data) VALUES (?, ?)`, [pk, rowStr], afterWrite, error);
                 }
             }, error);
 
@@ -171,14 +164,14 @@ export const SQLiteAbstract = (
 };
 
 
-export class WebSQL  extends NanoSQLMemoryIndex {
+export class WebSQL  extends nanoSQLMemoryIndex {
 
-    plugin: INanoSQLPlugin = {
+    plugin: InanoSQLPlugin = {
         name: "WebSQL Adapter",
         version: VERSION
     };
 
-    nSQL: INanoSQLInstance;
+    nSQL: InanoSQLInstance;
 
     private _size: number;
     private _id: string;
@@ -186,7 +179,7 @@ export class WebSQL  extends NanoSQLMemoryIndex {
     private _ai: {[table: string]: number};
     private _sqlite: SQLiteAbstractFns;
     private _tableConfigs: {
-        [tableName: string]: INanoSQLTable;
+        [tableName: string]: InanoSQLTable;
     }
 
     constructor(size?: number, batchSize?: number) {
@@ -200,14 +193,13 @@ export class WebSQL  extends NanoSQLMemoryIndex {
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
-        let isCompleting: boolean = false;
         this._db = window.openDatabase(this._id, String(this.nSQL.config.version) || "1.0", this._id, (isAndroid ? 5000000 : this._size));
         setFast(() => {
             this._sqlite.createAI(complete, error);
         });
     }
 
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
         this._tableConfigs[tableName] = tableData;
         this._sqlite.createTable(tableName, tableData, this._ai, complete, error);
     }

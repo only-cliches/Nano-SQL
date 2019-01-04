@@ -3,7 +3,7 @@ import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL } from "../src";
-import { INanoSQLInstance } from "../src/interfaces";
+import { InanoSQLInstance } from "../src/interfaces";
 import { nanoSQLAdapterTest } from "../src/adapter-test";
 import { SyncStorage } from "../src/adapters/syncStorage";
 import { RocksDB, rimraf } from "../src/adapters/rocksDB";

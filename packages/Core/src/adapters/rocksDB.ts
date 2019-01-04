@@ -1,6 +1,6 @@
-import { INanoSQLAdapter, INanoSQLDataModel, INanoSQLTable, INanoSQLPlugin, INanoSQLInstance, VERSION, postConnectFilter } from "../interfaces";
-import { allAsync, _NanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan, blankTableDefinition } from "../utilities";
-import { NanoSQLMemoryIndex } from "./memoryIndex";
+import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, postConnectFilter } from "../interfaces";
+import { allAsync, _nanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan, blankTableDefinition } from "../utilities";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
 
 declare const global: any;
 
@@ -18,9 +18,9 @@ export const rimraf = (dir_path: string) => {
     }
 };
 
-export class RocksDB extends NanoSQLMemoryIndex {
+export class RocksDB extends nanoSQLMemoryIndex {
 
-    plugin: INanoSQLPlugin = {
+    plugin: InanoSQLPlugin = {
         name: "RocksDB Adapter",
         version: VERSION,
         filters: [
@@ -37,10 +37,10 @@ export class RocksDB extends NanoSQLMemoryIndex {
         ]
     };
 
-    nSQL: INanoSQLInstance;
+    nSQL: InanoSQLInstance;
 
     private _id: string;
-    private _lvlDown: (dbID: string, tableName: string, tableData: INanoSQLTable) => { lvld: any, args?: any };
+    private _lvlDown: (dbID: string, tableName: string, tableData: InanoSQLTable) => { lvld: any, args?: any };
     private _levelDBs: {
         [key: string]: any;
     };
@@ -49,11 +49,11 @@ export class RocksDB extends NanoSQLMemoryIndex {
     };
 
     private _tableConfigs: {
-        [tableName: string]: INanoSQLTable;
+        [tableName: string]: InanoSQLTable;
     }
 
     constructor(
-        public path?: string | ((dbID: string, tableName: string, tableData: INanoSQLTable) => { lvld: any, args?: any })
+        public path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => { lvld: any, args?: any })
     ) {
         super(false, true);
         this._levelDBs = {};
@@ -61,7 +61,7 @@ export class RocksDB extends NanoSQLMemoryIndex {
         this._tableConfigs = {};
 
         if (typeof this.path === "string" || typeof this.path === "undefined") {
-            this._lvlDown = ((dbId: string, tableName: string, tableData: INanoSQLTable) => {
+            this._lvlDown = ((dbId: string, tableName: string, tableData: InanoSQLTable) => {
 
                 const basePath = global._path.join(this.path || ".", "db_" + dbId);
                 if (!global._fs.existsSync(basePath)) {
@@ -100,7 +100,7 @@ export class RocksDB extends NanoSQLMemoryIndex {
         });
     }
 
-    createTable(tableName: string, tableData: INanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
 
         if (this._levelDBs[tableName]) {
             error(new Error(`Table ${tableName} already exists and is open!`));
@@ -164,7 +164,7 @@ export class RocksDB extends NanoSQLMemoryIndex {
             this._ai[table] = Math.max(pk, this._ai[table]);
         }
 
-        row[this._tableConfigs[table].pkCol] = pk;
+        deepSet(this._tableConfigs[table].pkCol, row, pk);
 
         this._levelDBs[table].put(this._encodePk(table, pk), row, (err) => {
             if (err) {

@@ -1,21 +1,21 @@
 import { ReallySmallEvents } from "really-small-events";
-import { INanoSQLConfig, INanoSQLFunction, INanoSQLQuery, INanoSQLDatabaseEvent, INanoSQLAdapter, INanoSQLIndex, INanoSQLTable, INanoSQLInstance, INanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
-export declare class nanoSQL implements INanoSQLInstance {
-    config: INanoSQLConfig;
-    adapter: INanoSQLAdapter;
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLIndex, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
+export declare class nanoSQL implements InanoSQLInstance {
+    config: InanoSQLConfig;
+    adapter: InanoSQLAdapter;
     version: number;
     filters: {
         [filterName: string]: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
     };
     functions: {
-        [fnName: string]: INanoSQLFunction;
+        [fnName: string]: InanoSQLFunction;
     };
     indexes: {
-        [indexName: string]: INanoSQLIndex;
+        [indexName: string]: InanoSQLIndex;
     };
     planetRadius: number;
     tables: {
-        [tableName: string]: INanoSQLTable;
+        [tableName: string]: InanoSQLTable;
     };
     state: {
         activeAV: string;
@@ -66,27 +66,27 @@ export declare class nanoSQL implements INanoSQLInstance {
     _checkTTL(): void;
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {
         [key: string]: any;
-    }, i?: number) => boolean)) => Promise<TableQueryResult>)): INanoSQLInstance;
+    }, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
     _detectStorageMethod(): string;
-    _initPlugins(config: INanoSQLConfig): Promise<any>;
-    connect(config: INanoSQLConfig): Promise<any>;
+    _initPlugins(config: InanoSQLConfig): Promise<any>;
+    connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): void;
     every(args: {
         length: number;
         every?: number;
         offset?: number;
     }): number[];
-    triggerMapReduce(cb?: (event: INanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
-    on(action: string, callBack: (event: INanoSQLDatabaseEvent) => void): INanoSQLInstance;
-    off(action: string, callBack: (event: INanoSQLDatabaseEvent, database: INanoSQLInstance) => void): INanoSQLInstance;
-    _refreshEventChecker(): INanoSQLInstance;
+    triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance;
+    _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;
-    _doAV(AVType: "Action" | "View", table: string, AVName: string, AVargs: any): Promise<any>;
-    query(action: string | ((nSQL: INanoSQLInstance) => INanoSQLQuery), args?: any): INanoSQLQueryBuilder;
-    triggerQuery(query: INanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
-    triggerEvent(eventData: INanoSQLDatabaseEvent, ignoreStarTable?: boolean): INanoSQLInstance;
+    _doAV(AVType: "a" | "v", table: string, AVName: string, AVargs: any): Promise<any>;
+    query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder;
+    triggerQuery(query: InanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
+    triggerEvent(eventData: InanoSQLDatabaseEvent, ignoreStarTable?: boolean): InanoSQLInstance;
     default(replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
@@ -110,4 +110,4 @@ export declare class nanoSQL implements INanoSQLInstance {
 }
 export declare const nSQL: (table?: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
-}, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>) | undefined) => INanoSQLInstance;
+}, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>) | undefined) => InanoSQLInstance;

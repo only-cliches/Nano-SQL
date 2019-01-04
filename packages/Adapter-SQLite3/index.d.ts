@@ -1,4 +1,4 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
+import { nanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 export declare const sqlite3: any;
 export declare class SQLiteResult {
@@ -9,7 +9,7 @@ export declare class SQLiteResult {
     };
     constructor(rows: any[]);
 }
-export declare class nSQLiteAdapter implements NanoSQLStorageAdapter {
+export declare class nSQLiteAdapter implements nanoSQLStorageAdapter {
     private _pkKey;
     private _dbIndex;
     private _id;

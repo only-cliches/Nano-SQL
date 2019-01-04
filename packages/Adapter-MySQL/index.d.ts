@@ -1,4 +1,4 @@
-import { NanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
+import { nanoSQLStorageAdapter, DBKey, DBRow } from "nano-sql/lib/database/storage";
 import { DataModel } from "nano-sql/lib/index";
 export interface mySQLConnection {
     query: (sql: string, callback: (err: Error, results: any, fields: any) => void) => void;
@@ -12,7 +12,7 @@ export declare class SQLResult {
     };
     constructor(rows: any[]);
 }
-export declare class MySQLAdapter implements NanoSQLStorageAdapter {
+export declare class MySQLAdapter implements nanoSQLStorageAdapter {
     connectArgs: {
         connectionLimit?: number;
         host?: string;
