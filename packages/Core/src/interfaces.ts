@@ -2,6 +2,10 @@ import { ReallySmallEvents } from "really-small-events";
 
 export const VERSION = 2.0;
 
+export type uuid = String;
+export type timeId = String;
+export type timeIdms = String;
+
 export declare class InanoSQLInstance {
     config: InanoSQLConfig;
     adapter: InanoSQLAdapter;
