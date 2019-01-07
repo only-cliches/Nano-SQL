@@ -15,6 +15,7 @@ Scroll down for the todo list and it's progress.
 2. Use nanoSQL standalone, as the glue between your server and clients, or even with multi master servers.
 3. Supports many advanced features like Graph Queries, Map/Reduce, Indexing, and Geolocations.
 4. Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, etc...).
+5. Is Lightweight at 25 KB gzipped.
 
 ### Identical API Everywhere
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
@@ -84,7 +85,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc17/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc19/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>IAVFilterResult | @nano-sql/core</title>
+	<title>InanoSQLFunctionResult | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -57,10 +57,10 @@
 					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
 				</li>
 				<li>
-					<a href="_interfaces_.iavfilterresult.html">IAVFilterResult</a>
+					<a href="_interfaces_.inanosqlfunctionresult.html">InanoSQLFunctionResult</a>
 				</li>
 			</ul>
-			<h1>Interface IAVFilterResult</h1>
+			<h1>Interface InanoSQLFunctionResult</h1>
 		</div>
 	</div>
 </header>
@@ -71,9 +71,13 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">IAVFilterResult</span>
+						<span class="target">InanoSQLFunctionResult</span>
 					</li>
 				</ul>
+			</section>
+			<section class="tsd-panel tsd-kind-interface tsd-parent-kind-external-module">
+				<h3 class="tsd-before-signature">Indexable</h3>
+				<div class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">[</span>key: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">any</span></div>
 			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
@@ -82,10 +86,8 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.iavfilterresult.html#avname" class="tsd-kind-icon">AVName</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.iavfilterresult.html#avtype" class="tsd-kind-icon">AVType</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.iavfilterresult.html#avargs" class="tsd-kind-icon">AVargs</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.iavfilterresult.html#table" class="tsd-kind-icon">table</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlfunctionresult.html#result" class="tsd-kind-icon">result</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlfunctionresult.html#row" class="tsd-kind-icon">row</a></li>
 							</ul>
 						</section>
 					</div>
@@ -94,42 +96,22 @@
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="avname" class="tsd-anchor"></a>
-					<h3>AVName</h3>
-					<div class="tsd-signature tsd-kind-icon">AVName<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<a name="result" class="tsd-anchor"></a>
+					<h3>result</h3>
+					<div class="tsd-signature tsd-kind-icon">result<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/dda60b1/packages/Core/src/interfaces.ts#L575">interfaces.ts:575</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/dda60b1/packages/Core/src/interfaces.ts#L333">interfaces.ts:333</a></li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="avtype" class="tsd-anchor"></a>
-					<h3>AVType</h3>
-					<div class="tsd-signature tsd-kind-icon">AVType<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">"a"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"v"</span></div>
+					<a name="row" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> row</h3>
+					<div class="tsd-signature tsd-kind-icon">row<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/dda60b1/packages/Core/src/interfaces.ts#L573">interfaces.ts:573</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="avargs" class="tsd-anchor"></a>
-					<h3>AVargs</h3>
-					<div class="tsd-signature tsd-kind-icon">AVargs<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/dda60b1/packages/Core/src/interfaces.ts#L576">interfaces.ts:576</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="table" class="tsd-anchor"></a>
-					<h3>table</h3>
-					<div class="tsd-signature tsd-kind-icon">table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/dda60b1/packages/Core/src/interfaces.ts#L574">interfaces.ts:574</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/dda60b1/packages/Core/src/interfaces.ts#L334">interfaces.ts:334</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -172,19 +154,13 @@
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_interfaces_.iavfilterresult.html" class="tsd-kind-icon">IAVFilter<wbr>Result</a>
+						<a href="_interfaces_.inanosqlfunctionresult.html" class="tsd-kind-icon">InanoSQLFunction<wbr>Result</a>
 						<ul>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.iavfilterresult.html#avname" class="tsd-kind-icon">AVName</a>
+								<a href="_interfaces_.inanosqlfunctionresult.html#result" class="tsd-kind-icon">result</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.iavfilterresult.html#avtype" class="tsd-kind-icon">AVType</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.iavfilterresult.html#avargs" class="tsd-kind-icon">AVargs</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.iavfilterresult.html#table" class="tsd-kind-icon">table</a>
+								<a href="_interfaces_.inanosqlfunctionresult.html#row" class="tsd-kind-icon">row</a>
 							</li>
 						</ul>
 					</li>

@@ -1,5 +1,8 @@
 import { ReallySmallEvents } from "really-small-events";
 export declare const VERSION = 2;
+export declare type uuid = String;
+export declare type timeId = String;
+export declare type timeIdms = String;
 export declare class InanoSQLInstance {
     config: InanoSQLConfig;
     adapter: InanoSQLAdapter;
@@ -320,6 +323,11 @@ export interface InanoSQLActionOrView {
     extend?: any;
     call: (args?: any, db?: any) => Promise<any[]>;
 }
+export interface InanoSQLFunctionResult {
+    result: any;
+    row?: any;
+    [key: string]: any;
+}
 export interface InanoSQLFunction {
     type: "A" | "S";
     aggregateStart?: {
@@ -331,11 +339,7 @@ export interface InanoSQLFunction {
         result: any;
         row?: any;
         [key: string]: any;
-    }, ...args: any[]) => {
-        result: any;
-        row?: any;
-        [key: string]: any;
-    };
+    }, ...args: any[]) => InanoSQLFunctionResult;
     checkIndex?: (query: InanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
     queryIndex?: (query: InanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row: any, i: any) => void, complete: () => void, error: (err: any) => void) => void;
 }
@@ -490,8 +494,11 @@ export declare enum IWhereType {
 export interface IWhereCondition {
     index?: string;
     indexArray?: boolean;
-    fnName?: string;
-    fnArgs?: string[];
+    fnString?: string;
+    parsedFn?: {
+        name: string;
+        args: string[];
+    };
     col?: string;
     comp: string;
     value: any;

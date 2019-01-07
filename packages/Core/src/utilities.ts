@@ -19,8 +19,10 @@ import {
     adapterAddIndexValueFilter,
     adapterDeleteIndexValueFilter,
     adapterReadIndexKeyFilter,
-    adapterReadIndexKeysFilter
+    adapterReadIndexKeysFilter,
+    InanoSQLFunctionResult
 } from "./interfaces";
+import { _nanoSQLQuery } from "./query";
 
 declare var global: any;
 
@@ -588,6 +590,28 @@ export const objSort = (path?: string, rev?: boolean) => {
         return rev ? result * -1 : result;
     };
 };
+
+/**
+ * Recursively resolve function values provided a string and row
+ * 
+ *
+ * @param {string} fnString // TRIM(UPPER(column))
+ * @param {*} row // {column: " value "}
+ * @param {*} prev // aggregate previous value for aggregate functions
+ * @returns {InanoSQLFunctionResult} 
+ * @memberof _nanoSQLQuery
+ */
+export const execFunction = (query: InanoSQLQuery, fnString: string, row: any, prev: any): InanoSQLFunctionResult =>  {
+    const fnArgs = fnString.match(/\((.*)\)/gmi) as string[];
+    if (!fnArgs[0]) return {result: undefined}
+    const args = fnArgs[0].substr(1, fnArgs[0].length - 2).split(/\,\s?(?![^\(]*\))/).map(s => s.trim());
+    const fnName = fnString.split("(").shift() as string;
+    const calcArgs = args.map(s => s.indexOf("(") !== -1 ? execFunction(query, s, row, prev).result : s);
+    if (!query.parent.functions[fnName]) {
+        return {result: undefined}
+    }
+    return query.parent.functions[fnName].call(query, row, prev, ...calcArgs);
+}
 
 /**
  * Cast a javascript variable to a given type. Supports typescript primitives and more specific types.

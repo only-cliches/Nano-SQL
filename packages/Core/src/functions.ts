@@ -106,6 +106,13 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return {result: value};
             }
         },
+        TRIM: {
+            type: "S",
+            call: (query, row, prev, column) => {
+                const value = String(getFnValue(row, column)).trim();
+                return {result: value};
+            }
+        },
         UPPER: {
             type: "S",
             call: (query, row, prev, column) => {
@@ -116,7 +123,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
         CAST: {
             type: "S",
             call: (query, row, prev, column, type) => {
-                return {result: cast(type, deepGet(column, row))};
+                return {result: cast(getFnValue(row, type), deepGet(column, row), false, query.parent)};
             }
         },
         CONCAT: {
@@ -125,6 +132,33 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return {result: values.map(v => {
                     return getFnValue(row, v);
                 }).join("")};
+            }
+        },
+        REPLACE: {
+            type: "S",
+            call: (query, row, prev, subject: string, find: string, replace: string) => {
+                const subjVal = String(getFnValue(row, subject));
+                const findVal = String(getFnValue(row, find));
+                const repVal = String(getFnValue(row, replace));
+                return {result: subjVal.replace(findVal, repVal)};
+            }
+        },
+        STRCMP: {
+            type: "S",
+            call: (query, row, prev, subject1: any, subject2: any) => {
+                const subjVal1 = String(getFnValue(row, subject1));
+                const subjVal2 = String(getFnValue(row, subject2));
+                if (subjVal1 < subjVal2) return {result: -1};
+                if (subjVal1 > subjVal2) return {result: 1};
+                return {result: 0};
+            }
+        },
+        CONCAT_WS: {
+            type: "S",
+            call: (query, row, prev, sep: any, ...values: string[]) => {
+                return {result: values.map(v => {
+                    return getFnValue(row, v);
+                }).join(getFnValue(row, sep))};
             }
         },
         LEVENSHTEIN: {
@@ -139,12 +173,34 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return {result: wordLevenshtienCache[key]};
             }
         },
+        IF: {
+            type: "S",
+            call: (query, row, prev, expression, isTrue, isFalse) => {
+                const exp = expression.split(/<|=|>|<=|>=/gmi).map(s => {
+                    if (isNaN(s)) {
+                        return getFnValue(row, s);
+                    } else {
+                        return parseFloat(s);
+                    }
+                });
+                const comp = expression.match(/<|=|>|<=|>=/gmi)[0];
+                if (!comp) return {result: getFnValue(row, isFalse)}
+                switch (comp) {
+                    case "=": return exp[0] == exp[1] ? getFnValue(row, isTrue) : getFnValue(row, isFalse);
+                    case ">": return exp[0] > exp[1] ? getFnValue(row, isTrue) : getFnValue(row, isFalse);
+                    case "<": return exp[0] < exp[1] ? getFnValue(row, isTrue) : getFnValue(row, isFalse);
+                    case "<=": return exp[0] <= exp[1] ? getFnValue(row, isTrue) : getFnValue(row, isFalse);
+                    case ">=": return exp[0] < exp[1] ? getFnValue(row, isTrue) : getFnValue(row, isFalse);
+                    default: return {result: getFnValue(row, isFalse)}
+                }
+                
+            }
+        },
         CROW: {
             type: "S",
             call: (query, row, prev, gpsCol: string, lat: string, lon: string) => {
                 const latVal = getFnValue(row, gpsCol + ".lat");
                 const lonVal = getFnValue(row, gpsCol + ".lon");
-
                 return {
                     result: crowDistance(latVal, lonVal, parseFloat(lat), parseFloat(lon), nSQL.planetRadius)
                 };
@@ -164,8 +220,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                     if (crowCols.length === 2) {
                         return {
                             index: crowCols[0],
-                            fnName: "CROW",
-                            fnArgs: fnArgs,
+                            parsedFn: {name: "CROW", args: fnArgs},
                             comp: where[1],
                             value: where[2]
                         };
@@ -179,8 +234,8 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 const condition = where.comp;
 
                 const distance = parseFloat(where.value || "0");
-                const centerLat = parseFloat(where.fnArgs ? where.fnArgs[1] : "0");
-                const centerLon = parseFloat(where.fnArgs ? where.fnArgs[2] : "0");
+                const centerLat = parseFloat(where.parsedFn ? where.parsedFn.args[1] : "0");
+                const centerLon = parseFloat(where.parsedFn ? where.parsedFn.args[2] : "0");
 
                 // get distance radius in degrees
                 const distanceDegrees = (distance / (nSQL.planetRadius * 2 * Math.PI)) * 360;
@@ -301,8 +356,8 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                             }
 
                             // perform crow distance calculation on pole locations
-                            const rowLat = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
-                            const rowLon = deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
+                            const rowLat = deepGet((where.parsedFn ? where.parsedFn.args[0] : "") + ".lat", row);
+                            const rowLon = deepGet((where.parsedFn ? where.parsedFn.args[0] : "") + ".lon", row);
 
                             const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
                             const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
@@ -321,7 +376,9 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
         }
     };
 
-    Object.getOwnPropertyNames(Math).forEach((key) => {
+    const MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs","acos","asin","atan","atan2","ceil","cos","exp","floor","log","max","min","pow","random","round","sin","sqrt","tan"];
+
+    MathFns.forEach((key) => {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: (query, row, prev, ...args: string[]) => {
@@ -331,4 +388,3 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
         };
     });
 };
-

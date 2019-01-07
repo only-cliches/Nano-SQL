@@ -107,6 +107,13 @@ exports.attachDefaultFns = function (nSQL) {
                 return { result: value };
             }
         },
+        TRIM: {
+            type: "S",
+            call: function (query, row, prev, column) {
+                var value = String(utilities_1.getFnValue(row, column)).trim();
+                return { result: value };
+            }
+        },
         UPPER: {
             type: "S",
             call: function (query, row, prev, column) {
@@ -117,7 +124,7 @@ exports.attachDefaultFns = function (nSQL) {
         CAST: {
             type: "S",
             call: function (query, row, prev, column, type) {
-                return { result: utilities_1.cast(type, utilities_1.deepGet(column, row)) };
+                return { result: utilities_1.cast(utilities_1.getFnValue(row, type), utilities_1.deepGet(column, row), false, query.parent) };
             }
         },
         CONCAT: {
@@ -132,6 +139,39 @@ exports.attachDefaultFns = function (nSQL) {
                     }).join("") };
             }
         },
+        REPLACE: {
+            type: "S",
+            call: function (query, row, prev, subject, find, replace) {
+                var subjVal = String(utilities_1.getFnValue(row, subject));
+                var findVal = String(utilities_1.getFnValue(row, find));
+                var repVal = String(utilities_1.getFnValue(row, replace));
+                return { result: subjVal.replace(findVal, repVal) };
+            }
+        },
+        STRCMP: {
+            type: "S",
+            call: function (query, row, prev, subject1, subject2) {
+                var subjVal1 = String(utilities_1.getFnValue(row, subject1));
+                var subjVal2 = String(utilities_1.getFnValue(row, subject2));
+                if (subjVal1 < subjVal2)
+                    return { result: -1 };
+                if (subjVal1 > subjVal2)
+                    return { result: 1 };
+                return { result: 0 };
+            }
+        },
+        CONCAT_WS: {
+            type: "S",
+            call: function (query, row, prev, sep) {
+                var values = [];
+                for (var _i = 4; _i < arguments.length; _i++) {
+                    values[_i - 4] = arguments[_i];
+                }
+                return { result: values.map(function (v) {
+                        return utilities_1.getFnValue(row, v);
+                    }).join(utilities_1.getFnValue(row, sep)) };
+            }
+        },
         LEVENSHTEIN: {
             type: "S",
             call: function (query, row, prev, word1, word2) {
@@ -142,6 +182,30 @@ exports.attachDefaultFns = function (nSQL) {
                     wordLevenshtienCache[key] = levenshtein(w1, w2);
                 }
                 return { result: wordLevenshtienCache[key] };
+            }
+        },
+        IF: {
+            type: "S",
+            call: function (query, row, prev, expression, isTrue, isFalse) {
+                var exp = expression.split(/<|=|>|<=|>=/gmi).map(function (s) {
+                    if (isNaN(s)) {
+                        return utilities_1.getFnValue(row, s);
+                    }
+                    else {
+                        return parseFloat(s);
+                    }
+                });
+                var comp = expression.match(/<|=|>|<=|>=/gmi)[0];
+                if (!comp)
+                    return { result: utilities_1.getFnValue(row, isFalse) };
+                switch (comp) {
+                    case "=": return exp[0] == exp[1] ? utilities_1.getFnValue(row, isTrue) : utilities_1.getFnValue(row, isFalse);
+                    case ">": return exp[0] > exp[1] ? utilities_1.getFnValue(row, isTrue) : utilities_1.getFnValue(row, isFalse);
+                    case "<": return exp[0] < exp[1] ? utilities_1.getFnValue(row, isTrue) : utilities_1.getFnValue(row, isFalse);
+                    case "<=": return exp[0] <= exp[1] ? utilities_1.getFnValue(row, isTrue) : utilities_1.getFnValue(row, isFalse);
+                    case ">=": return exp[0] < exp[1] ? utilities_1.getFnValue(row, isTrue) : utilities_1.getFnValue(row, isFalse);
+                    default: return { result: utilities_1.getFnValue(row, isFalse) };
+                }
             }
         },
         CROW: {
@@ -168,8 +232,7 @@ exports.attachDefaultFns = function (nSQL) {
                     if (crowCols_1.length === 2) {
                         return {
                             index: crowCols_1[0],
-                            fnName: "CROW",
-                            fnArgs: fnArgs,
+                            parsedFn: { name: "CROW", args: fnArgs },
                             comp: where[1],
                             value: where[2]
                         };
@@ -182,8 +245,8 @@ exports.attachDefaultFns = function (nSQL) {
                 var lonTable = "_idx_" + query.table + "_" + where.index + ".lon";
                 var condition = where.comp;
                 var distance = parseFloat(where.value || "0");
-                var centerLat = parseFloat(where.fnArgs ? where.fnArgs[1] : "0");
-                var centerLon = parseFloat(where.fnArgs ? where.fnArgs[2] : "0");
+                var centerLat = parseFloat(where.parsedFn ? where.parsedFn.args[1] : "0");
+                var centerLon = parseFloat(where.parsedFn ? where.parsedFn.args[2] : "0");
                 // get distance radius in degrees
                 var distanceDegrees = (distance / (nSQL.planetRadius * 2 * Math.PI)) * 360;
                 // get degrees north and south of search point
@@ -287,8 +350,8 @@ exports.attachDefaultFns = function (nSQL) {
                                 return;
                             }
                             // perform crow distance calculation on pole locations
-                            var rowLat = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lat", row);
-                            var rowLon = utilities_1.deepGet((where.fnArgs ? where.fnArgs[0] : "") + ".lon", row);
+                            var rowLat = utilities_1.deepGet((where.parsedFn ? where.parsedFn.args[0] : "") + ".lat", row);
+                            var rowLon = utilities_1.deepGet((where.parsedFn ? where.parsedFn.args[0] : "") + ".lon", row);
                             var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
                             var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
                             if (doRow) {
@@ -304,7 +367,8 @@ exports.attachDefaultFns = function (nSQL) {
             }
         }
     };
-    Object.getOwnPropertyNames(Math).forEach(function (key) {
+    var MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "exp", "floor", "log", "max", "min", "pow", "random", "round", "sin", "sqrt", "tan"];
+    MathFns.forEach(function (key) {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: function (query, row, prev) {

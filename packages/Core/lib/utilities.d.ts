@@ -1,4 +1,4 @@
-import { InanoSQLQuery, InanoSQLInstance, TableQueryResult, InanoSQLTable } from "./interfaces";
+import { InanoSQLQuery, InanoSQLInstance, TableQueryResult, InanoSQLTable, InanoSQLFunctionResult } from "./interfaces";
 export declare const blankTableDefinition: InanoSQLTable;
 export declare const binarySearch: (arr: any[], value: any, indexOf: boolean, startVal?: number | undefined, endVal?: number | undefined) => number;
 export declare const titleCase: (str: string) => string;
@@ -147,6 +147,17 @@ export declare const cleanArgs: (argDeclarations: string[], args: {
  */
 export declare const isObject: (val: any) => boolean;
 export declare const objSort: (path?: string | undefined, rev?: boolean | undefined) => (a: any, b: any) => number;
+/**
+ * Recursively resolve function values provided a string and row
+ *
+ *
+ * @param {string} fnString // TRIM(UPPER(column))
+ * @param {*} row // {column: " value "}
+ * @param {*} prev // aggregate previous value for aggregate functions
+ * @returns {InanoSQLFunctionResult}
+ * @memberof _nanoSQLQuery
+ */
+export declare const execFunction: (query: InanoSQLQuery, fnString: string, row: any, prev: any) => InanoSQLFunctionResult;
 /**
  * Cast a javascript variable to a given type. Supports typescript primitives and more specific types.
  *

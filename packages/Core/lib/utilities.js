@@ -550,6 +550,29 @@ exports.objSort = function (path, rev) {
     };
 };
 /**
+ * Recursively resolve function values provided a string and row
+ *
+ *
+ * @param {string} fnString // TRIM(UPPER(column))
+ * @param {*} row // {column: " value "}
+ * @param {*} prev // aggregate previous value for aggregate functions
+ * @returns {InanoSQLFunctionResult}
+ * @memberof _nanoSQLQuery
+ */
+exports.execFunction = function (query, fnString, row, prev) {
+    var _a;
+    var fnArgs = fnString.match(/\((.*)\)/gmi);
+    if (!fnArgs[0])
+        return { result: undefined };
+    var args = fnArgs[0].substr(1, fnArgs[0].length - 2).split(/\,\s?(?![^\(]*\))/).map(function (s) { return s.trim(); });
+    var fnName = fnString.split("(").shift();
+    var calcArgs = args.map(function (s) { return s.indexOf("(") !== -1 ? exports.execFunction(query, s, row, prev).result : s; });
+    if (!query.parent.functions[fnName]) {
+        return { result: undefined };
+    }
+    return (_a = query.parent.functions[fnName]).call.apply(_a, [query, row, prev].concat(calcArgs));
+};
+/**
  * Cast a javascript variable to a given type. Supports typescript primitives and more specific types.
  *
  * @param {string} type

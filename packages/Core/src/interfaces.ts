@@ -329,11 +329,16 @@ export interface InanoSQLActionOrView {
     call: (args?: any, db?: any) => Promise<any[]>;
 }
 
+export interface InanoSQLFunctionResult {
+    result: any, 
+    row?: any, 
+    [key: string]: any
+}
 
 export interface InanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
-    call: (query: InanoSQLQuery, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => {result: any, row?: any, [key: string]: any}; // function call
+    call: (query: InanoSQLQuery, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => InanoSQLFunctionResult; // function call
     checkIndex?: (query: InanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
     queryIndex?: (query: InanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
 }
@@ -495,8 +500,8 @@ export enum IWhereType {
 export interface IWhereCondition {
     index?: string;
     indexArray?: boolean;
-    fnName?: string;
-    fnArgs?: string[];
+    fnString?: string;
+    parsedFn?: {name: string, args: string[]};
     col?: string;
     comp: string;
     value: any;

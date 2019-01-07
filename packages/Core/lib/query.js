@@ -544,8 +544,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             return _this._sortObj(a, b, _this._groupBy);
         }).forEach(function (val, idx) {
             var groupByKey = _this._groupBy.sort.map(function (k) {
-                var _a;
-                return k.fn ? (_a = _this.nSQL.functions[k.fn]).call.apply(_a, [_this.query, val, { result: undefined }].concat(k.path)) : String(utilities_1.deepGet(k.path, val));
+                return String(k.fn ? utilities_1.execFunction(_this.query, k.fn, val, { result: undefined }).result : utilities_1.deepGet(k.path, val));
             }).join(".");
             if (_this._sortGroupKeys[groupByKey] === undefined) {
                 _this._sortGroupKeys[groupByKey] = _this._sortGroups.length;
@@ -568,12 +567,12 @@ var _nanoSQLQuery = /** @class */ (function () {
             this._sortGroups.forEach(function (group) {
                 // find aggregate functions
                 var resultFns = _this._selectArgs.reduce(function (p, c, i) {
-                    if (_this.nSQL.functions[c.value] && _this.nSQL.functions[c.value].type === "A") {
+                    var fnName = c.value.split("(").shift();
+                    if (c.isFn && _this.nSQL.functions[fnName] && _this.nSQL.functions[fnName].type === "A") {
                         p[i] = {
                             idx: i,
                             name: c.value,
-                            aggr: utilities_1._assign(_this.nSQL.functions[c.value].aggregateStart),
-                            args: c.args
+                            aggr: utilities_1._assign(_this.nSQL.functions[fnName].aggregateStart),
                         };
                     }
                     return p;
@@ -582,17 +581,15 @@ var _nanoSQLQuery = /** @class */ (function () {
                 // calculate aggregate functions
                 group.forEach(function (row, i) {
                     resultFns.forEach(function (fn, i) {
-                        var _a;
                         if (!fn)
                             return;
-                        resultFns[i].aggr = (_a = _this.nSQL.functions[fn.name]).call.apply(_a, [_this.query, row, resultFns[i].aggr].concat(resultFns[i].args));
+                        resultFns[i].aggr = utilities_1.execFunction(_this.query, resultFns[i].name, row, resultFns[i].aggr);
                     });
                 });
                 // calculate simple functions and AS back into buffer
                 _this._queryBuffer.push(_this._selectArgs.reduce(function (prev, cur, i) {
-                    var _a;
-                    var col = cur.isFn ? cur.value + "(" + (cur.args || []).join(", ") + ")" : cur.value;
-                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? (_a = _this.nSQL.functions[cur.value]).call.apply(_a, [_this.query, resultFns[firstFn.idx].aggr.row, {}].concat((cur.args || []))) : utilities_1.deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
+                    var col = cur.value;
+                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
                     return prev;
                 }, {}));
             });
@@ -1050,14 +1047,14 @@ var _nanoSQLQuery = /** @class */ (function () {
         if (this._selectArgs.length) {
             var result_1 = {};
             this._selectArgs.forEach(function (arg) {
-                var _a;
                 if (arg.isFn) {
-                    if (!_this.nSQL.functions[arg.value]) {
-                        _this.query.state = "error";
-                        _this.error({ error: "Function " + arg.value + " not found!", query: _this.query });
+                    /*if (!this.nSQL.functions[arg.value]) {
+                        this.query.state = "error";
+                        this.error({error: `Function ${arg.value} not found!`, query: this.query});
                         return;
-                    }
-                    result_1[arg.as || arg.value] = (_a = _this.nSQL.functions[arg.value]).call.apply(_a, [_this.query, row, {}].concat((arg.args || []))).result;
+                    }*/
+                    result_1[arg.as || arg.value] = utilities_1.execFunction(_this.query, arg.value, row, {}).result;
+                    // result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, {} as any, ...(arg.args || [])).result;
                 }
                 else {
                     result_1[arg.as || arg.value] = utilities_1.deepGet(arg.value, row);
@@ -1087,9 +1084,8 @@ var _nanoSQLQuery = /** @class */ (function () {
         var A_id = id.length ? utilities_1.deepGet(id, objA) : false;
         var B_id = id.length ? utilities_1.deepGet(id, objB) : false;
         return columns.sort.reduce(function (prev, cur) {
-            var _a, _b;
-            var A = cur.fn ? (_a = _this.nSQL.functions[cur.fn]).call.apply(_a, [_this.query, objA, { result: undefined }].concat(cur.path)).result : utilities_1.deepGet(cur.path, objA);
-            var B = cur.fn ? (_b = _this.nSQL.functions[cur.fn]).call.apply(_b, [_this.query, objB, { result: undefined }].concat(cur.path)).result : utilities_1.deepGet(cur.path, objB);
+            var A = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, objA, { result: undefined }).result : utilities_1.deepGet(cur.path, objA);
+            var B = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, objB, { result: undefined }).result : utilities_1.deepGet(cur.path, objB);
             if (!prev) {
                 if (A === B)
                     return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
@@ -1423,8 +1419,8 @@ var _nanoSQLQuery = /** @class */ (function () {
     _nanoSQLQuery.prototype._resolveFastWhere = function (onlyGetPKs, fastWhere, isReversed, onRow, complete) {
         var _this = this;
         // function
-        if (fastWhere.index && fastWhere.fnName) {
-            this.nSQL.functions[fastWhere.fnName].queryIndex(this.query, fastWhere, onlyGetPKs, onRow, complete, this._onError);
+        if (fastWhere.index && fastWhere.parsedFn) {
+            this.nSQL.functions[fastWhere.parsedFn.name].queryIndex(this.query, fastWhere, onlyGetPKs, onRow, complete, this._onError);
             return;
         }
         // primary key or secondary index
@@ -1793,10 +1789,10 @@ var _nanoSQLQuery = /** @class */ (function () {
         return columnValue.match(_nanoSQLQuery.likeCache[givenValue]) !== null;
     };
     _nanoSQLQuery.prototype._getColValue = function (where, wholeRow) {
-        var _a;
-        if (where.fnName) {
-            var fnValue = (_a = this.nSQL.functions[where.fnName]).call.apply(_a, [this.query, wholeRow, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }].concat((where.fnArgs || [])));
-            return (fnValue ? fnValue : { result: undefined }).result;
+        if (where.fnString) {
+            return utilities_1.execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result;
+            // const fnValue = this.nSQL.functions[where.fnName].call(this.query, wholeRow, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }, ...(where.fnArgs || []));
+            // return (fnValue ? fnValue : {result: undefined}).result;
         }
         else {
             return utilities_1.deepGet(where.col, wholeRow);
@@ -1874,7 +1870,6 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
     };
     _nanoSQLQuery.prototype._parseSort = function (sort, checkforIndexes) {
-        var _this = this;
         var key = sort && sort.length ? utilities_1.hash(JSON.stringify(sort)) : "";
         if (!key)
             return { sort: [], index: "" };
@@ -1886,15 +1881,16 @@ var _nanoSQLQuery = /** @class */ (function () {
             if (hasFn) {
                 isThereFn = true;
             }
-            var fnArgs = hasFn ? c[0].split("(")[1].replace(")", "").split(",").map(function (v) { return v.trim(); }).filter(function (a) { return a; }) : [];
-            var fnName = hasFn ? c[0].split("(")[0].trim().toUpperCase() : undefined;
-            if (fnName && !_this.nSQL.functions[fnName]) {
-                _this.query.state = "error";
-                _this.error("Function \"" + fnName + "\" not found!");
-            }
+            /*
+            const fnArgs: string[] = hasFn ? c[0].split("(")[1].replace(")", "").split(",").map(v => v.trim()).filter(a => a) : [];
+            const fnName = hasFn ? c[0].split("(")[0].trim().toUpperCase() : undefined;
+            if (fnName && !this.nSQL.functions[fnName]) {
+                this.query.state = "error";
+                this.error(`Function "${fnName}" not found!`);
+            }*/
             p.push({
-                path: hasFn ? fnArgs : utilities_1.resolvePath(c[0]),
-                fn: fnName,
+                path: hasFn ? [] : utilities_1.resolvePath(c[0]),
+                fn: hasFn ? c[0] : undefined,
                 dir: (c[1] || "asc").toUpperCase()
             });
             return p;
@@ -1935,9 +1931,9 @@ var _nanoSQLQuery = /** @class */ (function () {
                 (this.query.actionArgs || []).forEach(function (val) {
                     var splitVal = val.split(/\s+as\s+/i).map(function (s) { return s.trim(); });
                     if (splitVal[0].indexOf("(") !== -1) {
-                        var fnArgs = splitVal[0].split("(")[1].replace(")", "").split(",").map(function (v) { return v.trim(); });
+                        // const fnArgs = splitVal[0].split("(")[1].replace(")", "").split(",").map(v => v.trim());
                         var fnName = splitVal[0].split("(")[0].trim().toUpperCase();
-                        _this._selectArgs.push({ isFn: true, value: fnName, as: splitVal[1], args: fnArgs });
+                        _this._selectArgs.push({ isFn: true, value: splitVal[0], as: splitVal[1], args: undefined });
                         if (!_this.nSQL.functions[fnName]) {
                             _this.query.state = "error";
                             _this.error("Function \"" + fnName + "\" not found!");
@@ -2034,8 +2030,8 @@ var _nanoSQLQuery = /** @class */ (function () {
                         }
                         if (!hasIndex) {
                             p.push({
-                                fnName: fnName,
-                                fnArgs: fnArgs,
+                                fnString: w[0],
+                                parsedFn: { name: fnName, args: fnArgs },
                                 comp: w[1],
                                 value: w[2]
                             });

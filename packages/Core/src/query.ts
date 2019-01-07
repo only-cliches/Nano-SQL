@@ -26,7 +26,8 @@ import {
     TableQueryResult, 
     InanoSQLMapReduce, 
     mapReduceFilter, 
-    InanoSQLDatabaseEvent 
+    InanoSQLDatabaseEvent, 
+    InanoSQLFunctionResult
 } from "./interfaces";
 
 import { 
@@ -45,6 +46,7 @@ import {
     adapterFilters, 
     throttle,
     nan,
+    execFunction,
 } from "./utilities";
 
 export const secondaryIndexQueue: { [idAndTable: string]: _nanoSQLQueue } = {};
@@ -458,7 +460,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         this._parseSelect();
         if (this.query.state === "error") return;
 
-
         const range = [(this.query.offset || 0), (this.query.offset || 0) + (this.query.limit || 0)];
         const doRange = range[0] + range[1] > 0;
 
@@ -667,7 +668,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         }).forEach((val, idx) => {
 
             const groupByKey = this._groupBy.sort.map(k => {
-                return k.fn ? this.nSQL.functions[k.fn].call(this.query, val, {result: undefined}, ...k.path) : String(deepGet(k.path, val));
+                return String(k.fn ? execFunction(this.query, k.fn, val, {result: undefined}).result : deepGet(k.path, val)) 
             }).join(".");
 
             if (this._sortGroupKeys[groupByKey] === undefined) {
@@ -695,13 +696,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             // loop through the groups
             this._sortGroups.forEach((group) => {
                 // find aggregate functions
-                let resultFns: { aggr: any, args: string[], name: string, idx: number }[] = this._selectArgs.reduce((p, c, i) => {
-                    if (this.nSQL.functions[c.value] && this.nSQL.functions[c.value].type === "A") {
+                let resultFns: { aggr: any, name: string, idx: number }[] = this._selectArgs.reduce((p, c, i) => {
+                    const fnName = c.value.split("(").shift() as string;
+                    if (c.isFn && this.nSQL.functions[fnName] && this.nSQL.functions[fnName].type === "A") {
                         p[i] = {
                             idx: i,
                             name: c.value,
-                            aggr: _assign(this.nSQL.functions[c.value].aggregateStart),
-                            args: c.args
+                            aggr: _assign(this.nSQL.functions[fnName].aggregateStart),
                         };
                     }
                     return p;
@@ -713,14 +714,14 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 group.forEach((row, i) => {
                     resultFns.forEach((fn, i) => {
                         if (!fn) return;
-                        resultFns[i].aggr = this.nSQL.functions[fn.name].call(this.query, row, resultFns[i].aggr, ...resultFns[i].args);
+                        resultFns[i].aggr = execFunction(this.query, resultFns[i].name, row, resultFns[i].aggr);
                     });
                 });
 
                 // calculate simple functions and AS back into buffer
                 this._queryBuffer.push(this._selectArgs.reduce((prev, cur, i) => {
-                    const col = cur.isFn ? `${cur.value}(${(cur.args || []).join(", ")})` : cur.value;
-                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? this.nSQL.functions[cur.value].call(this.query, resultFns[firstFn.idx].aggr.row, {} as any, ...(cur.args || [])) : deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
+                    const col = cur.value;
+                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? execFunction(this.query, cur.value, resultFns[firstFn.idx].aggr.row, {result: undefined}).result : deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
                     return prev;
                 }, {}));
 
@@ -1191,7 +1192,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         }, {});
     }
 
-
     public _showTables() {
         this.progress({
             tables: Object.keys(this.nSQL.tables)
@@ -1232,12 +1232,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             let result = {};
             this._selectArgs.forEach((arg) => {
                 if (arg.isFn) {
-                    if (!this.nSQL.functions[arg.value]) {
+                    /*if (!this.nSQL.functions[arg.value]) {
                         this.query.state = "error";
                         this.error({error: `Function ${arg.value} not found!`, query: this.query});
                         return;
-                    }
-                    result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, {} as any, ...(arg.args || [])).result;
+                    }*/
+                    result[arg.as || arg.value] = execFunction(this.query, arg.value, row, {} as any).result;
+                    // result[arg.as || arg.value] = this.nSQL.functions[arg.value].call(this.query, row, {} as any, ...(arg.args || [])).result;
                 } else {
                     result[arg.as || arg.value] = deepGet(arg.value, row);
                 }
@@ -1266,8 +1267,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const A_id = id.length ? deepGet(id, objA) : false;
         const B_id = id.length ? deepGet(id, objB) : false;
         return columns.sort.reduce((prev, cur) => {
-            let A = cur.fn ? this.nSQL.functions[cur.fn].call(this.query, objA, {result: undefined}, ...cur.path).result : deepGet(cur.path, objA);
-            let B = cur.fn ? this.nSQL.functions[cur.fn].call(this.query, objB, {result: undefined}, ...cur.path).result : deepGet(cur.path, objB);
+            let A = cur.fn ? execFunction(this.query, cur.fn, objA, {result: undefined}).result : deepGet(cur.path, objA);
+            let B = cur.fn ? execFunction(this.query, cur.fn, objB, {result: undefined}).result : deepGet(cur.path, objB);
             if (!prev) {
                 if (A === B) return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
                 return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
@@ -1622,8 +1623,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _resolveFastWhere(onlyGetPKs: any, fastWhere: IWhereCondition, isReversed: boolean, onRow: (row: { [name: string]: any }, i: number) => void, complete: () => void): void {
 
         // function
-        if (fastWhere.index && fastWhere.fnName) {
-            (this.nSQL.functions[fastWhere.fnName].queryIndex as any)(this.query, fastWhere, onlyGetPKs, onRow, complete, this._onError);
+        if (fastWhere.index && fastWhere.parsedFn) {
+            (this.nSQL.functions[fastWhere.parsedFn.name].queryIndex as any)(this.query, fastWhere, onlyGetPKs, onRow, complete, this._onError);
             return;
         }
 
@@ -1854,6 +1855,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
 
                     adapterFilters(this.nSQL, this.query).readMulti(this.query.table, "all", undefined, undefined, isReversed, (row, i) => {
+
                         if (this._whereArgs.type === IWhereType.slow) {
                             if (this._where(row, this._whereArgs.slowWhere as any)) {
                                 onRow(row, i);
@@ -2008,9 +2010,10 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     }
 
     public _getColValue(where: IWhereCondition, wholeRow: any): any {
-        if (where.fnName) {
-            const fnValue = this.nSQL.functions[where.fnName].call(this.query, wholeRow, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }, ...(where.fnArgs || []));
-            return (fnValue ? fnValue : {result: undefined}).result;
+        if (where.fnString) {
+            return execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result;
+            // const fnValue = this.nSQL.functions[where.fnName].call(this.query, wholeRow, this.nSQL.functions[where.fnName].aggregateStart || { result: undefined }, ...(where.fnArgs || []));
+            // return (fnValue ? fnValue : {result: undefined}).result;
         } else {
             return deepGet(where.col as string, wholeRow);
         }
@@ -2110,15 +2113,16 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             if (hasFn) {
                 isThereFn = true;
             }
+            /*
             const fnArgs: string[] = hasFn ? c[0].split("(")[1].replace(")", "").split(",").map(v => v.trim()).filter(a => a) : [];
             const fnName = hasFn ? c[0].split("(")[0].trim().toUpperCase() : undefined;
             if (fnName && !this.nSQL.functions[fnName]) {
                 this.query.state = "error";
                 this.error(`Function "${fnName}" not found!`);
-            }
+            }*/
             p.push({ 
-                path: hasFn ? fnArgs : resolvePath(c[0]),
-                fn: fnName,
+                path: hasFn ? [] : resolvePath(c[0]),
+                fn: hasFn ? c[0] : undefined,
                 dir: (c[1] || "asc").toUpperCase() 
             }); 
             return p;
@@ -2169,9 +2173,9 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 (this.query.actionArgs || []).forEach((val: string) => {
                     const splitVal = val.split(/\s+as\s+/i).map(s => s.trim());
                     if (splitVal[0].indexOf("(") !== -1) {
-                        const fnArgs = splitVal[0].split("(")[1].replace(")", "").split(",").map(v => v.trim());
+                        // const fnArgs = splitVal[0].split("(")[1].replace(")", "").split(",").map(v => v.trim());
                         const fnName = splitVal[0].split("(")[0].trim().toUpperCase();
-                        this._selectArgs.push({ isFn: true, value: fnName, as: splitVal[1], args: fnArgs });
+                        this._selectArgs.push({ isFn: true, value: splitVal[0], as: splitVal[1], args: undefined });
                         if (!this.nSQL.functions[fnName]) {
                             this.query.state = "error";
                             this.error(`Function "${fnName}" not found!`);
@@ -2280,8 +2284,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
                         if (!hasIndex) {
                             p.push({
-                                fnName: fnName,
-                                fnArgs: fnArgs,
+                                fnString: w[0],
+                                parsedFn: {name: fnName, args: fnArgs},
                                 comp: w[1],
                                 value: w[2]
                             });
@@ -2345,7 +2349,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     }
                     return p;
                 }
-            }, [] as any[]);
+            }, [] as IWhereCondition[]);
         };
         let parsedWhere = recursiveParse(typeof where[0] === "string" ? [where] : where, 0);
         // discover where we have indexes we can use
