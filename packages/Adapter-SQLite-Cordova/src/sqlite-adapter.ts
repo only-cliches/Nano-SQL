@@ -9,11 +9,19 @@ declare const cordova: any;
 export interface CordovaSQLiteDB {
     sqlBatch: (queries: (string|any[])[], onSuccess: () => void, onFail: (err: Error) => void) => void;
     executeSql: (sql: string, vars: any[], onSuccess: (result: SQLResultSet) => void, onFail: (err: Error) => void) => void;
-};
+}
 
 export const getMode = () => {
-    return typeof cordova !== "undefined" && window["sqlitePlugin"] ? new SQLiteStore() : "PERM";
-}
+    if (typeof cordova !== "undefined" && window["sqlitePlugin"]) {
+        if (window["device"] && window["device"].platform && window["device"].platform !== "browser") {
+            return new SQLiteStore();
+        } else {
+            return "PERM";
+        }
+    } else {
+        return "PERM";
+    }
+};
 
 /**
  * Handles WebSQL persistent storage
@@ -122,7 +130,7 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
         }, (err) => {
             console.error(sql, args, err);
             return false;
-        })
+        });
     }
 
     public write(table: string, pk: DBKey | null, data: DBRow, complete: (row: DBRow) => void): void {
@@ -133,29 +141,26 @@ export class SQLiteStore implements NanoSQLStorageAdapter {
             throw new Error("Can't add a row without a primary key!");
         }
 
-        let newRow = false;
-        if (this._dbIndex[table].indexOf(pk) === -1) {
-            newRow = true;
-            this._dbIndex[table].add(pk);
-        }
-
-        if (newRow) {
-            const r = {
-                ...data,
-                [this._pkKey[table]]: pk,
-            };
-            this._sql(true, `INSERT into ${this._chkTable(table)} (id, data) VALUES (?, ?)`, [pk, JSON.stringify(r)], (result) => {
-                complete(r);
-            });
-        } else {
-            const r = {
-                ...data,
-                [this._pkKey[table]]: pk,
-            };
-            this._sql(true, `UPDATE ${this._chkTable(table)} SET data = ? WHERE id = ?`, [JSON.stringify(r), pk], () => {
-                complete(r);
-            });
-        }
+        this._sql(false, `SELECT id FROM ${this._chkTable(table)} WHERE id = ?`, [pk], (result) => {
+            if (!result.rows.length) {
+                this._dbIndex[table].add(pk);
+                const r = {
+                    ...data,
+                    [this._pkKey[table]]: pk,
+                };
+                this._sql(true, `INSERT into ${this._chkTable(table)} (id, data) VALUES (?, ?)`, [pk, JSON.stringify(r)], (result) => {
+                    complete(r);
+                });
+            } else {
+                const r = {
+                    ...data,
+                    [this._pkKey[table]]: pk,
+                };
+                this._sql(true, `UPDATE ${this._chkTable(table)} SET data = ? WHERE id = ?`, [JSON.stringify(r), pk], () => {
+                    complete(r);
+                });
+            }
+        });
     }
 
     public delete(table: string, pk: DBKey, complete: () => void): void {

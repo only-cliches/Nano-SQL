@@ -10,9 +10,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var lie_ts_1 = require("lie-ts");
 var utilities_1 = require("nano-sql/lib/utilities");
 var db_idx_1 = require("nano-sql/lib/database/db-idx");
-;
 exports.getMode = function () {
-    return typeof cordova !== "undefined" && window["sqlitePlugin"] ? new SQLiteStore() : "PERM";
+    if (typeof cordova !== "undefined" && window["sqlitePlugin"]) {
+        if (window["device"] && window["device"].platform && window["device"].platform !== "browser") {
+            return new SQLiteStore();
+        }
+        else {
+            return "PERM";
+        }
+    }
+    else {
+        return "PERM";
+    }
 };
 var SQLiteStore = (function () {
     function SQLiteStore() {
@@ -80,28 +89,27 @@ var SQLiteStore = (function () {
         });
     };
     SQLiteStore.prototype.write = function (table, pk, data, complete) {
+        var _this = this;
         pk = pk || utilities_1.generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai);
         if (!pk) {
             throw new Error("Can't add a row without a primary key!");
         }
-        var newRow = false;
-        if (this._dbIndex[table].indexOf(pk) === -1) {
-            newRow = true;
-            this._dbIndex[table].add(pk);
-        }
-        if (newRow) {
-            var r_1 = __assign({}, data, (_a = {}, _a[this._pkKey[table]] = pk, _a));
-            this._sql(true, "INSERT into " + this._chkTable(table) + " (id, data) VALUES (?, ?)", [pk, JSON.stringify(r_1)], function (result) {
-                complete(r_1);
-            });
-        }
-        else {
-            var r_2 = __assign({}, data, (_b = {}, _b[this._pkKey[table]] = pk, _b));
-            this._sql(true, "UPDATE " + this._chkTable(table) + " SET data = ? WHERE id = ?", [JSON.stringify(r_2), pk], function () {
-                complete(r_2);
-            });
-        }
-        var _a, _b;
+        this._sql(false, "SELECT id FROM " + this._chkTable(table) + " WHERE id = ?", [pk], function (result) {
+            var _a, _b;
+            if (!result.rows.length) {
+                _this._dbIndex[table].add(pk);
+                var r_1 = __assign({}, data, (_a = {}, _a[_this._pkKey[table]] = pk, _a));
+                _this._sql(true, "INSERT into " + _this._chkTable(table) + " (id, data) VALUES (?, ?)", [pk, JSON.stringify(r_1)], function (result) {
+                    complete(r_1);
+                });
+            }
+            else {
+                var r_2 = __assign({}, data, (_b = {}, _b[_this._pkKey[table]] = pk, _b));
+                _this._sql(true, "UPDATE " + _this._chkTable(table) + " SET data = ? WHERE id = ?", [JSON.stringify(r_2), pk], function () {
+                    complete(r_2);
+                });
+            }
+        });
     };
     SQLiteStore.prototype.delete = function (table, pk, complete) {
         var pos = this._dbIndex[table].indexOf(pk);

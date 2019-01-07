@@ -1,6 +1,6 @@
 import { NanoSQLInstance } from "nano-sql";
 import { Promise } from "lie-ts";
-declare global  {
+declare global {
     interface Window {
         nSQL: (table?: string) => NanoSQLInstance;
     }

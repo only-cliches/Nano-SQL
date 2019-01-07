@@ -1,14 +1,7 @@
 # Change Log
 
-## 2.0 TODO
-- Remove query filter callback in favor of pure promise implemintation.
-- Split out history, fuzzy search, orm and denormalization into seperate plugins.
-- Move LevelDB to RocksDB.
-- Rewrite upsert/delete engine to perform updates one row at a time.
-- Add custom hook/action/filter system so plugins can interact in custom, undeclared ways.
-- Move query/storage engine from plugin to standard exection path.
-- Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
-- Remove built in Promise polyfill.
+## [1.8.1] 1-7-2019
+- Fixed issue with WebSQL attempting to update existing rows in some cases.
 
 ## [1.8.0] 12-16-2018
 - Fixed issue [#97](https://github.com/ClickSimply/Nano-SQL/issues/97), observers shouldn't fire after unsubscribes.

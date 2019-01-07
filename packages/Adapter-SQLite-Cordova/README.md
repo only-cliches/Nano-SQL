@@ -27,6 +27,7 @@ This is a special plugin written for NanoSQL that uses IndexedDB/WebSQL in the b
 
 ```sh
 cordova plugin add cordova-plugin-nano-sqlite --save
+npm i cordova-plugin-nano-sqlite --save
 ```
 
 ## Usage

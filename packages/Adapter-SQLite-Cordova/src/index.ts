@@ -6,7 +6,7 @@ declare const cordova: any;
 
 declare global {
     interface Window {
-        nSQL: (table?: string) => NanoSQLInstance
+        nSQL: (table?: string) => NanoSQLInstance;
     }
 }
 
@@ -38,7 +38,7 @@ export class initNanoSQL {
                 ...config,
                 mode: getMode()
             }).connect().then(() => {
-                res([], (table?: string) => {
+                res((table?: string) => {
                     return this._nsql.table(table);
                 });
             }).catch(rej);

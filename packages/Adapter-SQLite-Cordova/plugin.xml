@@ -4,7 +4,8 @@
     <description>Allows nanoSQL to persist changes to an on device SQLite database with no effort.</description>
     <license>MIT</license>
     <keywords>database, json, collection, records, node, nodejs, sql, orm, nosql, DBMS, data, query, SQLite, JSON, CSV, persistent, immutable, undo, redo, immutablejs, sorting, filtering, filter, sort, somesql, nanosql, levelDB, leveldb, indexeddb, level DB, Indexed DB, trie, tree</keywords>
-    <dependency id="cordova-sqlite-storage" version="2.3.0" />
+    <dependency id="cordova-sqlite-storage" version=">=2.6.0" />
+    <dependency id="cordova-plugin-device" version=">=2.0.2" />
     <js-module src="plugin.js" name="nSQLite">
         <clobbers target="nSQLite" />
     </js-module>

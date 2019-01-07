@@ -1,6 +1,6 @@
 {
     "name": "nano-sqlite",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "description": "SQLite3 Driver for Nano SQL",
     "main": "index.js",
     "typings": "index.d.ts",
@@ -28,7 +28,7 @@
         "typescript": "^2.9.2"
     },
     "dependencies": {
-        "nano-sql": "^1.7.7",
-        "sqlite3": "^4.0.2"
+        "nano-sql": "^1.8.0",
+        "sqlite3": "^4.0.4"
     }
 }

@@ -1,3 +1,8 @@
+# [1.7.0] 1-7-2019
+- Fixed issue with browser platform.
+- Fixed issue with database attempting update on existing rows in some cases.
+- Device plugin is now required
+
 # [1.5.0] 11-10-2018
 - Fixed issue with too large SQL statements.
 
@@ -20,12 +25,12 @@
 # [1.1.2] 1-18-2018
 - Bumped nanoSQL version.
 - Added standard build to use without module loaders.
-
+`
 # [1.1.0] 1-7-2018
 - Updated to newest version of nanoSQL.
 - Added new simpler API.
 
-# [1.0.3] 12-24-2017
+# [1.0.3] 12-24-2017`
 - Added better checking for cordova variable.
 
 # [1.0.2] 12-12-2017

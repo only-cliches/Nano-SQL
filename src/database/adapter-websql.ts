@@ -131,31 +131,26 @@ export class _WebSQLStore implements NanoSQLStorageAdapter {
             return;
         }
 
-        let newRow = false;
-        if (!this._dbIndex[table].exists(pk)) {
-            newRow = true;
-            this._dbIndex[table].add(pk);
-        }
-
-        if (newRow) {
-            const r = {
-                ...data,
-                [this._pkKey[table]]: pk,
-            };
-            this._sql(true, `INSERT into ${this._chkTable(table)} (id, data) VALUES (?, ?)`, [pk, JSON.stringify(r)], (result) => {
-                complete(r);
-            });
-        } else {
-
-            const r = {
-                ...data,
-                [this._pkKey[table]]: pk,
-            };
-            this._sql(true, `UPDATE ${this._chkTable(table)} SET data = ? WHERE id = ?`, [JSON.stringify(r), pk], () => {
-                complete(r);
-            });
-
-        }
+        this._sql(false, `SELECT id FROM ${this._chkTable(table)} WHERE id = ?`, [pk], (result) => {
+            if (!result.rows.length) {
+                this._dbIndex[table].add(pk);
+                const r = {
+                    ...data,
+                    [this._pkKey[table]]: pk,
+                };
+                this._sql(true, `INSERT into ${this._chkTable(table)} (id, data) VALUES (?, ?)`, [pk, JSON.stringify(r)], (result) => {
+                    complete(r);
+                });
+            } else {
+                const r = {
+                    ...data,
+                    [this._pkKey[table]]: pk,
+                };
+                this._sql(true, `UPDATE ${this._chkTable(table)} SET data = ? WHERE id = ?`, [JSON.stringify(r), pk], () => {
+                    complete(r);
+                });
+            }
+        });
     }
 
     public delete(table: string, pk: DBKey, complete: () => void): void {

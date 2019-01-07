@@ -29,7 +29,7 @@ var initNanoSQL = (function () {
             }
             var config = _this._nsql.getConfig();
             _this._nsql.config(__assign({}, config, { mode: sqlite_adapter_1.getMode() })).connect().then(function () {
-                res([], function (table) {
+                res(function (table) {
                     return _this._nsql.table(table);
                 });
             }).catch(rej);

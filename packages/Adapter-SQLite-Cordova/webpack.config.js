@@ -17,7 +17,8 @@ var options = {
 
     ],
     module: {
-        rules: [{
+        rules: [
+            {
                 test: /\.ts$|\.tsx$/,
                 loader: 'ts-loader',
                 options: {
