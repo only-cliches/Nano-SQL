@@ -25,6 +25,8 @@ Items here are planned but not yet released.
 - [Backups](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Backups)
 - [Encryption](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Encryption)
 - [History](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-History)
+- [Date](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Date)
+- [Map Reduce](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-MapReduce)
 
 ### Query Support
 - [GraphQL](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Query-GraphQL)

@@ -1,5 +1,5 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, postConnectFilter } from "../interfaces";
-import { allAsync, _nanoSQLQueue, generateID, _maybeAssign, setFast, deepSet, deepGet, nan, blankTableDefinition } from "../utilities";
+import { allAsync, _nanoSQLQueue, generateID, maybeAssign, setFast, deepSet, deepGet, nan, blankTableDefinition } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 
 declare const global: any;
@@ -122,34 +122,31 @@ export class RocksDB extends nanoSQLMemoryIndex {
         });
     }
 
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-        this._levelDBs[table].close((err) => {
-            if (err) {
-                error(err);
-                return;
-            }
-            delete this._levelDBs[table];
-            complete();
-        });
-    }
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
         this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(() => {
-            this.disconnectTable(table, () => {
+            this._levelDBs[table].close((err) => {
                 try {
                     rimraf(global._path.join((this.path || "."), "db_" + this._id, table));
                 } catch (e) {
                     error(e);
                     return;
                 }
+                delete this._levelDBs[table];
                 complete();
             }, error);
         }).catch(error);
     }
 
     disconnect(complete: () => void, error: (err: any) => void) {
-        allAsync(Object.keys(this._levelDBs), (table, i, next, err) => {
-            this.disconnectTable(table, next as any, err);
+        allAsync(Object.keys(this._levelDBs), (table, i, next, error) => {
+            this._levelDBs[table].close((err) => {
+                if (err) {
+                    error(err);
+                    return;
+                } 
+                next(null);
+            });
         }).then(complete).catch(error);
     }
 

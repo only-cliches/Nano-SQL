@@ -1,2 +1,2 @@
-import { nSQL, nanoSQL } from "./index";
-export { nSQL, nanoSQL };
+import { nSQL, nanoSQL, InanoSQLInstance } from "./index";
+export { nSQL, nanoSQL, InanoSQLInstance };

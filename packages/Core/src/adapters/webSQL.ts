@@ -1,5 +1,5 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, SQLiteAbstractFns } from "../interfaces";
-import { isAndroid, generateID, setFast, deepSet } from "../utilities";
+import { isAndroid, generateID, setFast, deepSet, uuid } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 
 let tables: string[] = [];
@@ -60,7 +60,7 @@ export const SQLiteAbstract = (
             deepSet(pkCol, row, pk);
             const rowStr = JSON.stringify(row);
 
-            const afterWrite = () => {
+            const afterWrite = (queryResult) => {
                 if (doAI && pk === ai[table]) {
                     _query(true, `UPDATE "_ai" SET inc = ? WHERE id = ?`, [ai[table], table], () => {
                         complete(pk);
@@ -205,6 +205,7 @@ export class WebSQL  extends nanoSQLMemoryIndex {
     }
 
     _query(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void): void {
+
         const doTransaction = (tx: SQLTransaction) => {
             tx.executeSql(sql, args, (tx2, result) => {
                 complete(result);
@@ -218,10 +219,6 @@ export class WebSQL  extends nanoSQLMemoryIndex {
         } else {
             this._db.readTransaction(doTransaction);
         }
-    }
-
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-        complete();
     }
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {

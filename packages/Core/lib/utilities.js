@@ -1,15 +1,29 @@
 Object.defineProperty(exports, "__esModule", { value: true });
+var leven = require("levenshtein-edit-distance");
 exports.blankTableDefinition = {
+    id: "",
     model: {},
     columns: [],
+    foreignKeys: [],
     indexes: {},
     actions: [],
+    // mapReduce: [],
     views: [],
     pkType: "string",
     pkCol: [],
     isPkNum: false,
     ai: false
 };
+/**
+ * Searches a sorted array for a given value.
+ *
+ * @param {any[]} arr
+ * @param {*} value
+ * @param {boolean} indexOf
+ * @param {number} [startVal]
+ * @param {number} [endVal]
+ * @returns {number}
+ */
 exports.binarySearch = function (arr, value, indexOf, startVal, endVal) {
     var start = startVal || 0;
     var end = endVal || arr.length;
@@ -28,8 +42,17 @@ exports.binarySearch = function (arr, value, indexOf, startVal, endVal) {
         return exports.binarySearch(arr, value, indexOf, start, m);
     return indexOf ? -1 : end;
 };
+/**
+ * Converts a word to title case.
+ *
+ * @param {string} str
+ * @returns
+ */
 exports.titleCase = function (str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+};
+exports.slugify = function (str) {
+    return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 };
 exports.getWeekOfYear = function (d) {
     var onejan = new Date(d.getFullYear(), 0, 1);
@@ -37,7 +60,7 @@ exports.getWeekOfYear = function (d) {
 };
 exports.buildQuery = function (nSQL, table, action) {
     return {
-        table: table,
+        table: table || nSQL.state.selectedTable,
         parent: nSQL,
         action: action,
         state: "pending",
@@ -55,7 +78,7 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterWrite", { result: { table: table, pk: pk, row: row, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.write(result.table, result.pk, result.row, function (pk) {
+                nSQL.adapter.write(nSQL.tableIds[result.table], result.pk, result.row, function (pk) {
                     result.complete(pk);
                 }, result.error);
             }, error);
@@ -64,7 +87,7 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterRead", { result: { table: table, pk: pk, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.read(result.table, result.pk, function (row) {
+                nSQL.adapter.read(nSQL.tableIds[result.table], result.pk, function (row) {
                     if (!row) {
                         result.complete(undefined);
                         return;
@@ -77,7 +100,7 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterReadMulti", { result: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse, onRow: onRow, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.readMulti(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, function (row, i) {
+                nSQL.adapter.readMulti(nSQL.tableIds[result.table], result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, function (row, i) {
                     result.onRow(row, i);
                 }, function () {
                     result.complete();
@@ -102,128 +125,121 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterCreateTable", { result: { tableName: tableName, tableData: tableData, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.createTable(result.tableName, result.tableData, result.complete, result.error);
+                nSQL.adapter.createTable(nSQL.tableIds[result.tableName], result.tableData, result.complete, result.error);
             }, error);
         },
         dropTable: function (table, complete, error) {
-            nSQL.doFilter("adapterDropTable", { result: { table: table, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDropTable", { result: { table: nSQL.tableIds[table], complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
                 nSQL.adapter.dropTable(result.table, result.complete, result.error);
             }, error);
         },
-        disconnectTable: function (table, complete, error) {
-            nSQL.doFilter("adapterDisconnectTable", { result: { table: table, complete: complete, error: error }, query: query }, function (result) {
-                if (!result)
-                    return; // filter took over
-                nSQL.adapter.disconnectTable(result.table, result.complete, result.error);
-            }, error);
-        },
         delete: function (table, pk, complete, error) {
-            nSQL.doFilter("adapterDelete", { result: { table: table, pk: pk, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDelete", { result: { table: nSQL.tableIds[table], pk: pk, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
                 nSQL.adapter.delete(result.table, result.pk, result.complete, result.error);
             }, error);
         },
         getTableIndex: function (table, complete, error) {
-            nSQL.doFilter("adapterGetTableIndex", { result: { table: table, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterGetTableIndex", { result: { table: nSQL.tableIds[table], complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
                 nSQL.adapter.getTableIndex(result.table, result.complete, result.error);
             }, error);
         },
         getTableIndexLength: function (table, complete, error) {
-            nSQL.doFilter("adapterGetTableIndexLength", { result: { table: table, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterGetTableIndexLength", { result: { table: nSQL.tableIds[table], complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
                 nSQL.adapter.getTableIndexLength(result.table, result.complete, result.error);
             }, error);
         },
-        createIndex: function (indexName, type, complete, error) {
-            nSQL.doFilter("adapterCreateIndex", { result: { indexName: indexName, type: type, complete: complete, error: error }, query: query }, function (result) {
+        createIndex: function (table, indexName, type, complete, error) {
+            nSQL.doFilter("adapterCreateIndex", { result: { table: nSQL.tableIds[table], indexName: indexName, type: type, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.createIndex(result.indexName, result.type, result.complete, result.error);
+                nSQL.adapter.createIndex(result.table, result.indexName, result.type, result.complete, result.error);
             }, error);
         },
-        deleteIndex: function (indexName, complete, error) {
-            if (!nSQL.indexes[indexName]) {
+        deleteIndex: function (table, indexName, complete, error) {
+            if (!nSQL.tables[table].indexes[indexName]) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            nSQL.doFilter("adapterDeleteIndex", { result: { indexName: indexName, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDeleteIndex", { result: { table: nSQL.tableIds[table], indexName: indexName, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.deleteIndex(result.indexName, result.complete, result.error);
+                nSQL.adapter.deleteIndex(result.table, result.indexName, result.complete, result.error);
             }, error);
         },
-        addIndexValue: function (indexName, key, value, complete, error) {
-            if (!nSQL.indexes[indexName]) {
+        addIndexValue: function (table, indexName, key, value, complete, error) {
+            if (!nSQL.tables[table].indexes[indexName]) {
+                error({ error: "Index " + indexName + " not found!" });
+                return;
+            }
+            var value2 = value;
+            // shift primary key query by offset
+            if (typeof value2 === "number" && nSQL.tables[table].indexes[indexName].props && nSQL.tables[table].indexes[indexName].props.offset) {
+                value2 += nSQL.tables[table].indexes[indexName].props.offset || 0;
+            }
+            nSQL.doFilter("adapterAddIndexValue", { result: { table: nSQL.tableIds[table], indexName: indexName, key: key, value: value2, complete: complete, error: error }, query: query }, function (result) {
+                if (!result)
+                    return; // filter took over
+                nSQL.adapter.addIndexValue(result.table, result.indexName, result.key, result.value, result.complete, result.error);
+            }, error);
+        },
+        deleteIndexValue: function (table, indexName, key, value, complete, error) {
+            if (!nSQL.tables[table].indexes[indexName]) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
             var key2 = value;
             // shift primary key query by offset
-            if (typeof key2 === "number" && nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                key2 += nSQL.indexes[indexName].props.offset || 0;
+            if (typeof key2 === "number" && nSQL.tables[table].indexes[indexName].props && nSQL.tables[table].indexes[indexName].props.offset) {
+                key2 += nSQL.tables[table].indexes[indexName].props.offset || 0;
             }
-            nSQL.doFilter("adapterAddIndexValue", { result: { indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDeleteIndexValue", { result: { table: nSQL.tableIds[table], indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.addIndexValue(result.indexName, result.key, result.value, result.complete, result.error);
+                nSQL.adapter.deleteIndexValue(result.table, result.indexName, result.key, result.value, result.complete, result.error);
             }, error);
         },
-        deleteIndexValue: function (indexName, key, value, complete, error) {
-            if (!nSQL.indexes[indexName]) {
-                error({ error: "Index " + indexName + " not found!" });
-                return;
-            }
-            var key2 = value;
-            // shift primary key query by offset
-            if (typeof key2 === "number" && nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                key2 += nSQL.indexes[indexName].props.offset || 0;
-            }
-            nSQL.doFilter("adapterDeleteIndexValue", { result: { indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
-                if (!result)
-                    return; // filter took over
-                nSQL.adapter.deleteIndexValue(result.indexName, result.key, result.value, result.complete, result.error);
-            }, error);
-        },
-        readIndexKey: function (indexName, pk, onRowPK, complete, error) {
-            if (!nSQL.indexes[indexName]) {
+        readIndexKey: function (table, indexName, pk, onRowPK, complete, error) {
+            if (!nSQL.tables[table].indexes[indexName]) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
             var key = pk;
             // shift primary key query by offset
-            if (typeof key === "number" && nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                key += nSQL.indexes[indexName].props.offset || 0;
+            if (typeof key === "number" && nSQL.tables[table].indexes[indexName].props && nSQL.tables[table].indexes[indexName].props.offset) {
+                key += nSQL.tables[table].indexes[indexName].props.offset || 0;
             }
-            nSQL.doFilter("adapterReadIndexKey", { result: { table: indexName, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterReadIndexKey", { result: { table: nSQL.tableIds[table], indexName: indexName, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.readIndexKey(result.table, result.pk, result.onRowPK, result.complete, result.error);
+                nSQL.adapter.readIndexKey(result.table, result.indexName, result.pk, result.onRowPK, result.complete, result.error);
             }, error);
         },
-        readIndexKeys: function (indexName, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
+        readIndexKeys: function (table, indexName, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
             var lower = offsetOrLow;
             var higher = limitOrHigh;
-            if (!nSQL.indexes[indexName]) {
+            if (!nSQL.tables[table].indexes[indexName]) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
             // shift range query by offset
             if (typeof lower === "number" && typeof higher === "number" && type === "range") {
-                if (nSQL.indexes[indexName].props && nSQL.indexes[indexName].props.offset) {
-                    lower += nSQL.indexes[indexName].props.offset || 0;
-                    higher += nSQL.indexes[indexName].props.offset || 0;
+                if (nSQL.tables[table].indexes[indexName] && nSQL.tables[table].indexes[indexName].props.offset) {
+                    lower += nSQL.tables[table].indexes[indexName].props.offset || 0;
+                    higher += nSQL.tables[table].indexes[indexName].props.offset || 0;
                 }
             }
-            nSQL.doFilter("adapterReadIndexKey", { result: { table: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterReadIndexKey", { result: { table: nSQL.tableIds[table], indexName: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.readIndexKeys(result.table, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, result.onRowPK, result.complete, result.error);
+                nSQL.adapter.readIndexKeys(result.table, result.indexName, result.type, result.offsetOrLow, result.limitOrHigh, result.reverse, result.onRowPK, result.complete, result.error);
             }, error);
         }
     };
@@ -233,6 +249,8 @@ exports.throwErr = function (err) {
     throw new Error(err);
 };
 exports.nan = function (input) {
+    if (typeof input === "number")
+        return input;
     return isNaN(input) ? 0 : parseFloat(input);
 };
 /**
@@ -241,7 +259,7 @@ exports.nan = function (input) {
  * @param {*} obj
  * @returns
  */
-exports._assign = function (obj) {
+exports.assign = function (obj) {
     return obj ? JSON.parse(JSON.stringify(obj)) : obj;
 };
 /**
@@ -252,7 +270,7 @@ exports._assign = function (obj) {
  * @param {*} obj2
  * @returns {boolean}
  */
-exports._objectsEqual = function (obj1, obj2) {
+exports.objectsEqual = function (obj1, obj2) {
     if (obj1 === obj2)
         return true;
     if (typeof obj1 !== "object")
@@ -268,7 +286,7 @@ exports._objectsEqual = function (obj1, obj2) {
     while (i-- && matches) {
         var key = keys[i];
         if (typeof obj1[key] === "object") { // nested compare
-            matches = exports._objectsEqual(obj1[key], obj2[key]);
+            matches = exports.objectsEqual(obj1[key], obj2[key]);
         }
         else {
             matches = obj1[key] === obj2[key];
@@ -687,6 +705,9 @@ exports.crowDistance = function (lat1, lon1, lat2, lon2, radius) {
             Math.pow(Math.sin(dLon / 2), 2);
     return radius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
+exports.levenshtein = function (word1, word2) {
+    return leven(word1, word2);
+};
 var objectPathCache = {};
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
 exports.resolvePath = function (pathQuery) {
@@ -729,7 +750,7 @@ exports.deepSet = function (pathQuery, object, value) {
             setObj[getPath[pathIdx]] = value;
             return;
         }
-        else if (!setObj[getPath[pathIdx]]) { // nested value doesn't exist yet
+        else if (!setObj[getPath[pathIdx]] || (!Array.isArray(setObj[getPath[pathIdx]]) && !exports.isObject(setObj[getPath[pathIdx]]))) { // nested value doesn't exist yet
             if (isNaN(getPath[pathIdx + 1])) { // assume number queries are for arrays, otherwise an object
                 setObj[getPath[pathIdx]] = {};
             }
@@ -764,8 +785,8 @@ exports.deepGet = function (pathQuery, object) {
     };
     return safeGet(Array.isArray(pathQuery) ? pathQuery : exports.resolvePath(pathQuery), 0, object);
 };
-exports._maybeAssign = function (obj) {
-    return Object.isFrozen(obj) ? exports._assign(obj) : obj;
+exports.maybeAssign = function (obj) {
+    return Object.isFrozen(obj) ? exports.assign(obj) : obj;
 };
 var uid = 0;
 var storage = {};

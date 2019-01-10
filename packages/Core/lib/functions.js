@@ -2,6 +2,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("./utilities");
 var levenshtein = require("levenshtein-edit-distance");
 var wordLevenshtienCache = {};
+var numVals = function (row) {
+    var subjects = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        subjects[_i - 1] = arguments[_i];
+    }
+    return subjects.map(function (s) { return parseFloat(isNaN(s) ? utilities_1.getFnValue(row, s) : s); });
+};
 exports.attachDefaultFns = function (nSQL) {
     nSQL.functions = {
         COUNT: {
@@ -100,31 +107,104 @@ exports.attachDefaultFns = function (nSQL) {
                 return prev;
             }
         },
+        ADD: {
+            type: "S",
+            call: function (query, row, prev) {
+                var subjects = [];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    subjects[_i - 3] = arguments[_i];
+                }
+                return { result: numVals(row, subjects).reduce(function (prev, cur, i) {
+                        if (i === 0)
+                            return cur;
+                        return prev + cur;
+                    }) };
+            }
+        },
+        SUB: {
+            type: "S",
+            call: function (query, row, prev) {
+                var subjects = [];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    subjects[_i - 3] = arguments[_i];
+                }
+                return { result: numVals(row, subjects).reduce(function (prev, cur, i) {
+                        if (i === 0)
+                            return cur;
+                        return prev - cur;
+                    }) };
+            }
+        },
+        DIV: {
+            type: "S",
+            call: function (query, row, prev, subject1) {
+                var subjects = [];
+                for (var _i = 4; _i < arguments.length; _i++) {
+                    subjects[_i - 4] = arguments[_i];
+                }
+                return { result: numVals(row, subjects).reduce(function (prev, cur, i) {
+                        if (i === 0)
+                            return cur;
+                        return prev / cur;
+                    }) };
+            }
+        },
+        MULT: {
+            type: "S",
+            call: function (query, row, prev) {
+                var subjects = [];
+                for (var _i = 3; _i < arguments.length; _i++) {
+                    subjects[_i - 3] = arguments[_i];
+                }
+                return { result: numVals(row, subjects).reduce(function (prev, cur, i) {
+                        if (i === 0)
+                            return cur;
+                        return prev * cur;
+                    }) };
+            }
+        },
+        MOD: {
+            type: "S",
+            call: function (query, row, prev, subject1, subject2) {
+                var _a = numVals(row, subject1, subject2), subjVal1 = _a[0], subjVal2 = _a[1];
+                return { result: subjVal1 % subjVal2 };
+            }
+        },
+        PI: {
+            type: "S",
+            call: function (query, row, prev) {
+                return { result: Math.PI };
+            }
+        },
+        TRUNCATE: {
+            type: "S",
+            call: function (query, row, prev, subject1, subject2) {
+                var _a = numVals(row, subject1, subject2), subjVal1 = _a[0], subjVal2 = _a[1];
+                return { result: parseFloat(subjVal1.toFixed(subjVal2)) };
+            }
+        },
         LOWER: {
             type: "S",
             call: function (query, row, prev, column) {
-                var value = String(utilities_1.getFnValue(row, column)).toLowerCase();
-                return { result: value };
+                return { result: String(utilities_1.getFnValue(row, column)).toLowerCase() };
             }
         },
         TRIM: {
             type: "S",
             call: function (query, row, prev, column) {
-                var value = String(utilities_1.getFnValue(row, column)).trim();
-                return { result: value };
+                return { result: String(utilities_1.getFnValue(row, column)).trim() };
             }
         },
         UPPER: {
             type: "S",
             call: function (query, row, prev, column) {
-                var value = String(utilities_1.getFnValue(row, column)).toUpperCase();
-                return { result: value };
+                return { result: String(utilities_1.getFnValue(row, column)).toUpperCase() };
             }
         },
         CAST: {
             type: "S",
             call: function (query, row, prev, column, type) {
-                return { result: utilities_1.cast(utilities_1.getFnValue(row, type), utilities_1.deepGet(column, row), false, query.parent) };
+                return { result: utilities_1.cast(utilities_1.getFnValue(row, type), utilities_1.getFnValue(row, column), false, query.parent) };
             }
         },
         CONCAT: {
@@ -137,6 +217,18 @@ exports.attachDefaultFns = function (nSQL) {
                 return { result: values.map(function (v) {
                         return utilities_1.getFnValue(row, v);
                     }).join("") };
+            }
+        },
+        CONCAT_WS: {
+            type: "S",
+            call: function (query, row, prev, sep) {
+                var values = [];
+                for (var _i = 4; _i < arguments.length; _i++) {
+                    values[_i - 4] = arguments[_i];
+                }
+                return { result: values.map(function (v) {
+                        return utilities_1.getFnValue(row, v);
+                    }).join(utilities_1.getFnValue(row, sep)) };
             }
         },
         REPLACE: {
@@ -158,18 +250,6 @@ exports.attachDefaultFns = function (nSQL) {
                 if (subjVal1 > subjVal2)
                     return { result: 1 };
                 return { result: 0 };
-            }
-        },
-        CONCAT_WS: {
-            type: "S",
-            call: function (query, row, prev, sep) {
-                var values = [];
-                for (var _i = 4; _i < arguments.length; _i++) {
-                    values[_i - 4] = arguments[_i];
-                }
-                return { result: values.map(function (v) {
-                        return utilities_1.getFnValue(row, v);
-                    }).join(utilities_1.getFnValue(row, sep)) };
             }
         },
         LEVENSHTEIN: {
@@ -225,7 +305,7 @@ exports.attachDefaultFns = function (nSQL) {
                     // find the lat/lon indexes for the crow calculation
                     Object.keys(indexes_1).forEach(function (k) {
                         var index = indexes_1[k];
-                        if (index.type === "float" && utilities_1._objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
+                        if (index.type === "float" && utilities_1.objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn_1)) {
                             crowCols_1.push(k.replace(".lat", "").replace(".lon", ""));
                         }
                     });
@@ -241,8 +321,9 @@ exports.attachDefaultFns = function (nSQL) {
                 return false;
             },
             queryIndex: function (query, where, onlyPKs, onRow, complete, error) {
-                var latTable = "_idx_" + query.table + "_" + where.index + ".lat";
-                var lonTable = "_idx_" + query.table + "_" + where.index + ".lon";
+                var table = query.table;
+                var latIndex = where.index + ".lat";
+                var lonIndex = where.index + ".lon";
                 var condition = where.comp;
                 var distance = parseFloat(where.value || "0");
                 var centerLat = parseFloat(where.parsedFn ? where.parsedFn.args[1] : "0");
@@ -290,14 +371,14 @@ exports.attachDefaultFns = function (nSQL) {
                     }
                 }
                 var pks = {};
-                utilities_1.allAsync([latTable, lonTable, lonTable], function (table, i, next, error) {
+                utilities_1.allAsync([latIndex, lonIndex, lonIndex], function (index, i, next, error) {
                     var ranges = [latRange, lonRange, extraLonRange][i];
                     if (!ranges.length) {
                         next(null);
                         return;
                     }
                     // read values from seconday index table
-                    utilities_1.adapterFilters(nSQL, query).readIndexKeys(table, "range", ranges[0], ranges[1], false, function (pk, id) {
+                    utilities_1.adapterFilters(nSQL, query).readIndexKeys(table, index, "range", ranges[0], ranges[1], false, function (pk, id) {
                         if (!pks[pk]) {
                             pks[pk] = {
                                 key: pk,
@@ -376,8 +457,7 @@ exports.attachDefaultFns = function (nSQL) {
                 for (var _i = 3; _i < arguments.length; _i++) {
                     args[_i - 3] = arguments[_i];
                 }
-                var fnArgs = args.map(function (a) { return parseFloat(isNaN(a) ? utilities_1.deepGet(a, row) : a); });
-                return { result: Math[key].apply(null, fnArgs) };
+                return { result: Math[key].apply(null, numVals(row, args)) };
             }
         };
     });

@@ -7,6 +7,7 @@ import { InanoSQLInstance } from "../src/interfaces";
 
 
 describe("Equivalent SQLite Queries Should Match", () => {
+
     it("Simple Select", (done: MochaDone) => {
         TestDBs().then((dbs) => {
             dbs.runQuery(`SELECT * FROM users;`, [], (nSQL) => {

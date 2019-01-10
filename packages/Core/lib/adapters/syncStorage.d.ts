@@ -22,7 +22,6 @@ export declare class SyncStorage extends nanoSQLMemoryIndex {
     constructor(useLS?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;
     write(table: string, pk: any, row: {

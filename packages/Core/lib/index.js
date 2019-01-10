@@ -10,12 +10,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var really_small_events_1 = require("really-small-events");
 var utilities_1 = require("./utilities");
 var interfaces_1 = require("./interfaces");
+exports.InanoSQLInstance = interfaces_1.InanoSQLInstance;
 var functions_1 = require("./functions");
 var query_1 = require("./query");
 var syncStorage_1 = require("./adapters/syncStorage");
 var webSQL_1 = require("./adapters/webSQL");
 var indexedDB_1 = require("./adapters/indexedDB");
 var query_builder_1 = require("./query-builder");
+var utils = require("./utilities");
 var RocksDB;
 if (typeof global !== "undefined") {
     RocksDB = global._rocksAdapter;
@@ -37,8 +39,8 @@ var nanoSQL = /** @class */ (function () {
             peerMode: false,
             connected: false,
             ready: false,
-            MRTimer: undefined,
-            runMR: {},
+            // MRTimer: undefined,
+            // runMR: {},
             selectedTable: ""
         };
         this.config = {
@@ -46,9 +48,9 @@ var nanoSQL = /** @class */ (function () {
             queue: false
         };
         this.tables = {};
+        this.tableIds = { "_util": "_util", "_ttl": "_ttl" };
         this._queryCache = {};
         this.filters = {};
-        this.indexes = {};
         this.indexTypes = {
             string: function (value) {
                 return typeof value === "object" ? JSON.stringify(value) : String(value);
@@ -285,6 +287,15 @@ var nanoSQL = /** @class */ (function () {
             }
         });
     };
+    nanoSQL.prototype.saveTableIds = function () {
+        var _this = this;
+        return new Promise(function (res, rej) {
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "upsert"), { actionArgs: utilities_1.assign({
+                    key: "tableIds",
+                    value: _this.tableIds
+                }) }), utilities_1.noop, res, rej);
+        });
+    };
     nanoSQL.prototype.connect = function (config) {
         var _this = this;
         var t = this;
@@ -358,29 +369,35 @@ var nanoSQL = /** @class */ (function () {
                 time: Date.now()
             });
             _this.state.connected = true;
-            _this.triggerMapReduce = _this.triggerMapReduce.bind(_this);
+            // this.triggerMapReduce = this.triggerMapReduce.bind(this);
             var tables = ["_util", "_ttl"].concat((_this.config.tables || []).map(function (t) { return t.name; }));
-            return utilities_1.allAsync(tables, function (j, i, next, err) {
+            return utilities_1.chainAsync(tables, function (j, i, next, err) {
                 switch (j) {
                     case "_util":
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "", "create table"), { actionArgs: {
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "create table"), { actionArgs: {
                                 name: "_util",
-                                model: [
-                                    { key: "key:string", props: ["pk()"] },
-                                    { key: "value:any" }
-                                ],
+                                model: {
+                                    "key:string": { pk: true },
+                                    "value:any": {}
+                                },
                                 _internal: true
-                            } }), utilities_1.noop, next, err);
+                            } }), utilities_1.noop, function () {
+                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "select"), { where: ["key", "=", "tableIds"] }), function (row) {
+                                _this.tableIds = __assign({}, _this.tableIds, row.value);
+                            }, function () {
+                                next();
+                            }, err);
+                        }, err);
                         break;
                     case "_ttl":
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "", "create table"), { actionArgs: {
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_ttl", "create table"), { actionArgs: {
                                 name: "_ttl",
-                                model: [
-                                    { key: "key:string", props: ["pk()"] },
-                                    { key: "table:string" },
-                                    { key: "cols:string[]" },
-                                    { key: "date:number" }
-                                ],
+                                model: {
+                                    "key:string": { pk: true },
+                                    "table:string": {},
+                                    "cols:string[]": {},
+                                    "date:number": {}
+                                },
                                 _internal: true
                             } }), utilities_1.noop, next, err);
                         break;
@@ -390,7 +407,7 @@ var nanoSQL = /** @class */ (function () {
                             err("Table not found!");
                             return;
                         }
-                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "", "create table"), { actionArgs: model }), utilities_1.noop, next, err);
+                        _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, j, "create table"), { actionArgs: model }), utilities_1.noop, next, err);
                 }
             });
         }).then(function () {
@@ -574,117 +591,121 @@ var nanoSQL = /** @class */ (function () {
         }
         return arr;
     };
-    nanoSQL.prototype.triggerMapReduce = function (cb, table, name) {
-        var _this = this;
-        if (table && name) {
-            if (!this.tables[table])
+    /*
+        public triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string) {
+    
+            if (table && name) {
+                if (!this.tables[table]) return;
+                if (!this.tables[table].mapReduce) return;
+                if (!this.state.runMR[table]) return;
+                if (!this.state.runMR[table][name]) return;
+                const event = {
+                    target: "Core",
+                    path: table + "." + name,
+                    events: ["map reduce"],
+                    time: Date.now(),
+                };
+                if (cb) {
+                    cb(event);
+                }
+                this.state.runMR[table][name](event);
                 return;
-            if (!this.tables[table].mapReduce)
-                return;
-            if (!this.state.runMR[table])
-                return;
-            if (!this.state.runMR[table][name])
-                return;
-            var event_1 = {
-                target: "Core",
-                path: table + "." + name,
-                events: ["map reduce"],
-                time: Date.now(),
-            };
-            if (cb) {
-                cb(event_1);
             }
-            this.state.runMR[table][name](event_1);
-            return;
-        }
-        Object.keys(this.tables).forEach(function (table) {
-            if (_this.tables[table].mapReduce) {
-                if (!_this.state.runMR[table])
-                    return;
-                (_this.tables[table].mapReduce || []).forEach(function (mr) {
-                    if (!_this.state.runMR[table][mr.name])
-                        return;
-                    if (mr.onTimes) {
-                        var runMR_1 = true;
-                        // handle zeroing out timer options below the developer choice.
-                        // example: developer sends in to trigger at midnight every day
-                        // sets seconds and minutes to zero so it'll only trigger
-                        // once that day instead of every second of midnight
-                        var keyStart_1 = -1;
-                        var fillKeys_1 = [];
-                        var fillObj_1 = {};
-                        ["seconds", "minutes", "hours", "weekDay", "weekOfYear", "date", "month"].forEach(function (dateKey, i) {
-                            if (!mr.onTimes[dateKey]) {
-                                fillKeys_1.push(dateKey);
-                                return;
-                            }
-                            if (keyStart_1 === -1) {
-                                keyStart_1 = 1;
-                                fillKeys_1.forEach(function (key) {
-                                    switch (key) {
-                                        case "seconds":
-                                        case "minutes":
-                                        case "hours":
-                                            fillObj_1[key] = [0];
+    
+            Object.keys(this.tables).forEach((table) => {
+                if (this.tables[table].mapReduce) {
+                    if (!this.state.runMR[table]) return;
+                    (this.tables[table].mapReduce || []).forEach((mr) => {
+                        if (!this.state.runMR[table][mr.name]) return;
+                        if (mr.onTimes) {
+                            let runMR = true;
+    
+                            // handle zeroing out timer options below the developer choice.
+                            // example: developer sends in to trigger at midnight every day
+                            // sets seconds and minutes to zero so it'll only trigger
+                            // once that day instead of every second of midnight
+                            let keyStart: number = -1;
+                            let fillKeys: string[] = [];
+                            let fillObj: any = {};
+                            ["seconds", "minutes", "hours", "weekDay", "weekOfYear", "date", "month"].forEach((dateKey, i) => {
+                                if (!(mr.onTimes as any)[dateKey]) {
+                                    fillKeys.push(dateKey);
+                                    return;
+                                }
+                                if (keyStart === -1) {
+                                    keyStart = 1;
+                                    fillKeys.forEach((key) => {
+                                        switch (key) {
+                                            case "seconds":
+                                            case "minutes":
+                                            case "hours":
+                                                fillObj[key] = [0];
                                             break;
-                                        case "weekDay":
-                                            // only need to set to beginning of week
-                                            // if a weekOfYear property is set
-                                            if (mr.onTimes.weekOfYear) {
-                                                fillObj_1[key] = [0];
-                                            }
+                                            case "weekDay":
+                                                // only need to set to beginning of week
+                                                // if a weekOfYear property is set
+                                                if ((mr.onTimes as any).weekOfYear) {
+                                                    fillObj[key] = [0];
+                                                }
                                             break;
-                                        case "weekOfYear":
+                                            case "weekOfYear":
+    
                                             break;
-                                        case "date":
-                                            fillObj_1[key] = [1];
+                                            case "date":
+                                                fillObj[key] = [1];
                                             break;
-                                        case "month":
+                                            case "month":
+    
                                             break;
-                                    }
-                                });
-                            }
-                        });
-                        var date_1 = new Date();
-                        Object.keys(__assign({}, mr.onTimes, fillObj_1)).forEach(function (time) {
-                            var checkTimes = Array.isArray(mr.onTimes[time]) ? mr.onTimes[time] : [mr.onTimes[time]];
-                            if (!checkTimes.length)
-                                return;
-                            switch (time) {
-                                case "weekDay":
-                                    if (checkTimes.indexOf(date_1.getDay()) === -1) {
-                                        runMR_1 = false;
-                                    }
+                                        }
+                                    });
+                                }
+                            });
+    
+                            const date = new Date();
+                            Object.keys({
+                                ...mr.onTimes,
+                                ...fillObj
+                            }).forEach((time) => {
+                                const checkTimes: number[] = Array.isArray((mr.onTimes as any)[time]) ? (mr.onTimes as any)[time] : [(mr.onTimes as any)[time]];
+                                if (!checkTimes.length) return;
+                                switch (time) {
+                                    case "weekDay":
+                                        if (checkTimes.indexOf(date.getDay()) === -1) {
+                                            runMR = false;
+                                        }
                                     break;
-                                case "weekOfYear":
-                                    if (checkTimes.indexOf(utilities_1.getWeekOfYear(date_1)) === -1) {
-                                        runMR_1 = false;
-                                    }
+                                    case "weekOfYear":
+                                        if (checkTimes.indexOf(getWeekOfYear(date)) === -1) {
+                                            runMR = false;
+                                        }
                                     break;
-                                default:
-                                    var q = "get" + utilities_1.titleCase(time);
-                                    if (date_1[q] && checkTimes.indexOf(date_1[q]()) === -1) {
-                                        runMR_1 = false;
-                                    }
+                                    default:
+                                        const q = "get" + titleCase(time);
+                                        if (date[q] && checkTimes.indexOf(date[q]()) === -1) {
+                                            runMR = false;
+                                        }
+                                }
+                            });
+    
+                            if (runMR) {
+                                const event = {
+                                    target: "Core",
+                                    path: table + "." + mr.name,
+                                    events: ["map reduce"],
+                                    time: Date.now(),
+                                };
+                                if (cb) {
+                                    cb(event);
+                                }
+                                this.state.runMR[table][mr.name](event);
                             }
-                        });
-                        if (runMR_1) {
-                            var event_2 = {
-                                target: "Core",
-                                path: table + "." + mr.name,
-                                events: ["map reduce"],
-                                time: Date.now(),
-                            };
-                            if (cb) {
-                                cb(event_2);
-                            }
-                            _this.state.runMR[table][mr.name](event_2);
                         }
-                    }
-                });
-            }
-        });
-    };
+                    });
+                }
+            });
+        }
+    */
     nanoSQL.prototype.on = function (action, callBack) {
         var _this = this;
         var t = this;
@@ -889,7 +910,7 @@ var nanoSQL = /** @class */ (function () {
                 });
             }
         }, function (err) {
-            console.error("Event suppressed", err);
+            console.log("Event suppressed", err);
         });
         return this;
     };
@@ -963,37 +984,58 @@ var nanoSQL = /** @class */ (function () {
         };
         return resolveModel(this.tables[table].columns, replaceObj);
     };
-    nanoSQL.prototype.rawDump = function (tables, onRow) {
+    nanoSQL.prototype.rawDump = function (tables, indexes, onRow) {
         var _this = this;
-        var exportTables = Object.keys(this.tables).filter(function (t) { return tables.length ? tables.indexOf(t) !== -1 : true; });
+        var exportTables = indexes ? tables : Object.keys(this.tables).filter(function (t) { return tables.length ? tables.indexOf(t) !== -1 : true; });
         return utilities_1.chainAsync(exportTables, function (table, i, nextTable, err) {
-            utilities_1.adapterFilters(_this).readMulti(table, "all", undefined, undefined, false, function (row) {
-                onRow(table, row);
-            }, nextTable, err || utilities_1.noop);
+            if (indexes) {
+                var tableName_1 = table.indexOf(":") !== -1 ? table.split(":")[0] : table;
+                var tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(_this.tables[table].indexes);
+                utilities_1.chainAsync(tableIndexes, function (index, i, nextIdx, errIdx) {
+                    utilities_1.adapterFilters(_this).readIndexKeys(tableName_1, index, "all", undefined, undefined, false, function (key, id) {
+                        onRow(index, { indexId: id, rowId: key });
+                    }, nextIdx, errIdx);
+                }).then(nextTable).catch(err);
+            }
+            else {
+                utilities_1.adapterFilters(_this).readMulti(table, "all", undefined, undefined, false, function (row) {
+                    onRow(table, row);
+                }, nextTable, err || utilities_1.noop);
+            }
         });
     };
-    nanoSQL.prototype.rawImport = function (tables, onProgress) {
+    nanoSQL.prototype.rawImport = function (tables, indexes, onProgress) {
         var _this = this;
         var progress = 0;
         var totalLength = Object.keys(tables).reduce(function (p, c) {
             return p += tables[c].length, p;
         }, 0);
         var usableTables = Object.keys(this.tables);
-        var importTables = Object.keys(tables).filter(function (t) { return usableTables.indexOf(t) !== -1; });
+        var importTables = indexes ? Object.keys(tables) : Object.keys(tables).filter(function (t) { return usableTables.indexOf(t) !== -1; });
         return utilities_1.chainAsync(importTables, function (table, i, next, err) {
-            var pk = _this.tables[table].pkCol;
-            utilities_1.chainAsync(tables[table], function (row, ii, nextRow, rowErr) {
-                if (!utilities_1.deepGet(pk, row) && rowErr) {
-                    rowErr("No primary key found, can't import: " + JSON.stringify(row));
-                    return;
-                }
-                utilities_1.adapterFilters(_this).write(table, utilities_1.deepGet(pk, row), row, function (newRow) {
-                    nextRow();
-                    progress++;
-                    if (onProgress)
-                        onProgress(Math.round((progress / totalLength) * 10000) / 100);
-                }, rowErr || utilities_1.noop);
-            }).then(next).catch(err);
+            if (indexes) {
+                // tableName:IndexName
+                var tableName_2 = table.split(":")[0];
+                var indexName_1 = table.split(":")[1];
+                utilities_1.chainAsync(tables[table], function (indexRow, ii, nextIdx, errIdx) {
+                    utilities_1.adapterFilters(_this).addIndexValue(tableName_2, indexName_1, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
+                }).then(next).catch(err);
+            }
+            else {
+                var pk_1 = _this.tables[table].pkCol;
+                utilities_1.chainAsync(tables[table], function (row, ii, nextRow, rowErr) {
+                    if (!utilities_1.deepGet(pk_1, row) && rowErr) {
+                        rowErr("No primary key found, can't import: " + JSON.stringify(row));
+                        return;
+                    }
+                    utilities_1.adapterFilters(_this).write(table, utilities_1.deepGet(pk_1, row), row, function (newRow) {
+                        nextRow();
+                        progress++;
+                        if (onProgress)
+                            onProgress(Math.round((progress / totalLength) * 10000) / 100);
+                    }, rowErr || utilities_1.noop);
+                }).then(next).catch(err);
+            }
         });
     };
     nanoSQL.prototype.disconnect = function () {
@@ -1169,13 +1211,17 @@ exports.nSQL = function (table) {
     return _nanoSQLStatic.selectTable(table);
 };
 if (typeof window !== "undefined") {
-    window["nano-sql"] = {
+    if (!window["@nano-sql"]) {
+        window["@nano-sql"] = {};
+    }
+    window["@nano-sql"].core = {
         nSQL: exports.nSQL,
-        nanoSQL: nanoSQL
+        nanoSQL: nanoSQL,
+        utilities: utils
     };
 }
 /*
-// used test browser adapters with live reload
+// used to test browser adapters with live reload
 let errors = 0;
 console.log("Testing IndexedDB");
 new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {

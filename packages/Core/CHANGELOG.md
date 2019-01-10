@@ -22,7 +22,6 @@
 - `limit().offset()` queries now do the same as the `.range()` query modifier use to do when there aren't orderby/groupby arguments.  
 - `.range()` is also no longer supported.
 - `union`, `join` and `graph` queries now use indexes when possible/available.
-- Added MapReduce support.
 - Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/functions.ts).
 - Events can now target nested row values. `nSQL("Table.column.nested.value").on("change", () => {})`.
 - Plugins and adapters can declare core/plugin version dependencies which are validated at runtime.
@@ -46,6 +45,28 @@
 - You can now drop and add tables to nanoSQL while it's running using queries.
 - Added new `conform rows` query that pulls every row from a given table, conforms it to the current data model, then puts the row back.
 - Added new `rebuild indexes` query to trigger index rebuilds.
+- `nanoSQLInstance` is now just `nanoSQL`.
+- window["nano-sql"] is now window["@nano-sql"].core.
+
+## [1.8.1] 1-7-2019
+- Fixed issue with WebSQL attempting to update existing rows in some cases.
+
+## [1.8.0] 12-16-2018
+- Fixed issue [#97](https://github.com/ClickSimply/Nano-SQL/issues/97), observers shouldn't fire after unsubscribes.
+- Fixed issue [#94](https://github.com/ClickSimply/Nano-SQL/issues/94), SQLite related adapters now work with primary key selects when using numbers.
+- Fixed issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85), problem was identical to issue 94.
+- Fixed "x row(s) modified" bug.
+
+## [1.7.9] 11-10-2018
+- Fixed secondary index truncation.
+- Fixed issue [#89](https://github.com/ClickSimply/Nano-SQL/issues/89), iOS/WebSQL support fixed.
+
+## [1.7.8] 10-10-2018
+- Fixed CDN Link issue.
+
+## [1.7.7] 10-10-2018
+- Fixed issue [#88](SQL Error: number of parameters does not match argument count) and [#87](https://github.com/ClickSimply/Nano-SQL/issues/87).  WebSQL queries were too large and are now batched.
+- Fixed issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85). Suboptimized queries where failing.
 
 ## [1.7.6] 8-10-2018
 - Fixed issue with CSV export headers.

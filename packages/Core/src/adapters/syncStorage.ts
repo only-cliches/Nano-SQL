@@ -1,5 +1,5 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "../interfaces";
-import { noop, deepFreeze, generateID, binarySearch, _assign, cast, blankTableDefinition, deepSet } from "../utilities";
+import { noop, deepFreeze, generateID, binarySearch, assign, cast, blankTableDefinition, deepSet } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 
 export class SyncStorage  extends nanoSQLMemoryIndex {
@@ -55,12 +55,6 @@ export class SyncStorage  extends nanoSQLMemoryIndex {
                 this._ai[tableName] = parseFloat(localStorage.getItem(this._id + "->" + tableName + "_ai") || "0");
             }
         }
-        complete();
-    }
-
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-        delete this._index[table];
-        delete this._rows[table];
         complete();
     }
 

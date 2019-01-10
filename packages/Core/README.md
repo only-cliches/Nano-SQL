@@ -32,17 +32,14 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 ### Flexible Data Models
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
+### Graph Queries
+Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
+
 ### Other Cool Things
-Built in geolocation indexing, query functions, multi-tab sync, typescript support, event system, CSV/JSON import & export, graph query support, and runs in every browser back to IE9!
+Built in geolocation indexing, foreign keys, nearly three dozen utility functions, query function support, multi-tab sync, typescript support, event system, CSV/JSON import & export, and runs in every browser back to IE9!
 
-## Live Examples: [Express/NodeJS](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [React Native](https://docs.nanosql.io/examples/react-native) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
+## Live Examples: [Express/NodeJS](https://nanosql.gitbook.io/docs/examples/express-nodejs) - [React](https://nanosql.gitbook.io/docs/examples/react) - [React Native](https://nanosql.gitbook.io/docs/examples/react-native) - [Angular](https://nanosql.gitbook.io/docs/examples/angular) - [VueJS](https://nanosql.gitbook.io/docs/examples/vuejs) - [Cordova](https://nanosql.gitbook.io/docs/examples/cordova)
 
-
-## Browser Support
-
-![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png) | ![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png) | ![Safari](https://raw.github.com/alrra/browser-logos/master/src/safari/safari_48x48.png) | ![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png) | ![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png) | ![IE](https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png) |
---- | --- | --- | --- | --- | --- |
-Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | Latest ✔ | 9+ ✔ |
 
 ## Database Support
 
@@ -85,7 +82,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc19/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc20/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

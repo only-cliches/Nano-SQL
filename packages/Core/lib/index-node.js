@@ -14,4 +14,5 @@ catch (e) { }
 var index_1 = require("./index");
 exports.nSQL = index_1.nSQL;
 exports.nanoSQL = index_1.nanoSQL;
+exports.InanoSQLInstance = index_1.InanoSQLInstance;
 //# sourceMappingURL=index-node.js.map

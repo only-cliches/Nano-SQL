@@ -4,7 +4,7 @@ import { InanoSQLInstance } from "../src/interfaces";
 
 
 import { comments, users, posts } from "./data";
-import { _objectsEqual, _assign } from "../src/utilities";
+import { objectsEqual, assign } from "../src/utilities";
 const Json2csvParser = require("json2csv").Parser;
 import * as papaparse from "papaparse";
 
@@ -111,9 +111,9 @@ export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsq
                 ]
             }).then(() => {
                 return Promise.all([
-                    nSQL.selectTable("comments").loadJS(_assign(comments)),
-                    nSQL.selectTable("users").loadJS(_assign(users)),
-                    nSQL.selectTable("posts").loadJS(_assign(posts))
+                    nSQL.selectTable("comments").loadJS(assign(comments)),
+                    nSQL.selectTable("users").loadJS(assign(users)),
+                    nSQL.selectTable("posts").loadJS(assign(posts))
                 ]);
             }),
             Promise.all([0, 1, 2].map((i) => {

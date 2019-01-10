@@ -29,9 +29,6 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
     nanoSQLMemoryIndex.prototype.dropTable = function (table, complete, error) {
         error(exports.err);
     };
-    nanoSQLMemoryIndex.prototype.disconnectTable = function (table, complete, error) {
-        error(exports.err);
-    };
     nanoSQLMemoryIndex.prototype.write = function (table, pk, row, complete, error) {
         error(exports.err);
     };
@@ -50,9 +47,14 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
     nanoSQLMemoryIndex.prototype.getTableIndexLength = function (table, complete, error) {
         error(exports.err);
     };
-    nanoSQLMemoryIndex.prototype.createIndex = function (indexName, type, complete, error) {
+    nanoSQLMemoryIndex.prototype.createIndex = function (tableId, index, type, complete, error) {
         var _this = this;
+        var indexName = "_idx_" + tableId + "_" + index;
         this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: ["id"], isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
+            if (_this.indexes[indexName]) {
+                complete();
+                return;
+            }
             _this.indexes[indexName] = {};
             _this.indexLoaded[indexName] = false;
             _this.useCacheIndexes[indexName] = _this.useCache || false;
@@ -71,16 +73,20 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
             }, error);
         }, error);
     };
-    nanoSQLMemoryIndex.prototype.deleteIndex = function (indexName, complete, error) {
+    nanoSQLMemoryIndex.prototype.deleteIndex = function (tableId, index, complete, error) {
+        var indexName = "_idx_" + tableId + "_" + index;
         delete this.indexes[indexName];
+        delete this.indexLoaded[indexName];
+        delete this.useCacheIndexes[indexName];
         this.dropTable(indexName, complete, error);
     };
-    nanoSQLMemoryIndex.prototype.addIndexValue = function (indexName, key, value, complete, error) {
+    nanoSQLMemoryIndex.prototype.addIndexValue = function (tableId, index, key, value, complete, error) {
         var _this = this;
+        var indexName = "_idx_" + tableId + "_" + index;
         if (!this.indexLoaded[indexName]) {
             this.read(indexName, value, function (row) {
                 var pks = row ? row.pks : [];
-                pks = _this.assign ? utilities_1._assign(pks) : pks;
+                pks = _this.assign ? utilities_1.assign(pks) : pks;
                 if (pks.length === 0) {
                     pks.push(key);
                 }
@@ -93,7 +99,7 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
                 }
                 _this.write(indexName, value, {
                     id: key,
-                    pks: _this.assign ? utilities_1._assign(pks) : pks
+                    pks: _this.assign ? utilities_1.assign(pks) : pks
                 }, complete, error);
             }, error);
             return;
@@ -108,15 +114,16 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
         }
         this.write(indexName, value, {
             id: key,
-            pks: this.assign ? utilities_1._assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+            pks: this.assign ? utilities_1.assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
         }, complete, error);
     };
-    nanoSQLMemoryIndex.prototype.deleteIndexValue = function (indexName, key, value, complete, error) {
+    nanoSQLMemoryIndex.prototype.deleteIndexValue = function (tableId, index, key, value, complete, error) {
         var _this = this;
+        var indexName = "_idx_" + tableId + "_" + index;
         if (!this.indexLoaded[indexName]) {
             this.read(indexName, value, function (row) {
                 var pks = row ? row.pks : [];
-                pks = _this.assign ? utilities_1._assign(pks) : pks;
+                pks = _this.assign ? utilities_1.assign(pks) : pks;
                 if (pks.length === 0) {
                     complete();
                     return;
@@ -136,7 +143,7 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
                 }
                 _this.write(indexName, value, {
                     id: key,
-                    pks: _this.assign ? utilities_1._assign(pks) : pks
+                    pks: _this.assign ? utilities_1.assign(pks) : pks
                 }, complete, error);
             }, error);
             return;
@@ -153,13 +160,14 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
                 this.indexes[indexName][value].splice(idx, 1);
                 this.write(indexName, value, {
                     id: value,
-                    pks: this.assign ? utilities_1._assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+                    pks: this.assign ? utilities_1.assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
                 }, complete, error);
             }
         }
     };
-    nanoSQLMemoryIndex.prototype.readIndexKey = function (table, pk, onRowPK, complete, error) {
-        this.read(table, pk, function (row) {
+    nanoSQLMemoryIndex.prototype.readIndexKey = function (tableId, index, pk, onRowPK, complete, error) {
+        var indexName = "_idx_" + tableId + "_" + index;
+        this.read(indexName, pk, function (row) {
             if (!row) {
                 complete();
                 return;
@@ -168,8 +176,9 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
             complete();
         }, error);
     };
-    nanoSQLMemoryIndex.prototype.readIndexKeys = function (table, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
-        this.readMulti(table, type, offsetOrLow, limitOrHigh, reverse, function (index) {
+    nanoSQLMemoryIndex.prototype.readIndexKeys = function (tableId, index, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
+        var indexName = "_idx_" + tableId + "_" + index;
+        this.readMulti(indexName, type, offsetOrLow, limitOrHigh, reverse, function (index) {
             if (!index)
                 return;
             index.pks.forEach(function (pk) {

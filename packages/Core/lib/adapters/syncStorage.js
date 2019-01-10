@@ -44,11 +44,6 @@ var SyncStorage = /** @class */ (function (_super) {
         }
         complete();
     };
-    SyncStorage.prototype.disconnectTable = function (table, complete, error) {
-        delete this._index[table];
-        delete this._rows[table];
-        complete();
-    };
     SyncStorage.prototype.dropTable = function (table, complete, error) {
         var _this = this;
         this._index[table].forEach(function (pk) {

@@ -66,7 +66,7 @@ exports.SQLiteAbstract = function (_query, _batchSize) {
                 ai[table] = Math.max(pk, ai[table]);
             utilities_1.deepSet(pkCol, row, pk);
             var rowStr = JSON.stringify(row);
-            var afterWrite = function () {
+            var afterWrite = function (queryResult) {
                 if (doAI && pk === ai[table]) {
                     _query(true, "UPDATE \"_ai\" SET inc = ? WHERE id = ?", [ai[table], table], function () {
                         complete(pk);
@@ -211,9 +211,6 @@ var WebSQL = /** @class */ (function (_super) {
         else {
             this._db.readTransaction(doTransaction);
         }
-    };
-    WebSQL.prototype.disconnectTable = function (table, complete, error) {
-        complete();
     };
     WebSQL.prototype.dropTable = function (table, complete, error) {
         this._sqlite.dropTable(table, complete, error);

@@ -16,13 +16,13 @@ export declare class InanoSQLInstance {
     functions: {
         [fnName: string]: InanoSQLFunction;
     };
-    indexes: {
-        [indexName: string]: InanoSQLIndex;
-    }
     planetRadius: number;
     tables: {
         [tableName: string]: InanoSQLTable;
     };
+    tableIds: {
+        [tableName: string]: string;
+    }
     state: {
         activeAV: string;
         hasAnyEvents: boolean;
@@ -34,8 +34,8 @@ export declare class InanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        MRTimer: any;
-        runMR: {[table: string]: {[mrName: string]: (...args: any[]) => void}};
+        // MRTimer: any;
+        // runMR: {[table: string]: {[mrName: string]: (...args: any[]) => void}};
         selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
     _queryCache: {
@@ -55,12 +55,13 @@ export declare class InanoSQLInstance {
         limit: number;
     }): any[];
     clearCache(id: string): boolean;
-    triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
+    // triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
     every(args: {length: number, every?: number, offset?: number}): number[];
     clearTTL(primaryKey: any): Promise<any>;
     expires(primaryKey: any): Promise<any>;
     _ttlTimer;
     _checkTTL(): void;
+    saveTableIds(): Promise<any>
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
     _detectStorageMethod();
@@ -79,14 +80,14 @@ export declare class InanoSQLInstance {
     default(replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
-    rawDump(tables: string[], onRow: (table: string, row: {
+    rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: {
         [key: string]: any;
     }) => void): Promise<any>;
     rawImport(tables: {
         [table: string]: {
             [key: string]: any;
         }[];
-    }, onProgress?: (percent: number) => void): Promise<any>;
+    }, indexes: boolean, onProgress?: (percent: number) => void): Promise<any>;
     disconnect(): Promise<any>;
     extend(scope: string, ...args: any[]): any | InanoSQLInstance;
     loadJS(rows: {
@@ -175,8 +176,7 @@ export declare class InanoSQLQueryExec {
     _streamAS(row, isJoin);
     _orderByRows(a, b);
     _sortObj(objA, objB, columns);
-    _createTable(table: InanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
-    _alterTable(table: InanoSQLTableConfig, complete: () => void, error: (err: any) => void): void;
+    _createTable(table: InanoSQLTableConfig, alterTable: boolean, complete: () => void, error: (err: any) => void): void;
     _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err);
     _resolveFastWhere(onlyPKs, table, fastWhere, isReversed, orderByPK, onRow, complete);
@@ -238,7 +238,7 @@ export interface InanoSQLDataModel {
         [key: string]: any;
     };
 }
-
+/*
 export interface InanoSQLMapReduce {
     name: string;
     call: (evn: InanoSQLDatabaseEvent) => Promise<any>;
@@ -254,6 +254,7 @@ export interface InanoSQLMapReduce {
         month?: number | number[];
     };
 }
+*/
 
 export interface InanoSQLSortBy {
     sort: {
@@ -294,8 +295,6 @@ export interface InanoSQLAdapter {
 
     dropTable(table: string, complete: () => void, error: (err: any) => void);
 
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void);
-
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
 
     read(table: string, pk: any, complete: (row: {[key: string]: any} | undefined) => void, error: (err: any) => void);
@@ -308,17 +307,17 @@ export interface InanoSQLAdapter {
 
     getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void);
 
-    createIndex(indexName: string, type: string, complete: () => void, error: (err: any) => void);
+    createIndex(table: string, indexName: string, type: string, complete: () => void, error: (err: any) => void);
 
-    deleteIndex(indexName: string, complete: () => void, error: (err: any) => void);
+    deleteIndex(table: string, indexName: string, complete: () => void, error: (err: any) => void);
 
-    addIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void);
+    addIndexValue(table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void);
 
-    deleteIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void);
+    deleteIndexValue(table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void);
 
-    readIndexKey(table: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void);
+    readIndexKey(table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void);
 
-    readIndexKeys(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any) => void, complete: () => void, error: (err: any) => void);
+    readIndexKeys(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any) => void, complete: () => void, error: (err: any) => void);
 }
 
 
@@ -354,7 +353,13 @@ export interface InanoSQLTableConfig {
             [prop: string]: any
         };
     };
-    mapReduce?: InanoSQLMapReduce[];
+    foreignKeys?: {
+        [colAndTable: string]: {
+            onDelete?: "cascade" | "set null" | "restrict" | "nothing",
+            [prop: string]: any
+        }
+    }
+    // mapReduce?: InanoSQLMapReduce[];
     filter?: (row: any) => any;
     actions?: InanoSQLActionOrView[];
     views?: InanoSQLActionOrView[];
@@ -377,13 +382,23 @@ export interface InanoSQLDenormalizeModel {
     onSrcDel?: "del" | "keep"
 }
 */
+
+export interface InanoSQLFK {
+    onDelete: "cascade" | "set null" | "restrict" | "nothing";
+    props: {[key: string]: any};
+    table: string;
+    path: string[];
+    isArray: boolean;
+}
+
 export interface InanoSQLTable {
     model: InanoSQLDataModel | string;
+    id: string;
     columns: InanoSQLTableColumn[];
     indexes: {
         [id: string]: InanoSQLIndex;
     };
-    mapReduce?: InanoSQLMapReduce[];
+    foreignKeys: InanoSQLFK[];
     filter?: (row: any) => any;
     actions: InanoSQLActionOrView[];
     views: InanoSQLActionOrView[];
@@ -402,6 +417,8 @@ export interface InanoSQLTableColumn {
     default?: any;
     max?: number;
     min?: number;
+    ai?: boolean;
+    pk?: boolean;
 }
 
 export interface InanoSQLDatabaseEvent {
@@ -439,6 +456,11 @@ export interface InanoSQLGraphArgs {
     on?: (row: {[key: string]: any}, idx: number) => boolean | any[];
 }
 
+export interface InanoSQLUnionArgs {
+    type: "all" | "distinct", 
+    queries: (() => Promise<any[]>)[]
+}
+
 export interface InanoSQLQuery {
     table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     tableAS?: string;
@@ -452,7 +474,6 @@ export interface InanoSQLQuery {
     tags: string[];
     comments: string[];
     where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean);
-    range?: number[];
     graph?: InanoSQLGraphArgs | InanoSQLGraphArgs[];
     orderBy?: string[];
     groupBy?: string[];
@@ -463,7 +484,7 @@ export interface InanoSQLQuery {
     ttl?: number;
     ttlCols?: string[];
     skipQueue?: boolean;
-    union?: {type: "all" | "distinct", queries: (() => Promise<any[]>)[]};
+    union?: InanoSQLUnionArgs;
     cacheID?: string;
     parent: InanoSQLInstance;
     returnEvent?: boolean;
@@ -687,16 +708,6 @@ export interface adapterDropTableFilter extends abstractFilter {
 }
 
 // tslint:disable-next-line
-export interface adapterDisconnectTableFilter extends abstractFilter {
-    result: {
-        table: string, 
-        complete: () => void, 
-        error: (err: any) => void
-    }
-    query?: InanoSQLQuery;
-}
-
-// tslint:disable-next-line
 export interface adapterDeleteFilter extends abstractFilter {
     result: {
         table: string, 
@@ -730,6 +741,7 @@ export interface adapterGetTableIndexLengthFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterCreateIndexFilter extends abstractFilter {
     result: {
+        table: string,
         indexName: string, 
         type: string, 
         complete: () => void, 
@@ -741,6 +753,7 @@ export interface adapterCreateIndexFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterDeleteIndexFilter extends abstractFilter {
     result: {
+        table: string,
         indexName: string, 
         complete: () => void, 
         error: (err: any) => void
@@ -751,6 +764,7 @@ export interface adapterDeleteIndexFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterAddIndexValueFilter extends abstractFilter {
     result: {
+        table: string,
         indexName: string, 
         key: any, 
         value: any, 
@@ -763,6 +777,7 @@ export interface adapterAddIndexValueFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterDeleteIndexValueFilter extends abstractFilter {
     result: {
+        table: string,
         indexName: string, 
         key: any, 
         value: any, 
@@ -775,7 +790,8 @@ export interface adapterDeleteIndexValueFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterReadIndexKeyFilter extends abstractFilter {
     result: {
-        table: string, 
+        table: string,
+        indexName: string, 
         pk: any, 
         onRowPK: (key: any) => void, 
         complete: () => void, 
@@ -787,7 +803,8 @@ export interface adapterReadIndexKeyFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterReadIndexKeysFilter extends abstractFilter {
     result: {
-        table: string, 
+        table: string,
+        indexName: string, 
         type: "range" | "offset" | "all", 
         offsetOrLow: any, 
         limitOrHigh: any, 
@@ -825,31 +842,6 @@ export interface addRowFilter extends abstractFilter {
 export interface updateRowFilter extends abstractFilter { 
     query: InanoSQLQuery;
     row: any;
-}
-
-// tslint:disable-next-line
-export interface dropTableFilter extends abstractFilter { 
-    query: InanoSQLQuery;
-    result: string;
-}
-
-// tslint:disable-next-line
-export interface alterTableFilter extends abstractFilter { 
-    query: InanoSQLQuery;
-    result: InanoSQLTableConfig;
-}
-
-// tslint:disable-next-line
-export interface addTableFilter extends abstractFilter {
-    query: InanoSQLQuery;
-    result: {name: string, conf: InanoSQLTable};
-}
-
-// tslint:disable-next-line
-export interface mapReduceFilter extends abstractFilter {
-    result: boolean;
-    table: string;
-    mr: InanoSQLMapReduce;
 }
 
 // tslint:disable-next-line

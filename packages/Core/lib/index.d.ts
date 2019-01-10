@@ -1,5 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
-import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLIndex, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
+export { InanoSQLInstance };
 export declare class nanoSQL implements InanoSQLInstance {
     config: InanoSQLConfig;
     adapter: InanoSQLAdapter;
@@ -10,12 +11,12 @@ export declare class nanoSQL implements InanoSQLInstance {
     functions: {
         [fnName: string]: InanoSQLFunction;
     };
-    indexes: {
-        [indexName: string]: InanoSQLIndex;
-    };
     planetRadius: number;
     tables: {
         [tableName: string]: InanoSQLTable;
+    };
+    tableIds: {
+        [tableName: string]: string;
     };
     state: {
         activeAV: string;
@@ -28,12 +29,6 @@ export declare class nanoSQL implements InanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        runMR: {
-            [table: string]: {
-                [mrName: string]: (...args: any[]) => void;
-            };
-        };
-        MRTimer: any;
         selectedTable: string | any[] | ((where?: any[] | ((row: {
             [key: string]: any;
         }, i?: number) => boolean)) => Promise<TableQueryResult>);
@@ -70,6 +65,7 @@ export declare class nanoSQL implements InanoSQLInstance {
     getPeers(): any;
     _detectStorageMethod(): string;
     _initPlugins(config: InanoSQLConfig): Promise<any>;
+    saveTableIds(): Promise<any>;
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): void;
     every(args: {
@@ -77,7 +73,6 @@ export declare class nanoSQL implements InanoSQLInstance {
         every?: number;
         offset?: number;
     }): number[];
-    triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
     on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance;
     off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance;
     _refreshEventChecker(): InanoSQLInstance;
@@ -90,14 +85,14 @@ export declare class nanoSQL implements InanoSQLInstance {
     default(replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
-    rawDump(tables: string[], onRow: (table: string, row: {
+    rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: {
         [key: string]: any;
     }) => void): Promise<any>;
     rawImport(tables: {
         [table: string]: {
             [key: string]: any;
         }[];
-    }, onProgress?: (percent: number) => void): Promise<any>;
+    }, indexes: boolean, onProgress?: (percent: number) => void): Promise<any>;
     disconnect(): Promise<{}>;
     extend(scope: string, ...args: any[]): any | nanoSQL;
     loadJS(rows: {

@@ -17,7 +17,7 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
             this._query = __assign({}, utilities_1.buildQuery(db, table, queryAction), { comments: [], state: "pending", action: queryAction, actionArgs: queryArgs, result: [] });
         }
         else {
-            this._query = __assign({}, utilities_1.buildQuery(db, table, ""), queryAction(db), { state: "pending" });
+            this._query = __assign({}, queryAction(db), { state: "pending", result: [] });
         }
     }
     _nanoSQLQueryBuilder.prototype.where = function (args) {

@@ -1,5 +1,5 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "../interfaces";
-import { hash, generateID, cast, deepGet, deepSet } from "../utilities";
+import { hash, generateID, cast, deepGet, deepSet, allAsync, setFast } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 import { deepEqual } from "assert";
 
@@ -41,7 +41,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         if (this.version) { // manually handled by developer
             version = this.version;
         } else { // automatically handled by nanoSQL
-            version = parseInt(localStorage.getItem(this._id + "_" + tableName + "_idb_version") || "") || 1;
+            version = parseInt(localStorage.getItem(this._id + "_" + tableName + "_idb_version") || "1");
             const modelHash = localStorage.getItem(this._id + "_" + tableName + "_idb_hash") || dataModelHash;
 
             if (modelHash !== dataModelHash) {
@@ -73,28 +73,29 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         };
     }
 
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-        this._db[table].onerror = error;
-        this._db[table].close();
-        delete this._db[table];
-        localStorage.removeItem(this._id + "_" + table + "_idb_version");
-        localStorage.removeItem(this._id + "_" + table + "_idb_hash");
-        localStorage.removeItem(this._id + "_" + table + "_idb_ai");
-        complete();
-    }
-
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
         // open a read/write db transaction, ready for clearing the data
         const tx = this._db[table].transaction(table, "readwrite");
         tx.onerror = error;
         const objectStoreRequest = tx.objectStore(table).clear();
+        objectStoreRequest.onerror = error;
         objectStoreRequest.onsuccess = () => {
-            this.disconnectTable(table, complete, error);
+            this._db[table].close();
+            delete this._db[table];
+            localStorage.removeItem(this._id + "_" + table + "_idb_version");
+            localStorage.removeItem(this._id + "_" + table + "_idb_hash");
+            localStorage.removeItem(this._id + "_" + table + "_idb_ai");
+            complete();
         };
     }
 
     disconnect(complete: () => void, error: (err: any) => void) {
-        complete();
+        allAsync(Object.keys(this._db), (table, i, next, error) => {
+            this._db[table].close();
+            setFast(() => {
+                next();
+            });
+        }).then(complete).catch(error);
     }
 
     store(table: string, type: IDBTransactionMode, open: (tr: IDBTransaction, store: IDBObjectStore) => void, error: (err: any) => void) {

@@ -15,7 +15,7 @@
  *
  */
 
-import { chainAsync, uuid, _objectsEqual } from "./utilities";
+import { chainAsync, uuid, objectsEqual } from "./utilities";
 import { InanoSQLAdapter, InanoSQLAdapterConstructor, InanoSQLInstance, InanoSQLTable } from "./interfaces";
 import { nanoSQL } from ".";
 
@@ -89,6 +89,7 @@ export class nanoSQLAdapterTest {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: uuid(),
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -105,6 +106,8 @@ export class nanoSQLAdapterTest {
                     ],
                     indexes: {},
                     actions: [],
+                    // mapReduce: [],
+                    foreignKeys: [],
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -131,7 +134,7 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test", "all", undefined, undefined, false, (row, idx) => {
                         rows.push(row);
                     }, () => {
-                        const condition = _objectsEqual(rows, allRows.filter(r => r.id !== 3));
+                        const condition = objectsEqual(rows, allRows.filter(r => r.id !== 3));
                         myConsole.assert(condition, "Delete Test");
                         condition ? res() : rej({e: allRows.filter(r => r.id !== 3), g: rows });
                     }, rej);
@@ -155,6 +158,7 @@ export class nanoSQLAdapterTest {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: uuid(),
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -179,6 +183,8 @@ export class nanoSQLAdapterTest {
                         }
                     },
                     actions: [],
+                    // mapReduce: [],
+                    foreignKeys: [],
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -198,10 +204,10 @@ export class nanoSQLAdapterTest {
                     }
                     allRows.push({id: i + 1, name: "Title " + num});
                 }
-                adapter.createIndex("_idx_test_name", "string", () => {
+                adapter.createIndex("test", "name", "string", () => {
                     chainAsync(allRows, (row, i, done) => {
                         adapter.write("test", null, row, () => {
-                            adapter.addIndexValue("_idx_test_name", row.id, row.name, done, rej);
+                            adapter.addIndexValue("test", "name", row.id, row.name, done, rej);
                         }, rej);
                     }).then(res);
                 }, rej);
@@ -211,10 +217,10 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read secondary index
                 let pks: any[] = [];
-                adapter.readIndexKey("_idx_test_name", "Title 005", (pk) => {
+                adapter.readIndexKey("test", "name", "Title 005", (pk) => {
                     pks.push(pk);
                 }, () => {
-                    const condition = _objectsEqual(pks, [5]);
+                    const condition = objectsEqual(pks, [5]);
                     myConsole.assert(condition, "Secondary Index Single Read");
                     condition ? res() : rej({e: [5], g: pks});
                 }, rej);    
@@ -223,11 +229,11 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read range secondary index
                 let pks: any[] = [];
-                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", false, (pk, value) => {
+                adapter.readIndexKeys("test", "name", "range", "Title 004", "Title 020", false, (pk, value) => {
                     pks.push(pk);
                 }, () => {
                     const filterRows = allRows.filter(r => r.name >= "Title 004" && r.name <= "Title 020").map(r => r.id);
-                    const condition = _objectsEqual(pks, filterRows);
+                    const condition = objectsEqual(pks, filterRows);
                     myConsole.assert(condition, "Secondary Index Range Read");
                     condition ? res() : rej({e: filterRows, g: pks});
                 }, rej); 
@@ -236,11 +242,11 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read offset secondary index
                 let pks: any[] = [];
-                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, false, (pk) => {
+                adapter.readIndexKeys("test", "name", "offset", 10, 20, false, (pk) => {
                     pks.push(pk);
                 }, () => {
                     const filterRows = allRows.filter((r, i) => i >= 10 && i < 30).map(r => r.id);
-                    const condition = _objectsEqual(pks, filterRows);
+                    const condition = objectsEqual(pks, filterRows);
                     myConsole.assert(condition, "Secondary Index Offset Read");
                     condition ? res() : rej({e: filterRows, g: pks});
                 }, rej); 
@@ -249,11 +255,11 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read range secondary index
                 let pks: any[] = [];
-                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", true, (pk, value) => {
+                adapter.readIndexKeys("test", "name", "range", "Title 004", "Title 020", true, (pk, value) => {
                     pks.push(pk);
                 }, () => {
                     const filterRows = allRows.filter(r => r.name >= "Title 004" && r.name <= "Title 020").map(r => r.id).reverse();
-                    const condition = _objectsEqual(pks, filterRows);
+                    const condition = objectsEqual(pks, filterRows);
                     myConsole.assert(condition, "Secondary Index Range Read Reverse");
                     condition ? res() : rej({e: filterRows, g: pks});
                 }, rej); 
@@ -262,11 +268,11 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read offset secondary index
                 let pks: any[] = [];
-                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, true, (pk) => {
+                adapter.readIndexKeys("test", "name", "offset", 10, 20, true, (pk) => {
                     pks.push(pk);
                 }, () => {
                     const filterRows = allRows.filter((r, i) => i >= 469 && i < 489).map(r => r.id).reverse();
-                    const condition = _objectsEqual(pks, filterRows);
+                    const condition = objectsEqual(pks, filterRows);
                     myConsole.assert(condition, "Secondary Index Offset Read Reverse");
                     condition ? res() : rej({e: filterRows, g: pks});
                 }, rej); 
@@ -275,12 +281,12 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read offset secondary index
                 let pks: any[] = [];
-                adapter.deleteIndexValue("_idx_test_name", 10, "Title 010", () => {
-                    adapter.readIndexKeys("_idx_test_name", "all", undefined, undefined, false, (pk) => {
+                adapter.deleteIndexValue("test", "name", 10, "Title 010", () => {
+                    adapter.readIndexKeys("test", "name", "all", undefined, undefined, false, (pk) => {
                         pks.push(pk);
                     }, () => {
                         const filterRows = allRows.filter(r => r.id !== 10).map(r => r.id);
-                        const condition = _objectsEqual(pks, filterRows);
+                        const condition = objectsEqual(pks, filterRows);
                         myConsole.assert(condition, "Secondary Index Remove Value");
                         condition ? res() : rej({e: filterRows, g: pks});
                     }, rej); 
@@ -300,6 +306,7 @@ export class nanoSQLAdapterTest {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: uuid(),
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -317,6 +324,8 @@ export class nanoSQLAdapterTest {
                     indexes: {},
                     actions: [],
                     views: [],
+                    // mapReduce: [],
+                    foreignKeys: [],
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -344,7 +353,7 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     const filterRows = allRows.filter(r => r.id >= 10 && r.id <= 20).reverse();
-                    const condition = _objectsEqual(rows, filterRows);
+                    const condition = objectsEqual(rows, filterRows);
                     myConsole.assert(condition, "Select Range Test (Reverse)");
                     condition ? res() : rej({e: filterRows, g: rows});
                 }, rej);
@@ -357,7 +366,7 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     const filterRows = allRows.filter((r, i) => i >= 499 - 30 && i < 499 - 10).reverse();
-                    const condition = _objectsEqual(rows, filterRows);
+                    const condition = objectsEqual(rows, filterRows);
                     myConsole.assert(condition, "Select Offset Test (Reverse)");
                     condition ? res() : rej({e: filterRows, g: rows});
                 }, rej);
@@ -370,7 +379,7 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     const filterRows = allRows.slice().reverse();
-                    const condition = _objectsEqual(rows, filterRows);
+                    const condition = objectsEqual(rows, filterRows);
                     myConsole.assert(condition, "Select All Rows Test (reverse)");
                     condition ? res() : rej({e: filterRows, g: rows});
                 }, rej);
@@ -383,7 +392,7 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     const filterRows = allRows.filter(r => r.id >= 10 && r.id <= 20);
-                    const condition = _objectsEqual(rows, filterRows);
+                    const condition = objectsEqual(rows, filterRows);
                     myConsole.assert(condition, "Select Range Test 2");
                     condition ? res() : rej({e: filterRows, g: rows});
                 }, rej);
@@ -395,7 +404,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "offset", 10, 20, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = _objectsEqual(rows, allRows.filter(r => r.id > 10 && r.id <= 30));
+                    const condition = objectsEqual(rows, allRows.filter(r => r.id > 10 && r.id <= 30));
                     myConsole.assert(condition, "Select Offset / Limit Test");
                     condition ? res() : rej({g: rows, e: allRows.filter(r => r.id > 10 && r.id <= 30)});
                 }, rej);
@@ -407,7 +416,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "all", undefined, undefined, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = _objectsEqual(rows, allRows);
+                    const condition = objectsEqual(rows, allRows);
                     myConsole.assert(condition, "Select Entire Table");
                     condition ? res() : rej({e: allRows, g: rows});
                 }, rej);
@@ -416,7 +425,7 @@ export class nanoSQLAdapterTest {
             // Select index
             return new Promise((res, rej) => {
                 adapter.getTableIndex("test", (idx) => {
-                    const condition = _objectsEqual(idx, index);
+                    const condition = objectsEqual(idx, index);
                     myConsole.assert(condition, "Select Index Test");
                     condition ? res() : rej({
                         e: index,
@@ -452,6 +461,7 @@ export class nanoSQLAdapterTest {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: uuid(),
                     model: {
                         "id:uuid": {pk: true},
                         "name:string": {}
@@ -469,6 +479,8 @@ export class nanoSQLAdapterTest {
                     indexes: {},
                     actions: [],
                     views: [],
+                    foreignKeys: [],
+                    // mapReduce: [],
                     pkType: "uuid",
                     pkCol: ["id"],
                     isPkNum: false,
@@ -498,7 +510,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "offset", 10, 20, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = _objectsEqual(rows, allRows.filter((r, i) => i >= 10 && i < 30));
+                    const condition = objectsEqual(rows, allRows.filter((r, i) => i >= 10 && i < 30));
                     myConsole.assert(condition, "Select Range Test 2");
                     condition ? res() : rej({g: rows, e: allRows.filter((r, i) => i >= 10 && i < 30)});
                 }, rej);
@@ -510,7 +522,7 @@ export class nanoSQLAdapterTest {
                 adapter.readMulti("test", "range", allRows[10].id, allRows[20].id, false, (row, idx) => {
                     rows.push(row);
                 }, () => {
-                    const condition = _objectsEqual(rows, allRows.filter(r => r.id >= allRows[10].id && r.id <= allRows[20].id));
+                    const condition = objectsEqual(rows, allRows.filter(r => r.id >= allRows[10].id && r.id <= allRows[20].id));
                     myConsole.assert(condition, "Select Range Test (Primary Key)");
                     condition ? res() : rej({
                         g: rows,
@@ -527,7 +539,7 @@ export class nanoSQLAdapterTest {
                     rows.push(row);
                 }, () => {
                     // console.timeEnd("READ");
-                    const condition = _objectsEqual(rows, allRows);
+                    const condition = objectsEqual(rows, allRows);
                     myConsole.assert(condition, "Select Entire Table Test");
                     condition ? res() : rej({e: allRows, g: rows});
                 }, rej);
@@ -536,7 +548,7 @@ export class nanoSQLAdapterTest {
             // Select index
             return new Promise((res, rej) => {
                 adapter.getTableIndex("test", (idx) => {
-                    const condition = _objectsEqual(idx, index);
+                    const condition = objectsEqual(idx, index);
                     myConsole.assert(condition, "Select Index Test");
                     condition ? res() : rej({
                         e: index,
@@ -570,6 +582,7 @@ export class nanoSQLAdapterTest {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: uuid(),
                     model: {
                         "id:int": {pk: true, ai: true},
                         "name:string": {},
@@ -591,7 +604,9 @@ export class nanoSQLAdapterTest {
                     ],
                     indexes: {},
                     actions: [],
+                    foreignKeys: [],
                     views: [],
+                    // mapReduce: [],
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -604,7 +619,7 @@ export class nanoSQLAdapterTest {
                 adapter.write("test", null, { name: "Test", posts: [1, 2]}, (pk) => {
                     adapter.read("test", pk, (row) => {
                         const expectRow = {name: "Test", id: 1, posts: [1, 2]};
-                        const condition = _objectsEqual(row, expectRow);
+                        const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Insert Test");
                         condition ? res() : rej({e: expectRow, g: row});
                     }, rej);
@@ -616,7 +631,7 @@ export class nanoSQLAdapterTest {
                 adapter.write("test", 1, {id: 1, name: "Testing", posts: [1, 2]}, (pk) => {
                     adapter.read("test", pk, (row) => {
                         const expectRow = {name: "Testing", id: 1, posts: [1, 2]};
-                        const condition = _objectsEqual(row, expectRow);
+                        const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Update Test");
                         condition ? res() : rej({e: expectRow, g: row});
                     }, rej);
@@ -628,7 +643,7 @@ export class nanoSQLAdapterTest {
                 adapter.write("test", 1, {id: 1, name: "Testing"}, (pk) => {
                     adapter.read("test", pk, (row) => {
                         const expectRow = {name: "Testing", id: 1};
-                        const condition = _objectsEqual(row, expectRow);
+                        const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Replace Test");
                         condition ? res() : rej({e: expectRow, g: row});
                     }, rej);
@@ -655,6 +670,7 @@ export class nanoSQLAdapterTest {
                 ].map(t => {
                     return new Promise((res2, rej2) => {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
+                            id: uuid(),
                             model: {
                                 "test": {
                                     "id:int": {pk: true, ai: true},
@@ -727,6 +743,8 @@ export class nanoSQLAdapterTest {
                             ],
                             indexes: {},
                             actions: [],
+                            // mapReduce: [],
+                            foreignKeys: [],
                             views: [],
                             pkType: {
                                 test: "int",
@@ -764,11 +782,11 @@ export class nanoSQLAdapterTest {
             // Auto incriment test
             return new Promise((res, rej) => {
                 adapter.write("test", null, {name: "Test"}, (pk) => {
-                    const condition = _objectsEqual(pk, 1);
+                    const condition = objectsEqual(pk, 1);
                     myConsole.assert(condition, "Test Auto Incriment Integer.");
                     condition ? (() => {
                         adapter.read("test", 1, (row: any) => {
-                            const condition2 = _objectsEqual(row.id, 1);
+                            const condition2 = objectsEqual(row.id, 1);
                             myConsole.assert(condition2, "Select Integer Primary Key.");
                             condition2 ? res() : rej({e: 1, g: row.id});
                         }, rej);
@@ -783,7 +801,7 @@ export class nanoSQLAdapterTest {
                     myConsole.assert(condition, "Test UUID.");
                     condition ? (() => {
                         adapter.read("test2", pk, (row: any) => {
-                            const condition2 = _objectsEqual(row.id, pk);
+                            const condition2 = objectsEqual(row.id, pk);
                             myConsole.assert(condition2, "Select UUID Primary Key.");
                             condition2 ? res() : rej({e: pk, g: row.id});
                         }, rej);
@@ -798,7 +816,7 @@ export class nanoSQLAdapterTest {
                     myConsole.assert(condition, "Test timeId.");
                     condition ? (() => {
                         adapter.read("test3", pk, (row: any) => {
-                            const condition2 = _objectsEqual(row.id, pk);
+                            const condition2 = objectsEqual(row.id, pk);
                             myConsole.assert(condition2, "Select timeId Primary Key.");
                             condition2 ? res() : rej({e: pk, g: row.id});
                         }, rej);
@@ -813,7 +831,7 @@ export class nanoSQLAdapterTest {
                     myConsole.assert(condition, "Test timeIdms.");
                     condition ? (() => {
                         adapter.read("test4", pk, (row: any) => {
-                            const condition2 = _objectsEqual(row.id, pk);
+                            const condition2 = objectsEqual(row.id, pk);
                             myConsole.assert(condition2, "Select timeIdms Primary Key.");
                             condition2 ? res() : rej({e: pk, g: row.id});
                         }, rej);
@@ -839,7 +857,7 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test5", "all", undefined, undefined, false, (row, idx) => {
                         keys.push(row.id);
                     }, () => {
-                        const condition = _objectsEqual(keys, UUIDs);
+                        const condition = objectsEqual(keys, UUIDs);
                         myConsole.assert(condition, "Test Sorted Primary Keys.");
                         condition ? res() : rej({e: UUIDs, g: keys});
                     }, rej);
@@ -859,11 +877,11 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test6", "all", undefined, undefined, false, (row) => {
                         rows.push(row);
                     }, () => {
-                        const condition = _objectsEqual(rows, floats.sort((a, b) => a.id > b.id ? 1 : -1));
+                        const condition = objectsEqual(rows, floats.sort((a, b) => a.id > b.id ? 1 : -1));
                         myConsole.assert(condition, "Test float primary keys.");
                         condition ? (() => {
                             adapter.read("test6", floats[0].id, (row: any) => {
-                                const condition2 = _objectsEqual(row.id, floats[0].id);
+                                const condition2 = objectsEqual(row.id, floats[0].id);
                                 myConsole.assert(condition2, "Select Float Primary Key.");
                                 condition2 ? res() : rej({e: floats[0].id, g: row.id});
                             }, rej);
@@ -888,11 +906,11 @@ export class nanoSQLAdapterTest {
                     adapter.readMulti("test7", "all", undefined, undefined, false, (row) => {
                         rows.push(row);
                     }, () => {
-                        const condition = _objectsEqual(rows, nestedPKRows);
+                        const condition = objectsEqual(rows, nestedPKRows);
                         myConsole.assert(condition, "Test Nested primary keys.");
                         condition ? (() => {
                             adapter.read("test7", nestedPKRows[2].nested.id, (row: any) => {
-                                const condition2 = _objectsEqual(row.nested.id, nestedPKRows[2].nested.id);
+                                const condition2 = objectsEqual(row.nested.id, nestedPKRows[2].nested.id);
                                 myConsole.assert(condition2, "Select Nested Primary Key.");
                                 condition2 ? res() : rej({e: nestedPKRows[0].nested.id, g: row.id});
                             }, rej);

@@ -115,21 +115,10 @@ var RocksDB = /** @class */ (function (_super) {
             });
         });
     };
-    RocksDB.prototype.disconnectTable = function (table, complete, error) {
-        var _this = this;
-        this._levelDBs[table].close(function (err) {
-            if (err) {
-                error(err);
-                return;
-            }
-            delete _this._levelDBs[table];
-            complete();
-        });
-    };
     RocksDB.prototype.dropTable = function (table, complete, error) {
         var _this = this;
         this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(function () {
-            _this.disconnectTable(table, function () {
+            _this._levelDBs[table].close(function (err) {
                 try {
                     exports.rimraf(global._path.join((_this.path || "."), "db_" + _this._id, table));
                 }
@@ -137,14 +126,21 @@ var RocksDB = /** @class */ (function (_super) {
                     error(e);
                     return;
                 }
+                delete _this._levelDBs[table];
                 complete();
             }, error);
         }).catch(error);
     };
     RocksDB.prototype.disconnect = function (complete, error) {
         var _this = this;
-        utilities_1.allAsync(Object.keys(this._levelDBs), function (table, i, next, err) {
-            _this.disconnectTable(table, next, err);
+        utilities_1.allAsync(Object.keys(this._levelDBs), function (table, i, next, error) {
+            _this._levelDBs[table].close(function (err) {
+                if (err) {
+                    error(err);
+                    return;
+                }
+                next(null);
+            });
         }).then(complete).catch(error);
     };
     RocksDB.prototype.write = function (table, pk, row, complete, error) {

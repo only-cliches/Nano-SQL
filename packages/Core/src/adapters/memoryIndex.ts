@@ -1,5 +1,5 @@
 import { InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLPlugin, loadIndexCacheFilter } from "../interfaces";
-import { binarySearch, blankTableDefinition, _assign } from "../utilities";
+import { binarySearch, blankTableDefinition, assign } from "../utilities";
 
 export const err = new Error("Memory index doesn't support this action!");
 
@@ -38,9 +38,6 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
         error(err);
     }
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-        error(err);
-    }
     write(table: string, pk: any, row: {
         [key: string]: any;
     }, complete: (pk: any) => void, error: (err: any) => void) {
@@ -66,17 +63,25 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
         error(err);
     }
 
-    createIndex(indexName: string, type: string, complete: () => void, error: (err: any) => void) {
+    createIndex(tableId: string, index: string, type: string, complete: () => void, error: (err: any) => void) {
+        const indexName = `_idx_${tableId}_${index}`;
         this.createTable(indexName, {
             ...blankTableDefinition,
             pkType: type,
             pkCol: ["id"],
             isPkNum: ["float", "int", "number"].indexOf(type) !== -1
         }, () => {
+
+            if (this.indexes[indexName]) {
+                complete();
+                return;
+            }
+
             this.indexes[indexName] = {};
             this.indexLoaded[indexName] = false;
             this.useCacheIndexes[indexName] = this.useCache || false;
             complete();
+
             this.nSQL.doFilter<loadIndexCacheFilter, {load: boolean, indexName: string}>("loadIndexCache", {result: {load: this.useCache || false}, index: indexName}, (result) => {
                 this.useCacheIndexes[indexName] = result.load;
                 if (result.load) {
@@ -93,16 +98,20 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
         }, error);
     }
 
-    deleteIndex(indexName: string, complete: () => void, error: (err: any) => void) {
+    deleteIndex(tableId: string, index: string, complete: () => void, error: (err: any) => void) {
+        const indexName = `_idx_${tableId}_${index}`;
         delete this.indexes[indexName];
+        delete this.indexLoaded[indexName];
+        delete this.useCacheIndexes[indexName];
         this.dropTable(indexName, complete, error);
     }
 
-    addIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) {
+    addIndexValue(tableId: string, index: string, key: any, value: any, complete: () => void, error: (err: any) => void) {
+        const indexName = `_idx_${tableId}_${index}`;
         if (!this.indexLoaded[indexName]) {
             this.read(indexName, value, (row) => {
                 let pks = row ? row.pks : [];
-                pks = this.assign ? _assign(pks) : pks;
+                pks = this.assign ? assign(pks) : pks;
                 if (pks.length === 0) {
                     pks.push(key);
                 } else {
@@ -115,7 +124,7 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
                 
                 this.write(indexName, value, {
                     id: key,
-                    pks: this.assign ? _assign(pks) : pks
+                    pks: this.assign ? assign(pks) : pks
                 }, complete, error);
             }, error);
             return;
@@ -130,15 +139,16 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
         }
         this.write(indexName, value, {
             id: key,
-            pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+            pks: this.assign ? assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
         }, complete, error);
     }
 
-    deleteIndexValue(indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) {
+    deleteIndexValue(tableId: string, index: string, key: any, value: any, complete: () => void, error: (err: any) => void) {
+        const indexName = `_idx_${tableId}_${index}`;
         if (!this.indexLoaded[indexName]) {
             this.read(indexName, value, (row) => {
                 let pks = row ? row.pks : [];
-                pks = this.assign ? _assign(pks) : pks;
+                pks = this.assign ? assign(pks) : pks;
                 if (pks.length === 0) {
                     complete();
                     return;
@@ -157,7 +167,7 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
                 
                 this.write(indexName, value, {
                     id: key,
-                    pks: this.assign ? _assign(pks) : pks
+                    pks: this.assign ? assign(pks) : pks
                 }, complete, error);
             }, error);
             return;
@@ -172,14 +182,15 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
                 this.indexes[indexName][value].splice(idx, 1);
                 this.write(indexName, value, {
                     id: value,
-                    pks: this.assign ? _assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
+                    pks: this.assign ? assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
                 }, complete, error);
             }
         }
     }
 
-    readIndexKey(table: string, pk: any, onRowPK: (pk: any) => void, complete: () => void, error: (err: any) => void) {
-        this.read(table, pk, (row) => {
+    readIndexKey(tableId: string, index: string, pk: any, onRowPK: (pk: any) => void, complete: () => void, error: (err: any) => void) {
+        const indexName = `_idx_${tableId}_${index}`;
+        this.read(indexName, pk, (row) => {
             if (!row) {
                 complete();
                 return;
@@ -189,8 +200,9 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
         }, error);
     }
 
-    readIndexKeys(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) {
-        this.readMulti(table, type, offsetOrLow, limitOrHigh, reverse, (index) => {
+    readIndexKeys(tableId: string, index: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) {
+        const indexName = `_idx_${tableId}_${index}`;
+        this.readMulti(indexName, type, offsetOrLow, limitOrHigh, reverse, (index) => {
             if (!index) return;
             index.pks.forEach((pk) => {
                 onRowPK(pk, index.id);

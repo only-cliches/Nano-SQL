@@ -1,7 +1,24 @@
 import { InanoSQLQuery, InanoSQLInstance, TableQueryResult, InanoSQLTable, InanoSQLFunctionResult } from "./interfaces";
 export declare const blankTableDefinition: InanoSQLTable;
+/**
+ * Searches a sorted array for a given value.
+ *
+ * @param {any[]} arr
+ * @param {*} value
+ * @param {boolean} indexOf
+ * @param {number} [startVal]
+ * @param {number} [endVal]
+ * @returns {number}
+ */
 export declare const binarySearch: (arr: any[], value: any, indexOf: boolean, startVal?: number | undefined, endVal?: number | undefined) => number;
+/**
+ * Converts a word to title case.
+ *
+ * @param {string} str
+ * @returns
+ */
 export declare const titleCase: (str: string) => string;
+export declare const slugify: (str: string) => string;
 export declare const getWeekOfYear: (d: Date) => number;
 export declare const buildQuery: (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
@@ -20,16 +37,15 @@ export declare const adapterFilters: (nSQL: InanoSQLInstance, query?: InanoSQLQu
     disconnect: (complete: () => void, error: (err: any) => void) => void;
     createTable: (tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => void;
     dropTable: (table: string, complete: () => void, error: (err: any) => void) => void;
-    disconnectTable: (table: string, complete: () => void, error: (err: any) => void) => void;
     delete: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
     getTableIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => void;
     getTableIndexLength: (table: string, complete: (length: number) => void, error: (err: any) => void) => void;
-    createIndex: (indexName: string, type: string, complete: () => void, error: (err: any) => void) => void;
-    deleteIndex: (indexName: string, complete: () => void, error: (err: any) => void) => void;
-    addIndexValue: (indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => void;
-    deleteIndexValue: (indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => void;
-    readIndexKey: (indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => void;
-    readIndexKeys: (indexName: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) => void;
+    createIndex: (table: string, indexName: string, type: string, complete: () => void, error: (err: any) => void) => void;
+    deleteIndex: (table: string, indexName: string, complete: () => void, error: (err: any) => void) => void;
+    addIndexValue: (table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => void;
+    deleteIndexValue: (table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => void;
+    readIndexKey: (table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => void;
+    readIndexKeys: (table: string, indexName: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) => void;
 };
 export declare const noop: () => void;
 export declare const throwErr: (err: any) => never;
@@ -40,7 +56,7 @@ export declare const nan: (input: any) => number;
  * @param {*} obj
  * @returns
  */
-export declare const _assign: (obj: any) => any;
+export declare const assign: (obj: any) => any;
 /**
  * Compare two javascript variables for equality.
  * Works with primitives, arrays and objects recursively.
@@ -49,7 +65,7 @@ export declare const _assign: (obj: any) => any;
  * @param {*} obj2
  * @returns {boolean}
  */
-export declare const _objectsEqual: (obj1: any, obj2: any) => boolean;
+export declare const objectsEqual: (obj1: any, obj2: any) => boolean;
 export declare class _nanoSQLQueue {
     processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
     onError?: ((err: any) => void) | undefined;
@@ -71,7 +87,7 @@ export declare class _nanoSQLQueue {
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export declare const chainAsync: (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err?: ((err?: any) => void) | undefined) => void) => Promise<any[]>;
+export declare const chainAsync: (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err: (err?: any) => void) => void) => Promise<any[]>;
 /**
  * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
  *
@@ -79,7 +95,7 @@ export declare const chainAsync: (items: any[], callback: (item: any, i: number,
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export declare const allAsync: (items: any[], callback: (item: any, i: number, next: (value: any) => void, err: (err: any) => void) => void) => Promise<any[]>;
+export declare const allAsync: (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err: (err: any) => void) => void) => Promise<any[]>;
 export declare const isSafari: boolean;
 export declare const isMSBrowser: boolean;
 export declare const isAndroid: boolean;
@@ -183,6 +199,7 @@ export declare const deg2rad: (deg: number) => number;
  * @returns {number}
  */
 export declare const crowDistance: (lat1: number, lon1: number, lat2: number, lon2: number, radius?: number) => number;
+export declare const levenshtein: (word1: string, word2: string) => number;
 export declare const resolvePath: (pathQuery: string) => string[];
 export declare const getFnValue: (row: any, valueOrPath: string) => any;
 /**
@@ -208,5 +225,5 @@ export declare const deepSet: (pathQuery: string | string[], object: any, value:
  * @returns {*}
  */
 export declare const deepGet: (pathQuery: string | string[], object: any) => any;
-export declare const _maybeAssign: (obj: any) => any;
+export declare const maybeAssign: (obj: any) => any;
 export declare const setFast: (...args: any[]) => void;

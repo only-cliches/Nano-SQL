@@ -87,6 +87,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: utilities_1.uuid(),
                     model: {
                         "id:int": { ai: true, pk: true },
                         "name:string": {}
@@ -103,6 +104,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     ],
                     indexes: {},
                     actions: [],
+                    // mapReduce: [],
+                    foreignKeys: [],
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -129,7 +132,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     adapter.readMulti("test", "all", undefined, undefined, false, function (row, idx) {
                         rows.push(row);
                     }, function () {
-                        var condition = utilities_1._objectsEqual(rows, allRows.filter(function (r) { return r.id !== 3; }));
+                        var condition = utilities_1.objectsEqual(rows, allRows.filter(function (r) { return r.id !== 3; }));
                         exports.myConsole.assert(condition, "Delete Test");
                         condition ? res() : rej({ e: allRows.filter(function (r) { return r.id !== 3; }), g: rows });
                     }, rej);
@@ -152,6 +155,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: utilities_1.uuid(),
                     model: {
                         "id:int": { ai: true, pk: true },
                         "name:string": {}
@@ -176,6 +180,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                         }
                     },
                     actions: [],
+                    // mapReduce: [],
+                    foreignKeys: [],
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -196,10 +202,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     }
                     allRows.push({ id: i + 1, name: "Title " + num });
                 }
-                adapter.createIndex("_idx_test_name", "string", function () {
+                adapter.createIndex("test", "name", "string", function () {
                     utilities_1.chainAsync(allRows, function (row, i, done) {
                         adapter.write("test", null, row, function () {
-                            adapter.addIndexValue("_idx_test_name", row.id, row.name, done, rej);
+                            adapter.addIndexValue("test", "name", row.id, row.name, done, rej);
                         }, rej);
                     }).then(res);
                 }, rej);
@@ -208,10 +214,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read secondary index
                 var pks = [];
-                adapter.readIndexKey("_idx_test_name", "Title 005", function (pk) {
+                adapter.readIndexKey("test", "name", "Title 005", function (pk) {
                     pks.push(pk);
                 }, function () {
-                    var condition = utilities_1._objectsEqual(pks, [5]);
+                    var condition = utilities_1.objectsEqual(pks, [5]);
                     exports.myConsole.assert(condition, "Secondary Index Single Read");
                     condition ? res() : rej({ e: [5], g: pks });
                 }, rej);
@@ -220,11 +226,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read range secondary index
                 var pks = [];
-                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", false, function (pk, value) {
+                adapter.readIndexKeys("test", "name", "range", "Title 004", "Title 020", false, function (pk, value) {
                     pks.push(pk);
                 }, function () {
                     var filterRows = allRows.filter(function (r) { return r.name >= "Title 004" && r.name <= "Title 020"; }).map(function (r) { return r.id; });
-                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    var condition = utilities_1.objectsEqual(pks, filterRows);
                     exports.myConsole.assert(condition, "Secondary Index Range Read");
                     condition ? res() : rej({ e: filterRows, g: pks });
                 }, rej);
@@ -233,11 +239,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read offset secondary index
                 var pks = [];
-                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, false, function (pk) {
+                adapter.readIndexKeys("test", "name", "offset", 10, 20, false, function (pk) {
                     pks.push(pk);
                 }, function () {
                     var filterRows = allRows.filter(function (r, i) { return i >= 10 && i < 30; }).map(function (r) { return r.id; });
-                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    var condition = utilities_1.objectsEqual(pks, filterRows);
                     exports.myConsole.assert(condition, "Secondary Index Offset Read");
                     condition ? res() : rej({ e: filterRows, g: pks });
                 }, rej);
@@ -246,11 +252,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read range secondary index
                 var pks = [];
-                adapter.readIndexKeys("_idx_test_name", "range", "Title 004", "Title 020", true, function (pk, value) {
+                adapter.readIndexKeys("test", "name", "range", "Title 004", "Title 020", true, function (pk, value) {
                     pks.push(pk);
                 }, function () {
                     var filterRows = allRows.filter(function (r) { return r.name >= "Title 004" && r.name <= "Title 020"; }).map(function (r) { return r.id; }).reverse();
-                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    var condition = utilities_1.objectsEqual(pks, filterRows);
                     exports.myConsole.assert(condition, "Secondary Index Range Read Reverse");
                     condition ? res() : rej({ e: filterRows, g: pks });
                 }, rej);
@@ -259,11 +265,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read offset secondary index
                 var pks = [];
-                adapter.readIndexKeys("_idx_test_name", "offset", 10, 20, true, function (pk) {
+                adapter.readIndexKeys("test", "name", "offset", 10, 20, true, function (pk) {
                     pks.push(pk);
                 }, function () {
                     var filterRows = allRows.filter(function (r, i) { return i >= 469 && i < 489; }).map(function (r) { return r.id; }).reverse();
-                    var condition = utilities_1._objectsEqual(pks, filterRows);
+                    var condition = utilities_1.objectsEqual(pks, filterRows);
                     exports.myConsole.assert(condition, "Secondary Index Offset Read Reverse");
                     condition ? res() : rej({ e: filterRows, g: pks });
                 }, rej);
@@ -272,12 +278,12 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read offset secondary index
                 var pks = [];
-                adapter.deleteIndexValue("_idx_test_name", 10, "Title 010", function () {
-                    adapter.readIndexKeys("_idx_test_name", "all", undefined, undefined, false, function (pk) {
+                adapter.deleteIndexValue("test", "name", 10, "Title 010", function () {
+                    adapter.readIndexKeys("test", "name", "all", undefined, undefined, false, function (pk) {
                         pks.push(pk);
                     }, function () {
                         var filterRows = allRows.filter(function (r) { return r.id !== 10; }).map(function (r) { return r.id; });
-                        var condition = utilities_1._objectsEqual(pks, filterRows);
+                        var condition = utilities_1.objectsEqual(pks, filterRows);
                         exports.myConsole.assert(condition, "Secondary Index Remove Value");
                         condition ? res() : rej({ e: filterRows, g: pks });
                     }, rej);
@@ -295,6 +301,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: utilities_1.uuid(),
                     model: {
                         "id:int": { ai: true, pk: true },
                         "name:string": {}
@@ -312,6 +319,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     indexes: {},
                     actions: [],
                     views: [],
+                    // mapReduce: [],
+                    foreignKeys: [],
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -338,7 +347,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     rows.push(row);
                 }, function () {
                     var filterRows = allRows.filter(function (r) { return r.id >= 10 && r.id <= 20; }).reverse();
-                    var condition = utilities_1._objectsEqual(rows, filterRows);
+                    var condition = utilities_1.objectsEqual(rows, filterRows);
                     exports.myConsole.assert(condition, "Select Range Test (Reverse)");
                     condition ? res() : rej({ e: filterRows, g: rows });
                 }, rej);
@@ -351,7 +360,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     rows.push(row);
                 }, function () {
                     var filterRows = allRows.filter(function (r, i) { return i >= 499 - 30 && i < 499 - 10; }).reverse();
-                    var condition = utilities_1._objectsEqual(rows, filterRows);
+                    var condition = utilities_1.objectsEqual(rows, filterRows);
                     exports.myConsole.assert(condition, "Select Offset Test (Reverse)");
                     condition ? res() : rej({ e: filterRows, g: rows });
                 }, rej);
@@ -364,7 +373,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     rows.push(row);
                 }, function () {
                     var filterRows = allRows.slice().reverse();
-                    var condition = utilities_1._objectsEqual(rows, filterRows);
+                    var condition = utilities_1.objectsEqual(rows, filterRows);
                     exports.myConsole.assert(condition, "Select All Rows Test (reverse)");
                     condition ? res() : rej({ e: filterRows, g: rows });
                 }, rej);
@@ -377,7 +386,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     rows.push(row);
                 }, function () {
                     var filterRows = allRows.filter(function (r) { return r.id >= 10 && r.id <= 20; });
-                    var condition = utilities_1._objectsEqual(rows, filterRows);
+                    var condition = utilities_1.objectsEqual(rows, filterRows);
                     exports.myConsole.assert(condition, "Select Range Test 2");
                     condition ? res() : rej({ e: filterRows, g: rows });
                 }, rej);
@@ -389,7 +398,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.readMulti("test", "offset", 10, 20, false, function (row, idx) {
                     rows.push(row);
                 }, function () {
-                    var condition = utilities_1._objectsEqual(rows, allRows.filter(function (r) { return r.id > 10 && r.id <= 30; }));
+                    var condition = utilities_1.objectsEqual(rows, allRows.filter(function (r) { return r.id > 10 && r.id <= 30; }));
                     exports.myConsole.assert(condition, "Select Offset / Limit Test");
                     condition ? res() : rej({ g: rows, e: allRows.filter(function (r) { return r.id > 10 && r.id <= 30; }) });
                 }, rej);
@@ -401,7 +410,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.readMulti("test", "all", undefined, undefined, false, function (row, idx) {
                     rows.push(row);
                 }, function () {
-                    var condition = utilities_1._objectsEqual(rows, allRows);
+                    var condition = utilities_1.objectsEqual(rows, allRows);
                     exports.myConsole.assert(condition, "Select Entire Table");
                     condition ? res() : rej({ e: allRows, g: rows });
                 }, rej);
@@ -410,7 +419,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             // Select index
             return new Promise(function (res, rej) {
                 adapter.getTableIndex("test", function (idx) {
-                    var condition = utilities_1._objectsEqual(idx, index);
+                    var condition = utilities_1.objectsEqual(idx, index);
                     exports.myConsole.assert(condition, "Select Index Test");
                     condition ? res() : rej({
                         e: index,
@@ -445,6 +454,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: utilities_1.uuid(),
                     model: {
                         "id:uuid": { pk: true },
                         "name:string": {}
@@ -462,6 +472,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     indexes: {},
                     actions: [],
                     views: [],
+                    foreignKeys: [],
+                    // mapReduce: [],
                     pkType: "uuid",
                     pkCol: ["id"],
                     isPkNum: false,
@@ -490,7 +502,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.readMulti("test", "offset", 10, 20, false, function (row, idx) {
                     rows.push(row);
                 }, function () {
-                    var condition = utilities_1._objectsEqual(rows, allRows.filter(function (r, i) { return i >= 10 && i < 30; }));
+                    var condition = utilities_1.objectsEqual(rows, allRows.filter(function (r, i) { return i >= 10 && i < 30; }));
                     exports.myConsole.assert(condition, "Select Range Test 2");
                     condition ? res() : rej({ g: rows, e: allRows.filter(function (r, i) { return i >= 10 && i < 30; }) });
                 }, rej);
@@ -502,7 +514,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.readMulti("test", "range", allRows[10].id, allRows[20].id, false, function (row, idx) {
                     rows.push(row);
                 }, function () {
-                    var condition = utilities_1._objectsEqual(rows, allRows.filter(function (r) { return r.id >= allRows[10].id && r.id <= allRows[20].id; }));
+                    var condition = utilities_1.objectsEqual(rows, allRows.filter(function (r) { return r.id >= allRows[10].id && r.id <= allRows[20].id; }));
                     exports.myConsole.assert(condition, "Select Range Test (Primary Key)");
                     condition ? res() : rej({
                         g: rows,
@@ -519,7 +531,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     rows.push(row);
                 }, function () {
                     // console.timeEnd("READ");
-                    var condition = utilities_1._objectsEqual(rows, allRows);
+                    var condition = utilities_1.objectsEqual(rows, allRows);
                     exports.myConsole.assert(condition, "Select Entire Table Test");
                     condition ? res() : rej({ e: allRows, g: rows });
                 }, rej);
@@ -528,7 +540,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             // Select index
             return new Promise(function (res, rej) {
                 adapter.getTableIndex("test", function (idx) {
-                    var condition = utilities_1._objectsEqual(idx, index);
+                    var condition = utilities_1.objectsEqual(idx, index);
                     exports.myConsole.assert(condition, "Select Index Test");
                     condition ? res() : rej({
                         e: index,
@@ -561,6 +573,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
+                    id: utilities_1.uuid(),
                     model: {
                         "id:int": { pk: true, ai: true },
                         "name:string": {},
@@ -582,7 +595,9 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     ],
                     indexes: {},
                     actions: [],
+                    foreignKeys: [],
                     views: [],
+                    // mapReduce: [],
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -595,7 +610,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.write("test", null, { name: "Test", posts: [1, 2] }, function (pk) {
                     adapter.read("test", pk, function (row) {
                         var expectRow = { name: "Test", id: 1, posts: [1, 2] };
-                        var condition = utilities_1._objectsEqual(row, expectRow);
+                        var condition = utilities_1.objectsEqual(row, expectRow);
                         exports.myConsole.assert(condition, "Insert Test");
                         condition ? res() : rej({ e: expectRow, g: row });
                     }, rej);
@@ -607,7 +622,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.write("test", 1, { id: 1, name: "Testing", posts: [1, 2] }, function (pk) {
                     adapter.read("test", pk, function (row) {
                         var expectRow = { name: "Testing", id: 1, posts: [1, 2] };
-                        var condition = utilities_1._objectsEqual(row, expectRow);
+                        var condition = utilities_1.objectsEqual(row, expectRow);
                         exports.myConsole.assert(condition, "Update Test");
                         condition ? res() : rej({ e: expectRow, g: row });
                     }, rej);
@@ -619,7 +634,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 adapter.write("test", 1, { id: 1, name: "Testing" }, function (pk) {
                     adapter.read("test", pk, function (row) {
                         var expectRow = { name: "Testing", id: 1 };
-                        var condition = utilities_1._objectsEqual(row, expectRow);
+                        var condition = utilities_1.objectsEqual(row, expectRow);
                         exports.myConsole.assert(condition, "Replace Test");
                         condition ? res() : rej({ e: expectRow, g: row });
                     }, rej);
@@ -645,6 +660,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 ].map(function (t) {
                     return new Promise(function (res2, rej2) {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
+                            id: utilities_1.uuid(),
                             model: {
                                 "test": {
                                     "id:int": { pk: true, ai: true },
@@ -717,6 +733,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                             ],
                             indexes: {},
                             actions: [],
+                            // mapReduce: [],
+                            foreignKeys: [],
                             views: [],
                             pkType: {
                                 test: "int",
@@ -754,11 +772,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             // Auto incriment test
             return new Promise(function (res, rej) {
                 adapter.write("test", null, { name: "Test" }, function (pk) {
-                    var condition = utilities_1._objectsEqual(pk, 1);
+                    var condition = utilities_1.objectsEqual(pk, 1);
                     exports.myConsole.assert(condition, "Test Auto Incriment Integer.");
                     condition ? (function () {
                         adapter.read("test", 1, function (row) {
-                            var condition2 = utilities_1._objectsEqual(row.id, 1);
+                            var condition2 = utilities_1.objectsEqual(row.id, 1);
                             exports.myConsole.assert(condition2, "Select Integer Primary Key.");
                             condition2 ? res() : rej({ e: 1, g: row.id });
                         }, rej);
@@ -773,7 +791,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     exports.myConsole.assert(condition, "Test UUID.");
                     condition ? (function () {
                         adapter.read("test2", pk, function (row) {
-                            var condition2 = utilities_1._objectsEqual(row.id, pk);
+                            var condition2 = utilities_1.objectsEqual(row.id, pk);
                             exports.myConsole.assert(condition2, "Select UUID Primary Key.");
                             condition2 ? res() : rej({ e: pk, g: row.id });
                         }, rej);
@@ -788,7 +806,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     exports.myConsole.assert(condition, "Test timeId.");
                     condition ? (function () {
                         adapter.read("test3", pk, function (row) {
-                            var condition2 = utilities_1._objectsEqual(row.id, pk);
+                            var condition2 = utilities_1.objectsEqual(row.id, pk);
                             exports.myConsole.assert(condition2, "Select timeId Primary Key.");
                             condition2 ? res() : rej({ e: pk, g: row.id });
                         }, rej);
@@ -803,7 +821,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     exports.myConsole.assert(condition, "Test timeIdms.");
                     condition ? (function () {
                         adapter.read("test4", pk, function (row) {
-                            var condition2 = utilities_1._objectsEqual(row.id, pk);
+                            var condition2 = utilities_1.objectsEqual(row.id, pk);
                             exports.myConsole.assert(condition2, "Select timeIdms Primary Key.");
                             condition2 ? res() : rej({ e: pk, g: row.id });
                         }, rej);
@@ -825,7 +843,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     adapter.readMulti("test5", "all", undefined, undefined, false, function (row, idx) {
                         keys.push(row.id);
                     }, function () {
-                        var condition = utilities_1._objectsEqual(keys, UUIDs);
+                        var condition = utilities_1.objectsEqual(keys, UUIDs);
                         exports.myConsole.assert(condition, "Test Sorted Primary Keys.");
                         condition ? res() : rej({ e: UUIDs, g: keys });
                     }, rej);
@@ -845,11 +863,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     adapter.readMulti("test6", "all", undefined, undefined, false, function (row) {
                         rows.push(row);
                     }, function () {
-                        var condition = utilities_1._objectsEqual(rows, floats.sort(function (a, b) { return a.id > b.id ? 1 : -1; }));
+                        var condition = utilities_1.objectsEqual(rows, floats.sort(function (a, b) { return a.id > b.id ? 1 : -1; }));
                         exports.myConsole.assert(condition, "Test float primary keys.");
                         condition ? (function () {
                             adapter.read("test6", floats[0].id, function (row) {
-                                var condition2 = utilities_1._objectsEqual(row.id, floats[0].id);
+                                var condition2 = utilities_1.objectsEqual(row.id, floats[0].id);
                                 exports.myConsole.assert(condition2, "Select Float Primary Key.");
                                 condition2 ? res() : rej({ e: floats[0].id, g: row.id });
                             }, rej);
@@ -874,11 +892,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     adapter.readMulti("test7", "all", undefined, undefined, false, function (row) {
                         rows.push(row);
                     }, function () {
-                        var condition = utilities_1._objectsEqual(rows, nestedPKRows);
+                        var condition = utilities_1.objectsEqual(rows, nestedPKRows);
                         exports.myConsole.assert(condition, "Test Nested primary keys.");
                         condition ? (function () {
                             adapter.read("test7", nestedPKRows[2].nested.id, function (row) {
-                                var condition2 = utilities_1._objectsEqual(row.nested.id, nestedPKRows[2].nested.id);
+                                var condition2 = utilities_1.objectsEqual(row.nested.id, nestedPKRows[2].nested.id);
                                 exports.myConsole.assert(condition2, "Select Nested Primary Key.");
                                 condition2 ? res() : rej({ e: nestedPKRows[0].nested.id, g: row.id });
                             }, rej);

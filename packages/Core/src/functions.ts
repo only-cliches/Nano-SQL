@@ -1,4 +1,4 @@
-import { crowDistance, deepGet, cast, resolvePath, _objectsEqual, getFnValue, allAsync, _maybeAssign, _nanoSQLQueue, chainAsync, adapterFilters, deg2rad, rad2deg } from "./utilities";
+import { crowDistance, deepGet, cast, resolvePath, objectsEqual, getFnValue, allAsync, maybeAssign, _nanoSQLQueue, chainAsync, adapterFilters, deg2rad, rad2deg } from "./utilities";
 import { InanoSQLQuery, InanoSQLIndex, IWhereCondition, InanoSQLInstance } from "./interfaces";
 import * as levenshtein from "levenshtein-edit-distance";
 
@@ -10,6 +10,10 @@ export interface ICrowIndexQuery {
     lat: number, 
     lon: number
 }
+
+const numVals = (row: any, ...subjects): number[] => {
+    return subjects.map(s => parseFloat(isNaN(s) ? getFnValue(row, s) : s))
+};
 
 export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
 
@@ -99,31 +103,84 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return prev;
             }
         },
+        ADD: {
+            type: "S",
+            call: (query, row, prev, ...subjects: any[]) => {
+                return {result: numVals(row, subjects).reduce((prev, cur, i) => {
+                    if (i === 0) return cur;
+                    return prev + cur;
+                })};
+            }
+        },
+        SUB: {
+            type: "S",
+            call: (query, row, prev, ...subjects: any[]) => {
+                return {result: numVals(row, subjects).reduce((prev, cur, i) => {
+                    if (i === 0) return cur;
+                    return prev - cur;
+                })};
+            }
+        },
+        DIV: {
+            type: "S",
+            call: (query, row, prev, subject1: any, ...subjects: any[]) => {
+                return {result: numVals(row, subjects).reduce((prev, cur, i) => {
+                    if (i === 0) return cur;
+                    return prev / cur;
+                })};
+            }
+        },
+        MULT: {
+            type: "S",
+            call: (query, row, prev, ...subjects: any[]) => {
+                return {result: numVals(row, subjects).reduce((prev, cur, i) => {
+                    if (i === 0) return cur;
+                    return prev * cur;
+                })};
+            }
+        },
+        MOD: {
+            type: "S",
+            call: (query, row, prev, subject1: any, subject2: any) => {
+                const [subjVal1, subjVal2] = numVals(row, subject1, subject2);
+                return {result: subjVal1 % subjVal2};
+            }
+        },
+        PI: {
+            type: "S",
+            call: (query, row, prev) => {
+                return {result: Math.PI};
+            }
+        },
+        TRUNCATE: {
+            type: "S",
+            call: (query, row, prev, subject1: any, subject2: any) => {
+                const [subjVal1, subjVal2] = numVals(row, subject1, subject2);
+                return {result: parseFloat(subjVal1.toFixed(subjVal2))};
+            }
+        },
         LOWER: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(row, column)).toLowerCase();
-                return {result: value};
+                return {result: String(getFnValue(row, column)).toLowerCase()};
             }
         },
         TRIM: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(row, column)).trim();
-                return {result: value};
+                return {result: String(getFnValue(row, column)).trim()};
             }
         },
         UPPER: {
             type: "S",
             call: (query, row, prev, column) => {
-                const value = String(getFnValue(row, column)).toUpperCase();
-                return {result: value};
+                return {result: String(getFnValue(row, column)).toUpperCase()};
             }
         },
         CAST: {
             type: "S",
             call: (query, row, prev, column, type) => {
-                return {result: cast(getFnValue(row, type), deepGet(column, row), false, query.parent)};
+                return {result: cast(getFnValue(row, type), getFnValue(row, column), false, query.parent)};
             }
         },
         CONCAT: {
@@ -132,6 +189,14 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return {result: values.map(v => {
                     return getFnValue(row, v);
                 }).join("")};
+            }
+        },
+        CONCAT_WS: {
+            type: "S",
+            call: (query, row, prev, sep: any, ...values: string[]) => {
+                return {result: values.map(v => {
+                    return getFnValue(row, v);
+                }).join(getFnValue(row, sep))};
             }
         },
         REPLACE: {
@@ -151,14 +216,6 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 if (subjVal1 < subjVal2) return {result: -1};
                 if (subjVal1 > subjVal2) return {result: 1};
                 return {result: 0};
-            }
-        },
-        CONCAT_WS: {
-            type: "S",
-            call: (query, row, prev, sep: any, ...values: string[]) => {
-                return {result: values.map(v => {
-                    return getFnValue(row, v);
-                }).join(getFnValue(row, sep))};
             }
         },
         LEVENSHTEIN: {
@@ -213,7 +270,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                     // find the lat/lon indexes for the crow calculation
                     Object.keys(indexes).forEach((k) => {
                         const index = indexes[k];
-                        if (index.type === "float" && _objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
+                        if (index.type === "float" && objectsEqual(index.path.slice(0, index.path.length - 1), crowColumn)) {
                             crowCols.push(k.replace(".lat", "").replace(".lon", ""));
                         }
                     });
@@ -229,8 +286,9 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return false;
             },
             queryIndex: (query: InanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err) => void) => {
-                const latTable = `_idx_${query.table as string}_${where.index}.lat`;
-                const lonTable = `_idx_${query.table as string}_${where.index}.lon`;
+                const table = query.table as string;
+                const latIndex = `${where.index}.lat`;
+                const lonIndex = `${where.index}.lon`;
                 const condition = where.comp;
 
                 const distance = parseFloat(where.value || "0");
@@ -288,7 +346,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
 
                 let pks: {[id: string]: ICrowIndexQuery} = {};
 
-                allAsync([latTable, lonTable, lonTable], (table, i, next, error) => {
+                allAsync([latIndex, lonIndex, lonIndex], (index, i, next, error) => {
                     const ranges = [latRange, lonRange, extraLonRange][i];
 
                     if (!ranges.length) {
@@ -297,7 +355,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                     }
 
                     // read values from seconday index table
-                    adapterFilters(nSQL, query).readIndexKeys(table, "range", ranges[0], ranges[1], false, (pk, id) => {
+                    adapterFilters(nSQL, query).readIndexKeys(table, index, "range", ranges[0], ranges[1], false, (pk, id) => {
                         if (!pks[pk]) {
                             pks[pk] = {
                                 key: pk,
@@ -382,8 +440,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: (query, row, prev, ...args: string[]) => {
-                const fnArgs = args.map(a => parseFloat(isNaN(a as any) ? deepGet(a, row) : a));
-                return {result: Math[key].apply(null, fnArgs)};
+                return {result: Math[key].apply(null, numVals(row, args))};
             }
         };
     });

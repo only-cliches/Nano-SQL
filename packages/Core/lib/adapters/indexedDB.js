@@ -39,7 +39,7 @@ var IndexedDB = /** @class */ (function (_super) {
             version = this.version;
         }
         else { // automatically handled by nanoSQL
-            version = parseInt(localStorage.getItem(this._id + "_" + tableName + "_idb_version") || "") || 1;
+            version = parseInt(localStorage.getItem(this._id + "_" + tableName + "_idb_version") || "1");
             var modelHash = localStorage.getItem(this._id + "_" + tableName + "_idb_hash") || dataModelHash;
             if (modelHash !== dataModelHash) {
                 version++;
@@ -64,27 +64,30 @@ var IndexedDB = /** @class */ (function (_super) {
             complete();
         };
     };
-    IndexedDB.prototype.disconnectTable = function (table, complete, error) {
-        this._db[table].onerror = error;
-        this._db[table].close();
-        delete this._db[table];
-        localStorage.removeItem(this._id + "_" + table + "_idb_version");
-        localStorage.removeItem(this._id + "_" + table + "_idb_hash");
-        localStorage.removeItem(this._id + "_" + table + "_idb_ai");
-        complete();
-    };
     IndexedDB.prototype.dropTable = function (table, complete, error) {
         var _this = this;
         // open a read/write db transaction, ready for clearing the data
         var tx = this._db[table].transaction(table, "readwrite");
         tx.onerror = error;
         var objectStoreRequest = tx.objectStore(table).clear();
+        objectStoreRequest.onerror = error;
         objectStoreRequest.onsuccess = function () {
-            _this.disconnectTable(table, complete, error);
+            _this._db[table].close();
+            delete _this._db[table];
+            localStorage.removeItem(_this._id + "_" + table + "_idb_version");
+            localStorage.removeItem(_this._id + "_" + table + "_idb_hash");
+            localStorage.removeItem(_this._id + "_" + table + "_idb_ai");
+            complete();
         };
     };
     IndexedDB.prototype.disconnect = function (complete, error) {
-        complete();
+        var _this = this;
+        utilities_1.allAsync(Object.keys(this._db), function (table, i, next, error) {
+            _this._db[table].close();
+            utilities_1.setFast(function () {
+                next();
+            });
+        }).then(complete).catch(error);
     };
     IndexedDB.prototype.store = function (table, type, open, error) {
         var transaction = this._db[table].transaction(table, type);

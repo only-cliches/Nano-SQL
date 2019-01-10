@@ -30,9 +30,9 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
             };
         } else {
             this._query = {
-                ...buildQuery(db, table, ""),
                 ...queryAction(db),
-                state: "pending"
+                state: "pending",
+                result: []
             };
         }
     }
