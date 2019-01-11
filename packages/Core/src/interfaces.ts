@@ -68,8 +68,8 @@ export declare class InanoSQLInstance {
     _initPlugins(config);
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers();
-    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance;
-    off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs?: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;
@@ -826,6 +826,16 @@ export interface loadIndexCacheFilter extends abstractFilter {
 export interface conformRowFilter extends abstractFilter { 
     result: any;
     oldRow: any;
+}
+
+// tslint:disable-next-line
+export interface onEventFilter extends abstractFilter { 
+    result: {action: string, callback: (event: InanoSQLDatabaseEvent) => void}
+}
+
+// tslint:disable-next-line
+export interface offEventFilter extends abstractFilter { 
+    result: {action: string, callback: (event: InanoSQLDatabaseEvent) => void}
 }
 
 // tslint:disable-next-line

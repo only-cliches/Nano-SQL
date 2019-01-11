@@ -1,11 +1,22 @@
-Universal database for the client, server & mobile devices.  It's like Lego for databases.
-<center>
-<img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+<p align="center">
+  <a href="https://github.com/ClickSimply/Nano-SQL">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  </a>
+</p>
+<p align="center">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fcore">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fcore.svg" alt="nanoSQL Logo">
+  </a>
+  <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
+  </a>
+</p>
 
-[![npm version](https://badge.fury.io/js/%40nano-sql%2Fcore.svg)](https://badge.fury.io/js/%40nano-sql%2Fcore)
-[![npm](https://img.shields.io/npm/l/express.svg?style=flat-square)](https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE)
-![TSlint](https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square)
-</center>
+<h1 align="center">nanoSQL</h1>
+<p align="center">
+  <strong>Universal database for the client, server & mobile devices.  It's like Lego for databases.</strong>
+</p>
+
 
 # NOTICE: This is the IN PROGRESS readme for nanoSQL 2.0.  Some of these features are not in place yet.
 Scroll down for the todo list and it's progress.
@@ -15,7 +26,7 @@ Scroll down for the todo list and it's progress.
 2. Use nanoSQL standalone, as the glue between your server and clients, or even with multi master servers.
 3. Supports many advanced features like Graph Queries, Map/Reduce, Indexing, and Geolocations.
 4. Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, etc...).
-5. Is Lightweight at 25 KB gzipped.
+5. Starts at only 25 KB gzipped.
 
 ### Identical API Everywhere
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
@@ -30,16 +41,32 @@ Run nanoSQL on your server and client, then with little effort allow nanoSQL to 
 Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
 
 ### Flexible Data Models
-The best of both worlds: Use RDBMS style data models to tune performance but still allow arbtrary columns.  Change your data model as often as you want and do type casting only when you need it.
+The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
 ### Graph Queries
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, foreign keys, nearly three dozen utility functions, query function support, multi-tab sync, typescript support, event system, CSV/JSON import & export, and runs in every browser back to IE9!
+Built in geolocation indexing, foreign keys, query function support, multi-tab sync, typescript support, event system, CSV/JSON import & export, and runs in every browser back to IE9!
 
 ## Live Examples: [Express/NodeJS](https://nanosql.gitbook.io/docs/examples/express-nodejs) - [React](https://nanosql.gitbook.io/docs/examples/react) - [React Native](https://nanosql.gitbook.io/docs/examples/react-native) - [Angular](https://nanosql.gitbook.io/docs/examples/angular) - [VueJS](https://nanosql.gitbook.io/docs/examples/vuejs) - [Cordova](https://nanosql.gitbook.io/docs/examples/cordova)
 
+## Comparison with Other Projects
+
+|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
+|-----------|---------|---------|--------|------|-----------|---------|--------|--------|--------|-----|
+| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |✓      |
+| Graph Queries  | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
+| Join Queries  | ✓       | ✓      | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
+| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
+| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| Offline Syncing | ✓ | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Multi Master Server | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Map Reduce Support | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✕      | ✕      | ✕      |
+| Fuzzy Search | ✓  | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✓      |
+| Size (kb) | 25      | 5       | 19      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
 
 ## Database Support
 

@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 import { assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _nanoSQLQueue, objectsEqual, titleCase, getWeekOfYear, throttle, adapterFilters } from "./utilities";
-import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, postConnectFilter } from "./interfaces";
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, postConnectFilter, onEventFilter, offEventFilter } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _nanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -58,7 +58,7 @@ export class nanoSQL implements InanoSQLInstance {
         ready: boolean;
         // runMR: {[table: string]: {[mrName: string]: (...args: any[]) => void}};
         // MRTimer: any;
-        selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
+        selectedTable: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
 
     public _queryCache: {
@@ -100,7 +100,7 @@ export class nanoSQL implements InanoSQLInstance {
         };
 
         this.tables = {};
-        this.tableIds = {"_util": "_util", "_ttl": "_ttl"};
+        this.tableIds = { "_util": "_util", "_ttl": "_ttl" };
         this._queryCache = {};
         this.filters = {};
 
@@ -129,7 +129,7 @@ export class nanoSQL implements InanoSQLInstance {
             Core: {
                 "*": new ReallySmallEvents()
             },
-            "*": { "*": new ReallySmallEvents()}
+            "*": { "*": new ReallySmallEvents() }
         };
         this._checkTTL = this._checkTTL.bind(this);
         attachDefaultFns(this);
@@ -265,7 +265,7 @@ export class nanoSQL implements InanoSQLInstance {
         getPage();
     }
 
-    public selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance {
+    public selectTable(table?: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance {
         if (table) this.state.selectedTable = table;
         return this;
     }
@@ -450,7 +450,7 @@ export class nanoSQL implements InanoSQLInstance {
                 this._initPlugins(this.config).then(() => {
                     this.adapter.nSQL = this;
                     adapterFilters(this).connect(this.state.id, () => {
-                        this.doFilter<postConnectFilter, InanoSQLConfig>("postConnect", {result: this.config}, (config) => {
+                        this.doFilter<postConnectFilter, InanoSQLConfig>("postConnect", { result: this.config }, (config) => {
                             this.config = config;
                             res();
                         }, rej)
@@ -485,7 +485,7 @@ export class nanoSQL implements InanoSQLInstance {
                             actionArgs: {
                                 name: "_util",
                                 model: {
-                                    "key:string": {pk: true},
+                                    "key:string": { pk: true },
                                     "value:any": {}
                                 },
                                 _internal: true
@@ -510,7 +510,7 @@ export class nanoSQL implements InanoSQLInstance {
                             actionArgs: {
                                 name: "_ttl",
                                 model: {
-                                    "key:string": {pk: true},
+                                    "key:string": { pk: true },
                                     "table:string": {},
                                     "cols:string[]": {},
                                     "date:number": {}
@@ -554,7 +554,7 @@ export class nanoSQL implements InanoSQLInstance {
                 }, rej);
             });
         }).then(() => {
-            
+
             // migrate user database version as needed
             return new Promise((res, rej) => {
                 if (!this.config.version) {
@@ -711,7 +711,7 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
-    public every(args: {length: number, every?: number, offset?: number}): number[] {
+    public every(args: { length: number, every?: number, offset?: number }): number[] {
         let i = 0;
         let arr: number[] = [];
         while (i <= args.length) {
@@ -726,225 +726,121 @@ export class nanoSQL implements InanoSQLInstance {
         }
         return arr;
     }
-/*
-    public triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string) {
 
-        if (table && name) {
-            if (!this.tables[table]) return;
-            if (!this.tables[table].mapReduce) return;
-            if (!this.state.runMR[table]) return;
-            if (!this.state.runMR[table][name]) return;
-            const event = {
-                target: "Core",
-                path: table + "." + name,
-                events: ["map reduce"],
-                time: Date.now(),
-            };
-            if (cb) {
-                cb(event);
-            }
-            this.state.runMR[table][name](event);
-            return;
-        }
-
-        Object.keys(this.tables).forEach((table) => {
-            if (this.tables[table].mapReduce) {
-                if (!this.state.runMR[table]) return;
-                (this.tables[table].mapReduce || []).forEach((mr) => {
-                    if (!this.state.runMR[table][mr.name]) return;
-                    if (mr.onTimes) {
-                        let runMR = true;
-
-                        // handle zeroing out timer options below the developer choice.
-                        // example: developer sends in to trigger at midnight every day
-                        // sets seconds and minutes to zero so it'll only trigger
-                        // once that day instead of every second of midnight
-                        let keyStart: number = -1;
-                        let fillKeys: string[] = [];
-                        let fillObj: any = {};
-                        ["seconds", "minutes", "hours", "weekDay", "weekOfYear", "date", "month"].forEach((dateKey, i) => {
-                            if (!(mr.onTimes as any)[dateKey]) {
-                                fillKeys.push(dateKey);
-                                return;
-                            }
-                            if (keyStart === -1) {
-                                keyStart = 1;
-                                fillKeys.forEach((key) => {
-                                    switch (key) {
-                                        case "seconds":
-                                        case "minutes":
-                                        case "hours":
-                                            fillObj[key] = [0];
-                                        break;
-                                        case "weekDay":
-                                            // only need to set to beginning of week
-                                            // if a weekOfYear property is set
-                                            if ((mr.onTimes as any).weekOfYear) {
-                                                fillObj[key] = [0];
-                                            }
-                                        break;
-                                        case "weekOfYear":
-
-                                        break;
-                                        case "date":
-                                            fillObj[key] = [1];
-                                        break;
-                                        case "month":
-
-                                        break;
-                                    }
-                                });
-                            }
-                        });
-
-                        const date = new Date();
-                        Object.keys({
-                            ...mr.onTimes,
-                            ...fillObj
-                        }).forEach((time) => {
-                            const checkTimes: number[] = Array.isArray((mr.onTimes as any)[time]) ? (mr.onTimes as any)[time] : [(mr.onTimes as any)[time]];
-                            if (!checkTimes.length) return;
-                            switch (time) {
-                                case "weekDay":
-                                    if (checkTimes.indexOf(date.getDay()) === -1) {
-                                        runMR = false;
-                                    }
-                                break;
-                                case "weekOfYear":
-                                    if (checkTimes.indexOf(getWeekOfYear(date)) === -1) {
-                                        runMR = false;
-                                    }
-                                break;
-                                default:
-                                    const q = "get" + titleCase(time);
-                                    if (date[q] && checkTimes.indexOf(date[q]()) === -1) {
-                                        runMR = false;
-                                    }
-                            }
-                        });
-
-                        if (runMR) {
-                            const event = {
-                                target: "Core",
-                                path: table + "." + mr.name,
-                                events: ["map reduce"],
-                                time: Date.now(),
-                            };
-                            if (cb) {
-                                cb(event);
-                            }
-                            this.state.runMR[table][mr.name](event);
-                        }
-                    }
-                });
-            }
-        });
-    }
-*/
-
-    public on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance {
+    public on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void {
         let t = this;
         let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
-        switch (action) {
-            case "connect":
-            case "ready":
-            case "disconnect":
-            case "peer change":
-            case "slow query":
-            case "map reduce":
-                this.eventFNs.Core["*"].on(action, callBack);
-                break;
-            case "select":
-            case "change":
-            case "delete":
-            case "upsert":
-            case "*":
-                const table = resolvePath(l);
-                if (!this.eventFNs[table[0]]) {
-                    this.eventFNs[table[0]] = {
-                        "*": new ReallySmallEvents()
-                    };
-                }
-                const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
-                if (!this.eventFNs[table[0]][nestedPath]) {
-                    this.eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
-                }
-                this.eventFNs[table[0]][nestedPath].on(action, callBack);
-                break;
-            default:
-                new Promise((res, rej) => {
-                    this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
-                }).then((evData: { nameSpace: string, path: string }) => {
-                    if (evData.nameSpace) {
-                        if (!this.eventFNs[evData.nameSpace]) {
-                            this.eventFNs[evData.nameSpace] = {
-                                "*": new ReallySmallEvents()
-                            };
-                        }
-                        if (!this.eventFNs[evData.nameSpace][evData.path]) {
-                            this.eventFNs[evData.nameSpace][evData.path] = new ReallySmallEvents();
-                        }
-                        this.eventFNs[evData.nameSpace][evData.path].on(action, callBack);
-                    } else {
-                        throw new Error(`Invalid event "${action}"!`);
-                    }
-                    t._refreshEventChecker();
-                });
-        }
+        this.doFilter<onEventFilter, { action: string, callback: (evnt: InanoSQLDatabaseEvent) => void }>("onEvent", { result: { action, callback: callBack } }, (newEvent) => {
 
-        return t._refreshEventChecker();
+            switch (newEvent.action) {
+                case "connect":
+                case "ready":
+                case "disconnect":
+                case "peer change":
+                case "slow query":
+                case "map reduce":
+                    this.eventFNs.Core["*"].on(newEvent.action, newEvent.callback);
+                    break;
+                case "select":
+                case "change":
+                case "delete":
+                case "upsert":
+                case "*":
+                    const table = resolvePath(l);
+                    if (!this.eventFNs[table[0]]) {
+                        this.eventFNs[table[0]] = {
+                            "*": new ReallySmallEvents()
+                        };
+                    }
+                    const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
+                    if (!this.eventFNs[table[0]][nestedPath]) {
+                        this.eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
+                    }
+                    this.eventFNs[table[0]][nestedPath].on(newEvent.action, newEvent.callback);
+                    break;
+                default:
+                    new Promise((res, rej) => {
+                        this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                    }).then((evData: { nameSpace: string, path: string }) => {
+                        if (evData.nameSpace) {
+                            if (!this.eventFNs[evData.nameSpace]) {
+                                this.eventFNs[evData.nameSpace] = {
+                                    "*": new ReallySmallEvents()
+                                };
+                            }
+                            if (!this.eventFNs[evData.nameSpace][evData.path]) {
+                                this.eventFNs[evData.nameSpace][evData.path] = new ReallySmallEvents();
+                            }
+                            this.eventFNs[evData.nameSpace][evData.path].on(newEvent.action, newEvent.callback);
+                        } else {
+                            throw new Error(`Invalid event "${action}"!`);
+                        }
+                        t._refreshEventChecker();
+                    });
+            }
+
+            t._refreshEventChecker();
+
+        }, noop);
     }
 
-    public off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance {
+    public off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void {
         let t = this;
         let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
-        switch (action) {
-            case "connect":
-            case "ready":
-            case "disconnect":
-            case "peer change":
-            case "slow query":
-            case "map reduce":
-                this.eventFNs.Core["*"].off(action, callBack);
-                break;
-            case "select":
-            case "change":
-            case "delete":
-            case "upsert":
-                const table = resolvePath(l);
-                if (!this.eventFNs[table[0]]) {
-                    this.eventFNs[table[0]] = {
-                        "*": new ReallySmallEvents()
-                    };
-                }
-                const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
-                if (!this.eventFNs[table[0]][nestedPath]) {
-                    this.eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
-                }
-                this.eventFNs[table[0]][nestedPath].off(action, callBack);
-                break;
-            default:
-                this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, (evData) => {
-                    if (evData.nameSpace) {
-                        if (!this.eventFNs[evData.nameSpace]) {
-                            this.eventFNs[evData.nameSpace] = {
-                                "*": new ReallySmallEvents()
-                            };
-                        }
-                        if (!this.eventFNs[evData.nameSpace][evData.path]) {
-                            this.eventFNs[evData.nameSpace][evData.path] = new ReallySmallEvents();
-                        }
-                        this.eventFNs[evData.nameSpace][evData.path].off(action, callBack);
-                    } else {
-                        throw new Error(`Invalid event "${action}"!`);
-                    }
-                    t._refreshEventChecker();
-                }, () => {});
-        }
+        this.doFilter<offEventFilter, { action: string, callback: (evnt: InanoSQLDatabaseEvent) => void }>("onEvent", { result: { action, callback: callBack } }, (newEvent) => {
 
-        return t._refreshEventChecker();
+            switch (newEvent.action) {
+                case "connect":
+                case "ready":
+                case "disconnect":
+                case "peer change":
+                case "slow query":
+                case "map reduce":
+                    this.eventFNs.Core["*"].off(newEvent.action, newEvent.callback);
+                    break;
+                case "select":
+                case "change":
+                case "delete":
+                case "upsert":
+                case "*":
+                    const table = resolvePath(l);
+                    if (!this.eventFNs[table[0]]) {
+                        this.eventFNs[table[0]] = {
+                            "*": new ReallySmallEvents()
+                        };
+                    }
+                    const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
+                    if (!this.eventFNs[table[0]][nestedPath]) {
+                        this.eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
+                    }
+                    this.eventFNs[table[0]][nestedPath].off(newEvent.action, newEvent.callback);
+                    break;
+                default:
+                    new Promise((res, rej) => {
+                        this.doFilter<customEventFilter, { nameSpace: string, path: string }>("customEvent", { result: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                    }).then((evData: { nameSpace: string, path: string }) => {
+                        if (evData.nameSpace) {
+                            if (!this.eventFNs[evData.nameSpace]) {
+                                this.eventFNs[evData.nameSpace] = {
+                                    "*": new ReallySmallEvents()
+                                };
+                            }
+                            if (!this.eventFNs[evData.nameSpace][evData.path]) {
+                                this.eventFNs[evData.nameSpace][evData.path] = new ReallySmallEvents();
+                            }
+                            this.eventFNs[evData.nameSpace][evData.path].off(newEvent.action, newEvent.callback);
+                        } else {
+                            throw new Error(`Invalid event "${action}"!`);
+                        }
+                        t._refreshEventChecker();
+                    });
+            }
+
+            t._refreshEventChecker();
+
+        }, noop);
     }
 
     public _refreshEventChecker(): InanoSQLInstance {
@@ -1139,7 +1035,7 @@ export class nanoSQL implements InanoSQLInstance {
                 const tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(this.tables[table].indexes);
                 chainAsync(tableIndexes, (index, i, nextIdx, errIdx) => {
                     adapterFilters(this).readIndexKeys(tableName, index, "all", undefined, undefined, false, (key, id) => {
-                        onRow(index, {indexId: id, rowId: key});
+                        onRow(index, { indexId: id, rowId: key });
                     }, nextIdx, errIdx);
                 }).then(nextTable).catch(err);
             } else {
@@ -1355,7 +1251,7 @@ export class nanoSQL implements InanoSQLInstance {
  */
 let _nanoSQLStatic = new nanoSQL();
 
-export const nSQL = (table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)) => {
+export const nSQL = (table?: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>)) => {
     return _nanoSQLStatic.selectTable(table);
 };
 
