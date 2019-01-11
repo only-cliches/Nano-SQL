@@ -639,7 +639,7 @@ export class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    public exec(): Promise<{[key: string]: any}[]> {
+    public exec(): Promise<any[]> {
 
         // handle instance queries
         if (Array.isArray(this._query.table)) {

@@ -307,7 +307,5 @@ export declare class _NanoSQLQuery {
      *
      * @memberOf NanoSQLInstance
      */
-    exec(): Promise<{
-        [key: string]: any;
-    }[]>;
+    exec(): Promise<any[]>;
 }

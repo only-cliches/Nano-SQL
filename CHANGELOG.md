@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.8.2] 1-11-2019
+- Adjusted promise return value.
+
 ## [1.8.1] 1-7-2019
 - Fixed issue with WebSQL attempting to update existing rows in some cases.
 
