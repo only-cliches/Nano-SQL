@@ -51,6 +51,7 @@ Built in geolocation indexing, foreign keys, query function support, multi-tab s
 
 ## Live Examples: [Express/NodeJS](https://nanosql.gitbook.io/docs/examples/express-nodejs) - [React](https://nanosql.gitbook.io/docs/examples/react) - [React Native](https://nanosql.gitbook.io/docs/examples/react-native) - [Angular](https://nanosql.gitbook.io/docs/examples/angular) - [VueJS](https://nanosql.gitbook.io/docs/examples/vuejs) - [Cordova](https://nanosql.gitbook.io/docs/examples/cordova)
 
+<!--
 ## Comparison with Other Projects
 
 |           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
@@ -67,6 +68,7 @@ Built in geolocation indexing, foreign keys, query function support, multi-tab s
 | Map Reduce Support | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✕      | ✕      | ✕      |
 | Fuzzy Search | ✓  | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✓      |
 | Size (kb) | 25      | 5       | 19      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
+-->
 
 ## Database Support
 
@@ -109,7 +111,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc20/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc21/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

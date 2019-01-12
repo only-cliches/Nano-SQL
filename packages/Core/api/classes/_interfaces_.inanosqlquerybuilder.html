@@ -142,7 +142,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L107">interfaces.ts:107</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L104">interfaces.ts:104</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -176,7 +176,7 @@
 					<div class="tsd-signature tsd-kind-icon">_AV<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L105">interfaces.ts:105</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L102">interfaces.ts:102</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -186,7 +186,7 @@
 					<div class="tsd-signature tsd-kind-icon">_db<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqlinstance.html" class="tsd-signature-type">InanoSQLInstance</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L103">interfaces.ts:103</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L100">interfaces.ts:100</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -196,7 +196,7 @@
 					<div class="tsd-signature tsd-kind-icon">_error<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L104">interfaces.ts:104</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L101">interfaces.ts:101</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -206,7 +206,7 @@
 					<div class="tsd-signature tsd-kind-icon">_query<span class="tsd-signature-symbol">:</span> <a href="../interfaces/_interfaces_.inanosqlquery.html" class="tsd-signature-type">InanoSQLQuery</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L106">interfaces.ts:106</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L103">interfaces.ts:103</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -216,7 +216,7 @@
 					<div class="tsd-signature tsd-kind-icon">exec<wbr>Map<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L107">interfaces.ts:107</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L104">interfaces.ts:104</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -227,16 +227,67 @@
 					<a name="cache" class="tsd-anchor"></a>
 					<h3>cache</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">cache<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">cache<span class="tsd-signature-symbol">(</span>cacheReady<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span>, error<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span>, streamPages<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L128">interfaces.ts:128</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L125">interfaces.ts:125</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></h4>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>cacheReady: <span class="tsd-signature-type">function</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>cacheId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, recordCount<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-parameters-title">Parameters</h4>
+													<ul class="tsd-parameters">
+														<li>
+															<h5>cacheId: <span class="tsd-signature-type">string</span></h5>
+														</li>
+														<li>
+															<h5>recordCount: <span class="tsd-signature-type">number</span></h5>
+														</li>
+													</ul>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+								<li>
+									<h5>error: <span class="tsd-signature-type">function</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-siganture">
+											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>error<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-parameters-title">Parameters</h4>
+													<ul class="tsd-parameters">
+														<li>
+															<h5>error: <span class="tsd-signature-type">any</span></h5>
+														</li>
+													</ul>
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> streamPages: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -250,7 +301,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L119">interfaces.ts:119</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L116">interfaces.ts:116</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -273,7 +324,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L124">interfaces.ts:124</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L121">interfaces.ts:121</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <a href="../interfaces/_interfaces_.inanosqlquery.html" class="tsd-signature-type">InanoSQLQuery</a></h4>
@@ -290,7 +341,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L139">interfaces.ts:139</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L133">interfaces.ts:133</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -307,7 +358,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L120">interfaces.ts:120</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L117">interfaces.ts:117</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -333,7 +384,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L133">interfaces.ts:133</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L127">interfaces.ts:127</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -364,7 +415,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L132">interfaces.ts:132</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L126">interfaces.ts:126</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -387,7 +438,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L113">interfaces.ts:113</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L110">interfaces.ts:110</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -410,7 +461,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L114">interfaces.ts:114</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L111">interfaces.ts:111</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -433,7 +484,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L137">interfaces.ts:137</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L131">interfaces.ts:131</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -456,7 +507,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L117">interfaces.ts:117</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L114">interfaces.ts:114</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -479,7 +530,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L118">interfaces.ts:118</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L115">interfaces.ts:115</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -502,7 +553,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L122">interfaces.ts:122</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L119">interfaces.ts:119</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -525,7 +576,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L138">interfaces.ts:138</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L132">interfaces.ts:132</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -548,7 +599,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L112">interfaces.ts:112</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L109">interfaces.ts:109</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -571,7 +622,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L127">interfaces.ts:127</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L124">interfaces.ts:124</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -648,7 +699,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L123">interfaces.ts:123</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L120">interfaces.ts:120</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -671,7 +722,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L126">interfaces.ts:126</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L123">interfaces.ts:123</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -694,7 +745,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L125">interfaces.ts:125</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L122">interfaces.ts:122</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -720,7 +771,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L121">interfaces.ts:121</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L118">interfaces.ts:118</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -746,7 +797,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/2a31db9/packages/Core/src/interfaces.ts#L109">interfaces.ts:109</a></li>
+									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L106">interfaces.ts:106</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>

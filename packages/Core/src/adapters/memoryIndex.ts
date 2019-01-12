@@ -82,9 +82,9 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
             this.useCacheIndexes[indexName] = this.useCache || false;
             complete();
 
-            this.nSQL.doFilter<loadIndexCacheFilter, {load: boolean, indexName: string}>("loadIndexCache", {result: {load: this.useCache || false}, index: indexName}, (result) => {
-                this.useCacheIndexes[indexName] = result.load;
-                if (result.load) {
+            this.nSQL.doFilter<loadIndexCacheFilter>("loadIndexCache", {res: {load: this.useCache || false}, index: indexName}, (result) => {
+                this.useCacheIndexes[indexName] = result.res.load;
+                if (result.res.load) {
                     this.readMulti(indexName, "all", undefined, undefined, false, (row) => {
                         if (!this.indexes[indexName][row.id]) {
                             this.indexes[indexName][row.id] = row.pks || [];

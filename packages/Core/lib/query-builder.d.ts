@@ -35,13 +35,12 @@ export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     into(table: string): _nanoSQLQueryBuilder;
     on(table: string): _nanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
-    exec(returnEvents?: boolean): Promise<{
-        [key: string]: any;
-    }[]>;
+    exec(returnEvents?: boolean): Promise<any[]>;
     streamEvent(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
     stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
-    cache(): Promise<{
-        id: string;
-        total: number;
-    }>;
+    cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {
+        pageSize: number;
+        onPage: (page: number, rows: any[]) => void;
+        doNotCache?: boolean;
+    }): void;
 }

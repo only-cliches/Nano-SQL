@@ -49,8 +49,8 @@ export declare class nanoSQL implements InanoSQLInstance {
     };
     private _Q;
     constructor();
-    doFilter<T, R>(filterName: string, args: T, complete: (result: R) => void, cancelled: (abortInfo: any) => void): void;
-    getCache(id: string, args: {
+    doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (abortInfo: any) => void): void;
+    getCache(id: string, args?: {
         offset: number;
         limit: number;
     }): any[];
@@ -73,8 +73,8 @@ export declare class nanoSQL implements InanoSQLInstance {
         every?: number;
         offset?: number;
     }): number[];
-    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance;
-    off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;

@@ -59,9 +59,9 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
             _this.indexLoaded[indexName] = false;
             _this.useCacheIndexes[indexName] = _this.useCache || false;
             complete();
-            _this.nSQL.doFilter("loadIndexCache", { result: { load: _this.useCache || false }, index: indexName }, function (result) {
-                _this.useCacheIndexes[indexName] = result.load;
-                if (result.load) {
+            _this.nSQL.doFilter("loadIndexCache", { res: { load: _this.useCache || false }, index: indexName }, function (result) {
+                _this.useCacheIndexes[indexName] = result.res.load;
+                if (result.res.load) {
                     _this.readMulti(indexName, "all", undefined, undefined, false, function (row) {
                         if (!_this.indexes[indexName][row.id]) {
                             _this.indexes[indexName][row.id] = row.pks || [];

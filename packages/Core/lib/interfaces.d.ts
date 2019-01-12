@@ -50,8 +50,8 @@ export declare class InanoSQLInstance {
         };
     };
     constructor();
-    doFilter<T, R>(filterName: string, args: T, complete: (result: R) => void, cancelled: (error: any) => void): void;
-    getCache(id: string, args: {
+    doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
+    getCache(id: string, args?: {
         offset: number;
         limit: number;
     }): any[];
@@ -74,8 +74,8 @@ export declare class InanoSQLInstance {
     _initPlugins(config: any): any;
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): any;
-    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): InanoSQLInstance;
-    off(action: string, callBack: (event: InanoSQLDatabaseEvent, database: InanoSQLInstance) => void): InanoSQLInstance;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs?: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;
@@ -130,10 +130,11 @@ export declare class InanoSQLQueryBuilder {
     ttl(seconds?: number, cols?: string[]): InanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
     stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
-    cache(): Promise<{
-        id: string;
-        total: number;
-    }>;
+    cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {
+        pageSize: number;
+        onPage: (page: number, rows: any[]) => void;
+        doNotCache?: boolean;
+    }): void;
     graph(graphArgs: InanoSQLGraphArgs | InanoSQLGraphArgs[]): InanoSQLQueryBuilder;
     from(tableObj: {
         table: string | any[] | ((where?: any[] | ((row: {
@@ -511,7 +512,7 @@ export interface abstractFilter {
         reason: string;
         [key: string]: any;
     };
-    result?: any;
+    res?: any;
 }
 export interface SQLiteAbstractFns {
     createAI: (complete: () => void, error: (err: any) => void) => void;
@@ -537,17 +538,17 @@ export interface extendFilter extends abstractFilter {
     args: any[];
 }
 export interface configTableFilter extends abstractFilter {
-    result: InanoSQLTableConfig;
+    res: InanoSQLTableConfig;
     query: InanoSQLQuery;
 }
 export interface queryFilter extends abstractFilter {
-    result: InanoSQLQuery;
+    res: InanoSQLQuery;
 }
 export interface eventFilter extends abstractFilter {
-    result: InanoSQLDatabaseEvent;
+    res: InanoSQLDatabaseEvent;
 }
-export interface config extends abstractFilter {
-    result: InanoSQLConfig;
+export interface configFilter extends abstractFilter {
+    res: InanoSQLConfig;
 }
 export interface IAVFilterResult {
     AVType: "a" | "v";
@@ -561,13 +562,13 @@ export interface TableQueryResult {
     cache?: boolean;
 }
 export interface actionFilter extends abstractFilter {
-    result: IAVFilterResult;
+    res: IAVFilterResult;
 }
 export interface viewFilter extends abstractFilter {
-    result: IAVFilterResult;
+    res: IAVFilterResult;
 }
 export interface configFilter extends abstractFilter {
-    result: InanoSQLConfig;
+    res: InanoSQLConfig;
 }
 export interface willConnectFilter extends abstractFilter {
 }
@@ -576,14 +577,14 @@ export interface readyFilter extends abstractFilter {
 export interface disconnectFilter extends abstractFilter {
 }
 export interface customQueryFilter extends abstractFilter {
-    result: undefined;
+    res: undefined;
     query: InanoSQLQueryExec;
     onRow: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
 }
 export interface customEventFilter extends abstractFilter {
-    result: {
+    res: {
         nameSpace: string;
         path: string;
     };
@@ -592,7 +593,7 @@ export interface customEventFilter extends abstractFilter {
     on: boolean;
 }
 export interface adapterReadFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         pk: any;
         complete: (row: {
@@ -603,7 +604,7 @@ export interface adapterReadFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterReadMultiFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         type: "range" | "offset" | "all";
         offsetOrLow: any;
@@ -618,7 +619,7 @@ export interface adapterReadMultiFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterWriteFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         pk: any;
         row: {
@@ -630,7 +631,7 @@ export interface adapterWriteFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterConnectFilter extends abstractFilter {
-    result: {
+    res: {
         id: string;
         complete: () => void;
         error: (err: any) => void;
@@ -638,14 +639,14 @@ export interface adapterConnectFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterDisconnectFilter extends abstractFilter {
-    result: {
+    res: {
         complete: () => void;
         error: (err: any) => void;
     };
     query?: InanoSQLQuery;
 }
 export interface adapterCreateTableFilter extends abstractFilter {
-    result: {
+    res: {
         tableName: string;
         tableData: InanoSQLTable;
         complete: () => void;
@@ -654,7 +655,7 @@ export interface adapterCreateTableFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterDropTableFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         complete: () => void;
         error: (err: any) => void;
@@ -662,7 +663,7 @@ export interface adapterDropTableFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterDeleteFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         pk: any;
         complete: () => void;
@@ -671,7 +672,7 @@ export interface adapterDeleteFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterGetTableIndexFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         complete: (index: any[]) => void;
         error: (err: any) => void;
@@ -679,7 +680,7 @@ export interface adapterGetTableIndexFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterGetTableIndexLengthFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         complete: (index: number) => void;
         error: (err: any) => void;
@@ -687,7 +688,7 @@ export interface adapterGetTableIndexLengthFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterCreateIndexFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         indexName: string;
         type: string;
@@ -697,7 +698,7 @@ export interface adapterCreateIndexFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterDeleteIndexFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         indexName: string;
         complete: () => void;
@@ -706,7 +707,7 @@ export interface adapterDeleteIndexFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterAddIndexValueFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         indexName: string;
         key: any;
@@ -717,7 +718,7 @@ export interface adapterAddIndexValueFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterDeleteIndexValueFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         indexName: string;
         key: any;
@@ -728,7 +729,7 @@ export interface adapterDeleteIndexValueFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterReadIndexKeyFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         indexName: string;
         pk: any;
@@ -739,7 +740,7 @@ export interface adapterReadIndexKeyFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface adapterReadIndexKeysFilter extends abstractFilter {
-    result: {
+    res: {
         table: string;
         indexName: string;
         type: "range" | "offset" | "all";
@@ -753,14 +754,26 @@ export interface adapterReadIndexKeysFilter extends abstractFilter {
     query?: InanoSQLQuery;
 }
 export interface loadIndexCacheFilter extends abstractFilter {
-    result: {
+    res: {
         load: boolean;
     };
     index: string;
 }
 export interface conformRowFilter extends abstractFilter {
-    result: any;
+    res: any;
     oldRow: any;
+}
+export interface onEventFilter extends abstractFilter {
+    res: {
+        action: string;
+        callback: (event: InanoSQLDatabaseEvent) => void;
+    };
+}
+export interface offEventFilter extends abstractFilter {
+    res: {
+        action: string;
+        callback: (event: InanoSQLDatabaseEvent) => void;
+    };
 }
 export interface deleteRowFilter extends abstractFilter {
     query: InanoSQLQuery;
@@ -773,5 +786,28 @@ export interface updateRowFilter extends abstractFilter {
     row: any;
 }
 export interface postConnectFilter extends abstractFilter {
-    result: InanoSQLConfig;
+    res: InanoSQLConfig;
+}
+export interface addRowEventFilter extends abstractFilter {
+    res: InanoSQLDatabaseEvent;
+}
+export interface deleteRowEventFilter extends abstractFilter {
+    res: InanoSQLDatabaseEvent;
+}
+export interface updateRowEventFilter extends abstractFilter {
+    res: InanoSQLDatabaseEvent;
+}
+export interface InanoSQLupdateIndex {
+    table: string;
+    indexName: string;
+    value: any;
+    pk: any;
+    addToIndex: boolean;
+    done: () => void;
+    err: (err: any) => void;
+    query: InanoSQLQuery;
+    nSQL: InanoSQLInstance;
+}
+export interface updateIndexFilter extends abstractFilter {
+    res: InanoSQLupdateIndex;
 }

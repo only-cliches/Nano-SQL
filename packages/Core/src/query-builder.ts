@@ -1,5 +1,5 @@
 import { InanoSQLQueryBuilder, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
-import { buildQuery, uuid } from "./utilities";
+import { buildQuery, uuid, noop } from "./utilities";
 
 // tslint:disable-next-line
 export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
@@ -157,7 +157,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
     }
 
-    public exec(returnEvents?: boolean): Promise<{ [key: string]: any }[]> {
+    public exec(returnEvents?: boolean): Promise<any[]> {
 
         return new Promise((res, rej) => {
             let buffer: any[] = [];
@@ -181,16 +181,37 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         this._db.triggerQuery(this._query, onRow, complete, err);
     }
 
-    public cache(): Promise<{id: string, total: number}> {
-        return new Promise((res, rej) => {
-            const id = uuid();
-            this.exec().then((rows) => {
-                this._db._queryCache[id] = rows;
-                res({
-                    id: id,
-                    total: rows.length
-                });
-            }).catch(rej);
-        });
+    public cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {pageSize: number, onPage: (page: number, rows: any[]) => void, doNotCache?: boolean}): void {
+        const id = uuid();
+        let buffer: any[] = [];
+        let didPage: boolean = false;
+        let pageNum = 0;
+        const streamObj = streamPages || {pageSize: 0, onPage: noop};
+        this.stream((row) => {
+            buffer.push(row);
+            if (streamObj.pageSize && streamObj.onPage && buffer.length % streamObj.pageSize === 0) {
+                didPage = true;
+                streamObj.onPage(pageNum, buffer.slice(buffer.length - streamObj.pageSize));
+                pageNum++;
+                if (streamObj.doNotCache) {
+                    buffer = [];
+                }
+            }
+        }, () => {
+            if (streamObj.pageSize && streamObj.onPage) {
+                if (!didPage || streamObj.doNotCache) { // didn't make it to the page size in total records
+                    streamObj.onPage(0, buffer.slice());
+                } else { // grab the remaining records
+                    streamObj.onPage(pageNum, buffer.slice(pageNum * streamObj.pageSize));
+                }
+            }
+            if (!streamObj.doNotCache) {
+                this._db._queryCache[id] = buffer;
+                cacheReady(id, buffer.length);
+            } else {
+                buffer = [];
+                cacheReady("", 0);
+            }
+        }, error)
     }
 }

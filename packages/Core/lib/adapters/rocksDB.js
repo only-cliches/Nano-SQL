@@ -47,8 +47,8 @@ var RocksDB = /** @class */ (function (_super) {
                     name: "postConnect",
                     priority: 1000,
                     call: function (args, complete, cancel) {
-                        if (typeof args.result.queue === "undefined") {
-                            args.result.queue = false;
+                        if (typeof args.res.queue === "undefined") {
+                            args.res.queue = false;
                         }
                         complete(args);
                     }

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>viewFilter | @nano-sql/core</title>
+	<title>onEventFilter | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -57,10 +57,10 @@
 					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
 				</li>
 				<li>
-					<a href="_interfaces_.viewfilter.html">viewFilter</a>
+					<a href="_interfaces_.oneventfilter.html">onEventFilter</a>
 				</li>
 			</ul>
-			<h1>Interface viewFilter</h1>
+			<h1>Interface onEventFilter</h1>
 		</div>
 	</div>
 </header>
@@ -74,7 +74,7 @@
 						<a href="_interfaces_.abstractfilter.html" class="tsd-signature-type">abstractFilter</a>
 						<ul class="tsd-hierarchy">
 							<li>
-								<span class="target">viewFilter</span>
+								<span class="target">onEventFilter</span>
 							</li>
 						</ul>
 					</li>
@@ -87,8 +87,8 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.viewfilter.html#abort" class="tsd-kind-icon">abort</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.viewfilter.html#res" class="tsd-kind-icon">res</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.oneventfilter.html#abort" class="tsd-kind-icon">abort</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.oneventfilter.html#res" class="tsd-kind-icon">res</a></li>
 							</ul>
 						</section>
 					</div>
@@ -110,13 +110,42 @@
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
 					<a name="res" class="tsd-anchor"></a>
 					<h3>res</h3>
-					<div class="tsd-signature tsd-kind-icon">res<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.iavfilterresult.html" class="tsd-signature-type">IAVFilterResult</a></div>
+					<div class="tsd-signature tsd-kind-icon">res<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<p>Overrides <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#res">res</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L607">interfaces.ts:607</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/8323e9c/packages/Core/src/interfaces.ts#L827">interfaces.ts:827</a></li>
 						</ul>
 					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>action<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>callback<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span></h5>
+								<ul class="tsd-parameters">
+									<li class="tsd-parameter-siganture">
+										<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-variable tsd-is-not-exported">
+											<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>event<span class="tsd-signature-symbol">: </span><a href="_interfaces_.inanosqldatabaseevent.html" class="tsd-signature-type">InanoSQLDatabaseEvent</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+										</ul>
+										<ul class="tsd-descriptions">
+											<li class="tsd-description">
+												<h4 class="tsd-parameters-title">Parameters</h4>
+												<ul class="tsd-parameters">
+													<li>
+														<h5>event: <a href="_interfaces_.inanosqldatabaseevent.html" class="tsd-signature-type">InanoSQLDatabaseEvent</a></h5>
+													</li>
+												</ul>
+												<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+											</li>
+										</ul>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
 				</section>
 			</section>
 		</div>
@@ -157,13 +186,13 @@
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_interfaces_.viewfilter.html" class="tsd-kind-icon">view<wbr>Filter</a>
+						<a href="_interfaces_.oneventfilter.html" class="tsd-kind-icon">on<wbr>Event<wbr>Filter</a>
 						<ul>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-								<a href="_interfaces_.viewfilter.html#abort" class="tsd-kind-icon">abort</a>
+								<a href="_interfaces_.oneventfilter.html#abort" class="tsd-kind-icon">abort</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-								<a href="_interfaces_.viewfilter.html#res" class="tsd-kind-icon">res</a>
+								<a href="_interfaces_.oneventfilter.html#res" class="tsd-kind-icon">res</a>
 							</li>
 						</ul>
 					</li>

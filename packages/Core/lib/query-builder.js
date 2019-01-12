@@ -144,18 +144,41 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
     _nanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
         this._db.triggerQuery(this._query, onRow, complete, err);
     };
-    _nanoSQLQueryBuilder.prototype.cache = function () {
+    _nanoSQLQueryBuilder.prototype.cache = function (cacheReady, error, streamPages) {
         var _this = this;
-        return new Promise(function (res, rej) {
-            var id = utilities_1.uuid();
-            _this.exec().then(function (rows) {
-                _this._db._queryCache[id] = rows;
-                res({
-                    id: id,
-                    total: rows.length
-                });
-            }).catch(rej);
-        });
+        var id = utilities_1.uuid();
+        var buffer = [];
+        var didPage = false;
+        var pageNum = 0;
+        var streamObj = streamPages || { pageSize: 0, onPage: utilities_1.noop };
+        this.stream(function (row) {
+            buffer.push(row);
+            if (streamObj.pageSize && streamObj.onPage && buffer.length % streamObj.pageSize === 0) {
+                didPage = true;
+                streamObj.onPage(pageNum, buffer.slice(buffer.length - streamObj.pageSize));
+                pageNum++;
+                if (streamObj.doNotCache) {
+                    buffer = [];
+                }
+            }
+        }, function () {
+            if (streamObj.pageSize && streamObj.onPage) {
+                if (!didPage || streamObj.doNotCache) { // didn't make it to the page size in total records
+                    streamObj.onPage(0, buffer.slice());
+                }
+                else { // grab the remaining records
+                    streamObj.onPage(pageNum, buffer.slice(pageNum * streamObj.pageSize));
+                }
+            }
+            if (!streamObj.doNotCache) {
+                _this._db._queryCache[id] = buffer;
+                cacheReady(id, buffer.length);
+            }
+            else {
+                buffer = [];
+                cacheReady("", 0);
+            }
+        }, error);
     };
     return _nanoSQLQueryBuilder;
 }());

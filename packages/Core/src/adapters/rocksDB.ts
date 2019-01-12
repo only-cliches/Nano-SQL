@@ -28,8 +28,8 @@ export class RocksDB extends nanoSQLMemoryIndex {
                 name: "postConnect",
                 priority: 1000,
                 call: (args: postConnectFilter, complete: (args: postConnectFilter) => void, cancel: (info: any) => void) => {
-                    if (typeof args.result.queue === "undefined") {
-                        args.result.queue = false;
+                    if (typeof args.res.queue === "undefined") {
+                        args.res.queue = false;
                     }
                     complete(args);
                 }
