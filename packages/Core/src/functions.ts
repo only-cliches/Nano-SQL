@@ -354,7 +354,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                         return;
                     }
 
-                    // read values from seconday index table
+                    // read values from seconday index
                     adapterFilters(nSQL, query).readIndexKeys(table, index, "range", ranges[0], ranges[1], false, (pk, id) => {
                         if (!pks[pk]) {
                             pks[pk] = {
@@ -379,17 +379,14 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                     // step 2: get the square shaped selection of items
                     let counter = 0;
 
-                    const rowsToRead = Object.keys(pks).filter(p => {
-                        if (poleQuery) { // check all rows for pole query
-                            return true;
-                        }
-                        if (pks[p].num === 0) { // if not pole query and doesn't have both lat and lon values, ignore
+                    const rowsToRead = (poleQuery ? Object.keys(pks) : Object.keys(pks).filter(p => {
+                        if (pks[p].num < 1) { // doesn't have both lat and lon values, ignore
                             return false;
                         }
                         // confirm within distance for remaining rows
                         const crowDist = crowDistance(pks[p].lat, pks[p].lon, centerLat, centerLon, nSQL.planetRadius);
                         return condition === "<" ? crowDist < distance : crowDist <= distance;
-                    }).map(p => pks[p]);
+                    })).map(p => pks[p]);
 
                     if (!poleQuery && onlyPKs) {
                         rowsToRead.forEach((rowData, k) => {

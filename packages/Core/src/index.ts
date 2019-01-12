@@ -494,6 +494,7 @@ export class nanoSQL implements InanoSQLInstance {
                                 ...buildQuery(this, "_util", "select"),
                                 where: ["key", "=", "tableIds"]
                             }, (row) => {
+                                console.log("CACHED IDS", row)
                                 this.tableIds = {
                                     ...this.tableIds,
                                     ...row.value
