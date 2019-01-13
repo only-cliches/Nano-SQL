@@ -1095,6 +1095,67 @@ var nanoSQL = /** @class */ (function () {
     return nanoSQL;
 }());
 exports.nanoSQL = nanoSQL;
+exports.nSQLv1Config = function (doConfig) {
+    var tables = {};
+    var conf = {};
+    var selTable = "";
+    var nSQLv1 = function (table) {
+        selTable = table || selTable;
+        if (table && !tables[table]) {
+            tables[table] = {
+                name: table,
+                model: {},
+                indexes: {},
+                actions: [],
+                views: []
+            };
+        }
+        return {
+            model: function (dataModels) {
+                var indexes = {};
+                tables[selTable].model = dataModels.reduce(function (prev, cur) {
+                    var key = cur.key + ":" + cur.type;
+                    prev[key] = {};
+                    if (cur.props) {
+                        if (cur.props.indexOf("pk") !== -1) {
+                            prev[key].pk = true;
+                        }
+                        if (cur.props.indexOf("ai") !== -1) {
+                            prev[key].ai = true;
+                        }
+                        if (indexes && cur.props.indexOf("idx") !== -1) {
+                            indexes[key] = {};
+                        }
+                    }
+                    return prev;
+                }, {});
+                tables[selTable].indexes = indexes;
+                return nSQLv1(table);
+            },
+            actions: function (actions) {
+                tables[selTable].actions = actions;
+                return nSQLv1(table);
+            },
+            views: function (views) {
+                tables[selTable].views = views;
+                return nSQLv1(table);
+            },
+            config: function (obj) {
+                conf = obj;
+                return nSQLv1(table);
+            },
+            table: function (ta) {
+                return nSQLv1(ta);
+            },
+            rowFilter: function (callback) {
+                tables[selTable].filter = callback;
+                return nSQLv1(table);
+            }
+        };
+    };
+    doConfig(nSQLv1);
+    return __assign({}, conf, { tables: Object.keys(tables).map(function (t) { return tables[t]; }) });
+};
 /**
  * @internal
  */

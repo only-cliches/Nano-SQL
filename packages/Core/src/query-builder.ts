@@ -43,13 +43,21 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     }
 
 
-    public orderBy(args: string[]): _nanoSQLQueryBuilder {
-        this._query.orderBy = args;
+    public orderBy(columns: string[] | {[col: string]: string}): _nanoSQLQueryBuilder {
+        if (Array.isArray(columns)) {
+            this._query.orderBy = columns;
+        } else {
+            this._query.orderBy = Object.keys(columns).map((col) => `${col} ${String(columns[col]).toUpperCase()}`);
+        }
         return this;
     }
 
-    public groupBy(columns: string[]): _nanoSQLQueryBuilder {
-        this._query.groupBy = columns;
+    public groupBy(columns: string[] | {[col: string]: string}): _nanoSQLQueryBuilder {
+        if (Array.isArray(columns)) {
+            this._query.groupBy = columns;
+        } else {
+            this._query.groupBy = Object.keys(columns).map((col) => `${col} ${String(columns[col]).toUpperCase()}`);
+        }
         return this;
     }
 

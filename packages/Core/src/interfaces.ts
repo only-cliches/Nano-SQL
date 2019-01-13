@@ -336,6 +336,16 @@ export interface InanoSQLFunction {
     queryIndex?: (query: InanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
 }
 
+export interface InanoSQLV1ConfigFn {
+    model: (dataModels: {key: string, type: string, props?: any[], default?: any}[]) => InanoSQLV1ConfigFn;
+    actions: (actions: InanoSQLActionOrView[]) => InanoSQLV1ConfigFn;
+    views: (views: InanoSQLActionOrView[]) => InanoSQLV1ConfigFn;
+    config: (obj: {[key: string]: any}) => InanoSQLV1ConfigFn;
+    table: (ta?: string) => InanoSQLV1ConfigFn;
+    rowFilter: (callback: (row: any) => any) => InanoSQLV1ConfigFn;
+};
+
+
 export interface InanoSQLTableConfig {
     name: string;
     model: InanoSQLDataModel | string;

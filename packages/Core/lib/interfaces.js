@@ -1,5 +1,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VERSION = 2.0;
+;
 var IWhereType;
 (function (IWhereType) {
     IWhereType[IWhereType["fast"] = 0] = "fast";

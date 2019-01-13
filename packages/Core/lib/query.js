@@ -1310,6 +1310,9 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }
             });
         }).then(function () {
+            if (_this.query.table === "_util") {
+                return Promise.resolve();
+            }
             return _this.nSQL.saveTableIds();
         }).then(function () {
             complete();

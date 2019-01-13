@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult } from "./interfaces";
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult, InanoSQLV1ConfigFn } from "./interfaces";
 export { InanoSQLInstance };
 export declare class nanoSQL implements InanoSQLInstance {
     config: InanoSQLConfig;
@@ -103,6 +103,7 @@ export declare class nanoSQL implements InanoSQLInstance {
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
     loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
 }
+export declare const nSQLv1Config: (doConfig: (nSQLv1: (table?: string | undefined) => InanoSQLV1ConfigFn) => void) => InanoSQLConfig;
 export declare const nSQL: (table?: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
 }, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>) | undefined) => InanoSQLInstance;

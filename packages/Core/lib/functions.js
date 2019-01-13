@@ -377,7 +377,7 @@ exports.attachDefaultFns = function (nSQL) {
                         next(null);
                         return;
                     }
-                    // read values from seconday index table
+                    // read values from seconday index
                     utilities_1.adapterFilters(nSQL, query).readIndexKeys(table, index, "range", ranges[0], ranges[1], false, function (pk, id) {
                         if (!pks[pk]) {
                             pks[pk] = {
@@ -402,17 +402,14 @@ exports.attachDefaultFns = function (nSQL) {
                 }).then(function () {
                     // step 2: get the square shaped selection of items
                     var counter = 0;
-                    var rowsToRead = Object.keys(pks).filter(function (p) {
-                        if (poleQuery) { // check all rows for pole query
-                            return true;
-                        }
-                        if (pks[p].num === 0) { // if not pole query and doesn't have both lat and lon values, ignore
+                    var rowsToRead = (poleQuery ? Object.keys(pks) : Object.keys(pks).filter(function (p) {
+                        if (pks[p].num < 1) { // doesn't have both lat and lon values, ignore
                             return false;
                         }
                         // confirm within distance for remaining rows
                         var crowDist = utilities_1.crowDistance(pks[p].lat, pks[p].lon, centerLat, centerLon, nSQL.planetRadius);
                         return condition === "<" ? crowDist < distance : crowDist <= distance;
-                    }).map(function (p) { return pks[p]; });
+                    })).map(function (p) { return pks[p]; });
                     if (!poleQuery && onlyPKs) {
                         rowsToRead.forEach(function (rowData, k) {
                             onRow(rowData.key, k);

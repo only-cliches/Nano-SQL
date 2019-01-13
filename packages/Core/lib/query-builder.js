@@ -24,12 +24,22 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         this._query.where = args;
         return this;
     };
-    _nanoSQLQueryBuilder.prototype.orderBy = function (args) {
-        this._query.orderBy = args;
+    _nanoSQLQueryBuilder.prototype.orderBy = function (columns) {
+        if (Array.isArray(columns)) {
+            this._query.orderBy = columns;
+        }
+        else {
+            this._query.orderBy = Object.keys(columns).map(function (col) { return col + " " + String(columns[col]).toUpperCase(); });
+        }
         return this;
     };
     _nanoSQLQueryBuilder.prototype.groupBy = function (columns) {
-        this._query.groupBy = columns;
+        if (Array.isArray(columns)) {
+            this._query.groupBy = columns;
+        }
+        else {
+            this._query.groupBy = Object.keys(columns).map(function (col) { return col + " " + String(columns[col]).toUpperCase(); });
+        }
         return this;
     };
     _nanoSQLQueryBuilder.prototype.having = function (args) {

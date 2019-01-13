@@ -11,8 +11,12 @@ export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     where(args: any[] | ((row: {
         [key: string]: any;
     }, i?: number) => boolean)): _nanoSQLQueryBuilder;
-    orderBy(args: string[]): _nanoSQLQueryBuilder;
-    groupBy(columns: string[]): _nanoSQLQueryBuilder;
+    orderBy(columns: string[] | {
+        [col: string]: string;
+    }): _nanoSQLQueryBuilder;
+    groupBy(columns: string[] | {
+        [col: string]: string;
+    }): _nanoSQLQueryBuilder;
     having(args: any[] | ((row: {
         [key: string]: any;
     }, i?: number) => boolean)): _nanoSQLQueryBuilder;

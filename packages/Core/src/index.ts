@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 import { assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _nanoSQLQueue, objectsEqual, titleCase, getWeekOfYear, throttle, adapterFilters } from "./utilities";
-import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter as actionViewFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, postConnectFilter, onEventFilter, offEventFilter } from "./interfaces";
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter as actionViewFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, postConnectFilter, onEventFilter, offEventFilter, InanoSQLV1ConfigFn } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _nanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -494,7 +494,6 @@ export class nanoSQL implements InanoSQLInstance {
                                 ...buildQuery(this, "_util", "select"),
                                 where: ["key", "=", "tableIds"]
                             }, (row) => {
-                                console.log("CACHED IDS", row)
                                 this.tableIds = {
                                     ...this.tableIds,
                                     ...row.value
@@ -1245,6 +1244,74 @@ export class nanoSQL implements InanoSQLInstance {
     }
 }
 
+export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1ConfigFn) => void): InanoSQLConfig => {
+
+    let tables: {[tableName: string]: InanoSQLTableConfig} = {};
+    let conf = {};
+    let selTable: string = "";
+
+    const nSQLv1 = (table?: string) => {
+        selTable = table || selTable;
+        if (table && !tables[table]) {
+            tables[table] = {
+                name: table,
+                model: {},
+                indexes: {},
+                actions: [],
+                views: []
+            }
+        }
+
+        return {
+            model: (dataModels: {key: string, type: string, props?: any[], default?: any}[]) => {
+                let indexes: InanoSQLTableConfig["indexes"] = {};
+                tables[selTable].model = dataModels.reduce((prev, cur) => {
+                    const key = cur.key + ":" + cur.type;
+                    prev[key] = {};
+                    if (cur.props) {
+                        if (cur.props.indexOf("pk") !== -1) {
+                            prev[key].pk = true;
+                        }
+                        if (cur.props.indexOf("ai") !== -1) {
+                            prev[key].ai = true;
+                        }
+                        if (indexes && cur.props.indexOf("idx") !== -1) {
+                            indexes[key] = {};
+                        }
+                    }
+                    return prev;
+                }, {});
+                tables[selTable].indexes = indexes;
+                return nSQLv1(table);
+            },
+            actions: (actions: InanoSQLActionOrView[]) => {
+                tables[selTable].actions = actions;
+                return nSQLv1(table);
+            },
+            views: (views: InanoSQLActionOrView[]) => {
+                tables[selTable].views = views;
+                return nSQLv1(table);
+            },
+            config: (obj: {[key: string]: any}) => {
+                conf = obj;
+                return nSQLv1(table);
+            },
+            table: (ta?: string) => {
+                return nSQLv1(ta);
+            },
+            rowFilter: (callback: (row: any) => any) => {
+                tables[selTable].filter = callback;
+                return nSQLv1(table);
+            }
+        }
+    };
+    doConfig(nSQLv1);
+
+    return {
+        ...conf,
+        tables: Object.keys(tables).map(t => tables[t]),
+    };
+}
 
 /**
  * @internal

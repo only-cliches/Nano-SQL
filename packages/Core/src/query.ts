@@ -1271,7 +1271,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         
         const tableID = this.nSQL.tableIds[this.query.table as string] || uuid();
 
-        console.log(this.query.table, this.nSQL.tableIds);
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL.tables).indexOf(table.name) !== -1) {
             alterTable = true;
@@ -1508,6 +1507,9 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 }
             });
         }).then(() => {
+            if (this.query.table as string === "_util") {
+                return Promise.resolve();
+            }
             return this.nSQL.saveTableIds();
         }).then(() => {
             complete();
