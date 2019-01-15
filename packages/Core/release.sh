@@ -42,6 +42,7 @@ function run() {
     #copy from examples into dist folder
     #yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
     rm -rf src/*.js
+    find ../../ -name ".DS_Store" -delete
 
     echo "${bold}(6/6) Cleaning up...${normal}"
 

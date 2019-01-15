@@ -1,11 +1,11 @@
 # Monorepo for nanoSQL 2.0
 For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree/1.X/).
 
-# WIP
-Items here are planned but not yet released.
-
 ## Packages
 - [Core](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core)
+
+# WIP
+Items here are planned but not yet released.
 
 ### Adapters
 - [DynamoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-DynamoDB)

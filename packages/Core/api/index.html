@@ -75,26 +75,19 @@
 						<img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
 					</a>
 				</p>
-				<p><h1 align="center">nanoSQL</h1></p>
+				<p><h1 align="center">nanoSQL 2</h1></p>
 				<p align="center">
 					<strong>Universal database for the client, server &amp; mobile devices.  It&#39;s like Lego for databases.</strong>
 				</p>
-				<h1 id="notice-this-is-the-in-progress-readme-for-nanosql-2-0-some-of-these-features-are-not-in-place-yet-">NOTICE: This is the IN PROGRESS readme for nanoSQL 2.0.  Some of these features are not in place yet.</h1>
-				<p>Scroll down for the todo list and it&#39;s progress.</p>
 				<h2 id="nanosql-is-a-database-abstraction-layer-that-">nanoSQL is a database abstraction layer that:</h2>
 				<ol>
 					<li>Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).</li>
-					<li>Use nanoSQL standalone, as the glue between your server and clients, or even with multi master servers.</li>
-					<li>Supports many advanced features like Graph Queries, Map/Reduce, Indexing, and Geolocations.</li>
-					<li>Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, etc...).</li>
+					<li>Supports many advanced features like Graph Queries, Indexing, and Geolocations.</li>
+					<li>Lets you use almost any database technology (RocksDB, IndexedDB, WebSQL, etc).</li>
 					<li>Starts at only 25 KB gzipped.</li>
 				</ol>
 				<h3 id="identical-api-everywhere">Identical API Everywhere</h3>
 				<p>Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  <strong>All data is portable and all features are isomorphic</strong>; jumping between different databases and environments is trivial.</p>
-				<h3 id="data-model-typescript-interface">Data Model =&gt; Typescript Interface</h3>
-				<p>Automatically generate typescript interfaces from your data models.</p>
-				<h3 id="offline-syncing">Offline Syncing</h3>
-				<p>Run nanoSQL on your server and client, then with little effort allow nanoSQL to handle the eventual consistency problems and keep both ends in sync with eachother.</p>
 				<h3 id="not-only-nosql">Not Only NoSQL</h3>
 				<p>Classical RDBMS queries like aggregate functions, joins and group bys are also supported.</p>
 				<h3 id="flexible-data-models">Flexible Data Models</h3>
@@ -102,31 +95,135 @@
 				<h3 id="graph-queries">Graph Queries</h3>
 				<p>Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.</p>
 				<h3 id="other-cool-things">Other Cool Things</h3>
-				<p>Built in geolocation indexing, foreign keys, query function support, multi-tab sync, typescript support, event system, CSV/JSON import &amp; export, and runs in every browser back to IE9!</p>
-				<h2 id="live-examples-express-nodejs-react-react-native-angular-vuejs-cordova">Live Examples: <a href="https://nanosql.gitbook.io/docs/examples/express-nodejs">Express/NodeJS</a> - <a href="https://nanosql.gitbook.io/docs/examples/react">React</a> - <a href="https://nanosql.gitbook.io/docs/examples/react-native">React Native</a> - <a href="https://nanosql.gitbook.io/docs/examples/angular">Angular</a> - <a href="https://nanosql.gitbook.io/docs/examples/vuejs">VueJS</a> - <a href="https://nanosql.gitbook.io/docs/examples/cordova">Cordova</a></h2>
-				<!--
-## Comparison with Other Projects
-
-|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
-|-----------|---------|---------|--------|------|-----------|---------|--------|--------|--------|-----|
-| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |✓      |
-| Graph Queries  | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
-| Join Queries  | ✓       | ✓      | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
-| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
-| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
-| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
-| Offline Syncing | ✓ | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Multi Master Server | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Map Reduce Support | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✕      | ✕      | ✕      |
-| Fuzzy Search | ✓  | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✓      |
-| Size (kb) | 25      | 5       | 19      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
--->
+				<p>Built in geolocation indexing, query function support, typescript support, event system, CSV/JSON import &amp; export, and runs in every browser back to IE9!</p>
+				<h2 id="comparison-with-other-projects">Comparison with Other Projects</h2>
+				<table>
+					<thead>
+						<tr>
+							<th></th>
+							<th>nanoSQL</th>
+							<th>TaffyDB</th>
+							<th>LokiJS</th>
+							<th>NeDB</th>
+							<th>LoveField</th>
+							<th>PouchDB</th>
+							<th>alaSQL</th>
+							<th>RxDB</th>
+							<th>SQL.js</th>
+							<th>Lunr</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Events</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✕</td>
+						</tr>
+						<tr>
+							<td>Typescript</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+						</tr>
+						<tr>
+							<td>Graph Queries</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+						</tr>
+						<tr>
+							<td>Join Queries</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✕</td>
+						</tr>
+						<tr>
+							<td>IndexedDB</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✕</td>
+						</tr>
+						<tr>
+							<td>Node</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+						</tr>
+						<tr>
+							<td>Query Functions</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✕</td>
+						</tr>
+						<tr>
+							<td>Size (kb)</td>
+							<td>25</td>
+							<td>5</td>
+							<td>19</td>
+							<td>27</td>
+							<td>40</td>
+							<td>46</td>
+							<td>88</td>
+							<td>164</td>
+							<td>500</td>
+							<td>8</td>
+						</tr>
+					</tbody>
+				</table>
 				<h2 id="database-support">Database Support</h2>
 				<p>NanoSQL can save data to many different places, depending on the browser or environment it&#39;s being ran in.</p>
 				<ol>
-					<li><p><strong>Included In The Box</strong></p>
-						<ul>
+					<li><strong>Included In The Box</strong><ul>
 							<li>Memory</li>
 							<li>Rocks DB</li>
 							<li>Indexed DB</li>
@@ -134,15 +231,9 @@
 							<li>Local Storage</li>
 						</ul>
 					</li>
-					<li><p><strong><a href="#">SQLite (NodeJS)</a></strong></p>
-					</li>
-					<li><strong><a href="#">SQLite (Cordova)</a></strong></li>
-					<li><strong><a href="#">MySQL</a></strong></li>
-					<li><strong><a href="#">React Native</a></strong></li>
-					<li><strong><a href="#">Redis</a></strong></li>
-					<li><strong><a href="#">Amazon Dynamo DB</a></strong></li>
 				</ol>
-				<p><a href="https://nanosql.gitbook.io/docs/">Documentation</a> | <a href="https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html">API Docs</a></p>
+				<p>More Adapters coming soon.</p>
+				<p><a href="https://nanosql.gitbook.io/docs/">Documentation</a> | <a href="https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html">API Docs</a> | <a href="https://github.com/ClickSimply/Nano-SQL/issues">Help</a></p>
 				<h2 id="installation">Installation</h2>
 				<pre><code class="lang-sh">npm i @nano-sql/core --save
 </code></pre>
@@ -153,31 +244,10 @@
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc22/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.1/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="important">Important</h2>
 				<p>If you are migrating from nanoSQL 1.X to 2.X, please read the <a href="https://nanosql.gitbook.io/docs/5-migration/1.x-2.0">migration guide</a>.</p>
-				<h1 id="2-0-progress">2.0 Progress</h1>
-				<ul>
-					<li>[x] Query Engine </li>
-					<li>[x] Hook/Filter System</li>
-					<li>[x] Memory/Local Storage Adapter</li>
-					<li>[x] Graph Query Support</li>
-					<li>[x] Event System</li>
-					<li>[x] Indexed DB/WebSQL/RocksDB Adapters</li>
-					<li>[x] Core Tests</li>
-					<li>[x] Adapter Tests</li>
-					<li>[ ] 2.0 documentation</li>
-					<li>[ ] 2.0 release</li>
-					<li>[ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters</li>
-					<li>[ ] GraphQL Support</li>
-					<li>[ ] Net Plugin (Offline Syncing)</li>
-					<li>[ ] Search Plugin</li>
-					<li>[ ] History Plugin</li>
-					<li>[ ] SQLite Query Support</li>
-					<li>[ ] MongoDB Query Support</li>
-					<li>[ ] ReQL Query Support</li>
-				</ul>
 				<h1 id="examples">Examples</h1>
 				<pre><code class="lang-ts"><span class="hljs-comment">// Persistent Database</span>
 nSQL().connect({
@@ -314,6 +384,27 @@ nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-strin
     */</span>
 })
 </code></pre>
+				<h1 id="2-0-progress">2.0 Progress</h1>
+				<ul>
+					<li>[x] Query Engine </li>
+					<li>[x] Hook/Filter System</li>
+					<li>[x] Memory/Local Storage Adapter</li>
+					<li>[x] Graph Query Support</li>
+					<li>[x] Event System</li>
+					<li>[x] Indexed DB/WebSQL/RocksDB Adapters</li>
+					<li>[x] Core Tests</li>
+					<li>[x] Adapter Tests</li>
+					<li>[x] 2.0 documentation</li>
+					<li>[x] 2.0 release</li>
+					<li>[ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters</li>
+					<li>[ ] GraphQL Support</li>
+					<li>[ ] Net Plugin (Offline Syncing)</li>
+					<li>[ ] Search Plugin</li>
+					<li>[ ] History Plugin</li>
+					<li>[ ] SQLite Query Support</li>
+					<li>[ ] MongoDB Query Support</li>
+					<li>[ ] ReQL Query Support</li>
+				</ul>
 			</div>
 		</div>
 		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">

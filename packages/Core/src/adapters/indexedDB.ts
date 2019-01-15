@@ -220,3 +220,4 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         }, error);
     }
 }
+

@@ -8,6 +8,7 @@ import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
+// import { nanoSQLAdapterTest } from "./adapter-test";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -406,7 +407,7 @@ export class nanoSQL implements InanoSQLInstance {
                 this.state.peerMode = true;
             }
             return new Promise((res, rej) => {
-                this.doFilter<willConnectFilter>("willConnect", { res: {} }, () => { res() }, rej);
+                this.doFilter<willConnectFilter>("willConnect", { res: this }, () => { res() }, rej);
             });
         }).then(() => {
             // setup and connect adapter
@@ -599,21 +600,26 @@ export class nanoSQL implements InanoSQLInstance {
             });
         }).then(() => {
             return new Promise((res, rej) => {
-                this.triggerEvent({
+                const event: InanoSQLDatabaseEvent = {
                     target: "Core",
                     path: "*",
                     targetId: this.state.id,
                     events: ["ready"],
                     time: Date.now()
-                });
-                this.state.ready = true;
-                if (!this.config.disableTTL) {
-                    this._checkTTL();
-                }
-                if (this.config.peer) {
-                    this._initPeers();
-                }
-                res();
+                };
+                
+                this.doFilter<readyFilter>("ready", {res: event}, (evnt) => {
+                    this.triggerEvent(evnt.res);
+                    this.state.ready = true;
+                    if (!this.config.disableTTL) {
+                        this._checkTTL();
+                    }
+                    if (this.config.peer) {
+                        this._initPeers();
+                    }
+                    res();
+                }, rej);
+
             });
         });
     }
@@ -738,7 +744,6 @@ export class nanoSQL implements InanoSQLInstance {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                case "map reduce":
                     this.eventFNs.Core["*"].on(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
@@ -796,7 +801,6 @@ export class nanoSQL implements InanoSQLInstance {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                case "map reduce":
                     this.eventFNs.Core["*"].off(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
@@ -864,15 +868,15 @@ export class nanoSQL implements InanoSQLInstance {
         return this._doAV("a", this.state.selectedTable as any, actionName, actionArgs);
     }
 
-    public _doAV(AVType: "a" | "v", table: string, AVName: string, AVargs: any): Promise<any> {
+    public _doAV(AVType: "a" | "v", table: string, AVName: string, AVArgs: any): Promise<any> {
         if (typeof this.state.selectedTable !== "string") return Promise.reject("Can't do Action/View with selected table!");
         return new Promise((res, rej) => {
-            this.doFilter<actionViewFilter>(AVType, {
+            this.doFilter<actionViewFilter>("actionView", {
                 res: {
                     AVType,
                     table,
                     AVName,
-                    AVargs
+                    AVArgs
                 }
             }, res, rej);
         }).then((actionOrView: actionViewFilter) => {
@@ -887,7 +891,7 @@ export class nanoSQL implements InanoSQLInstance {
                 return new Promise((res, rej) => rej(`${actionOrView.res.AVType} "${actionOrView.res.AVName}" Not Found!`));
             }
 
-            return selAV.call(selAV.args ? cleanArgs(selAV.args, actionOrView.res.AVargs, this) : {}, this);
+            return selAV.call(selAV.args ? cleanArgs(selAV.args, actionOrView.res.AVArgs, this) : {}, this);
         });
     }
 
@@ -906,7 +910,12 @@ export class nanoSQL implements InanoSQLInstance {
         this.doFilter<queryFilter>("query", { res: query }, (setQuery) => {
 
             if (this.config.queue && !setQuery.res.skipQueue) {
-                this._Q.newItem({ query: setQuery.res, onRow: onRow, complete: complete, error: error }, (item: { query: InanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
+                this._Q.newItem({ 
+                    query: setQuery.res, 
+                    onRow: onRow, 
+                    complete: complete, 
+                    error: error 
+                }, (item: { query: InanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
                     new _nanoSQLQuery(this, item.query, item.onRow, () => {
                         done();
                         item.complete();
@@ -1034,7 +1043,7 @@ export class nanoSQL implements InanoSQLInstance {
                 const tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(this.tables[table].indexes);
                 chainAsync(tableIndexes, (index, i, nextIdx, errIdx) => {
                     adapterFilters(this).readIndexKeys(tableName, index, "all", undefined, undefined, false, (key, id) => {
-                        onRow(index, { indexId: id, rowId: key });
+                        onRow(tableName + "." + index, { indexId: id, rowId: key });
                     }, nextIdx, errIdx);
                 }).then(nextTable).catch(err);
             } else {
@@ -1059,8 +1068,8 @@ export class nanoSQL implements InanoSQLInstance {
         return chainAsync(importTables, (table, i, next, err) => {
             if (indexes) {
                 // tableName:IndexName
-                const tableName = table.split(":")[0];
-                const indexName = table.split(":")[1];
+                const tableName = table.split(".")[0];
+                const indexName = table.split(".")[1];
                 chainAsync(tables[table], (indexRow, ii, nextIdx, errIdx) => {
                     adapterFilters(this).addIndexValue(tableName, indexName, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
                 }).then(next).catch(err);
@@ -1252,9 +1261,9 @@ export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1Co
 
     const nSQLv1 = (table?: string) => {
         selTable = table || selTable;
-        if (table && !tables[table]) {
-            tables[table] = {
-                name: table,
+        if (selTable && !tables[selTable]) {
+            tables[selTable] = {
+                name: selTable,
                 model: {},
                 indexes: {},
                 actions: [],
@@ -1277,7 +1286,7 @@ export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1Co
                         }
                         if (indexes && cur.props.indexOf("idx") !== -1) {
                             indexes[key] = {};
-                        }
+                        } 
                     }
                     return prev;
                 }, {});
@@ -1329,13 +1338,14 @@ if (typeof window !== "undefined") {
     window["@nano-sql"].core = {
         nSQL: nSQL,
         nanoSQL: nanoSQL,
-        utilities: utils
+        utilities: utils,
+        nSQLv1Config
     };
 }
 
 
-// used to test browser adapters with live reload
 /*
+// used to test browser adapters with live reload
 let errors = 0;
 console.log("Testing IndexedDB");
 new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {

@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2;
+export declare const VERSION = 2.01;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
@@ -235,16 +235,14 @@ export interface InanoSQLConfig {
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
 export interface InanoSQLDataModel {
-    [colAndType: string]: {
-        ai?: boolean;
-        pk?: boolean;
-        default?: any;
-        model?: InanoSQLDataModel;
-        notNull?: boolean;
-        max?: number;
-        min?: number;
-        [key: string]: any;
-    };
+    ai?: boolean;
+    pk?: boolean;
+    default?: any;
+    model?: InanoSQLDataModel;
+    notNull?: boolean;
+    max?: number;
+    min?: number;
+    [key: string]: any;
 }
 export interface InanoSQLSortBy {
     sort: {
@@ -299,7 +297,7 @@ export interface InanoSQLActionOrView {
     name: string;
     args?: string[];
     extend?: any;
-    call: (args?: any, db?: any) => Promise<any[]>;
+    call: (args: any, db: InanoSQLInstance) => Promise<any[]>;
 }
 export interface InanoSQLFunctionResult {
     result: any;
@@ -336,22 +334,19 @@ export interface InanoSQLV1ConfigFn {
     table: (ta?: string) => InanoSQLV1ConfigFn;
     rowFilter: (callback: (row: any) => any) => InanoSQLV1ConfigFn;
 }
+export interface InanoSQLTableIndexConfig {
+    offset?: number;
+    unique?: boolean;
+    [prop: string]: any;
+}
 export interface InanoSQLTableConfig {
     name: string;
-    model: InanoSQLDataModel | string;
+    model: {
+        [colAndType: string]: InanoSQLDataModel;
+    } | string;
     primaryKey?: string;
     indexes?: {
-        [colAndType: string]: {
-            offset?: number;
-            unique?: boolean;
-            [prop: string]: any;
-        };
-    };
-    foreignKeys?: {
-        [colAndTable: string]: {
-            onDelete?: "cascade" | "set null" | "restrict" | "nothing";
-            [prop: string]: any;
-        };
+        [colAndType: string]: InanoSQLTableIndexConfig;
     };
     filter?: (row: any) => any;
     actions?: InanoSQLActionOrView[];
@@ -361,23 +356,15 @@ export interface InanoSQLTableConfig {
     };
     _internal?: boolean;
 }
-export interface InanoSQLFK {
-    onDelete: "cascade" | "set null" | "restrict" | "nothing";
-    props: {
-        [key: string]: any;
-    };
-    table: string;
-    path: string[];
-    isArray: boolean;
-}
 export interface InanoSQLTable {
-    model: InanoSQLDataModel | string;
+    model: {
+        [colAndType: string]: InanoSQLDataModel;
+    } | string;
     id: string;
     columns: InanoSQLTableColumn[];
     indexes: {
         [id: string]: InanoSQLIndex;
     };
-    foreignKeys: InanoSQLFK[];
     filter?: (row: any) => any;
     actions: InanoSQLActionOrView[];
     views: InanoSQLActionOrView[];
@@ -569,7 +556,7 @@ export interface IAVFilterResult {
     AVType: "a" | "v";
     table: string;
     AVName: string;
-    AVargs: any;
+    AVArgs: any;
 }
 export interface TableQueryResult {
     rows: string | any[];
@@ -586,6 +573,7 @@ export interface configFilter extends abstractFilter {
     res: InanoSQLConfig;
 }
 export interface willConnectFilter extends abstractFilter {
+    res: InanoSQLInstance;
 }
 export interface readyFilter extends abstractFilter {
 }
@@ -593,7 +581,7 @@ export interface disconnectFilter extends abstractFilter {
 }
 export interface customQueryFilter extends abstractFilter {
     res: undefined;
-    query: InanoSQLQueryExec;
+    query: InanoSQLQuery;
     onRow: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
@@ -777,6 +765,7 @@ export interface loadIndexCacheFilter extends abstractFilter {
 export interface conformRowFilter extends abstractFilter {
     res: any;
     oldRow: any;
+    query: InanoSQLQuery;
 }
 export interface onEventFilter extends abstractFilter {
     res: {
@@ -803,14 +792,20 @@ export interface updateRowFilter extends abstractFilter {
 export interface postConnectFilter extends abstractFilter {
     res: InanoSQLConfig;
 }
+export interface readyFilter extends abstractFilter {
+    res: InanoSQLDatabaseEvent;
+}
 export interface addRowEventFilter extends abstractFilter {
     res: InanoSQLDatabaseEvent;
+    query: InanoSQLQuery;
 }
 export interface deleteRowEventFilter extends abstractFilter {
     res: InanoSQLDatabaseEvent;
+    query: InanoSQLQuery;
 }
 export interface updateRowEventFilter extends abstractFilter {
     res: InanoSQLDatabaseEvent;
+    query: InanoSQLQuery;
 }
 export interface InanoSQLupdateIndex {
     table: string;
@@ -825,4 +820,5 @@ export interface InanoSQLupdateIndex {
 }
 export interface updateIndexFilter extends abstractFilter {
     res: InanoSQLupdateIndex;
+    query: InanoSQLQuery;
 }

@@ -18,6 +18,7 @@ var webSQL_1 = require("./adapters/webSQL");
 var indexedDB_1 = require("./adapters/indexedDB");
 var query_builder_1 = require("./query-builder");
 var utils = require("./utilities");
+// import { nanoSQLAdapterTest } from "./adapter-test";
 var RocksDB;
 if (typeof global !== "undefined") {
     RocksDB = global._rocksAdapter;
@@ -310,7 +311,7 @@ var nanoSQL = /** @class */ (function () {
                 _this.state.peerMode = true;
             }
             return new Promise(function (res, rej) {
-                _this.doFilter("willConnect", { res: {} }, function () { res(); }, rej);
+                _this.doFilter("willConnect", { res: _this }, function () { res(); }, rej);
             });
         }).then(function () {
             // setup and connect adapter
@@ -470,21 +471,24 @@ var nanoSQL = /** @class */ (function () {
             });
         }).then(function () {
             return new Promise(function (res, rej) {
-                _this.triggerEvent({
+                var event = {
                     target: "Core",
                     path: "*",
                     targetId: _this.state.id,
                     events: ["ready"],
                     time: Date.now()
-                });
-                _this.state.ready = true;
-                if (!_this.config.disableTTL) {
-                    _this._checkTTL();
-                }
-                if (_this.config.peer) {
-                    _this._initPeers();
-                }
-                res();
+                };
+                _this.doFilter("ready", { res: event }, function (evnt) {
+                    _this.triggerEvent(evnt.res);
+                    _this.state.ready = true;
+                    if (!_this.config.disableTTL) {
+                        _this._checkTTL();
+                    }
+                    if (_this.config.peer) {
+                        _this._initPeers();
+                    }
+                    res();
+                }, rej);
             });
         });
     };
@@ -602,7 +606,6 @@ var nanoSQL = /** @class */ (function () {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                case "map reduce":
                     _this.eventFNs.Core["*"].on(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
@@ -657,7 +660,6 @@ var nanoSQL = /** @class */ (function () {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                case "map reduce":
                     _this.eventFNs.Core["*"].off(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
@@ -719,17 +721,17 @@ var nanoSQL = /** @class */ (function () {
     nanoSQL.prototype.doAction = function (actionName, actionArgs) {
         return this._doAV("a", this.state.selectedTable, actionName, actionArgs);
     };
-    nanoSQL.prototype._doAV = function (AVType, table, AVName, AVargs) {
+    nanoSQL.prototype._doAV = function (AVType, table, AVName, AVArgs) {
         var _this = this;
         if (typeof this.state.selectedTable !== "string")
             return Promise.reject("Can't do Action/View with selected table!");
         return new Promise(function (res, rej) {
-            _this.doFilter(AVType, {
+            _this.doFilter("actionView", {
                 res: {
                     AVType: AVType,
                     table: table,
                     AVName: AVName,
-                    AVargs: AVargs
+                    AVArgs: AVArgs
                 }
             }, res, rej);
         }).then(function (actionOrView) {
@@ -742,7 +744,7 @@ var nanoSQL = /** @class */ (function () {
             if (!selAV) {
                 return new Promise(function (res, rej) { return rej(actionOrView.res.AVType + " \"" + actionOrView.res.AVName + "\" Not Found!"); });
             }
-            return selAV.call(selAV.args ? utilities_1.cleanArgs(selAV.args, actionOrView.res.AVargs, _this) : {}, _this);
+            return selAV.call(selAV.args ? utilities_1.cleanArgs(selAV.args, actionOrView.res.AVArgs, _this) : {}, _this);
         });
     };
     nanoSQL.prototype.query = function (action, args) {
@@ -758,7 +760,12 @@ var nanoSQL = /** @class */ (function () {
         }
         this.doFilter("query", { res: query }, function (setQuery) {
             if (_this.config.queue && !setQuery.res.skipQueue) {
-                _this._Q.newItem({ query: setQuery.res, onRow: onRow, complete: complete, error: error }, function (item, done, err) {
+                _this._Q.newItem({
+                    query: setQuery.res,
+                    onRow: onRow,
+                    complete: complete,
+                    error: error
+                }, function (item, done, err) {
                     new query_1._nanoSQLQuery(_this, item.query, item.onRow, function () {
                         done();
                         item.complete();
@@ -885,7 +892,7 @@ var nanoSQL = /** @class */ (function () {
                 var tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(_this.tables[table].indexes);
                 utilities_1.chainAsync(tableIndexes, function (index, i, nextIdx, errIdx) {
                     utilities_1.adapterFilters(_this).readIndexKeys(tableName_1, index, "all", undefined, undefined, false, function (key, id) {
-                        onRow(index, { indexId: id, rowId: key });
+                        onRow(tableName_1 + "." + index, { indexId: id, rowId: key });
                     }, nextIdx, errIdx);
                 }).then(nextTable).catch(err);
             }
@@ -907,8 +914,8 @@ var nanoSQL = /** @class */ (function () {
         return utilities_1.chainAsync(importTables, function (table, i, next, err) {
             if (indexes) {
                 // tableName:IndexName
-                var tableName_2 = table.split(":")[0];
-                var indexName_1 = table.split(":")[1];
+                var tableName_2 = table.split(".")[0];
+                var indexName_1 = table.split(".")[1];
                 utilities_1.chainAsync(tables[table], function (indexRow, ii, nextIdx, errIdx) {
                     utilities_1.adapterFilters(_this).addIndexValue(tableName_2, indexName_1, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
                 }).then(next).catch(err);
@@ -1101,9 +1108,9 @@ exports.nSQLv1Config = function (doConfig) {
     var selTable = "";
     var nSQLv1 = function (table) {
         selTable = table || selTable;
-        if (table && !tables[table]) {
-            tables[table] = {
-                name: table,
+        if (selTable && !tables[selTable]) {
+            tables[selTable] = {
+                name: selTable,
                 model: {},
                 indexes: {},
                 actions: [],
@@ -1170,11 +1177,12 @@ if (typeof window !== "undefined") {
     window["@nano-sql"].core = {
         nSQL: exports.nSQL,
         nanoSQL: nanoSQL,
-        utilities: utils
+        utilities: utils,
+        nSQLv1Config: exports.nSQLv1Config
     };
 }
-// used to test browser adapters with live reload
 /*
+// used to test browser adapters with live reload
 let errors = 0;
 console.log("Testing IndexedDB");
 new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {

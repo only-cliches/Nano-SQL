@@ -30,7 +30,6 @@ export const blankTableDefinition: InanoSQLTable = {
     id: "",
     model: {},
     columns: [],
-    foreignKeys: [],
     indexes: {},
     actions: [],
     // mapReduce: [],
@@ -262,7 +261,7 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                     higher += nSQL.tables[table].indexes[indexName].props.offset || 0;
                 }
             }
-            nSQL.doFilter<adapterReadIndexKeysFilter>("adapterReadIndexKey", {res: {table: nSQL.tableIds[table], indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterReadIndexKeysFilter>("adapterReadIndexKeys", {res: {table: nSQL.tableIds[table], indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error}, query}, (result) => {
                 if (!result) return; // filter took over
                 nSQL.adapter.readIndexKeys(result.res.table, result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
             }, error);
@@ -698,9 +697,9 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: 
     const doCast = (castType: string, castVal: any) => {
         switch (castType) {
             case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, (s) => entityMap[s]);
-            case "int": return (t !== "number" || castVal % 1 !== 0) ? parseInt(castVal || 0) : castVal;
+            case "int": return (t !== "number" || castVal % 1 !== 0) ? Math.round(nan(castVal)) : castVal;
             case "number":
-            case "float": return t !== "number" ? parseFloat(castVal || 0) : castVal;
+            case "float": return t !== "number" ? nan(castVal) : castVal;
             case "array": return Array.isArray(castVal) ? castVal : [];
             case "uuid":
             case "timeId":

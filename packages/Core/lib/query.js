@@ -82,7 +82,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 this._describe();
                 break;
             case "describe indexes":
-                this._describe(true);
+                this._describe("idx");
                 break;
             case "drop":
             case "drop table":
@@ -110,7 +110,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 });
                 break;
             default:
-                this.nSQL.doFilter("customQuery", { res: undefined, query: this, onRow: progress, complete: complete, error: error }, function () {
+                this.nSQL.doFilter("customQuery", { res: undefined, query: this.query, onRow: progress, complete: complete, error: error }, function () {
                     _this.query.state = "error";
                     _this.error("Query type \"" + query.action + "\" not supported!");
                 }, function (err) {
@@ -130,7 +130,7 @@ var _nanoSQLQuery = /** @class */ (function () {
         var count = 0;
         var conformQueue = new utilities_1._nanoSQLQueue(function (item, i, done, err) {
             var newRow = _this.nSQL.default(item, conformTable);
-            _this.nSQL.doFilter("conformRow", { res: newRow, oldRow: item }, function (setRow) {
+            _this.nSQL.doFilter("conformRow", { res: newRow, oldRow: item, query: _this.query }, function (setRow) {
                 _this._diffUpdates(_this.query.table, item, setRow.res, function () {
                     var changeEvent = {
                         target: conformTable,
@@ -746,7 +746,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                     query: _this.query,
                     indexes: _this._indexesUsed
                 };
-                _this.nSQL.doFilter("updateRowEvent", { res: changeEvent }, function (event) {
+                _this.nSQL.doFilter("updateRowEvent", { res: changeEvent, query: _this.query }, function (event) {
                     if (typeof _this.query.table === "string") {
                         _this.nSQL.triggerEvent(event.res);
                         if (_this.nSQL.eventFNs[_this.query.table]) {
@@ -855,7 +855,7 @@ var _nanoSQLQuery = /** @class */ (function () {
     _nanoSQLQuery.prototype._updateIndex = function (table, indexName, value, pk, addToIndex, done, err) {
         var _this = this;
         var newItem = { table: table, indexName: indexName, value: value, pk: pk, addToIndex: addToIndex, done: done, err: err, query: this.query, nSQL: this.nSQL };
-        this.nSQL.doFilter("updateIndex", { res: newItem }, function (update) {
+        this.nSQL.doFilter("updateIndex", { res: newItem, query: this.query }, function (update) {
             exports.secondaryIndexQueue[_this.nSQL.state.id + _this.query.table].newItem(update.res, function (item, done, error) {
                 var fn = item.addToIndex ? utilities_1.adapterFilters(item.nSQL, item.query).addIndexValue : utilities_1.adapterFilters(item.nSQL, item.query).deleteIndexValue;
                 fn(item.table, item.indexName, item.pk, item.value, function () {
@@ -906,7 +906,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                             query: _this.query,
                             indexes: _this._indexesUsed
                         };
-                        _this.nSQL.doFilter("addRowEvent", { res: changeEvent }, function (event) {
+                        _this.nSQL.doFilter("addRowEvent", { res: changeEvent, query: _this.query }, function (event) {
                             if (typeof _this.query.table === "string") {
                                 _this.nSQL.triggerEvent(event.res);
                             }
@@ -977,7 +977,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                     query: _this.query,
                     indexes: _this._indexesUsed
                 };
-                _this.nSQL.doFilter("deleteRowEvent", { res: delEvent }, function (event) {
+                _this.nSQL.doFilter("deleteRowEvent", { res: delEvent, query: _this.query }, function (event) {
                     if (typeof _this.query.table === "string") {
                         _this.nSQL.triggerEvent(event.res);
                     }
@@ -1005,8 +1005,9 @@ var _nanoSQLQuery = /** @class */ (function () {
         });
         this.complete();
     };
-    _nanoSQLQuery.prototype._describe = function (showIndexes) {
+    _nanoSQLQuery.prototype._describe = function (type) {
         var _this = this;
+        if (type === void 0) { type = "table"; }
         if (typeof this.query.table !== "string") {
             this.query.state = "error";
             this.error({ error: "Can't call describe on that!", query: this.query });
@@ -1017,16 +1018,18 @@ var _nanoSQLQuery = /** @class */ (function () {
             this.error({ error: "Table " + this.query.table + " not found!", query: this.query });
             return;
         }
-        if (showIndexes) {
-            Object.keys(this.nSQL.tables[this.query.table].indexes).forEach(function (idx, i) {
-                var index = _this.nSQL.tables[_this.query.table].indexes[idx];
-                _this.progress(utilities_1.assign(index), i);
-            });
-        }
-        else {
-            this.nSQL.tables[this.query.table].columns.forEach(function (col, i) {
-                _this.progress(utilities_1.assign(col), i);
-            });
+        switch (type) {
+            case "table":
+                this.nSQL.tables[this.query.table].columns.forEach(function (col, i) {
+                    _this.progress(utilities_1.assign(col), i);
+                });
+                break;
+            case "idx":
+                Object.keys(this.nSQL.tables[this.query.table].indexes).forEach(function (idx, i) {
+                    var index = _this.nSQL.tables[_this.query.table].indexes[idx];
+                    _this.progress(utilities_1.assign(index), i);
+                });
+                break;
         }
         this.complete();
     };
@@ -1225,7 +1228,6 @@ var _nanoSQLQuery = /** @class */ (function () {
                 columns: generateColumns(computedDataModel),
                 filter: table.res.filter,
                 actions: table.res.actions || [],
-                foreignKeys: [],
                 views: table.res.views || [],
                 indexes: Object.keys(indexes).map(function (i) { return ({
                     id: utilities_1.resolvePath(i.split(":")[0]).join("."),

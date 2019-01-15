@@ -4,7 +4,6 @@ exports.blankTableDefinition = {
     id: "",
     model: {},
     columns: [],
-    foreignKeys: [],
     indexes: {},
     actions: [],
     // mapReduce: [],
@@ -236,7 +235,7 @@ exports.adapterFilters = function (nSQL, query) {
                     higher += nSQL.tables[table].indexes[indexName].props.offset || 0;
                 }
             }
-            nSQL.doFilter("adapterReadIndexKey", { res: { table: nSQL.tableIds[table], indexName: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterReadIndexKeys", { res: { table: nSQL.tableIds[table], indexName: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
                 nSQL.adapter.readIndexKeys(result.res.table, result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
@@ -650,9 +649,9 @@ exports.cast = function (type, val, allowUknownTypes, nSQL) {
     var doCast = function (castType, castVal) {
         switch (castType) {
             case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, function (s) { return entityMap[s]; });
-            case "int": return (t !== "number" || castVal % 1 !== 0) ? parseInt(castVal || 0) : castVal;
+            case "int": return (t !== "number" || castVal % 1 !== 0) ? Math.round(exports.nan(castVal)) : castVal;
             case "number":
-            case "float": return t !== "number" ? parseFloat(castVal || 0) : castVal;
+            case "float": return t !== "number" ? exports.nan(castVal) : castVal;
             case "array": return Array.isArray(castVal) ? castVal : [];
             case "uuid":
             case "timeId":

@@ -78,7 +78,7 @@ export declare class nanoSQL implements InanoSQLInstance {
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;
-    _doAV(AVType: "a" | "v", table: string, AVName: string, AVargs: any): Promise<any>;
+    _doAV(AVType: "a" | "v", table: string, AVName: string, AVArgs: any): Promise<any>;
     query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder;
     triggerQuery(query: InanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
     triggerEvent(eventData: InanoSQLDatabaseEvent, ignoreStarTable?: boolean): InanoSQLInstance;

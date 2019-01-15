@@ -50,7 +50,7 @@ export declare class _nanoSQLQuery implements InanoSQLQueryExec {
         [indexName: string]: any;
     };
     _showTables(): void;
-    _describe(showIndexes?: boolean): void;
+    _describe(type?: "table" | "idx" | "fks"): void;
     _combineRows(rData: any): {};
     _streamAS(row: any): any;
     _orderByRows(a: any, b: any): number;

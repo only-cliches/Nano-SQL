@@ -12,19 +12,30 @@
   </a>
 </p>
 
-<h1 align="center">nanoSQL 2</h1>
+<h1 align="center">nanoSQL</h1>
 <p align="center">
   <strong>Universal database for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
 
+
+# NOTICE: This is the IN PROGRESS readme for nanoSQL 2.0.  Some of these features are not in place yet.
+Scroll down for the todo list and it's progress.
+
 ## nanoSQL is a database abstraction layer that: 
 1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).
-2. Supports many advanced features like Graph Queries, Indexing, and Geolocations.
-3. Lets you use almost any database technology (RocksDB, IndexedDB, WebSQL, etc).
-4. Starts at only 25 KB gzipped.
+2. Use nanoSQL standalone, as the glue between your server and clients, or even with multi master servers.
+3. Supports many advanced features like Graph Queries, Map/Reduce, Indexing, and Geolocations.
+4. Lets you use almost any database technology (RocksDB, MySQL, SQLite, Amazon Dynamo, etc...).
+5. Starts at only 25 KB gzipped.
 
 ### Identical API Everywhere
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
+
+### Data Model => Typescript Interface
+Automatically generate typescript interfaces from your data models.
+
+### Offline Syncing
+Run nanoSQL on your server and client, then with little effort allow nanoSQL to handle the eventual consistency problems and keep both ends in sync with eachother.
 
 ### Not Only NoSQL 
 Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
@@ -36,9 +47,11 @@ The best of both worlds: Use RDBMS style data models to tune performance but sti
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, query function support, typescript support, event system, CSV/JSON import & export, and runs in every browser back to IE9!
+Built in geolocation indexing, foreign keys, query function support, multi-tab sync, typescript support, event system, CSV/JSON import & export, and runs in every browser back to IE9!
 
+## Live Examples: [Express/NodeJS](https://nanosql.gitbook.io/docs/examples/express-nodejs) - [React](https://nanosql.gitbook.io/docs/examples/react) - [React Native](https://nanosql.gitbook.io/docs/examples/react-native) - [Angular](https://nanosql.gitbook.io/docs/examples/angular) - [VueJS](https://nanosql.gitbook.io/docs/examples/vuejs) - [Cordova](https://nanosql.gitbook.io/docs/examples/cordova)
 
+<!--
 ## Comparison with Other Projects
 
 |           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
@@ -50,8 +63,12 @@ Built in geolocation indexing, query function support, typescript support, event
 | IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
 | Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
 | Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| Offline Syncing | ✓ | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Multi Master Server | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Map Reduce Support | ✓  | ✕      | ✕      | ✕    | ✕         | ✓       | ✕      | ✕      | ✕      | ✕      |
+| Fuzzy Search | ✓  | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✓      |
 | Size (kb) | 25      | 5       | 19      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
-
+-->
 
 ## Database Support
 
@@ -64,9 +81,14 @@ NanoSQL can save data to many different places, depending on the browser or envi
     - WebSQL
     - Local Storage
 
-More Adapters coming soon.
+2. **[SQLite (NodeJS)](#)**
+3. **[SQLite (Cordova)](#)**
+4. **[MySQL](#)**
+5. **[React Native](#)**
+6. **[Redis](#)**
+7. **[Amazon Dynamo DB](#)**
 
-[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
+[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html)
 
 ## Installation
 
@@ -89,12 +111,31 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.1/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.0-rc22/dist/nano-sql.min.js"></script>
 ```
 
 ## Important
 If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
 
+# 2.0 Progress
+- [x] Query Engine 
+- [x] Hook/Filter System
+- [x] Memory/Local Storage Adapter
+- [x] Graph Query Support
+- [x] Event System
+- [x] Indexed DB/WebSQL/RocksDB Adapters
+- [x] Core Tests
+- [x] Adapter Tests
+- [ ] 2.0 documentation
+- [ ] 2.0 release
+- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters
+- [ ] GraphQL Support
+- [ ] Net Plugin (Offline Syncing)
+- [ ] Search Plugin
+- [ ] History Plugin
+- [ ] SQLite Query Support
+- [ ] MongoDB Query Support
+- [ ] ReQL Query Support
 
 # Examples
 
@@ -234,23 +275,3 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
     */
 })
 ```
-
-# 2.0 Progress
-- [x] Query Engine 
-- [x] Hook/Filter System
-- [x] Memory/Local Storage Adapter
-- [x] Graph Query Support
-- [x] Event System
-- [x] Indexed DB/WebSQL/RocksDB Adapters
-- [x] Core Tests
-- [x] Adapter Tests
-- [x] 2.0 documentation
-- [x] 2.0 release
-- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters
-- [ ] GraphQL Support
-- [ ] Net Plugin (Offline Syncing)
-- [ ] Search Plugin
-- [ ] History Plugin
-- [ ] SQLite Query Support
-- [ ] MongoDB Query Support
-- [ ] ReQL Query Support

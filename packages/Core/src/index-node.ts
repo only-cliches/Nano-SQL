@@ -13,12 +13,13 @@ try {
 } catch (e) { }
 
 import {
-    nSQL, nanoSQL, InanoSQLInstance
+    nSQL, nanoSQL, InanoSQLInstance, nSQLv1Config
 } from "./index";
 
 
 export {
     nSQL,
     nanoSQL,
-    InanoSQLInstance
+    InanoSQLInstance,
+    nSQLv1Config
 };
