@@ -4,11 +4,13 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 ## Packages
 - [Core](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core)
 
+### Adapters
+- [DynamoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-DynamoDB)
+
 # WIP
 Items here are planned but not yet released.
 
 ### Adapters
-- [DynamoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-DynamoDB)
 - [MongoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MongoDB)
 - [MySQL Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MySQL)
 - [React Native Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)

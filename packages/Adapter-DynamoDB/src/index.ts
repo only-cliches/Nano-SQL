@@ -1,6 +1,7 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "@nano-sql/core/lib/interfaces";
-import { _nanoSQLQueue, generateID, _maybeAssign, setFast } from "@nano-sql/core/lib/utilities";
+import { generateID, setFast, deepSet } from "@nano-sql/core/lib/utilities";
 import * as AWS from "aws-sdk";
+import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
 
 export interface DynamoAdapterArgs {
     filterSchema?: (schema: AWS.DynamoDB.CreateTableInput) => AWS.DynamoDB.CreateTableInput,
@@ -24,7 +25,7 @@ export interface DynamoAdapterConfig {
 
 export const copy = (e) => e;
 
-export class DynamoDB implements InanoSQLAdapter {
+export class DynamoDB extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "DynamoDB Adapter",
@@ -35,10 +36,17 @@ export class DynamoDB implements InanoSQLAdapter {
 
     private _id: string;
     private _db: AWS.DynamoDB;
+    private _connectArgs: AWS.DynamoDB.ClientConfiguration;
     private _client: AWS.DynamoDB.DocumentClient;
     private config: DynamoAdapterConfig;
+    private _tableConfigs: {
+        [tableName: string]: InanoSQLTable;
+    }
 
-    constructor(args: DynamoAdapterArgs = {}) {  
+    constructor(connectArgs?: AWS.DynamoDB.ClientConfiguration, args?: DynamoAdapterArgs) {  
+
+        super(false, false);
+
         this.config = {
             filterDrop: copy,
             filterDelete: copy,
@@ -47,23 +55,25 @@ export class DynamoDB implements InanoSQLAdapter {
             filterGet: copy,
             filterQuery: copy,
             filterScan: copy,
-            ...args
+            ...(args || {})
         }
+        this._connectArgs = connectArgs || {};
+        this._tableConfigs = {};
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
-        this._db = new AWS.DynamoDB();
+        this._db = new AWS.DynamoDB(this._connectArgs);
         this._client = new AWS.DynamoDB.DocumentClient();
-        this.createAndInitTable("_ai_store", {
+        this.createTable("_ai_store", {
+            id: "_ai_store",
             model: {},
             columns: [],
             indexes: {},
-            pkOffset: 0,
             actions: [],
             views: [],
             pkType: "string",
-            pkCol: "",
+            pkCol: [],
             isPkNum: false,
             ai: false
         }, complete, error);
@@ -73,7 +83,9 @@ export class DynamoDB implements InanoSQLAdapter {
         return this._id + "." + tableName;
     }
 
-    createAndInitTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
+
+        this._tableConfigs[tableName] = tableData;
 
         this._db.listTables().promise().then((tables) => {
             const exists = (tables.TableNames || []).filter(t => t === this.table(tableName)).length > 0;
@@ -130,17 +142,13 @@ export class DynamoDB implements InanoSQLAdapter {
         });
     }
 
-    disconnectTable(table: string, complete: () => void, error: (err: any) => void) {
-        complete();
-    }
-
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
         this._db.deleteTable(this.config.filterDrop({TableName: this.table(table)}), (err) => {
             if (err) {
                 error(err);
                 return;
             }
-            if (!this.nSQL.tables[table].ai) {
+            if (!this._tableConfigs[table].ai) {
                 complete();
                 return;
             }
@@ -170,7 +178,7 @@ export class DynamoDB implements InanoSQLAdapter {
 
         (() => {
             return new Promise((res, rej) => {
-                if (this.nSQL.tables[table].ai) {
+                if (this._tableConfigs[table].ai) {
                     this._client.get(this.config.filterGet({
                         TableName: this.table("_ai_store"),
                         Key: {
@@ -190,13 +198,13 @@ export class DynamoDB implements InanoSQLAdapter {
                 }
             })
         })().then((ai: number) => {
-            pk = pk || generateID(this.nSQL.tables[table].pkType, ai + 1);
+            pk = pk || generateID(this._tableConfigs[table].pkType, ai + 1);
             if (typeof pk === "undefined") {
                 error(new Error("Can't add a row without a primary key!"));
                 return;
             }
 
-            row[this.nSQL.tables[table].pkCol] = pk;
+            deepSet(this._tableConfigs[table].pkCol, row, pk);
 
             const updateRow = () => {
                 this._client.update(this.config.filterUpdate({
@@ -221,7 +229,7 @@ export class DynamoDB implements InanoSQLAdapter {
                 });
             }
 
-            if (this.nSQL.tables[table].ai && ai < pk) {
+            if (this._tableConfigs[table].ai && ai < pk) {
                 // update ai counter
                 this._client.update(this.config.filterUpdate({
                     TableName: this.table("_ai_store"),
@@ -302,12 +310,11 @@ export class DynamoDB implements InanoSQLAdapter {
                     }
                     (item.Items || []).forEach((item) => {
                         if (type === "offset") {
-                            if (count >= low && count < high) {
-                                if (reverse) {
-                                    cache.unshift([item ? JSON.parse(item["data"]) : undefined, count])
-                                } else {
-                                    onRow(item ? JSON.parse(item["data"]) : undefined, count);
-                                } 
+                            if (!reverse && count >= low && count < high) {
+                                onRow(item ? JSON.parse(item["data"]) : undefined, count);
+                            }
+                            if (reverse) {
+                                cache.unshift([item ? JSON.parse(item["data"]) : undefined, count])
                             }
                         } else {
                             if (reverse) {
@@ -319,12 +326,23 @@ export class DynamoDB implements InanoSQLAdapter {
                         count++;
                     })
                     if (type === "offset") {
-                        if (count < high && item.LastEvaluatedKey) {
-                            LastEvaluatedKey = item.LastEvaluatedKey;
-                            setFast(read);
+                        if (reverse) {
+                            cache = cache.splice(low + 1, limitOrHigh);
+                            if (item.LastEvaluatedKey) {
+                                LastEvaluatedKey = item.LastEvaluatedKey;
+                                setFast(read);
+                            } else {
+                                done();
+                            }
                         } else {
-                            done();
+                            if (count < high && item.LastEvaluatedKey) {
+                                LastEvaluatedKey = item.LastEvaluatedKey;
+                                setFast(read);
+                            } else {
+                                done();
+                            }
                         }
+
                     } else {
                         if (item.LastEvaluatedKey) {
                             LastEvaluatedKey = item.LastEvaluatedKey;
@@ -398,7 +416,7 @@ export class DynamoDB implements InanoSQLAdapter {
         });
     }
 
-    getIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
         let index: any[] = [];
         let LastEvaluatedKey: AWS.DynamoDB.DocumentClient.Key;
         const read = () => {
@@ -425,7 +443,7 @@ export class DynamoDB implements InanoSQLAdapter {
 
     }
 
-    getNumberOfRecords(table: string, complete: (length: number) => void, error: (err: any) => void) {
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
         let count: number = 0;
         let LastEvaluatedKey: AWS.DynamoDB.DocumentClient.Key;
         const read = () => {

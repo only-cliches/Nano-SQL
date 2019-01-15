@@ -1,5 +1,5 @@
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = 2.01;
+exports.VERSION = 2.02;
 ;
 var IWhereType;
 (function (IWhereType) {

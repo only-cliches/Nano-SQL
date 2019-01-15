@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/ClickSimply/Nano-SQL">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
     <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
   </a>
 </p>
@@ -16,6 +16,8 @@
 <p align="center">
   <strong>Universal database for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
+
+[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
 
 ## nanoSQL is a database abstraction layer that: 
 1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).
@@ -64,9 +66,8 @@ NanoSQL can save data to many different places, depending on the browser or envi
     - WebSQL
     - Local Storage
 
-More Adapters coming soon.
-
-[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
+2. **[SQLite (NodeJS)](#https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
+3. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
 
 ## Installation
 
@@ -89,7 +90,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.1/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.2/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

@@ -1,41 +1,73 @@
-# Nano-SQLite3
-SQLite3 Driver for [Nano SQL](https://nanosql.io/)
+<p align="center">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  </a>
+</p>
+<p align="center">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-sqlite">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-sqlite.svg" alt="nanoSQL Logo">
+  </a>
+  <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
+  </a>
+</p>
 
-<img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
+<h1 align="center">nanoSQL 2 SQLite Adapter</h1>
+<p align="center">
+  <strong>Allows you to run SQLite in NodeJS with nanoSQL 2</strong>
+</p>
 
-[![NPM](https://nodei.co/npm/nano-sqlite.png?downloads=true&stars=true)](https://nodei.co/npm/nano-sqlite/)
+[Documentation](https://nanosql.gitbook.io/docs/adapters/sqlite-nodejs) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
 
-## [Documentation](https://docs.nanosql.io/)
+# Installation
 
-## Installation
 ```sh
-npm i --save nano-sqlite
+npm i @nano-sql/adapter-sqlite --save
 ```
 
-## Usage
+# Usage
+
 ```ts
-import { nSQL } from "nano-sql";
-import { nSQLiteAdapter, sqlite3 } from "nano-sqlite";
+import { SQLite } from "@nano-sql/adapter-sqlite";
+import { nSQL } from "@nano-sql/core";
 
-nSQL("table")
-.model([...])
-.config({
-    mode: new nSQLiteAdapter(":memory:", sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE),
-    ...other config options
-}).connect()...
+nSQL().connect({
+    id: "my_db",
+    mode: new SQLite(),
+    tables: [...]
+}).then(...)
 ```
-
-That's it, now everything NanoSQL can do you can do with SQLite.
-
-Read about NanoSQL [here](https://nanosql.io/).
 
 # API
 
-When you call `new nSQLiteAdapter` the arguments are exactly the same as for [`node-sqlite`](https://github.com/mapbox/node-sqlite3).
+The `SQLite` class accepts two optional arguments in it's constructor.
 
-The first argument is optional, it's the name of the SQLite database to create. Leaving the argument empty is the same as passing in ":memory:", which will cause the SQLite database to operate in memory only mode.  Passing in a string will cause it to make a database and use that as it's name.
+### Filename
+The first argument is the filename to the SQLite database to connect, default is ":memory:" which creates a temporary database.
 
-The second argument is optional, One or more of `sqlite3.OPEN_READONLY`, `sqlite3.OPEN_READWRITE` and `sqlite3.OPEN_CREATE`. The default value is `OPEN_READWRITE | OPEN_CREATE`.
+### Database Mode
 
-When using this adapter the id you pass into the config object will be ignored.
+The SQLite database mode can be set with this argument, the feature is fully documented [here](https://github.com/mapbox/node-sqlite3/wiki/API#new-sqlite3databasefilename-mode-callback).
+
+# MIT License
+
+Copyright (c) 2019 Scott Lott
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 

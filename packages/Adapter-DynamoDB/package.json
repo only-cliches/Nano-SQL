@@ -1,7 +1,7 @@
 {
-  "name": "@nano-sql/adapter-dynamodb",
-  "version": "2.0.0",
-  "description": "",
+  "name": "@nano-sql/adapter-dynamo",
+  "version": "2.0.3",
+  "description": "Easily Run AWS DynamoDB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
@@ -14,7 +14,7 @@
     "aws-sdk": "^2.382.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "2.X"
+    "@nano-sql/core": "^2.0.1"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

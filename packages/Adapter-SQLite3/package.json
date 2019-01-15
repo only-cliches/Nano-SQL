@@ -1,35 +1,25 @@
 {
-    "name": "nano-sqlite",
-    "version": "1.4.0",
-    "description": "SQLite3 Driver for Nano SQL",
-    "main": "index.js",
-    "typings": "index.d.ts",
-    "scripts": {
-        "build": "./node_modules/.bin/tsc"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/ClickSimply/Nano-SQL.git"
-    },
-    "keywords": [
-        "sql",
-        "sqlite",
-        "sqlite3",
-        "database"
-    ],
-    "author": "Scott Lott <Scott@ClickSimply.com>",
-    "license": "MIT",
-    "bugs": {
-        "url": "https://github.com/ClickSimply/Nano-SQL/issues"
-    },
-    "homepage": "https://nanosql.io/",
-    "devDependencies": {
-        "@types/node": "^10.1.3",
-        "@types/sqlite3": "^3.1.3",
-        "typescript": "^2.6.2"
-    },
-    "dependencies": {
-        "nano-sql": "^1.6.2",
-        "sqlite3": "^4.0.0"
-    }
+  "name": "@nano-sql/adapter-sqlite",
+  "version": "2.0.0",
+  "description": "Easily Run SQLite in NodeJS with nanoSQL 2!",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "ts-node src/test",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@nano-sql/core": "^2.0.1",
+    "sqlite3": "^4.0.6"
+  },
+  "peerDependencies": {
+    "@nano-sql/core": "^2.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
+  }
 }

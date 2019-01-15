@@ -4,7 +4,12 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.0.0]
+## [2.0.2]
+- Added DynamoDB and SQLite Adapter support.
+- DS_Store pull request.
+- A few readme tweaks.
+
+## [2.0.1]
 - Complete rewrite of the whole library from the ground up.  Previous plugins and adapters developed for nanoSQL 1.X will NOT work for 2.X versions.
 - Changed config, table model, view, and action setup format.  View [Migration Docs](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
 - Removed all ORM features, tries, history, observables and fuzzy search from core.

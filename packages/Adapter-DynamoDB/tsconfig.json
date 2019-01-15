@@ -9,6 +9,8 @@
         "noImplicitAny": false,
         "noImplicitReturns": true,
         "noImplicitThis": true,
+        "declaration": true,
+        "declarationDir": "lib",
         "noImplicitUseStrict": true,
         "sourceMap": true,
         "outDir": "lib",
