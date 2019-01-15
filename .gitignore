@@ -38,6 +38,7 @@ build/Release
 node_modules
 jspm_packages
 .DS_STORE
+.DS_Store
 
 # Optional npm cache directory
 .npm
