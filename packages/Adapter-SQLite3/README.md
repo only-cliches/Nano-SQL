@@ -43,7 +43,7 @@ nSQL().connect({
 The `SQLite` class accepts two optional arguments in it's constructor.
 
 ### Filename
-The first argument is the filename to the SQLite database to connect, default is ":memory:" which creates a temporary database.
+The first argument is the filename to the SQLite database to connect to, default is `:memory:` which creates a temporary database.
 
 ### Database Mode
 
