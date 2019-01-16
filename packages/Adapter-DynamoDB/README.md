@@ -14,7 +14,7 @@
 
 <h1 align="center">nanoSQL 2 DynamoDB Adapter</h1>
 <p align="center">
-  <strong>Allows you to run Amazon DynamoDB with nanoSQL 2</strong>
+  <strong>Allows you to run Amazon DynamoDB with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
 [Documentation](https://nanosql.gitbook.io/docs/adapters/dynamodb) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)

@@ -4,8 +4,8 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo">
-    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo.svg" alt="nanoSQL Logo">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-redis">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-redis.svg" alt="nanoSQL Logo">
   </a>
   <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
@@ -14,7 +14,7 @@
 
 <h1 align="center">nanoSQL 2 Redis Adapter</h1>
 <p align="center">
-  <strong>Allows you to run Amazon Redis with nanoSQL 2</strong>
+  <strong>Allows you to run Amazon Redis with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
 [Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)

@@ -33,7 +33,7 @@ export class SQLite  extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "SQLite Adapter",
-        version: 2.0
+        version: 2.02
     };
 
     nSQL: InanoSQLInstance;
