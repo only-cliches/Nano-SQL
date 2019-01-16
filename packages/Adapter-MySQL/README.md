@@ -1,41 +1,74 @@
-# Nano-MySQL
-MySQL Driver for [Nano SQL](https://nanosql.io/)
+<p align="center">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  </a>
+</p>
+<p align="center">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo.svg" alt="nanoSQL Logo">
+  </a>
+  <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
+  </a>
+</p>
 
-<img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
+<h1 align="center">nanoSQL 2 MySQL Adapter</h1>
+<p align="center">
+  <strong>Allows you to run MySQL with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
+</p>
 
-[![NPM](https://nodei.co/npm/nano-mysql.png?downloads=true&stars=true)](https://nodei.co/npm/nano-mysql/)
+[Documentation](https://nanosql.gitbook.io/docs/adapters/mysql) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
 
-## [Documentation](https://docs.nanosql.io/)
+# Installation
 
-## Installation
 ```sh
-npm i --save nano-mysql
+npm i @nano-sql/adapter-mysql --save
 ```
 
-## Usage
+# Usage
+
 ```ts
-import { nSQL } from "nano-sql";
-import { MySQLAdapter } from "nano-mysql";
+import { MySQL } from "@nano-sql/adapter-mysql";
+import { nSQL } from "@nano-sql/core";
 
-nSQL("table")
-.model([...])
-.config({
-    mode: new MySQLAdapter({ // required
-            host: "localhost",
-            database: "test",
-            user: "root",
-            password: "secret"
+nSQL().connect({
+    id: "my_db",
+    mode: new MySQL({ // required
+		host: "localhost",
+		database: "test",
+		user: "root",
+		password: "secret"
     }),
-    ...other config options
-}).connect()...
+    tables: [...]
+}).then(...)
 ```
-
-That's it, now everything NanoSQL can do you can do with MySQL.
-
-Read about NanoSQL [here](https://nanosql.io/).
 
 # API
 
-When you call `new MySQLAdapter` the adapter internally calls `mysql.createPool()` from the [mysql package](https://www.npmjs.com/package/mysql#pooling-connections).
+The `MySQL` class accepts one optional argument as its constructor.
 
-The default pool size is 20, you can modify this with the `connectionLimit` property.  All of the typical configuration options you would use are in the example above, refer the [mysql package documentation](https://www.npmjs.com/package/mysql#pooling-connections) for an exaustive list of options.
+### MySQL Connect Options
+The first object is passed directly into the backend mysql library to adjust the connect preferencs.  This object is fully documented [here](https://www.npmjs.com/package/mysql#connection-options).
+
+# MIT License
+
+Copyright (c) 2019 Scott Lott
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+

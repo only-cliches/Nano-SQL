@@ -1,33 +1,36 @@
 {
-  "name": "nano-mysql",
-  "version": "1.1.0",
-  "description": "MySQL Adapter for NanoSQL",
-  "main": "index.js",
-  "typings": "index.d.ts",
+  "name": "@nano-sql/adapter-mysql",
+  "version": "2.0.0",
+  "description": "Easily Run MySQL with nanoSQL 2!",
+  "main": "lib/index.js",
   "scripts": {
-    "build": "tsc && mv source.js index.js && mv source.d.ts index.d.ts",
-    "test": "tsc test.ts && node test.js && rm -rf *.js"
+    "test": "ts-node src/test",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/ClickSimply/Nano-SQL.git"
   },
-  "keywords": [],
+  "typings": "lib/index.d.ts",
+  "homepage": "https://nanosql.io/",
+  "keywords": [
+    "mysql",
+    "nosql",
+    "nanosql",
+    "rdbms"
+  ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/ClickSimply/Nano-SQL/issues"
-  },
-  "homepage": "https://nanosql.io",
   "dependencies": {
-    "@types/mysql": "^2.15.4",
-    "@types/redis": "^2.8.6",
-    "mysql": "^2.15.0",
-    "nano-sql": "^1.6.3",
-    "redis": "^2.8.0"
+    "@types/mysql": "^2.15.5",
+    "mysql": "^2.16.0"
+  },
+  "peerDependencies": {
+    "@nano-sql/core": "^2.0.2"
   },
   "devDependencies": {
-    "NanoSQL-Adapter-Test": "git+https://github.com/ClickSimply/NanoSQL-Adapter-Test.git",
-    "typescript": "^2.6.2"
+    "@types/node": "^10.12.18",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
   }
 }
