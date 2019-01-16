@@ -1,3 +1,6 @@
+# 2.0.5
+- Package.json adjustements
+
 # 2.0.4
 - Readme tweaks
 

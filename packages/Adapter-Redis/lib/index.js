@@ -19,7 +19,7 @@ var Redis = /** @class */ (function () {
         this.getClient = getClient;
         this.plugin = {
             name: "Redis Adapter",
-            version: 2.02
+            version: 2.03
         };
         this.connectArgs = this.connectArgs || {};
         this._tableConfigs = {};

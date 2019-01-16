@@ -1,13 +1,15 @@
 {
   "name": "@nano-sql/adapter-dynamo",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Easily Run AWS DynamoDB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
     "build": "tsc"
   },
-  "keywords": [],
+	"typings": "lib/index.d.ts",
+	"homepage": "https://nanosql.io/",
+  "keywords": ["amazon dynamodb", "dynamo db", "dynamob", "nosql", "nanosql", "rdbms"],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {

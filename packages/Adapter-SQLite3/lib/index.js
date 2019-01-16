@@ -35,7 +35,7 @@ var SQLite = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Adapter",
-            version: 2.02
+            version: 2.03
         };
         _this._ai = {};
         _this._query = _this._query.bind(_this);

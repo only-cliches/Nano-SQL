@@ -1,13 +1,19 @@
 {
   "name": "@nano-sql/adapter-sqlite",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Easily Run SQLite in NodeJS with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
     "build": "tsc"
   },
-  "keywords": [],
+  "repository": {
+		"type": "git",
+		"url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+	"typings": "lib/index.d.ts",
+	"homepage": "https://nanosql.io/",
+  "keywords": ["sqlite", "nanosql", "rdbms"],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
