@@ -20,7 +20,7 @@
 [Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
 
 # What is nanoSQL?
-nanoSQL core provides a standardized query language, data modeling and indexing system that can plug into almost any database technology and provide a consistent experience.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
+nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
 
 ### Identical API Everywhere
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
@@ -90,7 +90,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.2/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.3/dist/nano-sql.min.js"></script>
 ```
 
 ## Important
