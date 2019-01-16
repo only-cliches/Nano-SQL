@@ -29,7 +29,7 @@ export class DynamoDB extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "DynamoDB Adapter",
-        version: 2.05
+        version: 2.06
     };
 
     nSQL: InanoSQLInstance;

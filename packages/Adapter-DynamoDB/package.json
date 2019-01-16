@@ -1,12 +1,16 @@
 {
   "name": "@nano-sql/adapter-dynamo",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "Easily Run AWS DynamoDB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
     "build": "tsc"
   },
+  "repository": {
+		"type": "git",
+		"url": "https://github.com/ClickSimply/Nano-SQL.git"
+	},
 	"typings": "lib/index.d.ts",
 	"homepage": "https://nanosql.io/",
   "keywords": ["amazon dynamodb", "dynamo db", "dynamob", "nosql", "nanosql", "rdbms"],

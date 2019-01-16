@@ -19,7 +19,7 @@ var Redis = /** @class */ (function () {
         this.getClient = getClient;
         this.plugin = {
             name: "Redis Adapter",
-            version: 2.03
+            version: 2.04
         };
         this.connectArgs = this.connectArgs || {};
         this._tableConfigs = {};
@@ -447,42 +447,32 @@ var Redis = /** @class */ (function () {
         var indexName = "_idx_" + tableId + "_" + index;
         this.readZIndex(indexName, type, offsetOrLow, limitOrHigh, reverse, function (primaryKeys) {
             var page = 0;
-            // get the records in batches so we don't block redis
-            var getPage = function () {
+            if (!_this._db) {
+                error(noClient);
+                return;
+            }
+            utilities_1.chainAsync(primaryKeys, function (indexKey, i, pkNext, pkErr) {
                 if (!_this._db) {
                     error(noClient);
                     return;
                 }
-                var PKS = primaryKeys.slice((page * 100), (page * 100) + 100);
-                if (!PKS.length) {
-                    complete();
-                    return;
-                }
-                utilities_1.allAsync(PKS, function (indexKey, i, pkNext, pkErr) {
-                    if (!_this._db) {
-                        error(noClient);
+                _this._db.zrangebylex(_this.key(indexName, indexKey), "-", "+", function (err, result) {
+                    if (err) {
+                        error(err);
                         return;
                     }
-                    _this._db.zrangebylex(_this.key(indexName, indexKey), "-", "+", function (err, result) {
-                        if (err) {
-                            error(err);
-                            return;
-                        }
-                        if (!result) {
-                            pkNext();
-                            return;
-                        }
-                        result.forEach(function (value, i) {
-                            onRowPK(value.indexOf("num:") === 0 ? parseFloat(value.replace("num:", "")) : value, i);
-                        });
+                    if (!result) {
                         pkNext();
+                        return;
+                    }
+                    result.forEach(function (value, i) {
+                        onRowPK(value.indexOf("num:") === 0 ? parseFloat(value.replace("num:", "")) : value, i);
                     });
-                }).then(function () {
-                    page++;
-                    getPage();
+                    pkNext();
                 });
-            };
-            getPage();
+            }).then(function () {
+                complete();
+            });
         }, error);
     };
     return Redis;

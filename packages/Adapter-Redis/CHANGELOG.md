@@ -1,3 +1,6 @@
+# 2.0.4
+- Adjusted secondary index read.
+
 # 2.0.3
 - Added details to package.json
 

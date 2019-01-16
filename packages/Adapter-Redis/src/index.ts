@@ -8,18 +8,18 @@ export class Redis implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "Redis Adapter",
-        version: 2.03
+        version: 2.04
     };
 
     nSQL: InanoSQLInstance;
 
     private _id: string;
-    private _db: redis.RedisClient|undefined;
+    private _db: redis.RedisClient | undefined;
     private _tableConfigs: {
         [tableName: string]: InanoSQLTable;
     }
 
-    constructor( public connectArgs?: redis.ClientOpts, public getClient?: (redisClient: redis.RedisClient) => void) {
+    constructor(public connectArgs?: redis.ClientOpts, public getClient?: (redisClient: redis.RedisClient) => void) {
 
         this.connectArgs = this.connectArgs || {};
         this._tableConfigs = {};
@@ -78,7 +78,7 @@ export class Redis implements InanoSQLAdapter {
                     }
 
                     const PKS = (result[1] || []).filter((v, i) => i % 2 === 0);
-                    
+
                     chainAsync(PKS, (pk, i, next, err) => {
                         if (!this._db) {
                             error(noClient);
@@ -93,7 +93,7 @@ export class Redis implements InanoSQLAdapter {
                             next();
                         })
                     }).then(() => {
-                        if (result[0] === "0") { 
+                        if (result[0] === "0") {
                             if (!this._db) {
                                 error(noClient);
                                 return;
@@ -106,7 +106,7 @@ export class Redis implements InanoSQLAdapter {
                                 }
                                 complete();
                             });
-                            
+
                         } else {
                             ptr = result[0];
                             getNextPage();
@@ -182,7 +182,7 @@ export class Redis implements InanoSQLAdapter {
                     error(noClient);
                     return;
                 }
-                switch(item) {
+                switch (item) {
                     case "_index_": // update index
                         this._db.zadd(this.key("_index_", table), this._tableConfigs[table].isPkNum ? parseFloat(primaryKey) : 0, primaryKey, (error) => {
                             if (error) {
@@ -191,7 +191,7 @@ export class Redis implements InanoSQLAdapter {
                             }
                             next(primaryKey);
                         });
-                    break;
+                        break;
                     case "_table_": // update row value
                         this._db.set(this.key(table, String(primaryKey)), JSON.stringify(row), (error) => {
                             if (error) {
@@ -200,7 +200,7 @@ export class Redis implements InanoSQLAdapter {
                             }
                             next(primaryKey);
                         });
-                    break;
+                        break;
                 }
             });
         }).then((result: any[]) => {
@@ -248,7 +248,7 @@ export class Redis implements InanoSQLAdapter {
                         complete(results);
                     });
                 }
-            break;
+                break;
             case "all":
                 this.getTableIndex(table, (index) => {
                     if (reverse) {
@@ -257,7 +257,7 @@ export class Redis implements InanoSQLAdapter {
                         complete(index);
                     }
                 }, error);
-            break;
+                break;
             case "range":
                 if (this._tableConfigs[table].isPkNum) {
                     this._db.zrangebyscore(this.key("_index_", table), offsetOrLow, limitOrHigh, (err, result) => {
@@ -277,7 +277,7 @@ export class Redis implements InanoSQLAdapter {
                     });
                 }
 
-            break;
+                break;
         }
     }
 
@@ -318,7 +318,7 @@ export class Redis implements InanoSQLAdapter {
                 error(noClient);
                 return;
             }
-            switch(item) {
+            switch (item) {
                 case "_index_": // update index
                     this._db.zrem(this.key("_index_", table), pk, (error) => {
                         if (error) {
@@ -327,7 +327,7 @@ export class Redis implements InanoSQLAdapter {
                         }
                         next();
                     });
-                break;
+                    break;
                 case "_table_": // remove row value
                     this._db.del(this.key(table, String(pk)), (error) => {
                         if (error) {
@@ -336,7 +336,7 @@ export class Redis implements InanoSQLAdapter {
                         }
                         next();
                     });
-                break;
+                    break;
             }
         }).then(complete).catch(error);
     }
@@ -371,7 +371,7 @@ export class Redis implements InanoSQLAdapter {
             return;
         }
         this._db.zcount(this.key("_index_", table), "-inf", "+inf", (err, result) => {
-            if(err) {
+            if (err) {
                 error(err);
                 return;
             }
@@ -402,13 +402,13 @@ export class Redis implements InanoSQLAdapter {
             error(noClient);
             return;
         }
-        
+
         return allAsync(["_index_", "_table_"], (item, i, next, err) => {
             if (!this._db) {
                 error(noClient);
                 return;
             }
-            switch(item) {
+            switch (item) {
                 case "_index_": // update index
                     this._db.zadd(this.key("_index_", indexName), this._tableConfigs[indexName].isPkNum ? parseFloat(indexKey) : 0, indexKey, (error) => {
                         if (error) {
@@ -417,7 +417,7 @@ export class Redis implements InanoSQLAdapter {
                         }
                         next();
                     });
-                break;
+                    break;
                 case "_table_": // update row value
                     const isNum = typeof rowID === "number";
                     this._db.zadd(this.key(indexName, indexKey), 0, (isNum ? "num:" : "") + rowID, (error, result) => {
@@ -427,7 +427,7 @@ export class Redis implements InanoSQLAdapter {
                         }
                         next();
                     });
-                break;
+                    break;
             }
         }).then(complete).catch(error);
 
@@ -465,54 +465,45 @@ export class Redis implements InanoSQLAdapter {
                 return;
             }
             result.forEach((value, i) => {
-                onRowPK(value.indexOf("num:") === 0 ? parseFloat(value.replace("num:", "")) : value );
+                onRowPK(value.indexOf("num:") === 0 ? parseFloat(value.replace("num:", "")) : value);
             })
             complete();
         })
     }
 
     readIndexKeys(tableId: string, index: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) {
-        
+
         const indexName = `_idx_${tableId}_${index}`;
         this.readZIndex(indexName, type, offsetOrLow, limitOrHigh, reverse, (primaryKeys) => {
             let page = 0;
-            // get the records in batches so we don't block redis
-            const getPage = () => {
+            if (!this._db) {
+                error(noClient);
+                return;
+            }
+            chainAsync(primaryKeys, (indexKey, i, pkNext, pkErr) => {
                 if (!this._db) {
                     error(noClient);
                     return;
                 }
-                const PKS = primaryKeys.slice((page * 100), (page * 100) + 100);
-                if (!PKS.length) {
-                    complete();
-                    return;
-                }
-                allAsync(PKS, (indexKey, i, pkNext, pkErr) => {
-                    if (!this._db) {
-                        error(noClient);
+                this._db.zrangebylex(this.key(indexName, indexKey), "-", "+", (err, result) => {
+                    if (err) {
+                        error(err);
                         return;
                     }
-                    this._db.zrangebylex(this.key(indexName, indexKey), "-", "+", (err, result) => {
-                        if (err) {
-                            error(err);
-                            return;
-                        }
-                        if (!result) {
-                            pkNext();
-                            return;
-                        }
-                        result.forEach((value, i) => {
-                            onRowPK(value.indexOf("num:") === 0 ? parseFloat(value.replace("num:", "")) : value, i);
-                        })
+                    if (!result) {
                         pkNext();
+                        return;
+                    }
+                    result.forEach((value, i) => {
+                        onRowPK(value.indexOf("num:") === 0 ? parseFloat(value.replace("num:", "")) : value, i);
                     })
-                }).then(() => {
-                    page++;
-                    getPage();
+                    pkNext();
                 })
+            }).then(() => {
+                complete();
+            })
 
-            }
-            getPage();
+
         }, error);
     }
 }
