@@ -14,22 +14,19 @@
 
 <h1 align="center">nanoSQL 2</h1>
 <p align="center">
-  <strong>Universal database for the client, server & mobile devices.  It's like Lego for databases.</strong>
+  <strong>Universal database layer for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
 
 [Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
 
-## nanoSQL is a database abstraction layer that: 
-1. Makes running noSQL a breeze anywhere (NodeJS / Browser / Cordova / React Native / Electron).
-2. Supports many advanced features like Graph Queries, Indexing, and Geolocations.
-3. Lets you use almost any database technology (RocksDB, IndexedDB, WebSQL, etc).
-4. Starts at only 25 KB gzipped.
+# What is nanoSQL?
+nanoSQL core provides a standardized query language, data modeling and indexing system that can plug into almost any database technology and provide a consistent experience.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
 
 ### Identical API Everywhere
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
 ### Not Only NoSQL 
-Classical RDBMS queries like aggregate functions, joins and group bys are also supported.
+Classical RDBMS queries like aggregate functions, joins and group bys are also supported.  You can even write your own query functions.
 
 ### Flexible Data Models
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.
@@ -38,20 +35,21 @@ The best of both worlds: Use RDBMS style data models to tune performance but sti
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, query function support, typescript support, event system, CSV/JSON import & export, and runs in every browser back to IE9!
+Built in geolocation indexing, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 25KB!
 
 
 ## Comparison with Other Projects
 
-|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
-|-----------|---------|---------|--------|------|-----------|---------|--------|--------|--------|-----|
-| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |✓      |
-| Graph Queries  | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
-| Join Queries  | ✓       | ✓      | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
-| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
-| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
-| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
+|           | nanoSQL | TaffyDB   | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
+|-----------|---------|---------|------|-----------|---------|--------|--------|--------|-----|
+| Events    | ✓       | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Typescript| ✓       | ✕      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |✓      |
+| Graph Queries  | ✓       | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
+| Join Queries  | ✓       | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| IndexedDB | ✓       | ✕      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
+| Node      | ✓       | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
+| Query Functions | ✓ | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| Custom Backends | ✓ | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
 | Size (kb) | 25      | 5       | 19      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
 
 

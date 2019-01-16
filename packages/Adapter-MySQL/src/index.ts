@@ -13,7 +13,7 @@ export class MySQL extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "MySQL Adapter",
-        version: 2.00
+        version: 2.01
     };
 
     nSQL: InanoSQLInstance;

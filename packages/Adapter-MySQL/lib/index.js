@@ -38,7 +38,7 @@ var MySQL = /** @class */ (function (_super) {
         _this.connectArgs = connectArgs;
         _this.plugin = {
             name: "MySQL Adapter",
-            version: 2.00
+            version: 2.01
         };
         _this._tableConfigs = {};
         return _this;

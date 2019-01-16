@@ -4,8 +4,8 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo">
-    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo.svg" alt="nanoSQL Logo">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-mysql">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-mysql.svg" alt="nanoSQL Logo">
   </a>
   <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
