@@ -1,43 +1,26 @@
 {
-  "name": "nano-redis",
-  "version": "1.7.0",
-  "description": "Redis Adapter for nanoSQL https://nanosql.io",
-  "main": "index.js",
-  "typings": "index.d.ts",
+  "name": "@nano-sql/adapter-redis",
+  "version": "2.0.0",
+  "description": "Easily Use Redis with nanoSQL 2!",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "tsc test.ts && node test.js && rm -rf *.js",
-    "build": "rm -rf *.js && rm -rf *.d.ts && tsc && mv source.js index.js && mv source.d.ts index.d.ts"
+    "test": "ts-node src/test",
+    "build": "tsc"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ClickSimply/Nano-SQL.git"
-  },
-  "keywords": [
-    "database",
-    "redis",
-    "transaction",
-    "pipelining",
-    "performance",
-    "queue",
-    "nodejs",
-    "pubsub",
-    "backpressure",
-    "nanosql",
-    "nano-sql"
-  ],
-  "author": "",
+  "keywords": [],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/ClickSimply/Nano-SQL/issues"
-  },
-  "homepage": "https://nanosql.io",
   "dependencies": {
-    "nano-sql": "^1.6.3",
+    "@nano-sql/core": "^2.0.2",
     "redis": "^2.8.0"
   },
+  "peerDependencies": {
+    "@nano-sql/core": "^2.0.1"
+  },
   "devDependencies": {
-    "NanoSQL-Adapter-Test": "git+https://github.com/ClickSimply/NanoSQL-Adapter-Test.git",
-    "@types/redis": "^2.8.6",
-    "typescript": "^2.6.2"
+    "@types/node": "^10.12.18",
+    "@types/redis": "^2.8.10",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
   }
 }

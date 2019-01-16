@@ -66,8 +66,9 @@ NanoSQL can save data to many different places, depending on the browser or envi
     - WebSQL
     - Local Storage
 
-2. **[SQLite (NodeJS)](#https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
+2. **[SQLite (NodeJS)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
 3. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
+4. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
 
 ## Installation
 

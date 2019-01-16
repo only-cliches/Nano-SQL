@@ -1,77 +1,60 @@
-# Nano-Redis
-Redis Adapter for nanoSQL https://nanosql.io
+<p align="center">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  </a>
+</p>
+<p align="center">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-dynamo.svg" alt="nanoSQL Logo">
+  </a>
+  <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
+  </a>
+</p>
 
+<h1 align="center">nanoSQL 2 Redis Adapter</h1>
+<p align="center">
+  <strong>Allows you to run Amazon Redis with nanoSQL 2</strong>
+</p>
 
-<img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
+[Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
 
-[![NPM](https://nodei.co/npm/nano-sqlite.png?downloads=true&stars=true)](https://nodei.co/npm/nano-redis/)
+# Installation
 
-This is the fasest and easiest way to get Redis in your NodeJS app.
-
-## [Adapter Docs](https://docs.nanosql.io/adapters/redis)
-## [nanoSQL Docs](https://docs.nanosql.io/)
-
-## Highlighted Features
-- Supports all common RDBMS queries (joins, groupBy, etc).
-- Import and Export CSV/JSON.
-- **Simple & elegant undo/redo.**
-- Full Typescript support.
-- **Runtime type casting.**
-- **Complete ORM support.**
-- Fast secondary indexes.
-- Full events system.
-
-## Installation
 ```sh
-npm i --save nano-redis
+npm i @nano-sql/adapter-redis --save
 ```
 
-## Usage
+# Usage
+
 ```ts
-import { nSQL } from "nano-sql";
-import { RedisAdapter } from "nano-redis";
-// OR //
-const nSQL = require("nano-sql").nSQL;
-const RedisAdapter = require("nano-redis").RedisAdapter;
+import { Redis } from "@nano-sql/adapter-redis";
+import { nSQL } from "@nano-sql/core";
 
-
-nSQL("users") // table name
-.model([ // data model
-    {key: "id", type: "uuid", props: ["pk"]}, // primary key
-    {key: "name", type: "string"},
-    {key: "age", type: "int", props: ["idx"]} // secondary index
-])
-.config({
-    mode: new RedisAdapter({ // required
-        // identical to config object for https://www.npmjs.com/package/redis
-        host: "127.0.0.1",
-        password: "1234"
-    })
-}).connect().then(() => {
-    // add record
-    return nSQL("users").query("upsert", {name: "Jeb", age: 30}).exec();
-}).then(() => {
-    // get all records
-    return nSLQ("users").query("select").exec();
-}).then((rows) => {
-    console.log(rows) // [{id: "1df52039af3d-a5c0-4ca9-89b7-0e89aad5a61e", name: "Jeb", age: 30}]
-})
+nSQL().connect({
+    id: "my_db",
+    mode: new Redis(),
+    tables: [...]
+}).then(...)
 ```
 
-That's it, now everything nanoSQL can do you can do with Redis.
+# API
 
-Read about nanoSQL [here](https://nanosql.io/).
+The `Redis` class accepts two optional arguments
 
-## API
-The `RedisAdapter` method accepts a single agument, an object that's documented [here](https://www.npmjs.com/package/redis).
+### Redis Client Connect Options
+The adapter uses the npm `redis` module internally and calls `redis.createClient` to connect to the redis database.
 
+You can optionally pass in a configuration object to adjust things like the port and ip address the client will attempt to connect to.
 
-## [Adapter Docs](https://docs.nanosql.io/adapters/g-cloud-datastore)
-## [nanoSQL Docs](https://docs.nanosql.io/)
+All of the configuration options are documented [here](https://www.npmjs.com/package/redis#rediscreateclient).
 
-## MIT License
+### Redis Client Callback
+A function that will be called once the redis client connects, the argument passed into the function will be the redis client itself, giveing you access to perform redis queries manually or add event listeners.
 
-Copyright (c) 2018 Scott Lott
+# MIT License
+
+Copyright (c) 2019 Scott Lott
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -90,3 +73,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+

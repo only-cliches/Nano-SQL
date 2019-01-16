@@ -1,5 +1,4 @@
-import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, SQLiteAbstractFns } from "@nano-sql/core/lib/interfaces";
-import { generateID, setFast, deepSet, isAndroid } from "@nano-sql/core/lib/utilities";
+import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, SQLiteAbstractFns } from "@nano-sql/core/lib/interfaces";
 import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
 import { SQLiteAbstract } from "@nano-sql/core/lib/adapters/webSQL"; 
 import { Database } from "sqlite3";
