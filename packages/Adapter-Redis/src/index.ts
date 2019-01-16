@@ -8,7 +8,7 @@ export class Redis implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "Redis Adapter",
-        version: 2.01
+        version: 2.02
     };
 
     nSQL: InanoSQLInstance;

@@ -14,7 +14,7 @@
 
 <h1 align="center">nanoSQL 2 Redis Adapter</h1>
 <p align="center">
-  <strong>Allows you to run Amazon Redis with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
+  <strong>Allows you to run Redis with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
 [Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
