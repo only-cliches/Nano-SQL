@@ -1,3 +1,6 @@
+# 2.0.2
+- Added quotes to table names.
+
 # 2.0.1
 - Readme tweak
 

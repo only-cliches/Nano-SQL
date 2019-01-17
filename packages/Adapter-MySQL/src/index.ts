@@ -68,7 +68,7 @@ export class MySQL extends nanoSQLMemoryIndex {
         if (Object.keys(this._tableConfigs).indexOf(table) === -1) {
             throw Error("No table " + table + " found!");
         } else {
-            return `${this._id}_${table}`;
+            return `\`${this._id}_${table}\``;
         }
     }
 

@@ -50,7 +50,7 @@ Built in geolocation indexing, typescript support, event system, CSV/JSON import
 | Node      | ✓       | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
 | Query Functions | ✓ | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓ | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Size (kb) | 25      | 5       | 19      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
+| Size (kb) | 25      | 5      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
 
 
 ## Database Support
@@ -90,7 +90,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.3/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.4/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

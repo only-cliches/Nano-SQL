@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-mysql",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Easily Run MySQL with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {

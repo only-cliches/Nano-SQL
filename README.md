@@ -10,6 +10,9 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 - [Redis Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-Redis)
 - [MySQL Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MySQL)
 
+### Plugins
+- [Redis Index](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-RedisIndex)
+
 # WIP
 Items here are planned but not yet released.
 
@@ -22,7 +25,6 @@ Items here are planned but not yet released.
 ### Plugins
 - [CLI](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/cli)
 - [Net](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Net)
-- [Fast Index](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-FastIndex)
 - [Search](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Search)
 - [Backups](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Backups)
 - [Encryption](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Encryption)

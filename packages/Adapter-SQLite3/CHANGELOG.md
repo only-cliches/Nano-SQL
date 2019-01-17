@@ -1,3 +1,7 @@
+# 2.0.4
+- Moved to SQLite streaming API.
+- Fixed dependencies.
+
 # 2.0.3
 - Added git repo
 

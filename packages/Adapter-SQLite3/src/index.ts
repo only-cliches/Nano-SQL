@@ -5,35 +5,12 @@ import { Database } from "sqlite3";
 
 export const sqlite3 = require('sqlite3');
 
-export class SQLiteResult {
-
-    public rowData: any[];
-
-    public insertId: any;
-    public rowsAffected: number;
-
-    public rows: {
-        item: (idx: number) => any
-        length: number;
-    };
-
-    constructor(rows: any[]) {
-        this.rowData = rows;
-        this.rows = {
-            item: (idx: number) => {
-                return this.rowData[idx];
-            },
-            length: this.rowData.length
-        };
-    }
-}
-
 
 export class SQLite  extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "SQLite Adapter",
-        version: 2.03
+        version: 2.04
     };
 
     nSQL: InanoSQLInstance;
@@ -50,7 +27,7 @@ export class SQLite  extends nanoSQLMemoryIndex {
     private _mode: any;
 
     constructor(fileName?: string, mode?: any, batchSize?: number) {
-        super(false, false);
+        super(false, true);
         this._ai = {};
         this._query = this._query.bind(this);
         this._filename = fileName || ":memory:";
@@ -77,7 +54,7 @@ export class SQLite  extends nanoSQLMemoryIndex {
         this._sqlite.createTable(tableName, tableData, this._ai, complete, error);
     }
 
-    _query(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void): void {
+    _query(allowWrite: boolean, sql: string, args: any[], onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void {
 
         if (allowWrite) {
             this._db.run(sql, args, (err) => {
@@ -85,19 +62,24 @@ export class SQLite  extends nanoSQLMemoryIndex {
                     error(err);
                     return;
                 }
-                complete(new SQLiteResult([]));
+                complete();
             });
         } else {
-            let rows: any[] = [];
+            let count = 0;
 
             this._db.each(sql, args, (err, row) => {
-                rows.push(row);
+                if (err) {
+                    error(err);
+                    return;
+                }
+                onRow(row, count);
+                count++;
             }, (err) => {
                 if (err) {
                     error(err);
                     return;
                 }
-                complete(new SQLiteResult(rows));
+                complete();
             });
         }
     }

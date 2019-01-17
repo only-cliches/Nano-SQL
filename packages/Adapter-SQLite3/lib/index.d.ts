@@ -1,17 +1,6 @@
-/// <reference types="websql" />
 import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "@nano-sql/core/lib/interfaces";
 import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
 export declare const sqlite3: any;
-export declare class SQLiteResult {
-    rowData: any[];
-    insertId: any;
-    rowsAffected: number;
-    rows: {
-        item: (idx: number) => any;
-        length: number;
-    };
-    constructor(rows: any[]);
-}
 export declare class SQLite extends nanoSQLMemoryIndex {
     plugin: InanoSQLPlugin;
     nSQL: InanoSQLInstance;
@@ -25,7 +14,7 @@ export declare class SQLite extends nanoSQLMemoryIndex {
     constructor(fileName?: string, mode?: any, batchSize?: number);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
-    _query(allowWrite: boolean, sql: string, args: any[], complete: (rows: SQLResultSet) => void, error: (err: any) => void): void;
+    _query(allowWrite: boolean, sql: string, args: any[], onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;
     write(table: string, pk: any, row: {

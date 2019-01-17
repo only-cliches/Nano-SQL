@@ -15,27 +15,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var memoryIndex_1 = require("@nano-sql/core/lib/adapters/memoryIndex");
 var webSQL_1 = require("@nano-sql/core/lib/adapters/webSQL");
 exports.sqlite3 = require('sqlite3');
-var SQLiteResult = /** @class */ (function () {
-    function SQLiteResult(rows) {
-        var _this = this;
-        this.rowData = rows;
-        this.rows = {
-            item: function (idx) {
-                return _this.rowData[idx];
-            },
-            length: this.rowData.length
-        };
-    }
-    return SQLiteResult;
-}());
-exports.SQLiteResult = SQLiteResult;
 var SQLite = /** @class */ (function (_super) {
     __extends(SQLite, _super);
     function SQLite(fileName, mode, batchSize) {
-        var _this = _super.call(this, false, false) || this;
+        var _this = _super.call(this, false, true) || this;
         _this.plugin = {
             name: "SQLite Adapter",
-            version: 2.03
+            version: 2.04
         };
         _this._ai = {};
         _this._query = _this._query.bind(_this);
@@ -60,26 +46,31 @@ var SQLite = /** @class */ (function (_super) {
         this._tableConfigs[tableName] = tableData;
         this._sqlite.createTable(tableName, tableData, this._ai, complete, error);
     };
-    SQLite.prototype._query = function (allowWrite, sql, args, complete, error) {
+    SQLite.prototype._query = function (allowWrite, sql, args, onRow, complete, error) {
         if (allowWrite) {
             this._db.run(sql, args, function (err) {
                 if (err) {
                     error(err);
                     return;
                 }
-                complete(new SQLiteResult([]));
+                complete();
             });
         }
         else {
-            var rows_1 = [];
+            var count_1 = 0;
             this._db.each(sql, args, function (err, row) {
-                rows_1.push(row);
+                if (err) {
+                    error(err);
+                    return;
+                }
+                onRow(row, count_1);
+                count_1++;
             }, function (err) {
                 if (err) {
                     error(err);
                     return;
                 }
-                complete(new SQLiteResult(rows_1));
+                complete();
             });
         }
     };

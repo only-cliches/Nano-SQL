@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.03;
+export const VERSION = 2.04;
 
 export type uuid = String;
 export type timeId = String;
@@ -34,8 +34,6 @@ export declare class InanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        // MRTimer: any;
-        // runMR: {[table: string]: {[mrName: string]: (...args: any[]) => void}};
         selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
     _queryCache: {
@@ -52,7 +50,6 @@ export declare class InanoSQLInstance {
     doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
     getCache(id: string, args?: { offset: number, limit: number }): any[];
     clearCache(id: string): boolean;
-    // triggerMapReduce(cb?: (event: InanoSQLDatabaseEvent) => void, table?: string, name?: string): void;
     every(args: {length: number, every?: number, offset?: number}): number[];
     clearTTL(primaryKey: any): Promise<any>;
     expires(primaryKey: any): Promise<any>;
