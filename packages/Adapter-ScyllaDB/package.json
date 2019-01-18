@@ -1,20 +1,37 @@
 {
-  "name": "@nano-sql/adapter-scylladb",
+  "name": "@nano-sql/adapter-scylla",
   "version": "2.0.0",
-  "description": "",
+  "description": "Easily Use Scylla DB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
     "build": "tsc"
   },
-  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+  "typings": "lib/index.d.ts",
+  "homepage": "https://nanosql.io/",
+  "keywords": [
+    "scylla",
+    "scylla db",
+    "cassandra db",
+    "cassandra",
+    "nanosql",
+    "rdbms"
+  ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "cassandra-driver": "^4.0.0"
+    "@nano-sql/core": "^2.0.5",
+    "@types/cassandra-driver": "^3.6.0",
+    "@types/redis": "^2.8.10",
+    "cassandra-driver": "^3.6.0",
+    "redis": "^2.8.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "2.X"
+    "@nano-sql/core": "^2.0.5"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

@@ -69,6 +69,8 @@ NanoSQL can save data to many different places, depending on the browser or envi
 4. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
 5. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
 6. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
+7. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
+
 
 ## Installation
 

@@ -8,6 +8,8 @@
         "strictNullChecks": true,
         "noImplicitAny": false,
         "noImplicitReturns": true,
+        "declaration": true,
+        "declarationDir": "lib",
         "noImplicitThis": true,
         "noImplicitUseStrict": true,
         "sourceMap": true,

@@ -1092,9 +1092,18 @@ var _nanoSQLQuery = /** @class */ (function () {
             }
         }, 0);
     };
+    _nanoSQLQuery.prototype._tableID = function () {
+        return [0, 1].map(function () {
+            var id = utilities_1.random16Bits().toString(16);
+            while (id.length < 4) {
+                id = "0" + id;
+            }
+            return id;
+        }).join("-");
+    };
     _nanoSQLQuery.prototype._createTable = function (table, alterTable, complete, error) {
         var _this = this;
-        var tableID = this.nSQL.tableIds[this.query.table] || utilities_1.uuid();
+        var tableID = this.nSQL.tableIds[this.query.table] || this._tableID();
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL.tables).indexOf(table.name) !== -1) {
             alterTable = true;

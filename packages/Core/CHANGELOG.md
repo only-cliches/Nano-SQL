@@ -4,6 +4,10 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.0.6] 1-18-2018
+- Adjusted table ids to be not as pointlessly long.
+- Added new adapters to readme.
+
 ## [2.0.5] 1-17-2018
 - Fixed issue with `nan` function.
 - Added new adapters to readme.

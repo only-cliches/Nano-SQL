@@ -48,6 +48,7 @@ import {
     nan,
     execFunction,
     cast,
+    random16Bits,
 } from "./utilities";
 
 export const secondaryIndexQueue: { [idAndTable: string]: _nanoSQLQueue } = {};
@@ -1271,9 +1272,19 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         }, 0);
     }
 
+    public _tableID() {
+        return [0, 1].map(() => {
+            let id = random16Bits().toString(16);
+            while (id.length < 4) {
+                id = "0" + id
+            }
+            return id;
+        }).join("-");
+    }
+
     public _createTable(table: InanoSQLTableConfig, alterTable: boolean, complete: () => void, error: (err: any) => void): void {
         
-        const tableID = this.nSQL.tableIds[this.query.table as string] || uuid();
+        const tableID = this.nSQL.tableIds[this.query.table as string] || this._tableID();
 
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL.tables).indexOf(table.name) !== -1) {
