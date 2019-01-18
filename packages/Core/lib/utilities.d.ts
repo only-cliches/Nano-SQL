@@ -19,7 +19,6 @@ export declare const binarySearch: (arr: any[], value: any, indexOf: boolean, st
  */
 export declare const titleCase: (str: string) => string;
 export declare const slugify: (str: string) => string;
-export declare const getWeekOfYear: (d: Date) => number;
 export declare const buildQuery: (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {
     [key: string]: any;
 }, i?: number | undefined) => boolean) | undefined) => Promise<TableQueryResult>), action: string) => InanoSQLQuery;
@@ -81,7 +80,7 @@ export declare class _nanoSQLQueue {
     newItem(item: any, processFn?: (item: any, complete: () => void, err?: (error: any) => void) => void): void;
 }
 /**
- * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
+ * Quickly and efficiently fire asynchronous operations in sequence, returns once all operations complete.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
@@ -89,7 +88,7 @@ export declare class _nanoSQLQueue {
  */
 export declare const chainAsync: (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err: (err?: any) => void) => void) => Promise<any[]>;
 /**
- * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
+ * Quickly and efficiently fire asynchronous operations in parallel, returns once all operations are complete.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback

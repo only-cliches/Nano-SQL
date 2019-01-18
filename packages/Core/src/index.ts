@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _nanoSQLQueue, objectsEqual, titleCase, getWeekOfYear, throttle, adapterFilters } from "./utilities";
+import { assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _nanoSQLQueue, objectsEqual, titleCase, throttle, adapterFilters } from "./utilities";
 import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter as actionViewFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, postConnectFilter, onEventFilter, offEventFilter, InanoSQLV1ConfigFn } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _nanoSQLQuery } from "./query";
@@ -8,7 +8,6 @@ import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
-// import { nanoSQLAdapterTest } from "./adapter-test";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {

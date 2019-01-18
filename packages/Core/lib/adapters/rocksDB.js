@@ -36,9 +36,10 @@ exports.rimraf = function (dir_path) {
 };
 var RocksDB = /** @class */ (function (_super) {
     __extends(RocksDB, _super);
-    function RocksDB(path) {
-        var _this = _super.call(this, false, true) || this;
+    function RocksDB(path, indexCache) {
+        var _this = _super.call(this, false, typeof indexCache === "undefined" ? true : indexCache) || this;
         _this.path = path;
+        _this.indexCache = indexCache;
         _this.plugin = {
             name: "RocksDB Adapter",
             version: interfaces_1.VERSION,

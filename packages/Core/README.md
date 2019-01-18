@@ -68,6 +68,7 @@ NanoSQL can save data to many different places, depending on the browser or envi
 3. **[Redis](https://www.npmjs.com/package/@nano-sql/adapter-redis)**
 4. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
 5. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
+6. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
 
 ## Installation
 
@@ -90,7 +91,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.4/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.5/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

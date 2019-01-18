@@ -80,11 +80,6 @@ export const slugify = (str: string): string => {
     return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 }
 
-export const getWeekOfYear = (d: Date): number => {
-    const onejan = new Date(d.getFullYear(), 0, 1);
-    return Math.ceil( (((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7 );
-};
-
 export const buildQuery = (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
     return {
         table: table || nSQL.state.selectedTable,
@@ -274,8 +269,7 @@ export const throwErr = (err: any) => {
     throw new Error(err);
 };
 export const nan = (input: any): number => {
-    if (typeof input === "number") return input;
-    return isNaN(input) ? 0 : parseFloat(input);
+    return isNaN(input) || input === null ? 0 : parseFloat(input)
 }
 
 /**
@@ -392,7 +386,7 @@ export class _nanoSQLQueue {
 }
 
 /**
- * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
+ * Quickly and efficiently fire asynchronous operations in sequence, returns once all operations complete.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
@@ -426,7 +420,7 @@ export const chainAsync = (items: any[], callback: (item: any, i: number, next: 
 };
 
 /**
- * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
+ * Quickly and efficiently fire asynchronous operations in parallel, returns once all operations are complete.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback

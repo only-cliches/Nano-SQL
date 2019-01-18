@@ -18,7 +18,6 @@ var webSQL_1 = require("./adapters/webSQL");
 var indexedDB_1 = require("./adapters/indexedDB");
 var query_builder_1 = require("./query-builder");
 var utils = require("./utilities");
-// import { nanoSQLAdapterTest } from "./adapter-test";
 var RocksDB;
 if (typeof global !== "undefined") {
     RocksDB = global._rocksAdapter;

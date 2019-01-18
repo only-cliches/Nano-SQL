@@ -6,6 +6,7 @@ export declare class RocksDB extends nanoSQLMemoryIndex {
         lvld: any;
         args?: any;
     }) | undefined;
+    indexCache?: boolean | undefined;
     plugin: InanoSQLPlugin;
     nSQL: InanoSQLInstance;
     private _id;
@@ -16,7 +17,7 @@ export declare class RocksDB extends nanoSQLMemoryIndex {
     constructor(path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => {
         lvld: any;
         args?: any;
-    }) | undefined);
+    }) | undefined, indexCache?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;

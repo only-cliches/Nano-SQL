@@ -53,9 +53,10 @@ export class RocksDB extends nanoSQLMemoryIndex {
     }
 
     constructor(
-        public path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => { lvld: any, args?: any })
+        public path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => { lvld: any, args?: any }),
+        public indexCache?: boolean
     ) {
-        super(false, true);
+        super(false, typeof indexCache === "undefined" ? true : indexCache);
         this._levelDBs = {};
         this._ai = {};
         this._tableConfigs = {};

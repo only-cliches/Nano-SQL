@@ -53,10 +53,6 @@ exports.titleCase = function (str) {
 exports.slugify = function (str) {
     return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 };
-exports.getWeekOfYear = function (d) {
-    var onejan = new Date(d.getFullYear(), 0, 1);
-    return Math.ceil((((d.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
-};
 exports.buildQuery = function (nSQL, table, action) {
     return {
         table: table || nSQL.state.selectedTable,
@@ -248,9 +244,7 @@ exports.throwErr = function (err) {
     throw new Error(err);
 };
 exports.nan = function (input) {
-    if (typeof input === "number")
-        return input;
-    return isNaN(input) ? 0 : parseFloat(input);
+    return isNaN(input) || input === null ? 0 : parseFloat(input);
 };
 /**
  * Object.assign, but faster.
@@ -358,7 +352,7 @@ var _nanoSQLQueue = /** @class */ (function () {
 }());
 exports._nanoSQLQueue = _nanoSQLQueue;
 /**
- * Quickly and efficiently fire asyncrounous operations in sequence, returns once all operations complete.
+ * Quickly and efficiently fire asynchronous operations in sequence, returns once all operations complete.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
@@ -392,7 +386,7 @@ exports.chainAsync = function (items, callback) {
     });
 };
 /**
- * Quickly and efficiently fire asyncrounous operations in parallel, returns once all operations are complete.
+ * Quickly and efficiently fire asynchronous operations in parallel, returns once all operations are complete.
  *
  * @param {any[]} items
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback

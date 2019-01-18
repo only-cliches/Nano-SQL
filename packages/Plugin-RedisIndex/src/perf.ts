@@ -1,4 +1,4 @@
-import { nSQL } from "@nano-sql/core";
+import { nSQL } from "../../Core/src/index-node";
 import { RedisIndex } from "./index";
 import { MySQL } from "../../Adapter-MySQL/src";
 import { SQLite } from "../../Adapter-SQLite3/src";
@@ -15,9 +15,9 @@ function makeid(): string {
 
 nSQL().connect({
     id: "perf",
-    mode: new SQLite(),
+    mode: "PERM",
     plugins: [
-        // RedisIndex()
+        RedisIndex()
     ],
     tables: [
         {
