@@ -20,7 +20,6 @@ Items here are planned but not yet released.
 - [React Native Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)
 
 ### Plugins
-- [CLI](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/cli)
 - [Net](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Net)
 - [Search](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Search)
 - [Backups](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Backups)
