@@ -13,6 +13,8 @@ NanoSQL is the smallest and quickest way to get SQL power into your app. You get
 
 Persistence supports `Local Storage`, `Indexed DB`, and `WebSQL` in the browser, and `Level DB` in NodeJS *with the same API*.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.
 
+## **NEW** Improved nanoSQL 2 is out, [check it out here](https://www.npmjs.com/package/@nano-sql/core)!
+
 ## Live Examples: [Express](https://docs.nanosql.io/examples/express) - [React](https://docs.nanosql.io/examples/react) - [Angular](https://docs.nanosql.io/examples/angular) - [Vue](https://docs.nanosql.io/examples/vue) - [Cordova](https://docs.nanosql.io/examples/cordova)
 
 [Documentation](https://docs.nanosql.io/)
@@ -124,7 +126,7 @@ const nSQL = require("nano-sql").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.8.2/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nano-sql@1.8.3/dist/nano-sql.min.js"></script>
 ```
 
 ## Simple Usage

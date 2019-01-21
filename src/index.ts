@@ -10,7 +10,7 @@ import * as levenshtein from "levenshtein-edit-distance";
 import { Observer } from "./observable";
 import { callbackify } from "util";
 
-const VERSION = 1.82;
+const VERSION = 1.83;
 
 // uglifyJS fix
 const str = ["_util", "_ttl"];

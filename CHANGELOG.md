@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.8.3] 1-21-2019
+- Added notice of nanoSQL 2 release to readme.
+
 ## [1.8.2] 1-11-2019
 - Adjusted promise return value.
 
