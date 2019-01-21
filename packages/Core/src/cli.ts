@@ -41,8 +41,8 @@ if (options.package) {
     try {
         const optionsFile = fs.readFileSync(path.join(_cwd, options.package), {});
         useOptions = {
-            ...useOptions,
-            ...JSON.parse(optionsFile.toString("utf-8"))
+            ...JSON.parse(optionsFile.toString("utf-8")),
+            ...useOptions
         }
     } catch(e) {
         throw new Error(e);
@@ -51,8 +51,8 @@ if (options.package) {
     try {
         const optionsFile = fs.readFileSync(path.join(_cwd, "nsql.json"), {});
         useOptions = {
-            ...useOptions,
-            ...JSON.parse(optionsFile.toString("utf-8"))
+            ...JSON.parse(optionsFile.toString("utf-8")),
+            ...useOptions
         }
     } catch(e) {
         // silently fail

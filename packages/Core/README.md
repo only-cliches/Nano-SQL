@@ -113,7 +113,7 @@ nsql --outDir www --files file1.ts file2.ts... --watch
 
 If you don't pass `--watch` the CLI will compile the files into the given directory, then exit.  You can also optionally pass `--watchPolling` with an interval to enable polling on the watch system.
 
-It's important to note the files must be formated specifically for the CLI to read them correctly.
+It's important to note the files must be formatted specifically for the CLI to read them correctly.
 
 Each file should have an export named `tables` that is an array of `InanoSQLTableConfig` types.  The file below is a working example:
 
@@ -126,7 +126,7 @@ export const tables: InanoSQLTableConfig[] = [
         model: {
             "id:uuid": {pk: true},
             "age:float": {},
-            "str:string[]": {},
+            "name:string[]": {},
             "meta:obj[]": {
                 model: {
                     "key:string": {},

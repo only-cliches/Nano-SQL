@@ -1,6 +1,8 @@
 # Monorepo for nanoSQL 2.0
 For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree/1.X/).
 
+### All links here send you to source files.
+
 ## Packages
 - [Core](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core)
 
