@@ -4,7 +4,7 @@ import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
 import { InanoSQLInstance } from "../src/interfaces";
-import { uuid, crowDistance } from "../src/utilities";
+import { uuid, crowDistance, assign } from "../src/utilities";
 
 
 describe("Testing Other Features", () => {
@@ -935,6 +935,68 @@ describe("Testing Other Features", () => {
         }).then((idxRows) => {
             try {
                 expect(rows.filter(i => i.prop.arr.indexOf(terms[0]) !== -1)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Rebuild (with where statement)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: uuid()});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:string":{}
+                },
+                indexes: {
+                    "num:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(assign(rows));
+        }).then(() => {
+            return nSQL.query("rebuild indexes").where(["num", "BETWEEN", ["b", "e"]]).exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows.filter(i => i.num >= "b" && i.num <= "e").sort((a, b) => a.num > b.num ? 1 : -1)).to.deep.equal(idxRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Secondary Index Rebuild (without where statement)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 50; i ++) {
+            rows.push({id: i, num: uuid()});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:string":{}
+                },
+                indexes: {
+                    "num:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("rebuild indexes").exec();
+        }).then((idxRows) => {
+            try {
+                expect(rows).to.deep.equal(idxRows.sort((a, b) => a.id > b.id ? 1 : -1));
                 done();
             } catch (e) {
                 done(e);

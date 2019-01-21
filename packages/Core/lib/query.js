@@ -565,7 +565,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }, []);
                 var firstFn = resultFns.filter(function (f) { return f; })[0];
                 // calculate aggregate functions
-                group.forEach(function (row, i) {
+                group.reverse().forEach(function (row, i) {
                     resultFns.forEach(function (fn, i) {
                         if (!fn)
                             return;
@@ -582,7 +582,7 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         else {
             this._sortGroups.forEach(function (group) {
-                _this._queryBuffer.push(_this._streamAS(group.pop()));
+                _this._queryBuffer.push(_this._streamAS(group.shift()));
             });
         }
     };
@@ -1614,6 +1614,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             error(new Error("Table " + rebuildTables + " not found for rebuilding indexes!"));
             return;
         }
+        this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: interfaces_1.IWhereType.none };
         // .map(r => "_idx_" + this.nSQL.tableIds[rebuildTables] + "_" + r);
         if (this.query.where) { // rebuild only select rows (cant clean/remove index tables)
             var readQueue_1 = new utilities_1._nanoSQLQueue(function (item, i, complete, error) {
@@ -1640,21 +1641,23 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }, indexErr);
             }).then(function () {
                 // indexes are now empty
-                exports.secondaryIndexQueue[_this.nSQL.state.id + rebuildTables].newItem(utilities_1.uuid(), function (item, buffComplete, buffErr) {
-                    var readQueue = new utilities_1._nanoSQLQueue(function (row, i, complete, err) {
-                        _this._newRow(row, function (finishedRow) {
-                            progress(finishedRow, i);
-                            complete();
-                        }, err);
-                    }, error, function () {
-                        complete();
-                        buffComplete();
-                    });
-                    _this._getRecords(function (row) {
-                        readQueue.newItem(row);
-                    }, function () {
-                        readQueue.finished();
-                    });
+                var readQueue = new utilities_1._nanoSQLQueue(function (row, i, complete, err) {
+                    var indexValues = _this._getIndexValues(_this.nSQL.tables[rebuildTables].indexes, row);
+                    var rowPK = utilities_1.deepGet(_this.nSQL.tables[rebuildTables].pkCol, row);
+                    utilities_1.allAsync(Object.keys(indexValues), function (indexName, jj, nextIdx, errIdx) {
+                        var idxValue = indexValues[indexName];
+                        _this._updateIndex(rebuildTables, indexName, idxValue, rowPK, true, function () {
+                            progress(row, i);
+                            nextIdx();
+                        }, errIdx);
+                    }).then(complete).catch(err);
+                }, error, function () {
+                    complete();
+                });
+                _this._getRecords(function (row) {
+                    readQueue.newItem(row);
+                }, function () {
+                    readQueue.finished();
                 });
             }).catch(error);
         }

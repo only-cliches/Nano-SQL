@@ -1,6 +1,6 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.0.5",
+	"version": "2.0.7",
 	"description": "Like Lego For Databases",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",
@@ -11,7 +11,8 @@
 		"bundle": "cross-env NODE_ENV=production webpack -p --display-modules",
 		"release": "bash release.sh",
 		"test": "mocha -r ts-node/register tests/index.ts",
-		"lint": "tslint -p ./tsconfig.json \"./src/**/*.ts\""
+		"lint": "tslint -p ./tsconfig.json \"./src/**/*.ts\"",
+		"build-cli": "tsc -p 'tsconfig.cli.json'"
 	},
 	"repository": {
 		"type": "git",
@@ -22,7 +23,7 @@
 	"devDependencies": {
 		"@types/chai": "^4.1.7",
 		"@types/mocha": "^5.2.5",
-		"@types/node": "^10.12.12",
+		"@types/node": "^10.12.18",
 		"@types/websql": "0.0.27",
 		"chai": "^4.1.2",
 		"cross-env": "^5.2.0",
@@ -119,6 +120,11 @@
 		"really-small-events": "^1.1.0"
 	},
 	"optionalDependencies": {
+		"@types/node": "^10.12.18",
+		"luxon": "^1.10.0",
+		"command-line-args": "^5.0.2",
+		"chalk": "^2.4.2",
+		"chokidar": "^2.0.4",
 		"encoding-down": "^5.0.4",
 		"levelup": "^2.0.2",
 		"lexicographic-integer-encoding": "^1.0.1",
@@ -134,5 +140,8 @@
 			"deletions": 285629,
 			"hireable": true
 		}
-	]
+	],
+	"bin": {
+		"nsql": "./dist/cli.js"
+	}
 }

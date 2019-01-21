@@ -11,23 +11,23 @@ function run() {
     rm -rf lib
     mkdir api
 
-    echo "${bold}(1/6) Clean Completed...${normal}"
+    echo "${bold}(1/7) Clean Completed...${normal}"
 
     #type declerations & node build
     ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
 
-    echo "${bold}(2/6) Node Build & Type Declarations Completed...${normal}"
+    echo "${bold}(2/7) Node Build & Type Declarations Completed...${normal}"
 
     #browser build
     npm run bundle
 
-    echo "${bold}(3/6) Browser Build Completed...${normal}"
+    echo "${bold}(3/7) Browser Build Completed...${normal}"
 
     # Test rollup
     npm run rollup-test
     if [ $? -eq 0 ]; then
         rm nano-sql-rollup.min.js
-        echo "${bold}(4/6) Rollup Bundle OK${normal}"
+        echo "${bold}(4/7) Rollup Bundle OK${normal}"
     else
         rm nano-sql-rollup.min.js
         echo "${bold}Rollup Bundle Failed!${normal}"
@@ -37,14 +37,18 @@ function run() {
     #api docs
     ./node_modules/.bin/typedoc --out api --includes src --target ES6 --exclude node_modules --excludeExternals --excludePrivate
     touch api/.nojekyll
-    echo "${bold}(5/6) API Docs Completed...${normal}"
+    echo "${bold}(5/7) API Docs Completed...${normal}"
+
+    echo "${bold}(6/7) Building CLI...${normal}"
+    tsc -p "tsconfig.cli.json"
+    rm lib/cli.d.ts lib/cli.js.map
 
     #copy from examples into dist folder
     #yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
     rm -rf src/*.js
     find ../../ -name ".DS_Store" -delete
 
-    echo "${bold}(6/6) Cleaning up...${normal}"
+    echo "${bold}(7/7) Cleaning up...${normal}"
 
     echo "${bold}Ready For Release. Size Info:${normal}"
 

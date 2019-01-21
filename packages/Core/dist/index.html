@@ -47,7 +47,7 @@
                         }).then((result) => {
                             console.log(result);
                             console.time("sel");
-                            return nSQL("users").query("select").where(["age", "=", 21]).exec();
+                            return nSQL("users").query("rebuild indexes").where(["age", "=", 21]).exec();
                         }).then((rows) => {
                             console.timeEnd("sel");
                             console.log(rows);

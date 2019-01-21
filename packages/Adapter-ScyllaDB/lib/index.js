@@ -11,345 +11,53 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("@nano-sql/core/lib/utilities");
-var AWS = require("aws-sdk");
-exports.copy = function (e) { return e; };
-var DynamoDB = /** @class */ (function () {
-    function DynamoDB(args) {
-        if (args === void 0) { args = {}; }
+var Cassandra = require("cassandra-driver");
+var redis = require("redis");
+var copy = function (e) { return e; };
+var Scylla = /** @class */ (function () {
+    function Scylla(args, redisArgs, filters) {
+        this.args = args;
+        this.redisArgs = redisArgs;
         this.plugin = {
-            name: "DynamoDB Adapter",
-            version: 2.0
+            name: "Scylla Adapter",
+            version: 2.01
         };
-        this.config = __assign({ filterDrop: exports.copy, filterDelete: exports.copy, filterSchema: exports.copy, filterUpdate: exports.copy, filterGet: exports.copy, filterQuery: exports.copy, filterScan: exports.copy }, args);
+        this._tableConfigs = {};
+        this._filters = __assign({ createKeySpace: copy, createTable: copy, useKeySpace: copy, dropTable: copy, selectRow: copy, upsertRow: copy, deleteRow: copy, createIndex: copy, dropIndex: copy, addIndexValue: copy, deleteIndexValue: copy, readIndexValue: copy }, (filters || {}));
     }
-    DynamoDB.prototype.connect = function (id, complete, error) {
+    Scylla.prototype.scyllaTable = function (table) {
+        return utilities_1.slugify(table).replace(/\-/gmi, "_");
+    };
+    Scylla.prototype.connect = function (id, complete, error) {
+        var _this = this;
         this._id = id;
-        this._db = new AWS.DynamoDB();
-        this._client = new AWS.DynamoDB.DocumentClient();
-        this.createAndInitTable("_ai_store", {
-            model: {},
-            columns: [],
-            indexes: {},
-            pkOffset: 0,
-            actions: [],
-            views: [],
-            pkType: "string",
-            pkCol: "",
-            isPkNum: false,
-            ai: false
-        }, complete, error);
-    };
-    DynamoDB.prototype.table = function (tableName) {
-        return this._id + "." + tableName;
-    };
-    DynamoDB.prototype.createAndInitTable = function (tableName, tableData, complete, error) {
-        var _this = this;
-        this._db.listTables().promise().then(function (tables) {
-            var exists = (tables.TableNames || []).filter(function (t) { return t === _this.table(tableName); }).length > 0;
-            if (exists) { // table already exists
-                complete();
-                return;
-            }
-            var schema = {
-                TableName: _this.table(tableName),
-                KeySchema: [
-                    { AttributeName: "tname", KeyType: "HASH" },
-                    { AttributeName: "id", KeyType: "RANGE" }
-                ],
-                AttributeDefinitions: [
-                    { AttributeName: "tname", AttributeType: "S" },
-                    { AttributeName: "id", AttributeType: tableData.isPkNum ? "N" : "S" },
-                ],
-                ProvisionedThroughput: {
-                    ReadCapacityUnits: 2,
-                    WriteCapacityUnits: 2
-                }
-            };
-            _this._db.createTable(_this.config.filterSchema(schema), function (err, data) {
+        this._client = new Cassandra.Client(this.args);
+        this._client.connect().then(function () {
+            _this._client.execute(_this._filters.createKeySpace("CREATE KEYSPACE IF NOT EXISTS \"" + _this.scyllaTable(id) + "\" WITH REPLICATION = { \n                'class' : 'SimpleStrategy', \n                'replication_factor' : 1\n               };"), [], function (err, result) {
                 if (err) {
                     error(err);
                     return;
                 }
-                if (!tableData.ai) {
-                    complete();
-                    return;
-                }
-                _this._client.update(_this.config.filterUpdate({
-                    TableName: _this.table("_ai_store"),
-                    Key: {
-                        "tname": tableName,
-                        "id": tableName
-                    },
-                    UpdateExpression: "set #d = :val",
-                    ExpressionAttributeNames: {
-                        "#d": "data"
-                    },
-                    ExpressionAttributeValues: {
-                        ":val": 0
-                    }
-                }), function (err) {
+                _this._client.execute(_this._filters.useKeySpace("USE \"" + _this.scyllaTable(id) + "\";"), [], function (err, result) {
                     if (err) {
                         error(err);
                         return;
                     }
-                    complete();
-                });
-            });
-        });
-    };
-    DynamoDB.prototype.disconnectTable = function (table, complete, error) {
-        complete();
-    };
-    DynamoDB.prototype.dropTable = function (table, complete, error) {
-        var _this = this;
-        this._db.deleteTable(this.config.filterDrop({ TableName: this.table(table) }), function (err) {
-            if (err) {
-                error(err);
-                return;
-            }
-            if (!_this.nSQL.tables[table].ai) {
-                complete();
-                return;
-            }
-            _this._client.delete(_this.config.filterDelete({
-                TableName: _this.table("_ai_store"),
-                Key: {
-                    "tname": table,
-                    "id": table
-                }
-            }), function (err) {
-                if (err) {
-                    error(err);
-                    return;
-                }
-                complete();
-            });
-        });
-    };
-    DynamoDB.prototype.disconnect = function (complete, error) {
-        complete();
-    };
-    DynamoDB.prototype.write = function (table, pk, row, complete, error) {
-        var _this = this;
-        (function () {
-            return new Promise(function (res, rej) {
-                if (_this.nSQL.tables[table].ai) {
-                    _this._client.get(_this.config.filterGet({
-                        TableName: _this.table("_ai_store"),
-                        Key: {
-                            "tname": table,
-                            "id": table
-                        }
-                    }), function (err, item) {
-                        if (err) {
-                            error(err);
-                            return;
-                        }
-                        var ai = parseInt(item.Item ? item.Item["data"] : 0);
-                        res(ai);
-                    });
-                }
-                else {
-                    res(0);
-                }
-            });
-        })().then(function (ai) {
-            pk = pk || utilities_1.generateID(_this.nSQL.tables[table].pkType, ai + 1);
-            if (typeof pk === "undefined") {
-                error(new Error("Can't add a row without a primary key!"));
-                return;
-            }
-            row[_this.nSQL.tables[table].pkCol] = pk;
-            var updateRow = function () {
-                _this._client.update(_this.config.filterUpdate({
-                    TableName: _this.table(table),
-                    Key: {
-                        "tname": table,
-                        "id": pk
-                    },
-                    UpdateExpression: "set #d = :d",
-                    ExpressionAttributeNames: {
-                        "#d": "data"
-                    },
-                    ExpressionAttributeValues: {
-                        ":d": JSON.stringify(row)
-                    }
-                }), function (err) {
-                    if (err) {
-                        error(err);
-                        return;
-                    }
-                    complete(pk);
-                });
-            };
-            if (_this.nSQL.tables[table].ai && ai < pk) {
-                // update ai counter
-                _this._client.update(_this.config.filterUpdate({
-                    TableName: _this.table("_ai_store"),
-                    Key: {
-                        "tname": table,
-                        "id": table
-                    },
-                    UpdateExpression: "set #d = #d + :val",
-                    ExpressionAttributeNames: {
-                        "#d": "data"
-                    },
-                    ExpressionAttributeValues: {
-                        ":val": 1
-                    }
-                }), function (err) {
-                    if (err) {
-                        error(err);
-                        return;
-                    }
-                    updateRow();
-                });
-            }
-            else {
-                updateRow();
-            }
-        });
-    };
-    DynamoDB.prototype.read = function (table, pk, complete, error) {
-        this._client.get(this.config.filterGet({
-            TableName: this.table(table),
-            Key: {
-                "tname": table,
-                "id": pk
-            }
-        }), function (err, item) {
-            if (err) {
-                error(err);
-                return;
-            }
-            complete(item.Item ? JSON.parse(item.Item["data"]) : undefined);
-        });
-    };
-    DynamoDB.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
-        var _this = this;
-        if (type === "offset" || type === "all") {
-            var count_1 = 0;
-            var LastEvaluatedKey_1;
-            var low_1 = offsetOrLow;
-            var high_1 = offsetOrLow + limitOrHigh;
-            var cache_1 = [];
-            var done_1 = function () {
-                if (reverse) {
-                    cache_1.forEach(function (row) {
-                        onRow(row[0], row[1]);
-                    });
-                    cache_1 = [];
-                    complete();
-                }
-                else {
-                    complete();
-                }
-            };
-            var read_1 = function () {
-                _this._client.scan(_this.config.filterScan({
-                    TableName: _this.table(table),
-                    ExclusiveStartKey: LastEvaluatedKey_1
-                }), function (err, item) {
-                    if (err) {
-                        error(err);
-                        return;
-                    }
-                    if (!item.Items) {
-                        done_1();
-                        return;
-                    }
-                    (item.Items || []).forEach(function (item) {
-                        if (type === "offset") {
-                            if (count_1 >= low_1 && count_1 < high_1) {
-                                if (reverse) {
-                                    cache_1.unshift([item ? JSON.parse(item["data"]) : undefined, count_1]);
-                                }
-                                else {
-                                    onRow(item ? JSON.parse(item["data"]) : undefined, count_1);
-                                }
-                            }
-                        }
-                        else {
-                            if (reverse) {
-                                cache_1.unshift([item ? JSON.parse(item["data"]) : undefined, count_1]);
-                            }
-                            else {
-                                onRow(item ? JSON.parse(item["data"]) : undefined, count_1);
-                            }
-                        }
-                        count_1++;
-                    });
-                    if (type === "offset") {
-                        if (count_1 < high_1 && item.LastEvaluatedKey) {
-                            LastEvaluatedKey_1 = item.LastEvaluatedKey;
-                            utilities_1.setFast(read_1);
-                        }
-                        else {
-                            done_1();
-                        }
-                    }
-                    else {
-                        if (item.LastEvaluatedKey) {
-                            LastEvaluatedKey_1 = item.LastEvaluatedKey;
-                            utilities_1.setFast(read_1);
-                            return;
-                        }
-                        done_1();
-                    }
-                });
-            };
-            read_1();
-        }
-        else {
-            var LastEvaluatedKey_2;
-            var count_2 = 0;
-            var read_2 = function () {
-                _this._client.query(_this.config.filterQuery({
-                    TableName: _this.table(table),
-                    ScanIndexForward: !reverse,
-                    KeyConditionExpression: "#table = :table AND #id BETWEEN :low AND :high",
-                    ExpressionAttributeNames: {
-                        "#table": "tname",
-                        "#id": "id"
-                    },
-                    ExpressionAttributeValues: {
-                        ":table": table,
-                        ":low": offsetOrLow,
-                        ":high": limitOrHigh,
-                    },
-                    ExclusiveStartKey: LastEvaluatedKey_2
-                }), function (err, item) {
-                    if (err) {
-                        error(err);
-                        return;
-                    }
-                    if (!item.Items) {
+                    _this._redis = redis.createClient(_this.redisArgs);
+                    _this._redis.on("ready", function () {
                         complete();
-                        return;
-                    }
-                    (item.Items || []).forEach(function (item) {
-                        onRow(item ? JSON.parse(item["data"]) : undefined, count_2);
-                        count_2++;
                     });
-                    if (item.LastEvaluatedKey) {
-                        LastEvaluatedKey_2 = item.LastEvaluatedKey;
-                        utilities_1.setFast(read_2);
-                        return;
-                    }
-                    complete();
+                    _this._redis.on("error", error);
                 });
-            };
-            read_2();
-        }
+            });
+        }).catch(error);
     };
-    DynamoDB.prototype.delete = function (table, pk, complete, error) {
-        this._client.delete(this.config.filterDelete({
-            TableName: this.table(table),
-            Key: {
-                "tname": table,
-                "id": pk
-            }
-        }), function (err) {
+    Scylla.prototype.key = function (tableName, key) {
+        return this._id + "." + tableName + "." + key;
+    };
+    Scylla.prototype.createTable = function (tableName, tableData, complete, error) {
+        this._tableConfigs[tableName] = tableData;
+        this._client.execute(this._filters.createTable("CREATE TABLE IF NOT EXISTS \"" + this.scyllaTable(tableName) + "\" (\n            id " + (tableData.isPkNum ? (tableData.pkType === "int" ? "bigint" : "double") : (tableData.pkType === "uuid" ? "uuid" : "text")) + " PRIMARY KEY,\n            data text\n        )"), [], function (err, result) {
             if (err) {
                 error(err);
                 return;
@@ -357,57 +65,350 @@ var DynamoDB = /** @class */ (function () {
             complete();
         });
     };
-    DynamoDB.prototype.getIndex = function (table, complete, error) {
+    Scylla.prototype.dropTable = function (table, complete, error) {
         var _this = this;
-        var index = [];
-        var LastEvaluatedKey;
-        var read = function () {
-            _this._client.scan(_this.config.filterScan({
-                TableName: _this.table(table),
-                ExclusiveStartKey: LastEvaluatedKey
-            }), function (err, item) {
-                if (err) {
-                    error(err);
+        this._redis.del(this.key("_ai_", table), function () {
+            // done reading index, delete it
+            _this._redis.del(_this.key("_index_", table), function (delErr) {
+                if (delErr) {
+                    error(delErr);
                     return;
                 }
-                (item.Items || []).forEach(function (item) {
-                    index.push(item["id"]);
+                _this._client.execute(_this._filters.dropTable("DROP TABLE IF EXISTS \"" + _this.scyllaTable(table) + "\""), [], function (err, result) {
+                    if (err) {
+                        error(err);
+                        return;
+                    }
+                    complete();
                 });
-                if (item.LastEvaluatedKey) {
-                    LastEvaluatedKey = item.LastEvaluatedKey;
-                    utilities_1.setFast(read);
-                    return;
-                }
-                complete(index);
             });
-        };
-        read();
+        });
     };
-    DynamoDB.prototype.getNumberOfRecords = function (table, complete, error) {
+    Scylla.prototype.disconnect = function (complete, error) {
         var _this = this;
-        var count = 0;
-        var LastEvaluatedKey;
-        var read = function () {
-            _this._client.scan(_this.config.filterScan({
-                TableName: _this.table(table),
-                ExclusiveStartKey: LastEvaluatedKey
-            }), function (err, item) {
-                if (err) {
-                    error(err);
-                    return;
-                }
-                count += item.Count || 0;
-                if (item.LastEvaluatedKey) {
-                    LastEvaluatedKey = item.LastEvaluatedKey;
-                    utilities_1.setFast(read);
-                    return;
-                }
-                complete(count);
+        this._redis.on("end", function () {
+            _this._client.shutdown(function () {
+                complete();
             });
-        };
-        read();
+        });
+        this._redis.quit();
     };
-    return DynamoDB;
+    Scylla.prototype.write = function (table, pk, row, complete, error) {
+        var _this = this;
+        new Promise(function (res, rej) {
+            if (_this._tableConfigs[table].ai) {
+                _this._redis.get(_this.key("_ai_", table), function (err, result) {
+                    if (err) {
+                        rej(err);
+                        return;
+                    }
+                    res(parseInt(result) || 0);
+                });
+            }
+            else {
+                res(0);
+            }
+        }).then(function (AI) {
+            pk = pk || utilities_1.generateID(_this._tableConfigs[table].pkType, AI + 1);
+            return new Promise(function (res, rej) {
+                if (typeof pk === "undefined") {
+                    rej(new Error("Can't add a row without a primary key!"));
+                    return;
+                }
+                if (_this._tableConfigs[table].ai && pk > AI) { // need to increment ai to database
+                    _this._redis.incr(_this.key("_ai_", table), function (err, result) {
+                        if (err) {
+                            rej(err);
+                            return;
+                        }
+                        res(result || 0);
+                    });
+                }
+                else {
+                    res(pk);
+                }
+            });
+        }).then(function (primaryKey) {
+            utilities_1.deepSet(_this._tableConfigs[table].pkCol, row, primaryKey);
+            return utilities_1.allAsync(["_index_", "_table_"], function (item, i, next, err) {
+                switch (item) {
+                    case "_index_": // update index
+                        _this._redis.zadd(_this.key("_index_", table), _this._tableConfigs[table].isPkNum ? parseFloat(primaryKey) : 0, primaryKey, function (error) {
+                            if (error) {
+                                err(error);
+                                return;
+                            }
+                            next(primaryKey);
+                        });
+                        break;
+                    case "_table_": // update row value
+                        var long = Cassandra.types.Long;
+                        var setPK = _this._tableConfigs[table].pkType === "int" ? long.fromNumber(pk) : pk;
+                        _this._client.execute(_this._filters.upsertRow("UPDATE \"" + _this.scyllaTable(table) + "\" SET data = ? WHERE id = ?"), [JSON.stringify(row), setPK], function (err2, result) {
+                            if (err2) {
+                                err(err2);
+                                return;
+                            }
+                            next(primaryKey);
+                        });
+                        break;
+                }
+            });
+        }).then(function (result) {
+            complete(result[0]);
+        }).catch(error);
+    };
+    Scylla.prototype.read = function (table, pk, complete, error) {
+        var long = Cassandra.types.Long;
+        var setPK = this._tableConfigs[table].pkType === "int" ? long.fromNumber(pk) : pk;
+        this._client.execute(this._filters.selectRow("SELECT data FROM \"" + this.scyllaTable(table) + "\" WHERE id = ?"), [setPK], function (err, result) {
+            if (err) {
+                error(err);
+                return;
+            }
+            if (result.rowLength > 0) {
+                var row = result.first() || { data: "[]" };
+                complete(JSON.parse(row.data));
+            }
+            else {
+                complete(undefined);
+            }
+        });
+    };
+    Scylla.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
+        var _this = this;
+        this.readRedisIndex(table, type, offsetOrLow, limitOrHigh, reverse, function (primaryKeys) {
+            var batchSize = 500;
+            var page = 0;
+            var nextPage = function () {
+                var getPKS = primaryKeys.slice(page * batchSize, (page * batchSize) + batchSize);
+                if (getPKS.length === 0) {
+                    complete();
+                    return;
+                }
+                utilities_1.allAsync(getPKS, function (rowPK, i, rowData, onError) {
+                    _this.read(table, rowPK, rowData, onError);
+                }).then(function (rows) {
+                    rows.forEach(onRow);
+                    page++;
+                    nextPage();
+                }).catch(error);
+            };
+            nextPage();
+        }, error);
+    };
+    Scylla.prototype.delete = function (table, pk, complete, error) {
+        var _this = this;
+        utilities_1.allAsync(["_index_", "_table_"], function (item, i, next, err) {
+            switch (item) {
+                case "_index_": // update index
+                    _this._redis.zrem(_this.key("_index_", table), pk, function (error) {
+                        if (error) {
+                            err(error);
+                            return;
+                        }
+                        next();
+                    });
+                    break;
+                case "_table_": // remove row value
+                    var long = Cassandra.types.Long;
+                    var setPK = _this._tableConfigs[table].pkType === "int" ? long.fromNumber(pk) : pk;
+                    _this._client.execute(_this._filters.deleteRow("DELETE FROM \"" + _this.scyllaTable(table) + "\" WHERE id = ?"), [setPK], function (err2, result) {
+                        if (err2) {
+                            error(err2);
+                            return;
+                        }
+                        next();
+                    });
+                    break;
+            }
+        }).then(complete).catch(error);
+    };
+    Scylla.prototype.readRedisIndex = function (table, type, offsetOrLow, limitOrHigh, reverse, complete, error) {
+        switch (type) {
+            case "offset":
+                if (reverse) {
+                    this._redis.zrevrange(this.key("_index_", table), offsetOrLow + 1, offsetOrLow + limitOrHigh, function (err, results) {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        complete(results);
+                    });
+                }
+                else {
+                    this._redis.zrange(this.key("_index_", table), offsetOrLow, offsetOrLow + limitOrHigh - 1, function (err, results) {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        complete(results);
+                    });
+                }
+                break;
+            case "all":
+                this.getTableIndex(table, function (index) {
+                    if (reverse) {
+                        complete(index.reverse());
+                    }
+                    else {
+                        complete(index);
+                    }
+                }, error);
+                break;
+            case "range":
+                if (this._tableConfigs[table].isPkNum) {
+                    this._redis.zrangebyscore(this.key("_index_", table), offsetOrLow, limitOrHigh, function (err, result) {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        complete(reverse ? result.reverse() : result);
+                    });
+                }
+                else {
+                    this._redis.zrangebylex(this.key("_index_", table), "[" + offsetOrLow, "[" + limitOrHigh, function (err, result) {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        complete(reverse ? result.reverse() : result);
+                    });
+                }
+                break;
+        }
+    };
+    Scylla.prototype.maybeMapIndex = function (table, index) {
+        if (this._tableConfigs[table].isPkNum)
+            return index.map(function (i) { return parseFloat(i); });
+        return index;
+    };
+    Scylla.prototype.getTableIndex = function (table, complete, error) {
+        var _this = this;
+        this._redis.zrangebyscore(this.key("_index_", table), "-inf", "+inf", function (err, result) {
+            if (err) {
+                error(err);
+                return;
+            }
+            complete(_this.maybeMapIndex(table, result));
+        });
+    };
+    Scylla.prototype.getTableIndexLength = function (table, complete, error) {
+        this._redis.zcount(this.key("_index_", table), "-inf", "+inf", function (err, result) {
+            if (err) {
+                error(err);
+                return;
+            }
+            complete(result);
+        });
+    };
+    Scylla.prototype.createIndex = function (tableId, index, type, complete, error) {
+        var indexName = "_idx_" + tableId + "_" + index;
+        var isPkNum = ["float", "int", "number"].indexOf(type) !== -1;
+        this._tableConfigs[indexName] = __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: ["id"], isPkNum: isPkNum });
+        var pksType = this._tableConfigs[tableId].isPkNum ? (this._tableConfigs[tableId].pkType === "int" ? "bigint" : "double") : (this._tableConfigs[tableId].pkType === "uuid" ? "uuid" : "text");
+        this._client.execute(this._filters.createIndex("CREATE TABLE IF NOT EXISTS \"" + this.scyllaTable(indexName) + "\" (\n            id " + (isPkNum ? (type === "int" ? "bigint" : "double") : (type === "uuid" ? "uuid" : "text")) + " PRIMARY KEY,\n            pks set<" + pksType + ">\n        )"), [], function (err, result) {
+            if (err) {
+                error(err);
+                return;
+            }
+            complete();
+        });
+    };
+    Scylla.prototype.deleteIndex = function (tableId, index, complete, error) {
+        var indexName = "_idx_" + tableId + "_" + index;
+        this.dropTable(indexName, complete, error);
+    };
+    Scylla.prototype.addIndexValue = function (tableId, index, rowID, indexKey, complete, error) {
+        var _this = this;
+        var indexName = "_idx_" + tableId + "_" + index;
+        return utilities_1.allAsync(["_index_", "_table_"], function (item, i, next, err) {
+            switch (item) {
+                case "_index_": // update index
+                    _this._redis.zadd(_this.key("_index_", indexName), _this._tableConfigs[indexName].isPkNum ? parseFloat(indexKey) : 0, indexKey, function (error) {
+                        if (error) {
+                            err(error);
+                            return;
+                        }
+                        next();
+                    });
+                    break;
+                case "_table_": // update row value
+                    var long = Cassandra.types.Long;
+                    var setIndexKey = _this._tableConfigs[indexName].pkType === "int" ? long.fromNumber(indexKey) : indexKey;
+                    var setPK = _this._tableConfigs[tableId].pkType === "int" ? long.fromNumber(rowID) : rowID;
+                    _this._client.execute(_this._filters.addIndexValue("UPDATE \"" + _this.scyllaTable(indexName) + "\" SET pks = pks + {" + (_this._tableConfigs[tableId].isPkNum || _this._tableConfigs[tableId].pkType === "uuid" ? setPK : "'" + setPK + "'") + "} WHERE id = ?"), [setIndexKey], function (err2, result) {
+                        if (err2) {
+                            err(err2);
+                            return;
+                        }
+                        next();
+                    });
+                    break;
+            }
+        }).then(complete).catch(error);
+    };
+    Scylla.prototype.deleteIndexValue = function (tableId, index, rowID, indexKey, complete, error) {
+        var indexName = "_idx_" + tableId + "_" + index;
+        var long = Cassandra.types.Long;
+        var setIndexKey = this._tableConfigs[indexName].pkType === "int" ? long.fromNumber(indexKey) : indexKey;
+        var setPK = this._tableConfigs[tableId].pkType === "int" ? long.fromNumber(rowID) : rowID;
+        this._client.execute(this._filters.deleteIndexValue("UPDATE \"" + this.scyllaTable(indexName) + "\" SET pks = pks - {" + (this._tableConfigs[tableId].isPkNum || this._tableConfigs[tableId].pkType === "uuid" ? setPK : "'" + setPK + "'") + "} WHERE id = ?"), [setIndexKey], function (err2, result) {
+            if (err2) {
+                error(err2);
+                return;
+            }
+            complete();
+        });
+    };
+    Scylla.prototype.readIndexKey = function (tableId, index, indexKey, onRowPK, complete, error) {
+        var _this = this;
+        var indexName = "_idx_" + tableId + "_" + index;
+        var long = Cassandra.types.Long;
+        var setIndexKey = this._tableConfigs[indexName].pkType === "int" ? long.fromNumber(indexKey) : indexKey;
+        this._client.execute(this._filters.readIndexValue("SELECT pks FROM \"" + this.scyllaTable(indexName) + "\" WHERE id = ?"), [setIndexKey], function (err2, result) {
+            if (err2) {
+                error(err2);
+                return;
+            }
+            if (!result.rowLength) {
+                complete();
+                return;
+            }
+            var row = result.first() || { pks: [] };
+            row.pks.forEach(function (value, i) {
+                onRowPK(_this._tableConfigs[tableId].isPkNum ? value.toNumber() : value.toString());
+            });
+            complete();
+        });
+    };
+    Scylla.prototype.readIndexKeys = function (tableId, index, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
+        var _this = this;
+        var indexName = "_idx_" + tableId + "_" + index;
+        this.readRedisIndex(indexName, type, offsetOrLow, limitOrHigh, reverse, function (primaryKeys) {
+            var pageSize = 500;
+            var page = 0;
+            var count = 0;
+            var getPage = function () {
+                var keys = primaryKeys.slice(pageSize * page, (pageSize * page) + pageSize);
+                if (!keys.length) {
+                    complete();
+                    return;
+                }
+                utilities_1.allAsync(keys, function (indexKey, i, pkNext, pkErr) {
+                    _this.readIndexKey(tableId, index, indexKey, function (row) {
+                        onRowPK(row, count);
+                        count++;
+                    }, pkNext, pkErr);
+                }).then(function () {
+                    page++;
+                    getPage();
+                });
+            };
+            getPage();
+        }, error);
+    };
+    return Scylla;
 }());
-exports.DynamoDB = DynamoDB;
+exports.Scylla = Scylla;
 //# sourceMappingURL=index.js.map

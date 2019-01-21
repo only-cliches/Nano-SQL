@@ -88,6 +88,8 @@
 				<p>Classical RDBMS queries like aggregate functions, joins and group bys are also supported.  You can even write your own query functions.</p>
 				<h3 id="flexible-data-models">Flexible Data Models</h3>
 				<p>The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.</p>
+				<h3 id="data-models-typescript-types">Data Models =&gt; TypeScript Types</h3>
+				<p>Instantly convert data models into typescript interfaces.</p>
 				<h3 id="graph-queries">Graph Queries</h3>
 				<p>Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.</p>
 				<h3 id="other-cool-things">Other Cool Things</h3>
@@ -249,10 +251,63 @@
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.5/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.7/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="important">Important</h2>
 				<p>If you are migrating from nanoSQL 1.X to 2.X, please read the <a href="https://nanosql.gitbook.io/docs/5-migration/1.x-2.0">migration guide</a>.</p>
+				<h1 id="cli">CLI</h1>
+				<p>The nanoSQL command line interface allows you to compile data models into typescript interface files.</p>
+				<p>Usage is as follows:</p>
+				<pre><code class="lang-sh">nsql --outDir www --files file1.ts file2.ts... --watch
+</code></pre>
+				<p>If you don&#39;t pass <code>--watch</code> the CLI will compile the files into the given directory, then exit.  You can also optionally pass <code>--watchPolling</code> with an interval to enable polling on the watch system.</p>
+				<p>It&#39;s important to note the files must be formated specifically for the CLI to read them correctly.</p>
+				<p>Each file should have an export named <code>tables</code> that is an array of <code>InanoSQLTableConfig</code> types.  The file below is a working example:</p>
+				<pre><code class="lang-ts"><span class="hljs-keyword">import</span> { InanoSQLTableConfig } <span class="hljs-keyword">from</span> <span class="hljs-string">"@nano-sql/core/lib/interfaces"</span>;
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> tables: InanoSQLTableConfig[] = [
+    {
+        name: <span class="hljs-string">"users"</span>,
+        model: {
+            <span class="hljs-string">"id:uuid"</span>: {pk: <span class="hljs-literal">true</span>, ai: <span class="hljs-literal">true</span>},
+            <span class="hljs-string">"age:float"</span>: {},
+            <span class="hljs-string">"str:string[]"</span>: {},
+            <span class="hljs-string">"meta:obj[]"</span>: {
+                model: {
+                    <span class="hljs-string">"meta:string"</span>: {},
+                    <span class="hljs-string">"name:bool"</span>: {},
+                    <span class="hljs-string">"face:string"</span>: {}
+                }
+            },
+            <span class="hljs-string">"*:any"</span>: {}
+        }
+    }
+];
+
+<span class="hljs-comment">// using the above object in nSQL</span>
+<span class="hljs-keyword">import</span> { nSQL } <span class="hljs-keyword">from</span> <span class="hljs-string">"@nano-sql/core"</span>;
+nSQL().connect({
+    id: <span class="hljs-string">"my_db"</span>,
+    tables: tables
+}).then..
+</code></pre>
+				<p>Assuming the above file is in the root directory of our project named index.ts, we could compile it to a typescript interface file with this command:</p>
+				<pre><code class="lang-sh">nsql --outDir www --files index.ts
+</code></pre>
+				<p>The above command would produce the following file:</p>
+				<pre><code class="lang-ts"><span class="hljs-keyword">import</span> { uuid, timeId, timeIdms } <span class="hljs-keyword">from</span>  <span class="hljs-string">"@nano-sql/core/lib/interfaces"</span>
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> IusersTable {
+    id:uuid;
+    age:<span class="hljs-built_in">number</span>;
+    name:<span class="hljs-built_in">string</span>[];
+    meta:{
+        key:<span class="hljs-built_in">string</span>;
+        value:<span class="hljs-built_in">any</span>;
+    }[];
+    [key: <span class="hljs-built_in">string</span>]: <span class="hljs-built_in">any</span>;
+}
+</code></pre>
 				<h1 id="examples">Examples</h1>
 				<pre><code class="lang-ts"><span class="hljs-comment">// Persistent Database</span>
 nSQL().connect({
@@ -420,6 +475,9 @@ nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-strin
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_adapter_test_.html">"adapter-<wbr>test"</a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_cli_.html">"cli"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_functions_.html">"functions"</a>

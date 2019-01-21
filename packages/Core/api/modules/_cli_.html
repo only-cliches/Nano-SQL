@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;functions&quot; | @nano-sql/core</title>
+	<title>&quot;cli&quot; | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,10 +54,10 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="_functions_.html">&quot;functions&quot;</a>
+					<a href="_cli_.html">&quot;cli&quot;</a>
 				</li>
 			</ul>
-			<h1>External module &quot;functions&quot;</h1>
+			<h1>External module &quot;cli&quot;</h1>
 		</div>
 	</div>
 </header>
@@ -68,23 +68,20 @@
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
-						<section class="tsd-index-section ">
-							<h3>Interfaces</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-interface tsd-parent-kind-external-module"><a href="../interfaces/_functions_.icrowindexquery.html" class="tsd-kind-icon">ICrow<wbr>Index<wbr>Query</a></li>
-							</ul>
-						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Variables</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_functions_.html#wordlevenshtiencache" class="tsd-kind-icon">word<wbr>Levenshtien<wbr>Cache</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_cli_.html#_cwd" class="tsd-kind-icon">_cwd</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_cli_.html#options" class="tsd-kind-icon">options</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_cli_.html#packagejson" class="tsd-kind-icon">packageJSON</a></li>
+								<li class="tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported"><a href="_cli_.html#useoptions" class="tsd-kind-icon">use<wbr>Options</a></li>
 							</ul>
 						</section>
-						<section class="tsd-index-section ">
+						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-function tsd-parent-kind-external-module"><a href="_functions_.html#attachdefaultfns" class="tsd-kind-icon">attach<wbr>Default<wbr>Fns</a></li>
-								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_functions_.html#numvals" class="tsd-kind-icon">num<wbr>Vals</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_cli_.html#parsefile" class="tsd-kind-icon">parse<wbr>File</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_cli_.html#parsemodel" class="tsd-kind-icon">parse<wbr>Model</a></li>
 							</ul>
 						</section>
 					</div>
@@ -93,72 +90,125 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Variables</h2>
 				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="wordlevenshtiencache" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagConst">Const</span> word<wbr>Levenshtien<wbr>Cache</h3>
-					<div class="tsd-signature tsd-kind-icon">word<wbr>Levenshtien<wbr>Cache<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<a name="_cwd" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> _cwd</h3>
+					<div class="tsd-signature tsd-kind-icon">_cwd<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;process.cwd()</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/4b22518/packages/Core/src/functions.ts#L5">functions.ts:5</a></li>
+							<li>Defined in cli.ts:20</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="options" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> options</h3>
+					<div class="tsd-signature tsd-kind-icon">options<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol"> =&nbsp;cliArgs([{name: &quot;package&quot;, alias: &quot;p&quot;, type: String},{name: &quot;watch&quot;, alias: &quot;w&quot;, type: Boolean},{name: &quot;watchPolling&quot;, alias: &quot;l&quot;, type: Number},{name: &quot;files&quot;, alias: &quot;f&quot;, type: String, multiple: true},{name: &quot;outDir&quot;, alias: &quot;o&quot;, type: String}])</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in cli.ts:22</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="packagejson" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagLet">Let</span> packageJSON</h3>
+					<div class="tsd-signature tsd-kind-icon">packageJSON<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">any</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in cli.ts:9</li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="useoptions" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagLet">Let</span> use<wbr>Options</h3>
+					<div class="tsd-signature tsd-kind-icon">use<wbr>Options<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span><span class="tsd-signature-symbol"> =&nbsp;options</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in cli.ts:30</li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
 						<h4>Type declaration</h4>
 						<ul class="tsd-parameters">
-							<li class="tsd-parameter-index-signature">
-								<h5><span class="tsd-signature-symbol">[</span>words: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><span class="tsd-signature-type">number</span></h5>
+							<li class="tsd-parameter">
+								<h5><span class="tsd-flag ts-flagOptional">Optional</span> files<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5><span class="tsd-flag ts-flagOptional">Optional</span> out<wbr>Dir<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5><span class="tsd-flag ts-flagOptional">Optional</span> package<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5><span class="tsd-flag ts-flagOptional">Optional</span> watch<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">true</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">false</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5><span class="tsd-flag ts-flagOptional">Optional</span> watch<wbr>Polling<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 							</li>
 						</ul>
 					</div>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group ">
+			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Functions</h2>
-				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module">
-					<a name="attachdefaultfns" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagConst">Const</span> attach<wbr>Default<wbr>Fns</h3>
-					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module">
-						<li class="tsd-signature tsd-kind-icon">attach<wbr>Default<wbr>Fns<span class="tsd-signature-symbol">(</span>nSQL<span class="tsd-signature-symbol">: </span><a href="../classes/_interfaces_.inanosqlinstance.html" class="tsd-signature-type">InanoSQLInstance</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="parsefile" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> parse<wbr>File</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+						<li class="tsd-signature tsd-kind-icon">parse<wbr>File<span class="tsd-signature-symbol">(</span>file<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, idx<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/4b22518/packages/Core/src/functions.ts#L18">functions.ts:18</a></li>
+									<li>Defined in cli.ts:128</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>nSQL: <a href="../classes/_interfaces_.inanosqlinstance.html" class="tsd-signature-type">InanoSQLInstance</a></h5>
+									<h5>file: <span class="tsd-signature-type">string</span></h5>
+								</li>
+								<li>
+									<h5>idx: <span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 					</ul>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="numvals" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagConst">Const</span> num<wbr>Vals</h3>
+					<a name="parsemodel" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> parse<wbr>Model</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-						<li class="tsd-signature tsd-kind-icon">num<wbr>Vals<span class="tsd-signature-symbol">(</span>row<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span>, <span class="tsd-signature-symbol">...</span>subjects<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></li>
+						<li class="tsd-signature tsd-kind-icon">parse<wbr>Model<span class="tsd-signature-symbol">(</span>name<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span>, level<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, model<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/4b22518/packages/Core/src/functions.ts#L14">functions.ts:14</a></li>
+									<li>Defined in cli.ts:60</li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>row: <span class="tsd-signature-type">any</span></h5>
+									<h5>name: <span class="tsd-signature-type">string</span></h5>
 								</li>
 								<li>
-									<h5><span class="tsd-flag ts-flagRest">Rest</span> <span class="tsd-signature-symbol">...</span>subjects: <span class="tsd-signature-type">any</span><span class="tsd-signature-symbol">[]</span></h5>
+									<h5>level: <span class="tsd-signature-type">number</span></h5>
+								</li>
+								<li>
+									<h5>model: <span class="tsd-signature-type">object</span></h5>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-index-signature">
+											<h5><span class="tsd-signature-symbol">[</span>colAndType: <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">]: </span><a href="../interfaces/_interfaces_.inanosqldatamodel.html" class="tsd-signature-type">InanoSQLDataModel</a></h5>
+										</li>
+									</ul>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -173,10 +223,10 @@
 					<li class=" tsd-kind-external-module">
 						<a href="_adapter_test_.html">"adapter-<wbr>test"</a>
 					</li>
-					<li class=" tsd-kind-external-module">
+					<li class="current tsd-kind-external-module">
 						<a href="_cli_.html">"cli"</a>
 					</li>
-					<li class="current tsd-kind-external-module">
+					<li class=" tsd-kind-external-module">
 						<a href="_functions_.html">"functions"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
@@ -201,17 +251,23 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
-					<li class=" tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="../interfaces/_functions_.icrowindexquery.html" class="tsd-kind-icon">ICrow<wbr>Index<wbr>Query</a>
+					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_cli_.html#_cwd" class="tsd-kind-icon">_cwd</a>
 					</li>
 					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_functions_.html#wordlevenshtiencache" class="tsd-kind-icon">word<wbr>Levenshtien<wbr>Cache</a>
+						<a href="_cli_.html#options" class="tsd-kind-icon">options</a>
 					</li>
-					<li class=" tsd-kind-function tsd-parent-kind-external-module">
-						<a href="_functions_.html#attachdefaultfns" class="tsd-kind-icon">attach<wbr>Default<wbr>Fns</a>
+					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_cli_.html#packagejson" class="tsd-kind-icon">packageJSON</a>
+					</li>
+					<li class=" tsd-kind-variable tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_cli_.html#useoptions" class="tsd-kind-icon">use<wbr>Options</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_functions_.html#numvals" class="tsd-kind-icon">num<wbr>Vals</a>
+						<a href="_cli_.html#parsefile" class="tsd-kind-icon">parse<wbr>File</a>
+					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_cli_.html#parsemodel" class="tsd-kind-icon">parse<wbr>Model</a>
 					</li>
 				</ul>
 			</nav>

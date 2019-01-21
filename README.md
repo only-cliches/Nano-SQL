@@ -18,7 +18,6 @@ Items here are planned but not yet released.
 ### Adapters
 - [SQLite Cordova Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite-Cordova)
 - [React Native Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)
-- [LightningDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-LightningDB)
 
 ### Plugins
 - [CLI](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/cli)

@@ -701,7 +701,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 let firstFn = resultFns.filter(f => f)[0];
 
                 // calculate aggregate functions
-                group.forEach((row, i) => {
+                group.reverse().forEach((row, i) => {
                     resultFns.forEach((fn, i) => {
                         if (!fn) return;
                         resultFns[i].aggr = execFunction(this.query, resultFns[i].name, row, resultFns[i].aggr);
@@ -718,7 +718,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             });
         } else {
             this._sortGroups.forEach((group) => {
-                this._queryBuffer.push(this._streamAS(group.pop()));
+                this._queryBuffer.push(this._streamAS(group.shift()));
             });
         }
     }
@@ -1829,9 +1829,12 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             error(new Error(`Table ${rebuildTables} not found for rebuilding indexes!`));
             return;
         }
+
+        this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: IWhereType.none };
         
         // .map(r => "_idx_" + this.nSQL.tableIds[rebuildTables] + "_" + r);
         if (this.query.where) { // rebuild only select rows (cant clean/remove index tables)
+
             const readQueue = new _nanoSQLQueue((item, i, complete, error) => {
                 this._removeRowAndIndexes(this.nSQL.tables[rebuildTables], item, () => {
                     this._newRow(item, complete, error);
@@ -1847,7 +1850,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 readQueue.finished();
             });
         } else { // empty indexes and start from scratch
-            const indexes = Object.keys(this.nSQL.tables[rebuildTables].indexes)
+            const indexes = Object.keys(this.nSQL.tables[rebuildTables].indexes);
+
             allAsync(indexes, (indexName, j, nextIndex, indexErr) => {
                 adapterFilters(this.nSQL, this.query).deleteIndex(rebuildTables, indexName, () => {
                     adapterFilters(this.nSQL, this.query).createIndex(rebuildTables, indexName, this.nSQL.tables[rebuildTables].indexes[indexName].type, () => {
@@ -1855,22 +1859,25 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     }, indexErr);
                 }, indexErr);
             }).then(() => {
+
                 // indexes are now empty
-                secondaryIndexQueue[this.nSQL.state.id + rebuildTables].newItem(uuid(), (item, buffComplete, buffErr) => {
-                    const readQueue = new _nanoSQLQueue((row, i, complete, err) => {
-                        this._newRow(row, (finishedRow) => {
-                            progress(finishedRow, i);
-                            complete();
-                        }, err);
-                    }, error, () => {
-                        complete();
-                        buffComplete();
-                    });
-                    this._getRecords((row) => {
-                        readQueue.newItem(row);
-                    }, () => {
-                        readQueue.finished();
-                    });
+                const readQueue = new _nanoSQLQueue((row, i, complete, err) => {
+                    const indexValues = this._getIndexValues(this.nSQL.tables[rebuildTables].indexes, row);
+                    const rowPK = deepGet(this.nSQL.tables[rebuildTables].pkCol, row);
+                    allAsync(Object.keys(indexValues), (indexName, jj, nextIdx, errIdx) => {
+                        const idxValue = indexValues[indexName];
+                        this._updateIndex(rebuildTables, indexName, idxValue, rowPK, true, () => {
+                            progress(row, i);
+                            nextIdx();
+                        }, errIdx);
+                    }).then(complete).catch(err);
+                }, error, () => {
+                    complete();
+                });
+                this._getRecords((row) => {
+                    readQueue.newItem(row);
+                }, () => {
+                    readQueue.finished();
                 });
 
             }).catch(error);

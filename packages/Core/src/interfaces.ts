@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.05;
+export const VERSION = 2.07;
 
 export type uuid = String;
 export type timeId = String;
@@ -221,7 +221,9 @@ export interface InanoSQLDataModel {
     ai?: boolean;
     pk?: boolean;
     default?: any;
-    model?: InanoSQLDataModel;
+    model?: {
+        [colAndType: string]: InanoSQLDataModel;
+    }
     notNull?: boolean;
     max?: number;
     min?: number;
