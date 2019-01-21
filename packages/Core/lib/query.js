@@ -336,6 +336,12 @@ var _nanoSQLQuery = /** @class */ (function () {
             return;
         var range = [(this.query.offset || 0), (this.query.offset || 0) + (this.query.limit || 0)];
         var doRange = range[0] + range[1] > 0;
+        var distinctKeys = {};
+        var generateDistinctKey = function (row) {
+            return (_this.query.distinct || []).reduce(function (prev, cur) {
+                return prev + JSON.stringify(utilities_1.deepGet(cur, row) || {});
+            }, "");
+        };
         // UNION query
         if (this.query.union) {
             var hashes_1 = [];
@@ -375,13 +381,36 @@ var _nanoSQLQuery = /** @class */ (function () {
                     }).filter(function (f) { return f; });
                     if (_this.query.orderBy) {
                         _this._queryBuffer = _this._queryBuffer.concat(rows.map(function (row) {
+                            var isDistinct = true;
+                            if (_this.query.distinct) {
+                                var key = generateDistinctKey(row);
+                                if (!distinctKeys[key]) {
+                                    distinctKeys[key] = true;
+                                }
+                                else {
+                                    isDistinct = false;
+                                }
+                            }
                             var newRow = _this._streamAS(row);
                             var keep = _this.query.having ? _this._where(newRow, _this._havingArgs.slowWhere) : true;
-                            return keep ? newRow : undefined;
+                            return keep && isDistinct ? newRow : undefined;
                         }).filter(function (f) { return f; }));
                     }
                     else {
                         rows.forEach(function (row, i) {
+                            var isDistinct = true;
+                            if (_this.query.distinct) {
+                                var key = generateDistinctKey(row);
+                                if (!distinctKeys[key]) {
+                                    distinctKeys[key] = true;
+                                }
+                                else {
+                                    isDistinct = false;
+                                }
+                            }
+                            if (!isDistinct) {
+                                return;
+                            }
                             var newRow = _this._streamAS(row);
                             var keep = _this.query.having ? _this._where(newRow, _this._havingArgs.slowWhere) : true;
                             if (!keep) {
@@ -389,11 +418,11 @@ var _nanoSQLQuery = /** @class */ (function () {
                             }
                             if (doRange) {
                                 if (count_1 >= range[0] && count_1 < range[1]) {
-                                    _this.progress(_this._streamAS(row), count_1);
+                                    _this.progress(newRow, count_1);
                                 }
                             }
                             else {
-                                _this.progress(_this._streamAS(row), count_1);
+                                _this.progress(newRow, count_1);
                             }
                             count_1++;
                         });
@@ -418,6 +447,21 @@ var _nanoSQLQuery = /** @class */ (function () {
         var graphBuffer = new utilities_1._nanoSQLQueue(function (gRow, ct, nextGraph, err) {
             if (_this.query.graph) {
                 _this._graph(_this.query.graph || [], _this.query.tableAS || _this.query.table, gRow, rowCounter, function (graphRow, j) {
+                    var isDistinct = true;
+                    if (_this.query.distinct) {
+                        var key = generateDistinctKey(graphRow);
+                        if (!distinctKeys[key]) {
+                            distinctKeys[key] = true;
+                        }
+                        else {
+                            isDistinct = false;
+                        }
+                    }
+                    if (!isDistinct) {
+                        rowCounter2++;
+                        nextGraph();
+                        return;
+                    }
                     var finalRow = _this._streamAS(graphRow);
                     if (_this.query.having) {
                         if (_this._where(_this._streamAS(gRow), _this._havingArgs.slowWhere)) {
@@ -432,6 +476,21 @@ var _nanoSQLQuery = /** @class */ (function () {
                 });
             }
             else {
+                var isDistinct = true;
+                if (_this.query.distinct) {
+                    var key = generateDistinctKey(gRow);
+                    if (!distinctKeys[key]) {
+                        distinctKeys[key] = true;
+                    }
+                    else {
+                        isDistinct = false;
+                    }
+                }
+                if (!isDistinct) {
+                    rowCounter2++;
+                    nextGraph();
+                    return;
+                }
                 _this.progress(_this._streamAS(gRow), rowCounter2);
                 rowCounter2++;
                 nextGraph();
@@ -481,7 +540,19 @@ var _nanoSQLQuery = /** @class */ (function () {
                     _this._queryBuffer = _this._queryBuffer.slice(range[0], range[1]);
                 }
                 _this._queryBuffer.forEach(function (row, i) {
-                    _this.progress(row, i);
+                    var isDistinct = true;
+                    if (_this.query.distinct) {
+                        var key = generateDistinctKey(row);
+                        if (!distinctKeys[key]) {
+                            distinctKeys[key] = true;
+                        }
+                        else {
+                            isDistinct = false;
+                        }
+                    }
+                    if (isDistinct) {
+                        _this.progress(row, i);
+                    }
                 });
                 if (_this.query.cacheID && _this.query.cacheID === _this.query.queryID) {
                     delete globalTableCache[_this.query.cacheID];
@@ -1046,9 +1117,11 @@ var _nanoSQLQuery = /** @class */ (function () {
     };
     _nanoSQLQuery.prototype._streamAS = function (row) {
         var _this = this;
-        if (this._selectArgs.length) {
+        var distinctArgs = (this.query.distinct || []).map(function (s) { return ({ isFn: false, value: s }); });
+        var selectArgs = (this._selectArgs || []).concat(distinctArgs);
+        if (selectArgs.length) {
             var result_1 = {};
-            this._selectArgs.forEach(function (arg) {
+            selectArgs.forEach(function (arg) {
                 if (arg.isFn) {
                     result_1[arg.as || arg.value] = utilities_1.execFunction(_this.query, arg.value, row, {}).result;
                 }

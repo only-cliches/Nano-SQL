@@ -127,6 +127,7 @@ export declare class InanoSQLQueryBuilder {
     offset(args: number): InanoSQLQueryBuilder;
     tag(tag: string): InanoSQLQueryBuilder;
     emit(): InanoSQLQuery;
+    distinct(columns: string[]): InanoSQLQueryBuilder;
     ttl(seconds?: number, cols?: string[]): InanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
     stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
@@ -457,6 +458,7 @@ export interface InanoSQLQuery {
     join?: InanoSQLJoinArgs | InanoSQLJoinArgs[];
     limit?: number;
     offset?: number;
+    distinct?: string[];
     ttl?: number;
     ttlCols?: string[];
     skipQueue?: boolean;

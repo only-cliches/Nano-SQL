@@ -453,6 +453,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const range = [(this.query.offset || 0), (this.query.offset || 0) + (this.query.limit || 0)];
         const doRange = range[0] + range[1] > 0;
 
+        let distinctKeys: {[key: string]: boolean} = {};
+        const generateDistinctKey = (row: any) => {
+            return (this.query.distinct || []).reduce((prev, cur) => {
+                return prev + JSON.stringify(deepGet(cur, row) || {});
+            }, "");
+        }
+
         // UNION query
         if (this.query.union) {
             let hashes: any[] = [];
@@ -491,12 +498,33 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
                     if (this.query.orderBy) {
                         this._queryBuffer = this._queryBuffer.concat(rows.map(row => {
+                            let isDistinct = true;
+                            if (this.query.distinct) {
+                                const key = generateDistinctKey(row);
+                                if (!distinctKeys[key]) {
+                                    distinctKeys[key] = true;
+                                } else {
+                                    isDistinct = false;
+                                }
+                            }
                             const newRow = this._streamAS(row);
                             const keep = this.query.having ? this._where(newRow, this._havingArgs.slowWhere as any[]) : true;
-                            return keep ? newRow : undefined;
+                            return keep && isDistinct ? newRow : undefined;
                         }).filter(f => f));
                     } else {
                         rows.forEach((row, i) => {
+                            let isDistinct = true;
+                            if (this.query.distinct) {
+                                const key = generateDistinctKey(row);
+                                if (!distinctKeys[key]) {
+                                    distinctKeys[key] = true;
+                                } else {
+                                    isDistinct = false;
+                                }
+                            }
+                            if (!isDistinct) {
+                                return;
+                            }
                             const newRow = this._streamAS(row);
                             const keep = this.query.having ? this._where(newRow, this._havingArgs.slowWhere as any[]) : true;
                             if (!keep) {
@@ -504,10 +532,10 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                             }
                             if (doRange) {
                                 if (count >= range[0] && count < range[1]) {
-                                    this.progress(this._streamAS(row), count);
+                                    this.progress(newRow, count);
                                 }
                             } else {
-                                this.progress(this._streamAS(row), count);
+                                this.progress(newRow, count);
                             }
                             count++;
                         });
@@ -534,6 +562,21 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const graphBuffer = new _nanoSQLQueue((gRow, ct, nextGraph, err) => {
             if (this.query.graph) {
                 this._graph(this.query.graph || [], this.query.tableAS || this.query.table as string, gRow, rowCounter, (graphRow, j) => {
+
+                    let isDistinct = true;
+                    if (this.query.distinct) {
+                        const key = generateDistinctKey(graphRow);
+                        if (!distinctKeys[key]) {
+                            distinctKeys[key] = true;
+                        } else {
+                            isDistinct = false;
+                        }
+                    }
+                    if (!isDistinct) {
+                        rowCounter2++;
+                        nextGraph();
+                        return;
+                    }
                     const finalRow = this._streamAS(graphRow);
                     if (this.query.having) {
                         if (this._where(this._streamAS(gRow), this._havingArgs.slowWhere as any[])) {
@@ -546,6 +589,20 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     nextGraph();
                 });
             } else {
+                let isDistinct = true;
+                if (this.query.distinct) {
+                    const key = generateDistinctKey(gRow);
+                    if (!distinctKeys[key]) {
+                        distinctKeys[key] = true;
+                    } else {
+                        isDistinct = false;
+                    }
+                }
+                if (!isDistinct) {
+                    rowCounter2++;
+                    nextGraph();
+                    return;
+                }
                 this.progress(this._streamAS(gRow), rowCounter2);
                 rowCounter2++;
                 nextGraph();
@@ -602,7 +659,18 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 }
 
                 this._queryBuffer.forEach((row, i) => {
-                    this.progress(row, i);
+                    let isDistinct = true;
+                    if (this.query.distinct) {
+                        const key = generateDistinctKey(row);
+                        if (!distinctKeys[key]) {
+                            distinctKeys[key] = true;
+                        } else {
+                            isDistinct = false;
+                        }
+                    }
+                    if (isDistinct) {
+                        this.progress(row, i);
+                    }
                 });
 
                 if (this.query.cacheID && this.query.cacheID === this.query.queryID) {
@@ -1228,9 +1296,11 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     }
 
     public _streamAS(row: any): any {
-        if (this._selectArgs.length) {
+        const distinctArgs = (this.query.distinct || []).map(s => ({ isFn: false, value: s}))
+        const selectArgs = (this._selectArgs || []).concat(distinctArgs);
+        if (selectArgs.length) {
             let result = {};
-            this._selectArgs.forEach((arg) => {
+            selectArgs.forEach((arg) => {
                 if (arg.isFn) {
                     result[arg.as || arg.value] = execFunction(this.query, arg.value, row, {} as any).result;
                 } else {

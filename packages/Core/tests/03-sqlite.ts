@@ -128,6 +128,21 @@ describe("Equivalent SQLite Queries Should Match", () => {
         });
     });
 
+    it("Distinct Query", (done: MochaDone) => {
+        TestDBs().then((dbs) => {
+            dbs.runQuery(`SELECT DISTINCT userId FROM posts;`, [], (nSQL) => {
+                return nSQL.selectTable("posts").query("select").distinct(["userId"]).exec();
+            }).then((result) => {
+                try {
+                    expect(result[1]).to.deep.equal(result[0]);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+    });
+
     it("Function Query 1", (done: MochaDone) => {
         TestDBs().then((dbs) => {
             dbs.runQuery(`SELECT AVG(age) AS averageAge FROM users;`, [], (nSQL) => {

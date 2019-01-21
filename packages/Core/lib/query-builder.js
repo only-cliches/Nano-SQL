@@ -33,6 +33,10 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         }
         return this;
     };
+    _nanoSQLQueryBuilder.prototype.distinct = function (columns) {
+        this._query.distinct = columns;
+        return this;
+    };
     _nanoSQLQueryBuilder.prototype.groupBy = function (columns) {
         if (Array.isArray(columns)) {
             this._query.groupBy = columns;

@@ -14,6 +14,7 @@ export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     orderBy(columns: string[] | {
         [col: string]: string;
     }): _nanoSQLQueryBuilder;
+    distinct(columns: string[]): _nanoSQLQueryBuilder;
     groupBy(columns: string[] | {
         [col: string]: string;
     }): _nanoSQLQueryBuilder;

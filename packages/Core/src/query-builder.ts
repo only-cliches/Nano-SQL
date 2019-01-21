@@ -52,6 +52,11 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return this;
     }
 
+    public distinct(columns: string[]): _nanoSQLQueryBuilder {
+        this._query.distinct = columns;
+        return this;
+    }
+
     public groupBy(columns: string[] | {[col: string]: string}): _nanoSQLQueryBuilder {
         if (Array.isArray(columns)) {
             this._query.groupBy = columns;
