@@ -96,7 +96,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.7/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.8/dist/nano-sql.min.js"></script>
 ```
 
 ## Important
@@ -124,14 +124,13 @@ export const tables: InanoSQLTableConfig[] = [
     {
         name: "users",
         model: {
-            "id:uuid": {pk: true, ai: true},
+            "id:uuid": {pk: true},
             "age:float": {},
             "str:string[]": {},
             "meta:obj[]": {
                 model: {
-                    "meta:string": {},
-                    "name:bool": {},
-                    "face:string": {}
+                    "key:string": {},
+                    "value:any": {}
                 }
             },
             "*:any": {}

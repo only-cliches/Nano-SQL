@@ -1,5 +1,5 @@
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = 2.07;
+exports.VERSION = 2.08;
 ;
 var IWhereType;
 (function (IWhereType) {
@@ -9,3 +9,4 @@ var IWhereType;
     IWhereType[IWhereType["fn"] = 3] = "fn";
     IWhereType[IWhereType["none"] = 4] = "none"; // no where, return all rows
 })(IWhereType = exports.IWhereType || (exports.IWhereType = {}));
+//# sourceMappingURL=interfaces.js.map

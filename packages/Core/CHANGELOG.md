@@ -4,6 +4,10 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.0.8] 1-21-2018
+- Fixed a typo in the readme.
+- Fixed package.json error.
+
 ## [2.0.7] 1-21-2018
 - Fixed issue [111](https://github.com/ClickSimply/Nano-SQL/issues/111), added tests to prevent the issue from happening again.
 - Resolved a few other minor issues with group by.

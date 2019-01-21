@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as chokadir from "chokidar";
 import * as path from "path";
 import * as fs from "fs";

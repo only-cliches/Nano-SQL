@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2.07;
+export declare const VERSION = 2.08;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
