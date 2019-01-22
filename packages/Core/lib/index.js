@@ -41,14 +41,15 @@ var nanoSQL = /** @class */ (function () {
             ready: false,
             // MRTimer: undefined,
             // runMR: {},
-            selectedTable: ""
+            selectedTable: "",
+            exportQueryObj: false
         };
         this.config = {
             id: "temp",
             queue: false
         };
-        this.tables = {};
-        this.tableIds = { "_util": "_util", "_ttl": "_ttl" };
+        this._tables = {};
+        this._tableIds = { "_util": "_util", "_ttl": "_ttl" };
         this._queryCache = {};
         this.filters = {};
         this.indexTypes = {
@@ -163,16 +164,16 @@ var nanoSQL = /** @class */ (function () {
                         };
                         var rowData = row.key.split(".");
                         var table = rowData[0];
-                        var key = ["float", "int", "number"].indexOf(_this.tables[table].pkType) === -1 ? rowData[1] : parseFloat(rowData[1]);
+                        var key = ["float", "int", "number"].indexOf(_this._tables[table].pkType) === -1 ? rowData[1] : parseFloat(rowData[1]);
                         if (row.cols.length) {
                             var upsertObj_1 = {};
                             row.cols.forEach(function (col) {
                                 upsertObj_1[col] = null;
                             });
-                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: upsertObj_1, where: [_this.tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
+                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: upsertObj_1, where: [_this._tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
                         }
                         else {
-                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "delete"), { where: [_this.tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
+                            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "delete"), { where: [_this._tables[table].pkCol, "=", key] }), utilities_1.noop, clearTTL, utilities_1.throwErr);
                         }
                     }
                     else {
@@ -285,14 +286,24 @@ var nanoSQL = /** @class */ (function () {
             }
         });
     };
-    nanoSQL.prototype.saveTableIds = function () {
+    nanoSQL.prototype._saveTableIds = function () {
         var _this = this;
         return new Promise(function (res, rej) {
             _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "upsert"), { actionArgs: utilities_1.assign({
                     key: "tableIds",
-                    value: _this.tableIds
+                    value: _this._tableIds
                 }) }), utilities_1.noop, res, rej);
         });
+    };
+    nanoSQL.prototype.queries = function () {
+        var _this = this;
+        if (typeof this.state.selectedTable !== "string") {
+            throw new Error("Can't get table queries without selecting a table!");
+        }
+        return Object.keys(this._tables[this.state.selectedTable].queries).reduce(function (prev, cur) {
+            prev[cur] = _this._tables[_this.state.selectedTable].queries[cur].call;
+            return prev;
+        }, {});
     };
     nanoSQL.prototype.connect = function (config) {
         var _this = this;
@@ -383,7 +394,7 @@ var nanoSQL = /** @class */ (function () {
                                 _internal: true
                             } }), utilities_1.noop, function () {
                             _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, "_util", "select"), { where: ["key", "=", "tableIds"] }), function (row) {
-                                _this.tableIds = __assign({}, _this.tableIds, row.value);
+                                _this._tableIds = __assign({}, _this._tableIds, row.value);
                             }, function () {
                                 next();
                             }, err);
@@ -735,7 +746,7 @@ var nanoSQL = /** @class */ (function () {
             }, res, rej);
         }).then(function (actionOrView) {
             var key = actionOrView.res.AVType === "a" ? "actions" : "views";
-            var selAV = _this.tables[actionOrView.res.table][key].reduce(function (prev, cur) {
+            var selAV = _this._tables[actionOrView.res.table][key].reduce(function (prev, cur) {
                 if (cur.name === actionOrView.res.AVName)
                     return cur;
                 return prev;
@@ -819,7 +830,7 @@ var nanoSQL = /** @class */ (function () {
             throw new Error("Must select table to generate defualts!");
         }
         table = (table || this.state.selectedTable);
-        if (!this.tables[table]) {
+        if (!this._tables[table]) {
             throw new Error("nSQL: Table \"" + table + "\" not found for generating default object!");
         }
         var error = "";
@@ -880,15 +891,15 @@ var nanoSQL = /** @class */ (function () {
             }
             return newObj;
         };
-        return resolveModel(this.tables[table].columns, replaceObj);
+        return resolveModel(this._tables[table].columns, replaceObj);
     };
     nanoSQL.prototype.rawDump = function (tables, indexes, onRow) {
         var _this = this;
-        var exportTables = indexes ? tables : Object.keys(this.tables).filter(function (t) { return tables.length ? tables.indexOf(t) !== -1 : true; });
+        var exportTables = indexes ? tables : Object.keys(this._tables).filter(function (t) { return tables.length ? tables.indexOf(t) !== -1 : true; });
         return utilities_1.chainAsync(exportTables, function (table, i, nextTable, err) {
             if (indexes) {
                 var tableName_1 = table.indexOf(":") !== -1 ? table.split(":")[0] : table;
-                var tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(_this.tables[table].indexes);
+                var tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(_this._tables[table].indexes);
                 utilities_1.chainAsync(tableIndexes, function (index, i, nextIdx, errIdx) {
                     utilities_1.adapterFilters(_this).readIndexKeys(tableName_1, index, "all", undefined, undefined, false, function (key, id) {
                         onRow(tableName_1 + "." + index, { indexId: id, rowId: key });
@@ -908,7 +919,7 @@ var nanoSQL = /** @class */ (function () {
         var totalLength = Object.keys(tables).reduce(function (p, c) {
             return p += tables[c].length, p;
         }, 0);
-        var usableTables = Object.keys(this.tables);
+        var usableTables = Object.keys(this._tables);
         var importTables = indexes ? Object.keys(tables) : Object.keys(tables).filter(function (t) { return usableTables.indexOf(t) !== -1; });
         return utilities_1.chainAsync(importTables, function (table, i, next, err) {
             if (indexes) {
@@ -920,7 +931,7 @@ var nanoSQL = /** @class */ (function () {
                 }).then(next).catch(err);
             }
             else {
-                var pk_1 = _this.tables[table].pkCol;
+                var pk_1 = _this._tables[table].pkCol;
                 utilities_1.chainAsync(tables[table], function (row, ii, nextRow, rowErr) {
                     if (!utilities_1.deepGet(pk_1, row) && rowErr) {
                         rowErr("No primary key found, can't import: " + JSON.stringify(row));
@@ -954,7 +965,7 @@ var nanoSQL = /** @class */ (function () {
             _this.doFilter("extend", { scope: scope, args: args, res: null }, res, rej);
         });
     };
-    nanoSQL.prototype.loadJS = function (rows, onProgress) {
+    nanoSQL.prototype.loadJS = function (rows, onProgress, parallel) {
         var _this = this;
         var table = this.state.selectedTable;
         if (typeof table !== "string") {
@@ -962,7 +973,8 @@ var nanoSQL = /** @class */ (function () {
         }
         var total = rows.length;
         var count = 0;
-        return utilities_1.chainAsync(rows, function (row, i, next, err) {
+        var async = parallel ? utilities_1.allAsync : utilities_1.chainAsync;
+        return async(rows, function (row, i, next, err) {
             _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: row }), function (r) {
             }, function () {
                 count++;
@@ -1085,17 +1097,22 @@ var nanoSQL = /** @class */ (function () {
             }
         }).filter(function (r) { return r; });
     };
-    nanoSQL.prototype.loadCSV = function (csv, rowMap, onProgress) {
+    nanoSQL.prototype.loadCSV = function (csv, rowMap, onProgress, parallel) {
         var _this = this;
         var table = this.state.selectedTable;
         if (typeof table !== "string") {
             return Promise.reject("nSQL: Can't load CSV into temporary table!");
         }
         var rowData = this.CSVtoJSON(csv, rowMap);
-        return utilities_1.chainAsync(rowData, function (row, i, nextRow, err) {
-            if (onProgress)
-                onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
-            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: row }), utilities_1.noop, nextRow, err || utilities_1.noop);
+        var async = parallel ? utilities_1.allAsync : utilities_1.chainAsync;
+        var count = 0;
+        return async(rowData, function (row, i, nextRow, err) {
+            _this.triggerQuery(__assign({}, utilities_1.buildQuery(_this, table, "upsert"), { actionArgs: row }), utilities_1.noop, function () {
+                count++;
+                if (onProgress)
+                    onProgress(Math.round((count / rowData.length) * 10000) / 100);
+                nextRow();
+            }, err || utilities_1.noop);
         });
     };
     return nanoSQL;

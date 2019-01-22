@@ -8,6 +8,7 @@ import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
+import { timingSafeEqual } from "crypto";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -37,11 +38,11 @@ export class nanoSQL implements InanoSQLInstance {
 
     public planetRadius: number = 6371;
 
-    public tables: {
+    public _tables: {
         [tableName: string]: InanoSQLTable;
     };
 
-    public tableIds: {
+    public _tableIds: {
         [tableName: string]: string;
     }
 
@@ -56,8 +57,7 @@ export class nanoSQL implements InanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
-        // runMR: {[table: string]: {[mrName: string]: (...args: any[]) => void}};
-        // MRTimer: any;
+        exportQueryObj: boolean;
         selectedTable: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
 
@@ -91,7 +91,8 @@ export class nanoSQL implements InanoSQLInstance {
             ready: false,
             // MRTimer: undefined,
             // runMR: {},
-            selectedTable: ""
+            selectedTable: "",
+            exportQueryObj: false
         };
 
         this.config = {
@@ -99,8 +100,8 @@ export class nanoSQL implements InanoSQLInstance {
             queue: false
         };
 
-        this.tables = {};
-        this.tableIds = { "_util": "_util", "_ttl": "_ttl" };
+        this._tables = {};
+        this._tableIds = { "_util": "_util", "_ttl": "_ttl" };
         this._queryCache = {};
         this.filters = {};
 
@@ -231,7 +232,7 @@ export class nanoSQL implements InanoSQLInstance {
                         };
                         const rowData = row.key.split(".");
                         const table = rowData[0];
-                        const key = ["float", "int", "number"].indexOf(this.tables[table].pkType) === -1 ? rowData[1] : parseFloat(rowData[1]);
+                        const key = ["float", "int", "number"].indexOf(this._tables[table].pkType) === -1 ? rowData[1] : parseFloat(rowData[1]);
                         if (row.cols.length) {
                             let upsertObj = {};
                             row.cols.forEach((col) => {
@@ -240,12 +241,12 @@ export class nanoSQL implements InanoSQLInstance {
                             this.triggerQuery({
                                 ...buildQuery(this, table, "upsert"),
                                 actionArgs: upsertObj,
-                                where: [this.tables[table].pkCol, "=", key]
+                                where: [this._tables[table].pkCol, "=", key]
                             }, noop, clearTTL, throwErr);
                         } else {
                             this.triggerQuery({
                                 ...buildQuery(this, table, "delete"),
-                                where: [this.tables[table].pkCol, "=", key]
+                                where: [this._tables[table].pkCol, "=", key]
                             }, noop, clearTTL, throwErr);
                         }
                     } else {
@@ -373,16 +374,28 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
-    public saveTableIds(): Promise<any> {
+    public _saveTableIds(): Promise<any> {
         return new Promise((res, rej) => {
             this.triggerQuery({
                 ...buildQuery(this, "_util", "upsert"),
                 actionArgs: assign({
                     key: "tableIds",
-                    value: this.tableIds
+                    value: this._tableIds
                 })
             }, noop, res, rej);
         })
+    }
+
+    public queries(): {
+        [fnName: string]: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+    } {
+        if (typeof this.state.selectedTable !== "string") {
+            throw new Error(`Can't get table queries without selecting a table!`);
+        }
+        return Object.keys(this._tables[this.state.selectedTable].queries).reduce((prev, cur) => {
+            prev[cur] = this._tables[this.state.selectedTable as string].queries[cur].call;
+            return prev;
+        }, {});
     }
 
     public connect(config: InanoSQLConfig): Promise<any> {
@@ -494,8 +507,8 @@ export class nanoSQL implements InanoSQLInstance {
                                 ...buildQuery(this, "_util", "select"),
                                 where: ["key", "=", "tableIds"]
                             }, (row) => {
-                                this.tableIds = {
-                                    ...this.tableIds,
+                                this._tableIds = {
+                                    ...this._tableIds,
                                     ...row.value
                                 }
                             }, () => {
@@ -881,7 +894,7 @@ export class nanoSQL implements InanoSQLInstance {
         }).then((actionOrView: actionViewFilter) => {
             const key = actionOrView.res.AVType === "a" ? "actions" : "views";
 
-            const selAV: InanoSQLActionOrView | null = this.tables[actionOrView.res.table][key].reduce((prev, cur) => {
+            const selAV: InanoSQLActionOrView | null = this._tables[actionOrView.res.table][key].reduce((prev, cur) => {
                 if (cur.name === actionOrView.res.AVName) return cur;
                 return prev;
             }, null as any);
@@ -968,7 +981,7 @@ export class nanoSQL implements InanoSQLInstance {
             throw new Error("Must select table to generate defualts!");
         }
         table = (table || this.state.selectedTable as any) as string;
-        if (!this.tables[table]) {
+        if (!this._tables[table]) {
             throw new Error(`nSQL: Table "${table}" not found for generating default object!`);
         }
 
@@ -1028,18 +1041,18 @@ export class nanoSQL implements InanoSQLInstance {
             return newObj;
         };
 
-        return resolveModel(this.tables[table].columns, replaceObj);
+        return resolveModel(this._tables[table].columns, replaceObj);
     }
 
 
     public rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: { [key: string]: any }) => void): Promise<any> {
 
-        const exportTables = indexes ? tables : Object.keys(this.tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);
+        const exportTables = indexes ? tables : Object.keys(this._tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);
 
         return chainAsync(exportTables, (table: string, i, nextTable, err) => {
             if (indexes) {
                 const tableName = table.indexOf(":") !== -1 ? table.split(":")[0] : table;
-                const tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(this.tables[table].indexes);
+                const tableIndexes = table.indexOf(":") !== -1 ? [table.split(":")[1]] : Object.keys(this._tables[table].indexes);
                 chainAsync(tableIndexes, (index, i, nextIdx, errIdx) => {
                     adapterFilters(this).readIndexKeys(tableName, index, "all", undefined, undefined, false, (key, id) => {
                         onRow(tableName + "." + index, { indexId: id, rowId: key });
@@ -1061,7 +1074,7 @@ export class nanoSQL implements InanoSQLInstance {
             return p += tables[c].length, p;
         }, 0);
 
-        const usableTables = Object.keys(this.tables);
+        const usableTables = Object.keys(this._tables);
         const importTables: string[] = indexes ? Object.keys(tables) : Object.keys(tables).filter(t => usableTables.indexOf(t) !== -1);
 
         return chainAsync(importTables, (table, i, next, err) => {
@@ -1073,7 +1086,7 @@ export class nanoSQL implements InanoSQLInstance {
                     adapterFilters(this).addIndexValue(tableName, indexName, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
                 }).then(next).catch(err);
             } else {
-                const pk = this.tables[table].pkCol;
+                const pk = this._tables[table].pkCol;
                 chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
                     if (!deepGet(pk, row) && rowErr) {
                         rowErr("No primary key found, can't import: " + JSON.stringify(row));
@@ -1103,7 +1116,7 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
-    public loadJS(rows: { [key: string]: any }[], onProgress?: (percent: number) => void): Promise<any[]> {
+    public loadJS(rows: { [key: string]: any }[], onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]> {
 
         const table = this.state.selectedTable;
 
@@ -1112,7 +1125,8 @@ export class nanoSQL implements InanoSQLInstance {
         }
         const total = rows.length;
         let count = 0;
-        return chainAsync(rows, (row, i, next, err) => {
+        const async = parallel ? allAsync : chainAsync;
+        return async(rows, (row, i, next, err) => {
             this.triggerQuery({
                 ...buildQuery(this, table, "upsert"),
                 actionArgs: row
@@ -1232,7 +1246,7 @@ export class nanoSQL implements InanoSQLInstance {
         }).filter(r => r);
     }
 
-    public loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]> {
+    public loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]> {
 
         const table = this.state.selectedTable;
 
@@ -1241,13 +1255,17 @@ export class nanoSQL implements InanoSQLInstance {
         }
 
         let rowData = this.CSVtoJSON(csv, rowMap);
-
-        return chainAsync(rowData, (row, i, nextRow, err) => {
-            if (onProgress) onProgress(Math.round(((i + 1) / rowData.length) * 10000) / 100);
+        const async = parallel ? allAsync : chainAsync;
+        let count = 0;
+        return async(rowData, (row, i, nextRow, err) => {
             this.triggerQuery({
                 ...buildQuery(this, table, "upsert"),
                 actionArgs: row
-            }, noop, nextRow, err || noop);
+            }, noop, () => {
+                count++;
+                if (onProgress) onProgress(Math.round((count / rowData.length) * 10000) / 100);
+                nextRow();
+            }, err || noop);
         });
     }
 }

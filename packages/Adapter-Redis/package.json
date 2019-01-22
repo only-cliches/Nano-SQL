@@ -1,6 +1,6 @@
 {
-  "name": "@nano-sql/adapter-mysql",
-  "version": "2.0.0",
+  "name": "@nano-sql/adapter-redis",
+  "version": "2.0.5",
   "description": "Easily Use MySQL with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -8,19 +8,24 @@
     "build": "tsc"
   },
   "repository": {
-		"type": "git",
-		"url": "https://github.com/ClickSimply/Nano-SQL.git"
-	},
-	"typings": "lib/index.d.ts",
-	"homepage": "https://nanosql.io/",
-  "keywords": ["mysql", "nosql", "nanosql", "rdbms"],
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+  "typings": "lib/index.d.ts",
+  "homepage": "https://nanosql.io/",
+  "keywords": [
+    "redis",
+    "nosql",
+    "nanosql",
+    "rdbms"
+  ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-
+    "redis": "^2.8.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.0.2"
+    "@nano-sql/core": "^2.0.9"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

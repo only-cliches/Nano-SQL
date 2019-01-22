@@ -74,7 +74,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
     nanoSQLAdapterTest.newTable = function (adapter, nSQL, tableName, tableConfig, complete, error) {
         adapter.nSQL = nSQL;
         adapter.createTable(tableName, tableConfig, function () {
-            nSQL.tables[tableName] = tableConfig;
+            nSQL._tables[tableName] = tableConfig;
             complete();
         }, error);
     };
@@ -104,7 +104,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     ],
                     indexes: {},
                     actions: [],
-                    // mapReduce: [],
+                    queries: {},
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -179,7 +179,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                         }
                     },
                     actions: [],
-                    // mapReduce: [],
+                    queries: {},
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -317,7 +317,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     indexes: {},
                     actions: [],
                     views: [],
-                    // mapReduce: [],
+                    queries: {},
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -469,7 +469,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     indexes: {},
                     actions: [],
                     views: [],
-                    // mapReduce: [],
+                    queries: {},
                     pkType: "uuid",
                     pkCol: ["id"],
                     isPkNum: false,
@@ -592,7 +592,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     indexes: {},
                     actions: [],
                     views: [],
-                    // mapReduce: [],
+                    queries: {},
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -728,7 +728,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                             ],
                             indexes: {},
                             actions: [],
-                            // mapReduce: [],
+                            queries: {},
                             views: [],
                             pkType: {
                                 test: "int",

@@ -125,12 +125,15 @@ export const tables: InanoSQLTableConfig[] = [
         name: "users",
         model: {
             "id:uuid": {pk: true},
-            "age:float": {},
-            "name:string[]": {},
-            "meta:obj[]": {
+            "age:float": {notNull: true},
+            "name:string[]": {default: []},
+            "properties:meta[]": {},
+            "address:obj": {
                 model: {
-                    "key:string": {},
-                    "value:any": {}
+                    "street:string":{},
+                    "city:string":{},
+                    "zip:string":{},
+                    "state:string":{}
                 }
             },
             "*:any": {}
@@ -138,11 +141,19 @@ export const tables: InanoSQLTableConfig[] = [
     }
 ];
 
+export const types = {
+    meta: {
+        "key:string": {notNull: true},
+        "value:any": {notNull: true}
+    }
+}
+
 // using the above object in nSQL
 import { nSQL } from "@nano-sql/core";
 nSQL().connect({
     id: "my_db",
-    tables: tables
+    tables: tables,
+    types: types
 }).then..
 ```
 
@@ -155,21 +166,30 @@ nsql --outDir www --files index.ts
 The above command would produce the following file:
 
 ```ts
-import { uuid, timeId, timeIdms } from  "@nano-sql/core/lib/interfaces"
+import { uuid, timeId, timeIdms } from  "@nano-sql/core/lib/interfaces";
 
-export interface IusersTable {
+export interface ItableUsers {
 	id:uuid;
 	age:number;
 	name:string[];
-	meta:{
-		key:string;
-		value:any;
-	}[];
+	properties?:ItypeMeta[];
+	address?:{
+		street?:string;
+		city?:string;
+		zip?:string;
+		state?:string;
+	};
 	[key: string]: any;
 }
+
+export interface ItypeMeta {
+	key:string;
+	value:any;
+}
+
 ```
 
-# Examples
+# Query Examples
 
 ```ts
 // Persistent Database

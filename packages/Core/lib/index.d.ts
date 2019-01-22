@@ -12,10 +12,10 @@ export declare class nanoSQL implements InanoSQLInstance {
         [fnName: string]: InanoSQLFunction;
     };
     planetRadius: number;
-    tables: {
+    _tables: {
         [tableName: string]: InanoSQLTable;
     };
-    tableIds: {
+    _tableIds: {
         [tableName: string]: string;
     };
     state: {
@@ -29,6 +29,7 @@ export declare class nanoSQL implements InanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
+        exportQueryObj: boolean;
         selectedTable: string | any[] | ((where?: any[] | ((row: {
             [key: string]: any;
         }, i?: number) => boolean)) => Promise<TableQueryResult>);
@@ -65,7 +66,10 @@ export declare class nanoSQL implements InanoSQLInstance {
     getPeers(): any;
     _detectStorageMethod(): string;
     _initPlugins(config: InanoSQLConfig): Promise<any>;
-    saveTableIds(): Promise<any>;
+    _saveTableIds(): Promise<any>;
+    queries(): {
+        [fnName: string]: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+    };
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): void;
     every(args: {
@@ -97,11 +101,11 @@ export declare class nanoSQL implements InanoSQLInstance {
     extend(scope: string, ...args: any[]): any | nanoSQL;
     loadJS(rows: {
         [key: string]: any;
-    }[], onProgress?: (percent: number) => void): Promise<any[]>;
+    }[], onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]>;
     JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
     csvToArray(text: string): any[];
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
-    loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
+    loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]>;
 }
 export declare const nSQLv1Config: (doConfig: (nSQLv1: (table?: string | undefined) => InanoSQLV1ConfigFn) => void) => InanoSQLConfig;
 export declare const nSQL: (table?: string | any[] | ((where?: any[] | ((row: {

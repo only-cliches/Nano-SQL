@@ -1,6 +1,6 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "@nano-sql/core/lib/interfaces";
-import { _nanoSQLQueue, generateID, maybeAssign, setFast, deepSet, allAsync, blankTableDefinition, chainAsync, slugify } from "@nano-sql/core/lib/utilities";
-import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
+import { _nanoSQLQueue, generateID, maybeAssign, setFast, deepSet, allAsync, blankTableDefinition, chainAsync, slugify, binarySearch } from "@nano-sql/core/lib/utilities";
+// import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
 import * as Cassandra from "cassandra-driver";
 import * as redis from "redis";
 
@@ -40,7 +40,7 @@ export class Scylla implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "Scylla Adapter",
-        version: 2.01
+        version: 2.03
     };
 
     nSQL: InanoSQLInstance;
@@ -229,24 +229,33 @@ export class Scylla implements InanoSQLAdapter {
     read(table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) {
         const long = Cassandra.types.Long
         const setPK = this._tableConfigs[table].pkType === "int" ? (long as any).fromNumber(pk) : pk;
-        this._client.execute(this._filters.selectRow(`SELECT data FROM "${this.scyllaTable(table)}" WHERE id = ?`), [setPK], (err, result) => {
-            if (err) {
-                error(err);
-                return;
-            }
-            if (result.rowLength > 0) {
-                const row = result.first() || {data: "[]"};
-                complete(JSON.parse(row.data));
-            } else {
-                complete(undefined);
-            }
-        });
+        let retries = 0;
+        const doRead = () => {
+            this._client.execute(this._filters.selectRow(`SELECT data FROM "${this.scyllaTable(table)}" WHERE id = ?`), [setPK], (err, result) => {
+                if (err) {
+                    if (retries > 3) {
+                        error(err);
+                    } else {
+                        retries++;
+                        setTimeout(doRead, 100 + (Math.random() * 100));
+                    }
+                    return;
+                }
+                if (result.rowLength > 0) {
+                    const row = result.first() || {data: "[]"};
+                    complete(JSON.parse(row.data));
+                } else {
+                    complete(undefined);
+                }
+            });
+        }
+        doRead();
     }
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
 
         this.readRedisIndex(table, type, offsetOrLow, limitOrHigh, reverse, (primaryKeys) => {
-            const batchSize = 500;
+            const batchSize = 2000;
             let page = 0;
             const nextPage = () => {
                 const getPKS = primaryKeys.slice(page * batchSize, (page * batchSize) + batchSize);
@@ -264,7 +273,6 @@ export class Scylla implements InanoSQLAdapter {
             }
             nextPage();
         }, error);
-
     }
 
 
@@ -487,7 +495,7 @@ export class Scylla implements InanoSQLAdapter {
         const indexName = `_idx_${tableId}_${index}`;
         this.readRedisIndex(indexName, type, offsetOrLow, limitOrHigh, reverse, (primaryKeys) => {
             
-            const pageSize = 500;
+            const pageSize = 2000;
             let page = 0;
             let count = 0;
             const getPage = () => {

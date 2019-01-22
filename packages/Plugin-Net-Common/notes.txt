@@ -1,0 +1,35 @@
+- Use GIT style version control
+
+RAFT:
+https://www.youtube.com/watch?v=YbZ3zDzDnrw
+
+Two tables for every version controlled table:
+- Tree
+- Versions
+
+Tree contains json of version control history for that row
+{
+    id: xxxx,
+    current: 1.1.3,
+    conflicts: [],
+    tree: [
+        {version: 0, date: xxx, parent: id, props: {}, forks: []}
+        {version: 1, date: xxx, parent: id, props: {}, forks: [
+            [
+                {version: 1.0.0, date: xxx, parent: id, props: {}, forks: []},
+                {version: 1.0.1, date: xxx, parent: id, props: {}, forks: []},
+                {version: 1.0.2, date: xxx, parent: id, props: {}, forks: []}
+            ],
+            [
+                {version: 1.1.0, date: xxx, parent: id, props: {}, forks: []},
+                {version: 1.1.1, date: xxx, parent: id, props: {}, forks: [
+                    [
+                        {version: 1.1.1.0.0, date: xxx, parent: id, props: {}, forks: []}
+                    ]
+                ]},
+                {version: 1.1.2, date: xxx, parent: id, props: {}, forks: []}
+            ]
+        ]}
+        {version: 2, date: xxx, parent: id, props: {}, hash: xxx, forks: []}
+    ]
+}

@@ -75,7 +75,7 @@ export class nanoSQLAdapterTest {
     public static newTable(adapter: InanoSQLAdapter, nSQL: InanoSQLInstance, tableName: string, tableConfig: InanoSQLTable, complete: () => void, error: () => void) {
         adapter.nSQL = nSQL;
         adapter.createTable(tableName, tableConfig, () => {
-            nSQL.tables[tableName] = tableConfig;
+            nSQL._tables[tableName] = tableConfig;
             complete();
         }, error);
     }
@@ -106,7 +106,7 @@ export class nanoSQLAdapterTest {
                     ],
                     indexes: {},
                     actions: [],
-                    // mapReduce: [],
+                    queries: {},
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -182,7 +182,7 @@ export class nanoSQLAdapterTest {
                         }
                     },
                     actions: [],
-                    // mapReduce: [],
+                    queries: {},
                     views: [],
                     pkType: "int",
                     pkCol: ["id"],
@@ -322,7 +322,7 @@ export class nanoSQLAdapterTest {
                     indexes: {},
                     actions: [],
                     views: [],
-                    // mapReduce: [],
+                    queries: {},
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -476,7 +476,7 @@ export class nanoSQLAdapterTest {
                     indexes: {},
                     actions: [],
                     views: [],
-                    // mapReduce: [],
+                    queries: {},
                     pkType: "uuid",
                     pkCol: ["id"],
                     isPkNum: false,
@@ -601,7 +601,7 @@ export class nanoSQLAdapterTest {
                     indexes: {},
                     actions: [],
                     views: [],
-                    // mapReduce: [],
+                    queries: {},
                     pkType: "int",
                     pkCol: ["id"],
                     isPkNum: true,
@@ -738,7 +738,7 @@ export class nanoSQLAdapterTest {
                             ],
                             indexes: {},
                             actions: [],
-                            // mapReduce: [],
+                            queries: {},
                             views: [],
                             pkType: {
                                 test: "int",

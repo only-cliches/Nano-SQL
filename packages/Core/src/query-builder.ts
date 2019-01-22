@@ -187,11 +187,21 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
     public streamEvent(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
         this._query.returnEvent = true;
-        this._db.triggerQuery(this._query, onRow, complete, err);
+        if (this._db.state.exportQueryObj) {
+            onRow(this._query);
+            complete();
+        } else {
+            this._db.triggerQuery(this._query, onRow, complete, err);
+        }
     }
 
     public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
-        this._db.triggerQuery(this._query, onRow, complete, err);
+        if (this._db.state.exportQueryObj) {
+            onRow(this._query);
+            complete();
+        } else {
+            this._db.triggerQuery(this._query, onRow, complete, err);
+        }
     }
 
     public cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {pageSize: number, onPage: (page: number, rows: any[]) => void, doNotCache?: boolean}): void {

@@ -1,3 +1,6 @@
+# 2.0.5
+- Fixed package.json issue.
+
 # 2.0.4
 - Adjusted secondary index read.
 

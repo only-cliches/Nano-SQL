@@ -4,9 +4,15 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.1.0]
+
+## [2.1.0] 1-22-2018
 - Fixed typos in readme file.
 - Adjusted CLI so passed in arguments overwrite file options.
+- Added new `queries` option to tables to replace old `action/view` api.
+- Added optional parallel argument to loadJS and loadCSV.
+- Shifted CLI exported interface names from `IusersTable` to `ItableUsers`.
+- Added `types` object to CLI build.
+- Changed `types` property from array of strings to datamodel object.
 
 ## [2.0.9] 1-21-2018
 - Fixed ReadMe typo.

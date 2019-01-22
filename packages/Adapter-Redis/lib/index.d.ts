@@ -1,14 +1,13 @@
 import { InanoSQLAdapter, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "@nano-sql/core/lib/interfaces";
-import * as redis from "redis";
 export declare class Redis implements InanoSQLAdapter {
-    connectArgs?: redis.ClientOpts | undefined;
-    getClient?: ((redisClient: redis.RedisClient) => void) | undefined;
+    connectArgs?: any;
+    getClient?: ((redisClient: any) => void) | undefined;
     plugin: InanoSQLPlugin;
     nSQL: InanoSQLInstance;
     private _id;
     private _db;
     private _tableConfigs;
-    constructor(connectArgs?: redis.ClientOpts | undefined, getClient?: ((redisClient: redis.RedisClient) => void) | undefined);
+    constructor(connectArgs?: any, getClient?: ((redisClient: any) => void) | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     key(tableName: string, key: any): string;
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;

@@ -299,7 +299,7 @@ exports.attachDefaultFns = function (nSQL) {
             },
             checkIndex: function (query, fnArgs, where) {
                 if (where[1] === "<" || where[1] === "<=") {
-                    var indexes_1 = typeof query.table === "string" ? nSQL.tables[query.table].indexes : {};
+                    var indexes_1 = typeof query.table === "string" ? nSQL._tables[query.table].indexes : {};
                     var crowColumn_1 = utilities_1.resolvePath(fnArgs[0]);
                     var crowCols_1 = [];
                     // find the lat/lon indexes for the crow calculation
@@ -433,7 +433,7 @@ exports.attachDefaultFns = function (nSQL) {
                             var crowDist = utilities_1.crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
                             var doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
                             if (doRow) {
-                                onRow(onlyPKs ? utilities_1.deepGet(nSQL.tables[query.table].pkCol, row) : row, counter);
+                                onRow(onlyPKs ? utilities_1.deepGet(nSQL._tables[query.table].pkCol, row) : row, counter);
                                 counter++;
                             }
                             next(null);

@@ -153,10 +153,22 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
     };
     _nanoSQLQueryBuilder.prototype.streamEvent = function (onRow, complete, err) {
         this._query.returnEvent = true;
-        this._db.triggerQuery(this._query, onRow, complete, err);
+        if (this._db.state.exportQueryObj) {
+            onRow(this._query);
+            complete();
+        }
+        else {
+            this._db.triggerQuery(this._query, onRow, complete, err);
+        }
     };
     _nanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
-        this._db.triggerQuery(this._query, onRow, complete, err);
+        if (this._db.state.exportQueryObj) {
+            onRow(this._query);
+            complete();
+        }
+        else {
+            this._db.triggerQuery(this._query, onRow, complete, err);
+        }
     };
     _nanoSQLQueryBuilder.prototype.cache = function (cacheReady, error, streamPages) {
         var _this = this;

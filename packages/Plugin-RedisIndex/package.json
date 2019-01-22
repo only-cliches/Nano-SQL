@@ -22,14 +22,16 @@
   "license": "MIT",
   "dependencies": {
     "@nano-sql/adapter-mysql": "^2.0.1",
+    "@nano-sql/adapter-scylla": "^2.0.2",
+    "composeaddresstranslator": "^1.0.4",
     "redis": "^2.8.0"
   },
   "peerDependencies": {
     "@nano-sql/core": "^2.0.3"
   },
   "devDependencies": {
+    "@nano-sql/core": "^2.0.9",
     "@types/node": "^10.12.18",
-    "@nano-sql/core": "^2.0.3",
     "ts-node": "^7.0.1",
     "typescript": "^3.2.2"
   }

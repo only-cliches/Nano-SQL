@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.08;
+export const VERSION = 2.10;
 
 export type uuid = String;
 export type timeId = String;
@@ -17,10 +17,10 @@ export declare class InanoSQLInstance {
         [fnName: string]: InanoSQLFunction;
     };
     planetRadius: number;
-    tables: {
+    _tables: {
         [tableName: string]: InanoSQLTable;
     };
-    tableIds: {
+    _tableIds: {
         [tableName: string]: string;
     }
     state: {
@@ -34,6 +34,7 @@ export declare class InanoSQLInstance {
         peerMode: boolean;
         connected: boolean;
         ready: boolean;
+        exportQueryObj: boolean;
         selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
     _queryCache: {
@@ -49,13 +50,16 @@ export declare class InanoSQLInstance {
     constructor();
     doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
     getCache(id: string, args?: { offset: number, limit: number }): any[];
+    /*queries(): {
+        [fnName: string]: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+    }*/
     clearCache(id: string): boolean;
     every(args: {length: number, every?: number, offset?: number}): number[];
     clearTTL(primaryKey: any): Promise<any>;
     expires(primaryKey: any): Promise<any>;
     _ttlTimer;
     _checkTTL(): void;
-    saveTableIds(): Promise<any>
+    _saveTableIds(): Promise<any>
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
     _detectStorageMethod();
@@ -213,7 +217,11 @@ export interface InanoSQLConfig {
     path?: string | ((dbID: string, tableName: string) => {lvld: any, args?: any}); // RocksDB path
     disableTTL?: boolean;
     tables?: InanoSQLTableConfig[];
-    types?: {[typeName: string]: string[]};
+    types?: {
+        [typeName: string]: {
+            [colAndType: string]: InanoSQLDataModel;
+        }
+    };
     onVersionUpdate?: (oldVersion: number) => Promise<number>;
 }
 
@@ -359,7 +367,17 @@ export interface InanoSQLTableConfig {
     indexes?: {
         [colAndType: string]: InanoSQLTableIndexConfig;
     };
-    // mapReduce?: InanoSQLMapReduce[];
+    queries?: {
+        [fnName: string]: {
+            args?: {
+                [colAndType: string]: InanoSQLDataModel;
+            } | string;
+            returns?: {
+                [colAndType: string]: InanoSQLDataModel;
+            } | string;
+            call: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+        }
+    },
     filter?: (row: any) => any;
     actions?: InanoSQLActionOrView[];
     views?: InanoSQLActionOrView[];
@@ -393,6 +411,17 @@ export interface InanoSQLTable {
     indexes: {
         [id: string]: InanoSQLIndex;
     };
+    queries: {
+        [fnName: string]: {
+            args?: {
+                [colAndType: string]: InanoSQLDataModel;
+            } | string;
+            returns?: {
+                [colAndType: string]: InanoSQLDataModel;
+            } | string;
+            call: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+        }
+    },
     filter?: (row: any) => any;
     actions: InanoSQLActionOrView[];
     views: InanoSQLActionOrView[];

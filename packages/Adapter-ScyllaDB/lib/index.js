@@ -11,6 +11,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("@nano-sql/core/lib/utilities");
+// import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
 var Cassandra = require("cassandra-driver");
 var redis = require("redis");
 var copy = function (e) { return e; };
@@ -20,7 +21,7 @@ var Scylla = /** @class */ (function () {
         this.redisArgs = redisArgs;
         this.plugin = {
             name: "Scylla Adapter",
-            version: 2.01
+            version: 2.03
         };
         this._tableConfigs = {};
         this._filters = __assign({ createKeySpace: copy, createTable: copy, useKeySpace: copy, dropTable: copy, selectRow: copy, upsertRow: copy, deleteRow: copy, createIndex: copy, dropIndex: copy, addIndexValue: copy, deleteIndexValue: copy, readIndexValue: copy }, (filters || {}));
@@ -159,26 +160,37 @@ var Scylla = /** @class */ (function () {
         }).catch(error);
     };
     Scylla.prototype.read = function (table, pk, complete, error) {
+        var _this = this;
         var long = Cassandra.types.Long;
         var setPK = this._tableConfigs[table].pkType === "int" ? long.fromNumber(pk) : pk;
-        this._client.execute(this._filters.selectRow("SELECT data FROM \"" + this.scyllaTable(table) + "\" WHERE id = ?"), [setPK], function (err, result) {
-            if (err) {
-                error(err);
-                return;
-            }
-            if (result.rowLength > 0) {
-                var row = result.first() || { data: "[]" };
-                complete(JSON.parse(row.data));
-            }
-            else {
-                complete(undefined);
-            }
-        });
+        var retries = 0;
+        var doRead = function () {
+            _this._client.execute(_this._filters.selectRow("SELECT data FROM \"" + _this.scyllaTable(table) + "\" WHERE id = ?"), [setPK], function (err, result) {
+                if (err) {
+                    if (retries > 3) {
+                        error(err);
+                    }
+                    else {
+                        retries++;
+                        setTimeout(doRead, 100 + (Math.random() * 100));
+                    }
+                    return;
+                }
+                if (result.rowLength > 0) {
+                    var row = result.first() || { data: "[]" };
+                    complete(JSON.parse(row.data));
+                }
+                else {
+                    complete(undefined);
+                }
+            });
+        };
+        doRead();
     };
     Scylla.prototype.readMulti = function (table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error) {
         var _this = this;
         this.readRedisIndex(table, type, offsetOrLow, limitOrHigh, reverse, function (primaryKeys) {
-            var batchSize = 500;
+            var batchSize = 2000;
             var page = 0;
             var nextPage = function () {
                 var getPKS = primaryKeys.slice(page * batchSize, (page * batchSize) + batchSize);
@@ -386,7 +398,7 @@ var Scylla = /** @class */ (function () {
         var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
         this.readRedisIndex(indexName, type, offsetOrLow, limitOrHigh, reverse, function (primaryKeys) {
-            var pageSize = 500;
+            var pageSize = 2000;
             var page = 0;
             var count = 0;
             var getPage = function () {
