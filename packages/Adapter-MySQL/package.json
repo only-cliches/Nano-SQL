@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-mysql",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Easily Run MySQL with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -26,7 +26,7 @@
     "mysql": "^2.16.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.0.2"
+    "@nano-sql/core": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

@@ -1,3 +1,6 @@
+# 2.0.6
+- Package.json, performance, dependency & Readme updates.
+
 # 2.0.5
 - Fixed package.json issue.
 

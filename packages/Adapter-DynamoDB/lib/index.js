@@ -33,7 +33,7 @@ var DynamoDB = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "DynamoDB Adapter",
-            version: 2.06
+            version: 2.07
         };
         _this.config = __assign({ filterDrop: exports.copy, filterDelete: exports.copy, filterSchema: exports.copy, filterUpdate: exports.copy, filterGet: exports.copy, filterQuery: exports.copy, filterScan: exports.copy }, (args || {}));
         _this._connectArgs = connectArgs || {};

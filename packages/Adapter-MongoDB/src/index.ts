@@ -11,7 +11,7 @@ export class MongoDB implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "MongoDB Adapter",
-        version: 2.00
+        version: 2.01
     };
 
     nSQL: InanoSQLInstance;
@@ -217,11 +217,16 @@ export class MongoDB implements InanoSQLAdapter {
                     pks.splice(idx, 1);
                 }
             }
-            
-            this.write(indexName, value, {
-                id: key,
-                pks: pks
-            }, complete, error);
+
+            if (pks.length) {
+                this.write(indexName, value, {
+                    id: key,
+                    pks: pks
+                }, complete, error);
+            } else {
+                this.delete(indexName, value, complete, error);
+            }
+
         }, error);
 
     }

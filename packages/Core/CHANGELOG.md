@@ -6,8 +6,8 @@
 
 ## [2.1.1] 1-24-2018
 - Added gitter chat link.
-- Added foreign key feature and it's documentation.
-- Finished new `queries` feature and it's documentation.
+- Added foreign key feature and its documentation.
+- Finished new `queries` feature and its documentation.
 - Fixed bug with new row data not returning on row updates.
 - Fixed a few bugs related to memoization not getting invalidated properly.
 

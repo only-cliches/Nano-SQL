@@ -17,7 +17,7 @@
   <strong>Allows you to run Amazon DynamoDB with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/dynamodb) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
+[Documentation](https://nanosql.gitbook.io/docs/adapters/dynamodb) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 

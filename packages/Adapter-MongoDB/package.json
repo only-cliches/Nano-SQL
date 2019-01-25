@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-mongo",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Easily Run MongoDB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -26,7 +26,7 @@
     "mongodb": "^3.1.12"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.0.4"
+    "@nano-sql/core": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

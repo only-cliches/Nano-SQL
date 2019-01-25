@@ -1,7 +1,7 @@
 {
   "name": "@nano-sql/adapter-redis",
-  "version": "2.0.5",
-  "description": "Easily Use MySQL with nanoSQL 2!",
+  "version": "2.0.6",
+  "description": "Easily Use Redis with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
@@ -25,7 +25,7 @@
     "redis": "^2.8.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.0.9"
+    "@nano-sql/core": "^2.1.1"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

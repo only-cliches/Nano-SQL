@@ -19,7 +19,7 @@ var Redis = /** @class */ (function () {
         this.getClient = getClient;
         this.plugin = {
             name: "Redis Adapter",
-            version: 2.05
+            version: 2.06
         };
         this.connectArgs = this.connectArgs || {};
         this._tableConfigs = {};
@@ -407,6 +407,7 @@ var Redis = /** @class */ (function () {
         }).then(complete).catch(error);
     };
     Redis.prototype.deleteIndexValue = function (tableId, index, rowID, indexKey, complete, error) {
+        var _this = this;
         if (!this._db) {
             error(noClient);
             return;
@@ -418,7 +419,23 @@ var Redis = /** @class */ (function () {
                 error(err);
                 return;
             }
-            complete();
+            var cnt = 0;
+            _this.readIndexKey(tableId, index, indexKey, function () {
+                cnt++;
+            }, function () {
+                if (cnt > 0) {
+                    complete();
+                }
+                else {
+                    _this._db.del(_this.key(indexName, indexKey), function (err, result) {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        complete();
+                    });
+                }
+            }, error);
         });
     };
     Redis.prototype.readIndexKey = function (tableId, index, indexKey, onRowPK, complete, error) {

@@ -1,3 +1,6 @@
+# 2.0.7
+- Readme updates and dependency updates.
+
 # 2.0.5 & 2.0.6
 - Package.json adjustements
 

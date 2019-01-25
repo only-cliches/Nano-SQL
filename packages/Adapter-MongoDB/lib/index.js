@@ -22,7 +22,7 @@ var MongoDB = /** @class */ (function () {
         this.databaseOptions = databaseOptions;
         this.plugin = {
             name: "MongoDB Adapter",
-            version: 2.00
+            version: 2.01
         };
         this._tableConfigs = {};
     }
@@ -192,10 +192,15 @@ var MongoDB = /** @class */ (function () {
                     pks.splice(idx, 1);
                 }
             }
-            _this.write(indexName, value, {
-                id: key,
-                pks: pks
-            }, complete, error);
+            if (pks.length) {
+                _this.write(indexName, value, {
+                    id: key,
+                    pks: pks
+                }, complete, error);
+            }
+            else {
+                _this.delete(indexName, value, complete, error);
+            }
         }, error);
     };
     MongoDB.prototype.readIndexKey = function (tableId, index, pk, onRowPK, complete, error) {

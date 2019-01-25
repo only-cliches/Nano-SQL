@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-dynamo",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Easily Run AWS DynamoDB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {

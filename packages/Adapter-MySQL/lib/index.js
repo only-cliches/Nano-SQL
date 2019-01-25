@@ -38,7 +38,7 @@ var MySQL = /** @class */ (function (_super) {
         _this.connectArgs = connectArgs;
         _this.plugin = {
             name: "MySQL Adapter",
-            version: 2.01
+            version: 2.03
         };
         _this._tableConfigs = {};
         return _this;
@@ -60,7 +60,7 @@ var MySQL = /** @class */ (function (_super) {
             throw Error("No table " + table + " found!");
         }
         else {
-            return this._id + "_" + table;
+            return "`" + this._id + "_" + table + "`";
         }
     };
     MySQL.prototype._sql = function (sql, args, complete, error) {

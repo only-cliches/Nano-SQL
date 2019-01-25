@@ -8,13 +8,13 @@ export class Redis implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "Redis Adapter",
-        version: 2.05
+        version: 2.06
     };
 
     nSQL: InanoSQLInstance;
 
     private _id: string;
-    private _db: redis.RedisClient | undefined;
+    private _db: redis.RedisClient;
     private _tableConfigs: {
         [tableName: string]: InanoSQLTable;
     }
@@ -445,7 +445,22 @@ export class Redis implements InanoSQLAdapter {
                 error(err);
                 return;
             }
-            complete();
+            let cnt = 0;
+            this.readIndexKey(tableId, index, indexKey, () => {
+                cnt++;
+            }, () => {
+                if (cnt > 0) {
+                    complete();
+                } else {
+                    this._db.del(this.key(indexName, indexKey), (err, result) => {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        complete();
+                    });
+                }
+            }, error);
         });
     }
 
