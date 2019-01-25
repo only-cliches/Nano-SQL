@@ -523,6 +523,53 @@ exports.generateID = function (primaryKeyType, incrimentValue) {
     };
     return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
+exports.cleanArgs2 = function (args, dataModel, nSQL) {
+    var returnObj = {};
+    var conformType = function (strType, obj, dModel) {
+        if (strType.indexOf("[]") !== -1) {
+            var arrayOf_1 = strType.slice(0, strType.lastIndexOf("[]"));
+            // value should be array but isn't, cast it to one
+            if (!Array.isArray(obj))
+                return [];
+            // we have an array, cast array of types
+            return obj.map(function (v) { return conformType(arrayOf_1, v, dModel); });
+        }
+        if (typeof dModel === "string") {
+            var findModel_1 = dModel.replace(/\[\]/gmi, "");
+            var typeModel = Object.keys(nSQL.config.types || {}).reduce(function (prev, cur) {
+                if (cur === findModel_1)
+                    return (nSQL.config.types || {})[cur];
+                return prev;
+            }, undefined);
+            if (!typeModel) {
+                throw new Error("Can't find type " + findModel_1 + "!");
+            }
+            return conformType(dModel, args, typeModel);
+        }
+        else {
+            var returnObj_1 = {};
+            var getOtherCols_1 = false;
+            var definedCols_1 = [];
+            Object.keys(dModel).forEach(function (colAndType) {
+                var split = colAndType.split(":");
+                if (split[0] === "*") {
+                    getOtherCols_1 = true;
+                }
+                else {
+                    definedCols_1.push(split[0]);
+                    returnObj_1[split[0]] = exports.cast(split[1], obj[split[0]], false, nSQL);
+                }
+            });
+            if (getOtherCols_1 && exports.isObject(obj)) {
+                Object.keys(obj).filter(function (k) { return definedCols_1.indexOf(k) === -1; }).forEach(function (key) {
+                    returnObj_1[key] = obj[key];
+                });
+            }
+            return returnObj_1;
+        }
+    };
+    return conformType(typeof dataModel === "string" ? dataModel : "", args, dataModel);
+};
 /**
  * Clean the arguments from an object given an array of arguments and their types.
  *
@@ -595,12 +642,12 @@ exports.cast = function (type, val, allowUknownTypes, nSQL) {
         return val;
     // recursively cast arrays
     if (type.indexOf("[]") !== -1) {
-        var arrayOf_1 = type.slice(0, type.lastIndexOf("[]"));
+        var arrayOf_2 = type.slice(0, type.lastIndexOf("[]"));
         // value should be array but isn't, cast it to one
         if (!Array.isArray(val))
             return [];
         // we have an array, cast array of types
-        return val.map(function (v) { return exports.cast(arrayOf_1, v, allowUknownTypes); });
+        return val.map(function (v) { return exports.cast(arrayOf_2, v, allowUknownTypes); });
     }
     var t = typeof val;
     var entityMap = {
@@ -693,19 +740,18 @@ exports.levenshtein = function (word1, word2) {
 var objectPathCache = {};
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
 exports.resolvePath = function (pathQuery) {
-    if (!pathQuery || !pathQuery)
+    if (!pathQuery)
         return [];
-    var cacheKey = pathQuery;
-    if (objectPathCache[cacheKey]) {
-        return objectPathCache[cacheKey];
+    if (objectPathCache[pathQuery]) {
+        return objectPathCache[pathQuery].slice();
     }
     var path = pathQuery.indexOf("[") !== -1 ?
         // handle complex mix of dots and brackets like "users.value[meta][value].length"
         pathQuery.split(/\.|\[/gmi).map(function (v) { return v.replace(/\]/gmi, ""); }) :
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
-    objectPathCache[cacheKey] = path;
-    return objectPathCache[cacheKey];
+    objectPathCache[pathQuery] = path;
+    return objectPathCache[pathQuery].slice();
 };
 exports.getFnValue = function (row, valueOrPath) {
     return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : exports.deepGet(valueOrPath, row);

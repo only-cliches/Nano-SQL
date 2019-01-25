@@ -154,36 +154,40 @@ export class nanoSQLMemoryIndex implements InanoSQLAdapter {
                     return;
                 } else {
                     const idx = pks.length < 100 ? pks.indexOf(key) : binarySearch(pks, key, true);
-                    if (idx === -1) {
-                        complete();
-                        return;
-                    } else {
+                    if (idx !== -1) {
                         pks.splice(idx, 1);
                     }
                 }
                 if (this.useCacheIndexes[indexName]) {
                     this.indexes[indexName][value] = pks;
                 }
-                
-                this.write(indexName, value, {
-                    id: key,
-                    pks: this.assign ? assign(pks) : pks
-                }, complete, error);
+
+                if (pks.length) {
+                    this.write(indexName, value, {
+                        id: key,
+                        pks: this.assign ? assign(pks) : pks
+                    }, complete, error);
+                } else {
+                    this.delete(indexName, value, complete, error);
+                }
             }, error);
-            return;
-        }
-        if (!this.indexes[indexName][value]) {
-            complete();
         } else {
             const idx = this.indexes[indexName][value].length < 100 ? this.indexes[indexName][value].indexOf(key) : binarySearch(this.indexes[indexName][value], key, true);
-            if (idx === -1) {
-                complete();
-            } else {
+            if (idx !== -1) {
                 this.indexes[indexName][value].splice(idx, 1);
-                this.write(indexName, value, {
-                    id: value,
-                    pks: this.assign ? assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
-                }, complete, error);
+
+                const pks = this.indexes[indexName][value];
+
+                if (pks.length) {
+                    this.write(indexName, value, {
+                        id: key,
+                        pks: this.assign ? assign(pks) : pks
+                    }, complete, error);
+                } else {
+                    this.delete(indexName, value, complete, error);
+                }
+            } else {
+                complete();
             }
         }
     }

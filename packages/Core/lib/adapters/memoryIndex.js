@@ -130,38 +130,41 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
                 }
                 else {
                     var idx = pks.length < 100 ? pks.indexOf(key) : utilities_1.binarySearch(pks, key, true);
-                    if (idx === -1) {
-                        complete();
-                        return;
-                    }
-                    else {
+                    if (idx !== -1) {
                         pks.splice(idx, 1);
                     }
                 }
                 if (_this.useCacheIndexes[indexName]) {
                     _this.indexes[indexName][value] = pks;
                 }
-                _this.write(indexName, value, {
-                    id: key,
-                    pks: _this.assign ? utilities_1.assign(pks) : pks
-                }, complete, error);
+                if (pks.length) {
+                    _this.write(indexName, value, {
+                        id: key,
+                        pks: _this.assign ? utilities_1.assign(pks) : pks
+                    }, complete, error);
+                }
+                else {
+                    _this.delete(indexName, value, complete, error);
+                }
             }, error);
-            return;
-        }
-        if (!this.indexes[indexName][value]) {
-            complete();
         }
         else {
             var idx = this.indexes[indexName][value].length < 100 ? this.indexes[indexName][value].indexOf(key) : utilities_1.binarySearch(this.indexes[indexName][value], key, true);
-            if (idx === -1) {
-                complete();
+            if (idx !== -1) {
+                this.indexes[indexName][value].splice(idx, 1);
+                var pks = this.indexes[indexName][value];
+                if (pks.length) {
+                    this.write(indexName, value, {
+                        id: key,
+                        pks: this.assign ? utilities_1.assign(pks) : pks
+                    }, complete, error);
+                }
+                else {
+                    this.delete(indexName, value, complete, error);
+                }
             }
             else {
-                this.indexes[indexName][value].splice(idx, 1);
-                this.write(indexName, value, {
-                    id: value,
-                    pks: this.assign ? utilities_1.assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
-                }, complete, error);
+                complete();
             }
         }
     };

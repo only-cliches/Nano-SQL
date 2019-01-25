@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2.1;
+export declare const VERSION = 2.11;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
@@ -25,6 +25,7 @@ export declare class InanoSQLInstance {
         hasAnyEvents: boolean;
         id: string;
         pid: string;
+        cacheId: uuid;
         peers: string[];
         peerEvents: string[];
         focused: boolean;
@@ -35,6 +36,9 @@ export declare class InanoSQLInstance {
         selectedTable: string | any[] | ((where?: any[] | ((row: {
             [key: string]: any;
         }, i?: number) => boolean)) => Promise<TableQueryResult>);
+    };
+    _fkRels: {
+        [tableName: string]: InanoSQLForeignKey[];
     };
     _queryCache: {
         [id: string]: any[];
@@ -51,11 +55,16 @@ export declare class InanoSQLInstance {
         };
     };
     constructor();
+    _rebuildFKs(): any;
     doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
     getCache(id: string, args?: {
         offset: number;
         limit: number;
     }): any[];
+    presetQuery(fn: string): {
+        promise: (args: any) => Promise<any[]>;
+        stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => void;
+    };
     clearCache(id: string): boolean;
     every(args: {
         length: number;
@@ -104,6 +113,15 @@ export declare class InanoSQLInstance {
     csvToArray(text: string): any[];
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
     loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
+}
+export interface InanoSQLForeignKey {
+    selfPath: string[];
+    selfIsArray: boolean;
+    onDelete: InanoSQLFKActions;
+    childTable: string;
+    childPath: string[];
+    childIsArray: boolean;
+    childIndex: string;
 }
 export declare class InanoSQLQueryBuilder {
     _db: InanoSQLInstance;
@@ -189,7 +207,9 @@ export declare class InanoSQLQueryExec {
     _onError(err: any): any;
     _resolveFastWhere(onlyPKs: any, table: any, fastWhere: any, isReversed: any, orderByPK: any, onRow: any, complete: any): any;
     _fastQuery(onRow: any, complete: any): any;
-    _getRecords(onRow: any, complete: any): any;
+    _getRecords(onRow: (row: {
+        [name: string]: any;
+    }, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _rebuildIndexes(table: any, complete: any, error: any): any;
     _where(singleRow: any, where: any, ignoreFirstPath: any): any;
     static likeCache: {
@@ -340,9 +360,19 @@ export interface InanoSQLV1ConfigFn {
     table: (ta?: string) => InanoSQLV1ConfigFn;
     rowFilter: (callback: (row: any) => any) => InanoSQLV1ConfigFn;
 }
+export declare enum InanoSQLFKActions {
+    NONE = 0,
+    CASCADE = 1,
+    RESTRICT = 2,
+    SET_NULL = 3
+}
 export interface InanoSQLTableIndexConfig {
     offset?: number;
     unique?: boolean;
+    foreignKey?: {
+        target: string;
+        onDelete?: InanoSQLFKActions;
+    };
     [prop: string]: any;
 }
 export interface InanoSQLTableConfig {
@@ -355,16 +385,15 @@ export interface InanoSQLTableConfig {
         [colAndType: string]: InanoSQLTableIndexConfig;
     };
     queries?: {
-        [fnName: string]: {
-            args?: {
-                [colAndType: string]: InanoSQLDataModel;
-            } | string;
-            returns?: {
-                [colAndType: string]: InanoSQLDataModel;
-            } | string;
-            call: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
-        };
-    };
+        name: string;
+        args?: {
+            [colAndType: string]: InanoSQLDataModel;
+        } | string;
+        returns?: {
+            [colAndType: string]: InanoSQLDataModel;
+        } | string;
+        call: (db: InanoSQLInstance, args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+    }[];
     filter?: (row: any) => any;
     actions?: InanoSQLActionOrView[];
     views?: InanoSQLActionOrView[];
@@ -390,7 +419,7 @@ export interface InanoSQLTable {
             returns?: {
                 [colAndType: string]: InanoSQLDataModel;
             } | string;
-            call: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+            call: (db: InanoSQLInstance, args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
         };
     };
     filter?: (row: any) => any;
@@ -500,6 +529,10 @@ export interface InanoSQLIndex {
     props: {
         unique?: boolean;
         offset?: number;
+        foreignKey?: {
+            target: string;
+            onDelete?: InanoSQLFKActions;
+        };
         [key: string]: any;
     };
     path: string[];
@@ -592,10 +625,7 @@ export interface TableQueryResult {
     filtered: boolean;
     cache?: boolean;
 }
-export interface actionFilter extends abstractFilter {
-    res: IAVFilterResult;
-}
-export interface viewFilter extends abstractFilter {
+export interface actionViewFilter extends abstractFilter {
     res: IAVFilterResult;
 }
 export interface configFilter extends abstractFilter {

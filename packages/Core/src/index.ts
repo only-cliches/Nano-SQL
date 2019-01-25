@@ -1,6 +1,52 @@
 import { ReallySmallEvents } from "really-small-events";
-import { assign, allAsync, cast, cleanArgs, chainAsync, uuid, hash, noop, throwErr, setFast, resolvePath, isSafari, objSort, deepGet, buildQuery, _nanoSQLQueue, objectsEqual, titleCase, throttle, adapterFilters } from "./utilities";
-import { InanoSQLConfig, InanoSQLFunction, InanoSQLActionOrView, InanoSQLDataModel, InanoSQLQuery, disconnectFilter, InanoSQLDatabaseEvent, extendFilter, abstractFilter, queryFilter, eventFilter, configFilter, IAVFilterResult, actionFilter as actionViewFilter, InanoSQLAdapter, willConnectFilter, InanoSQLJoinArgs, readyFilter, InanoSQLTableColumn, InanoSQLGraphArgs, IWhereCondition, InanoSQLIndex, InanoSQLTableConfig, configTableFilter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, InanoSQLQueryExec, customEventFilter, VERSION, TableQueryResult, postConnectFilter, onEventFilter, offEventFilter, InanoSQLV1ConfigFn } from "./interfaces";
+import { 
+    assign, 
+    allAsync, 
+    cast, 
+    cleanArgs, 
+    chainAsync, 
+    uuid as uuidFN,
+    noop, 
+    throwErr, 
+    setFast, 
+    resolvePath, 
+    isSafari, 
+    deepGet, 
+    buildQuery, 
+    _nanoSQLQueue, 
+    adapterFilters, 
+    cleanArgs2 
+} from "./utilities";
+import { 
+    InanoSQLConfig, 
+    InanoSQLFunction, 
+    InanoSQLActionOrView, 
+    InanoSQLQuery, 
+    disconnectFilter, 
+    InanoSQLDatabaseEvent, 
+    extendFilter, 
+    queryFilter, 
+    eventFilter, 
+    configFilter, 
+    actionViewFilter, 
+    InanoSQLAdapter, 
+    willConnectFilter, 
+    readyFilter, 
+    InanoSQLTableColumn, 
+    InanoSQLTableConfig, 
+    InanoSQLTable, 
+    InanoSQLInstance, 
+    InanoSQLQueryBuilder, 
+    customEventFilter, 
+    VERSION, 
+    TableQueryResult, 
+    postConnectFilter, 
+    onEventFilter, 
+    offEventFilter, 
+    InanoSQLV1ConfigFn, 
+    InanoSQLFKActions, 
+    uuid
+} from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _nanoSQLQuery } from "./query";
 import { SyncStorage } from "./adapters/syncStorage";
@@ -8,7 +54,6 @@ import { WebSQL } from "./adapters/webSQL";
 import { IndexedDB } from "./adapters/indexedDB";
 import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
-import { timingSafeEqual } from "crypto";
 
 let RocksDB: any;
 if (typeof global !== "undefined") {
@@ -46,6 +91,18 @@ export class nanoSQL implements InanoSQLInstance {
         [tableName: string]: string;
     }
 
+    public _fkRels: {
+        [tableName: string]: {
+            selfPath: string[];
+            selfIsArray: boolean;
+            onDelete: InanoSQLFKActions;
+            childTable: string;
+            childPath: string[];
+            childIsArray: boolean;
+            childIndex: string;
+        }[];
+    }
+
     public state: {
         activeAV: string;
         hasAnyEvents: boolean;
@@ -55,6 +112,7 @@ export class nanoSQL implements InanoSQLInstance {
         peerEvents: string[];
         focused: boolean;
         peerMode: boolean;
+        cacheId: uuid,
         connected: boolean;
         ready: boolean;
         exportQueryObj: boolean;
@@ -82,8 +140,9 @@ export class nanoSQL implements InanoSQLInstance {
             activeAV: "",
             hasAnyEvents: false,
             peers: [],
-            pid: uuid(),
-            id: uuid(),
+            pid: uuidFN(),
+            id: uuidFN(),
+            cacheId: uuidFN(),
             peerEvents: [],
             focused: true,
             peerMode: false,
@@ -101,14 +160,16 @@ export class nanoSQL implements InanoSQLInstance {
         };
 
         this._tables = {};
+        this._fkRels = {};
         this._tableIds = { "_util": "_util", "_ttl": "_ttl" };
         this._queryCache = {};
         this.filters = {};
 
+        const str = (value: any) => {
+            return typeof value === "object" ? JSON.stringify(value) : String(value);
+        };
         this.indexTypes = {
-            string: (value: any) => {
-                return typeof value === "object" ? JSON.stringify(value) : String(value);
-            },
+            string: str,
             geo: (value: any) => {
                 return undefined;
             },
@@ -123,7 +184,10 @@ export class nanoSQL implements InanoSQLInstance {
             number: (value: any) => {
                 const float = parseFloat(value);
                 return isNaN(float) ? 0 : float;
-            }
+            },
+            uuid: str,
+            timeId: str,
+            timeIdms: str
         };
 
         this.eventFNs = {
@@ -134,6 +198,36 @@ export class nanoSQL implements InanoSQLInstance {
         };
         this._checkTTL = this._checkTTL.bind(this);
         attachDefaultFns(this);
+    }
+
+    public _rebuildFKs() {
+        // bust memoized caches
+        this.state.cacheId = uuidFN();
+
+        this._fkRels = {};
+        Object.keys(this._tables).forEach((tableName) => {
+            const table = this._tables[tableName];
+            Object.keys(table.indexes).forEach((indexName) => {
+                const index = table.indexes[indexName];
+                if (index.props && index.props.foreignKey) {
+                    const path = resolvePath(index.props.foreignKey.target);
+                    const remoteTable = path.shift() as string;
+                    if (!this._fkRels[remoteTable]) {
+                        this._fkRels[remoteTable] = [];
+                    }
+
+                    this._fkRels[remoteTable].push({
+                        selfPath: path.map(s => s.replace(/\[\]/gmi, "")),
+                        selfIsArray: index.props.foreignKey.target.indexOf("[]") !== -1,
+                        childTable: tableName,
+                        childPath: index.path,
+                        childIsArray: index.isArray,
+                        childIndex: indexName,
+                        onDelete: index.props.foreignKey.onDelete || InanoSQLFKActions.NONE
+                    });
+                }
+            })
+        });
     }
 
     public doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (abortInfo: any) => void): void {
@@ -386,16 +480,56 @@ export class nanoSQL implements InanoSQLInstance {
         })
     }
 
-    public queries(): {
-        [fnName: string]: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+    public presetQuery(fn: string): {
+        promise: (args: any) => Promise<any[]>;
+        stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => void
     } {
         if (typeof this.state.selectedTable !== "string") {
             throw new Error(`Can't get table queries without selecting a table!`);
         }
-        return Object.keys(this._tables[this.state.selectedTable].queries).reduce((prev, cur) => {
-            prev[cur] = this._tables[this.state.selectedTable as string].queries[cur].call;
-            return prev;
-        }, {});
+        let found = Object.keys(this._tables[this.state.selectedTable].queries).indexOf(fn) !== -1;
+        if (!found) {
+            throw new Error(`Can't find preset query ${fn}!`);
+        }
+
+        let queryRunning = false;
+        
+        return {
+            promise: (args: any) => {
+                return new Promise((res, rej) => {
+                    if (queryRunning) {
+                        rej(`Query already streaming!`);
+                        return;
+                    }
+                    queryRunning = true;
+                    const fnArgs = this._tables[this.state.selectedTable as string].queries[fn].args;
+                    let filteredArgs: any = {};
+                    if (fnArgs) {
+                        filteredArgs = cleanArgs2(args, fnArgs, this);
+                    }
+
+                    let buffer: any[] = [];
+                    this._tables[this.state.selectedTable as string].queries[fn].call(this, filteredArgs, (row) => {
+                        buffer.push(row);
+                    }, () => {
+                        res(buffer);
+                    }, rej);
+                })
+            },
+            stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => {
+                if (queryRunning) {
+                    error("Query already using promise!");
+                    return;
+                }
+                queryRunning = true;
+                const fnArgs = this._tables[this.state.selectedTable as string].queries[fn].args;
+                let filteredArgs: any = {};
+                if (fnArgs) {
+                    filteredArgs = cleanArgs2(args, fnArgs, this);
+                }
+                this._tables[this.state.selectedTable as string].queries[fn].call(this, filteredArgs, onRow, complete, error);
+            }
+        }
     }
 
     public connect(config: InanoSQLConfig): Promise<any> {
@@ -639,7 +773,7 @@ export class nanoSQL implements InanoSQLInstance {
     public _initPeers() {
         let counter = 0;
 
-        this.state.pid = uuid();
+        this.state.pid = uuidFN();
 
         // Append this peer to the network
         this.state.peers = this.getPeers();

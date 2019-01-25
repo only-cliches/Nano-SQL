@@ -1,4 +1,4 @@
-import { InanoSQLQuery, InanoSQLInstance, TableQueryResult, InanoSQLTable, InanoSQLFunctionResult } from "./interfaces";
+import { InanoSQLQuery, InanoSQLInstance, TableQueryResult, InanoSQLTable, InanoSQLFunctionResult, InanoSQLDataModel } from "./interfaces";
 export declare const blankTableDefinition: InanoSQLTable;
 /**
  * Searches a sorted array for a given value.
@@ -142,6 +142,9 @@ export declare const hash: (str: string) => string;
  * @returns {*}
  */
 export declare const generateID: (primaryKeyType: string, incrimentValue?: number | undefined) => any;
+export declare const cleanArgs2: (args: any, dataModel: string | {
+    [colAndType: string]: InanoSQLDataModel;
+}, nSQL: InanoSQLInstance) => any;
 /**
  * Clean the arguments from an object given an array of arguments and their types.
  *

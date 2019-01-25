@@ -175,7 +175,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             conformQueue.newItem(conformFilter(row));
         }, function () {
             conformQueue.finished();
-        });
+        }, error);
     };
     _nanoSQLQuery.prototype._getTable = function (tableName, whereCond, table, callback) {
         var _this = this;
@@ -589,7 +589,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             else {
                 selectBuffer.finished();
             }
-        });
+        }, onError);
     };
     _nanoSQLQuery.prototype._groupByRows = function () {
         var _this = this;
@@ -755,14 +755,14 @@ var _nanoSQLQuery = /** @class */ (function () {
                 if (pkVal) {
                     utilities_1.adapterFilters(_this.nSQL, _this.query).read(_this.query.table, pkVal, function (oldRow) {
                         if (oldRow) {
-                            _this._updateRow(row, oldRow, function (eventOrNewRow) {
-                                onRow(eventOrNewRow, i);
+                            _this._updateRow(row, oldRow, function (newRow) {
+                                onRow(newRow, i);
                                 next(null);
                             }, error);
                         }
                         else {
-                            _this._newRow(row, function () {
-                                onRow({ oldRow: undefined, newRow: row }, i);
+                            _this._newRow(row, function (newRow) {
+                                onRow(newRow, i);
                                 next(null);
                             }, error);
                         }
@@ -798,7 +798,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 upsertBuffer_1.newItem(row);
             }, function () {
                 upsertBuffer_1.finished();
-            });
+            }, error);
         }
     };
     _nanoSQLQuery.prototype._updateRow = function (newData, oldRow, complete, error) {
@@ -900,7 +900,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                             }).then(next);
                         }
                         else {
-                            utilities_1.allAsync(["rm", "add"], function (job, i, nextJob) {
+                            utilities_1.chainAsync(["rm", "add"], function (job, i, nextJob) {
                                 switch (job) {
                                     case "add": // add new index value
                                         _this._updateIndex(tableName_1, indexName, newIndexValues[indexName], utilities_1.deepGet(table.pkCol, finalRow), true, function () {
@@ -927,7 +927,7 @@ var _nanoSQLQuery = /** @class */ (function () {
         var _this = this;
         var newItem = { table: table, indexName: indexName, value: value, pk: pk, addToIndex: addToIndex, done: done, err: err, query: this.query, nSQL: this.nSQL };
         this.nSQL.doFilter("updateIndex", { res: newItem, query: this.query }, function (update) {
-            exports.secondaryIndexQueue[_this.nSQL.state.id + _this.query.table].newItem(update.res, function (item, done, error) {
+            exports.secondaryIndexQueue[_this.nSQL.state.id + update.res.indexName].newItem(update.res, function (item, done, error) {
                 var fn = item.addToIndex ? utilities_1.adapterFilters(item.nSQL, item.query).addIndexValue : utilities_1.adapterFilters(item.nSQL, item.query).deleteIndexValue;
                 fn(item.table, item.indexName, item.pk, item.value, function () {
                     item.done();
@@ -993,13 +993,63 @@ var _nanoSQLQuery = /** @class */ (function () {
         this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: interfaces_1.IWhereType.none };
         if (this.query.state === "error")
             return;
-        var delRows = 0;
-        var table = this.nSQL._tables[this.query.table];
+        var tableConfig = this.nSQL._tables[this.query.table];
         var deleteBuffer = new utilities_1._nanoSQLQueue(function (row, i, done, err) {
-            _this._removeRowAndIndexes(table, row, function (delRowOrEvent) {
-                onRow(delRowOrEvent, i);
-                done();
-            }, err);
+            new Promise(function (res, rej) {
+                var table = _this.query.table;
+                if (_this.nSQL._fkRels[table] && _this.nSQL._fkRels[table].length) {
+                    utilities_1.allAsync(_this.nSQL._fkRels[table], function (fkRestraint, i, next, err) {
+                        var rowValue = utilities_1.deepGet(fkRestraint.selfPath, row);
+                        var rowPKs = utilities_1.cast("any[]", fkRestraint.selfIsArray ? rowValue : [rowValue]);
+                        utilities_1.allAsync(rowPKs, function (rowPK, iii, nextRow, rowErr) {
+                            switch (fkRestraint.onDelete) {
+                                case interfaces_1.InanoSQLFKActions.RESTRICT: // see if any rows are connected
+                                    var count_2 = 0;
+                                    utilities_1.adapterFilters(_this.nSQL, _this.query).readIndexKey(fkRestraint.childTable, fkRestraint.childIndex, rowPK, function (pk) {
+                                        count_2++;
+                                    }, function () {
+                                        if (count_2 > 0) {
+                                            rowErr("Foreign key restraint error, can't delete!");
+                                        }
+                                        else {
+                                            nextRow();
+                                        }
+                                    }, err);
+                                    break;
+                                case interfaces_1.InanoSQLFKActions.CASCADE:
+                                    var deleteIDs_1 = [];
+                                    utilities_1.adapterFilters(_this.nSQL, _this.query).readIndexKey(fkRestraint.childTable, fkRestraint.childIndex, rowPK, function (key) {
+                                        deleteIDs_1.push(key);
+                                    }, function () {
+                                        _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, fkRestraint.childTable, "delete"), { where: [fkRestraint.childPath.join("."), fkRestraint.childIsArray ? "INCLUDES" : "IN", deleteIDs_1] }), utilities_1.noop, nextRow, rowErr);
+                                    }, err);
+                                    break;
+                                case interfaces_1.InanoSQLFKActions.SET_NULL:
+                                    var setIDs_1 = [];
+                                    utilities_1.adapterFilters(_this.nSQL, _this.query).readIndexKey(fkRestraint.childTable, fkRestraint.childIndex, rowPK, function (key) {
+                                        setIDs_1.push(key);
+                                    }, function () {
+                                        var _a;
+                                        _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, fkRestraint.childTable, "upsert"), { actionArgs: (_a = {},
+                                                _a[fkRestraint.childPath.join(".")] = null,
+                                                _a), where: [fkRestraint.childPath.join("."), fkRestraint.childIsArray ? "INCLUDES" : "IN", deleteIDs_1] }), utilities_1.noop, nextRow, rowErr);
+                                    }, err);
+                                    break;
+                                default:
+                                    next();
+                            }
+                        }).then(next).catch(err);
+                    }).then(res).catch(rej);
+                }
+                else {
+                    res();
+                }
+            }).then(function () {
+                _this._removeRowAndIndexes(tableConfig, row, function (delRowOrEvent) {
+                    onRow(delRowOrEvent, i);
+                    done();
+                }, err);
+            }).catch(err);
         }, error, function () {
             complete();
         });
@@ -1007,7 +1057,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             deleteBuffer.newItem(row);
         }, function () {
             deleteBuffer.finished();
-        });
+        }, error);
     };
     _nanoSQLQuery.prototype._removeRowAndIndexes = function (table, row, complete, error) {
         var _this = this;
@@ -1307,7 +1357,10 @@ var _nanoSQLQuery = /** @class */ (function () {
                 filter: table.res.filter,
                 actions: table.res.actions || [],
                 views: table.res.views || [],
-                queries: table.res.queries || {},
+                queries: (table.res.queries || []).reduce(function (prev, query) {
+                    prev[query.name] = query;
+                    return prev;
+                }, {}),
                 indexes: Object.keys(indexes).map(function (i) { return ({
                     id: utilities_1.resolvePath(i.split(":")[0]).join("."),
                     type: (i.split(":")[1] || "string").replace(/\[\]/gmi, ""),
@@ -1359,7 +1412,6 @@ var _nanoSQLQuery = /** @class */ (function () {
             var newIndexes = Object.keys(newConfig.indexes);
             var addIndexes = newIndexes.filter(function (v) { return oldIndexes.indexOf(v) === -1; });
             var addTables = [table.res.name].concat(addIndexes);
-            exports.secondaryIndexQueue[_this.nSQL.state.id + table.res.name] = new utilities_1._nanoSQLQueue();
             return utilities_1.chainAsync(addTables, function (tableOrIndexName, i, next, err) {
                 if (i === 0) { // table
                     var newTable_1 = { name: tableOrIndexName, conf: newConfig };
@@ -1385,12 +1437,14 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }
                 else { // indexes
                     var index = newConfig.indexes[tableOrIndexName];
+                    exports.secondaryIndexQueue[_this.nSQL.state.id + index.id] = new utilities_1._nanoSQLQueue();
                     utilities_1.adapterFilters(_this.nSQL, _this.query).createIndex(table.res.name, index.id, index.type, function () {
                         next(null);
                     }, err);
                 }
             });
         }).then(function () {
+            _this.nSQL._rebuildFKs();
             if (_this.query.table === "_util") {
                 return Promise.resolve();
             }
@@ -1405,21 +1459,67 @@ var _nanoSQLQuery = /** @class */ (function () {
         Object.keys(this.nSQL._tables[table].indexes).forEach(function (indexName) {
             tablesToDrop.push(indexName);
         });
-        utilities_1.allAsync(tablesToDrop, function (dropTable, i, next, err) {
-            if (i === 0) {
-                utilities_1.adapterFilters(_this.nSQL, _this.query).dropTable(dropTable, function () {
-                    delete _this.nSQL._tables[dropTable];
-                    delete _this.nSQL._tableIds[dropTable];
-                    _this.nSQL._saveTableIds().then(function () {
-                        next(dropTable);
-                    }).catch(err);
-                }, err);
+        new Promise(function (res, rej) {
+            if (_this.nSQL._fkRels[table] && _this.nSQL._fkRels[table].length) {
+                utilities_1.allAsync(_this.nSQL._fkRels[table], function (fkRestraint, i, next, err) {
+                    switch (fkRestraint.onDelete) {
+                        case interfaces_1.InanoSQLFKActions.RESTRICT: // see if any rows are connected
+                            var count_3 = 0;
+                            utilities_1.adapterFilters(_this.nSQL, _this.query).readIndexKeys(fkRestraint.childTable, fkRestraint.childIndex, "offset", 0, 1, false, function (key, id) {
+                                count_3++;
+                            }, function () {
+                                if (count_3 > 0) {
+                                    err("Foreign key restraint error, can't drop!");
+                                }
+                                else {
+                                    next();
+                                }
+                            }, err);
+                            break;
+                        case interfaces_1.InanoSQLFKActions.CASCADE:
+                            var deleteIDs_2 = [];
+                            utilities_1.adapterFilters(_this.nSQL, _this.query).readIndexKeys(fkRestraint.childTable, fkRestraint.childIndex, "all", 0, 0, false, function (key, id) {
+                                deleteIDs_2.push(key);
+                            }, function () {
+                                _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, fkRestraint.childTable, "delete"), { where: [fkRestraint.childPath.join("."), fkRestraint.childIsArray ? "INCLUDES" : "IN", deleteIDs_2] }), utilities_1.noop, next, err);
+                            }, err);
+                            break;
+                        case interfaces_1.InanoSQLFKActions.SET_NULL:
+                            var setIDs_2 = [];
+                            utilities_1.adapterFilters(_this.nSQL, _this.query).readIndexKeys(fkRestraint.childTable, fkRestraint.childIndex, "all", 0, 0, false, function (key, id) {
+                                setIDs_2.push(key);
+                            }, function () {
+                                var _a;
+                                _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, fkRestraint.childTable, "upsert"), { actionArgs: (_a = {},
+                                        _a[fkRestraint.childPath.join(".")] = null,
+                                        _a), where: [fkRestraint.childPath.join("."), fkRestraint.childIsArray ? "INCLUDES" : "IN", deleteIDs_2] }), utilities_1.noop, next, err);
+                            }, err);
+                            break;
+                        default:
+                            next();
+                    }
+                }).then(res).catch(rej);
             }
             else {
-                utilities_1.adapterFilters(_this.nSQL, _this.query).deleteIndex(table, dropTable, next, err);
+                res();
             }
         }).then(function () {
-            complete();
+            return utilities_1.allAsync(tablesToDrop, function (dropTable, i, next, err) {
+                if (i === 0) {
+                    utilities_1.adapterFilters(_this.nSQL, _this.query).dropTable(dropTable, function () {
+                        delete _this.nSQL._tables[dropTable];
+                        delete _this.nSQL._tableIds[dropTable];
+                        _this.nSQL._saveTableIds().then(function () {
+                            next(dropTable);
+                        }).catch(err);
+                    }, err);
+                }
+                else {
+                    utilities_1.adapterFilters(_this.nSQL, _this.query).deleteIndex(table, dropTable, next, err);
+                }
+            }).then(function () {
+                complete();
+            });
         }).catch(error);
     };
     _nanoSQLQuery.prototype._onError = function (err) {
@@ -1544,7 +1644,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                         complete();
                     }
                     else {
-                        utilities_1.chainAsync(PKS, function (pkRead, ii, nextPK) {
+                        utilities_1.allAsync(PKS, function (pkRead, ii, nextPK) {
                             if (isPKquery) {
                                 utilities_1.adapterFilters(_this.nSQL, _this.query).read(_this.query.table, pkRead, function (row) {
                                     indexBuffer.newItem(row);
@@ -1605,7 +1705,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             }
         }
     };
-    _nanoSQLQuery.prototype._getRecords = function (onRow, complete) {
+    _nanoSQLQuery.prototype._getRecords = function (onRow, complete, error) {
         var _this = this;
         var scanRecords = function (rows) {
             var i = 0;
@@ -1635,7 +1735,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 case interfaces_1.IWhereType.fast:
                     this._fastQuery(onRow, complete);
                     break;
-                // primary key or secondary index followed by slow query
+                // primary key or secondary index query followed by slow query
                 case interfaces_1.IWhereType.medium:
                     this._fastQuery(function (row, i) {
                         if (_this._where(row, _this._whereArgs.slowWhere)) {
@@ -1669,12 +1769,15 @@ var _nanoSQLQuery = /** @class */ (function () {
             }
         }
         else if (typeof this.query.table === "function") { // promise that returns array
-            this._getTable(this.query.tableAS || this.query.table, this.query.where, this.query.table, function (result) {
+            this._getTable(this.query.tableAS || utilities_1.uuid(), this.query.where, this.query.table, function (result) {
                 scanRecords(result.rows);
             });
         }
         else if (Array.isArray(this.query.table)) { // array
             scanRecords(this.query.table);
+        }
+        else {
+            error("Can't get selected table!");
         }
     };
     _nanoSQLQuery.prototype._rebuildIndexes = function (progress, complete, error) {
@@ -1685,7 +1788,6 @@ var _nanoSQLQuery = /** @class */ (function () {
             return;
         }
         this._whereArgs = this.query.where ? this._parseWhere(this.query.where) : { type: interfaces_1.IWhereType.none };
-        // .map(r => "_idx_" + this.nSQL.tableIds[rebuildTables] + "_" + r);
         if (this.query.where) { // rebuild only select rows (cant clean/remove index tables)
             var readQueue_1 = new utilities_1._nanoSQLQueue(function (item, i, complete, error) {
                 _this._removeRowAndIndexes(_this.nSQL._tables[rebuildTables], item, function () {
@@ -1699,7 +1801,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 readQueue_1.newItem(row);
             }, function () {
                 readQueue_1.finished();
-            });
+            }, error);
         }
         else { // empty indexes and start from scratch
             var indexes = Object.keys(this.nSQL._tables[rebuildTables].indexes);
@@ -1728,7 +1830,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                     readQueue.newItem(row);
                 }, function () {
                     readQueue.finished();
-                });
+                }, error);
             }).catch(error);
         }
     };
@@ -1876,7 +1978,7 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
     };
     _nanoSQLQuery.prototype._parseSort = function (sort, checkforIndexes) {
-        var key = sort && sort.length ? utilities_1.hash(JSON.stringify(sort)) : "";
+        var key = ((sort && sort.length ? utilities_1.hash(JSON.stringify(sort)) : "") + this.nSQL.state.cacheId) + this.nSQL.state.cacheId;
         if (!key)
             return { sort: [], index: "" };
         if (_nanoSQLQuery._sortMemoized[key])
@@ -1925,7 +2027,7 @@ var _nanoSQLQuery = /** @class */ (function () {
     };
     _nanoSQLQuery.prototype._parseSelect = function () {
         var _this = this;
-        var selectArgsKey = this.query.actionArgs && this.query.actionArgs.length ? JSON.stringify(this.query.actionArgs) : "";
+        var selectArgsKey = (this.query.actionArgs && this.query.actionArgs.length ? JSON.stringify(this.query.actionArgs) : "") + this.nSQL.state.cacheId;
         this._orderBy = this._parseSort(this.query.orderBy || [], typeof this.query.table === "string");
         this._groupBy = this._parseSort(this.query.groupBy || [], false);
         if (selectArgsKey) {
@@ -1982,9 +2084,9 @@ var _nanoSQLQuery = /** @class */ (function () {
     _nanoSQLQuery.prototype._parseWhere = function (qWhere, ignoreIndexes) {
         var _this = this;
         var where = qWhere || [];
-        var key = JSON.stringify(where, function (key, value) {
+        var key = (JSON.stringify(where, function (key, value) {
             return value && value.constructor && value.constructor.name === "RegExp" ? value.toString() : value;
-        }) + (ignoreIndexes ? "0" : "1");
+        }) + (ignoreIndexes ? "0" : "1")) + this.nSQL.state.cacheId;
         if (_nanoSQLQuery._whereMemoized[key]) {
             return _nanoSQLQuery._whereMemoized[key];
         }

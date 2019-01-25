@@ -740,6 +740,7 @@ export class nanoSQLAdapterTest {
                             actions: [],
                             queries: {},
                             views: [],
+    
                             pkType: {
                                 test: "int",
                                 test2: "uuid",

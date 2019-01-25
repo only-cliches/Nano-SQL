@@ -17,7 +17,7 @@
   <strong>Universal database layer for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
+[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Issues](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
@@ -26,7 +26,7 @@ nanoSQL core provides a standardized query language, data modeling, indexing and
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
 ### Not Only NoSQL 
-Classical RDBMS queries like aggregate functions, joins and group bys are also supported.  You can even write your own query functions.
+Classical RDBMS queries like aggregate functions, joins and group bys are also supported.  You can even write your own query functions and use foreign keys!
 
 ### Flexible Data Models
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.
@@ -51,9 +51,10 @@ Built in geolocation indexing, typescript support, event system, CSV/JSON import
 | Join Queries  | ✓       | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | IndexedDB | ✓       | ✕      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
 | Node      | ✓       | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
+| Foreign Keys  | ✓   | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Query Functions | ✓ | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓ | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Size (kb) | 25      | 5      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
+| Size (kb) | 26      | 5      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
 
 
 ## Database Support
@@ -96,7 +97,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.0.9/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.1/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

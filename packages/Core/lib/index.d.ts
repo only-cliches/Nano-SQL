@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult, InanoSQLV1ConfigFn } from "./interfaces";
+import { InanoSQLConfig, InanoSQLFunction, InanoSQLQuery, InanoSQLDatabaseEvent, InanoSQLAdapter, InanoSQLTable, InanoSQLInstance, InanoSQLQueryBuilder, TableQueryResult, InanoSQLV1ConfigFn, InanoSQLFKActions, uuid } from "./interfaces";
 export { InanoSQLInstance };
 export declare class nanoSQL implements InanoSQLInstance {
     config: InanoSQLConfig;
@@ -18,6 +18,17 @@ export declare class nanoSQL implements InanoSQLInstance {
     _tableIds: {
         [tableName: string]: string;
     };
+    _fkRels: {
+        [tableName: string]: {
+            selfPath: string[];
+            selfIsArray: boolean;
+            onDelete: InanoSQLFKActions;
+            childTable: string;
+            childPath: string[];
+            childIsArray: boolean;
+            childIndex: string;
+        }[];
+    };
     state: {
         activeAV: string;
         hasAnyEvents: boolean;
@@ -27,6 +38,7 @@ export declare class nanoSQL implements InanoSQLInstance {
         peerEvents: string[];
         focused: boolean;
         peerMode: boolean;
+        cacheId: uuid;
         connected: boolean;
         ready: boolean;
         exportQueryObj: boolean;
@@ -50,6 +62,7 @@ export declare class nanoSQL implements InanoSQLInstance {
     };
     private _Q;
     constructor();
+    _rebuildFKs(): void;
     doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (abortInfo: any) => void): void;
     getCache(id: string, args?: {
         offset: number;
@@ -67,8 +80,9 @@ export declare class nanoSQL implements InanoSQLInstance {
     _detectStorageMethod(): string;
     _initPlugins(config: InanoSQLConfig): Promise<any>;
     _saveTableIds(): Promise<any>;
-    queries(): {
-        [fnName: string]: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+    presetQuery(fn: string): {
+        promise: (args: any) => Promise<any[]>;
+        stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => void;
     };
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): void;

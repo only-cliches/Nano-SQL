@@ -19,7 +19,8 @@ import {
     adapterDeleteIndexValueFilter,
     adapterReadIndexKeyFilter,
     adapterReadIndexKeysFilter,
-    InanoSQLFunctionResult
+    InanoSQLFunctionResult,
+    InanoSQLDataModel
 } from "./interfaces";
 import { _nanoSQLQuery } from "./query";
 import * as leven from "levenshtein-edit-distance";
@@ -562,6 +563,52 @@ export const generateID = (primaryKeyType: string, incrimentValue?: number): any
     return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
 
+export const cleanArgs2 = (args: any, dataModel: { [colAndType: string]: InanoSQLDataModel } | string, nSQL: InanoSQLInstance): any => {
+    let returnObj = {};
+
+    const conformType = (strType: string, obj: any, dModel: { [colAndType: string]: InanoSQLDataModel } | string): any => {
+        if (strType.indexOf("[]") !== -1) {
+            const arrayOf = strType.slice(0, strType.lastIndexOf("[]"));
+            // value should be array but isn't, cast it to one
+            if (!Array.isArray(obj)) return [];
+            // we have an array, cast array of types
+            return obj.map((v) => conformType(arrayOf, v, dModel));
+        }
+        if (typeof dModel === "string") {
+            let findModel = dModel.replace(/\[\]/gmi, "");
+            let typeModel = Object.keys(nSQL.config.types || {}).reduce((prev, cur) => {
+                if (cur === findModel) return (nSQL.config.types || {})[cur];
+                return prev;
+            }, undefined);
+            if (!typeModel) {
+                throw new Error(`Can't find type ${findModel}!`);
+            }
+            return conformType(dModel, args, typeModel);
+        } else {
+            let returnObj = {};
+            let getOtherCols: boolean = false;
+            let definedCols: string[] = [];
+            Object.keys(dModel).forEach((colAndType) => {
+                const split = colAndType.split(":");
+                if (split[0] === "*") {
+                    getOtherCols = true;
+                } else {
+                    definedCols.push(split[0]);
+                    returnObj[split[0]] = cast(split[1], obj[split[0]], false, nSQL);
+                }
+            });
+            if (getOtherCols && isObject(obj)) {
+                Object.keys(obj).filter(k => definedCols.indexOf(k) === -1).forEach((key) => {
+                    returnObj[key] = obj[key];
+                });
+            }
+            return returnObj;
+        }
+    };
+
+    return conformType(typeof dataModel === "string" ? dataModel : "", args, dataModel);
+}
+
 /**
  * Clean the arguments from an object given an array of arguments and their types.
  *
@@ -752,10 +799,10 @@ const objectPathCache: {
 
 // turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
 export const resolvePath = (pathQuery: string): string[] => {
-    if (!pathQuery || !pathQuery) return [];
-    const cacheKey = pathQuery;
-    if (objectPathCache[cacheKey]) {
-        return objectPathCache[cacheKey];
+    if (!pathQuery) return [];
+
+    if (objectPathCache[pathQuery]) {
+        return objectPathCache[pathQuery].slice();
     }
     const path = pathQuery.indexOf("[") !== -1 ?
         // handle complex mix of dots and brackets like "users.value[meta][value].length"
@@ -763,9 +810,11 @@ export const resolvePath = (pathQuery: string): string[] => {
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
 
-    objectPathCache[cacheKey] = path;
+    
 
-    return objectPathCache[cacheKey];
+    objectPathCache[pathQuery] = path;
+
+    return objectPathCache[pathQuery].slice();
 };
 
 export const getFnValue = (row: any, valueOrPath: string): any => {

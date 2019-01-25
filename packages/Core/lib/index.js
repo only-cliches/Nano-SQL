@@ -34,6 +34,7 @@ var nanoSQL = /** @class */ (function () {
             peers: [],
             pid: utilities_1.uuid(),
             id: utilities_1.uuid(),
+            cacheId: utilities_1.uuid(),
             peerEvents: [],
             focused: true,
             peerMode: false,
@@ -49,13 +50,15 @@ var nanoSQL = /** @class */ (function () {
             queue: false
         };
         this._tables = {};
+        this._fkRels = {};
         this._tableIds = { "_util": "_util", "_ttl": "_ttl" };
         this._queryCache = {};
         this.filters = {};
+        var str = function (value) {
+            return typeof value === "object" ? JSON.stringify(value) : String(value);
+        };
         this.indexTypes = {
-            string: function (value) {
-                return typeof value === "object" ? JSON.stringify(value) : String(value);
-            },
+            string: str,
             geo: function (value) {
                 return undefined;
             },
@@ -70,7 +73,10 @@ var nanoSQL = /** @class */ (function () {
             number: function (value) {
                 var float = parseFloat(value);
                 return isNaN(float) ? 0 : float;
-            }
+            },
+            uuid: str,
+            timeId: str,
+            timeIdms: str
         };
         this.eventFNs = {
             Core: {
@@ -81,6 +87,34 @@ var nanoSQL = /** @class */ (function () {
         this._checkTTL = this._checkTTL.bind(this);
         functions_1.attachDefaultFns(this);
     }
+    nanoSQL.prototype._rebuildFKs = function () {
+        var _this = this;
+        // bust memoized caches
+        this.state.cacheId = utilities_1.uuid();
+        this._fkRels = {};
+        Object.keys(this._tables).forEach(function (tableName) {
+            var table = _this._tables[tableName];
+            Object.keys(table.indexes).forEach(function (indexName) {
+                var index = table.indexes[indexName];
+                if (index.props && index.props.foreignKey) {
+                    var path = utilities_1.resolvePath(index.props.foreignKey.target);
+                    var remoteTable = path.shift();
+                    if (!_this._fkRels[remoteTable]) {
+                        _this._fkRels[remoteTable] = [];
+                    }
+                    _this._fkRels[remoteTable].push({
+                        selfPath: path.map(function (s) { return s.replace(/\[\]/gmi, ""); }),
+                        selfIsArray: index.props.foreignKey.target.indexOf("[]") !== -1,
+                        childTable: tableName,
+                        childPath: index.path,
+                        childIsArray: index.isArray,
+                        childIndex: indexName,
+                        onDelete: index.props.foreignKey.onDelete || interfaces_1.InanoSQLFKActions.NONE
+                    });
+                }
+            });
+        });
+    };
     nanoSQL.prototype.doFilter = function (filterName, args, complete, cancelled) {
         var _this = this;
         if (this.filters[filterName]) {
@@ -295,15 +329,51 @@ var nanoSQL = /** @class */ (function () {
                 }) }), utilities_1.noop, res, rej);
         });
     };
-    nanoSQL.prototype.queries = function () {
+    nanoSQL.prototype.presetQuery = function (fn) {
         var _this = this;
         if (typeof this.state.selectedTable !== "string") {
             throw new Error("Can't get table queries without selecting a table!");
         }
-        return Object.keys(this._tables[this.state.selectedTable].queries).reduce(function (prev, cur) {
-            prev[cur] = _this._tables[_this.state.selectedTable].queries[cur].call;
-            return prev;
-        }, {});
+        var found = Object.keys(this._tables[this.state.selectedTable].queries).indexOf(fn) !== -1;
+        if (!found) {
+            throw new Error("Can't find preset query " + fn + "!");
+        }
+        var queryRunning = false;
+        return {
+            promise: function (args) {
+                return new Promise(function (res, rej) {
+                    if (queryRunning) {
+                        rej("Query already streaming!");
+                        return;
+                    }
+                    queryRunning = true;
+                    var fnArgs = _this._tables[_this.state.selectedTable].queries[fn].args;
+                    var filteredArgs = {};
+                    if (fnArgs) {
+                        filteredArgs = utilities_1.cleanArgs2(args, fnArgs, _this);
+                    }
+                    var buffer = [];
+                    _this._tables[_this.state.selectedTable].queries[fn].call(_this, filteredArgs, function (row) {
+                        buffer.push(row);
+                    }, function () {
+                        res(buffer);
+                    }, rej);
+                });
+            },
+            stream: function (args, onRow, complete, error) {
+                if (queryRunning) {
+                    error("Query already using promise!");
+                    return;
+                }
+                queryRunning = true;
+                var fnArgs = _this._tables[_this.state.selectedTable].queries[fn].args;
+                var filteredArgs = {};
+                if (fnArgs) {
+                    filteredArgs = utilities_1.cleanArgs2(args, fnArgs, _this);
+                }
+                _this._tables[_this.state.selectedTable].queries[fn].call(_this, filteredArgs, onRow, complete, error);
+            }
+        };
     };
     nanoSQL.prototype.connect = function (config) {
         var _this = this;

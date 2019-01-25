@@ -66,7 +66,7 @@ export declare class _nanoSQLQuery implements InanoSQLQueryExec {
     }, i: number) => void, complete: () => void): void;
     _getRecords(onRow: (row: {
         [name: string]: any;
-    }, i: number) => void, complete: () => void): void;
+    }, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _rebuildIndexes(progress: (row: any, i: any) => void, complete: () => void, error: (err: any) => void): void;
     _where(singleRow: any, where: (IWhereCondition | string | (IWhereCondition | string)[])[]): boolean;
     static likeCache: {

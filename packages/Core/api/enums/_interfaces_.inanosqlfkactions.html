@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>actionFilter | @nano-sql/core</title>
+	<title>InanoSQLFKActions | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -57,64 +57,71 @@
 					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
 				</li>
 				<li>
-					<a href="_interfaces_.actionfilter.html">actionFilter</a>
+					<a href="_interfaces_.inanosqlfkactions.html">InanoSQLFKActions</a>
 				</li>
 			</ul>
-			<h1>Interface actionFilter</h1>
+			<h1>Enumeration InanoSQLFKActions</h1>
 		</div>
 	</div>
 </header>
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
-			<section class="tsd-panel tsd-hierarchy">
-				<h3>Hierarchy</h3>
-				<ul class="tsd-hierarchy">
-					<li>
-						<a href="_interfaces_.abstractfilter.html" class="tsd-signature-type">abstractFilter</a>
-						<ul class="tsd-hierarchy">
-							<li>
-								<span class="target">actionFilter</span>
-							</li>
-						</ul>
-					</li>
-				</ul>
-			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section ">
-							<h3>Properties</h3>
+							<h3>Enumeration members</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.actionfilter.html#abort" class="tsd-kind-icon">abort</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.actionfilter.html#res" class="tsd-kind-icon">res</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum"><a href="_interfaces_.inanosqlfkactions.html#cascade" class="tsd-kind-icon">CASCADE</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum"><a href="_interfaces_.inanosqlfkactions.html#none" class="tsd-kind-icon">NONE</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum"><a href="_interfaces_.inanosqlfkactions.html#restrict" class="tsd-kind-icon">RESTRICT</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum"><a href="_interfaces_.inanosqlfkactions.html#set_null" class="tsd-kind-icon">SET_<wbr>NULL</a></li>
 							</ul>
 						</section>
 					</div>
 				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-					<a name="abort" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> abort</h3>
-					<div class="tsd-signature tsd-kind-icon">abort<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
+				<h2>Enumeration members</h2>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum">
+					<a name="cascade" class="tsd-anchor"></a>
+					<h3>CASCADE</h3>
+					<div class="tsd-signature tsd-kind-icon">CASCADE<span class="tsd-signature-symbol">:</span> </div>
 					<aside class="tsd-sources">
-						<p>Inherited from <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#abort">abort</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/9b17030/packages/Core/src/interfaces.ts#L564">interfaces.ts:564</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L372">interfaces.ts:372</a></li>
 						</ul>
 					</aside>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-					<a name="res" class="tsd-anchor"></a>
-					<h3>res</h3>
-					<div class="tsd-signature tsd-kind-icon">res<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.iavfilterresult.html" class="tsd-signature-type">IAVFilterResult</a></div>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum">
+					<a name="none" class="tsd-anchor"></a>
+					<h3>NONE</h3>
+					<div class="tsd-signature tsd-kind-icon">NONE<span class="tsd-signature-symbol">:</span> </div>
 					<aside class="tsd-sources">
-						<p>Overrides <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#res">res</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/9b17030/packages/Core/src/interfaces.ts#L632">interfaces.ts:632</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L371">interfaces.ts:371</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum">
+					<a name="restrict" class="tsd-anchor"></a>
+					<h3>RESTRICT</h3>
+					<div class="tsd-signature tsd-kind-icon">RESTRICT<span class="tsd-signature-symbol">:</span> </div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L373">interfaces.ts:373</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum">
+					<a name="set_null" class="tsd-anchor"></a>
+					<h3>SET_<wbr>NULL</h3>
+					<div class="tsd-signature tsd-kind-icon">SET_<wbr>NULL<span class="tsd-signature-symbol">:</span> </div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L374">interfaces.ts:374</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -159,14 +166,20 @@
 				<ul class="before-current">
 				</ul>
 				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_interfaces_.actionfilter.html" class="tsd-kind-icon">action<wbr>Filter</a>
+					<li class="current tsd-kind-enum tsd-parent-kind-external-module">
+						<a href="_interfaces_.inanosqlfkactions.html" class="tsd-kind-icon">InanoSQLFKActions</a>
 						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-								<a href="_interfaces_.actionfilter.html#abort" class="tsd-kind-icon">abort</a>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum">
+								<a href="_interfaces_.inanosqlfkactions.html#cascade" class="tsd-kind-icon">CASCADE</a>
 							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-								<a href="_interfaces_.actionfilter.html#res" class="tsd-kind-icon">res</a>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum">
+								<a href="_interfaces_.inanosqlfkactions.html#none" class="tsd-kind-icon">NONE</a>
+							</li>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum">
+								<a href="_interfaces_.inanosqlfkactions.html#restrict" class="tsd-kind-icon">RESTRICT</a>
+							</li>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum">
+								<a href="_interfaces_.inanosqlfkactions.html#set_null" class="tsd-kind-icon">SET_<wbr>NULL</a>
 							</li>
 						</ul>
 					</li>

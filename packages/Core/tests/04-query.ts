@@ -3,7 +3,7 @@ import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
-import { InanoSQLInstance } from "../src/interfaces";
+import { InanoSQLInstance, InanoSQLFKActions } from "../src/interfaces";
 import { uuid, crowDistance, assign } from "../src/utilities";
 
 
@@ -588,6 +588,274 @@ describe("Testing Other Features", () => {
         })
     });
 
+    it("Foreign Key Restraint", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        const queryFinished = (withError?: boolean) => {
+            try {
+                expect(withError).to.equal(true);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        }
+        nSQL.connect({
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "id:int":{pk: true},
+                        "num:int":{}
+                    }
+                },
+                {
+                    name: "posts",
+                    model: {
+                        "id:int":{pk:true},
+                        "title:string":{},
+                        "user:int":{}
+                    },
+                    indexes: {
+                        "user:int":{foreignKey: {target: "users.id", onDelete: InanoSQLFKActions.RESTRICT}}
+                    }
+                }
+            ]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("users").loadJS(rows);
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            }
+            return nSQL.selectTable("posts").loadJS(rows);
+        }).then(() => {
+            return nSQL.selectTable("users").query("delete").where(["id", "=", 20]).exec();
+        }).then((pkRows) => {
+            queryFinished(false);
+        }).catch((err) => {
+            queryFinished(true);
+        })
+    });
+
+    it("Foreign Key Restraint 2", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "id:int":{pk: true},
+                        "num:int":{}
+                    }
+                },
+                {
+                    name: "posts",
+                    model: {
+                        "id:int":{pk:true},
+                        "title:string":{},
+                        "user:int":{}
+                    },
+                    indexes: {
+                        "user:int":{foreignKey: {target: "users.id", onDelete: InanoSQLFKActions.CASCADE}}
+                    }
+                }
+            ]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("users").loadJS(rows);
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            }
+            return nSQL.selectTable("posts").loadJS(rows);
+        }).then(() => {
+            return nSQL.selectTable("users").query("delete").where(["id", "=", 20]).exec();
+        }).then((pkRows) => {
+            return nSQL.selectTable("posts").query("select").where(["user", "=", 20]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(0);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Foreign Key Restraint 3", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "id:int":{pk: true},
+                        "num:int":{},
+                        "postIds:int[]": {}
+                    },
+                    indexes: {
+                        "postIds:int[]":{foreignKey: {target: "posts.id", onDelete: InanoSQLFKActions.CASCADE}}
+                    }
+                },
+                {
+                    name: "posts",
+                    model: {
+                        "id:int":{pk:true},
+                        "title:string":{},
+                        "user:int":{}
+                    }
+                }
+            ]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i, posts: [
+                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                ]});
+            }
+            return nSQL.selectTable("users").loadJS(rows);
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            }
+            return nSQL.selectTable("posts").loadJS(rows);
+        }).then(() => {
+            return nSQL.selectTable("posts").query("delete").where(["id", "IN", [20, 30]]).exec();
+        }).then((pkRows) => {
+            return nSQL.selectTable("users").query("select").where(["postIds", "INCLUDES", [20, 30]]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(0);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Foreign Key Restraint 4", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "id:int":{pk: true},
+                        "num:int":{},
+                        "postIds:int[]": {}
+                    },
+                    indexes: {
+                        "postIds:int[]":{foreignKey: {target: "posts.id", onDelete: InanoSQLFKActions.CASCADE}}
+                    }
+                },
+                {
+                    name: "posts",
+                    model: {
+                        "id:int":{pk:true},
+                        "title:string":{},
+                        "user:int":{}
+                    }
+                }
+            ]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i, posts: [
+                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                ]});
+            }
+            return nSQL.selectTable("users").loadJS(rows);
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            }
+            return nSQL.selectTable("posts").loadJS(rows);
+        }).then(() => {
+            return nSQL.selectTable("posts").query("select").where(["user", "=", 20]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.be.greaterThan(3);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        }).catch((err) => {
+            console.error(err);
+        })
+    });
+
+    it("Foreign Key Restraint 5", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "id:int":{pk: true},
+                        "num:int":{},
+                        "postIds:int[]": {}
+                    },
+                    indexes: {
+                        "postIds:int[]":{foreignKey: {target: "posts.list[]", onDelete: InanoSQLFKActions.CASCADE}}
+                    }
+                },
+                {
+                    name: "posts",
+                    model: {
+                        "id:int":{pk:true},
+                        "title:string":{},
+                        "user:int":{},
+                        "list:any[]": {}
+                    }
+                }
+            ]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i, posts: [
+                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                ]});
+            }
+            return nSQL.selectTable("users").loadJS(rows);
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50), list: [
+                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                ]});
+            }
+            return nSQL.selectTable("posts").loadJS(rows);
+        }).then(() => {
+            return nSQL.selectTable("posts").query("delete").where(["list", "INCLUDES", [20, 30]]).exec();
+        }).then((pkRows) => {
+            return nSQL.selectTable("users").query("select").where(["postIds", "INCLUDES", [20, 30]]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(0);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("Change Events work", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
@@ -616,6 +884,39 @@ describe("Testing Other Features", () => {
             return nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec();
         }).then((pkRows) => {
 
+        });
+    });
+
+    it("Secondary Index Test (Delete)", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        for (let i = 1; i < 100; i ++) {
+            rows.push({id: i, num: i});
+        }
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                },
+                indexes: {
+                    "num:int": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("delete").where(["num", "BETWEEN", [29, 49]]).exec();
+        }).then((idxRows) => {
+            return nSQL.query("select").exec();
+        }).then((rows) => {
+            try {
+                expect(rows.filter(i => i.num <= 29 || i.num >= 49)).to.deep.equal(rows);
+                done();
+            } catch (e) {
+                done(e);
+            }
         });
     });
 

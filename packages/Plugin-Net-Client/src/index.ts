@@ -14,6 +14,7 @@ export class nanoSQLClient {
         servers: string | string[]; // array of servers OR Url to JSON with server list
         disableWS?: boolean;
         databases: InanoSQLUniversalDB[];
+        onConflictFromServer?: () => {}
     }, onSession?: (session: InanoSQLSession) => void): Promise<any> {
         return new Promise((res, rej) => {
 
@@ -22,6 +23,12 @@ export class nanoSQLClient {
 
     public db(name: string) {
 
+    }
+
+    public requestSync(database: string, table: string): Promise<any> {
+        return new Promise((res, rej) => {
+
+        });
     }
 
     public on(event: string, callback: () => void) {

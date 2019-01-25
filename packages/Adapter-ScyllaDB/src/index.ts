@@ -40,7 +40,7 @@ export class Scylla implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "Scylla Adapter",
-        version: 2.03
+        version: 2.04
     };
 
     nSQL: InanoSQLInstance;
@@ -242,7 +242,7 @@ export class Scylla implements InanoSQLAdapter {
                     return;
                 }
                 if (result.rowLength > 0) {
-                    const row = result.first() || {data: "[]"};
+                    const row = result.first() || {data: "{}"};
                     complete(JSON.parse(row.data));
                 } else {
                     complete(undefined);
@@ -253,7 +253,7 @@ export class Scylla implements InanoSQLAdapter {
     }
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
-
+        
         this.readRedisIndex(table, type, offsetOrLow, limitOrHigh, reverse, (primaryKeys) => {
             const batchSize = 2000;
             let page = 0;

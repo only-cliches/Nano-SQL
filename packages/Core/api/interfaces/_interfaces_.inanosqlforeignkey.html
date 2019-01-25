@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>viewFilter | @nano-sql/core</title>
+	<title>InanoSQLForeignKey | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -57,10 +57,10 @@
 					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
 				</li>
 				<li>
-					<a href="_interfaces_.viewfilter.html">viewFilter</a>
+					<a href="_interfaces_.inanosqlforeignkey.html">InanoSQLForeignKey</a>
 				</li>
 			</ul>
-			<h1>Interface viewFilter</h1>
+			<h1>Interface InanoSQLForeignKey</h1>
 		</div>
 	</div>
 </header>
@@ -71,12 +71,7 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<a href="_interfaces_.abstractfilter.html" class="tsd-signature-type">abstractFilter</a>
-						<ul class="tsd-hierarchy">
-							<li>
-								<span class="target">viewFilter</span>
-							</li>
-						</ul>
+						<span class="target">InanoSQLForeignKey</span>
 					</li>
 				</ul>
 			</section>
@@ -87,8 +82,13 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.viewfilter.html#abort" class="tsd-kind-icon">abort</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.viewfilter.html#res" class="tsd-kind-icon">res</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#childindex" class="tsd-kind-icon">child<wbr>Index</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#childisarray" class="tsd-kind-icon">child<wbr>IsArray</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#childpath" class="tsd-kind-icon">child<wbr>Path</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#childtable" class="tsd-kind-icon">child<wbr>Table</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#ondelete" class="tsd-kind-icon">on<wbr>Delete</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#selfisarray" class="tsd-kind-icon">self<wbr>IsArray</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlforeignkey.html#selfpath" class="tsd-kind-icon">self<wbr>Path</a></li>
 							</ul>
 						</section>
 					</div>
@@ -96,25 +96,73 @@
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-					<a name="abort" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> abort</h3>
-					<div class="tsd-signature tsd-kind-icon">abort<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="childindex" class="tsd-anchor"></a>
+					<h3>child<wbr>Index</h3>
+					<div class="tsd-signature tsd-kind-icon">child<wbr>Index<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
-						<p>Inherited from <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#abort">abort</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/9b17030/packages/Core/src/interfaces.ts#L564">interfaces.ts:564</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L113">interfaces.ts:113</a></li>
 						</ul>
 					</aside>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-					<a name="res" class="tsd-anchor"></a>
-					<h3>res</h3>
-					<div class="tsd-signature tsd-kind-icon">res<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.iavfilterresult.html" class="tsd-signature-type">IAVFilterResult</a></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="childisarray" class="tsd-anchor"></a>
+					<h3>child<wbr>IsArray</h3>
+					<div class="tsd-signature tsd-kind-icon">child<wbr>IsArray<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
-						<p>Overrides <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#res">res</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/9b17030/packages/Core/src/interfaces.ts#L637">interfaces.ts:637</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L112">interfaces.ts:112</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="childpath" class="tsd-anchor"></a>
+					<h3>child<wbr>Path</h3>
+					<div class="tsd-signature tsd-kind-icon">child<wbr>Path<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L111">interfaces.ts:111</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="childtable" class="tsd-anchor"></a>
+					<h3>child<wbr>Table</h3>
+					<div class="tsd-signature tsd-kind-icon">child<wbr>Table<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L110">interfaces.ts:110</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="ondelete" class="tsd-anchor"></a>
+					<h3>on<wbr>Delete</h3>
+					<div class="tsd-signature tsd-kind-icon">on<wbr>Delete<span class="tsd-signature-symbol">:</span> <a href="../enums/_interfaces_.inanosqlfkactions.html" class="tsd-signature-type">InanoSQLFKActions</a></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L109">interfaces.ts:109</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="selfisarray" class="tsd-anchor"></a>
+					<h3>self<wbr>IsArray</h3>
+					<div class="tsd-signature tsd-kind-icon">self<wbr>IsArray<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L108">interfaces.ts:108</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
+					<a name="selfpath" class="tsd-anchor"></a>
+					<h3>self<wbr>Path</h3>
+					<div class="tsd-signature tsd-kind-icon">self<wbr>Path<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/450c199/packages/Core/src/interfaces.ts#L107">interfaces.ts:107</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -160,13 +208,28 @@
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_interfaces_.viewfilter.html" class="tsd-kind-icon">view<wbr>Filter</a>
+						<a href="_interfaces_.inanosqlforeignkey.html" class="tsd-kind-icon">InanoSQLForeign<wbr>Key</a>
 						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-								<a href="_interfaces_.viewfilter.html#abort" class="tsd-kind-icon">abort</a>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#childindex" class="tsd-kind-icon">child<wbr>Index</a>
 							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-								<a href="_interfaces_.viewfilter.html#res" class="tsd-kind-icon">res</a>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#childisarray" class="tsd-kind-icon">child<wbr>IsArray</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#childpath" class="tsd-kind-icon">child<wbr>Path</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#childtable" class="tsd-kind-icon">child<wbr>Table</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#ondelete" class="tsd-kind-icon">on<wbr>Delete</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#selfisarray" class="tsd-kind-icon">self<wbr>IsArray</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface">
+								<a href="_interfaces_.inanosqlforeignkey.html#selfpath" class="tsd-kind-icon">self<wbr>Path</a>
 							</li>
 						</ul>
 					</li>
