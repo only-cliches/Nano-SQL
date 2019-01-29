@@ -528,7 +528,6 @@ export const uuid = (): string => {
 };
 
 
-
 /**
  * A quick and dirty hashing function, turns a string into a md5 style hash.
  * Stolen from https://github.com/darkskyapp/string-hash

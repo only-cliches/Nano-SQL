@@ -39,16 +39,12 @@ export class nanoSQLClient {
 
     }
 
-    public subscribe(stream: string): Promise<any> {
-        return new Promise((res, rej) => {
+    public subscribe(stream: string, callback: (data: any) => void): void {
 
-        })
     }
 
-    public unsubscribe(stream: string): Promise<any> {
-        return new Promise((res, rej) => {
+    public unsubscribe(stream: string, callback: (data: any) => void): void {
 
-        })
     }
 
     public get(name: string, args: any): Promise<any> {
