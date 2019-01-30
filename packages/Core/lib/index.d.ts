@@ -91,8 +91,8 @@ export declare class nanoSQL implements InanoSQLInstance {
         every?: number;
         offset?: number;
     }): number[];
-    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
-    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;

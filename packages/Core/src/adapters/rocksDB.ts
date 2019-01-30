@@ -68,11 +68,8 @@ export class RocksDB extends nanoSQLMemoryIndex {
                 if (!global._fs.existsSync(basePath)) {
                     global._fs.mkdirSync(basePath);
                 }
-                const keyEncoding = {
-                    "int": global._lexint
-                }[tableData.pkType] || "binary";
                 return {
-                    lvld: global._encode(global._rocks(global._path.join(basePath, tableName)), { valueEncoding: "json", keyEncoding: keyEncoding }),
+                    lvld: global._rocks(global._path.join(basePath, tableName)),
                     args: {
                         cacheSize: 64 * 1024 * 1024,
                         writeBufferSize: 64 * 1024 * 1024
@@ -91,7 +88,8 @@ export class RocksDB extends nanoSQLMemoryIndex {
             ...blankTableDefinition,
             pkType: "string"
         });
-        global._levelup(lvlDownAI.lvld, lvlDownAI.args, (err, db) => {
+        const keyEncoding = "binary";
+        global._levelup(global._encode(lvlDownAI.lvld, { valueEncoding: "json", keyEncoding: keyEncoding }), lvlDownAI.args, (err, db) => {
             if (err) {
                 error(err);
                 return;
@@ -109,8 +107,12 @@ export class RocksDB extends nanoSQLMemoryIndex {
         }
         this._tableConfigs[tableName] = tableData;
 
+        const keyEncoding = {
+            "int": global._lexint
+        }[tableData.pkType] || "binary";
+
         const lvlDown = this._lvlDown(this._id, tableName, tableData);
-        global._levelup(lvlDown.lvld, lvlDown.args, (err, db) => {
+        global._levelup(global._encode(lvlDown.lvld, { valueEncoding: "json", keyEncoding: keyEncoding }), lvlDown.args, (err, db) => {
             if (err) {
                 error(err);
                 return;

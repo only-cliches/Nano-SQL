@@ -24,6 +24,7 @@ import {
 } from "./interfaces";
 import { _nanoSQLQuery } from "./query";
 import * as leven from "levenshtein-edit-distance";
+import * as equal from "fast-deep-equal";
 
 declare var global: any;
 
@@ -295,25 +296,9 @@ export const assign = (obj: any) => {
 export const objectsEqual = (obj1: any, obj2: any): boolean => {
     if (obj1 === obj2) return true;
     if (typeof obj1 !== "object") return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
-    if (!obj1 || !obj2) return false; // if either object is undefined/false they don't match
+    if (!obj1 || !obj2) return false; // if either object is undefined they don't match
 
-    const keys = Object.keys(obj1);
-    // If sizes differ then we can skip further comparison
-    let matches = Array.isArray(obj1) ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
-
-    if (!matches) return false;
-
-    let i = keys.length;
-    while (i-- && matches) {
-        const key = keys[i];
-        if (typeof obj1[key] === "object") { // nested compare
-            matches = objectsEqual(obj1[key], obj2[key]);
-        } else {
-            matches = obj1[key] === obj2[key];
-        }
-    }
-
-    return matches;
+    return equal(obj1, obj2);
 };
 
 // tslint:disable-next-line

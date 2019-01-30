@@ -65,11 +65,8 @@ var RocksDB = /** @class */ (function (_super) {
                 if (!global._fs.existsSync(basePath)) {
                     global._fs.mkdirSync(basePath);
                 }
-                var keyEncoding = {
-                    "int": global._lexint
-                }[tableData.pkType] || "binary";
                 return {
-                    lvld: global._encode(global._rocks(global._path.join(basePath, tableName)), { valueEncoding: "json", keyEncoding: keyEncoding }),
+                    lvld: global._rocks(global._path.join(basePath, tableName)),
                     args: {
                         cacheSize: 64 * 1024 * 1024,
                         writeBufferSize: 64 * 1024 * 1024
@@ -87,7 +84,8 @@ var RocksDB = /** @class */ (function (_super) {
         this._id = id;
         var tableName = "_ai_store_";
         var lvlDownAI = this._lvlDown(this._id, tableName, __assign({}, utilities_1.blankTableDefinition, { pkType: "string" }));
-        global._levelup(lvlDownAI.lvld, lvlDownAI.args, function (err, db) {
+        var keyEncoding = "binary";
+        global._levelup(global._encode(lvlDownAI.lvld, { valueEncoding: "json", keyEncoding: keyEncoding }), lvlDownAI.args, function (err, db) {
             if (err) {
                 error(err);
                 return;
@@ -103,8 +101,11 @@ var RocksDB = /** @class */ (function (_super) {
             return;
         }
         this._tableConfigs[tableName] = tableData;
+        var keyEncoding = {
+            "int": global._lexint
+        }[tableData.pkType] || "binary";
         var lvlDown = this._lvlDown(this._id, tableName, tableData);
-        global._levelup(lvlDown.lvld, lvlDown.args, function (err, db) {
+        global._levelup(global._encode(lvlDown.lvld, { valueEncoding: "json", keyEncoding: keyEncoding }), lvlDown.args, function (err, db) {
             if (err) {
                 error(err);
                 return;

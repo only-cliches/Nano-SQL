@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.11;
+export const VERSION = 2.12;
 
 export type uuid = String;
 export type timeId = String;
@@ -72,8 +72,8 @@ export declare class InanoSQLInstance {
     _initPlugins(config);
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers();
-    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
-    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs?: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;

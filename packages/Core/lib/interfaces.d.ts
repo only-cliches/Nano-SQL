@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2.11;
+export declare const VERSION = 2.12;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
@@ -84,8 +84,8 @@ export declare class InanoSQLInstance {
     _initPlugins(config: any): any;
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): any;
-    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
-    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void;
+    on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
+    off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
     _refreshEventChecker(): InanoSQLInstance;
     getView(viewName: string, viewArgs?: any): Promise<any>;
     doAction(actionName: string, actionArgs: any): Promise<any>;

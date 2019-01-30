@@ -8,6 +8,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("./utilities");
+var equal = require("fast-deep-equal");
 // tslint:disable-next-line
 var _nanoSQLQueryBuilder = /** @class */ (function () {
     function _nanoSQLQueryBuilder(db, table, queryAction, queryArgs, actionOrView) {
@@ -151,17 +152,11 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
             }, rej);
         });
     };
-    _nanoSQLQueryBuilder.prototype.streamEvent = function (onRow, complete, err) {
-        this._query.returnEvent = true;
-        if (this._db.state.exportQueryObj) {
-            onRow(this._query);
-            complete();
-        }
-        else {
-            this._db.triggerQuery(this._query, onRow, complete, err);
-        }
+    _nanoSQLQueryBuilder.prototype.listen = function (args) {
+        return new _nanoSQLObserverQuery(this._query, args && args.debounce, args && args.unique, args && args.compareFn);
     };
-    _nanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err) {
+    _nanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err, events) {
+        this._query.returnEvent = events;
         if (this._db.state.exportQueryObj) {
             onRow(this._query);
             complete();
@@ -209,4 +204,139 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
     return _nanoSQLQueryBuilder;
 }());
 exports._nanoSQLQueryBuilder = _nanoSQLQueryBuilder;
+var observerType;
+(function (observerType) {
+    observerType[observerType["stream"] = 0] = "stream";
+    observerType[observerType["exec"] = 1] = "exec";
+})(observerType || (observerType = {}));
+var _nanoSQLObserverQuery = /** @class */ (function () {
+    function _nanoSQLObserverQuery(query, debounce, unique, compareFn) {
+        if (debounce === void 0) { debounce = 500; }
+        if (unique === void 0) { unique = false; }
+        if (compareFn === void 0) { compareFn = equal; }
+        var _this = this;
+        this.query = query;
+        this.debounce = debounce;
+        this.unique = unique;
+        this.compareFn = compareFn;
+        this._listenTables = [];
+        this._active = true;
+        this.trigger = this.trigger.bind(this);
+        this._doQuery = this._doQuery.bind(this);
+        this._cbs = {
+            stream: [utilities_1.noop, utilities_1.noop, utilities_1.noop, false],
+            exec: [utilities_1.noop, false]
+        };
+        if (typeof query.table !== "string") {
+            throw new Error("Can't listen on dynamic tables!");
+        }
+        if (query.action !== "select") {
+            throw new Error("Can't listen to this kind of query!");
+        }
+        // detect tables to listen for
+        this._listenTables.push(query.table);
+        if (query.join) {
+            var join = Array.isArray(query.join) ? query.join : [query.join];
+            this._listenTables.concat(this._getTables(join));
+        }
+        if (query.graph) {
+            var graph = Array.isArray(query.graph) ? query.graph : [query.graph];
+            this._listenTables.concat(this._getTables(graph));
+        }
+        // remove duplicate tables
+        this._listenTables = this._listenTables.filter(function (v, i, s) { return s.indexOf(v) === i; });
+        this._listenTables.forEach(function (table) {
+            query.parent.on("change", _this._throttleTrigger, table);
+        });
+        this._throttleTrigger = utilities_1.throttle(this, this._doQuery, debounce);
+    }
+    _nanoSQLObserverQuery.prototype._getTables = function (objects) {
+        var _this = this;
+        var tables = [];
+        objects.forEach(function (j) {
+            if (j.with && j.with.table && typeof j.with.table === "string") {
+                tables.push(j.with.table);
+            }
+            var nestedGraph = j.graph;
+            if (nestedGraph) {
+                var graph = Array.isArray(nestedGraph) ? nestedGraph : [nestedGraph];
+                tables.concat(_this._getTables(graph));
+            }
+        });
+        return tables;
+    };
+    _nanoSQLObserverQuery.prototype._doQuery = function () {
+        var _this = this;
+        if (!this._active || typeof this._mode === "undefined")
+            return;
+        switch (this._mode) {
+            case observerType.stream:
+                this.query.returnEvent = this._cbs.stream[3];
+                this.query.parent.triggerQuery(this.query, this._cbs.stream[0], this._cbs.stream[1], this._cbs.stream[2]);
+                break;
+            case observerType.exec:
+                this.query.returnEvent = this._cbs.exec[1];
+                var rows_1 = [];
+                this.query.parent.triggerQuery(this.query, function (row) {
+                    rows_1.push(row);
+                }, function () {
+                    if (_this.unique) {
+                        var trigger = false;
+                        if (!_this._oldValues) { // if no previous values, show results
+                            trigger = true;
+                        }
+                        else {
+                            if (_this._oldValues.length !== rows_1.length) { // if the query length is different, show results
+                                trigger = true;
+                            }
+                            else {
+                                trigger = !_this.compareFn(_this._oldValues, rows_1); // finally, deep equality check (slow af)
+                            }
+                        }
+                        if (trigger) {
+                            _this._oldValues = rows_1;
+                            _this._cbs.exec[0](utilities_1.assign(rows_1));
+                        }
+                    }
+                    else {
+                        _this._cbs.exec[0](rows_1);
+                    }
+                }, function (err) {
+                    _this._cbs.exec[0]([], err);
+                });
+                break;
+        }
+    };
+    _nanoSQLObserverQuery.prototype._maybeError = function () {
+        if (typeof this._mode !== "undefined") {
+            throw new Error("Listen can't have multiple exports!");
+        }
+    };
+    _nanoSQLObserverQuery.prototype.trigger = function () {
+        this._throttleTrigger();
+    };
+    _nanoSQLObserverQuery.prototype.stream = function (onRow, complete, error, events) {
+        if (this.unique) {
+            throw new Error("Can't use unique with stream listener!");
+        }
+        this._maybeError();
+        this._mode = observerType.stream;
+        this._cbs.stream = [onRow, complete, error, events || false];
+        this._doQuery();
+    };
+    _nanoSQLObserverQuery.prototype.exec = function (callback, events) {
+        this._maybeError();
+        this._mode = observerType.exec;
+        this._cbs.exec = [callback, events || false];
+        this._doQuery();
+    };
+    _nanoSQLObserverQuery.prototype.unsubscribe = function () {
+        var _this = this;
+        this._active = false;
+        this._listenTables.forEach(function (table) {
+            _this.query.parent.off("change", _this._throttleTrigger, table);
+        });
+    };
+    return _nanoSQLObserverQuery;
+}());
 //# sourceMappingURL=query-builder.js.map

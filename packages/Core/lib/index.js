@@ -675,10 +675,10 @@ var nanoSQL = /** @class */ (function () {
         }
         return arr;
     };
-    nanoSQL.prototype.on = function (action, callBack) {
+    nanoSQL.prototype.on = function (action, callBack, selectTable) {
         var _this = this;
         var t = this;
-        var l = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
+        var l = selectTable || typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
         this.doFilter("onEvent", { res: { action: action, callback: callBack } }, function (newEvent) {
             switch (newEvent.res.action) {
                 case "connect":
@@ -729,10 +729,10 @@ var nanoSQL = /** @class */ (function () {
             t._refreshEventChecker();
         }, utilities_1.noop);
     };
-    nanoSQL.prototype.off = function (action, callBack) {
+    nanoSQL.prototype.off = function (action, callBack, selectTable) {
         var _this = this;
         var t = this;
-        var l = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
+        var l = selectTable || typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
         this.doFilter("onEvent", { res: { action: action, callback: callBack } }, function (newEvent) {
             switch (newEvent.res.action) {
                 case "connect":
@@ -1282,5 +1282,5 @@ new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {
 }).catch((err) => {
     console.error(err);
     errors++;
-});*/ 
+});*/
 //# sourceMappingURL=index.js.map

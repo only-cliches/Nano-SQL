@@ -1,5 +1,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var leven = require("levenshtein-edit-distance");
+var equal = require("fast-deep-equal");
 exports.blankTableDefinition = {
     id: "",
     model: {},
@@ -269,23 +270,8 @@ exports.objectsEqual = function (obj1, obj2) {
     if (typeof obj1 !== "object")
         return false; // primitives will always pass === when they're equal, so we have primitives that don't match.
     if (!obj1 || !obj2)
-        return false; // if either object is undefined/false they don't match
-    var keys = Object.keys(obj1);
-    // If sizes differ then we can skip further comparison
-    var matches = Array.isArray(obj1) ? obj1.length === obj2.length : keys.length === Object.keys(obj2).length;
-    if (!matches)
-        return false;
-    var i = keys.length;
-    while (i-- && matches) {
-        var key = keys[i];
-        if (typeof obj1[key] === "object") { // nested compare
-            matches = exports.objectsEqual(obj1[key], obj2[key]);
-        }
-        else {
-            matches = obj1[key] === obj2[key];
-        }
-    }
-    return matches;
+        return false; // if either object is undefined they don't match
+    return equal(obj1, obj2);
 };
 // tslint:disable-next-line
 var _nanoSQLQueue = /** @class */ (function () {

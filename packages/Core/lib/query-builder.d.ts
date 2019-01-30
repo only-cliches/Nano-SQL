@@ -41,11 +41,36 @@ export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     on(table: string): _nanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
     exec(returnEvents?: boolean): Promise<any[]>;
-    streamEvent(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
-    stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
+    listen(args?: {
+        debounce?: number;
+        unique?: boolean;
+        compareFn?: (rowsA: any[], rowsB: any[]) => boolean;
+    }): _nanoSQLObserverQuery;
+    stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void, events?: boolean): void;
     cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {
         pageSize: number;
         onPage: (page: number, rows: any[]) => void;
         doNotCache?: boolean;
     }): void;
 }
+declare class _nanoSQLObserverQuery {
+    query: InanoSQLQuery;
+    debounce: number;
+    unique: boolean;
+    compareFn: (rowsA: any[], rowsB: any[]) => boolean;
+    private _listenTables;
+    private _mode;
+    private _active;
+    private _throttleTrigger;
+    private _oldValues;
+    private _cbs;
+    constructor(query: InanoSQLQuery, debounce?: number, unique?: boolean, compareFn?: (rowsA: any[], rowsB: any[]) => boolean);
+    private _getTables;
+    private _doQuery;
+    private _maybeError;
+    trigger(): void;
+    stream(onRow: (row: any) => void, complete: () => void, error: (err: any) => void, events?: boolean): void;
+    exec(callback: (rows: any[], error?: any) => void, events?: boolean): void;
+    unsubscribe(): void;
+}
+export {};

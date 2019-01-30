@@ -878,9 +878,9 @@ export class nanoSQL implements InanoSQLInstance {
         return arr;
     }
 
-    public on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void {
+    public on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void {
         let t = this;
-        let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
+        let l: string = selectTable || typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
         this.doFilter<onEventFilter>("onEvent", { res: { action, callback: callBack } }, (newEvent) => {
 
@@ -935,9 +935,9 @@ export class nanoSQL implements InanoSQLInstance {
         }, noop);
     }
 
-    public off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void): void {
+    public off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void {
         let t = this;
-        let l: string = typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
+        let l: string = selectTable || typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
 
         this.doFilter<offEventFilter>("onEvent", { res: { action, callback: callBack } }, (newEvent) => {
 

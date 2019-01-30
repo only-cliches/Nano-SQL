@@ -1,5 +1,6 @@
 import { InanoSQLQueryBuilder, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
-import { buildQuery, uuid, noop } from "./utilities";
+import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign } from "./utilities";
+import * as equal from "fast-deep-equal";
 
 // tslint:disable-next-line
 export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
@@ -185,17 +186,12 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         });
     }
 
-    public streamEvent(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
-        this._query.returnEvent = true;
-        if (this._db.state.exportQueryObj) {
-            onRow(this._query);
-            complete();
-        } else {
-            this._db.triggerQuery(this._query, onRow, complete, err);
-        }
+    public listen(args?: {debounce?: number, unique?: boolean, compareFn?: (rowsA: any[], rowsB: any[]) => boolean}): _nanoSQLObserverQuery {
+        return new _nanoSQLObserverQuery(this._query, args && args.debounce, args && args.unique, args && args.compareFn);
     }
 
-    public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void {
+    public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void, events?: boolean): void {
+        this._query.returnEvent = events;
         if (this._db.state.exportQueryObj) {
             onRow(this._query);
             complete();
@@ -236,5 +232,153 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
                 cacheReady("", 0);
             }
         }, error)
+    }
+}
+
+enum observerType {
+    stream, exec
+}
+
+class _nanoSQLObserverQuery {
+
+    private _listenTables: string[] = [];
+
+    private _mode: observerType;
+
+    private _active: boolean = true;
+
+    private _throttleTrigger: () => void;
+
+    private _oldValues: any[];
+
+    private _cbs: {
+        stream: [(row: any) => void, () => void, (err: any) => void, boolean],
+        exec: [(rows: any[], error?: any) => void, boolean]
+    }
+    
+    constructor(public query: InanoSQLQuery, public debounce: number = 500, public unique: boolean = false, public compareFn: (rowsA: any[], rowsB: any[]) => boolean = equal) {
+        this.trigger = this.trigger.bind(this);
+        this._doQuery = this._doQuery.bind(this);
+
+        this._cbs = {
+            stream: [noop, noop, noop, false],
+            exec: [noop, false]
+        };
+
+        if (typeof query.table !== "string") {
+            throw new Error("Can't listen on dynamic tables!");
+        }
+        if (query.action !== "select") {
+            throw new Error("Can't listen to this kind of query!");
+        }
+
+        // detect tables to listen for
+        this._listenTables.push(query.table as string);
+        if (query.join) {
+            const join = Array.isArray(query.join) ? query.join : [query.join];
+            this._listenTables.concat(this._getTables(join));
+        }
+        if (query.graph) {
+            const graph = Array.isArray(query.graph) ? query.graph : [query.graph];
+            this._listenTables.concat(this._getTables(graph));
+        }
+        // remove duplicate tables
+        this._listenTables = this._listenTables.filter((v, i, s) => s.indexOf(v) === i);
+
+        this._listenTables.forEach((table) => {
+            query.parent.on("change", this._throttleTrigger, table);
+        });
+        this._throttleTrigger = throttle(this, this._doQuery, debounce);
+    }
+
+    private _getTables(objects: (InanoSQLGraphArgs | InanoSQLJoinArgs)[]): string[] {
+        let tables: string[] = [];
+        objects.forEach((j) => {
+            if (j.with && j.with.table && typeof j.with.table === "string") {
+                tables.push(j.with.table);
+            }
+            const nestedGraph = (j as InanoSQLGraphArgs).graph;
+            if (nestedGraph) {
+                const graph = Array.isArray(nestedGraph) ? nestedGraph : [nestedGraph];
+                tables.concat(this._getTables(graph));
+            }
+        });
+        return tables;
+    }
+
+    private _doQuery() {
+        if (!this._active || typeof this._mode === "undefined") return;
+
+        switch(this._mode) {
+            case observerType.stream:
+                this.query.returnEvent = this._cbs.stream[3];
+                this.query.parent.triggerQuery(this.query, this._cbs.stream[0], this._cbs.stream[1], this._cbs.stream[2]);
+            break;
+            case observerType.exec: 
+                this.query.returnEvent = this._cbs.exec[1];
+                let rows: any[] = [];
+                this.query.parent.triggerQuery(this.query, (row) => {
+                    rows.push(row);
+                }, () => {
+                    if (this.unique) {
+                        let trigger: boolean = false;
+                        if (!this._oldValues) { // if no previous values, show results
+                            trigger = true;
+                        } else {
+                            if (this._oldValues.length !== rows.length) { // if the query length is different, show results
+                                trigger = true;
+                            } else {
+                                trigger = !this.compareFn(this._oldValues, rows); // finally, deep equality check (slow af)
+                            }
+                        }
+
+                        if (trigger) {
+                            this._oldValues = rows;
+                            this._cbs.exec[0](assign(rows));
+                        }
+                    } else {
+                        this._cbs.exec[0](rows);
+                    }
+                    
+                }, (err) => {
+                    this._cbs.exec[0]([], err);
+                });
+            break;
+        }
+        
+    }
+
+    private _maybeError() {
+        if (typeof this._mode !== "undefined") {
+            throw new Error("Listen can't have multiple exports!");
+        }
+    }
+
+    trigger() {
+        this._throttleTrigger();
+    }
+
+    stream(onRow: (row: any) => void, complete: () => void, error: (err: any) => void, events?: boolean) {
+        if (this.unique) {
+            throw new Error("Can't use unique with stream listener!");
+        }
+        this._maybeError();
+        this._mode = observerType.stream;
+        this._cbs.stream = [onRow, complete, error, events || false];
+        this._doQuery();
+    }
+
+    exec(callback: (rows: any[], error?: any) => void, events?: boolean) {
+        this._maybeError();
+        this._mode = observerType.exec;
+        this._cbs.exec = [callback, events || false];
+        this._doQuery();
+    }
+
+    unsubscribe() {
+        this._active = false;
+        this._listenTables.forEach((table) => {
+            this.query.parent.off("change", this._throttleTrigger, table);
+        });
     }
 }

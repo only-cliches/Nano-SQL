@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>configTableFilter | @nano-sql/core</title>
+	<title>observerType | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -54,78 +54,52 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
+					<a href="../modules/_query_builder_.html">&quot;query-builder&quot;</a>
 				</li>
 				<li>
-					<a href="_interfaces_.configtablefilter.html">configTableFilter</a>
+					<a href="_query_builder_.observertype.html">observerType</a>
 				</li>
 			</ul>
-			<h1>Interface configTableFilter</h1>
+			<h1>Enumeration observerType</h1>
 		</div>
 	</div>
 </header>
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
-			<section class="tsd-panel tsd-hierarchy">
-				<h3>Hierarchy</h3>
-				<ul class="tsd-hierarchy">
-					<li>
-						<a href="_interfaces_.abstractfilter.html" class="tsd-signature-type">abstractFilter</a>
-						<ul class="tsd-hierarchy">
-							<li>
-								<span class="target">configTableFilter</span>
-							</li>
-						</ul>
-					</li>
-				</ul>
-			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
-						<section class="tsd-index-section ">
-							<h3>Properties</h3>
+						<section class="tsd-index-section tsd-is-not-exported">
+							<h3>Enumeration members</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.configtablefilter.html#abort" class="tsd-kind-icon">abort</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.configtablefilter.html#query" class="tsd-kind-icon">query</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.configtablefilter.html#res" class="tsd-kind-icon">res</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum tsd-is-not-exported"><a href="_query_builder_.observertype.html#exec" class="tsd-kind-icon">exec</a></li>
+								<li class="tsd-kind-enum-member tsd-parent-kind-enum tsd-is-not-exported"><a href="_query_builder_.observertype.html#stream" class="tsd-kind-icon">stream</a></li>
 							</ul>
 						</section>
 					</div>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-					<a name="abort" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagOptional">Optional</span> abort</h3>
-					<div class="tsd-signature tsd-kind-icon">abort<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
+			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
+				<h2>Enumeration members</h2>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum tsd-is-not-exported">
+					<a name="exec" class="tsd-anchor"></a>
+					<h3>exec</h3>
+					<div class="tsd-signature tsd-kind-icon">exec<span class="tsd-signature-symbol">:</span> </div>
 					<aside class="tsd-sources">
-						<p>Inherited from <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#abort">abort</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/65f084b/packages/Core/src/interfaces.ts#L587">interfaces.ts:587</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/65f084b/packages/Core/src/query-builder.ts#L239">query-builder.ts:239</a></li>
 						</ul>
 					</aside>
 				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="query" class="tsd-anchor"></a>
-					<h3>query</h3>
-					<div class="tsd-signature tsd-kind-icon">query<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqlquery.html" class="tsd-signature-type">InanoSQLQuery</a></div>
+				<section class="tsd-panel tsd-member tsd-kind-enum-member tsd-parent-kind-enum tsd-is-not-exported">
+					<a name="stream" class="tsd-anchor"></a>
+					<h3>stream</h3>
+					<div class="tsd-signature tsd-kind-icon">stream<span class="tsd-signature-symbol">:</span> </div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/65f084b/packages/Core/src/interfaces.ts#L622">interfaces.ts:622</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-					<a name="res" class="tsd-anchor"></a>
-					<h3>res</h3>
-					<div class="tsd-signature tsd-kind-icon">res<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqltableconfig.html" class="tsd-signature-type">InanoSQLTableConfig</a></div>
-					<aside class="tsd-sources">
-						<p>Overrides <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#res">res</a></p>
-						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/65f084b/packages/Core/src/interfaces.ts#L621">interfaces.ts:621</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/65f084b/packages/Core/src/query-builder.ts#L239">query-builder.ts:239</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -152,13 +126,13 @@
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_index_node_.html">"index-<wbr>node"</a>
 					</li>
-					<li class="current tsd-kind-external-module">
+					<li class=" tsd-kind-external-module">
 						<a href="../modules/_interfaces_.html">"interfaces"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="../modules/_query_.html">"query"</a>
 					</li>
-					<li class=" tsd-kind-external-module">
+					<li class="current tsd-kind-external-module">
 						<a href="../modules/_query_builder_.html">"query-<wbr>builder"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
@@ -170,22 +144,25 @@
 				<ul class="before-current">
 				</ul>
 				<ul class="current">
-					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_interfaces_.configtablefilter.html" class="tsd-kind-icon">config<wbr>Table<wbr>Filter</a>
+					<li class="current tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_query_builder_.observertype.html" class="tsd-kind-icon">observer<wbr>Type</a>
 						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
-								<a href="_interfaces_.configtablefilter.html#abort" class="tsd-kind-icon">abort</a>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum tsd-is-not-exported">
+								<a href="_query_builder_.observertype.html#exec" class="tsd-kind-icon">exec</a>
 							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.configtablefilter.html#query" class="tsd-kind-icon">query</a>
-							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
-								<a href="_interfaces_.configtablefilter.html#res" class="tsd-kind-icon">res</a>
+							<li class=" tsd-kind-enum-member tsd-parent-kind-enum tsd-is-not-exported">
+								<a href="_query_builder_.observertype.html#stream" class="tsd-kind-icon">stream</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="../classes/_query_builder_._nanosqlobserverquery.html" class="tsd-kind-icon">_nanoSQLObserver<wbr>Query</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-external-module">
+						<a href="../classes/_query_builder_._nanosqlquerybuilder.html" class="tsd-kind-icon">_nanoSQLQuery<wbr>Builder</a>
+					</li>
 				</ul>
 			</nav>
 		</div>
