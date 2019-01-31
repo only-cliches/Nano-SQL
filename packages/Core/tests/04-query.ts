@@ -1004,6 +1004,67 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Observer work multi", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }, {
+                name: "test2",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            const observer = nSQL.selectTable('test').query("select").where(["id", "=", 30]).listen({debounce: 10});
+            const observer2 = nSQL.selectTable('test2').query("select").where(["id", "=", 30]).listen({debounce: 10});
+            let invocations = 0;
+            observer.exec(() => {
+                invocations++;
+                console.log('a', invocations)
+            });
+            observer2.exec(() => {
+                invocations++;
+                console.log('b', invocations)
+                if (invocations !== 6) {
+                    return;
+                }
+                try {
+                    expect(true).to.equal(true);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+            setTimeout(() => {
+                nSQL.selectTable('test').query("upsert", {num: 20}).where(["id", "=", 30]).exec().then(() => {
+                    setTimeout(() => {
+                        nSQL.selectTable('test').query("upsert", {num: 20}).where(["id", "=", 30]).exec().then(() => {
+                            setTimeout(() => {
+                                nSQL.selectTable('test2').query("upsert", {num: 20}).where(["id", "=", 30]).exec().then(() => {
+                                    setTimeout(() => {
+                                        nSQL.selectTable('test2').query("upsert", {num: 20}).where(["id", "=", 30]).exec()
+                                    }, 100);
+                                });
+                            }, 100);
+                        })
+                    }, 100);
+                });
+            }, 100);
+        });
+    });
+
     it("Secondary Index Test (Delete)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
