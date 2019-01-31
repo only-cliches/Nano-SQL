@@ -1145,7 +1145,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         const changeEvent: InanoSQLDatabaseEvent = {
                             target: this.query.table as string,
                             path: "*",
-                            events: ["upsert", "*"],
+                            events: ["upsert", "change", "*"],
                             time: Date.now(),
                             performance: Date.now() - this._startTime,
                             result: rowToAdd.res,
