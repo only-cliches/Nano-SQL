@@ -1,128 +1,87 @@
-# cordova-Nano-SQLite
+<p align="center">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  </a>
+</p>
+<p align="center">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-sqlite-cordova">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-sqlite-cordova.svg" alt="nanoSQL Logo">
+  </a>
+  <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
+  </a>
+</p>
 
-The most powerful little database, now in your mobile device!
+<h1 align="center">nanoSQL 2 SQLite Cordova Adapter</h1>
+<p align="center">
+  <strong>Allows you to run SQLite in Cordova with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
+</p>
 
-<img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/master/logo.png" alt="nanoSQL Logo">
+[Documentation](https://nanosql.gitbook.io/docs/adapters/sqlite-cordova) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
-What if your app's data store and permenent storage where one and the same?  NanoSQL is the quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, and caching.  
+This is a special adapter written for nanoSQL 2 that uses IndexedDB/WebSQL in the browser, then switches over to a full SQLite database on the device with exactly the same API and features. Test and develop your app in the browser, then get a full real database on the device with zero effort.
 
-This is a special plugin written for NanoSQL that uses IndexedDB/WebSQL in the browser for testing, then switches over to a full SQLite database on the device *with exactly the same API!*  Test all day long in the browser, then get a full real database on the device with **zero** effort.
-
-- [nanoSQL Documentation](https://docs.nanosql.io/)
-- [Plugin Documentation](https://docs.nanosql.io/adapters/sqlite-cordova/)
-
-## Highlighted Features
-- Works on device and in the browser with same API.
-- Supports all common RDBMS queries.
-- Import and Export CSV/JSON.
-- **Simple & elegant undo/redo.**
-- Full Typescript support.
-- **Runtime type casting.**
-- **Complete ORM support.**
-- Fast secondary indexes.
-- Full events system.
-
-
-## Installation
+# Installation
 
 ```sh
-cordova plugin add cordova-plugin-nano-sqlite --save
+cordova plugin add @nano-sql/adapter-sqlite-cordova
 ```
 
-## Usage
+# Usage 
 
-Works with Babel, ES5 and Typescript projects out of the box.
+## Module Loader
+```ts
+import { getMode } from "@nano-sql/adapter-sqlite-cordova";
+import { nSQL } from "@nano-sql/core";
 
-### Standard Usage
-1. Include nanoSQL in your head:
-
-```html
- <script src="https://cdn.jsdelivr.net/npm/nano-sql@1.6.3/dist/nano-sql.min.js"></script> 
-```
-
-2. Follow the guide below:
-
-```js
-nSQL().onConnected(() => {
-
+nSQL().on("ready", () => {
     // Database is no ready to query against.
 
     // ReactDOM.render()...
     // VueApp.$mount()...
     // platformBrowserDynamic().bootstrapModule(AppModule);
-
-    nSQL("users").query('upsert', { // Add a record
-        name: "bill",
-        age: 20
-    }).exec().then((result) => {
-        return nSQL().query('select').exec(); // select all rows from the current active table
-    }).then((result) => {
-        console.log(result) // <= [{id:1, name:"bill", age: 20}]
-    })
 });
 
 document.addEventListener(typeof cordova !== "undefined" ? "deviceready" : "DOMContentLoaded", () => {
-    nSQL("users")
-    .model([
-        { key: 'id', type: 'int', props: ['pk', 'ai'] },
-        { key: 'name', type: 'string' },
-        { key: 'age', type: 'int' }
-    ])
-    .config({
-        mode: window.nSQLite.getMode() // required
-    }).connect()
-});
-```
-
-
-
-### Using With A Module Bundler (Webpack/Babel/Typescript):
-
-```js
-import { getMode } from "cordova-plugin-nano-sqlite/lib/sqlite-adapter";
-import { nSQL } from "nano-sql";
-
-nSQL().onConnected(() => {
-
-    // Database is no ready to query against.
-
-    // ReactDOM.render()...
-    // VueApp.$mount()...
-    // platformBrowserDynamic().bootstrapModule(AppModule);
-
-    nSQL("users").query('upsert', { // Add a record
-        name: "bill",
-        age: 20
-    }).exec().then((result) => {
-        return nSQL().query('select').exec(); // select all rows from the current active table
-    }).then((result) => {
-        console.log(result) // <= [{id:1, name:"bill", age: 20}]
+    nSQL().connect({
+        id: "my_db",
+        mode: getMode(),
+        tables: [...]
     })
 });
+```
 
-document.addEventListener(typeof cordova !== "undefined" ? "deviceready" : "DOMContentLoaded", () => {
-    nSQL("users")
-    .model([
-        { key: 'id', type: 'int', props: ['pk', 'ai'] },
-        { key: 'name', type: 'string' },
-        { key: 'age', type: 'int' }
-    ])
-    .config({
-        mode: getMode() // required
-    }).connect()
+## Embedded
+
+If you're not using a module loader like Webpack then your app can only be tested in the browser with `cordova run browser`.  
+
+```ts
+document.addEventListener("deviceready", () => {
+
+    const nSQL = window.nanoSQLPlugin.nSQL;
+    const getMode = window.nanoSQLPlugin.getMode;
+
+    nSQL().connect({
+        id: "my_db",
+        mode: getMode(),
+        tables: [...]
+    }).then(() => {
+        // Database is no ready to query against.
+
+        // ReactDOM.render()...
+        // VueApp.$mount()...
+        // platformBrowserDynamic().bootstrapModule(AppModule);
+    })
 });
 ```
 
-And that's it, you can use this just like you would use NanoSQL in the browser or anywhere else.  The API is exactly the same.
+## Database ID
 
-
-## More detailed use cases, examples and documentation: 
-- [nanoSQL Documentation](https://docs.nanosql.io/)
-- [Plugin Documentation](https://docs.nanosql.io/adapters/sqlite-cordova/)
+SQLite will use the id in the nanoSQL connect object as the database filename, you can run multiple databases at the same time provided you use a different id for each one.
 
 # MIT License
 
-Copyright (c) 2018 Scott Lott
+Copyright (c) 2019 Scott Lott
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -141,3 +100,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+

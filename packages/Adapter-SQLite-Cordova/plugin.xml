@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="cordova-plugin-nano-sqlite" version="1.3.0">
-    <name>NanoSQLite Plugin</name>
-    <description>Allows nanoSQL to persist changes to an on device SQLite database with no effort.</description>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" id="adapter-sqlite-cordova" version="2.0.5">
+    <name>NanoSQL 2 Cordova Plugin</name>
+    <description>Switch between IndexedDB/WebSQL for browser testing and full on device SQLite database with zero effort.</description>
     <license>MIT</license>
     <keywords>database, json, collection, records, node, nodejs, sql, orm, nosql, DBMS, data, query, SQLite, JSON, CSV, persistent, immutable, undo, redo, immutablejs, sorting, filtering, filter, sort, somesql, nanosql, levelDB, leveldb, indexeddb, level DB, Indexed DB, trie, tree</keywords>
-    <dependency id="cordova-sqlite-storage" version="2.3.0" />
-    <js-module src="plugin.js" name="nSQLite">
-        <clobbers target="nSQLite" />
+    <dependency id="cordova-sqlite-storage" version="2.6.0" />
+    <dependency id="cordova-plugin-device" version="2.0.2" />
+    <js-module src="dist/sqlite.js" name="nanoSQLPlugin">
+        <clobbers target="nanoSQLPlugin" />
     </js-module>
 </plugin>

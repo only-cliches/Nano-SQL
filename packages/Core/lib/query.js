@@ -969,7 +969,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                         var changeEvent = {
                             target: _this.query.table,
                             path: "*",
-                            events: ["upsert", "*"],
+                            events: ["upsert", "change", "*"],
                             time: Date.now(),
                             performance: Date.now() - _this._startTime,
                             result: rowToAdd.res,

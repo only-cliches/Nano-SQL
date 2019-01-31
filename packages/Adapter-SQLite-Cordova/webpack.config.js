@@ -1,28 +1,36 @@
 const path = require('path');
+const webpack = require("webpack");
+const PATHS = {
+    app: path.join(__dirname, 'src'),
+    build: path.join(__dirname, 'dist')
+};
+const nodeExternals = require('webpack-node-externals');
 
-var options = {
+const options = {
     entry: {
-        plugin: [path.join(__dirname, 'src', 'sqlite-adapter.ts')],
+        'sqlite': [path.join(__dirname, 'src', 'plugin.ts')],
     },
     output: {
-        path: path.join(__dirname),
+        path: PATHS.build,
         filename: '[name].js',
         libraryTarget: 'umd',
         umdNamedDefine: true
     },
-    resolve: {
-        extensions: ['.js', '.ts', '.tsx', '.scss', ".css", ".jsx"]
+    node: {
+        global: false,
+        process: false
     },
-    plugins: [
-
-    ],
+    optimization: {
+		minimize: false
+	},
+    resolve: {
+        extensions: ['.ts', '.tsx', '.js']
+    },
     module: {
-        loaders: [{
-                test: /\.ts$|\.tsx$/,
-                loader: 'ts-loader',
-                options: {
-                    configFile: "tsconfig.wp.json"
-                }
+        rules: [
+            {
+                test: /\.ts$/,
+                loader: 'ts-loader'
             }
         ]
     }
