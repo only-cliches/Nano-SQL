@@ -1352,6 +1352,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             var tablePKType = table.res.primaryKey ? table.res.primaryKey.split(":")[1] : pkType(table.res.model);
             var newConfig = {
                 id: tableID,
+                name: table.res.name,
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
                 filter: table.res.filter,
@@ -1408,10 +1409,16 @@ var _nanoSQLQuery = /** @class */ (function () {
             }
             if (error && error.length)
                 return Promise.reject(error);
+            return new Promise(function (res, rej) {
+                _this.nSQL.doFilter("configTableSystem", { res: newConfig, query: _this.query }, function (result) {
+                    res(result.res);
+                }, rej);
+            });
+        }).then(function (newConfig) {
             var oldIndexes = alterTable ? Object.keys(_this.nSQL._tables[_this.query.table].indexes) : [];
             var newIndexes = Object.keys(newConfig.indexes);
             var addIndexes = newIndexes.filter(function (v) { return oldIndexes.indexOf(v) === -1; });
-            var addTables = [table.res.name].concat(addIndexes);
+            var addTables = [newConfig.name].concat(addIndexes);
             return utilities_1.chainAsync(addTables, function (tableOrIndexName, i, next, err) {
                 if (i === 0) { // table
                     var newTable_1 = { name: tableOrIndexName, conf: newConfig };
@@ -1438,7 +1445,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 else { // indexes
                     var index = newConfig.indexes[tableOrIndexName];
                     exports.secondaryIndexQueue[_this.nSQL.state.id + index.id] = new utilities_1._nanoSQLQueue();
-                    utilities_1.adapterFilters(_this.nSQL, _this.query).createIndex(table.res.name, index.id, index.type, function () {
+                    utilities_1.adapterFilters(_this.nSQL, _this.query).createIndex(newConfig.name, index.id, index.type, function () {
                         next(null);
                     }, err);
                 }

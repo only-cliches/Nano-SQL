@@ -13,7 +13,48 @@
     <script>
         function test() {
 
-            
+
+            const readTest = (mode) => {
+                const nSQL = new window["@nano-sql"].core.nanoSQL();
+                return nSQL.connect({
+                    id: window["@nano-sql"].core.utilities.uuid(),
+                    mode: mode,
+                    queue: false,
+                    tables: [
+                        {
+                            name: "albums",
+                            model: {
+                                "id:int": {pk: true},
+                                "albumId:int": {},
+                                "title:string": {},
+                                "url:string": {},
+                                "thumbnailUrl:string": {}
+                            }
+                        }
+                    ]
+                }).then(() => {
+                    return fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json());
+                }).then((result) => {
+                    return nSQL.selectTable("albums").loadJS(result, () => {}, true);
+                }).then(() => {
+                    console.time(mode);
+                    return nSQL.query("select").where(["albumId", "=", 38]).exec();
+                }).then(() => {
+                    console.timeEnd(mode);
+                    return Promise.resolve();
+                })
+            }
+
+            const runTests = async () => {
+                await readTest("TEMP");
+                await readTest("WSQL");
+                await readTest("IDB");
+            }
+
+            runTests();
+
+
+            /*
                         nSQL().connect({
                             id: "test",
                             mode: "WSQL",

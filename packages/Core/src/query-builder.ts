@@ -259,6 +259,7 @@ class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
     constructor(public query: InanoSQLQuery, public debounce: number = 500, public unique: boolean = false, public compareFn: (rowsA: any[], rowsB: any[]) => boolean = equal) {
         this.trigger = this.trigger.bind(this);
         this._doQuery = this._doQuery.bind(this);
+        this._throttleTrigger = this._doQuery.bind(this);
 
         this._cbs = {
             stream: [noop, noop, noop, false],

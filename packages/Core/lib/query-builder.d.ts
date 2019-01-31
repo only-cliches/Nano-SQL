@@ -1,4 +1,4 @@
-import { InanoSQLQueryBuilder, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
+import { InanoSQLQueryBuilder, InanoSQLObserverQuery, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
 export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     _db: InanoSQLInstance;
     _error: string;
@@ -53,7 +53,7 @@ export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         doNotCache?: boolean;
     }): void;
 }
-declare class _nanoSQLObserverQuery {
+declare class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
     query: InanoSQLQuery;
     debounce: number;
     unique: boolean;

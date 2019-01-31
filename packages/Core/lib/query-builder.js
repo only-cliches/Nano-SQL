@@ -223,6 +223,7 @@ var _nanoSQLObserverQuery = /** @class */ (function () {
         this._active = true;
         this.trigger = this.trigger.bind(this);
         this._doQuery = this._doQuery.bind(this);
+        this._throttleTrigger = this._doQuery.bind(this);
         this._cbs = {
             stream: [utilities_1.noop, utilities_1.noop, utilities_1.noop, false],
             exec: [utilities_1.noop, false]
@@ -245,10 +246,10 @@ var _nanoSQLObserverQuery = /** @class */ (function () {
         }
         // remove duplicate tables
         this._listenTables = this._listenTables.filter(function (v, i, s) { return s.indexOf(v) === i; });
+        this._throttleTrigger = utilities_1.throttle(this, this._doQuery, debounce);
         this._listenTables.forEach(function (table) {
             query.parent.on("change", _this._throttleTrigger, table);
         });
-        this._throttleTrigger = utilities_1.throttle(this, this._doQuery, debounce);
     }
     _nanoSQLObserverQuery.prototype._getTables = function (objects) {
         var _this = this;

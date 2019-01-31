@@ -3,6 +3,7 @@ var leven = require("levenshtein-edit-distance");
 var equal = require("fast-deep-equal");
 exports.blankTableDefinition = {
     id: "",
+    name: "",
     model: {},
     columns: [],
     indexes: {},

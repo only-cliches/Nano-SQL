@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2.12;
+export declare const VERSION = 2.13;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
@@ -123,6 +123,13 @@ export interface InanoSQLForeignKey {
     childIsArray: boolean;
     childIndex: string;
 }
+export declare class InanoSQLObserverQuery {
+    constructor(query: InanoSQLQuery, debounce: number, unique: boolean, compareFn: (rowsA: any[], rowsB: any[]) => boolean);
+    trigger(): any;
+    stream(onRow: (row: any) => void, complete: () => void, error: (err: any) => void, events?: boolean): any;
+    exec(callback: (rows: any[], error?: any) => void, events?: boolean): any;
+    unsubscribe(): any;
+}
 export declare class InanoSQLQueryBuilder {
     _db: InanoSQLInstance;
     _error: string;
@@ -134,6 +141,11 @@ export declare class InanoSQLQueryBuilder {
         [key: string]: any;
     }, i?: number) => boolean)): InanoSQLQueryBuilder;
     orderBy(args: string[]): InanoSQLQueryBuilder;
+    listen(args?: {
+        debounce?: number;
+        unique?: boolean;
+        compareFn?: (rowsA: any[], rowsB: any[]) => boolean;
+    }): InanoSQLObserverQuery;
     groupBy(columns: string[]): InanoSQLQueryBuilder;
     having(args: any[] | ((row: {
         [key: string]: any;
@@ -407,6 +419,7 @@ export interface InanoSQLTable {
         [colAndType: string]: InanoSQLDataModel;
     } | string;
     id: string;
+    name: string;
     columns: InanoSQLTableColumn[];
     indexes: {
         [id: string]: InanoSQLIndex;
@@ -879,5 +892,9 @@ export interface InanoSQLupdateIndex {
 }
 export interface updateIndexFilter extends abstractFilter {
     res: InanoSQLupdateIndex;
+    query: InanoSQLQuery;
+}
+export interface configTableSystemFilter extends abstractFilter {
+    res: InanoSQLTable;
     query: InanoSQLQuery;
 }
