@@ -1,4 +1,4 @@
-import { InanoSQLQueryBuilder, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
+import { InanoSQLQueryBuilder, InanoSQLObserverQuery, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
 import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign } from "./utilities";
 import * as equal from "fast-deep-equal";
 
@@ -239,7 +239,7 @@ enum observerType {
     stream, exec
 }
 
-class _nanoSQLObserverQuery {
+class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
 
     private _listenTables: string[] = [];
 
@@ -287,7 +287,10 @@ class _nanoSQLObserverQuery {
         this._listenTables = this._listenTables.filter((v, i, s) => s.indexOf(v) === i);
 
         this._throttleTrigger = throttle(this, this._doQuery, debounce);
+<<<<<<< HEAD
 
+=======
+>>>>>>> 97e0e7b48c991fa0bd47264dde60c8e847b18955
         this._listenTables.forEach((table) => {
             query.parent.on("change", this._throttleTrigger, table);
         });

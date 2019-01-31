@@ -881,7 +881,7 @@ export class nanoSQL implements InanoSQLInstance {
 
     public on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void {
         let t = this;
-        let l: string = selectTable || typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
+        let l: string = selectTable || (typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable);
 
         this.doFilter<onEventFilter>("onEvent", { res: { action, callback: callBack } }, (newEvent) => {
 

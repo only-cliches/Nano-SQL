@@ -112,7 +112,13 @@ export interface InanoSQLForeignKey {
     childIsArray: boolean;
     childIndex: string;
 }
-
+export declare class InanoSQLObserverQuery {
+    constructor(query: InanoSQLQuery, debounce: number, unique: boolean, compareFn: (rowsA: any[], rowsB: any[]) => boolean)
+    trigger()
+    stream(onRow: (row: any) => void, complete: () => void, error: (err: any) => void, events?: boolean)
+    exec(callback: (rows: any[], error?: any) => void, events?: boolean)
+    unsubscribe()
+}
 export declare class InanoSQLQueryBuilder {
     _db: InanoSQLInstance;
     _error: string;
@@ -124,6 +130,7 @@ export declare class InanoSQLQueryBuilder {
         [key: string]: any;
     }, i?: number) => boolean)): InanoSQLQueryBuilder;
     orderBy(args: string[]): InanoSQLQueryBuilder;
+    listen(args?: {debounce?: number, unique?: boolean, compareFn?: (rowsA: any[], rowsB: any[]) => boolean}): InanoSQLObserverQuery;
     groupBy(columns: string[]): InanoSQLQueryBuilder;
     having(args: any[] | ((row: {
         [key: string]: any;
