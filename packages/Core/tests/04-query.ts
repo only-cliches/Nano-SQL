@@ -943,7 +943,7 @@ describe("Testing Other Features", () => {
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
-            const observer = nSQL.query("select").where(["id", "=", 30]).listen();
+            const observer = nSQL.query("select").where(["id", "=", 30]).listen({debounce: 10});
             let invocations = 0;
             observer.exec(() => {
                 invocations++;
@@ -980,7 +980,7 @@ describe("Testing Other Features", () => {
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
-            const observer = nSQL.query("select").where(["id", "=", 30]).listen();
+            const observer = nSQL.query("select").where(["id", "=", 30]).listen({debounce: 10});
             let invocations = 0;
             observer.exec(() => {
                 invocations++;
@@ -994,12 +994,13 @@ describe("Testing Other Features", () => {
                     done(e);
                 }
             });
-            return Promise.all([
-                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec(), 
-                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec()
-            ]);
-        }).then((pkRows) => {
-
+            setTimeout(() => {
+                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec().then(() => {
+                    setTimeout(() => {
+                        nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec()
+                    }, 100);
+                });
+            }, 100);
         });
     });
 

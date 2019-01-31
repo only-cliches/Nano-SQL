@@ -679,7 +679,7 @@ var nanoSQL = /** @class */ (function () {
     nanoSQL.prototype.on = function (action, callBack, selectTable) {
         var _this = this;
         var t = this;
-        var l = selectTable || typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable;
+        var l = selectTable || (typeof t.state.selectedTable !== "string" ? "" : t.state.selectedTable);
         this.doFilter("onEvent", { res: { action: action, callback: callBack } }, function (newEvent) {
             switch (newEvent.res.action) {
                 case "connect":
