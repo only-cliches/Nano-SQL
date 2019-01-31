@@ -1,3 +1,6 @@
+# 2.0.6
+- Adjusted readme and plugin index file.
+
 # 2.0.5
 - Readme adjustment
 - Dependency update

@@ -1564,10 +1564,14 @@ var sqliteCordova = __webpack_require__(8);
 var core_1 = __webpack_require__(9);
 exports.nSQL = core_1.nSQL;
 exports.nanoSQL = core_1.nanoSQL;
-exports.InanoSQLInstance = core_1.InanoSQLInstance;
 exports.nSQLv1Config = core_1.nSQLv1Config;
 var getMode = sqliteCordova.getMode;
 exports.getMode = getMode;
+if (typeof window !== "undefined") {
+    window["nSQL"] = core_1.nSQL;
+    window["nanoSQL"] = core_1.nanoSQL;
+    window["nSQLv1Config"] = core_1.nSQLv1Config;
+}
 
 
 /***/ }),
@@ -1609,7 +1613,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         var _this = _super.call(this, false, true) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.05
+            version: 2.06
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
