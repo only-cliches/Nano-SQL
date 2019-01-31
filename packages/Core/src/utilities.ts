@@ -30,6 +30,7 @@ declare var global: any;
 
 export const blankTableDefinition: InanoSQLTable = {
     id: "",
+    name: "",
     model: {},
     columns: [],
     indexes: {},

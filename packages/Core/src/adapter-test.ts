@@ -90,6 +90,7 @@ export class nanoSQLAdapterTest {
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
+                    name: "test",
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -158,6 +159,7 @@ export class nanoSQLAdapterTest {
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
+                    name: "test",
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -305,6 +307,7 @@ export class nanoSQLAdapterTest {
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
+                    name: "test",
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -459,6 +462,7 @@ export class nanoSQLAdapterTest {
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
+                    name: "test",
                     model: {
                         "id:uuid": {pk: true},
                         "name:string": {}
@@ -579,6 +583,7 @@ export class nanoSQLAdapterTest {
             adapter.connect("123", () => {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
+                    name: "test",
                     model: {
                         "id:int": {pk: true, ai: true},
                         "name:string": {},
@@ -666,6 +671,7 @@ export class nanoSQLAdapterTest {
                     return new Promise((res2, rej2) => {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
                             id: uuid(),
+                            name: "test",
                             model: {
                                 "test": {
                                     "id:int": {pk: true, ai: true},

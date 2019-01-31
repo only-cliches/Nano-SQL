@@ -376,7 +376,8 @@ export class nanoSQL implements InanoSQLInstance {
         // Browser
 
         // Safari / iOS always gets WebSQL (mobile and desktop)
-        if (isSafari) {
+        // newer versions of safari drop WebSQL, so also do feature detection
+        if (isSafari && typeof window.openDatabase !== "undefined") {
             return "WSQL";
         }
 

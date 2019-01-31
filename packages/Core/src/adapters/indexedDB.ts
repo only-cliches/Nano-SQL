@@ -164,31 +164,46 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         const upperLimit = lowerLimit + limitOrHigh;
         let advancing: boolean = true;
         this.store(table, "readonly", (tr, store) => {
-            store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = (event: any) => {
-                const cursor: IDBCursorWithValue = event.target.result;
-                if (!cursor) {
+            if ((store as any).getAll) {
+                const request = (store as any).getAll(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), type === "offset" && !reverse ? limitOrHigh + offsetOrLow : undefined);
+                request.onsuccess = (event: any) => {
+                    const result: any[] = reverse ? event.target.result.reverse() : event.target.result;
+                    if (type === "offset") {
+                        const add = reverse ? 1 : 0;
+                        result.slice(offsetOrLow + add, offsetOrLow + limitOrHigh + add).forEach(onRow);
+                    } else {
+                        result.forEach(onRow);
+                    }
                     complete();
-                    return;
                 }
-
-                if (type === "offset") {
-                    if (advancing) {
-                        const lower = reverse ? lowerLimit + 1 : lowerLimit;
-                        cursor.advance(lower);
-                        count = lower;
-                        advancing = false;
+                request.onerror = error;
+            } else {
+                store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = (event: any) => {
+                    const cursor: IDBCursorWithValue = event.target.result;
+                    if (!cursor) {
+                        complete();
                         return;
                     }
-
-                    if (reverse ? upperLimit >= count : upperLimit > count) {
-                        onRow(cursor.value, count - offsetOrLow);
+    
+                    if (type === "offset") {
+                        if (advancing) {
+                            const lower = reverse ? lowerLimit + 1 : lowerLimit;
+                            cursor.advance(lower);
+                            count = lower;
+                            advancing = false;
+                            return;
+                        }
+    
+                        if (reverse ? upperLimit >= count : upperLimit > count) {
+                            onRow(cursor.value, count - offsetOrLow);
+                        }
+                    } else {
+                        onRow(cursor.value, count);
                     }
-                } else {
-                    onRow(cursor.value, count);
-                }
-                count++;
-                cursor.continue();
-            };
+                    count++;
+                    cursor.continue();
+                };
+            }
         }, error);
 
     }

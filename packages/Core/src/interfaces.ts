@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.12;
+export const VERSION = 2.13;
 
 export type uuid = String;
 export type timeId = String;
@@ -429,6 +429,7 @@ export interface InanoSQLTable {
         [colAndType: string]: InanoSQLDataModel;
     } | string;
     id: string;
+    name: string;
     columns: InanoSQLTableColumn[];
     indexes: {
         [id: string]: InanoSQLIndex;
@@ -937,5 +938,10 @@ export interface InanoSQLupdateIndex {
 
 export interface updateIndexFilter extends abstractFilter {
     res: InanoSQLupdateIndex;
+    query: InanoSQLQuery;
+}
+
+export interface configTableSystemFilter extends abstractFilter {
+    res: InanoSQLTable;
     query: InanoSQLQuery;
 }

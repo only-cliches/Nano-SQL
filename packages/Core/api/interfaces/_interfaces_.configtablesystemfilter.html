@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>InanoSQLUnionArgs | @nano-sql/core</title>
+	<title>configTableSystemFilter | @nano-sql/core</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -57,10 +57,10 @@
 					<a href="../modules/_interfaces_.html">&quot;interfaces&quot;</a>
 				</li>
 				<li>
-					<a href="_interfaces_.inanosqlunionargs.html">InanoSQLUnionArgs</a>
+					<a href="_interfaces_.configtablesystemfilter.html">configTableSystemFilter</a>
 				</li>
 			</ul>
-			<h1>Interface InanoSQLUnionArgs</h1>
+			<h1>Interface configTableSystemFilter</h1>
 		</div>
 	</div>
 </header>
@@ -71,7 +71,12 @@
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<span class="target">InanoSQLUnionArgs</span>
+						<a href="_interfaces_.abstractfilter.html" class="tsd-signature-type">abstractFilter</a>
+						<ul class="tsd-hierarchy">
+							<li>
+								<span class="target">configTableSystemFilter</span>
+							</li>
+						</ul>
 					</li>
 				</ul>
 			</section>
@@ -82,8 +87,9 @@
 						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlunionargs.html#queries" class="tsd-kind-icon">queries</a></li>
-								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.inanosqlunionargs.html#type" class="tsd-kind-icon">type</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-inherited"><a href="_interfaces_.configtablesystemfilter.html#abort" class="tsd-kind-icon">abort</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface"><a href="_interfaces_.configtablesystemfilter.html#query" class="tsd-kind-icon">query</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite"><a href="_interfaces_.configtablesystemfilter.html#res" class="tsd-kind-icon">res</a></li>
 							</ul>
 						</section>
 					</div>
@@ -91,23 +97,35 @@
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="queries" class="tsd-anchor"></a>
-					<h3>queries</h3>
-					<div class="tsd-signature tsd-kind-icon">queries<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">[]</span></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+					<a name="abort" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> abort</h3>
+					<div class="tsd-signature tsd-kind-icon">abort<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
+						<p>Inherited from <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#abort">abort</a></p>
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/ecf6a83/packages/Core/src/interfaces.ts#L507">interfaces.ts:507</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/ecf6a83/packages/Core/src/interfaces.ts#L588">interfaces.ts:588</a></li>
 						</ul>
 					</aside>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface">
-					<a name="type" class="tsd-anchor"></a>
-					<h3>type</h3>
-					<div class="tsd-signature tsd-kind-icon">type<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">"all"</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">"distinct"</span></div>
+					<a name="query" class="tsd-anchor"></a>
+					<h3>query</h3>
+					<div class="tsd-signature tsd-kind-icon">query<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqlquery.html" class="tsd-signature-type">InanoSQLQuery</a></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/ecf6a83/packages/Core/src/interfaces.ts#L506">interfaces.ts:506</a></li>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/ecf6a83/packages/Core/src/interfaces.ts#L946">interfaces.ts:946</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
+					<a name="res" class="tsd-anchor"></a>
+					<h3>res</h3>
+					<div class="tsd-signature tsd-kind-icon">res<span class="tsd-signature-symbol">:</span> <a href="_interfaces_.inanosqltable.html" class="tsd-signature-type">InanoSQLTable</a></div>
+					<aside class="tsd-sources">
+						<p>Overrides <a href="_interfaces_.abstractfilter.html">abstractFilter</a>.<a href="_interfaces_.abstractfilter.html#res">res</a></p>
+						<ul>
+							<li>Defined in <a href="https://github.com/ClickSimply/Nano-SQL/blob/ecf6a83/packages/Core/src/interfaces.ts#L945">interfaces.ts:945</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -153,13 +171,16 @@
 				</ul>
 				<ul class="current">
 					<li class="current tsd-kind-interface tsd-parent-kind-external-module">
-						<a href="_interfaces_.inanosqlunionargs.html" class="tsd-kind-icon">InanoSQLUnion<wbr>Args</a>
+						<a href="_interfaces_.configtablesystemfilter.html" class="tsd-kind-icon">config<wbr>Table<wbr>System<wbr>Filter</a>
 						<ul>
-							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.inanosqlunionargs.html#queries" class="tsd-kind-icon">queries</a>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-inherited">
+								<a href="_interfaces_.configtablesystemfilter.html#abort" class="tsd-kind-icon">abort</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-interface">
-								<a href="_interfaces_.inanosqlunionargs.html#type" class="tsd-kind-icon">type</a>
+								<a href="_interfaces_.configtablesystemfilter.html#query" class="tsd-kind-icon">query</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-interface tsd-is-overwrite">
+								<a href="_interfaces_.configtablesystemfilter.html#res" class="tsd-kind-icon">res</a>
 							</li>
 						</ul>
 					</li>

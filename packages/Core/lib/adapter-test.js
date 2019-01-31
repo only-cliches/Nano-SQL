@@ -88,6 +88,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: utilities_1.uuid(),
+                    name: "test",
                     model: {
                         "id:int": { ai: true, pk: true },
                         "name:string": {}
@@ -155,6 +156,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: utilities_1.uuid(),
+                    name: "test",
                     model: {
                         "id:int": { ai: true, pk: true },
                         "name:string": {}
@@ -300,6 +302,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: utilities_1.uuid(),
+                    name: "test",
                     model: {
                         "id:int": { ai: true, pk: true },
                         "name:string": {}
@@ -452,6 +455,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: utilities_1.uuid(),
+                    name: "test",
                     model: {
                         "id:uuid": { pk: true },
                         "name:string": {}
@@ -570,6 +574,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.connect("123", function () {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: utilities_1.uuid(),
+                    name: "test",
                     model: {
                         "id:int": { pk: true, ai: true },
                         "name:string": {},
@@ -656,6 +661,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                     return new Promise(function (res2, rej2) {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
                             id: utilities_1.uuid(),
+                            name: "test",
                             model: {
                                 "test": {
                                     "id:int": { pk: true, ai: true },

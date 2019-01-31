@@ -145,30 +145,47 @@ var IndexedDB = /** @class */ (function (_super) {
         var upperLimit = lowerLimit + limitOrHigh;
         var advancing = true;
         this.store(table, "readonly", function (tr, store) {
-            store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = function (event) {
-                var cursor = event.target.result;
-                if (!cursor) {
+            if (store.getAll) {
+                var request = store.getAll(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), type === "offset" && !reverse ? limitOrHigh + offsetOrLow : undefined);
+                request.onsuccess = function (event) {
+                    var result = reverse ? event.target.result.reverse() : event.target.result;
+                    if (type === "offset") {
+                        var add = reverse ? 1 : 0;
+                        result.slice(offsetOrLow + add, offsetOrLow + limitOrHigh + add).forEach(onRow);
+                    }
+                    else {
+                        result.forEach(onRow);
+                    }
                     complete();
-                    return;
-                }
-                if (type === "offset") {
-                    if (advancing) {
-                        var lower = reverse ? lowerLimit + 1 : lowerLimit;
-                        cursor.advance(lower);
-                        count = lower;
-                        advancing = false;
+                };
+                request.onerror = error;
+            }
+            else {
+                store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = function (event) {
+                    var cursor = event.target.result;
+                    if (!cursor) {
+                        complete();
                         return;
                     }
-                    if (reverse ? upperLimit >= count : upperLimit > count) {
-                        onRow(cursor.value, count - offsetOrLow);
+                    if (type === "offset") {
+                        if (advancing) {
+                            var lower = reverse ? lowerLimit + 1 : lowerLimit;
+                            cursor.advance(lower);
+                            count = lower;
+                            advancing = false;
+                            return;
+                        }
+                        if (reverse ? upperLimit >= count : upperLimit > count) {
+                            onRow(cursor.value, count - offsetOrLow);
+                        }
                     }
-                }
-                else {
-                    onRow(cursor.value, count);
-                }
-                count++;
-                cursor.continue();
-            };
+                    else {
+                        onRow(cursor.value, count);
+                    }
+                    count++;
+                    cursor.continue();
+                };
+            }
         }, error);
     };
     IndexedDB.prototype.getTableIndex = function (table, complete, error) {

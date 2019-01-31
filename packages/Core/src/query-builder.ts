@@ -259,6 +259,7 @@ class _nanoSQLObserverQuery {
     constructor(public query: InanoSQLQuery, public debounce: number = 500, public unique: boolean = false, public compareFn: (rowsA: any[], rowsB: any[]) => boolean = equal) {
         this.trigger = this.trigger.bind(this);
         this._doQuery = this._doQuery.bind(this);
+        this._throttleTrigger = this._doQuery.bind(this);
 
         this._cbs = {
             stream: [noop, noop, noop, false],
@@ -285,10 +286,11 @@ class _nanoSQLObserverQuery {
         // remove duplicate tables
         this._listenTables = this._listenTables.filter((v, i, s) => s.indexOf(v) === i);
 
+        this._throttleTrigger = throttle(this, this._doQuery, debounce);
+
         this._listenTables.forEach((table) => {
             query.parent.on("change", this._throttleTrigger, table);
         });
-        this._throttleTrigger = throttle(this, this._doQuery, debounce);
     }
 
     private _getTables(objects: (InanoSQLGraphArgs | InanoSQLJoinArgs)[]): string[] {

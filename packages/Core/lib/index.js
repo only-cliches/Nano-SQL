@@ -237,7 +237,8 @@ var nanoSQL = /** @class */ (function () {
         }
         // Browser
         // Safari / iOS always gets WebSQL (mobile and desktop)
-        if (utilities_1.isSafari) {
+        // newer versions of safari drop WebSQL, so also do feature detection
+        if (utilities_1.isSafari && typeof window.openDatabase !== "undefined") {
             return "WSQL";
         }
         // everyone else (FF + Chrome + Edge + IE)
@@ -1282,5 +1283,5 @@ new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {
 }).catch((err) => {
     console.error(err);
     errors++;
-});*/
+});*/ 
 //# sourceMappingURL=index.js.map

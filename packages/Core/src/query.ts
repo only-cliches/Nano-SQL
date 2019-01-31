@@ -29,7 +29,8 @@ import {
     updateIndexFilter,
     InanoSQLupdateIndex,
     InanoSQLFKActions,
-    InanoSQLForeignKey
+    InanoSQLForeignKey,
+    configTableSystemFilter
 } from "./interfaces";
 
 import { 
@@ -1552,6 +1553,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             let newConfig: InanoSQLTable = {
                 id: tableID,
+                name: table.res.name,
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
                 filter: table.res.filter,
@@ -1610,12 +1612,19 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             if (error && error.length) return Promise.reject(error);
 
+            return new Promise((res, rej) => {
+                this.nSQL.doFilter<configTableSystemFilter>("configTableSystem", {res: newConfig, query: this.query}, (result) => {
+                    res(result.res);
+                }, rej)
+            })
+        }).then((newConfig: InanoSQLTable) => {
+
             const oldIndexes = alterTable ? Object.keys(this.nSQL._tables[this.query.table as string].indexes) : [];
             const newIndexes = Object.keys(newConfig.indexes); 
 
             const addIndexes = newIndexes.filter(v => oldIndexes.indexOf(v) === -1);
 
-            let addTables = [table.res.name].concat(addIndexes);
+            let addTables = [newConfig.name].concat(addIndexes);
 
             return chainAsync(addTables, (tableOrIndexName, i, next, err) => {
                 if (i === 0) { // table
@@ -1642,7 +1651,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 } else { // indexes
                     const index = newConfig.indexes[tableOrIndexName];
                     secondaryIndexQueue[this.nSQL.state.id + index.id] = new _nanoSQLQueue();
-                    adapterFilters(this.nSQL, this.query).createIndex(table.res.name, index.id, index.type, () => {
+                    adapterFilters(this.nSQL, this.query).createIndex(newConfig.name, index.id, index.type, () => {
                         next(null);
                     }, err as any);
 
