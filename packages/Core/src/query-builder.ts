@@ -287,10 +287,6 @@ class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
         this._listenTables = this._listenTables.filter((v, i, s) => s.indexOf(v) === i);
 
         this._throttleTrigger = throttle(this, this._doQuery, debounce);
-<<<<<<< HEAD
-
-=======
->>>>>>> 97e0e7b48c991fa0bd47264dde60c8e847b18955
         this._listenTables.forEach((table) => {
             query.parent.on("change", this._throttleTrigger, table);
         });
