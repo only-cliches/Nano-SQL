@@ -1629,7 +1629,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             return chainAsync(addTables, (tableOrIndexName, i, next, err) => {
                 if (i === 0) { // table
                     const newTable = { name: tableOrIndexName, conf: newConfig };
-                    this.nSQL._tableIds[newTable.name] = tableID;
+                    this.nSQL._tableIds[newTable.name] = newConfig.id;
                     if (alterTable) {
                         delete this.nSQL._tableIds[this.query.table as string];
                         const removeIndexes = oldIndexes.filter(v => newIndexes.indexOf(v) === -1);

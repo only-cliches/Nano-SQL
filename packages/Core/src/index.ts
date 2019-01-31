@@ -1512,3 +1512,4 @@ new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {
     console.error(err);
     errors++;
 });*/
+

@@ -4,6 +4,9 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.1.4]
+- Adjusted how table ids are assigned.
+
 ## [2.1.3] 1-30-2019
 - Added feature detection for WebSQL in safari to fix issue [115](https://github.com/ClickSimply/Nano-SQL/issues/115).
 - Added new filter "configTableSystem" to resolve issue [117](https://github.com/ClickSimply/Nano-SQL/issues/117).

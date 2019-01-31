@@ -1422,7 +1422,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             return utilities_1.chainAsync(addTables, function (tableOrIndexName, i, next, err) {
                 if (i === 0) { // table
                     var newTable_1 = { name: tableOrIndexName, conf: newConfig };
-                    _this.nSQL._tableIds[newTable_1.name] = tableID;
+                    _this.nSQL._tableIds[newTable_1.name] = newConfig.id;
                     if (alterTable) {
                         delete _this.nSQL._tableIds[_this.query.table];
                         var removeIndexes = oldIndexes.filter(function (v) { return newIndexes.indexOf(v) === -1; });
