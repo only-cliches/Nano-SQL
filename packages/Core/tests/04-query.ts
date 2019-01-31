@@ -887,6 +887,122 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Change Events work twice", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            let invocations = 0;
+            nSQL.on("change", () => {
+                invocations++;
+                if (invocations !== 2) {
+                    return;
+                }
+                try {
+                    expect(true).to.equal(true);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+            return Promise.all([
+                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec(), 
+                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec()
+            ]);
+        }).then((pkRows) => {
+
+        });
+    });
+
+    it("Observer work", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            const observer = nSQL.query("select").where(["id", "=", 30]).listen();
+            let invocations = 0;
+            observer.exec(() => {
+                invocations++;
+                if (invocations !== 2) {
+                    return;
+                }
+                try {
+                    expect(true).to.equal(true);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+            return nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec();
+        }).then((pkRows) => {
+
+        });
+    });
+
+    it("Observer work twice", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int":{pk: true},
+                    "num:int":{}
+                }
+            }]
+        }).then(() => {
+            let rows: any[] = [];
+            for (let i = 1; i < 50; i ++) {
+                rows.push({id: i, num: i});
+            }
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            const observer = nSQL.query("select").where(["id", "=", 30]).listen();
+            let invocations = 0;
+            observer.exec(() => {
+                invocations++;
+                if (invocations !== 3) {
+                    return;
+                }
+                try {
+                    expect(true).to.equal(true);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+            return Promise.all([
+                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec(), 
+                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec()
+            ]);
+        }).then((pkRows) => {
+
+        });
+    });
+
     it("Secondary Index Test (Delete)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
