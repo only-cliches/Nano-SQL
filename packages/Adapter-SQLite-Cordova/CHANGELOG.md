@@ -1,3 +1,6 @@
+# 2.0.8
+- Upgraded @nano-sql/core dependency to newest version.
+
 # 2.0.7
 - Disabled cache for better memory performance.
 

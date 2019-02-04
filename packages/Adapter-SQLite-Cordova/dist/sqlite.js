@@ -962,7 +962,7 @@ exports.setFast = (function () {
 /***/ (function(module, exports) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = 2.14;
+exports.VERSION = 2.15;
 ;
 var InanoSQLFKActions;
 (function (InanoSQLFKActions) {
@@ -1000,9 +1000,6 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
     function nanoSQLMemoryIndex(assign, useCache) {
         this.assign = assign;
         this.useCache = useCache;
-        this.indexes = {};
-        this.indexLoaded = {};
-        this.useCacheIndexes = {};
     }
     nanoSQLMemoryIndex.prototype.connect = function (id, complete, error) {
         error(exports.err);
@@ -1035,125 +1032,60 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
         error(exports.err);
     };
     nanoSQLMemoryIndex.prototype.createIndex = function (tableId, index, type, complete, error) {
-        var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
         this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: ["id"], isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
-            if (_this.indexes[indexName]) {
-                complete();
-                return;
-            }
-            _this.indexes[indexName] = {};
-            _this.indexLoaded[indexName] = false;
-            _this.useCacheIndexes[indexName] = _this.useCache || false;
             complete();
-            _this.nSQL.doFilter("loadIndexCache", { res: { load: _this.useCache || false }, index: indexName }, function (result) {
-                _this.useCacheIndexes[indexName] = result.res.load;
-                if (result.res.load) {
-                    _this.readMulti(indexName, "all", undefined, undefined, false, function (row) {
-                        if (!_this.indexes[indexName][row.id]) {
-                            _this.indexes[indexName][row.id] = row.pks || [];
-                        }
-                    }, function () {
-                        _this.indexLoaded[indexName] = true;
-                    }, error);
-                }
-            }, error);
         }, error);
     };
     nanoSQLMemoryIndex.prototype.deleteIndex = function (tableId, index, complete, error) {
         var indexName = "_idx_" + tableId + "_" + index;
-        delete this.indexes[indexName];
-        delete this.indexLoaded[indexName];
-        delete this.useCacheIndexes[indexName];
         this.dropTable(indexName, complete, error);
     };
     nanoSQLMemoryIndex.prototype.addIndexValue = function (tableId, index, key, value, complete, error) {
         var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
-        if (!this.indexLoaded[indexName]) {
-            this.read(indexName, value, function (row) {
-                var pks = row ? row.pks : [];
-                pks = _this.assign ? utilities_1.assign(pks) : pks;
-                if (pks.length === 0) {
-                    pks.push(key);
-                }
-                else {
-                    var idx = utilities_1.binarySearch(pks, key, false);
-                    pks.splice(idx, 0, key);
-                }
-                if (_this.useCacheIndexes[indexName]) {
-                    _this.indexes[indexName][value] = pks;
-                }
-                _this.write(indexName, value, {
-                    id: key,
-                    pks: _this.assign ? utilities_1.assign(pks) : pks
-                }, complete, error);
-            }, error);
-            return;
-        }
-        if (!this.indexes[indexName][value]) {
-            this.indexes[indexName][value] = [];
-            this.indexes[indexName][value].push(key);
-        }
-        else {
-            var idx = utilities_1.binarySearch(this.indexes[indexName][value], key, false);
-            this.indexes[indexName][value].splice(idx, 0, key);
-        }
-        this.write(indexName, value, {
-            id: key,
-            pks: this.assign ? utilities_1.assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
-        }, complete, error);
+        this.read(indexName, value, function (row) {
+            var pks = row ? row.pks : [];
+            pks = _this.assign ? utilities_1.assign(pks) : pks;
+            if (pks.length === 0) {
+                pks.push(key);
+            }
+            else {
+                var idx = utilities_1.binarySearch(pks, key, false);
+                pks.splice(idx, 0, key);
+            }
+            _this.write(indexName, value, {
+                id: key,
+                pks: _this.assign ? utilities_1.assign(pks) : pks
+            }, complete, error);
+        }, error);
     };
     nanoSQLMemoryIndex.prototype.deleteIndexValue = function (tableId, index, key, value, complete, error) {
         var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
-        if (!this.indexLoaded[indexName]) {
-            this.read(indexName, value, function (row) {
-                var pks = row ? row.pks : [];
-                pks = _this.assign ? utilities_1.assign(pks) : pks;
-                if (pks.length === 0) {
-                    complete();
-                    return;
-                }
-                else {
-                    var idx = pks.length < 100 ? pks.indexOf(key) : utilities_1.binarySearch(pks, key, true);
-                    if (idx !== -1) {
-                        pks.splice(idx, 1);
-                    }
-                }
-                if (_this.useCacheIndexes[indexName]) {
-                    _this.indexes[indexName][value] = pks;
-                }
-                if (pks.length) {
-                    _this.write(indexName, value, {
-                        id: key,
-                        pks: _this.assign ? utilities_1.assign(pks) : pks
-                    }, complete, error);
-                }
-                else {
-                    _this.delete(indexName, value, complete, error);
-                }
-            }, error);
-        }
-        else {
-            var idx = this.indexes[indexName][value].length < 100 ? this.indexes[indexName][value].indexOf(key) : utilities_1.binarySearch(this.indexes[indexName][value], key, true);
-            if (idx !== -1) {
-                this.indexes[indexName][value].splice(idx, 1);
-                var pks = this.indexes[indexName][value];
-                if (pks.length) {
-                    this.write(indexName, value, {
-                        id: key,
-                        pks: this.assign ? utilities_1.assign(pks) : pks
-                    }, complete, error);
-                }
-                else {
-                    this.delete(indexName, value, complete, error);
-                }
+        this.read(indexName, value, function (row) {
+            var pks = row ? row.pks : [];
+            pks = _this.assign ? utilities_1.assign(pks) : pks;
+            if (pks.length === 0) {
+                complete();
+                return;
             }
             else {
-                complete();
+                var idx = pks.length < 100 ? pks.indexOf(key) : utilities_1.binarySearch(pks, key, true);
+                if (idx !== -1) {
+                    pks.splice(idx, 1);
+                }
             }
-        }
+            if (pks.length) {
+                _this.write(indexName, value, {
+                    id: key,
+                    pks: _this.assign ? utilities_1.assign(pks) : pks
+                }, complete, error);
+            }
+            else {
+                _this.delete(indexName, value, complete, error);
+            }
+        }, error);
     };
     nanoSQLMemoryIndex.prototype.readIndexKey = function (tableId, index, pk, onRowPK, complete, error) {
         var indexName = "_idx_" + tableId + "_" + index;
@@ -1613,7 +1545,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.07
+            version: 2.08
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
@@ -1927,11 +1859,11 @@ var nanoSQL = /** @class */ (function () {
         }
         // everyone else (FF + Chrome + Edge + IE)
         // check for support for indexed db
-        if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
+        if (typeof indexedDB !== "undefined") { // use indexed DB if possible
             return "IDB";
         }
-        // Use WebSQL if it's there.
-        if (typeof window !== "undefined" && typeof window.openDatabase !== "undefined") {
+        // fall back to WebSQL
+        if (typeof window.openDatabase !== "undefined") {
             return "WSQL";
         }
         // nothing else works, we gotta do local storage. :(
@@ -3574,12 +3506,12 @@ var _nanoSQLQuery = /** @class */ (function () {
             case "create table":
             case "create table if not exists":
                 requireQueryOpts(true, function () {
-                    _this._createTable(_this.query.actionArgs, false, finishQuery, _this.error);
+                    _this._createTable(_this.query.actionArgs, false, progress, finishQuery, _this.error);
                 });
                 break;
             case "alter table":
                 requireQueryOpts(true, function () {
-                    _this._createTable(_this.query.actionArgs, true, finishQuery, _this.error);
+                    _this._createTable(_this.query.actionArgs, true, progress, finishQuery, _this.error);
                 });
                 break;
             case "rebuild indexes":
@@ -4601,9 +4533,6 @@ var _nanoSQLQuery = /** @class */ (function () {
     };
     _nanoSQLQuery.prototype._showTables = function () {
         var _this = this;
-        this.progress({
-            tables: Object.keys(this.nSQL._tables)
-        }, 0);
         Object.keys(this.nSQL._tables).forEach(function (table, i) {
             _this.progress({ table: table }, i);
         });
@@ -4707,9 +4636,9 @@ var _nanoSQLQuery = /** @class */ (function () {
             return id;
         }).join("-");
     };
-    _nanoSQLQuery.prototype._createTable = function (table, alterTable, complete, error) {
+    _nanoSQLQuery.prototype._createTable = function (table, alterTable, onRow, complete, error) {
         var _this = this;
-        var tableID = this.nSQL._tableIds[this.query.table] || this._tableID();
+        var tableID = this.nSQL._tableIds[table.name] || this._tableID();
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL._tables).indexOf(table.name) !== -1) {
             alterTable = true;
@@ -4902,6 +4831,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             var newIndexes = Object.keys(newConfig.indexes);
             var addIndexes = newIndexes.filter(function (v) { return oldIndexes.indexOf(v) === -1; });
             var addTables = [newConfig.name].concat(addIndexes);
+            onRow(newConfig, 0);
             return utilities_1.chainAsync(addTables, function (tableOrIndexName, i, next, err) {
                 if (i === 0) { // table
                     var newTable_1 = { name: tableOrIndexName, conf: newConfig };
