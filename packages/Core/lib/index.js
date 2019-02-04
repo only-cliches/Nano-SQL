@@ -243,11 +243,11 @@ var nanoSQL = /** @class */ (function () {
         }
         // everyone else (FF + Chrome + Edge + IE)
         // check for support for indexed db
-        if (typeof indexedDB !== "undefined") { // fall back to indexed db if we can
+        if (typeof indexedDB !== "undefined") { // use indexed DB if possible
             return "IDB";
         }
-        // Use WebSQL if it's there.
-        if (typeof window !== "undefined" && typeof window.openDatabase !== "undefined") {
+        // fall back to WebSQL
+        if (typeof window.openDatabase !== "undefined") {
             return "WSQL";
         }
         // nothing else works, we gotta do local storage. :(

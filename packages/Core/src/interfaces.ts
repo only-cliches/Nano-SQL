@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.14;
+export const VERSION = 2.15;
 
 export type uuid = String;
 export type timeId = String;
@@ -195,7 +195,7 @@ export declare class InanoSQLQueryExec {
     _streamAS(row, isJoin);
     _orderByRows(a, b);
     _sortObj(objA, objB, columns);
-    _createTable(table: InanoSQLTableConfig, alterTable: boolean, complete: () => void, error: (err: any) => void): void;
+    _createTable(table: InanoSQLTableConfig, alterTable: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err);
     _resolveFastWhere(onlyPKs, table, fastWhere, isReversed, orderByPK, onRow, complete);

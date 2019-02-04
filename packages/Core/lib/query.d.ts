@@ -55,7 +55,7 @@ export declare class _nanoSQLQuery implements InanoSQLQueryExec {
     _streamAS(row: any): any;
     _orderByRows(a: any, b: any): number;
     _tableID(): string;
-    _createTable(table: InanoSQLTableConfig, alterTable: boolean, complete: () => void, error: (err: any) => void): void;
+    _createTable(table: InanoSQLTableConfig, alterTable: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err: any): void;
     _resolveFastWhere(onlyGetPKs: any, fastWhere: IWhereCondition, isReversed: boolean, onRow: (row: {

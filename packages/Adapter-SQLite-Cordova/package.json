@@ -1,6 +1,6 @@
 {
     "name": "@nano-sql/adapter-sqlite-cordova",
-    "version": "2.0.6",
+    "version": "2.0.7",
     "description": "Easily Run SQLite in Cordova with nanoSQL 2!",
     "main": "lib/index.js",
     "scripts": {
@@ -85,8 +85,6 @@
         "ts-loader": "^4.4.2",
         "tslint": "^5.11.0",
         "typescript": "^3.2.4",
-        "uglify-js": "^3.4.5",
-        "uglifyjs-webpack-plugin": "^2.0.1",
         "webpack": "^4.27.0",
         "webpack-cli": "^3.1.0"
     }

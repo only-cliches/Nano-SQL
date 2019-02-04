@@ -4,6 +4,11 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.1.5] 2-4-2019
+- Removed memory caching from secondary index class.
+- Fixed issue with `create table` not working if you didn't have the table selected with `nSQL`.
+- Fixed issue with `show tables` query returning redudant results.
+
 ## [2.1.4] 1-31-2018
 - Adjusted how table ids are assigned.
 - Merged PR [21](https://github.com/ClickSimply/Nano-SQL/pull/121) that added `change` events to row updates.

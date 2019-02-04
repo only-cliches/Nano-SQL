@@ -35,7 +35,7 @@ import { getMode } from "@nano-sql/adapter-sqlite-cordova";
 import { nSQL } from "@nano-sql/core";
 
 nSQL().on("ready", () => {
-    // Database is no ready to query against.
+    // Database is now ready to query against.
 
     // ReactDOM.render()...
     // VueApp.$mount()...
@@ -60,7 +60,7 @@ document.addEventListener("deviceready", () => {
         mode: window.nSQLadapter.getMode(),
         tables: [...]
     }).then(() => {
-      // Database is no ready to query against.
+      // Database is now ready to query against.
 
       // ReactDOM.render()...
       // VueApp.$mount()...

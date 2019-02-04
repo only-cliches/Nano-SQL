@@ -1610,10 +1610,10 @@ exports.getMode = function () {
 var SQLiteCordova = /** @class */ (function (_super) {
     __extends(SQLiteCordova, _super);
     function SQLiteCordova() {
-        var _this = _super.call(this, false, true) || this;
+        var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.06
+            version: 2.07
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");

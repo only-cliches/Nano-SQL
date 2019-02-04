@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2.14;
+export declare const VERSION = 2.15;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
@@ -214,7 +214,7 @@ export declare class InanoSQLQueryExec {
     _streamAS(row: any, isJoin: any): any;
     _orderByRows(a: any, b: any): any;
     _sortObj(objA: any, objB: any, columns: any): any;
-    _createTable(table: InanoSQLTableConfig, alterTable: boolean, complete: () => void, error: (err: any) => void): void;
+    _createTable(table: InanoSQLTableConfig, alterTable: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     _onError(err: any): any;
     _resolveFastWhere(onlyPKs: any, table: any, fastWhere: any, isReversed: any, orderByPK: any, onRow: any, complete: any): any;

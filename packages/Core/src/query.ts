@@ -166,12 +166,12 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             case "create table":
             case "create table if not exists":
                 requireQueryOpts(true, () => {
-                    this._createTable(this.query.actionArgs as InanoSQLTableConfig, false, finishQuery, this.error);
+                    this._createTable(this.query.actionArgs as InanoSQLTableConfig, false, progress, finishQuery, this.error);
                 });
                 break;
             case "alter table":
                 requireQueryOpts(true, () => {
-                    this._createTable(this.query.actionArgs as InanoSQLTableConfig, true, finishQuery, this.error);
+                    this._createTable(this.query.actionArgs as InanoSQLTableConfig, true, progress, finishQuery, this.error);
                 });
                 break;
             case "rebuild indexes":
@@ -1307,9 +1307,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     }
 
     public _showTables() {
-        this.progress({
-            tables: Object.keys(this.nSQL._tables)
-        }, 0);
         Object.keys(this.nSQL._tables).forEach((table, i) => {
             this.progress({table: table}, i);
         });
@@ -1412,9 +1409,9 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         }).join("-");
     }
 
-    public _createTable(table: InanoSQLTableConfig, alterTable: boolean, complete: () => void, error: (err: any) => void): void {
+    public _createTable(table: InanoSQLTableConfig, alterTable: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void {
         
-        const tableID = this.nSQL._tableIds[this.query.table as string] || this._tableID();
+        const tableID = this.nSQL._tableIds[table.name] || this._tableID();
 
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL._tables).indexOf(table.name) !== -1) {
@@ -1625,6 +1622,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             const addIndexes = newIndexes.filter(v => oldIndexes.indexOf(v) === -1);
 
             let addTables = [newConfig.name].concat(addIndexes);
+
+            onRow(newConfig, 0);
 
             return chainAsync(addTables, (tableOrIndexName, i, next, err) => {
                 if (i === 0) { // table

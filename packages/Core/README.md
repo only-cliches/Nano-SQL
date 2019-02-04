@@ -38,7 +38,7 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 25KB!
+Built in geolocation indexing, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 27KB!
 
 
 ## Comparison with Other Projects
@@ -98,7 +98,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.4/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.5/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

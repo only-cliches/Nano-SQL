@@ -1,3 +1,6 @@
+# 2.0.7
+- Disabled cache for better memory performance.
+
 # 2.0.6
 - Adjusted readme and plugin index file.
 

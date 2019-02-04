@@ -5,17 +5,6 @@ export declare class nanoSQLMemoryIndex implements InanoSQLAdapter {
     useCache?: boolean | undefined;
     plugin: InanoSQLPlugin;
     nSQL: InanoSQLInstance;
-    indexes: {
-        [indexName: string]: {
-            [key: string]: any[];
-        };
-    };
-    indexLoaded: {
-        [indexName: string]: boolean;
-    };
-    useCacheIndexes: {
-        [indexName: string]: boolean;
-    };
     constructor(assign?: boolean | undefined, useCache?: boolean | undefined);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

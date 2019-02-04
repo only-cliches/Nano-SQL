@@ -91,12 +91,12 @@ var _nanoSQLQuery = /** @class */ (function () {
             case "create table":
             case "create table if not exists":
                 requireQueryOpts(true, function () {
-                    _this._createTable(_this.query.actionArgs, false, finishQuery, _this.error);
+                    _this._createTable(_this.query.actionArgs, false, progress, finishQuery, _this.error);
                 });
                 break;
             case "alter table":
                 requireQueryOpts(true, function () {
-                    _this._createTable(_this.query.actionArgs, true, finishQuery, _this.error);
+                    _this._createTable(_this.query.actionArgs, true, progress, finishQuery, _this.error);
                 });
                 break;
             case "rebuild indexes":
@@ -1118,9 +1118,6 @@ var _nanoSQLQuery = /** @class */ (function () {
     };
     _nanoSQLQuery.prototype._showTables = function () {
         var _this = this;
-        this.progress({
-            tables: Object.keys(this.nSQL._tables)
-        }, 0);
         Object.keys(this.nSQL._tables).forEach(function (table, i) {
             _this.progress({ table: table }, i);
         });
@@ -1224,9 +1221,9 @@ var _nanoSQLQuery = /** @class */ (function () {
             return id;
         }).join("-");
     };
-    _nanoSQLQuery.prototype._createTable = function (table, alterTable, complete, error) {
+    _nanoSQLQuery.prototype._createTable = function (table, alterTable, onRow, complete, error) {
         var _this = this;
-        var tableID = this.nSQL._tableIds[this.query.table] || this._tableID();
+        var tableID = this.nSQL._tableIds[table.name] || this._tableID();
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL._tables).indexOf(table.name) !== -1) {
             alterTable = true;
@@ -1419,6 +1416,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             var newIndexes = Object.keys(newConfig.indexes);
             var addIndexes = newIndexes.filter(function (v) { return oldIndexes.indexOf(v) === -1; });
             var addTables = [newConfig.name].concat(addIndexes);
+            onRow(newConfig, 0);
             return utilities_1.chainAsync(addTables, function (tableOrIndexName, i, next, err) {
                 if (i === 0) { // table
                     var newTable_1 = { name: tableOrIndexName, conf: newConfig };

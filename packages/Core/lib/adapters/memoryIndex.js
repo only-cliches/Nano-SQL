@@ -13,9 +13,6 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
     function nanoSQLMemoryIndex(assign, useCache) {
         this.assign = assign;
         this.useCache = useCache;
-        this.indexes = {};
-        this.indexLoaded = {};
-        this.useCacheIndexes = {};
     }
     nanoSQLMemoryIndex.prototype.connect = function (id, complete, error) {
         error(exports.err);
@@ -48,125 +45,60 @@ var nanoSQLMemoryIndex = /** @class */ (function () {
         error(exports.err);
     };
     nanoSQLMemoryIndex.prototype.createIndex = function (tableId, index, type, complete, error) {
-        var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
         this.createTable(indexName, __assign({}, utilities_1.blankTableDefinition, { pkType: type, pkCol: ["id"], isPkNum: ["float", "int", "number"].indexOf(type) !== -1 }), function () {
-            if (_this.indexes[indexName]) {
-                complete();
-                return;
-            }
-            _this.indexes[indexName] = {};
-            _this.indexLoaded[indexName] = false;
-            _this.useCacheIndexes[indexName] = _this.useCache || false;
             complete();
-            _this.nSQL.doFilter("loadIndexCache", { res: { load: _this.useCache || false }, index: indexName }, function (result) {
-                _this.useCacheIndexes[indexName] = result.res.load;
-                if (result.res.load) {
-                    _this.readMulti(indexName, "all", undefined, undefined, false, function (row) {
-                        if (!_this.indexes[indexName][row.id]) {
-                            _this.indexes[indexName][row.id] = row.pks || [];
-                        }
-                    }, function () {
-                        _this.indexLoaded[indexName] = true;
-                    }, error);
-                }
-            }, error);
         }, error);
     };
     nanoSQLMemoryIndex.prototype.deleteIndex = function (tableId, index, complete, error) {
         var indexName = "_idx_" + tableId + "_" + index;
-        delete this.indexes[indexName];
-        delete this.indexLoaded[indexName];
-        delete this.useCacheIndexes[indexName];
         this.dropTable(indexName, complete, error);
     };
     nanoSQLMemoryIndex.prototype.addIndexValue = function (tableId, index, key, value, complete, error) {
         var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
-        if (!this.indexLoaded[indexName]) {
-            this.read(indexName, value, function (row) {
-                var pks = row ? row.pks : [];
-                pks = _this.assign ? utilities_1.assign(pks) : pks;
-                if (pks.length === 0) {
-                    pks.push(key);
-                }
-                else {
-                    var idx = utilities_1.binarySearch(pks, key, false);
-                    pks.splice(idx, 0, key);
-                }
-                if (_this.useCacheIndexes[indexName]) {
-                    _this.indexes[indexName][value] = pks;
-                }
-                _this.write(indexName, value, {
-                    id: key,
-                    pks: _this.assign ? utilities_1.assign(pks) : pks
-                }, complete, error);
-            }, error);
-            return;
-        }
-        if (!this.indexes[indexName][value]) {
-            this.indexes[indexName][value] = [];
-            this.indexes[indexName][value].push(key);
-        }
-        else {
-            var idx = utilities_1.binarySearch(this.indexes[indexName][value], key, false);
-            this.indexes[indexName][value].splice(idx, 0, key);
-        }
-        this.write(indexName, value, {
-            id: key,
-            pks: this.assign ? utilities_1.assign(this.indexes[indexName][value]) : this.indexes[indexName][value]
-        }, complete, error);
+        this.read(indexName, value, function (row) {
+            var pks = row ? row.pks : [];
+            pks = _this.assign ? utilities_1.assign(pks) : pks;
+            if (pks.length === 0) {
+                pks.push(key);
+            }
+            else {
+                var idx = utilities_1.binarySearch(pks, key, false);
+                pks.splice(idx, 0, key);
+            }
+            _this.write(indexName, value, {
+                id: key,
+                pks: _this.assign ? utilities_1.assign(pks) : pks
+            }, complete, error);
+        }, error);
     };
     nanoSQLMemoryIndex.prototype.deleteIndexValue = function (tableId, index, key, value, complete, error) {
         var _this = this;
         var indexName = "_idx_" + tableId + "_" + index;
-        if (!this.indexLoaded[indexName]) {
-            this.read(indexName, value, function (row) {
-                var pks = row ? row.pks : [];
-                pks = _this.assign ? utilities_1.assign(pks) : pks;
-                if (pks.length === 0) {
-                    complete();
-                    return;
-                }
-                else {
-                    var idx = pks.length < 100 ? pks.indexOf(key) : utilities_1.binarySearch(pks, key, true);
-                    if (idx !== -1) {
-                        pks.splice(idx, 1);
-                    }
-                }
-                if (_this.useCacheIndexes[indexName]) {
-                    _this.indexes[indexName][value] = pks;
-                }
-                if (pks.length) {
-                    _this.write(indexName, value, {
-                        id: key,
-                        pks: _this.assign ? utilities_1.assign(pks) : pks
-                    }, complete, error);
-                }
-                else {
-                    _this.delete(indexName, value, complete, error);
-                }
-            }, error);
-        }
-        else {
-            var idx = this.indexes[indexName][value].length < 100 ? this.indexes[indexName][value].indexOf(key) : utilities_1.binarySearch(this.indexes[indexName][value], key, true);
-            if (idx !== -1) {
-                this.indexes[indexName][value].splice(idx, 1);
-                var pks = this.indexes[indexName][value];
-                if (pks.length) {
-                    this.write(indexName, value, {
-                        id: key,
-                        pks: this.assign ? utilities_1.assign(pks) : pks
-                    }, complete, error);
-                }
-                else {
-                    this.delete(indexName, value, complete, error);
-                }
+        this.read(indexName, value, function (row) {
+            var pks = row ? row.pks : [];
+            pks = _this.assign ? utilities_1.assign(pks) : pks;
+            if (pks.length === 0) {
+                complete();
+                return;
             }
             else {
-                complete();
+                var idx = pks.length < 100 ? pks.indexOf(key) : utilities_1.binarySearch(pks, key, true);
+                if (idx !== -1) {
+                    pks.splice(idx, 1);
+                }
             }
-        }
+            if (pks.length) {
+                _this.write(indexName, value, {
+                    id: key,
+                    pks: _this.assign ? utilities_1.assign(pks) : pks
+                }, complete, error);
+            }
+            else {
+                _this.delete(indexName, value, complete, error);
+            }
+        }, error);
     };
     nanoSQLMemoryIndex.prototype.readIndexKey = function (tableId, index, pk, onRowPK, complete, error) {
         var indexName = "_idx_" + tableId + "_" + index;
