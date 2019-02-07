@@ -76,6 +76,9 @@ NanoSQL can save data to many different places, depending on the browser or envi
 7. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
 8. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
 
+## Plugins
+- **[Redis Index](https://www.npmjs.com/package/@nano-sql/plugin-redis-index)**
+
 
 ## Installation
 
@@ -98,7 +101,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.5/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.6/dist/nano-sql.min.js"></script>
 ```
 
 ## Important
@@ -341,7 +344,7 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
 - [x] Adapter Tests
 - [x] 2.0 documentation
 - [x] 2.0 release
-- [ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters
+- [x] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters
 - [ ] GraphQL Support
 - [ ] Net Plugin (Offline Syncing)
 - [ ] Search Plugin

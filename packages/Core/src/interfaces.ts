@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.15;
+export const VERSION = 2.16;
 
 export type uuid = String;
 export type timeId = String;
@@ -553,6 +553,7 @@ export interface InanoSQLIndex {
         unique?: boolean;
         offset?: number;
         foreignKey?: { target: string, onDelete?: InanoSQLFKActions  };
+        ignore_case?: boolean;
         [key: string]: any;
     };
     path: string[];

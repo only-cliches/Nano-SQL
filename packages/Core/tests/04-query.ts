@@ -588,6 +588,38 @@ describe("Testing Other Features", () => {
         })
     });
 
+    it("Ignore case secondary indexes.", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "posts",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "body:string": {}
+                    },
+                    indexes: {
+                        "title:string": {ignore_case: true}
+                    }
+                }
+            ]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("select").where(["title", "=", "qui EST esse"]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(1);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("Foreign Key Restraint", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         const queryFinished = (withError?: boolean) => {

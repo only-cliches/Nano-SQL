@@ -15,11 +15,11 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 - [MongoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MongoDB)
 - [ScyllaDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ScyllaDB)
 
+## Plugins
+- [Redis Index](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-RedisIndex)
+
 # WIP
 Items here are planned but not yet released.
-
-### Adapters
-- [React Native Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)
 
 ### Plugins
 - [Net](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Net)

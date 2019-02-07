@@ -1,6 +1,6 @@
 {
     "name": "@nano-sql/adapter-sqlite-cordova",
-    "version": "2.0.8",
+    "version": "2.0.9",
     "description": "Easily Run SQLite in Cordova with nanoSQL 2!",
     "main": "lib/index.js",
     "scripts": {
@@ -76,16 +76,16 @@
     "author": "Scott Lott <Scott@ClickSimply.com>",
     "license": "MIT",
     "dependencies": {
-        "@nano-sql/core": "^2.1.5",
         "cordova-plugin-device": "^2.0.2",
-        "cordova-sqlite-storage": "^2.6.0"
+        "cordova-sqlite-storage": "^2.6.0",
+        "@nano-sql/core": "^2.1.6"
     },
     "devDependencies": {
         "@types/node": "^10.12.21",
         "ts-loader": "^4.4.2",
         "tslint": "^5.11.0",
         "typescript": "^3.3.1",
-        "webpack": "^4.29.1",
-        "webpack-cli": "^3.1.0"
+        "webpack": "^4.29.2",
+        "webpack-cli": "^3.2.3"
     }
 }

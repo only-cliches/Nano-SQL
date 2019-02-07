@@ -17,14 +17,18 @@
   <strong>Allows you use Redis for Indexes with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
+[Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What's This For?
-Most of the adapters you can use in NodeJS (MySQL, DynamoDB, etc) must perform serialization of the secondary indexes before and after each upsert query and at least one serialization step for select queries on secondary indexes.  The performance cost of this json serialization can slow down secondary indexes.
+Most of the adapters you can use in NodeJS (MySQL, DynamoDB, RocksDB, etc) must perform serialization of the secondary indexes for each indexed column in an upsert query and at least one serialization step for select queries.  The performance cost of this json serialization and read-modify-write cycles can slow down secondary indexes writes significantly.
 
-Unlike most database engines, Redis provides a native "list" type that allows the serialization process to be skipped entirely.  Using this plugin with MySQL, DynamoDB and almost all the other NodeJS adapters will provide a performance boost for indexes.
+Unlike most database engines, Redis provides a native "list" type that allows the serialization process to be skipped entirely.  Using this plugin will provide a performance boost for secondary indexes.  The more secondary indexes you have, the faster this plugin will be compared to without it.
 
-Some NodeJS adapters do not benefit from this plugin, I recommend that you test your data models with and without the plugin to make sure you have a performance benefit.  It's mostly the embedded databases (SQLite & RocksDB) that are faster *without* this plugin.
+Secondary index read performance should be similar to or better than the built in adapter.
+
+A simple test writing 100k rows with two indexes and RocksDB:
+1. Without this plugin: 29.5 seconds (3.4 upserts/ms)
+2. With this plugin: 22.3 seconds (4.4 upserts/ms)
 
 > **Important** If you setup this plugin on an existing database you'll need to [rebuild your indexes](https://nanosql.gitbook.io/docs/query/rebuild-index) (after installing the plugin) for the indexes to start working again.
 

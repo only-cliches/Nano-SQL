@@ -254,6 +254,10 @@
 					<li><strong><a href="https://www.npmjs.com/package/@nano-sql/adapter-mongo">MongoDB</a></strong></li>
 					<li><strong><a href="https://www.npmjs.com/package/@nano-sql/adapter-scylla">ScyllaDB</a></strong></li>
 				</ol>
+				<h2 id="plugins">Plugins</h2>
+				<ul>
+					<li><strong><a href="https://www.npmjs.com/package/@nano-sql/plugin-redis-index">Redis Index</a></strong></li>
+				</ul>
 				<h2 id="installation">Installation</h2>
 				<pre><code class="lang-sh">npm i @nano-sql/core --save
 </code></pre>
@@ -264,7 +268,7 @@
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.5/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.6/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="important">Important</h2>
 				<p>If you are migrating from nanoSQL 1.X to 2.X, please read the <a href="https://nanosql.gitbook.io/docs/5-migration/1.x-2.0">migration guide</a>.</p>
@@ -488,7 +492,7 @@ nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-strin
 					<li>[x] Adapter Tests</li>
 					<li>[x] 2.0 documentation</li>
 					<li>[x] 2.0 release</li>
-					<li>[ ] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters</li>
+					<li>[x] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters</li>
 					<li>[ ] GraphQL Support</li>
 					<li>[ ] Net Plugin (Offline Syncing)</li>
 					<li>[ ] Search Plugin</li>

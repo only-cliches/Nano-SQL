@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/plugin-redis-index",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Use Redis to speed up nanoSQL 2 indexes!",
   "main": "lib/index.js",
   "scripts": {
@@ -16,23 +16,21 @@
   "keywords": [
     "nosql",
     "nanosql",
-    "rdbms"
+    "rdbms",
+    "indexes"
   ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "@nano-sql/adapter-mysql": "^2.0.1",
-    "@nano-sql/adapter-scylla": "^2.0.2",
-    "composeaddresstranslator": "^1.0.4",
     "redis": "^2.8.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.0.3"
+    "@nano-sql/core": "^2.1.5"
   },
   "devDependencies": {
-    "@nano-sql/core": "^2.0.9",
-    "@types/node": "^10.12.18",
+    "@nano-sql/core": "^2.1.5",
+    "@types/node": "^10.12.21",
     "ts-node": "^7.0.1",
-    "typescript": "^3.2.2"
+    "typescript": "^3.3.1"
   }
 }

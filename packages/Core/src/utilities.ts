@@ -203,6 +203,10 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
             }
 
+            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                value2 = String(value2 || "").toUpperCase();
+            }
+
             nSQL.doFilter<adapterAddIndexValueFilter>("adapterAddIndexValue", {res: {table: nSQL._tableIds[table], indexName, key, value: value2, complete, error}, query}, (result) => {
                 if (!result) return; // filter took over
                 nSQL.adapter.addIndexValue(result.res.table, result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
@@ -217,6 +221,10 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
             // shift primary key query by offset
             if (typeof key2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            }
+
+            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                key2 = String(key2 || "").toUpperCase();
             }
 
             nSQL.doFilter<adapterDeleteIndexValueFilter>("adapterDeleteIndexValue", {res: {table: nSQL._tableIds[table], indexName, key, value: key2, complete, error}, query}, (result) => {
@@ -235,6 +243,10 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
             // shift primary key query by offset
             if (typeof key === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            }
+
+            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                key = String(key || "").toUpperCase();
             }
 
             nSQL.doFilter<adapterReadIndexKeyFilter>("adapterReadIndexKey", {res: {table: nSQL._tableIds[table], indexName, pk: key, onRowPK, complete, error}, query}, (result) => {
@@ -259,6 +271,12 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                     higher += nSQL._tables[table].indexes[indexName].props.offset || 0;
                 }
             }
+
+            if (type === "range" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                lower = String(lower || "").toUpperCase();
+                higher = String(higher || "").toUpperCase();
+            }
+
             nSQL.doFilter<adapterReadIndexKeysFilter>("adapterReadIndexKeys", {res: {table: nSQL._tableIds[table], indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error}, query}, (result) => {
                 if (!result) return; // filter took over
                 nSQL.adapter.readIndexKeys(result.res.table, result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);

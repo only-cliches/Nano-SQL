@@ -281,6 +281,9 @@ exports.adapterFilters = function (nSQL, query) {
             if (typeof value2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
             }
+            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                value2 = String(value2 || "").toUpperCase();
+            }
             nSQL.doFilter("adapterAddIndexValue", { res: { table: nSQL._tableIds[table], indexName: indexName, key: key, value: value2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
@@ -297,6 +300,9 @@ exports.adapterFilters = function (nSQL, query) {
             if (typeof key2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
             }
+            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                key2 = String(key2 || "").toUpperCase();
+            }
             nSQL.doFilter("adapterDeleteIndexValue", { res: { table: nSQL._tableIds[table], indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
@@ -312,6 +318,9 @@ exports.adapterFilters = function (nSQL, query) {
             // shift primary key query by offset
             if (typeof key === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            }
+            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                key = String(key || "").toUpperCase();
             }
             nSQL.doFilter("adapterReadIndexKey", { res: { table: nSQL._tableIds[table], indexName: indexName, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
@@ -332,6 +341,10 @@ exports.adapterFilters = function (nSQL, query) {
                     lower += nSQL._tables[table].indexes[indexName].props.offset || 0;
                     higher += nSQL._tables[table].indexes[indexName].props.offset || 0;
                 }
+            }
+            if (type === "range" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+                lower = String(lower || "").toUpperCase();
+                higher = String(higher || "").toUpperCase();
             }
             nSQL.doFilter("adapterReadIndexKeys", { res: { table: nSQL._tableIds[table], indexName: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
@@ -962,7 +975,7 @@ exports.setFast = (function () {
 /***/ (function(module, exports) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = 2.15;
+exports.VERSION = 2.16;
 ;
 var InanoSQLFKActions;
 (function (InanoSQLFKActions) {
@@ -1545,7 +1558,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.08
+            version: 2.09
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
