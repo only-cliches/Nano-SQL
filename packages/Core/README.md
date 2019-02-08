@@ -68,12 +68,13 @@ NanoSQL can save data to many different places, depending on the browser or envi
     - WebSQL
     - Local Storage
 
-2. **[SQLite (NodeJS)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
+2. **[SQLite (NodeJS/Electron)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
 3. **[SQLite (Cordova)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-cordova)**
-4. **[Redis](https://www.npmjs.com/package/@nano-sql/adapter-redis)**
-5. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
-6. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
-7. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
+4. **[React Native](https://www.npmjs.com/package/@nano-sql/adapter-react-native)**
+5. **[Redis](https://www.npmjs.com/package/@nano-sql/adapter-redis)**
+6. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
+7. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
+8. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
 8. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
 
 ## Plugins
@@ -101,7 +102,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.6/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.7/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

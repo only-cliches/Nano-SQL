@@ -1,54 +1,18 @@
 import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "@nano-sql/core/lib/interfaces";
 import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
-export declare class MySQL extends nanoSQLMemoryIndex {
-    connectArgs: {
-        connectionLimit?: number;
-        host?: string;
-        port?: number;
-        socketPath?: string;
-        user: string;
-        password: string;
-        database: string;
-        charset?: string;
-        timezone?: string;
-        connectTimeout?: number;
-        stringifyObjects?: boolean;
-        insecureAuth?: boolean;
-        debug?: boolean;
-        trace?: boolean;
-        multipleStatements?: boolean;
-        ssl?: {
-            [key: string]: any;
-        };
-    };
+export declare const binaryInsert: (arr: any[], value: any, remove: boolean, startVal?: number | undefined, endVal?: number | undefined) => boolean;
+export declare class NativeStorage extends nanoSQLMemoryIndex {
+    cacheIndexes: boolean;
     plugin: InanoSQLPlugin;
     nSQL: InanoSQLInstance;
     private _id;
-    private _db;
+    private _indexes;
+    private _ai;
     private _tableConfigs;
-    constructor(connectArgs: {
-        connectionLimit?: number;
-        host?: string;
-        port?: number;
-        socketPath?: string;
-        user: string;
-        password: string;
-        database: string;
-        charset?: string;
-        timezone?: string;
-        connectTimeout?: number;
-        stringifyObjects?: boolean;
-        insecureAuth?: boolean;
-        debug?: boolean;
-        trace?: boolean;
-        multipleStatements?: boolean;
-        ssl?: {
-            [key: string]: any;
-        };
-    });
+    constructor(cacheIndexes: boolean);
     connect(id: string, complete: () => void, error: (err: any) => void): void;
-    private _chkTable;
-    _sql(sql: string, args: any[], complete: (rows: any) => void, error: (err: any) => void): void;
+    key(table: string, pk: any): string;
+    getIndex(table: string): Promise<any[]>;
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void): void;
     dropTable(table: string, complete: () => void, error: (err: any) => void): void;
     disconnect(complete: () => void, error: (err: any) => void): void;

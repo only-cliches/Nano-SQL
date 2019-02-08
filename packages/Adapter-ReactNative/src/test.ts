@@ -1,13 +1,8 @@
 import { nanoSQLAdapterTest } from "@nano-sql/core/lib/adapter-test";
-import { MySQL } from "./index";
+import { NativeStorage } from "./index";
 
-new nanoSQLAdapterTest(MySQL, [{ 
-    host: "localhost",
-    user: "root",
-    database: "test",
-    password: ""
-}]).test().then(() => {
-    console.log("MySQL Test Passed");
+new nanoSQLAdapterTest(NativeStorage, []).test().then(() => {
+    console.log("Native Storage Test Passed!");
     setTimeout(() => {
         process.exit();
     }, 250);

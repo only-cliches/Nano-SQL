@@ -10,6 +10,7 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 - [DynamoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-DynamoDB)
 - [SQLite Cordova Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite-Cordova)
 - [SQLite Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite3)
+- [React Native Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)
 - [Redis Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-Redis)
 - [MySQL Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MySQL)
 - [MongoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MongoDB)

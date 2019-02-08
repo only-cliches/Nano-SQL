@@ -816,56 +816,24 @@ exports.deepGet = function (pathQuery, object) {
 exports.maybeAssign = function (obj) {
     return Object.isFrozen(obj) ? exports.assign(obj) : obj;
 };
-var uid = 0;
-var storage = {};
-var slice = Array.prototype.slice;
-var message = "setMsg";
-var canPost = typeof window !== "undefined" && window.postMessage && window.addEventListener;
 var fastApply = function (args) {
-    return args[0].apply(null, slice.call(args, 1));
+    return args[0].apply(null, Array.prototype.slice.call(args, 1));
 };
-var callback = function (event) {
-    var key = event.data;
-    var data;
-    if (typeof key === "string" && key.indexOf(message) === 0) {
-        data = storage[key];
-        if (data) {
-            delete storage[key];
-            fastApply(data);
-        }
-    }
-};
-if (canPost) {
-    window.addEventListener("message", callback);
-}
-var setImmediatePolyfill = function () {
+exports.setFast = typeof Promise !== "undefined" ? function () {
     var args = [];
     for (var _i = 0; _i < arguments.length; _i++) {
         args[_i] = arguments[_i];
     }
-    var id = uid++;
-    var key = message + id;
-    storage[key] = args;
-    window.postMessage(key, "*");
-    return id;
+    Promise.resolve().then(function () {
+        fastApply(args);
+    });
+} : function () {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    setTimeout(function () {
+        fastApply(args);
+    }, 0);
 };
-exports.setFast = (function () {
-    return canPost ? setImmediatePolyfill : // built in window messaging (pretty fast, not bad)
-        function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            if (typeof global !== "undefined") {
-                global["setImmediate"](function () {
-                    fastApply(args);
-                });
-            }
-            else {
-                setTimeout(function () {
-                    fastApply(args);
-                }, 0);
-            }
-        };
-})();
 //# sourceMappingURL=utilities.js.map

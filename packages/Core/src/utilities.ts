@@ -892,53 +892,16 @@ export const maybeAssign = (obj: any): any => {
     return Object.isFrozen(obj) ? assign(obj) : obj;
 };
 
-let uid = 0;
-let storage = {};
-let slice = Array.prototype.slice;
-let message = "setMsg";
-
-const canPost = typeof window !== "undefined" && window.postMessage && window.addEventListener;
-
 const fastApply = (args) => {
-    return args[0].apply(null, slice.call(args, 1));
+    return args[0].apply(null, Array.prototype.slice.call(args, 1));
 };
 
-const callback = (event) => {
-    let key = event.data;
-    let data;
-    if (typeof key === "string" && key.indexOf(message) === 0) {
-        data = storage[key];
-        if (data) {
-            delete storage[key];
-            fastApply(data);
-        }
-    }
-};
-
-if (canPost) {
-    window.addEventListener("message", callback);
+export const setFast = typeof Promise !== "undefined" ? (...args: any[]) => {
+    Promise.resolve().then(() => {
+        fastApply(args);
+    })
+} : (...args: any[]) => {
+    setTimeout(() => {
+        fastApply(args);
+    }, 0);
 }
-
-const setImmediatePolyfill = (...args: any[]) => {
-    let id = uid++;
-    let key = message + id;
-    storage[key] = args;
-    window.postMessage(key, "*");
-    return id;
-};
-
-export const setFast = (() => {
-    return canPost ? setImmediatePolyfill : // built in window messaging (pretty fast, not bad)
-        (...args: any[]) => {
-            if (typeof global !== "undefined") {
-                global["setImmediate"](() => { // setImmediate in node
-                    fastApply(args);
-                });
-            } else {
-                setTimeout(() => { // setTimeout, worst case...
-                    fastApply(args);
-                }, 0);
-            }
-        };
-})();
-

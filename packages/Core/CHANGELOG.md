@@ -4,6 +4,10 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.1.7] 2-7-2019
+- Adjusted bug with React Native support.
+- React native adapter added.
+
 ## [2.1.6] 2-6-2019
 - Added new secondary index prop: `ignore_case`.
 - Added redis index to readme.

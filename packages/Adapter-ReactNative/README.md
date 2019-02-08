@@ -17,7 +17,7 @@
   <strong>Allows you to run React Native with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/mysql) | [Help](https://github.com/ClickSimply/Nano-SQL/issues)
+[Documentation](https://nanosql.gitbook.io/docs/adapters/react-native) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 
@@ -28,22 +28,21 @@ npm i @nano-sql/adapter-react-native --save
 # Usage
 
 ```ts
-import { ReactNative } from "@nano-sql/adapter-react-native";
+import { NativeStorage } from "@nano-sql/adapter-react-native";
 import { nSQL } from "@nano-sql/core";
 
 nSQL().connect({
     id: "my_db",
-    mode: new ReactNative(),
+    mode: new NativeStorage(true), // true to enable index cache, leave blank otherwise
     tables: [...]
 }).then(...)
 ```
 
 # API
 
-The `MySQL` class accepts one optional argument as its constructor.
+The `NativeStorage` class accepts one optional argument that is used to enable or disable index caching.
 
-### MySQL Connect Options
-The first object is passed directly into the backend mysql library to adjust the connect preferencs.  This object is fully documented [here](https://www.npmjs.com/package/mysql#connection-options).
+If `true` is passed in, table indexes will be stored in javascript memory to increase write performance and range query performance.  If `false` or nothing is passed in, write performance and range queries will be slower but indexes will only be loaded into memory as they are needed, then cleared from memory.
 
 # MIT License
 
