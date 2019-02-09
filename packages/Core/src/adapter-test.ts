@@ -67,9 +67,6 @@ export class nanoSQLAdapterTest {
             console.log("✓ Secondary Index Passed");
             console.log("✓ All Tests Passed!******");
         })
-        /*.catch((e) => {
-            console.error("Test Failed", e);
-        });*/
     }
 
     public static newTable(adapter: InanoSQLAdapter, nSQL: InanoSQLInstance, tableName: string, tableConfig: InanoSQLTable, complete: () => void, error: () => void) {
@@ -255,10 +252,10 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 // read range secondary index
                 let pks: any[] = [];
-                adapter.readIndexKeys("test", "name", "range", "Title 004", "Title 020", true, (pk, value) => {
+                adapter.readIndexKeys("test", "name", "range", "Title 010", "~", true, (pk, value) => {
                     pks.push(pk);
                 }, () => {
-                    const filterRows = allRows.filter(r => r.name >= "Title 004" && r.name <= "Title 020").map(r => r.id).reverse();
+                    const filterRows = allRows.filter(r => r.name >= "Title 010").map(r => r.id).reverse();
                     const condition = objectsEqual(pks, filterRows);
                     myConsole.assert(condition, "Secondary Index Range Read Reverse");
                     condition ? res() : rej({e: filterRows, g: pks});
@@ -666,7 +663,7 @@ export class nanoSQLAdapterTest {
             adapter.nSQL = nSQL;
             adapter.connect("123", () => {
                 Promise.all([
-                    "test", "test2", "test3", "test4", "test5", "test6", "test7"
+                    "test", "test2", "test3", "test4", "test5", "test6", "test7", "test8"
                 ].map(t => {
                     return new Promise((res2, rej2) => {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
@@ -702,7 +699,11 @@ export class nanoSQLAdapterTest {
                                         model: {"id:int": {pk: true}}
                                     },
                                     "name:string": {}
-                                }
+                                },
+                                "test8": {
+                                    "id:string": {pk: true},
+                                    "name:string": {}
+                                },
                             }[t],
                             columns: [
                                 {
@@ -735,6 +736,10 @@ export class nanoSQLAdapterTest {
                                         model: [
                                             {key: "id", type: "int"}
                                         ]
+                                    },
+                                    "test8": {
+                                        key: "id",
+                                        type: "string"
                                     }
                                 }[t],
                                 {
@@ -754,7 +759,8 @@ export class nanoSQLAdapterTest {
                                 test4: "timeIdms",
                                 test5: "uuid",
                                 test6: "float",
-                                test7: "int"
+                                test7: "int",
+                                test8: "string"
                             }[t],
                             pkCol: t === "test7" ? ["nested", "id"] : ["id"],
                             isPkNum: {
@@ -764,7 +770,8 @@ export class nanoSQLAdapterTest {
                                 test4: false,
                                 test5: false,
                                 test6: true,
-                                test7: true
+                                test7: true,
+                                test8: false
                             }[t],
                             ai: {
                                 test: true,
@@ -773,7 +780,8 @@ export class nanoSQLAdapterTest {
                                 test4: false,
                                 test5: false,
                                 test6: false,
-                                test7: false
+                                test7: false,
+                                test8: false
                             }[t]
                         }, res2, rej2);
                     });
@@ -923,8 +931,29 @@ export class nanoSQLAdapterTest {
                 }).catch(rej);
             });
         }).then(() => {
+            // Sorted string test
+            return new Promise((res, rej) => {
+                let nestedPKRows: any[] = [];
+                let stringValues = " !#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}~".split("");
+                for (let i = 0; i < stringValues.length; i++) {
+                    nestedPKRows.push({id: stringValues[i], name: "Test " + i});
+                }
+                chainAsync(nestedPKRows, (row, i, next) => {
+                    adapter.write("test8", row.id, row, next, rej);
+                }).then(() => {
+                    let rows: any[] = [];
+                    adapter.readMulti("test8", "all", undefined, undefined, false, (row) => {
+                        rows.push(row);
+                    }, () => {
+                        const condition = objectsEqual(rows, nestedPKRows);
+                        myConsole.assert(condition, "Test strings sort properly.");
+                        condition ? res() : rej({e: nestedPKRows, g: rows});
+                    }, rej);
+                }).catch(rej);
+            });
+        }).then(() => {
             return Promise.all([
-                "test", "test2", "test3", "test4", "test5", "test6", "test7"
+                "test", "test2", "test3", "test4", "test5", "test6", "test7", "test8"
             ].map(table => new Promise((res, rej) => {
                 adapter.dropTable(table, res, rej);
             }))).then(() => {

@@ -1572,6 +1572,13 @@ var _nanoSQLQuery = /** @class */ (function () {
         if (fastWhere.indexArray) {
             // Primary keys cannot be array indexes
             switch (fastWhere.comp) {
+                case "INCLUDES LIKE":
+                    utilities_1.adapterFilters(this.nSQL, this.query).readIndexKeys(this.query.table, fastWhere.index, "range", fastWhere.value.replace(/\%/gmi, "") + " ", fastWhere.value.replace(/\%/gmi, "") + "~", isReversed, function (pk) {
+                        indexBuffer.newItem(pk);
+                    }, function () {
+                        indexBuffer.finished();
+                    }, this._onError);
+                    break;
                 case "INCLUDES":
                     var pks = [];
                     utilities_1.adapterFilters(this.nSQL, this.query).readIndexKey(this.query.table, fastWhere.index, fastWhere.value, function (pk) {
@@ -1624,6 +1631,22 @@ var _nanoSQLQuery = /** @class */ (function () {
                                 indexBuffer.finished();
                             }, this.error);
                         }
+                    }
+                    break;
+                case "LIKE":
+                    if (isPKquery) {
+                        utilities_1.adapterFilters(this.nSQL, this.query).readMulti(this.query.table, "range", fastWhere.value.replace(/\%/gmi, "") + "0", fastWhere.value.replace(/\%/gmi, "") + "Z", isReversed, function (row, i) {
+                            indexBuffer.newItem(row);
+                        }, function () {
+                            indexBuffer.finished();
+                        }, this._onError);
+                    }
+                    else {
+                        utilities_1.adapterFilters(this.nSQL, this.query).readIndexKeys(this.query.table, fastWhere.index, "range", fastWhere.value.replace(/\%/gmi, "") + " ", fastWhere.value.replace(/\%/gmi, "") + "~", isReversed, function (row) {
+                            indexBuffer.newItem(row);
+                        }, function () {
+                            indexBuffer.finished();
+                        }, this._onError);
                     }
                     break;
                 case "BETWEEN":
@@ -1880,7 +1903,8 @@ var _nanoSQLQuery = /** @class */ (function () {
     _nanoSQLQuery.prototype._processLIKE = function (columnValue, givenValue) {
         if (!_nanoSQLQuery.likeCache[givenValue]) {
             var prevChar_1 = "";
-            _nanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(function (s) {
+            var len_1 = givenValue.split("").length - 1;
+            _nanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(function (s, i) {
                 if (prevChar_1 === "\\") {
                     prevChar_1 = s;
                     return s;
@@ -1890,7 +1914,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                     return ".*";
                 if (s === "_")
                     return ".";
-                return s;
+                return (i === 0 ? "^" + s : i === len_1 ? s + "$" : s);
             }).join(""), "gmi");
         }
         if (typeof columnValue !== "string") {
@@ -1923,6 +1947,7 @@ var _nanoSQLQuery = /** @class */ (function () {
      * @returns {boolean}
      */
     _nanoSQLQuery.prototype._compare = function (where, wholeRow) {
+        var _this = this;
         var columnValue = this._getColValue(where, wholeRow);
         var givenValue = where.value;
         var compare = where.comp;
@@ -1971,6 +1996,8 @@ var _nanoSQLQuery = /** @class */ (function () {
             case "NOT BETWEEN": return givenValue[0] >= columnValue || givenValue[1] <= columnValue;
             // if single value exists in array column
             case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
+            // if LIKE value exists in array column
+            case "INCLUDES LIKE": return (columnValue || []).filter(function (v) { return _this._processLIKE(v, givenValue); }).length > 0;
             // if single value does not exist in array column
             case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
             // if array of values intersects with array column
@@ -2104,6 +2131,7 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         var indexes = typeof this.query.table === "string" ? Object.keys(this.nSQL._tables[this.query.table].indexes).map(function (k) { return _this.nSQL._tables[_this.query.table].indexes[k]; }) : [];
         var pkKey = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table].pkCol : [];
+        var pkType = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table].pkType : "";
         // find indexes and functions
         var recursiveParse = function (ww, level) {
             var doIndex = !ignoreIndexes && level === 0;
@@ -2155,45 +2183,62 @@ var _nanoSQLQuery = /** @class */ (function () {
                     else { // column select
                         var isIndexCol_1 = false;
                         var path_1 = doIndex ? utilities_1.resolvePath(w[0]) : [];
-                        if (["=", "BETWEEN", "IN"].indexOf(w[1]) !== -1 && doIndex) {
-                            // primary key select
-                            if (utilities_1.objectsEqual(path_1, pkKey)) {
-                                isIndexCol_1 = true;
-                                _this._indexesUsed.push(utilities_1.assign(w));
-                                p.push({
-                                    index: "_pk_",
-                                    col: w[0],
-                                    comp: w[1],
-                                    value: w[2]
-                                });
+                        if (["=", "BETWEEN", "IN", "LIKE"].indexOf(w[1]) !== -1 && doIndex) {
+                            if (w[1] === "LIKE" && !w[2].match(/.*\%$/gmi)) {
+                                // using LIKE but wrong format for fast query
                             }
-                            else { // check if we can use any index
-                                indexes.forEach(function (index) {
-                                    if (isIndexCol_1 === false && utilities_1.objectsEqual(index.path, path_1) && index.isArray === false) {
+                            else {
+                                // primary key select
+                                if (utilities_1.objectsEqual(path_1, pkKey)) {
+                                    if (w[1] === "LIKE" && pkType !== "string") {
+                                    }
+                                    else {
                                         isIndexCol_1 = true;
                                         _this._indexesUsed.push(utilities_1.assign(w));
                                         p.push({
-                                            index: index.id,
+                                            index: "_pk_",
                                             col: w[0],
                                             comp: w[1],
                                             value: w[2]
                                         });
                                     }
-                                });
+                                }
+                                else { // check if we can use any secondary index
+                                    indexes.forEach(function (index) {
+                                        if (w[1] === "LIKE" && index.type !== "string") {
+                                        }
+                                        else {
+                                            if (isIndexCol_1 === false && utilities_1.objectsEqual(index.path, path_1) && index.isArray === false) {
+                                                isIndexCol_1 = true;
+                                                _this._indexesUsed.push(utilities_1.assign(w));
+                                                p.push({
+                                                    index: index.id,
+                                                    col: w[0],
+                                                    comp: w[1],
+                                                    value: w[2]
+                                                });
+                                            }
+                                        }
+                                    });
+                                }
                             }
                         }
-                        if (doIndex && !isIndexCol_1 && ["INCLUDES", "INTERSECT", "INTERSECT ALL"].indexOf(w[1]) !== -1) {
+                        if (doIndex && !isIndexCol_1 && ["INCLUDES", "INTERSECT", "INTERSECT ALL", "INCLUDES LIKE"].indexOf(w[1]) !== -1) {
                             indexes.forEach(function (index) {
                                 if (utilities_1.objectsEqual(index.path, path_1) && index.isArray === true) {
-                                    isIndexCol_1 = true;
-                                    _this._indexesUsed.push(utilities_1.assign(w));
-                                    p.push({
-                                        index: index.id,
-                                        indexArray: true,
-                                        col: w[0],
-                                        comp: w[1],
-                                        value: w[2]
-                                    });
+                                    if (w[1] === "INCLUDES LIKE" && index.type !== "string") {
+                                    }
+                                    else {
+                                        isIndexCol_1 = true;
+                                        _this._indexesUsed.push(utilities_1.assign(w));
+                                        p.push({
+                                            index: index.id,
+                                            indexArray: true,
+                                            col: w[0],
+                                            comp: w[1],
+                                            value: w[2]
+                                        });
+                                    }
                                 }
                             });
                         }

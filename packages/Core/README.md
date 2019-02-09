@@ -38,7 +38,7 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 27KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 27KB!
 
 
 ## Comparison with Other Projects
@@ -62,14 +62,15 @@ Built in geolocation indexing, observable queries, typescript support, event sys
 NanoSQL can save data to many different places, depending on the browser or environment it's being ran in.
 
 1. **Included In The Box**
-    - Memory
-    - Rocks DB
-    - Indexed DB
-    - WebSQL
-    - Local Storage
+    - Memory (Browser/NodeJS/Electron)
+    - Rocks DB (NodeJS/Electron)
+    - Indexed DB (Browser)
+    - WebSQL (Browser)
+    - Local Storage (Browser)
 
 2. **[SQLite (NodeJS/Electron)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
 3. **[SQLite (Cordova)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-cordova)**
+3. **[SQLite (NativeScript)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-nativescript)**
 4. **[React Native](https://www.npmjs.com/package/@nano-sql/adapter-react-native)**
 5. **[Redis](https://www.npmjs.com/package/@nano-sql/adapter-redis)**
 6. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
@@ -102,7 +103,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.7/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.8/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

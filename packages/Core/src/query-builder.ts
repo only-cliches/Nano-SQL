@@ -175,14 +175,13 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
         return new Promise((res, rej) => {
             let buffer: any[] = [];
-            this._query.returnEvent = returnEvents;
             this.stream((row) => {
                 if (row) {
                     buffer.push(row);
                 }
             }, () => {
                 res(buffer);
-            }, rej);
+            }, rej, returnEvents);
         });
     }
 

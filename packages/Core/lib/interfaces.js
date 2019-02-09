@@ -1,5 +1,5 @@
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = 2.17;
+exports.VERSION = 2.18;
 ;
 var InanoSQLFKActions;
 (function (InanoSQLFKActions) {

@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.17;
+export const VERSION = 2.18;
 
 export type uuid = String;
 export type timeId = String;
@@ -146,7 +146,7 @@ export declare class InanoSQLQueryBuilder {
     distinct(columns: string[]): InanoSQLQueryBuilder;
     ttl(seconds?: number, cols?: string[]): InanoSQLQueryBuilder;
     toCSV(headers?: boolean): any;
-    stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void): void;
+    stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void, exportEvent?: boolean): void;
     cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {pageSize: number, onPage: (page: number, rows: any[]) => void, doNotCache?: boolean}): void;
     graph(graphArgs: InanoSQLGraphArgs | InanoSQLGraphArgs[]): InanoSQLQueryBuilder;
     from(tableObj: {
@@ -155,7 +155,7 @@ export declare class InanoSQLQueryBuilder {
     }): InanoSQLQueryBuilder;
     into(table: string): InanoSQLQueryBuilder;
     on(table: string): InanoSQLQueryBuilder;
-    exec(): Promise<{
+    exec(exportEvent?: boolean): Promise<{
         [key: string]: any;
     }[]>;
 }

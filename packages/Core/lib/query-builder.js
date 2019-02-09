@@ -142,14 +142,13 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         var _this = this;
         return new Promise(function (res, rej) {
             var buffer = [];
-            _this._query.returnEvent = returnEvents;
             _this.stream(function (row) {
                 if (row) {
                     buffer.push(row);
                 }
             }, function () {
                 res(buffer);
-            }, rej);
+            }, rej, returnEvents);
         });
     };
     _nanoSQLQueryBuilder.prototype.listen = function (args) {

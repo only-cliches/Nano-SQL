@@ -67,9 +67,6 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             console.log("✓ Secondary Index Passed");
             console.log("✓ All Tests Passed!******");
         });
-        /*.catch((e) => {
-            console.error("Test Failed", e);
-        });*/
     };
     nanoSQLAdapterTest.newTable = function (adapter, nSQL, tableName, tableConfig, complete, error) {
         adapter.nSQL = nSQL;
@@ -252,10 +249,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             return new Promise(function (res, rej) {
                 // read range secondary index
                 var pks = [];
-                adapter.readIndexKeys("test", "name", "range", "Title 004", "Title 020", true, function (pk, value) {
+                adapter.readIndexKeys("test", "name", "range", "Title 010", "~", true, function (pk, value) {
                     pks.push(pk);
                 }, function () {
-                    var filterRows = allRows.filter(function (r) { return r.name >= "Title 004" && r.name <= "Title 020"; }).map(function (r) { return r.id; }).reverse();
+                    var filterRows = allRows.filter(function (r) { return r.name >= "Title 010"; }).map(function (r) { return r.id; }).reverse();
                     var condition = utilities_1.objectsEqual(pks, filterRows);
                     exports.myConsole.assert(condition, "Secondary Index Range Read Reverse");
                     condition ? res() : rej({ e: filterRows, g: pks });
@@ -656,7 +653,7 @@ var nanoSQLAdapterTest = /** @class */ (function () {
             adapter.nSQL = nSQL;
             adapter.connect("123", function () {
                 Promise.all([
-                    "test", "test2", "test3", "test4", "test5", "test6", "test7"
+                    "test", "test2", "test3", "test4", "test5", "test6", "test7", "test8"
                 ].map(function (t) {
                     return new Promise(function (res2, rej2) {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
@@ -692,7 +689,11 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                         model: { "id:int": { pk: true } }
                                     },
                                     "name:string": {}
-                                }
+                                },
+                                "test8": {
+                                    "id:string": { pk: true },
+                                    "name:string": {}
+                                },
                             }[t],
                             columns: [
                                 {
@@ -725,6 +726,10 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                         model: [
                                             { key: "id", type: "int" }
                                         ]
+                                    },
+                                    "test8": {
+                                        key: "id",
+                                        type: "string"
                                     }
                                 }[t],
                                 {
@@ -743,7 +748,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 test4: "timeIdms",
                                 test5: "uuid",
                                 test6: "float",
-                                test7: "int"
+                                test7: "int",
+                                test8: "string"
                             }[t],
                             pkCol: t === "test7" ? ["nested", "id"] : ["id"],
                             isPkNum: {
@@ -753,7 +759,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 test4: false,
                                 test5: false,
                                 test6: true,
-                                test7: true
+                                test7: true,
+                                test8: false
                             }[t],
                             ai: {
                                 test: true,
@@ -762,7 +769,8 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                                 test4: false,
                                 test5: false,
                                 test6: false,
-                                test7: false
+                                test7: false,
+                                test8: false
                             }[t]
                         }, res2, rej2);
                     });
@@ -908,8 +916,29 @@ var nanoSQLAdapterTest = /** @class */ (function () {
                 }).catch(rej);
             });
         }).then(function () {
+            // Sorted string test
+            return new Promise(function (res, rej) {
+                var nestedPKRows = [];
+                var stringValues = " !#$%&'()*+,-./0123456789;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_abcdefghijklmnopqrstuvwxyz{|}~".split("");
+                for (var i = 0; i < stringValues.length; i++) {
+                    nestedPKRows.push({ id: stringValues[i], name: "Test " + i });
+                }
+                utilities_1.chainAsync(nestedPKRows, function (row, i, next) {
+                    adapter.write("test8", row.id, row, next, rej);
+                }).then(function () {
+                    var rows = [];
+                    adapter.readMulti("test8", "all", undefined, undefined, false, function (row) {
+                        rows.push(row);
+                    }, function () {
+                        var condition = utilities_1.objectsEqual(rows, nestedPKRows);
+                        exports.myConsole.assert(condition, "Test strings sort properly.");
+                        condition ? res() : rej({ e: nestedPKRows, g: rows });
+                    }, rej);
+                }).catch(rej);
+            });
+        }).then(function () {
             return Promise.all([
-                "test", "test2", "test3", "test4", "test5", "test6", "test7"
+                "test", "test2", "test3", "test4", "test5", "test6", "test7", "test8"
             ].map(function (table) { return new Promise(function (res, rej) {
                 adapter.dropTable(table, res, rej);
             }); })).then(function () {

@@ -1794,6 +1794,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             // Primary keys cannot be array indexes
 
             switch (fastWhere.comp) {
+                case "INCLUDES LIKE":
+                    adapterFilters(this.nSQL, this.query).readIndexKeys(this.query.table as string, fastWhere.index as string, "range", fastWhere.value.replace(/\%/gmi, "") + " ", fastWhere.value.replace(/\%/gmi, "") + "~", isReversed, (pk) => {
+                        indexBuffer.newItem(pk);
+                    }, () => {
+                        indexBuffer.finished();
+                    }, this._onError);
+                    break;
                 case "INCLUDES":
                     let pks: any[] = [];
                     adapterFilters(this.nSQL, this.query).readIndexKey(this.query.table as string, fastWhere.index as string, fastWhere.value, (pk) => {
@@ -1847,6 +1854,21 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         }
                     }
                     break;
+                case "LIKE":
+                    if (isPKquery) {
+                        adapterFilters(this.nSQL, this.query).readMulti(this.query.table as string, "range", fastWhere.value.replace(/\%/gmi, "") + "0", fastWhere.value.replace(/\%/gmi, "") + "Z", isReversed, (row, i) => {
+                            indexBuffer.newItem(row);
+                        }, () => {
+                            indexBuffer.finished();
+                        }, this._onError);
+                    } else {
+                        adapterFilters(this.nSQL, this.query).readIndexKeys(this.query.table as string, fastWhere.index as string, "range", fastWhere.value.replace(/\%/gmi, "") + " ", fastWhere.value.replace(/\%/gmi, "") + "~", isReversed, (row) => {
+                            indexBuffer.newItem(row);
+                        }, () => {
+                            indexBuffer.finished();
+                        }, this._onError);
+                    }
+                break;
                 case "BETWEEN":
                     if (isPKquery) {
                         adapterFilters(this.nSQL, this.query).readMulti(this.query.table as string, "range", fastWhere.value[0], fastWhere.value[1], isReversed, (row, i) => {
@@ -2122,7 +2144,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _processLIKE(columnValue: string, givenValue: string): boolean {
         if (!_nanoSQLQuery.likeCache[givenValue]) {
             let prevChar = "";
-            _nanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map(s => {
+            const len = givenValue.split("").length - 1;
+            _nanoSQLQuery.likeCache[givenValue] = new RegExp(givenValue.split("").map((s, i) => {
                 if (prevChar === "\\") {
                     prevChar = s;
                     return s;
@@ -2130,7 +2153,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 prevChar = s;
                 if (s === "%") return ".*";
                 if (s === "_") return ".";
-                return s;
+                return (i === 0 ? "^" + s : i === len ? s + "$" : s);
             }).join(""), "gmi");
         }
         if (typeof columnValue !== "string") {
@@ -2217,6 +2240,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             case "NOT BETWEEN": return givenValue[0] >= columnValue || givenValue[1] <= columnValue;
             // if single value exists in array column
             case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
+            // if LIKE value exists in array column
+            case "INCLUDES LIKE": return (columnValue || []).filter(v => this._processLIKE(v, givenValue)).length > 0;
             // if single value does not exist in array column
             case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
             // if array of values intersects with array column
@@ -2372,6 +2397,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
         const indexes: InanoSQLIndex[] = typeof this.query.table === "string" ? Object.keys(this.nSQL._tables[this.query.table].indexes).map(k => this.nSQL._tables[this.query.table as string].indexes[k]) : [];
         const pkKey: string[] = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table].pkCol : [];
+        const pkType: string = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table].pkType : "";
 
         // find indexes and functions
         const recursiveParse = (ww: any[], level: number): (IWhereCondition | string)[] => {
@@ -2430,45 +2456,62 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         let isIndexCol = false;
                         const path = doIndex ? resolvePath(w[0]) : [];
 
-                        if (["=", "BETWEEN", "IN"].indexOf(w[1]) !== -1 && doIndex) {
-                            // primary key select
-                            if (objectsEqual(path, pkKey)) {
-                                isIndexCol = true;
-                                this._indexesUsed.push(assign(w));
-                                p.push({
-                                    index: "_pk_",
-                                    col: w[0],
-                                    comp: w[1],
-                                    value: w[2]
-                                });
-                            } else { // check if we can use any index
-                                indexes.forEach((index) => {
-                                    if (isIndexCol === false && objectsEqual(index.path, path) && index.isArray === false) {
+                        if (["=", "BETWEEN", "IN", "LIKE"].indexOf(w[1]) !== -1 && doIndex) {
+                            
+                            if (w[1] === "LIKE" && !w[2].match(/.*\%$/gmi)) {
+                                // using LIKE but wrong format for fast query
+                            } else {
+                                // primary key select
+                                if (objectsEqual(path, pkKey)) {
+                                    if (w[1] === "LIKE" && pkType !== "string") {
+
+                                    } else {
                                         isIndexCol = true;
                                         this._indexesUsed.push(assign(w));
                                         p.push({
-                                            index: index.id,
+                                            index: "_pk_",
                                             col: w[0],
                                             comp: w[1],
                                             value: w[2]
                                         });
                                     }
-                                });
+                                } else { // check if we can use any secondary index
+                                    indexes.forEach((index) => {
+                                        if (w[1] === "LIKE" && index.type !== "string") {
+
+                                        } else {
+                                            if (isIndexCol === false && objectsEqual(index.path, path) && index.isArray === false) {
+                                                isIndexCol = true;
+                                                this._indexesUsed.push(assign(w));
+                                                p.push({
+                                                    index: index.id,
+                                                    col: w[0],
+                                                    comp: w[1],
+                                                    value: w[2]
+                                                });
+                                            }
+                                        }
+                                    });
+                                }
                             }
                         }
 
-                        if (doIndex && !isIndexCol && ["INCLUDES", "INTERSECT", "INTERSECT ALL"].indexOf(w[1]) !== -1) {
+                        if (doIndex && !isIndexCol && ["INCLUDES", "INTERSECT", "INTERSECT ALL", "INCLUDES LIKE"].indexOf(w[1]) !== -1) {
                             indexes.forEach((index) => {
                                 if (objectsEqual(index.path, path) && index.isArray === true) {
-                                    isIndexCol = true;
-                                    this._indexesUsed.push(assign(w));
-                                    p.push({
-                                        index: index.id,
-                                        indexArray: true,
-                                        col: w[0],
-                                        comp: w[1],
-                                        value: w[2]
-                                    });
+                                    if (w[1] === "INCLUDES LIKE" && index.type !== "string") {
+
+                                    } else {
+                                        isIndexCol = true;
+                                        this._indexesUsed.push(assign(w));
+                                        p.push({
+                                            index: index.id,
+                                            indexArray: true,
+                                            col: w[0],
+                                            comp: w[1],
+                                            value: w[2]
+                                        });
+                                    }
                                 }
                             });
                         }

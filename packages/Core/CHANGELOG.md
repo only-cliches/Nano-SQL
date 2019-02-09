@@ -4,6 +4,15 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.1.8] 2-8-2018
+- Fixed bug with LIKE syntax not working similar/identcal to SQL databases.  Added tests.
+- Fixed types with exporting events.
+- Fixed events not exporting correctly.
+- Added autocomplete feature to secondary indexes.  Works on all existing secondary indexes that are of string type.  Usage: `nSQL("table").query("select").where(["column", "LIKE", "search%"]).exec()`.
+- Added new `INCLUDES LIKE` where condition. Useful for matching array columns against a like condition.
+- New `INCLUDES LIKE` query works for autocomplete on `string[]` indexes.
+- Added nativescript adapter.
+
 ## [2.1.7] 2-7-2019
 - Adjusted bug with React Native support.
 - React native adapter added.

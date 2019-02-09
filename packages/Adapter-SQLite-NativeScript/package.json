@@ -1,0 +1,56 @@
+{
+  "name": "@nano-sql/adapter-sqlite-nativescript",
+  "version": "2.0.0",
+  "description": "Easily Run SQLite in NativeScript with nanoSQL 2!",
+  "main": "lib/index",
+  "scripts": {
+    "test": "ts-node src/test",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+  "typings": "lib/types.d.ts",
+  "homepage": "https://nanosql.io/",
+  "keywords": [
+    "sqlite",
+    "nanosql",
+    "rdbms",
+    "nano-sql",
+    "NativeScript",
+    "SQL",
+    "SQLite",
+    "Database",
+    "DB",
+    "iOS",
+    "Android",
+    "JavaScript"
+  ],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
+  "nativescript": {
+    "platforms": {
+      "android": "1.4.0",
+      "ios": "1.4.0"
+    },
+    "plugin": {
+      "nan": "true",
+      "pan": "true",
+      "core3": "true",
+      "core4": "true",
+      "category": "Database"
+    }
+  },
+  "dependencies": {
+    "nativescript-sqlite": "^2.3.2"
+  },
+  "peerDependencies": {
+    "@nano-sql/core": "^2.1.7"
+  },
+  "devDependencies": {
+    "@nano-sql/core": "^2.1.7",
+    "@types/node": "^10.12.23",
+    "typescript": "^3.3.3"
+  }
+}

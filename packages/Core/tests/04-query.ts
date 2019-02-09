@@ -588,6 +588,126 @@ describe("Testing Other Features", () => {
         })
     });
 
+    it("Test LIKE Syntax", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "posts",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "body:string": {}
+                    }
+                }
+            ]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("select").where(["title", "LIKE", "qui%"]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(7);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Test LIKE Syntax 2", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "posts",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "body:string": {}
+                    }
+                }
+            ]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("select").where(["title", "LIKE", "%magni"]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(2);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Test LIKE Syntax 3", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "posts",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "body:string": {}
+                    }
+                }
+            ]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("select").where(["body", "LIKE", "%dicta%"]).exec();
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(9);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Test LIKE Indexing", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+
+        nSQL.connect({
+            tables: [
+                {
+                    name: "posts",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "body:string": {}
+                    },
+                    indexes: {
+                        "title:string": {}
+                    }
+                }
+            ]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("select").where(["title", "LIKE", "qui%"]).exec(true);
+        }).then((rows) => {
+            try {
+                expect(rows.length).to.equal(7);
+                expect(rows[0].indexes).to.deep.equal([ [ 'title', 'LIKE', 'qui%' ] ]);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("Ignore case secondary indexes.", (done: MochaDone) => {
         const nSQL = new nanoSQL();
 
