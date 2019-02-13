@@ -138,37 +138,12 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         var t = this;
         return t.exec().then(function (json) { return Promise.resolve(t._db.JSONtoCSV(json, headers)); });
     };
-    _nanoSQLQueryBuilder.prototype.copyTo = function (table, onProgress) {
-        var _this = this;
-        return new Promise(function (res, rej) {
-            if (_this._query.action !== "select") {
-                rej("copyTo only works with select statements!");
-                return;
-            }
-            if (!table || typeof table !== "string") {
-                rej('Can only copy to valid internal tables!');
-                return;
-            }
-            var start = Date.now();
-            var i = 0;
-            var copyQ = new utilities_1._nanoSQLQueue(function (row, cnt, complete, error) {
-                _this._query.parent.triggerQuery(__assign({}, utilities_1.buildQuery(_this._query.parent, table, "upsert"), { actionArgs: row }), utilities_1.noop, function () {
-                    if (onProgress)
-                        onProgress(row, i);
-                    i++;
-                    complete();
-                }, error);
-            }, rej, function () {
-                res({ count: i, perf: Date.now() - start });
-            });
-            _this.stream(function (row) {
-                if (row) {
-                    copyQ.newItem(row);
-                }
-            }, function () {
-                copyQ.finished();
-            }, rej, false);
-        });
+    _nanoSQLQueryBuilder.prototype.copyTo = function (table, mutate) {
+        this._query.copyTo = {
+            table: table,
+            mutate: mutate || (function (r) { return r; })
+        };
+        return this;
     };
     _nanoSQLQueryBuilder.prototype.exec = function (returnEvents) {
         var _this = this;
@@ -187,13 +162,36 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         return new _nanoSQLObserverQuery(this._query, args && args.debounce, args && args.unique, args && args.compareFn);
     };
     _nanoSQLQueryBuilder.prototype.stream = function (onRow, complete, err, events) {
+        var _this = this;
         this._query.returnEvent = events;
         if (this._db.state.exportQueryObj) {
             onRow(this._query);
             complete();
         }
         else {
-            this._db.triggerQuery(this._query, onRow, complete, err);
+            var copyQ_1 = this._query.copyTo ? new utilities_1._nanoSQLQueue(function (item, cnt, next, qerr) {
+                _this._query.parent.triggerQuery(__assign({}, utilities_1.buildQuery(_this._query.parent, _this._query.copyTo && _this._query.copyTo.table || "", "upsert"), { actionArgs: _this._query.copyTo && _this._query.copyTo.mutate(item) }), utilities_1.noop, function () {
+                    onRow(item);
+                    next();
+                }, qerr);
+            }, err, function () {
+                complete();
+            }) : undefined;
+            this._db.triggerQuery(this._query, function (row) {
+                if (copyQ_1) {
+                    copyQ_1.newItem(row);
+                }
+                else {
+                    onRow(row);
+                }
+            }, function () {
+                if (copyQ_1) {
+                    copyQ_1.finished();
+                }
+                else {
+                    complete();
+                }
+            }, err);
         }
     };
     _nanoSQLQueryBuilder.prototype.cache = function (cacheReady, error, streamPages) {

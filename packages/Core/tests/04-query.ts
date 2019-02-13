@@ -4,7 +4,7 @@ import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
 import { InanoSQLInstance, InanoSQLFKActions, InanoSQLAdapter } from "../src/interfaces";
-import { uuid, crowDistance, assign } from "../src/utilities";
+import { uuid, crowDistance, assign, noop } from "../src/utilities";
 import { SyncStorage } from "../src/adapters/syncStorage";
 
 
@@ -1219,10 +1219,12 @@ describe("Testing Other Features", () => {
         }).then(() => {
             return nSQL.selectTable("posts").loadJS(posts);
         }).then(() => {
-            return nSQL.query("select").where(["id", "<", 20]).copyTo("posts2");
-        }).then((res) => {
+            return nSQL.query("select").where(["id", "<", 20]).copyTo("posts2").exec();
+        }).then(() => {
+            return nSQL.selectTable("posts2").query("select").exec()
+        }).then((rows) => {
             try {
-                expect(res.count).to.equal(19);
+                expect(rows.length).to.equal(19);
                 done();
             } catch (e) {
                 done(e);

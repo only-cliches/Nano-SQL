@@ -171,41 +171,12 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
     }
 
-    public copyTo(table: string, onProgress?: (row, num: number) => void): Promise<{count: number, perf: number}> {
-        return new Promise((res, rej) => {
-            if (this._query.action !== "select") {
-                rej(`copyTo only works with select statements!`);
-                return;
-            }
-            if (!table || typeof table !== "string") {
-                rej('Can only copy to valid internal tables!');
-                return;
-            }
-    
-            let start = Date.now();
-            let i = 0;
-            const copyQ = new _nanoSQLQueue((row, cnt, complete, error) => {
-                this._query.parent.triggerQuery({
-                    ...buildQuery(this._query.parent, table, "upsert"),
-                    actionArgs: row,
-                }, noop, () => {
-                    if (onProgress) onProgress(row, i);
-                    i++;
-                    complete();
-                }, error);
-            }, rej, () => {
-                res({count: i, perf: Date.now() - start});
-            });
-
-
-            this.stream((row) => {
-                if (row) {
-                    copyQ.newItem(row);
-                }
-            }, () => {
-                copyQ.finished();
-            }, rej, false);
-        });
+    public copyTo(table: string, mutate?: (row: any) => any): _nanoSQLQueryBuilder {
+        this._query.copyTo = {
+            table: table, 
+            mutate: mutate || ((r) => r)
+        };
+        return this;
     }
 
     public exec(returnEvents?: boolean): Promise<any[]> {
@@ -232,7 +203,31 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
             onRow(this._query);
             complete();
         } else {
-            this._db.triggerQuery(this._query, onRow, complete, err);
+            const copyQ = this._query.copyTo ? new _nanoSQLQueue((item, cnt, next, qerr) => {
+                this._query.parent.triggerQuery({
+                    ...buildQuery(this._query.parent, this._query.copyTo && this._query.copyTo.table || "", "upsert"),
+                    actionArgs: this._query.copyTo && this._query.copyTo.mutate(item)
+                }, noop, () => {
+                    onRow(item);
+                    next();
+                }, qerr);
+            }, err, () => {
+                complete();
+            }) : undefined;
+
+            this._db.triggerQuery(this._query, (row) => {
+                if (copyQ) {
+                    copyQ.newItem(row);
+                } else {
+                    onRow(row);
+                }
+            }, () => {
+                if (copyQ) {
+                    copyQ.finished();
+                } else {
+                    complete();
+                }
+            }, err);
         }
     }
 

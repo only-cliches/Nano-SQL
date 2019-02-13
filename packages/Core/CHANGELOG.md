@@ -13,17 +13,14 @@
 - Added new `clone` query type to copy tables from one adapter to another.
 ```ts
 nSQL("users").query("clone", {
-    id: "id-of-other-database",
     mode: new SyncStorage() // or any nanoSQL adapter
 }).then(() => {
     // clone table done
 })
 ```
-- Added new `copyTo` query execution. Allows a selection to be streamed directly into another table.
+- Added new `copyTo` query argument. Allows a query result to be streamed directly into another table.
 ```ts
-nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrder"]).where(["orderDate", ">", Date.now() - (24 * 60 * 60 * 1000)]).copyTo("orderStats" /* table to stream rows into */).then(() => {
-    // copy complete
-})
+nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrder"]).where(["orderDate", ">", Date.now() - (24 * 60 * 60 * 1000)]).copyTo("orderStats" /* table to copy results into */).exec().then...
 ```
 
 ## [2.1.8] 2-8-2019

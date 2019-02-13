@@ -152,9 +152,9 @@ export declare class InanoSQLQueryBuilder {
         table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string
     }): InanoSQLQueryBuilder;
+    copyTo(table: string, mutate?: (row: any) => any): InanoSQLQueryBuilder;
     into(table: string): InanoSQLQueryBuilder;
     on(table: string): InanoSQLQueryBuilder;
-    copyTo(table: string, onProgress?: (row, num: number) => void): Promise<{count: number, perf: number}>
     exec(exportEvent?: boolean): Promise<{
         [key: string]: any;
     }[]>;
@@ -527,6 +527,7 @@ export interface InanoSQLQuery {
     extend: {scope: string, args: any[]}[];
     queryID: string;
     tags: string[];
+    copyTo?: {table: string, mutate: (row: any) => any};
     comments: string[];
     where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean);
     graph?: InanoSQLGraphArgs | InanoSQLGraphArgs[];
