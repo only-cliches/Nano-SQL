@@ -77,7 +77,6 @@ export declare class nanoSQL implements InanoSQLInstance {
         [key: string]: any;
     }, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
-    _detectStorageMethod(): string;
     _initPlugins(config: InanoSQLConfig): Promise<any>;
     _saveTableIds(): Promise<any>;
     presetQuery(fn: string): {

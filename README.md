@@ -7,15 +7,15 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 - [Core](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core)
 
 ### Adapters
-- [DynamoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-DynamoDB)
-- [SQLite Cordova Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite-Cordova)
-- [SQLite Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite3)
-- [React Native Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)
-- [SQLite Nativescript Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite-NativeScript)
-- [Redis Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-Redis)
-- [MySQL Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MySQL)
-- [MongoDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MongoDB)
-- [ScyllaDB Adapter](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ScyllaDB)
+- [DynamoDB](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-DynamoDB)
+- [SQLite (NodeJS/Electron)](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite3)
+- [SQLite (Cordova)](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite-Cordova)
+- [SQLite (NativeScript)](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-SQLite-NativeScript)
+- [React Native](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ReactNative)
+- [Redis](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-Redis)
+- [MySQL](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MySQL)
+- [MongoDB](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-MongoDB)
+- [ScyllaDB/Cassandra](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Adapter-ScyllaDB)
 
 ## Plugins
 - [Redis Index](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-RedisIndex)

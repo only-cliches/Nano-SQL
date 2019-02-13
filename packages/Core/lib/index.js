@@ -13,15 +13,9 @@ var interfaces_1 = require("./interfaces");
 exports.InanoSQLInstance = interfaces_1.InanoSQLInstance;
 var functions_1 = require("./functions");
 var query_1 = require("./query");
-var syncStorage_1 = require("./adapters/syncStorage");
-var webSQL_1 = require("./adapters/webSQL");
-var indexedDB_1 = require("./adapters/indexedDB");
 var query_builder_1 = require("./query-builder");
 var utils = require("./utilities");
-var RocksDB;
-if (typeof global !== "undefined") {
-    RocksDB = global._rocksAdapter;
-}
+var adapter_detect_1 = require("./adapter-detect");
 // tslint:disable-next-line
 var nanoSQL = /** @class */ (function () {
     function nanoSQL() {
@@ -57,23 +51,20 @@ var nanoSQL = /** @class */ (function () {
         var str = function (value) {
             return typeof value === "object" ? JSON.stringify(value) : String(value);
         };
+        var num = function (parseFn) {
+            return function (value) {
+                return isNaN(value) || value === null ? 0 : parseFn(value);
+            };
+        };
         this.indexTypes = {
             string: str,
             geo: function (value) {
                 return undefined;
             },
-            float: function (value) {
-                var float = parseFloat(value);
-                return isNaN(float) ? 0 : float;
-            },
-            int: function (value) {
-                var int = parseInt(value);
-                return isNaN(int) ? 0 : int;
-            },
-            number: function (value) {
-                var float = parseFloat(value);
-                return isNaN(float) ? 0 : float;
-            },
+            float: num(parseFloat),
+            int: num(parseInt),
+            number: num(parseFloat),
+            date: num(parseInt),
             uuid: str,
             timeId: str,
             timeIdms: str
@@ -230,29 +221,6 @@ var nanoSQL = /** @class */ (function () {
     nanoSQL.prototype.getPeers = function () {
         return JSON.parse(localStorage.getItem("nsql-peers-" + this.state.id) || "[]");
     };
-    nanoSQL.prototype._detectStorageMethod = function () {
-        // NodeJS
-        if (typeof window === "undefined") {
-            return "RKS";
-        }
-        // Browser
-        // Safari / iOS always gets WebSQL (mobile and desktop)
-        // newer versions of safari drop WebSQL, so also do feature detection
-        if (utilities_1.isSafari && typeof window.openDatabase !== "undefined") {
-            return "WSQL";
-        }
-        // everyone else (FF + Chrome + Edge + IE)
-        // check for support for indexed db
-        if (typeof indexedDB !== "undefined") { // use indexed DB if possible
-            return "IDB";
-        }
-        // fall back to WebSQL
-        if (typeof window.openDatabase !== "undefined") {
-            return "WSQL";
-        }
-        // nothing else works, we gotta do local storage. :(
-        return "LS";
-    };
     nanoSQL.prototype._initPlugins = function (config) {
         var _this = this;
         return new Promise(function (res, rej) {
@@ -397,35 +365,7 @@ var nanoSQL = /** @class */ (function () {
         }).then(function () {
             // setup and connect adapter
             return new Promise(function (res, rej) {
-                var dbMode = typeof _this.config.mode !== "undefined" ? _this.config.mode : "TEMP";
-                if (typeof dbMode === "string") {
-                    if (dbMode === "PERM") {
-                        dbMode = _this._detectStorageMethod();
-                    }
-                    switch (dbMode) {
-                        case "TEMP":
-                            _this.adapter = new syncStorage_1.SyncStorage(false);
-                            break;
-                        case "LS":
-                            _this.adapter = new syncStorage_1.SyncStorage(true);
-                            break;
-                        case "WSQL":
-                            _this.adapter = new webSQL_1.WebSQL(_this.config.size);
-                            break;
-                        case "IDB":
-                            _this.adapter = new indexedDB_1.IndexedDB(_this.config.version);
-                            break;
-                        case "RKS":
-                        case "LVL":
-                            _this.adapter = new RocksDB(_this.config.path);
-                            break;
-                        default:
-                            rej("Cannot find mode " + dbMode + "!");
-                    }
-                }
-                else {
-                    _this.adapter = dbMode;
-                }
+                _this.adapter = adapter_detect_1.resolveMode(_this.config.mode || "TEMP", _this.config);
                 if (_this.adapter.plugin) {
                     (_this.config.plugins || []).push(_this.adapter.plugin);
                 }
@@ -451,7 +391,6 @@ var nanoSQL = /** @class */ (function () {
                 time: Date.now()
             });
             _this.state.connected = true;
-            // this.triggerMapReduce = this.triggerMapReduce.bind(this);
             var tables = ["_util", "_ttl"].concat((_this.config.tables || []).map(function (t) { return t.name; }));
             return utilities_1.chainAsync(tables, function (j, i, next, err) {
                 switch (j) {

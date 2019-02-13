@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-export declare const VERSION = 2.18;
+export declare const VERSION = 2.19;
 export declare type uuid = String;
 export declare type timeId = String;
 export declare type timeIdms = String;
@@ -80,7 +80,6 @@ export declare class InanoSQLInstance {
         [key: string]: any;
     }, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
-    _detectStorageMethod(): any;
     _initPlugins(config: any): any;
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers(): any;
@@ -176,6 +175,10 @@ export declare class InanoSQLQueryBuilder {
     }): InanoSQLQueryBuilder;
     into(table: string): InanoSQLQueryBuilder;
     on(table: string): InanoSQLQueryBuilder;
+    copyTo(table: string, onProgress?: (row: any, num: number) => void): Promise<{
+        count: number;
+        perf: number;
+    }>;
     exec(exportEvent?: boolean): Promise<{
         [key: string]: any;
     }[]>;
@@ -389,6 +392,7 @@ export interface InanoSQLTableIndexConfig {
 }
 export interface InanoSQLTableConfig {
     name: string;
+    mode?: string | InanoSQLAdapter;
     model: {
         [colAndType: string]: InanoSQLDataModel;
     } | string;
@@ -420,6 +424,7 @@ export interface InanoSQLTable {
     } | string;
     id: string;
     name: string;
+    mode?: InanoSQLAdapter;
     columns: InanoSQLTableColumn[];
     indexes: {
         [id: string]: InanoSQLIndex;
@@ -723,7 +728,7 @@ export interface adapterDisconnectFilter extends abstractFilter {
 }
 export interface adapterCreateTableFilter extends abstractFilter {
     res: {
-        tableName: string;
+        table: string;
         tableData: InanoSQLTable;
         complete: () => void;
         error: (err: any) => void;

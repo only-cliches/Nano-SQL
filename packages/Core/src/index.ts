@@ -15,7 +15,7 @@ import {
     buildQuery, 
     _nanoSQLQueue, 
     adapterFilters, 
-    cleanArgs2 
+    cleanArgs2
 } from "./utilities";
 import { 
     InanoSQLConfig, 
@@ -49,16 +49,10 @@ import {
 } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _nanoSQLQuery } from "./query";
-import { SyncStorage } from "./adapters/syncStorage";
-import { WebSQL } from "./adapters/webSQL";
-import { IndexedDB } from "./adapters/indexedDB";
 import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
+import { resolveMode } from "./adapter-detect";
 
-let RocksDB: any;
-if (typeof global !== "undefined") {
-    RocksDB = (global as any)._rocksAdapter;
-}
 
 export {
     InanoSQLInstance
@@ -168,23 +162,20 @@ export class nanoSQL implements InanoSQLInstance {
         const str = (value: any) => {
             return typeof value === "object" ? JSON.stringify(value) : String(value);
         };
+        const num = (parseFn: (string: any) => number) => {
+            return (value: any) => {
+                return isNaN(value) || value === null ? 0 : parseFn(value);
+            }
+        }
         this.indexTypes = {
             string: str,
             geo: (value: any) => {
                 return undefined;
             },
-            float: (value: any) => {
-                const float = parseFloat(value);
-                return isNaN(float) ? 0 : float;
-            },
-            int: (value: any) => {
-                const int = parseInt(value);
-                return isNaN(int) ? 0 : int;
-            },
-            number: (value: any) => {
-                const float = parseFloat(value);
-                return isNaN(float) ? 0 : float;
-            },
+            float: num(parseFloat),
+            int: num(parseInt),
+            number: num(parseFloat),
+            date: num(parseInt),
             uuid: str,
             timeId: str,
             timeIdms: str
@@ -366,37 +357,6 @@ export class nanoSQL implements InanoSQLInstance {
         return JSON.parse(localStorage.getItem("nsql-peers-" + this.state.id) || "[]");
     }
 
-    public _detectStorageMethod(): string {
-
-        // NodeJS
-        if (typeof window === "undefined") {
-            return "RKS";
-        }
-
-        // Browser
-
-        // Safari / iOS always gets WebSQL (mobile and desktop)
-        // newer versions of safari drop WebSQL, so also do feature detection
-        if (isSafari && typeof window.openDatabase !== "undefined") {
-            return "WSQL";
-        }
-
-        // everyone else (FF + Chrome + Edge + IE)
-        // check for support for indexed db
-        if (typeof indexedDB !== "undefined") { // use indexed DB if possible
-            return "IDB";
-        }
-
-        // fall back to WebSQL
-        if (typeof window.openDatabase !== "undefined") {
-            return "WSQL";
-        }
-
-        // nothing else works, we gotta do local storage. :(
-        return "LS";
-
-    }
-
     public _initPlugins(config: InanoSQLConfig): Promise<any> {
         return new Promise((res, rej) => {
 
@@ -560,35 +520,9 @@ export class nanoSQL implements InanoSQLInstance {
             // setup and connect adapter
             return new Promise((res, rej) => {
 
-                let dbMode = typeof this.config.mode !== "undefined" ? this.config.mode : "TEMP";
+                
+                this.adapter = resolveMode(this.config.mode || "TEMP", this.config);
 
-                if (typeof dbMode === "string") {
-                    if (dbMode === "PERM") {
-                        dbMode = this._detectStorageMethod();
-                    }
-                    switch (dbMode) {
-                        case "TEMP":
-                            this.adapter = new SyncStorage(false);
-                            break;
-                        case "LS":
-                            this.adapter = new SyncStorage(true);
-                            break;
-                        case "WSQL":
-                            this.adapter = new WebSQL(this.config.size);
-                            break;
-                        case "IDB":
-                            this.adapter = new IndexedDB(this.config.version);
-                            break;
-                        case "RKS":
-                        case "LVL":
-                            this.adapter = new RocksDB(this.config.path);
-                            break;
-                        default:
-                            rej(`Cannot find mode ${dbMode}!`);
-                    }
-                } else {
-                    this.adapter = dbMode;
-                }
 
                 if (this.adapter.plugin) {
                     (this.config.plugins || []).push(this.adapter.plugin);
@@ -619,8 +553,6 @@ export class nanoSQL implements InanoSQLInstance {
                 time: Date.now()
             });
             this.state.connected = true;
-
-            // this.triggerMapReduce = this.triggerMapReduce.bind(this);
 
             const tables = ["_util", "_ttl"].concat((this.config.tables || []).map(t => t.name));
 

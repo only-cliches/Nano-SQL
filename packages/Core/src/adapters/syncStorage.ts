@@ -2,7 +2,7 @@ import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, Inan
 import { noop, deepFreeze, generateID, binarySearch, assign, cast, blankTableDefinition, deepSet } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 
-export class SyncStorage  extends nanoSQLMemoryIndex {
+export class SyncStorage extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "Sync Storage Adapter",

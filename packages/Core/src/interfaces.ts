@@ -1,6 +1,6 @@
 import { ReallySmallEvents } from "really-small-events";
 
-export const VERSION = 2.18;
+export const VERSION = 2.19;
 
 export type uuid = String;
 export type timeId = String;
@@ -68,7 +68,6 @@ export declare class InanoSQLInstance {
     _saveTableIds(): Promise<any>
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
-    _detectStorageMethod();
     _initPlugins(config);
     connect(config: InanoSQLConfig): Promise<any>;
     _initPeers();
@@ -155,6 +154,7 @@ export declare class InanoSQLQueryBuilder {
     }): InanoSQLQueryBuilder;
     into(table: string): InanoSQLQueryBuilder;
     on(table: string): InanoSQLQueryBuilder;
+    copyTo(table: string, onProgress?: (row, num: number) => void): Promise<{count: number, perf: number}>
     exec(exportEvent?: boolean): Promise<{
         [key: string]: any;
     }[]>;
@@ -391,6 +391,7 @@ export interface InanoSQLTableIndexConfig {
 
 export interface InanoSQLTableConfig {
     name: string;
+    mode?: string | InanoSQLAdapter;
     model: {
         [colAndType: string]: InanoSQLDataModel;
     } | string;
@@ -437,6 +438,7 @@ export interface InanoSQLTable {
     } | string;
     id: string;
     name: string;
+    mode?: InanoSQLAdapter;
     columns: InanoSQLTableColumn[];
     indexes: {
         [id: string]: InanoSQLIndex;
@@ -742,7 +744,7 @@ export interface adapterDisconnectFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterCreateTableFilter extends abstractFilter {
     res: {
-        tableName: string, 
+        table: string, 
         tableData: InanoSQLTable, 
         complete: () => void, 
         error: (err: any) => void

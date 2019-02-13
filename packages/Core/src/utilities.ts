@@ -1,9 +1,9 @@
-import { 
-    InanoSQLQuery, 
-    InanoSQLInstance, 
-    adapterReadFilter, 
-    adapterReadMultiFilter, 
-    TableQueryResult, 
+import {
+    InanoSQLQuery,
+    InanoSQLInstance,
+    adapterReadFilter,
+    adapterReadMultiFilter,
+    TableQueryResult,
     InanoSQLTable,
     adapterWriteFilter,
     adapterConnectFilter,
@@ -20,7 +20,9 @@ import {
     adapterReadIndexKeyFilter,
     adapterReadIndexKeysFilter,
     InanoSQLFunctionResult,
-    InanoSQLDataModel
+    InanoSQLDataModel,
+    InanoSQLTableColumn,
+    InanoSQLAdapter
 } from "./interfaces";
 import { _nanoSQLQuery } from "./query";
 import * as leven from "levenshtein-edit-distance";
@@ -83,7 +85,7 @@ export const slugify = (str: string): string => {
     return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 }
 
-export const buildQuery = (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
+export const buildQuery = (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
     return {
         table: table || nSQL.state.selectedTable,
         parent: nSQL,
@@ -103,17 +105,19 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
         write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
             nSQL.doFilter<adapterWriteFilter>("adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.write(nSQL._tableIds[result.res.table], result.res.pk, result.res.row, (pk) => {
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.write(nSQL._tableIds[result.res.table], result.res.pk, result.res.row, (pk) => {
                     result.res.complete(pk);
                 }, result.res.error);
             }, error as any);
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
-            
-            nSQL.doFilter<adapterReadFilter>("adapterRead", { res: {table, pk, complete, error }, query }, (result) => {
+
+            nSQL.doFilter<adapterReadFilter>("adapterRead", { res: { table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
 
-                nSQL.adapter.read(nSQL._tableIds[result.res.table], result.res.pk, (row) => {
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.read(nSQL._tableIds[result.res.table], result.res.pk, (row) => {
                     if (!row) {
                         result.res.complete(undefined);
                         return;
@@ -126,7 +130,8 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
         readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
             nSQL.doFilter<adapterReadMultiFilter>("adapterReadMulti", { res: { table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.readMulti(nSQL._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (row, i) => {
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.readMulti(nSQL._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (row, i) => {
                     result.res.onRow(row, i)
                 }, () => {
                     result.res.complete();
@@ -135,66 +140,73 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
 
         },
         connect: (id: string, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterConnectFilter>("adapterConnect", {res: {id, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterConnectFilter>("adapterConnect", { res: { id, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 nSQL.adapter.connect(result.res.id, result.res.complete, result.res.error);
             }, error);
         },
         disconnect: (complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterDisconnectFilter>("adapterDisconnect", {res: {complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterDisconnectFilter>("adapterDisconnect", { res: { complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 nSQL.adapter.disconnect(result.res.complete, result.res.error);
             }, error);
         },
-        createTable: (tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterCreateTableFilter>("adapterCreateTable", {res: {tableName, tableData, complete, error}, query}, (result) => {
+        createTable: (table: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => {
+            nSQL.doFilter<adapterCreateTableFilter>("adapterCreateTable", { res: { table, tableData, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.createTable(nSQL._tableIds[result.res.tableName], result.res.tableData, result.res.complete, result.res.error);
+                const adapter = tableData.mode || nSQL.adapter;
+                adapter.createTable(nSQL._tableIds[result.res.table], result.res.tableData, result.res.complete, result.res.error);
             }, error);
         },
         dropTable: (table: string, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterDropTableFilter>("adapterDropTable", {res: {table: nSQL._tableIds[table], complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterDropTableFilter>("adapterDropTable", { res: { table: table, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.dropTable(result.res.table, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.dropTable(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         delete: (table: string, pk: any, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterDeleteFilter>("adapterDelete", {res: {table: nSQL._tableIds[table], pk, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterDeleteFilter>("adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.delete(result.res.table, result.res.pk, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.delete(nSQL._tableIds[result.res.table], result.res.pk, result.res.complete, result.res.error);
             }, error);
         },
         getTableIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterGetTableIndexFilter>("adapterGetTableIndex", {res: {table: nSQL._tableIds[table], complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterGetTableIndexFilter>("adapterGetTableIndex", { res: { table: table, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.getTableIndex(result.res.table, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.getTableIndex(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         getTableIndexLength: (table: string, complete: (length: number) => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterGetTableIndexLengthFilter>("adapterGetTableIndexLength", {res: {table: nSQL._tableIds[table], complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterGetTableIndexLengthFilter>("adapterGetTableIndexLength", { res: { table: table, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.getTableIndexLength(result.res.table, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.getTableIndexLength(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         createIndex: (table: string, indexName: string, type: string, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterCreateIndexFilter>("adapterCreateIndex", {res: {table: nSQL._tableIds[table], indexName, type, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterCreateIndexFilter>("adapterCreateIndex", { res: { table: table, indexName, type, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.createIndex(result.res.table, result.res.indexName, result.res.type, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.createIndex(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.complete, result.res.error);
             }, error);
         },
         deleteIndex: (table: string, indexName: string, complete: () => void, error: (err: any) => void) => {
             if (!nSQL._tables[table].indexes[indexName]) {
-                error({error: `Index ${indexName} not found!`});
+                error({ error: `Index ${indexName} not found!` });
                 return;
             }
-            nSQL.doFilter<adapterDeleteIndexFilter>("adapterDeleteIndex", {res: {table: nSQL._tableIds[table], indexName, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterDeleteIndexFilter>("adapterDeleteIndex", { res: { table: table, indexName, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.deleteIndex(result.res.table, result.res.indexName, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.deleteIndex(nSQL._tableIds[result.res.table], result.res.indexName, result.res.complete, result.res.error);
             }, error);
         },
         addIndexValue: (table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => {
             if (!nSQL._tables[table].indexes[indexName]) {
-                error({error: `Index ${indexName} not found!`});
+                error({ error: `Index ${indexName} not found!` });
                 return;
             }
             let value2 = value;
@@ -207,14 +219,15 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 value2 = String(value2 || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterAddIndexValueFilter>("adapterAddIndexValue", {res: {table: nSQL._tableIds[table], indexName, key, value: value2, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterAddIndexValueFilter>("adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.addIndexValue(result.res.table, result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.addIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
         },
         deleteIndexValue: (table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => {
             if (!nSQL._tables[table].indexes[indexName]) {
-                error({error: `Index ${indexName} not found!`});
+                error({ error: `Index ${indexName} not found!` });
                 return;
             }
             let key2 = value;
@@ -227,15 +240,16 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 key2 = String(key2 || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterDeleteIndexValueFilter>("adapterDeleteIndexValue", {res: {table: nSQL._tableIds[table], indexName, key, value: key2, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterDeleteIndexValueFilter>("adapterDeleteIndexValue", { res: { table: table, indexName, key, value: key2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.deleteIndexValue(result.res.table, result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.deleteIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
         },
         readIndexKey: (table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => {
 
             if (!nSQL._tables[table].indexes[indexName]) {
-                error({error: `Index ${indexName} not found!`});
+                error({ error: `Index ${indexName} not found!` });
                 return;
             }
 
@@ -249,18 +263,19 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 key = String(key || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterReadIndexKeyFilter>("adapterReadIndexKey", {res: {table: nSQL._tableIds[table], indexName, pk: key, onRowPK, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterReadIndexKeyFilter>("adapterReadIndexKey", { res: { table: table, indexName, pk: key, onRowPK, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.readIndexKey(result.res.table, result.res.indexName, result.res.pk, result.res.onRowPK, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.readIndexKey(nSQL._tableIds[result.res.table], result.res.indexName, result.res.pk, result.res.onRowPK, result.res.complete, result.res.error);
             }, error);
         },
         readIndexKeys: (table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) => {
-            
+
             let lower = offsetOrLow;
             let higher = limitOrHigh;
 
             if (!nSQL._tables[table].indexes[indexName]) {
-                error({error: `Index ${indexName} not found!`});
+                error({ error: `Index ${indexName} not found!` });
                 return;
             }
 
@@ -277,13 +292,71 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 higher = String(higher || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterReadIndexKeysFilter>("adapterReadIndexKeys", {res: {table: nSQL._tableIds[table], indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error}, query}, (result) => {
+            nSQL.doFilter<adapterReadIndexKeysFilter>("adapterReadIndexKeys", { res: { table: table, indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.readIndexKeys(result.res.table, result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
+                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
             }, error);
         }
     };
 };
+
+export const ISO_8601_FULL = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
+
+export const maybeDate = (value: any): any => {
+    if (value && typeof value === "string" && ISO_8601_FULL.test(value)) {
+        return Date.parse(value);
+    }
+    return value;
+}
+
+export const mutateRowTypes = (replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
+
+    if (!nSQL._tables[table]) {
+        throw new Error(`nSQL: Table "${table}" not found!`);
+    }
+
+    const resolveModel = (cols: InanoSQLTableColumn[], useObj: any, nestedModel?: string): any => {
+        if (!useObj) return useObj;
+
+        if (nestedModel && nestedModel.length) {
+            if (nestedModel.indexOf("[]") !== -1) {
+                if (Array.isArray(useObj)) {
+                    return useObj.map(a => resolveModel(cols, a, nestedModel.slice(0, nestedModel.lastIndexOf("[]"))));
+                } else {
+                    return [];
+                }
+            }
+        }
+
+        cols.forEach((m) => {
+
+            if (m.model) {
+                if (m.type.indexOf("[]") !== -1) {
+                    const arr = typeof useObj !== "undefined" ? useObj[m.key] : [];
+                    if (!Array.isArray(arr)) {
+                        useObj[m.key] = [];
+                    } else {
+                        useObj[m.key] = arr.map(a => resolveModel(m.model as any[], a, m.type.slice(0, m.type.lastIndexOf("[]"))));
+                    }
+                } else {
+                    useObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
+                }
+            } else {
+                switch (m.type) {
+                    case "date": 
+                        useObj[m.key] = new Date(useObj[m.key]).toISOString();
+                    break;
+                    default:
+                        useObj[m.key] = useObj[m.key];
+                }
+            }
+        });
+        return useObj;
+    };
+
+    return resolveModel(nSQL._tables[table].columns, replaceObj);
+}
 
 export const noop = () => { };
 export const throwErr = (err: any) => {
@@ -412,7 +485,9 @@ export const chainAsync = (items: any[], callback: (item: any, i: number, next: 
                         results.push(result || 0);
                     }
                     i++;
-                    i % 500 === 0 ? setFast(step) : step();
+                    i % 250 === 0 ? setFast(() => {
+                        step();
+                    }) : step();
                 }, (err) => {
                     rej(err);
                 });
@@ -473,7 +548,7 @@ export const random16Bits = (): number => {
 
 export const throttle = (scope: any, func: any, limit: number) => {
     let waiting = false;
-    return (...args: any[]) => {  
+    return (...args: any[]) => {
         if (waiting) return;
         waiting = true;
         setTimeout(() => {
@@ -557,6 +632,7 @@ export const hash = (str: string): string => {
 export const generateID = (primaryKeyType: string, incrimentValue?: number): any => {
     const idTypes = {
         "int": (value) => value,
+        "date": (value) => value,
         "float": (value) => value,
         "uuid": uuid,
         "timeId": () => timeid(),
@@ -662,14 +738,14 @@ export const objSort = (path?: string, rev?: boolean) => {
  * @returns {InanoSQLFunctionResult} 
  * @memberof _nanoSQLQuery
  */
-export const execFunction = (query: InanoSQLQuery, fnString: string, row: any, prev: any): InanoSQLFunctionResult =>  {
+export const execFunction = (query: InanoSQLQuery, fnString: string, row: any, prev: any): InanoSQLFunctionResult => {
     const fnArgs = fnString.match(/\((.*)\)/gmi) as string[];
-    if (!fnArgs[0]) return {result: undefined}
+    if (!fnArgs[0]) return { result: undefined }
     const args = fnArgs[0].substr(1, fnArgs[0].length - 2).split(/\,\s?(?![^\(]*\))/).map(s => s.trim());
     const fnName = fnString.split("(").shift() as string;
     const calcArgs = args.map(s => s.indexOf("(") !== -1 ? execFunction(query, s, row, prev).result : s);
     if (!query.parent.functions[fnName]) {
-        return {result: undefined}
+        return { result: undefined }
     }
     return query.parent.functions[fnName].call(query, row, prev, ...calcArgs);
 }
@@ -728,6 +804,10 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: 
     const doCast = (castType: string, castVal: any) => {
         switch (castType) {
             case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, (s) => entityMap[s]);
+            case "date":
+                if (t === "string") {
+                    return Date.parse(castVal);
+                }
             case "int": return (t !== "number" || castVal % 1 !== 0) ? Math.round(nan(castVal)) : castVal;
             case "number":
             case "float": return t !== "number" ? nan(castVal) : castVal;
@@ -813,7 +893,7 @@ export const resolvePath = (pathQuery: string): string[] => {
         // handle simple dot paths like "users.meta.value.length"
         pathQuery.split(".");
 
-    
+
 
     objectPathCache[pathQuery] = path;
 
@@ -843,7 +923,7 @@ export const deepFreeze = (obj: any) => {
     return Object.freeze(obj);
 };
 
-export const deepSet = (pathQuery: string|string[], object: any, value: any): any => {
+export const deepSet = (pathQuery: string | string[], object: any, value: any): any => {
 
     const safeSet = (getPath: string[], pathIdx: number, setObj: any) => {
         if (!getPath[pathIdx + 1]) { // end of path
@@ -878,7 +958,7 @@ export const deepSet = (pathQuery: string|string[], object: any, value: any): an
  * @param {boolean} [ignoreFirstPath]
  * @returns {*}
  */
-export const deepGet = (pathQuery: string|string[], object: any): any => {
+export const deepGet = (pathQuery: string | string[], object: any): any => {
 
     const safeGet = (getPath: string[], pathIdx: number, object: any) => {
         if (!getPath[pathIdx] || !object) return object;

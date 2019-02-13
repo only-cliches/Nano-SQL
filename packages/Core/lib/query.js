@@ -9,6 +9,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var interfaces_1 = require("./interfaces");
 var utilities_1 = require("./utilities");
+var adapter_detect_1 = require("./adapter-detect");
 exports.secondaryIndexQueue = {};
 var globalTableCache = {};
 // tslint:disable-next-line
@@ -33,9 +34,9 @@ var _nanoSQLQuery = /** @class */ (function () {
         var action = query.action.toLowerCase().trim();
         this._orderByRows = this._orderByRows.bind(this);
         this._onError = this._onError.bind(this);
-        if (action !== "select" && typeof query.table !== "string") {
+        if (["select", "clone"].indexOf(action) === -1 && typeof query.table !== "string") {
             this.query.state = "error";
-            this.error("Only \"select\" queries are available for this resource!");
+            this.error("Only \"select\" and \"clone\" queries are available for this resource!");
             return;
         }
         if (typeof query.table === "string" && !this.nSQL.state.connected) {
@@ -109,6 +110,11 @@ var _nanoSQLQuery = /** @class */ (function () {
                     _this._conform(_this.progress, finishQuery, _this.error);
                 });
                 break;
+            case "clone":
+                requireQueryOpts(true, function () {
+                    _this._clone(_this.progress, finishQuery, _this.error);
+                });
+                break;
             default:
                 this.nSQL.doFilter("customQuery", { res: undefined, query: this.query, onRow: progress, complete: complete, error: error }, function () {
                     _this.query.state = "error";
@@ -119,6 +125,86 @@ var _nanoSQLQuery = /** @class */ (function () {
                 });
         }
     }
+    _nanoSQLQuery.prototype._clone = function (progress, finished, error) {
+        var _this = this;
+        var mode = this.query.actionArgs && this.query.actionArgs.mode;
+        var adapterCB = this.query.actionArgs && this.query.actionArgs.getAdapter;
+        var id = this.query.actionArgs && this.query.actionArgs.id || this.query.parent.state.id;
+        if (!id || !mode) {
+            error("Id & Mode required for clone query!");
+            return;
+        }
+        var adapter = adapter_detect_1.resolveMode(mode);
+        // this.query.parent._tables
+        var tables = this.query.table !== "*" ? [this.query.table] : Object.keys(this.nSQL._tables);
+        var i = 0;
+        var setIds = {};
+        // 1. connect to secondary adapter
+        adapter.connect(id, function () {
+            utilities_1.chainAsync(tables, function (tableName, i, nextTable, errTable) {
+                var table = _this.query.parent._tables[tableName];
+                if (!table) {
+                    errTable("Table " + table + " not found!");
+                    return;
+                }
+                // 2. create copy of table in secondary adapter
+                adapter.createTable(_this.query.parent._tableIds[table.name], table, function () {
+                    setIds[table.name] = _this.query.parent._tableIds[table.name];
+                    // 3. create copy of indexes in secondary adapter
+                    utilities_1.allAsync(Object.keys(table.indexes), function (index, i, next, err) {
+                        var idx = table.indexes[index];
+                        adapter.createIndex(_this.query.parent._tableIds[table.name], index, idx.type, next, err);
+                    }).then(function () {
+                        var writeQueue = new utilities_1._nanoSQLQueue(function (item, i, complete, error) {
+                            progress({ target: table.name, targetId: _this.query.parent._tableIds[table.name], object: item }, i);
+                            i++;
+                            adapter.write(_this.query.parent._tableIds[table.name], utilities_1.deepGet(table.pkCol, item), item, complete, error);
+                        }, error, function () {
+                            // 5. copy indexes to new adapter table
+                            utilities_1.chainAsync(Object.keys(table.indexes), function (indexName, i, nextIndex, indexErr) {
+                                var index = table.indexes[indexName];
+                                utilities_1.adapterFilters(_this.query.parent, _this.query).readIndexKeys(table.name, indexName, "all", undefined, undefined, false, function (rowId, key) {
+                                    progress({ target: _this.query.parent._tableIds[table.name] + "." + indexName, targetId: table.name + "." + indexName, object: { key: key, rowId: rowId } }, i);
+                                    i++;
+                                    adapter.addIndexValue(_this.query.parent._tableIds[table.name], indexName, rowId, key, utilities_1.noop, indexErr);
+                                }, nextIndex, indexErr);
+                            }).then(function () {
+                                // 6. Done
+                                nextTable();
+                            }).catch(error);
+                        });
+                        // 4. Copy rows to new adapter table
+                        utilities_1.adapterFilters(_this.query.parent, _this.query).readMulti(table.name, "all", undefined, undefined, false, function (row, i) {
+                            writeQueue.newItem(row);
+                        }, function () {
+                            writeQueue.finished();
+                        }, error);
+                    }).catch(error);
+                }, error);
+            }).then(function () {
+                // set table ids
+                adapter.createTable("_util", __assign({}, utilities_1.blankTableDefinition, { name: "_util", model: {
+                        "key:string": { pk: true },
+                        "value:any": {}
+                    } }), function () {
+                    adapter.read("_util", "tableIds", function (row) {
+                        var ids = __assign({}, (row && row.value || {}), setIds);
+                        adapter.write("_util", "taleIds", { key: "tableIds", value: ids }, function () {
+                            if (adapterCB) {
+                                adapterCB(adapter);
+                                finished();
+                            }
+                            else {
+                                adapter.disconnect(function () {
+                                    finished();
+                                }, error);
+                            }
+                        }, error);
+                    }, error);
+                }, error);
+            }).catch(error);
+        }, error);
+    };
     _nanoSQLQuery.prototype._conform = function (progress, finished, error) {
         var _this = this;
         var conformTable = this.query.table;
@@ -163,6 +249,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                             }
                         });
                     }
+                    _this._startTime = Date.now();
                     progress(_this.query.returnEvent ? changeEvent : setRow.res, i);
                     count++;
                     done();
@@ -576,6 +663,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             if (tableIsString) {
                 _this.nSQL.triggerEvent(selectEvent);
             }
+            _this._startTime = Date.now();
             if (_this.query.returnEvent) {
                 _this.progress(selectEvent, i);
             }
@@ -839,6 +927,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                                 }
                             });
                         }
+                        _this._startTime = Date.now();
                     }
                     complete(_this.query.returnEvent ? event.res : finalRow);
                 }, error);
@@ -981,6 +1070,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                             if (typeof _this.query.table === "string") {
                                 _this.nSQL.triggerEvent(event.res);
                             }
+                            _this._startTime = Date.now();
                             complete(_this.query.returnEvent ? event.res : rowToAdd.res);
                         }, error);
                     });
@@ -1102,6 +1192,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                     if (typeof _this.query.table === "string") {
                         _this.nSQL.triggerEvent(event.res);
                     }
+                    _this._startTime = Date.now();
                     complete(_this.query.returnEvent ? event.res : delRow.res);
                 }, error);
             }).catch(error);
@@ -1346,10 +1437,24 @@ var _nanoSQLQuery = /** @class */ (function () {
                     return p;
                 }, path);
             };
+            var generateTypes = function (model) {
+                var useModel = model || {};
+                return Object.keys(useModel).reduce(function (prev, cur) {
+                    var keyAndType = cur.split(":");
+                    if (useModel[cur].model) {
+                        prev[keyAndType[0]] = generateTypes(useModel[cur].model);
+                    }
+                    else {
+                        prev[keyAndType[0]] = keyAndType[1];
+                    }
+                    return prev;
+                }, {});
+            };
             var tablePKType = table.res.primaryKey ? table.res.primaryKey.split(":")[1] : pkType(table.res.model);
             var newConfig = {
                 id: tableID,
                 name: table.res.name,
+                mode: table.res.mode ? adapter_detect_1.resolveMode(table.res.mode) : undefined,
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
                 filter: table.res.filter,
@@ -1394,7 +1499,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }, {}),
                 pkType: tablePKType,
                 pkCol: table.res.primaryKey ? utilities_1.resolvePath(table.res.primaryKey.split(":")[0]) : getPK([], table.res.model),
-                isPkNum: ["number", "int", "float"].indexOf(tablePKType) !== -1,
+                isPkNum: ["number", "int", "float", "date"].indexOf(tablePKType) !== -1,
                 ai: ai
             };
             // no primary key found, set one
@@ -1411,6 +1516,38 @@ var _nanoSQLQuery = /** @class */ (function () {
                     res(result.res);
                 }, rej);
             });
+        }).then(function (newConfig) {
+            var oldMode = _this.nSQL._tables[_this.query.table] && _this.nSQL._tables[_this.query.table].mode;
+            if (newConfig.mode || oldMode) {
+                return new Promise(function (res, rej) {
+                    if (alterTable && newConfig.mode === oldMode) {
+                        res(newConfig);
+                    }
+                    else {
+                        var connectAdapter_1 = function () {
+                            if (newConfig.mode) {
+                                newConfig.mode.connect(_this.nSQL.state.id, function () {
+                                    res(newConfig);
+                                }, rej);
+                            }
+                            else {
+                                res(newConfig);
+                            }
+                        };
+                        if (oldMode) {
+                            oldMode.disconnect(function () {
+                                connectAdapter_1();
+                            }, rej);
+                        }
+                        else {
+                            connectAdapter_1();
+                        }
+                    }
+                });
+            }
+            else {
+                return Promise.resolve(newConfig);
+            }
         }).then(function (newConfig) {
             var oldIndexes = alterTable ? Object.keys(_this.nSQL._tables[_this.query.table].indexes) : [];
             var newIndexes = Object.keys(newConfig.indexes);
@@ -1761,13 +1898,15 @@ var _nanoSQLQuery = /** @class */ (function () {
             switch (this._whereArgs.type) {
                 // primary key or secondary index select
                 case interfaces_1.IWhereType.fast:
-                    this._fastQuery(onRow, complete);
+                    this._fastQuery(function (row, i) {
+                        onRow(utilities_1.mutateRowTypes(row, _this.query.table, _this.nSQL), i);
+                    }, complete);
                     break;
                 // primary key or secondary index query followed by slow query
                 case interfaces_1.IWhereType.medium:
                     this._fastQuery(function (row, i) {
                         if (_this._where(row, _this._whereArgs.slowWhere)) {
-                            onRow(row, i);
+                            onRow(utilities_1.mutateRowTypes(row, _this.query.table, _this.nSQL), i);
                         }
                     }, complete);
                     break;
@@ -1779,16 +1918,16 @@ var _nanoSQLQuery = /** @class */ (function () {
                     utilities_1.adapterFilters(this.nSQL, this.query).readMulti(this.query.table, "all", undefined, undefined, isReversed, function (row, i) {
                         if (_this._whereArgs.type === interfaces_1.IWhereType.slow) {
                             if (_this._where(row, _this._whereArgs.slowWhere)) {
-                                onRow(row, i);
+                                onRow(utilities_1.mutateRowTypes(row, _this.query.table, _this.nSQL), i);
                             }
                         }
                         else if (_this._whereArgs.type === interfaces_1.IWhereType.fn && _this._whereArgs.whereFn) {
                             if (_this._whereArgs.whereFn(row, i)) {
-                                onRow(row, i);
+                                onRow(utilities_1.mutateRowTypes(row, _this.query.table, _this.nSQL), i);
                             }
                         }
                         else {
-                            onRow(row, i);
+                            onRow(utilities_1.mutateRowTypes(row, _this.query.table, _this.nSQL), i);
                         }
                     }, function () {
                         complete();
@@ -2183,6 +2322,8 @@ var _nanoSQLQuery = /** @class */ (function () {
                     else { // column select
                         var isIndexCol_1 = false;
                         var path_1 = doIndex ? utilities_1.resolvePath(w[0]) : [];
+                        // convert date strings to date numbers
+                        w[2] = Array.isArray(w[2]) ? w[2].map(function (w) { return utilities_1.maybeDate(w); }) : utilities_1.maybeDate(w[2]);
                         if (["=", "BETWEEN", "IN", "LIKE"].indexOf(w[1]) !== -1 && doIndex) {
                             if (w[1] === "LIKE" && !w[2].match(/.*\%$/gmi)) {
                                 // using LIKE but wrong format for fast query

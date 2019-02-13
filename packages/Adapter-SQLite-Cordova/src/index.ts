@@ -49,7 +49,7 @@ export class SQLiteCordova  extends nanoSQLMemoryIndex {
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
-        console.log(`nanoSQL "${id}" using SQLite.`);
+        console.log(`nanoSQL "${id}" using SQLite`);
         try {
             this._db = window["sqlitePlugin"].openDatabase({name: id, location: "default"});
             complete();

@@ -117,7 +117,7 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         return this;
     };
     _nanoSQLQueryBuilder.prototype.from = function (tableObj) {
-        if (typeof tableObj === "string") {
+        if (typeof tableObj === "string" || Array.isArray(tableObj)) {
             this._query.table = tableObj;
         }
         else {
@@ -137,6 +137,38 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
     _nanoSQLQueryBuilder.prototype.toCSV = function (headers) {
         var t = this;
         return t.exec().then(function (json) { return Promise.resolve(t._db.JSONtoCSV(json, headers)); });
+    };
+    _nanoSQLQueryBuilder.prototype.copyTo = function (table, onProgress) {
+        var _this = this;
+        return new Promise(function (res, rej) {
+            if (_this._query.action !== "select") {
+                rej("copyTo only works with select statements!");
+                return;
+            }
+            if (!table || typeof table !== "string") {
+                rej('Can only copy to valid internal tables!');
+                return;
+            }
+            var start = Date.now();
+            var i = 0;
+            var copyQ = new utilities_1._nanoSQLQueue(function (row, cnt, complete, error) {
+                _this._query.parent.triggerQuery(__assign({}, utilities_1.buildQuery(_this._query.parent, table, "upsert"), { actionArgs: row }), utilities_1.noop, function () {
+                    if (onProgress)
+                        onProgress(row, i);
+                    i++;
+                    complete();
+                }, error);
+            }, rej, function () {
+                res({ count: i, perf: Date.now() - start });
+            });
+            _this.stream(function (row) {
+                if (row) {
+                    copyQ.newItem(row);
+                }
+            }, function () {
+                copyQ.finished();
+            }, rej, false);
+        });
     };
     _nanoSQLQueryBuilder.prototype.exec = function (returnEvents) {
         var _this = this;

@@ -4,7 +4,29 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.1.8] 2-8-2018
+## [2.1.9] 2-12-2019
+- **BREAKING CHANGE** The filter "adapterCreateTable" now uses `table` instead of `tableName` to keep with the naming convention of other filters.
+- Fixed issue [#126](https://github.com/ClickSimply/Nano-SQL/issues/126) with `.from` usage.
+- Fixed issue [#127](https://github.com/ClickSimply/Nano-SQL/issues/127), official `date` type is now supported.
+- Added features requested in issue [#125](https://github.com/ClickSimply/Nano-SQL/issues/125).  `mode` can now be set on a per table basis and copying rows from one table to another is easier.
+- `performance` property of events is now per row and doesn't grow as the query progresses.
+- Added new `clone` query type to copy tables from one adapter to another.
+```ts
+nSQL("users").query("clone", {
+    id: "id-of-other-database",
+    mode: new SyncStorage() // or any nanoSQL adapter
+}).then(() => {
+    // clone table done
+})
+```
+- Added new `copyTo` query execution. Allows a selection to be streamed directly into another table.
+```ts
+nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrder"]).where(["orderDate", ">", Date.now() - (24 * 60 * 60 * 1000)]).copyTo("orderStats" /* table to stream rows into */).then(() => {
+    // copy complete
+})
+```
+
+## [2.1.8] 2-8-2019
 - Fixed bug with LIKE syntax not working similar/identcal to SQL databases.  Added tests.
 - Fixed types with exporting events.
 - Fixed events not exporting correctly.

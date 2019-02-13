@@ -168,7 +168,12 @@ var WebSQL = /** @class */ (function (_super) {
     WebSQL.prototype.connect = function (id, complete, error) {
         var _this = this;
         this._id = id;
-        this._db = window.openDatabase(this._id, String(this.nSQL.config.version) || "1.0", this._id, (utilities_1.isAndroid ? 5000000 : this._size));
+        try {
+            this._db = window.openDatabase(this._id, String(this.nSQL.config.version) || "1.0", this._id, (utilities_1.isAndroid ? 5000000 : this._size));
+        }
+        catch (e) {
+            error(e);
+        }
         utilities_1.setFast(function () {
             _this._sqlite.createAI(complete, error);
         });

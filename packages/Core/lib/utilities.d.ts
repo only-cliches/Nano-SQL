@@ -34,7 +34,7 @@ export declare const adapterFilters: (nSQL: InanoSQLInstance, query?: InanoSQLQu
     }, i: number) => void, complete: () => void, error: (err: any) => void) => void;
     connect: (id: string, complete: () => void, error: (err: any) => void) => void;
     disconnect: (complete: () => void, error: (err: any) => void) => void;
-    createTable: (tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => void;
+    createTable: (table: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => void;
     dropTable: (table: string, complete: () => void, error: (err: any) => void) => void;
     delete: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
     getTableIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => void;
@@ -46,6 +46,9 @@ export declare const adapterFilters: (nSQL: InanoSQLInstance, query?: InanoSQLQu
     readIndexKey: (table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => void;
     readIndexKeys: (table: string, indexName: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) => void;
 };
+export declare const ISO_8601_FULL: RegExp;
+export declare const maybeDate: (value: any) => any;
+export declare const mutateRowTypes: (replaceObj: any, table: string, nSQL: InanoSQLInstance) => any;
 export declare const noop: () => void;
 export declare const throwErr: (err: any) => never;
 export declare const nan: (input: any) => number;

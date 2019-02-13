@@ -42,7 +42,7 @@ describe("Adapter Tests", () => {
         });
     });
 
-    it("WebSQL & IndexedDB", (done: MochaDone) => {
+    it("WebSQL, IndexedDB & LocalStorage", (done: MochaDone) => {
 
         webpack({
             entry: {

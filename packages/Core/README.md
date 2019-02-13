@@ -38,23 +38,24 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 27KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 28KB!
 
 
 ## Comparison with Other Projects
 
-|           | nanoSQL | TaffyDB   | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js | Lunr |
-|-----------|---------|---------|------|-----------|---------|--------|--------|--------|-----|
-| Events    | ✓       | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Typescript| ✓       | ✕      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |✓      |
-| Graph Queries  | ✓       | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
-| Join Queries  | ✓       | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
-| IndexedDB | ✓       | ✕      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
-| Node      | ✓       | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
-| Foreign Keys  | ✓   | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
-| Query Functions | ✓ | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
-| Custom Backends | ✓ | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Size (kb) | 27      | 5      | 27   | 40         | 46      | 88     | 164     | 500    | 8 |
+|                 | nanoSQL | TaffyDB| NeDB | LoveField | PouchDB | alaSQL |  RxDB  | SQL.js |  Lunr  |
+|-----------------|---------|--------|------|-----------|---------|--------|--------|--------|--------|
+| Events          | ✓       | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Typescript      | ✓       | ✕      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      | ✓      |
+| Graph Queries   | ✓       | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
+| Join Queries    | ✓       | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| IndexedDB       | ✓       | ✕      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
+| NodeJS          | ✓       | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
+| Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
+| Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Indexes         | ✓       | ✕      | ✓    | ✓         | ✓       | ✓      | ✓      | ✓      | ✕      |
+| Size (kb)       | 28      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
 
 
 ## Database Support
@@ -103,7 +104,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.8/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.9/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

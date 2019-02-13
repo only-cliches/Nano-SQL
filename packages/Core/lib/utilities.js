@@ -75,7 +75,8 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterWrite", { res: { table: table, pk: pk, row: row, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.write(nSQL._tableIds[result.res.table], result.res.pk, result.res.row, function (pk) {
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.write(nSQL._tableIds[result.res.table], result.res.pk, result.res.row, function (pk) {
                     result.res.complete(pk);
                 }, result.res.error);
             }, error);
@@ -84,7 +85,8 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterRead", { res: { table: table, pk: pk, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.read(nSQL._tableIds[result.res.table], result.res.pk, function (row) {
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.read(nSQL._tableIds[result.res.table], result.res.pk, function (row) {
                     if (!row) {
                         result.res.complete(undefined);
                         return;
@@ -97,7 +99,8 @@ exports.adapterFilters = function (nSQL, query) {
             nSQL.doFilter("adapterReadMulti", { res: { table: table, type: type, offsetOrLow: offsetOrLow, limitOrHigh: limitOrHigh, reverse: reverse, onRow: onRow, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.readMulti(nSQL._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, function (row, i) {
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.readMulti(nSQL._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, function (row, i) {
                     result.res.onRow(row, i);
                 }, function () {
                     result.res.complete();
@@ -118,46 +121,52 @@ exports.adapterFilters = function (nSQL, query) {
                 nSQL.adapter.disconnect(result.res.complete, result.res.error);
             }, error);
         },
-        createTable: function (tableName, tableData, complete, error) {
-            nSQL.doFilter("adapterCreateTable", { res: { tableName: tableName, tableData: tableData, complete: complete, error: error }, query: query }, function (result) {
+        createTable: function (table, tableData, complete, error) {
+            nSQL.doFilter("adapterCreateTable", { res: { table: table, tableData: tableData, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.createTable(nSQL._tableIds[result.res.tableName], result.res.tableData, result.res.complete, result.res.error);
+                var adapter = tableData.mode || nSQL.adapter;
+                adapter.createTable(nSQL._tableIds[result.res.table], result.res.tableData, result.res.complete, result.res.error);
             }, error);
         },
         dropTable: function (table, complete, error) {
-            nSQL.doFilter("adapterDropTable", { res: { table: nSQL._tableIds[table], complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDropTable", { res: { table: table, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.dropTable(result.res.table, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.dropTable(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         delete: function (table, pk, complete, error) {
-            nSQL.doFilter("adapterDelete", { res: { table: nSQL._tableIds[table], pk: pk, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDelete", { res: { table: table, pk: pk, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.delete(result.res.table, result.res.pk, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.delete(nSQL._tableIds[result.res.table], result.res.pk, result.res.complete, result.res.error);
             }, error);
         },
         getTableIndex: function (table, complete, error) {
-            nSQL.doFilter("adapterGetTableIndex", { res: { table: nSQL._tableIds[table], complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterGetTableIndex", { res: { table: table, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.getTableIndex(result.res.table, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.getTableIndex(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         getTableIndexLength: function (table, complete, error) {
-            nSQL.doFilter("adapterGetTableIndexLength", { res: { table: nSQL._tableIds[table], complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterGetTableIndexLength", { res: { table: table, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.getTableIndexLength(result.res.table, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.getTableIndexLength(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         createIndex: function (table, indexName, type, complete, error) {
-            nSQL.doFilter("adapterCreateIndex", { res: { table: nSQL._tableIds[table], indexName: indexName, type: type, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterCreateIndex", { res: { table: table, indexName: indexName, type: type, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.createIndex(result.res.table, result.res.indexName, result.res.type, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.createIndex(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.complete, result.res.error);
             }, error);
         },
         deleteIndex: function (table, indexName, complete, error) {
@@ -165,10 +174,11 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            nSQL.doFilter("adapterDeleteIndex", { res: { table: nSQL._tableIds[table], indexName: indexName, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDeleteIndex", { res: { table: table, indexName: indexName, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.deleteIndex(result.res.table, result.res.indexName, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.deleteIndex(nSQL._tableIds[result.res.table], result.res.indexName, result.res.complete, result.res.error);
             }, error);
         },
         addIndexValue: function (table, indexName, key, value, complete, error) {
@@ -184,10 +194,11 @@ exports.adapterFilters = function (nSQL, query) {
             if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
                 value2 = String(value2 || "").toUpperCase();
             }
-            nSQL.doFilter("adapterAddIndexValue", { res: { table: nSQL._tableIds[table], indexName: indexName, key: key, value: value2, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterAddIndexValue", { res: { table: table, indexName: indexName, key: key, value: value2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.addIndexValue(result.res.table, result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.addIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
         },
         deleteIndexValue: function (table, indexName, key, value, complete, error) {
@@ -203,10 +214,11 @@ exports.adapterFilters = function (nSQL, query) {
             if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
                 key2 = String(key2 || "").toUpperCase();
             }
-            nSQL.doFilter("adapterDeleteIndexValue", { res: { table: nSQL._tableIds[table], indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterDeleteIndexValue", { res: { table: table, indexName: indexName, key: key, value: key2, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.deleteIndexValue(result.res.table, result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.deleteIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
         },
         readIndexKey: function (table, indexName, pk, onRowPK, complete, error) {
@@ -222,10 +234,11 @@ exports.adapterFilters = function (nSQL, query) {
             if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
                 key = String(key || "").toUpperCase();
             }
-            nSQL.doFilter("adapterReadIndexKey", { res: { table: nSQL._tableIds[table], indexName: indexName, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterReadIndexKey", { res: { table: table, indexName: indexName, pk: key, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.readIndexKey(result.res.table, result.res.indexName, result.res.pk, result.res.onRowPK, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.readIndexKey(nSQL._tableIds[result.res.table], result.res.indexName, result.res.pk, result.res.onRowPK, result.res.complete, result.res.error);
             }, error);
         },
         readIndexKeys: function (table, indexName, type, offsetOrLow, limitOrHigh, reverse, onRowPK, complete, error) {
@@ -246,13 +259,67 @@ exports.adapterFilters = function (nSQL, query) {
                 lower = String(lower || "").toUpperCase();
                 higher = String(higher || "").toUpperCase();
             }
-            nSQL.doFilter("adapterReadIndexKeys", { res: { table: nSQL._tableIds[table], indexName: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
+            nSQL.doFilter("adapterReadIndexKeys", { res: { table: table, indexName: indexName, type: type, offsetOrLow: lower, limitOrHigh: higher, reverse: reverse, onRowPK: onRowPK, complete: complete, error: error }, query: query }, function (result) {
                 if (!result)
                     return; // filter took over
-                nSQL.adapter.readIndexKeys(result.res.table, result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
+                var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
+                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
             }, error);
         }
     };
+};
+exports.ISO_8601_FULL = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
+exports.maybeDate = function (value) {
+    if (value && typeof value === "string" && exports.ISO_8601_FULL.test(value)) {
+        return Date.parse(value);
+    }
+    return value;
+};
+exports.mutateRowTypes = function (replaceObj, table, nSQL) {
+    if (!nSQL._tables[table]) {
+        throw new Error("nSQL: Table \"" + table + "\" not found!");
+    }
+    var resolveModel = function (cols, useObj, nestedModel) {
+        if (!useObj)
+            return useObj;
+        if (nestedModel && nestedModel.length) {
+            if (nestedModel.indexOf("[]") !== -1) {
+                if (Array.isArray(useObj)) {
+                    return useObj.map(function (a) { return resolveModel(cols, a, nestedModel.slice(0, nestedModel.lastIndexOf("[]"))); });
+                }
+                else {
+                    return [];
+                }
+            }
+        }
+        cols.forEach(function (m) {
+            if (m.model) {
+                if (m.type.indexOf("[]") !== -1) {
+                    var arr = typeof useObj !== "undefined" ? useObj[m.key] : [];
+                    if (!Array.isArray(arr)) {
+                        useObj[m.key] = [];
+                    }
+                    else {
+                        useObj[m.key] = arr.map(function (a) { return resolveModel(m.model, a, m.type.slice(0, m.type.lastIndexOf("[]"))); });
+                    }
+                }
+                else {
+                    useObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
+                }
+            }
+            else {
+                switch (m.type) {
+                    case "date":
+                        useObj[m.key] = new Date(useObj[m.key]).toISOString();
+                        break;
+                    default:
+                        useObj[m.key] = useObj[m.key];
+                }
+            }
+        });
+        return useObj;
+    };
+    return resolveModel(nSQL._tables[table].columns, replaceObj);
 };
 exports.noop = function () { };
 exports.throwErr = function (err) {
@@ -373,7 +440,9 @@ exports.chainAsync = function (items, callback) {
                         results.push(result || 0);
                     }
                     i++;
-                    i % 500 === 0 ? exports.setFast(step) : step();
+                    i % 250 === 0 ? exports.setFast(function () {
+                        step();
+                    }) : step();
                 }, function (err) {
                     rej(err);
                 });
@@ -516,6 +585,7 @@ exports.hash = function (str) {
 exports.generateID = function (primaryKeyType, incrimentValue) {
     var idTypes = {
         "int": function (value) { return value; },
+        "date": function (value) { return value; },
         "float": function (value) { return value; },
         "uuid": exports.uuid,
         "timeId": function () { return exports.timeid(); },
@@ -679,6 +749,10 @@ exports.cast = function (type, val, allowUknownTypes, nSQL) {
     var doCast = function (castType, castVal) {
         switch (castType) {
             case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, function (s) { return entityMap[s]; });
+            case "date":
+                if (t === "string") {
+                    return Date.parse(castVal);
+                }
             case "int": return (t !== "number" || castVal % 1 !== 0) ? Math.round(exports.nan(castVal)) : castVal;
             case "number":
             case "float": return t !== "number" ? exports.nan(castVal) : castVal;

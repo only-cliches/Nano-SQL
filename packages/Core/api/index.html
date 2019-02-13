@@ -172,7 +172,7 @@
 							<td>✕</td>
 						</tr>
 						<tr>
-							<td>Node</td>
+							<td>NodeJS</td>
 							<td>✓</td>
 							<td>✓</td>
 							<td>✓</td>
@@ -220,6 +220,18 @@
 							<td>✕</td>
 						</tr>
 						<tr>
+							<td>Indexes</td>
+							<td>✓</td>
+							<td>✕</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✓</td>
+							<td>✕</td>
+						</tr>
+						<tr>
 							<td>Size (kb)</td>
 							<td>27</td>
 							<td>5</td>
@@ -238,11 +250,11 @@
 				<ol>
 					<li><p><strong>Included In The Box</strong></p>
 						<ul>
-							<li>Memory</li>
-							<li>Rocks DB</li>
-							<li>Indexed DB</li>
-							<li>WebSQL</li>
-							<li>Local Storage</li>
+							<li>Memory (Browser/NodeJS/Electron)</li>
+							<li>Rocks DB (NodeJS/Electron)</li>
+							<li>Indexed DB (Browser)</li>
+							<li>WebSQL (Browser)</li>
+							<li>Local Storage (Browser)</li>
 						</ul>
 					</li>
 					<li><p><strong><a href="https://www.npmjs.com/package/@nano-sql/adapter-sqlite">SQLite (NodeJS/Electron)</a></strong></p>
@@ -270,7 +282,7 @@
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.8/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.9/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="important">Important</h2>
 				<p>If you are migrating from nanoSQL 1.X to 2.X, please read the <a href="https://nanosql.gitbook.io/docs/5-migration/1.x-2.0">migration guide</a>.</p>
@@ -510,6 +522,9 @@ nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-strin
 				<ul>
 					<li class="globals  ">
 						<a href="globals.html"><em>Globals</em></a>
+					</li>
+					<li class=" tsd-kind-external-module">
+						<a href="modules/_adapter_detect_.html">"adapter-<wbr>detect"</a>
 					</li>
 					<li class=" tsd-kind-external-module">
 						<a href="modules/_adapter_test_.html">"adapter-<wbr>test"</a>

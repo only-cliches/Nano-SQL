@@ -1,5 +1,5 @@
 import { InanoSQLQueryBuilder, InanoSQLObserverQuery, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
-import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign } from "./utilities";
+import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign, _nanoSQLQueue } from "./utilities";
 import * as equal from "fast-deep-equal";
 
 // tslint:disable-next-line
@@ -146,8 +146,8 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     public from(tableObj: {
         table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
         as?: string
-    } | string): _nanoSQLQueryBuilder {
-        if (typeof tableObj === "string") {
+    } | string | any[]): _nanoSQLQueryBuilder {
+        if (typeof tableObj === "string" || Array.isArray(tableObj)) {
             this._query.table = tableObj;
         } else {
             this._query.table = tableObj.table;
@@ -169,6 +169,43 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     public toCSV(headers?: boolean): any {
         let t = this;
         return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
+    }
+
+    public copyTo(table: string, onProgress?: (row, num: number) => void): Promise<{count: number, perf: number}> {
+        return new Promise((res, rej) => {
+            if (this._query.action !== "select") {
+                rej(`copyTo only works with select statements!`);
+                return;
+            }
+            if (!table || typeof table !== "string") {
+                rej('Can only copy to valid internal tables!');
+                return;
+            }
+    
+            let start = Date.now();
+            let i = 0;
+            const copyQ = new _nanoSQLQueue((row, cnt, complete, error) => {
+                this._query.parent.triggerQuery({
+                    ...buildQuery(this._query.parent, table, "upsert"),
+                    actionArgs: row,
+                }, noop, () => {
+                    if (onProgress) onProgress(row, i);
+                    i++;
+                    complete();
+                }, error);
+            }, rej, () => {
+                res({count: i, perf: Date.now() - start});
+            });
+
+
+            this.stream((row) => {
+                if (row) {
+                    copyQ.newItem(row);
+                }
+            }, () => {
+                copyQ.finished();
+            }, rej, false);
+        });
     }
 
     public exec(returnEvents?: boolean): Promise<any[]> {

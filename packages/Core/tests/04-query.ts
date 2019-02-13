@@ -3,8 +3,9 @@ import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
 import { comments, users, posts } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
-import { InanoSQLInstance, InanoSQLFKActions } from "../src/interfaces";
+import { InanoSQLInstance, InanoSQLFKActions, InanoSQLAdapter } from "../src/interfaces";
 import { uuid, crowDistance, assign } from "../src/utilities";
+import { SyncStorage } from "../src/adapters/syncStorage";
 
 
 describe("Testing Other Features", () => {
@@ -1154,6 +1155,79 @@ describe("Testing Other Features", () => {
                 });
             }, 100);
         });
+    });
+
+    it("Clone Queries Work", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "posts",
+                model: {
+                    "id:int": { ai: true, pk: true },
+                    "userId:int": {},
+                    "title:string": {},
+                    "body:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("clone", {
+                mode: new SyncStorage(),
+                getAdapter: (adapter: InanoSQLAdapter) => {
+                    let rows: any[] = [];
+                    const tableId = nSQL._tableIds["posts"];
+                    adapter.readMulti(tableId, "all", 0, 0, false, (row) => {
+                        rows.push(row);
+                    }, () => {
+                        try {
+                            expect(rows).to.deep.equal(posts);
+                            done();
+                        } catch (e) {
+                            done(e);
+                        }
+                    }, (err) => {
+                        done(err)
+                    })
+                }
+            }).exec();
+        }).catch((err) => {
+            done(err);
+        })
+    });
+
+    it("Copy To Queries Work", (done: MochaDone) => {
+        const nSQL = new nanoSQL();
+        nSQL.connect({
+            tables: [{
+                name: "posts",
+                model: {
+                    "id:int": { ai: true, pk: true },
+                    "userId:int": {},
+                    "title:string": {},
+                    "body:string": {}
+                },
+            }, {
+                name: "posts2",
+                model: {
+                    "id:int": { ai: true, pk: true },
+                    "userId:int": {},
+                    "title:string": {},
+                    "body:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("posts").loadJS(posts);
+        }).then(() => {
+            return nSQL.query("select").where(["id", "<", 20]).copyTo("posts2");
+        }).then((res) => {
+            try {
+                expect(res.count).to.equal(19);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        })
     });
 
     it("Secondary Index Test (Delete)", (done: MochaDone) => {
