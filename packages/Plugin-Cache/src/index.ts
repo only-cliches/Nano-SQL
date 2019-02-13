@@ -1,5 +1,5 @@
-import { InanoSQLAdapter, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, adapterCreateIndexFilter, adapterConnectFilter, adapterDeleteIndexFilter, adapterAddIndexValueFilter, adapterDeleteIndexValueFilter, adapterReadIndexKeyFilter, adapterReadIndexKeysFilter, adapterWriteFilter, adapterReadFilter, adapterReadMultiFilter, adapterDisconnectFilter, adapterCreateTableFilter, adapterDropTableFilter, adapterDeleteFilter, adapterGetTableIndexFilter, adapterGetTableIndexLengthFilter } from "@nano-sql/core/lib/interfaces";
-import { generateID, deepSet, chainAsync, allAsync, blankTableDefinition } from "@nano-sql/core/lib/utilities";
+import { InanoSQLAdapter, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, adapterCreateIndexFilter, adapterConnectFilter, adapterDeleteIndexFilter, adapterAddIndexValueFilter, adapterDeleteIndexValueFilter, adapterReadIndexKeyFilter, adapterReadIndexKeysFilter, adapterWriteFilter, adapterReadFilter, adapterReadMultiFilter, adapterDisconnectFilter, adapterCreateTableFilter, adapterDropTableFilter, adapterDeleteFilter, adapterGetTableIndexFilter, adapterGetTableIndexLengthFilter, postConnectFilter, willConnectFilter, InanoSQLQuery } from "@nano-sql/core/lib/interfaces";
+import { generateID, deepSet, chainAsync, allAsync, blankTableDefinition, adapterFilters, buildQuery, noop } from "@nano-sql/core/lib/utilities";
 import { SyncStorage } from "@nano-sql/core/lib/adapters/syncStorage";
 
 export const nSQLCache = (args?: {
@@ -21,6 +21,7 @@ export const nSQLCache = (args?: {
         batchInterval: 500,
         ...(args || {}),
     };
+    let nSQL: InanoSQLInstance;
 
     setInterval(() => {
         if (connected) {
@@ -28,14 +29,55 @@ export const nSQLCache = (args?: {
         }
     }, setArgs.batchInterval);
 
-    const loadCache = (tableName: string) => {
+    const loadCache = (tableId: string) => {
+        const tableName = Object.keys(nSQL._tableIds).reduce((prev, cur) => {
+            if (nSQL._tableIds[cur] === tableId) return cur;
+            return prev; 
+        }, "");
+        adapterFilters(nSQL).getTableIndex(tableId, (index) => {
+            let i = 0;
+            const next = () => {
+                let loadThese = index.splice(setArgs.batchSize * i, (setArgs.batchSize * i) + setArgs.batchSize);
+                if (!loadThese.length) {
+                    cachedTables[tableId] = "ready";
+                    return;
+                }
+                allAsync(loadThese, (pk, i, next, err) => {
+                    adapterFilters(nSQL).read(tableId, pk, next, err);
+                }).then((rows) => {
+                    nSQL.triggerQuery({
+                        ...buildQuery(nSQL, tableName, "upsert"),
+                        actionArgs: rows,
+                        tags: ["load-cache"]
+                    }, noop, () => {
+                        i++;
+                        setTimeout(next);
+                    }, (err) => {
+                        throw new Error(err);
+                    });
 
+                }).catch((err) => {
+                    throw new Error(err);
+                })
+            }
+            next();
+        }, (err) => {
+            throw new Error(err);
+        })
     }
 
     return {
         name: "Cache",
         version: 2.00,
         filters: [
+            {
+                name: "willConnect",
+                priority: 1500,
+                call: (inputArgs: willConnectFilter, complete: (args: willConnectFilter) => void, cancel: (info: any) => void) => {
+                    nSQL = inputArgs.res;
+                    complete(inputArgs);
+                }
+            },
             {
                 name: "adapterConnect",
                 priority: 1500,
@@ -50,7 +92,10 @@ export const nSQLCache = (args?: {
                 name: "adapterWrite",
                 priority: 1500,
                 call: (inputArgs: adapterWriteFilter, complete: (args: any) => void, cancel: (info: any) => void) => {
-
+                    const loadCache = ((inputArgs.query || {} as InanoSQLQuery).tags || []).indexOf("load-cache") !== -1;
+                    if (loadCache || cachedTables[inputArgs.res.table] === "ready") {
+                        
+                    }
                 }
             },
             {
@@ -90,6 +135,7 @@ export const nSQLCache = (args?: {
                         cachedTables[inputArgs.res.tableName] = "loading";
                         cacheAdapter.createTable(inputArgs.res.tableName, inputArgs.res.tableData, () => {
                             complete(inputArgs);
+                            loadCache(inputArgs.res.tableName);
                         }, inputArgs.res.error);
                     } else {
                         complete(inputArgs);

@@ -1,50 +1,50 @@
 import { ReallySmallEvents } from "really-small-events";
-import { 
-    assign, 
-    allAsync, 
-    cast, 
-    cleanArgs, 
-    chainAsync, 
+import {
+    assign,
+    allAsync,
+    cast,
+    cleanArgs,
+    chainAsync,
     uuid as uuidFN,
-    noop, 
-    throwErr, 
-    setFast, 
-    resolvePath, 
-    isSafari, 
-    deepGet, 
-    buildQuery, 
-    _nanoSQLQueue, 
-    adapterFilters, 
+    noop,
+    throwErr,
+    setFast,
+    resolvePath,
+    isSafari,
+    deepGet,
+    buildQuery,
+    _nanoSQLQueue,
+    adapterFilters,
     cleanArgs2
 } from "./utilities";
-import { 
-    InanoSQLConfig, 
-    InanoSQLFunction, 
-    InanoSQLActionOrView, 
-    InanoSQLQuery, 
-    disconnectFilter, 
-    InanoSQLDatabaseEvent, 
-    extendFilter, 
-    queryFilter, 
-    eventFilter, 
-    configFilter, 
-    actionViewFilter, 
-    InanoSQLAdapter, 
-    willConnectFilter, 
-    readyFilter, 
-    InanoSQLTableColumn, 
-    InanoSQLTableConfig, 
-    InanoSQLTable, 
-    InanoSQLInstance, 
-    InanoSQLQueryBuilder, 
-    customEventFilter, 
-    VERSION, 
-    TableQueryResult, 
-    postConnectFilter, 
-    onEventFilter, 
-    offEventFilter, 
-    InanoSQLV1ConfigFn, 
-    InanoSQLFKActions, 
+import {
+    InanoSQLConfig,
+    InanoSQLFunction,
+    InanoSQLActionOrView,
+    InanoSQLQuery,
+    disconnectFilter,
+    InanoSQLDatabaseEvent,
+    extendFilter,
+    queryFilter,
+    eventFilter,
+    configFilter,
+    actionViewFilter,
+    InanoSQLAdapter,
+    willConnectFilter,
+    readyFilter,
+    InanoSQLTableColumn,
+    InanoSQLTableConfig,
+    InanoSQLTable,
+    InanoSQLInstance,
+    InanoSQLQueryBuilder,
+    customEventFilter,
+    VERSION,
+    TableQueryResult,
+    postConnectFilter,
+    onEventFilter,
+    offEventFilter,
+    InanoSQLV1ConfigFn,
+    InanoSQLFKActions,
     uuid
 } from "./interfaces";
 import { attachDefaultFns } from "./functions";
@@ -454,7 +454,7 @@ export class nanoSQL implements InanoSQLInstance {
         }
 
         let queryRunning = false;
-        
+
         return {
             promise: (args: any) => {
                 return new Promise((res, rej) => {
@@ -520,7 +520,7 @@ export class nanoSQL implements InanoSQLInstance {
             // setup and connect adapter
             return new Promise((res, rej) => {
 
-                
+
                 this.adapter = resolveMode(this.config.mode || "TEMP", this.config);
 
 
@@ -686,8 +686,8 @@ export class nanoSQL implements InanoSQLInstance {
                     events: ["ready"],
                     time: Date.now()
                 };
-                
-                this.doFilter<readyFilter>("ready", {res: event}, (evnt) => {
+
+                this.doFilter<readyFilter>("ready", { res: event }, (evnt) => {
                     this.triggerEvent(evnt.res);
                     this.state.ready = true;
                     if (!this.config.disableTTL) {
@@ -989,11 +989,11 @@ export class nanoSQL implements InanoSQLInstance {
         this.doFilter<queryFilter>("query", { res: query }, (setQuery) => {
 
             if (this.config.queue && !setQuery.res.skipQueue) {
-                this._Q.newItem({ 
-                    query: setQuery.res, 
-                    onRow: onRow, 
-                    complete: complete, 
-                    error: error 
+                this._Q.newItem({
+                    query: setQuery.res,
+                    onRow: onRow,
+                    complete: complete,
+                    error: error
                 }, (item: { query: InanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
                     new _nanoSQLQuery(this, item.query, item.onRow, () => {
                         done();
@@ -1339,7 +1339,7 @@ export class nanoSQL implements InanoSQLInstance {
 
 export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1ConfigFn) => void): InanoSQLConfig => {
 
-    let tables: {[tableName: string]: InanoSQLTableConfig} = {};
+    let tables: { [tableName: string]: InanoSQLTableConfig } = {};
     let conf = {};
     let selTable: string = "";
 
@@ -1356,7 +1356,7 @@ export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1Co
         }
 
         return {
-            model: (dataModels: {key: string, type: string, props?: any[], default?: any}[]) => {
+            model: (dataModels: { key: string, type: string, props?: any[], default?: any }[]) => {
                 let indexes: InanoSQLTableConfig["indexes"] = {};
                 tables[selTable].model = dataModels.reduce((prev, cur) => {
                     const key = cur.key + ":" + cur.type;
@@ -1370,7 +1370,7 @@ export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1Co
                         }
                         if (indexes && cur.props.indexOf("idx") !== -1) {
                             indexes[key] = {};
-                        } 
+                        }
                     }
                     return prev;
                 }, {});
@@ -1385,7 +1385,7 @@ export const nSQLv1Config = (doConfig: (nSQLv1: (table?: string) => InanoSQLV1Co
                 tables[selTable].views = views;
                 return nSQLv1(table);
             },
-            config: (obj: {[key: string]: any}) => {
+            config: (obj: { [key: string]: any }) => {
                 conf = obj;
                 return nSQLv1(table);
             },
@@ -1444,4 +1444,3 @@ new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {
     console.error(err);
     errors++;
 });*/
-
