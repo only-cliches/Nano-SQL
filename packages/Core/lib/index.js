@@ -1222,5 +1222,5 @@ new nanoSQLAdapterTest(IndexedDB, []).test().then(() => {
 }).catch((err) => {
     console.error(err);
     errors++;
-});*/
+});*/ 
 //# sourceMappingURL=index.js.map

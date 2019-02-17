@@ -347,61 +347,51 @@ var _nanoSQLQuery = /** @class */ (function () {
             var withPK = typeof join.with.table === "string" ? _this.nSQL._tables[join.with.table].pkCol : [];
             var rightTable = String(join.with.as || join.with.table);
             var leftTable = String(_this.query.tableAS || _this.query.table);
-            var queryTable = _this.query.tableAS || _this.query.table;
-            var whereCond = join.on && join.type !== "cross" ? _this._buildCombineWhere(join.on, join.with.as || join.with.table, queryTable, rowData) : [];
-            _this._getTable(queryTable, whereCond, join.with.table, function (joinTable) {
-                var eachRow = function (row) {
-                    var _a;
-                    joinRowCount++;
-                    if (join.type === "right" || join.type === "outer") {
-                        // keep track of which right side rows have been joined
-                        rightHashes.push(withPK ? utilities_1.deepGet(withPK, row) : utilities_1.hash(JSON.stringify(row)));
-                    }
-                    joinBuffer.newItem(__assign({}, rowData, (_a = {}, _a[rightTable] = row, _a)));
-                };
-                var rowsDone = function () {
-                    var _a, _b;
-                    switch (join.type) {
-                        case "left":
-                            if (joinRowCount === 0) {
-                                joinBuffer.newItem(__assign({}, rowData, (_a = {}, _a[rightTable] = undefined, _a)));
-                            }
-                            joinBuffer.finished();
-                            break;
-                        case "inner":
-                        case "cross":
-                            joinBuffer.finished();
-                            break;
-                        case "outer":
-                        case "right":
-                            if (joinRowCount === 0 && join.type === "outer") {
-                                joinBuffer.newItem(__assign({}, rowData, (_b = {}, _b[rightTable] = undefined, _b)));
-                            }
-                            // full table scan on right table :(
-                            _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, join.with.table, "select"), { skipQueue: true, cacheID: _this.query.cacheID, where: withPK ? [withPK, "NOT IN", rightHashes] : undefined }), function (row) {
-                                var _a;
-                                if (withPK || rightHashes.indexOf(utilities_1.hash(JSON.stringify(row))) === -1) {
-                                    joinBuffer.newItem(__assign({}, rowData, (_a = {}, _a[leftTable] = undefined, _a[rightTable] = row, _a)));
-                                }
-                            }, function () {
-                                joinBuffer.finished();
-                            }, function (err) {
-                                _this.query.state = "error";
-                                _this.error(err);
-                            });
-                            break;
-                    }
-                };
-                if (joinTable.filtered) {
-                    joinTable.rows.forEach(eachRow);
-                    rowsDone();
+            var eachRow = function (row) {
+                var _a;
+                joinRowCount++;
+                if (join.type === "right" || join.type === "outer") {
+                    // keep track of which right side rows have been joined
+                    rightHashes.push(withPK ? utilities_1.deepGet(withPK, row) : utilities_1.hash(JSON.stringify(row)));
                 }
-                else {
-                    _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, joinTable.rows, "select"), { tableAS: join.with.as, cacheID: _this.query.cacheID, where: join.on && join.type !== "cross" ? _this._buildCombineWhere(join.on, join.with.as || join.with.table, queryTable, rowData) : undefined, skipQueue: true }), eachRow, rowsDone, function (err) {
-                        _this.query.state = "error";
-                        _this.error(err);
-                    });
+                joinBuffer.newItem(__assign({}, rowData, (_a = {}, _a[rightTable] = row, _a)));
+            };
+            var rowsDone = function () {
+                var _a, _b;
+                switch (join.type) {
+                    case "left":
+                        if (joinRowCount === 0) {
+                            joinBuffer.newItem(__assign({}, rowData, (_a = {}, _a[rightTable] = undefined, _a)));
+                        }
+                        joinBuffer.finished();
+                        break;
+                    case "inner":
+                    case "cross":
+                        joinBuffer.finished();
+                        break;
+                    case "outer":
+                    case "right":
+                        if (joinRowCount === 0 && join.type === "outer") {
+                            joinBuffer.newItem(__assign({}, rowData, (_b = {}, _b[rightTable] = undefined, _b)));
+                        }
+                        // full table scan on right table :(
+                        _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, join.with.table, "select"), { skipQueue: true, cacheID: _this.query.cacheID, where: withPK ? [withPK, "NOT IN", rightHashes] : undefined }), function (row) {
+                            var _a;
+                            if (withPK || rightHashes.indexOf(utilities_1.hash(JSON.stringify(row))) === -1) {
+                                joinBuffer.newItem(__assign({}, rowData, (_a = {}, _a[leftTable] = undefined, _a[rightTable] = row, _a)));
+                            }
+                        }, function () {
+                            joinBuffer.finished();
+                        }, function (err) {
+                            _this.query.state = "error";
+                            _this.error(err);
+                        });
+                        break;
                 }
+            };
+            _this.nSQL.triggerQuery(__assign({}, utilities_1.buildQuery(_this.nSQL, join.with.table, "select"), { tableAS: join.with.as, cacheID: _this.query.cacheID, where: join.on && join.type !== "cross" ? _this._buildCombineWhereJoin(join.on, join.with.as || join.with.table, rowData) : undefined, skipQueue: true }), eachRow, rowsDone, function (err) {
+                _this.query.state = "error";
+                _this.error(err);
             });
         };
         doJoin((_a = {}, _a[String(this.query.tableAS || this.query.table)] = leftRow, _a), 0, complete);
@@ -745,7 +735,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             });
         }
     };
-    _nanoSQLQuery.prototype._buildCombineWhere = function (graphWhere, graphTable, rowTable, rowData) {
+    _nanoSQLQuery.prototype._buildCombineWhereJoin = function (graphWhere, graphTable, rowData) {
         var _this = this;
         if (typeof graphWhere === "function") {
             return function (compareRow) {
@@ -754,12 +744,12 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         return (typeof graphWhere[0] === "string" ? [graphWhere] : graphWhere).map(function (j) {
             if (Array.isArray(j[0]))
-                return _this._buildCombineWhere(j, graphTable, rowTable, rowData); // nested where
+                return _this._buildCombineWhereJoin(j, graphTable, rowData); // nested where
             if (j === "AND" || j === "OR")
                 return j;
             var leftWhere = utilities_1.resolvePath(j[0]);
             var rightWhere = utilities_1.resolvePath(j[2]);
-            var swapWhere = leftWhere[0] === rowTable;
+            var swapWhere = leftWhere[0] !== graphTable;
             // swapWhere = true [leftTable.column, =, rightTable.column] => [rightWhere, =, objQuery(leftWhere)]
             // swapWhere = false [rightTable.column, =, leftTable.column] => [leftWhere, =, objQuery(rightWhere)]
             return [
@@ -790,7 +780,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 return;
             }
             row[graph.key] = [];
-            var whereCond = _this._buildCombineWhere(graph.on, graph.with.as || graph.with.table, topTable, (_a = {}, _a[topTable] = row, _a));
+            var whereCond = _this._buildCombineWhereJoin(graph.on, graph.with.as || graph.with.table, (_a = {}, _a[topTable] = row, _a));
             _this._getTable(graph.with.as || graph.with.table, whereCond, graph.with.table, function (graphTable) {
                 if (graphTable.filtered) {
                     graphTable.rows.forEach(function (graphRow) {

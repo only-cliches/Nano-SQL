@@ -1,5 +1,5 @@
 import { InanoSQLDataModel, InanoSQLQuery } from "@nano-sql/core/lib/interfaces";
-import { InanoSQLUniversalDB, InanoSQLSession } from "@nano-sql/plugin-net-common";
+import { InanoSQLUniversalDB, InanoSQLSession } from "../common";
 import { Express } from "express";
 
 export interface InanoSQLPresetQuery {

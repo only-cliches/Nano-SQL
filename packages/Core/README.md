@@ -31,7 +31,7 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 ### Flexible Data Models
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
-### Data Models => TypeScript Types
+### Data Models => TypeScript Files
 Instantly convert data models into typescript interfaces.
 
 ### Graph Queries
@@ -104,7 +104,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.1.9/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.0/dist/nano-sql.min.js"></script>
 ```
 
 ## Important

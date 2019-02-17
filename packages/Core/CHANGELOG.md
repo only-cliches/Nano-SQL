@@ -4,6 +4,10 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.0] 2-17-2019
+- Made some optimizations to JOIN code, joins are faster now.
+- Fixed issue [#128](https://github.com/ClickSimply/Nano-SQL/issues/128).  Nested joins based on previous join value is now possible.
+
 ## [2.1.9] 2-12-2019
 - **BREAKING CHANGE** The filter "adapterCreateTable" now uses `table` instead of `tableName` to keep with the naming convention of other filters.
 - Fixed issue [#126](https://github.com/ClickSimply/Nano-SQL/issues/126) with `.from` usage.

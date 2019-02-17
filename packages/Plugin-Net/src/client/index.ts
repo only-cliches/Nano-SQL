@@ -1,6 +1,6 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "@nano-sql/core/lib/interfaces";
 import { generateID, setFast, deepSet } from "@nano-sql/core/lib/utilities";
-import { InanoSQLUniversalDB, InanoSQLSession } from "@nano-sql/plugin-net-common";
+import { InanoSQLUniversalDB, InanoSQLSession } from "../common";
 
 export class nanoSQLClient {
 

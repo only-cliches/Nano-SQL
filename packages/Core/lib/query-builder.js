@@ -135,8 +135,8 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         return this;
     };
     _nanoSQLQueryBuilder.prototype.toCSV = function (headers) {
-        var t = this;
-        return t.exec().then(function (json) { return Promise.resolve(t._db.JSONtoCSV(json, headers)); });
+        var _this = this;
+        return this.exec().then(function (json) { return Promise.resolve(_this._db.JSONtoCSV(json, headers)); });
     };
     _nanoSQLQueryBuilder.prototype.copyTo = function (table, mutate) {
         this._query.copyTo = {

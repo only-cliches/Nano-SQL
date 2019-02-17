@@ -1,11 +1,12 @@
 import { expect, assert } from "chai";
 import "mocha";
 import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
-import { comments, users, posts } from "./data";
+import { comments, users, posts, multiJoinResult } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
 import { InanoSQLInstance, InanoSQLFKActions, InanoSQLAdapter } from "../src/interfaces";
 import { uuid, crowDistance, assign, noop } from "../src/utilities";
 import { SyncStorage } from "../src/adapters/syncStorage";
+import * as fs from "fs";
 
 
 describe("Testing Other Features", () => {
@@ -1193,6 +1194,32 @@ describe("Testing Other Features", () => {
             }).exec();
         }).catch((err) => {
             done(err);
+        })
+    });
+
+    it("Multi Nested Joins", (done: MochaDone) => {
+        TestDBs().then((result) => {
+            result.runQuery(`SELECT * from posts`, [], (nSQL) => {
+                return nSQL.selectTable("users").query("select").join([
+                    {
+                        with: {table: "posts"},
+                        type: "inner",
+                        on: ["users.id", "=", "posts.userId"]
+                    },
+                    {
+                        with: {table: "comments"},
+                        type: "inner",
+                        on: ["posts.id", "=", "comments.postId"]
+                    }
+                ]).exec();
+            }).then((result) => {
+                try {
+                    expect(result).to.deep.equal(multiJoinResult);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
         })
     });
 

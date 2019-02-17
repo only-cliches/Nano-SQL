@@ -35,7 +35,7 @@ export declare class _nanoSQLQuery implements InanoSQLQueryExec {
     }, i?: number) => boolean) | undefined, table: any, callback: (result: TableQueryResult) => void): void;
     _select(complete: () => void, onError: (error: any) => void): void;
     _groupByRows(): void;
-    _buildCombineWhere(graphWhere: any, graphTable: string, rowTable: string, rowData: any): any;
+    _buildCombineWhereJoin(graphWhere: any, graphTable: string, rowData: any): any;
     _graph(gArgs: InanoSQLGraphArgs | InanoSQLGraphArgs[], topTable: string, row: any, index: number, onRow: (row: any, i: number) => void): void;
     _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
     _updateRow(newData: any, oldRow: any, complete: (row: any) => void, error: (err: any) => void): void;

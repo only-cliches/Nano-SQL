@@ -166,9 +166,8 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return this;
     }
 
-    public toCSV(headers?: boolean): any {
-        let t = this;
-        return t.exec().then((json: any[]) => Promise.resolve(t._db.JSONtoCSV(json, headers)));
+    public toCSV(headers?: boolean): Promise<string> {
+        return this.exec().then((json: any[]) => Promise.resolve(this._db.JSONtoCSV(json, headers)));
     }
 
     public copyTo(table: string, mutate?: (row: any) => any): _nanoSQLQueryBuilder {
