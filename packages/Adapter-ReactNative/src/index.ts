@@ -102,6 +102,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
                 return;
             }
             if (result) {
+                this._indexes[tableName] = JSON.parse(result);
                 AsyncStorage.getItem(this.key(tableName, "__AI__"), (err, ai) => {
                     if (err) {
                         error(err);
@@ -112,6 +113,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
                 })
             } else {
                 this._ai[tableName] = 0;
+                this._indexes[tableName] = [];
                 AsyncStorage.setItem(this.key(tableName, "__IDX__"), "[]", (err) => {
                     if (err) {
                         error(err);

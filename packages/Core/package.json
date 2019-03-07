@@ -1,6 +1,6 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.2.0",
+	"version": "2.2.1",
 	"description": "Like Lego For Databases",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",
@@ -8,7 +8,7 @@
 		"dist": "npm-run-all lint test release",
 		"rollup-test": "rollup -c",
 		"serve": "webpack-dev-server --mode=development",
-		"bundle": "cross-env NODE_ENV=production webpack -p --display-modules",
+		"bundle": "webpack -p --display-modules && webpack -p --es5 --display-modules",
 		"release": "bash release.sh",
 		"test": "mocha -r ts-node/register tests/index.ts",
 		"lint": "tslint -p ./tsconfig.json \"./src/**/*.ts\""

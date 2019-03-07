@@ -88,12 +88,12 @@
 				<p>Classical RDBMS queries like aggregate functions, joins and group bys are also supported.  You can even write your own query functions and use foreign keys!</p>
 				<h3 id="flexible-data-models">Flexible Data Models</h3>
 				<p>The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.</p>
-				<h3 id="data-models-typescript-types">Data Models =&gt; TypeScript Types</h3>
+				<h3 id="data-models-typescript-files">Data Models =&gt; TypeScript Files</h3>
 				<p>Instantly convert data models into typescript interfaces.</p>
 				<h3 id="graph-queries">Graph Queries</h3>
 				<p>Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.</p>
 				<h3 id="other-cool-things">Other Cool Things</h3>
-				<p>Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import &amp; export, runs in every browser back to IE9 and starts at only 28KB!</p>
+				<p>Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import &amp; export, runs in every browser back to IE9 and starts at only 27KB!</p>
 				<h2 id="comparison-with-other-projects">Comparison with Other Projects</h2>
 				<table>
 					<thead>
@@ -220,20 +220,8 @@
 							<td>✕</td>
 						</tr>
 						<tr>
-							<td>Indexes</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
 							<td>Size (kb)</td>
-							<td>28</td>
+							<td>27</td>
 							<td>5</td>
 							<td>27</td>
 							<td>40</td>
@@ -282,7 +270,11 @@
 				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;
 </code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.0/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="lang-html"><span class="hljs-comment">&lt;!-- ES6 Only (Faster &amp; Smaller) --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+<span class="hljs-comment">&lt;!-- ES5 (Internet Explorer/Old Browser Support) --&gt;</span>
+<span class="hljs-comment">&lt;!-- Promise must be polyfilled as well --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.es5.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 </code></pre>
 				<h2 id="important">Important</h2>
 				<p>If you are migrating from nanoSQL 1.X to 2.X, please read the <a href="https://nanosql.gitbook.io/docs/5-migration/1.x-2.0">migration guide</a>.</p>

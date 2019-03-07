@@ -4,6 +4,20 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.1] 3-6-2019
+- **BREAKING CHANGE** The default minified build is now ES6 since browser support has grown significantly.  There's still an ES5 friendly build generated at `nano-sql.min.es5.js` in the same folder.
+- Added support for function based column defaults:
+```ts
+nSQL().query("create table", {
+    name: "posts",
+    model: {
+        "id:uuid": {pk: true},
+        "title:string": {},
+        "date:int" {default: () => Date.now() },
+    }
+}).exec()
+```
+
 ## [2.2.0] 2-17-2019
 - Made some optimizations to JOIN code, joins are faster now.
 - Fixed issue [#128](https://github.com/ClickSimply/Nano-SQL/issues/128).  Nested joins based on previous join value is now possible.

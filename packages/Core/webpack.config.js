@@ -1,11 +1,11 @@
 const path = require('path');
-const webpack = require("webpack");
 const PATHS = {
     app: path.join(__dirname, 'src'),
     build: path.join(__dirname, 'dist')
 };
-const nodeExternals = require('webpack-node-externals');
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+
+const es5 = process.argv.indexOf("--es5") !== -1;
 
 const options = {
     entry: {
@@ -13,7 +13,7 @@ const options = {
     },
     output: {
         path: PATHS.build,
-        filename: '[name].min.js',
+        filename: es5 ? '[name].min.es5.js' : '[name].min.js',
         libraryTarget: 'umd',
         umdNamedDefine: true
     },
@@ -48,7 +48,12 @@ const options = {
         rules: [
             {
                 test: /\.ts$/,
-                loader: 'ts-loader'
+                loader: 'ts-loader',
+                options: {
+                    compilerOptions: es5 ? {} : {
+                        target: "ES6"
+                    }
+                }
             }
         ]
     }

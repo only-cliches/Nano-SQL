@@ -1083,7 +1083,7 @@ export class nanoSQL implements InanoSQLInstance {
                         newObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
                     }
                 } else {
-                    let value = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key], false, this) : m.default;
+                    let value = typeof useObj[m.key] !== "undefined" ? cast(m.type, useObj[m.key], false, this) : (typeof m.default === "function" ? m.default(replaceObj) : m.default);
                     if (typeof m.max !== "undefined" && value > m.max) {
                         error = `Data error, column ${m.key} can't be greater than ${m.max}!`
                     }
@@ -1097,7 +1097,9 @@ export class nanoSQL implements InanoSQLInstance {
                 }
             });
 
-            if (error.length) return new Error(error);
+            if (error.length) {
+                throw new Error(error);
+            }
 
             if (hasWildCard && useObj) {
                 const keys = cols.map(c => c.key);

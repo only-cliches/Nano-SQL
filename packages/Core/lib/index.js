@@ -878,7 +878,7 @@ var nanoSQL = /** @class */ (function () {
                     }
                 }
                 else {
-                    var value = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key], false, _this) : m.default;
+                    var value = typeof useObj[m.key] !== "undefined" ? utilities_1.cast(m.type, useObj[m.key], false, _this) : (typeof m.default === "function" ? m.default(replaceObj) : m.default);
                     if (typeof m.max !== "undefined" && value > m.max) {
                         error = "Data error, column " + m.key + " can't be greater than " + m.max + "!";
                     }
@@ -891,8 +891,9 @@ var nanoSQL = /** @class */ (function () {
                     error = "Data error, " + m.key + " cannot be null!";
                 }
             });
-            if (error.length)
-                return new Error(error);
+            if (error.length) {
+                throw new Error(error);
+            }
             if (hasWildCard && useObj) {
                 var keys_1 = cols.map(function (c) { return c.key; });
                 Object.keys(useObj).filter(function (c) { return keys_1.indexOf(c) === -1; }).forEach(function (key) {

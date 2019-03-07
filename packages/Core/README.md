@@ -38,7 +38,7 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 28KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 27KB!
 
 
 ## Comparison with Other Projects
@@ -54,8 +54,7 @@ Built in geolocation indexing, autocomplete, observable queries, typescript supp
 | Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Indexes         | ✓       | ✕      | ✓    | ✓         | ✓       | ✓      | ✓      | ✓      | ✕      |
-| Size (kb)       | 28      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
+| Size (kb)       | 27      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
 
 
 ## Database Support
@@ -77,7 +76,7 @@ NanoSQL can save data to many different places, depending on the browser or envi
 6. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
 7. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
 8. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
-8. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
+9. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
 
 ## Plugins
 - **[Redis Index](https://www.npmjs.com/package/@nano-sql/plugin-redis-index)**
@@ -104,7 +103,11 @@ const nSQL = require("@nano-sql/core").nSQL;
 To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.0/dist/nano-sql.min.js"></script>
+<!-- ES6 Only (Faster & Smaller) -->
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.js"></script>
+<!-- ES5 (Internet Explorer/Old Browser Support) -->
+<!-- Promise must be polyfilled as well -->
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.es5.js"></script>
 ```
 
 ## Important
