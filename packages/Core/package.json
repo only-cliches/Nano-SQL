@@ -115,6 +115,7 @@
 	"author": "Scott Lott <Scott@ClickSimply.com>",
 	"license": "MIT",
 	"dependencies": {
+		"cordova-adapter-sqlite-eypscap": "^2.0.9",
 		"fast-deep-equal": "^2.0.1",
 		"levenshtein-edit-distance": "^2.0.2",
 		"really-small-events": "^1.1.0"

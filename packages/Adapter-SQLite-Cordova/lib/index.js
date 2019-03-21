@@ -33,7 +33,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.09
+            version: 2.10
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
@@ -45,7 +45,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         return _this;
     }
     SQLiteCordova.prototype.connect = function (id, complete, error) {
-        console.log("nanoSQL \"" + id + "\" using SQLite.");
+        console.log("nanoSQL \"" + id + "\" using SQLite");
         try {
             this._db = window["sqlitePlugin"].openDatabase({ name: id, location: "default" });
             complete();
