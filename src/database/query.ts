@@ -1,7 +1,7 @@
 import { IdbQuery } from "../query/std-query";
 import { NanoSQLPlugin, DBConnect, DataModel, NanoSQLFunction, NanoSQLInstance, ORMArgs, nSQL, JoinArgs } from "../index";
 import { _NanoSQLStorage, DBRow } from "./storage";
-import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect, tokenizer, crowDistance, setFast } from "../utilities";
+import { fastALL, _assign, hash, deepFreeze, objQuery, uuid, fastCHAIN, intersect, tokenizer, crowDistance, setFast, deepGet, _nanoSQLQueue } from "../utilities";
 import * as fuzzy from "fuzzysearch";
 import * as levenshtein from "levenshtein-edit-distance";
 import { resolve } from "dns";
@@ -978,6 +978,159 @@ export class _MutateSelection {
      * @returns {void}
      * @memberof _MutateSelection
      */
+    public _maybeJoin(leftRow: any, onRow: (rowData: any) => void, complete: () => void, error: (err: any) => void): void {
+
+        const joinData: JoinArgs[] = (Array.isArray(this.q.join) ? this.q.join : [this.q.join]) as any;
+
+
+        if (!joinData[0]) { // no join to perform, NEXT!
+            onRow(leftRow);
+            complete();
+            return;
+        }
+
+        const leftTable = this.q.table as string;
+        const undefinedLeft = this.s.tableInfo[leftTable]._keys.reduce((prev, cur) => { return prev[cur] = undefined, prev; }, {});
+
+        const doJoin = (rowData: { [table: string]: any }, joinIdx: number, joinDone: () => void) => {
+
+            const join = joinData[joinIdx];
+            let joinRowCount = 0;
+            let rightHashes: any[] = [];
+
+            if (join.type !== "cross" && !join.table) {
+                error(new Error("Non 'cross' joins require an 'on' parameter!"));
+                return;
+            }
+
+            const _combineRows = (rData: any) => {
+                return Object.keys(rData).reduce((prev, cur) => {
+                    const row = rData[cur];
+                    if (!row) return prev;
+                    Object.keys(row).forEach((k) => {
+                        prev[cur + "." + k] = row[k];
+                    });
+                    return prev;
+                }, {});
+            };
+
+
+            const joinBuffer = new _nanoSQLQueue((rData, i, rDone, err) => {
+
+                if (!joinData[joinIdx + 1]) { // no more joins, send joined row
+                    onRow(_combineRows(rData));
+                    rDone();
+                } else { // more joins, nest on!
+                    doJoin(rData, joinIdx + 1, rDone);
+                }
+            }, error, joinDone);
+
+
+            const rightPK = this.s.tableInfo[join.table]._pk;
+            const rightTable = join.table;
+            const undefinedRight = this.s.tableInfo[rightTable]._keys.reduce((prev, cur) => { return prev[cur] = undefined, prev; }, {});
+
+            const eachRow = (row) => {
+                joinRowCount++;
+                if (join.type === "right" || join.type === "outer") {
+                    // keep track of which right side rows have been joined
+                    rightHashes.push(deepGet(rightPK, row));
+                }
+                joinBuffer.newItem({
+                    ...rowData,
+                    [rightTable]: row
+                });
+            };
+
+            const rowsDone = () => {
+
+                switch (join.type) {
+                    case "left":
+                        if (joinRowCount === 0) {
+                            joinBuffer.newItem({
+                                ...rowData,
+                                [rightTable]: undefinedRight
+                            });
+                        }
+                        joinBuffer.finished();
+                        break;
+                    case "inner":
+                    case "cross":
+                        joinBuffer.finished();
+                        break;
+                    case "outer":
+                    case "right":
+                        if (joinRowCount === 0 && join.type === "outer") {
+                            joinBuffer.newItem({
+                                ...rowData,
+                                [rightTable]: undefinedRight
+                            });
+                        }
+
+                        // full table scan on right table :(
+                        this.s._rangeRead(join.table, undefined, undefined, true, (rows) => {
+                            rows.forEach((row) => {
+                                joinBuffer.newItem({
+                                    ...rowData,
+                                    [leftTable]: undefinedLeft,
+                                    [rightTable]: row
+                                });
+                            });
+                            joinBuffer.finished();
+                        }, (row) => {
+                            return rightHashes.indexOf(deepGet(rightPK, row)) === -1;
+                        });
+                        break;
+                }
+            };
+
+            if (join.type === "cross") {
+                this.s._rangeRead(join.table, undefined, undefined, true, (rows) => {
+                    rows.forEach(eachRow);
+                    rowsDone();
+                });
+            } else {
+                let joinCondition = join.where || [];
+                if (!joinCondition.length) {
+                    error("No join condition!");
+                    return;
+                }
+                // ["someTable.col", "=", "otherTable.id"]
+                const rightTableOnLeftCondition = joinCondition[0].indexOf(join.table) === 0;
+                const rightCol = rightTableOnLeftCondition ? joinCondition[0].split(".")[1] : joinCondition[2].split(".")[1];
+                const rightValue = rightTableOnLeftCondition ? deepGet(joinCondition[2], rowData) : deepGet(joinCondition[0], rowData);
+
+                if (rightCol === rightPK) { // primary key (very fast)
+                    this.s.adapterRead(join.table, rightValue, (row) => {
+                        eachRow(row);
+                        rowsDone();
+                    }, false);
+                } else { // not primary key on right (full table scan)
+                    const getRrightCol = (rightTableOnLeftCondition ? joinCondition[0] : joinCondition[2]).split(".").filter((v, i) => i > 0).join(".");
+                    this.s._rangeRead(join.table, undefined, undefined, true, (rows) => {
+                        rows.forEach(eachRow);
+                        rowsDone();
+                    }, (row) => {
+                        return deepGet(getRrightCol, row) === rightValue;
+                    });
+                }
+            }
+
+        };
+
+        doJoin({ [leftTable]: leftRow }, 0, complete);
+    }
+
+    /**
+     * Peform a join command.
+     *
+     * @internal
+     * @param {DBRow[]} rows
+     * @param {(rows: DBRow[]) => void} complete
+     * @returns {void}
+     * @memberof _MutateSelection
+     */
+    /*
     private _join(rows: DBRow[], complete: (rows: DBRow[]) => void, error: (E: Error) => void): void {
 
         if (!this.q.join) {
@@ -1052,7 +1205,7 @@ export class _MutateSelection {
         });
 
 
-    }
+    }*/
 
     /**
      * Generate a unique group by key given a group by object and a row.
@@ -1235,6 +1388,7 @@ export class _MutateSelection {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _MutateSelection
      */
+    /*
     private _doJoin(type: "left" | "inner" | "right" | "cross" | "outer", leftTable: string, rightTable: string, joinConditions: null | { _left: string, _check: string, _right: string }, complete: (rows: DBRow[]) => void): void {
         const L = "left";
         const R = "right";
@@ -1309,6 +1463,7 @@ export class _MutateSelection {
             }
         });
     }
+    */
 
     /**
      * Get the sort direction for two objects given the objects, columns and resolve paths.
@@ -1545,10 +1700,16 @@ export class _MutateSelection {
         };
 
         if (this.q.join) {
-            this._join(inputRows, (rows) => {
-                inputRows = rows;
+            let joinedRows: any[] = [];
+            console.log(inputRows);
+            fastCHAIN(inputRows, (row, i, next) => {
+                this._maybeJoin(row, (newRow) => {
+                    joinedRows.push(newRow);
+                }, next, error);
+            }).then(() => {
+                inputRows = joinedRows;
                 afterJoin();
-            }, error);
+            }).catch(error);
         } else {
             afterJoin();
         }
@@ -1584,10 +1745,10 @@ export class _RowSelection {
         }
 
         // join command requires n^2 scan that gets taken care of in join logic.
-        if (this.q.join) {
+        /*if (this.q.join) {
             callback([]);
             return;
-        }
+        }*/
 
         // trie search, nice and fast.
         if (this.q.trie && this.q.trie.column && this.q.trie.search) {

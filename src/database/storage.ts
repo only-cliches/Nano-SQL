@@ -911,11 +911,17 @@ export class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorage
      */
-    public _rangeRead(table: string, from: any, to: any, usePKs: boolean, complete: (rows: DBRow[]) => void) {
+    public _rangeRead(table: string, from: any, to: any, usePKs: boolean, complete: (rows: DBRow[]) => void, filter?: (row: any) => boolean) {
 
         let rows: any[] = [];
         this.adapters[0].adapter.rangeRead(table, (row, idx, next) => {
-            rows.push(row);
+            if (filter) {
+                if (filter(row)) {
+                    rows.push(row);
+                }
+            } else {
+                rows.push(row);
+            }
             next();
         }, () => {
             complete(rows);

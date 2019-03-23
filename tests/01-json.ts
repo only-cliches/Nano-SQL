@@ -42,7 +42,6 @@ describe("Import/Export", () => {
             nSQL.loadCSV("users", CSVData).then(() => {
                 nSQL.table("users").query("select").exec().then((rows) => {
                     try {
-                        console.log(rows);
                         expect(rows).to.deep.equal(ExampleUsers, "CSV Import failed!");
                         done();
                     } catch (e) {

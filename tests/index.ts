@@ -6,7 +6,7 @@ const mochaTestData = require("mocha-testdata");
 const colors = require("colors");
 
 console.log(("Tests Beginning at " + new Date().toLocaleTimeString() + ", " + new Date().toDateString() as any).magenta);
-
+/*
 import "./01-json";
 import "./02-primaryKeys";
 import "./03-integrity";
@@ -21,3 +21,5 @@ import "./11-orm";
 import "./12-events";
 import "./13-search";
 // import "./13-denormalization";
+*/
+import "./08-join";

@@ -467,6 +467,110 @@ export const binarySearch = (arr: any[], value: any, startVal?: number, endVal?:
     return end;
 };
 
+
+// turn path into array of strings, ie value[hey][there].length => [value, hey, there, length];
+export const resolvePath = (pathQuery: string): string[] => {
+    if (!pathQuery) return [];
+
+    if (objectPathCache[pathQuery]) {
+        return objectPathCache[pathQuery].slice();
+    }
+    const path = pathQuery.indexOf("[") !== -1 ?
+        // handle complex mix of dots and brackets like "users.value[meta][value].length"
+        pathQuery.split(/\.|\[/gmi).map(v => v.replace(/\]/gmi, "")) :
+        // handle simple dot paths like "users.meta.value.length"
+        pathQuery.split(".");
+
+
+
+    objectPathCache[pathQuery] = path;
+
+    return objectPathCache[pathQuery].slice();
+};
+
+export const noop = () => {};
+
+// tslint:disable-next-line:class-name
+export class _nanoSQLQueue {
+
+    private _items: [any, undefined | ((item: any, complete: () => void, err?: (err: any) => void) => void)][] = [];
+    private _going: boolean = false;
+    private _done: boolean = false;
+    private _count: number = 0;
+    private _triggeredComplete: boolean = false;
+
+    constructor(
+        public processItem?: (item: any, count: number, complete: () => void, error: (err: any) => void) => void,
+        public onError?: (err: any) => void,
+        public onComplete?: () => void
+    ) {
+        this._progressBuffer = this._progressBuffer.bind(this);
+    }
+
+    private _progressBuffer() {
+        if (this._triggeredComplete) {
+            return;
+        }
+
+        // quueue as finished
+        if (this._done && !this._items.length) {
+            this._triggeredComplete = true;
+            if (this.onComplete) this.onComplete();
+            return;
+        }
+
+        // queue has paused
+        if (!this._items.length) {
+            this._going = false;
+            return;
+        }
+
+        const next = () => {
+            this._count++;
+            this._count % 100 === 0 ? setFast(this._progressBuffer) : this._progressBuffer();
+        };
+
+        // process queue
+        const item = this._items.shift() || [];
+        if (item[1]) {
+            item[1](item[0], next, this.onError ? this.onError : noop);
+        } else if (this.processItem) {
+            this.processItem(item[0], this._count, next, this.onError ? this.onError : noop);
+        }
+
+    }
+
+    public finished() {
+        this._done = true;
+        if (this._triggeredComplete) {
+            return;
+        }
+        if (!this._going && !this._items.length) {
+            this._triggeredComplete = true;
+            if (this.onComplete) this.onComplete();
+        }
+    }
+
+    public newItem(item: any, processFn?: (item: any, complete: () => void, err?: (error: any) => void) => void) {
+        this._items.push([item, processFn]);
+        if (!this._going) {
+            this._going = true;
+            this._progressBuffer();
+        }
+    }
+}
+
+
+export const deepGet = (pathQuery: string | string[], object: any): any => {
+
+    const safeGet = (getPath: string[], pathIdx: number, object: any) => {
+        if (!getPath[pathIdx] || !object) return object;
+        return safeGet(getPath, pathIdx + 1, object[getPath[pathIdx] as string]);
+    };
+
+    return safeGet(Array.isArray(pathQuery) ? pathQuery : resolvePath(pathQuery), 0, object);
+};
+
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
  *

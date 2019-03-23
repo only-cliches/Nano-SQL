@@ -45,6 +45,7 @@ const joinTables = (ready: (nSQL: NanoSQLInstance) => void) => {
 };
 
 describe("Join", () => {
+    /*
     it("Left Join", (done: MochaDone) => {
         joinTables((n) => {
             n.table("users").query("select").join({
@@ -52,7 +53,6 @@ describe("Join", () => {
                 table: "posts",
                 where: ["users.id", "=", "posts.author"]
             }).exec().then((rows) => {
-
                 try {
                     expect(rows).to.deep.equal([
                         { "users.id": 1, "users.age": 20, "users.name": "Bill", "users.email": "bill@gmail.com", "users.meta": { "value": 1 }, "users.posts": [1, 2, 3], "posts.id": 1, "posts.title": "never", "posts.author": 1 },
@@ -91,7 +91,7 @@ describe("Join", () => {
             });
         });
     });
-
+*/
     it("Right Join", (done: MochaDone) => {
         joinTables((n) => {
             n.table("users").query("select").join({
@@ -99,7 +99,7 @@ describe("Join", () => {
                 table: "posts",
                 where: ["users.id", "=", "posts.author"]
             }).exec().then((rows) => {
-
+                console.log(rows);
                 try {
                     expect(rows).to.deep.equal([
                         { "posts.id": 1, "posts.title": "never", "posts.author": 1, "users.id": 1, "users.age": 20, "users.name": "Bill", "users.email": "bill@gmail.com", "users.meta": { "value": 1 }, "users.posts": [1, 2, 3] },
@@ -115,7 +115,7 @@ describe("Join", () => {
             });
         });
     });
-
+/*
     it("Multiple Joins", (done: MochaDone) => {
         joinTables((n) => {
             n.table("users").query("select").join([
@@ -287,4 +287,5 @@ describe("Join", () => {
             });
         });
     });
+    */
 });
