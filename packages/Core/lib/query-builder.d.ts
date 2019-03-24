@@ -47,7 +47,7 @@ export declare class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         unique?: boolean;
         compareFn?: (rowsA: any[], rowsB: any[]) => boolean;
     }): _nanoSQLObserverQuery;
-    stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void, events?: boolean): void;
+    stream(onRow: (row: any) => void, complete?: () => void, err?: (error: any) => void, events?: boolean): void;
     cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {
         pageSize: number;
         onPage: (page: number, rows: any[]) => void;

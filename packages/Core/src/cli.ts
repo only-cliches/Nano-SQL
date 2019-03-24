@@ -6,7 +6,6 @@ import * as fs from "fs";
 import * as chalk from "chalk";
 import * as cliArgs from "command-line-args";
 import { InanoSQLTableConfig, InanoSQLDataModel } from "./interfaces";
-import { DateTime } from "luxon";
 import { titleCase, resolvePath, objectsEqual } from "./utilities";
 
 let packageJSON: any = {};
@@ -204,7 +203,6 @@ const parseFile = (file: string, idx: number): string => {
                 tsFile += "\n\n";
             })
         }
-        const now = DateTime.local();
         console.log(`${idx + 1}. "${(file.split(/\\|\//gmi).pop() || "")}" types rendered.`);
         return tsFile;
     } catch(e) {
@@ -221,8 +219,7 @@ if (!useOptions.outDir) {
 }
 
 useOptions.files.forEach((file, i) => {
-    const now = DateTime.local();
-    console.log(`Running on ${now.toLocaleString(DateTime.DATETIME_FULL)}`);
+    console.log(`Running on ${new Date().toLocaleTimeString()}`);
     let newTypeFile = parseFile(path.join(_cwd, file), i);
     const fileName = (file.split(/\\|\//gmi).pop() || "").split(".").shift();
     try {
@@ -236,13 +233,11 @@ if (useOptions.watch) {
     console.log("\nWatching files...");
     useOptions.files.forEach((file) => {
         const watcher = chokadir.watch(path.join(_cwd, file), {
-            persist: true,
             usePolling: useOptions.watchPolling ? true : false,
             interval: useOptions.watchPolling,
         });
         watcher.on("change", (ev) => {
-            const now = DateTime.local();
-            console.log(`Change detected ${now.toLocaleString(DateTime.DATETIME_FULL)}`);
+            console.log(`Change detected ${new Date().toLocaleTimeString()}`);
             let newTypeFile = parseFile(ev, 0);
             const fileName = (ev.split(/\\|\//gmi).pop() || "").split(".").shift();
             try {

@@ -196,12 +196,16 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return new _nanoSQLObserverQuery(this._query, args && args.debounce, args && args.unique, args && args.compareFn);
     }
 
-    public stream(onRow: (row: any) => void, complete: () => void, err: (error: any) => void, events?: boolean): void {
+    public stream(onRow: (row: any) => void, complete?: () => void, err?: (error: any) => void, events?: boolean): void {
         this._query.returnEvent = events;
         if (this._db.state.exportQueryObj) {
+
             onRow(this._query);
-            complete();
+
+            if (complete) complete();
+
         } else {
+
             const copyQ = this._query.copyTo ? new _nanoSQLQueue((item, cnt, next, qerr) => {
                 this._query.parent.triggerQuery({
                     ...buildQuery(this._query.parent, this._query.copyTo && this._query.copyTo.table || "", "upsert"),
@@ -211,7 +215,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
                     next();
                 }, qerr);
             }, err, () => {
-                complete();
+                if (complete) complete();
             }) : undefined;
 
             this._db.triggerQuery(this._query, (row) => {
@@ -224,9 +228,9 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
                 if (copyQ) {
                     copyQ.finished();
                 } else {
-                    complete();
+                    if (complete) complete();
                 }
-            }, err);
+            }, err || noop);
         }
     }
 

@@ -1,11 +1,14 @@
 #!/usr/bin/env node
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var chokadir = require("chokidar");
@@ -13,7 +16,6 @@ var path = require("path");
 var fs = require("fs");
 var chalk = require("chalk");
 var cliArgs = require("command-line-args");
-var luxon_1 = require("luxon");
 var utilities_1 = require("./utilities");
 var packageJSON = {};
 try {
@@ -190,7 +192,6 @@ var parseFile = function (file, idx) {
                 tsFile_1 += "\n\n";
             });
         }
-        var now = luxon_1.DateTime.local();
         console.log(idx + 1 + ". \"" + (file.split(/\\|\//gmi).pop() || "") + "\" types rendered.");
         return tsFile_1;
     }
@@ -205,8 +206,7 @@ if (!useOptions.outDir) {
     throw new Error("No out directory declared, need it with {outDir: \".\"} or --outDir .!");
 }
 useOptions.files.forEach(function (file, i) {
-    var now = luxon_1.DateTime.local();
-    console.log("Running on " + now.toLocaleString(luxon_1.DateTime.DATETIME_FULL));
+    console.log("Running on " + new Date().toLocaleTimeString());
     var newTypeFile = parseFile(path.join(_cwd, file), i);
     var fileName = (file.split(/\\|\//gmi).pop() || "").split(".").shift();
     try {
@@ -220,13 +220,11 @@ if (useOptions.watch) {
     console.log("\nWatching files...");
     useOptions.files.forEach(function (file) {
         var watcher = chokadir.watch(path.join(_cwd, file), {
-            persist: true,
             usePolling: useOptions.watchPolling ? true : false,
             interval: useOptions.watchPolling,
         });
         watcher.on("change", function (ev) {
-            var now = luxon_1.DateTime.local();
-            console.log("Change detected " + now.toLocaleString(luxon_1.DateTime.DATETIME_FULL));
+            console.log("Change detected " + new Date().toLocaleTimeString());
             var newTypeFile = parseFile(ev, 0);
             var fileName = (ev.split(/\\|\//gmi).pop() || "").split(".").shift();
             try {

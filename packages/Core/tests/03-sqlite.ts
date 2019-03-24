@@ -251,6 +251,21 @@ describe("Equivalent SQLite Queries Should Match", () => {
         });
     });
 
+    it("Empty COUNT Query", (done: MochaDone) => {
+        TestDBs().then((dbs) => {
+            dbs.runQuery(`SELECT COUNT(*), title FROM posts WHERE id = ? ORDER BY id`, [5000], (nSQL) => {
+                return nSQL.selectTable("posts").query("select", ["COUNT(*)", "title"]).where(["id", "=", 5000]).orderBy(["id"]).exec();
+            }).then((result) => {
+                try {
+                    expect(result[1]).to.deep.equal(result[0]);
+                    done();
+                } catch (e) {
+                    done(e);
+                }
+            });
+        });
+    });
+
     it("Group By Query 1", (done: MochaDone) => {
         TestDBs().then((dbs) => {
             dbs.runQuery(`SELECT id, COUNT(*) from posts GROUP BY userId ORDER BY id`, [], (nSQL) => {
@@ -362,8 +377,8 @@ describe("Equivalent SQLite Queries Should Match", () => {
 
     it("Limit Offset Query 2", (done: MochaDone) => {
         TestDBs().then((dbs) => {
-            dbs.runQuery(`SELECT * FROM comments GROUP BY postId LIMIT 10 OFFSET 5;`, [], (nSQL) => {
-                return nSQL.selectTable("comments").query("select").groupBy(["postId"]).limit(10).offset(5).exec();
+            dbs.runQuery(`SELECT * FROM comments GROUP BY postId ORDER BY id LIMIT 10 OFFSET 5;`, [], (nSQL) => {
+                return nSQL.selectTable("comments").query("select").groupBy(["postId"]).limit(10).offset(5).orderBy(["id"]).exec();
             }).then((result) => {
                 try {
                     expect(result[1]).to.deep.equal(result[0]);

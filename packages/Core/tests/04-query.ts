@@ -1,19 +1,20 @@
 import { expect, assert } from "chai";
 import "mocha";
-import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin  } from "./init";
+import { TestDBs, JSON2CSV, CSV2JSON, cleanNsqlJoin } from "./init";
 import { comments, users, posts, multiJoinResult } from "./data";
 import { nanoSQL, nSQL as nSQLDefault } from "../src";
 import { InanoSQLInstance, InanoSQLFKActions, InanoSQLAdapter } from "../src/interfaces";
 import { uuid, crowDistance, assign, noop } from "../src/utilities";
 import { SyncStorage } from "../src/adapters/syncStorage";
 import * as fs from "fs";
+import * as path from "path";
 
 
 describe("Testing Other Features", () => {
 
     it("Select Equals", (done: MochaDone) => {
         nSQLDefault([
-            {id: 50}
+            { id: 50 }
         ]).query("select").where(["id", "=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -26,7 +27,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Equals", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 50}}}
+            { id: { value: { prop: 50 } } }
         ]).query("select").where(["id.value.prop", "=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -39,7 +40,7 @@ describe("Testing Other Features", () => {
 
     it("Select Not Equals", (done: MochaDone) => {
         nSQLDefault([
-            {id: 60}
+            { id: 60 }
         ]).query("select").where(["id", "!=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -52,7 +53,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Not Equals", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 60}}}
+            { id: { value: { prop: 60 } } }
         ]).query("select").where(["id.value.prop", "!=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -65,7 +66,7 @@ describe("Testing Other Features", () => {
 
     it("Select Greater Than", (done: MochaDone) => {
         nSQLDefault([
-            {id: 60}
+            { id: 60 }
         ]).query("select").where(["id", ">", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -78,7 +79,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Greater Than", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 60}}}
+            { id: { value: { prop: 60 } } }
         ]).query("select").where(["id.value.prop", ">", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -91,7 +92,7 @@ describe("Testing Other Features", () => {
 
     it("Select Greater Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: 60}
+            { id: 60 }
         ]).query("select").where(["id", ">=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -104,7 +105,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Greater Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 60}}}
+            { id: { value: { prop: 60 } } }
         ]).query("select").where(["id.value.prop", ">=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -117,7 +118,7 @@ describe("Testing Other Features", () => {
 
     it("Select Greater Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: 50}
+            { id: 50 }
         ]).query("select").where(["id", ">=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -130,7 +131,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Greater Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 50}}}
+            { id: { value: { prop: 50 } } }
         ]).query("select").where(["id.value.prop", ">=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -143,7 +144,7 @@ describe("Testing Other Features", () => {
 
     it("Select Less Than", (done: MochaDone) => {
         nSQLDefault([
-            {id: 30}
+            { id: 30 }
         ]).query("select").where(["id", "<", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -156,7 +157,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Less Than", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 30}}}
+            { id: { value: { prop: 30 } } }
         ]).query("select").where(["id.value.prop", "<", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -169,7 +170,7 @@ describe("Testing Other Features", () => {
 
     it("Select Less Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: 30}
+            { id: 30 }
         ]).query("select").where(["id", "<=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -182,7 +183,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Less Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 30}}}
+            { id: { value: { prop: 30 } } }
         ]).query("select").where(["id.value.prop", "<=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -195,7 +196,7 @@ describe("Testing Other Features", () => {
 
     it("Select Less Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: 50}
+            { id: 50 }
         ]).query("select").where(["id", "<=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -208,7 +209,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Less Than or Equal To", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 50}}}
+            { id: { value: { prop: 50 } } }
         ]).query("select").where(["id.value.prop", "<=", 50]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -221,7 +222,7 @@ describe("Testing Other Features", () => {
 
     it("Select In", (done: MochaDone) => {
         nSQLDefault([
-            {id: 20}
+            { id: 20 }
         ]).query("select").where(["id", "IN", [20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -234,7 +235,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select In", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 20}}}
+            { id: { value: { prop: 20 } } }
         ]).query("select").where(["id.value.prop", "IN", [20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -247,7 +248,7 @@ describe("Testing Other Features", () => {
 
     it("Select Not In", (done: MochaDone) => {
         nSQLDefault([
-            {id: 30}
+            { id: 30 }
         ]).query("select").where(["id", "NOT IN", [20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -260,7 +261,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select Not In", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 30}}}
+            { id: { value: { prop: 30 } } }
         ]).query("select").where(["id.value.prop", "NOT IN", [20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -273,7 +274,7 @@ describe("Testing Other Features", () => {
 
     it("Select LIKE", (done: MochaDone) => {
         nSQLDefault([
-            {id: "billy"}
+            { id: "billy" }
         ]).query("select").where(["id", "LIKE", "bill%"]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -286,7 +287,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select LIKE", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: "billy"}}}
+            { id: { value: { prop: "billy" } } }
         ]).query("select").where(["id.value.prop", "LIKE", "bill%"]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -299,7 +300,7 @@ describe("Testing Other Features", () => {
 
     it("Select LIKE", (done: MochaDone) => {
         nSQLDefault([
-            {id: "billy"}
+            { id: "billy" }
         ]).query("select").where(["id", "LIKE", "bill%"]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -312,7 +313,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select LIKE", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: "billy"}}}
+            { id: { value: { prop: "billy" } } }
         ]).query("select").where(["id.value.prop", "LIKE", "bill%"]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -325,7 +326,7 @@ describe("Testing Other Features", () => {
 
     it("Select BETWEEN", (done: MochaDone) => {
         nSQLDefault([
-            {id: 30}
+            { id: 30 }
         ]).query("select").where(["id", "BETWEEN", [20, 50]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -338,7 +339,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select BETWEEN", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 30}}}
+            { id: { value: { prop: 30 } } }
         ]).query("select").where(["id.value.prop", "BETWEEN", [20, 50]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -351,7 +352,7 @@ describe("Testing Other Features", () => {
 
     it("Select NOT BETWEEN", (done: MochaDone) => {
         nSQLDefault([
-            {id: 60}
+            { id: 60 }
         ]).query("select").where(["id", "NOT BETWEEN", [20, 50]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -364,7 +365,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select NOT BETWEEN", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: 60}}}
+            { id: { value: { prop: 60 } } }
         ]).query("select").where(["id.value.prop", "NOT BETWEEN", [20, 50]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -377,7 +378,7 @@ describe("Testing Other Features", () => {
 
     it("Select INCLUDES", (done: MochaDone) => {
         nSQLDefault([
-            {id: [10, 20, 30]}
+            { id: [10, 20, 30] }
         ]).query("select").where(["id", "INCLUDES", 20]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -390,7 +391,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select INCLUDES", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: [10, 20, 30]}}}
+            { id: { value: { prop: [10, 20, 30] } } }
         ]).query("select").where(["id.value.prop", "INCLUDES", 20]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -403,7 +404,7 @@ describe("Testing Other Features", () => {
 
     it("Select NOT INCLUDES", (done: MochaDone) => {
         nSQLDefault([
-            {id: [10, 20, 30]}
+            { id: [10, 20, 30] }
         ]).query("select").where(["id", "NOT INCLUDES", 25]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -416,7 +417,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select NOT INCLUDES", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: [10, 20, 30]}}}
+            { id: { value: { prop: [10, 20, 30] } } }
         ]).query("select").where(["id.value.prop", "NOT INCLUDES", 25]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -429,7 +430,7 @@ describe("Testing Other Features", () => {
 
     it("Select INTERSECT", (done: MochaDone) => {
         nSQLDefault([
-            {id: [10, 20, 30]}
+            { id: [10, 20, 30] }
         ]).query("select").where(["id", "INTERSECT", [20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -442,7 +443,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select INTERSECT", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: [10, 20, 30]}}}
+            { id: { value: { prop: [10, 20, 30] } } }
         ]).query("select").where(["id.value.prop", "INTERSECT", [20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -455,7 +456,7 @@ describe("Testing Other Features", () => {
 
     it("Select INTERSECT ALL", (done: MochaDone) => {
         nSQLDefault([
-            {id: [10, 20, 30]}
+            { id: [10, 20, 30] }
         ]).query("select").where(["id", "INTERSECT ALL", [10, 20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -468,7 +469,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select INTERSECT ALL", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: [10, 20, 30]}}}
+            { id: { value: { prop: [10, 20, 30] } } }
         ]).query("select").where(["id.value.prop", "INTERSECT ALL", [10, 20]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -481,7 +482,7 @@ describe("Testing Other Features", () => {
 
     it("Select NOT INTERSECT", (done: MochaDone) => {
         nSQLDefault([
-            {id: [10, 20, 30]}
+            { id: [10, 20, 30] }
         ]).query("select").where(["id", "NOT INTERSECT", [5, 15]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -494,7 +495,7 @@ describe("Testing Other Features", () => {
 
     it("Nested Select NOT INTERSECT", (done: MochaDone) => {
         nSQLDefault([
-            {id: {value: {prop: [10, 20, 30]}}}
+            { id: { value: { prop: [10, 20, 30] } } }
         ]).query("select").where(["id.value.prop", "NOT INTERSECT", [5, 15]]).exec().then((rows) => {
             try {
                 expect(rows.length).to.equal(1);
@@ -508,7 +509,7 @@ describe("Testing Other Features", () => {
     it("Order By Function", (done: MochaDone) => {
         let rows: any[] = [];
         for (let i = 0; i < 50; i++) {
-            rows.push({value: Math.random() > 0.5 ? uuid() : uuid().toUpperCase()})
+            rows.push({ value: Math.random() > 0.5 ? uuid() : uuid().toUpperCase() })
         }
         nSQLDefault(rows).query("select").orderBy(["UPPER(value) ASC"]).exec().then((result) => {
             const sortedRows = rows.sort((a, b) => {
@@ -523,20 +524,102 @@ describe("Testing Other Features", () => {
         });
     });
 
+
+    it("Order By Multiple Columns", (done: MochaDone) => {
+
+        const nSQLInstance = new nanoSQL();
+
+        const nSQL = (table?: string) => {
+            return nSQLInstance.selectTable(table);
+        }
+
+        nSQL().connect({
+            id: 'test',
+            mode: 'TEMP',
+            tables: [
+                {
+                    name: 'users',
+                    model: {
+                        'id:uuid': { pk: true },
+                        'forename:string': {},
+                        'surname:string': {},
+                        'gender:string': {},
+                        'age:int': {},
+                        'education:string': {},
+                        'occupation:string': {},
+                        'salary:int': {}
+                    },
+                    indexes: {
+                        'forename:string': {},
+                        'surname:string': {},
+                        'age:int': {},
+                        'gender:string': {},
+                        'education:string': {},
+                        'occupation:string': {},
+                        'salary:int': {}
+                    }
+                }
+            ]
+        }).then(() => {
+            const names = JSON.parse(fs.readFileSync(path.join(__dirname, "names.json")).toString());
+            return nSQL("users").loadJS(names);
+        }).then(() => {
+            return nSQL("users").query("select", ["forename", "surname"])
+                .where(['age', '<=', 21])
+                .orderBy(['surname ASC', 'forename ASC']).exec();
+        }).then((rows) => {
+            const compareResult = [{ forename: 'Tiana', surname: 'Brown' },
+            { forename: 'Maddie', surname: 'Campbell' },
+            { forename: 'Daryl', surname: 'Chapman' },
+            { forename: 'Freddie', surname: 'Clark' },
+            { forename: 'Freddie', surname: 'Chapman' },
+            { forename: 'Ryan', surname: 'Cooper' },
+            { forename: 'Alexia', surname: 'Craig' },
+            { forename: 'Haris', surname: 'Davis' },
+            { forename: 'Madaline', surname: 'Ellis' },
+            { forename: 'Abigail', surname: 'Evans' },
+            { forename: 'Adison', surname: 'Grant' },
+            { forename: 'Connie', surname: 'Hamilton' },
+            { forename: 'Michael', surname: 'Hamilton' },
+            { forename: 'Amy', surname: 'Holmes' },
+            { forename: 'Kristian', surname: 'Howard' },
+            { forename: 'Grace', surname: 'Johnston' },
+            { forename: 'Kellan', surname: 'Jones' },
+            { forename: 'Jenna', surname: 'Mason' },
+            { forename: 'Honey', surname: 'Perkins' },
+            { forename: 'Paul', surname: 'Reed' },
+            { forename: 'Vincent', surname: 'Richards' },
+            { forename: 'Frederick', surname: 'Riley' },
+            { forename: 'Edith', surname: 'Rogers' },
+            { forename: 'Lucy', surname: 'Rogers' },
+            { forename: 'Kate', surname: 'Taylor' },
+            { forename: 'Briony', surname: 'Thompson' },
+            { forename: 'Isabella', surname: 'Thompson' },
+            { forename: 'Madaline', surname: 'Thompson' },
+            { forename: 'Ada', surname: 'Wright' }];
+            try {
+                expect(rows).to.deep.equal(compareResult);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("PK & Normal Between behave identically.", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 }
             }]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
@@ -568,21 +651,21 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 },
                 indexes: {
-                    "num:int":{unique: true}
+                    "num:int": { unique: true }
                 }
             }]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
-            return nSQL.query("upsert", {id: 60, num: 40}).exec();
+            return nSQL.query("upsert", { id: 60, num: 40 }).exec();
         }).then((pkRows) => {
             queryFinished(false);
         }).catch((err) => {
@@ -702,7 +785,7 @@ describe("Testing Other Features", () => {
         }).then((rows) => {
             try {
                 expect(rows.length).to.equal(7);
-                expect(rows[0].indexes).to.deep.equal([ [ 'title', 'LIKE', 'qui%' ] ]);
+                expect(rows[0].indexes).to.deep.equal([['title', 'LIKE', 'qui%']]);
                 done();
             } catch (e) {
                 done(e);
@@ -724,7 +807,7 @@ describe("Testing Other Features", () => {
                         "body:string": {}
                     },
                     indexes: {
-                        "title:string": {ignore_case: true}
+                        "title:string": { ignore_case: true }
                     }
                 }
             ]
@@ -757,32 +840,32 @@ describe("Testing Other Features", () => {
                 {
                     name: "users",
                     model: {
-                        "id:int":{pk: true},
-                        "num:int":{}
+                        "id:int": { pk: true },
+                        "num:int": {}
                     }
                 },
                 {
                     name: "posts",
                     model: {
-                        "id:int":{pk:true},
-                        "title:string":{},
-                        "user:int":{}
+                        "id:int": { pk: true },
+                        "title:string": {},
+                        "user:int": {}
                     },
                     indexes: {
-                        "user:int":{foreignKey: {target: "users.id", onDelete: InanoSQLFKActions.RESTRICT}}
+                        "user:int": { foreignKey: { target: "users.id", onDelete: InanoSQLFKActions.RESTRICT } }
                     }
                 }
             ]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("users").loadJS(rows);
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50) });
             }
             return nSQL.selectTable("posts").loadJS(rows);
         }).then(() => {
@@ -802,32 +885,32 @@ describe("Testing Other Features", () => {
                 {
                     name: "users",
                     model: {
-                        "id:int":{pk: true},
-                        "num:int":{}
+                        "id:int": { pk: true },
+                        "num:int": {}
                     }
                 },
                 {
                     name: "posts",
                     model: {
-                        "id:int":{pk:true},
-                        "title:string":{},
-                        "user:int":{}
+                        "id:int": { pk: true },
+                        "title:string": {},
+                        "user:int": {}
                     },
                     indexes: {
-                        "user:int":{foreignKey: {target: "users.id", onDelete: InanoSQLFKActions.CASCADE}}
+                        "user:int": { foreignKey: { target: "users.id", onDelete: InanoSQLFKActions.CASCADE } }
                     }
                 }
             ]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("users").loadJS(rows);
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50) });
             }
             return nSQL.selectTable("posts").loadJS(rows);
         }).then(() => {
@@ -852,36 +935,38 @@ describe("Testing Other Features", () => {
                 {
                     name: "users",
                     model: {
-                        "id:int":{pk: true},
-                        "num:int":{},
+                        "id:int": { pk: true },
+                        "num:int": {},
                         "postIds:int[]": {}
                     },
                     indexes: {
-                        "postIds:int[]":{foreignKey: {target: "posts.id", onDelete: InanoSQLFKActions.CASCADE}}
+                        "postIds:int[]": { foreignKey: { target: "posts.id", onDelete: InanoSQLFKActions.CASCADE } }
                     }
                 },
                 {
                     name: "posts",
                     model: {
-                        "id:int":{pk:true},
-                        "title:string":{},
-                        "user:int":{}
+                        "id:int": { pk: true },
+                        "title:string": {},
+                        "user:int": {}
                     }
                 }
             ]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i, posts: [
-                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
-                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
-                ]});
+            for (let i = 1; i < 50; i++) {
+                rows.push({
+                    id: i, num: i, posts: [
+                        i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                        i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                    ]
+                });
             }
             return nSQL.selectTable("users").loadJS(rows);
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50) });
             }
             return nSQL.selectTable("posts").loadJS(rows);
         }).then(() => {
@@ -906,36 +991,38 @@ describe("Testing Other Features", () => {
                 {
                     name: "users",
                     model: {
-                        "id:int":{pk: true},
-                        "num:int":{},
+                        "id:int": { pk: true },
+                        "num:int": {},
                         "postIds:int[]": {}
                     },
                     indexes: {
-                        "postIds:int[]":{foreignKey: {target: "posts.id", onDelete: InanoSQLFKActions.CASCADE}}
+                        "postIds:int[]": { foreignKey: { target: "posts.id", onDelete: InanoSQLFKActions.CASCADE } }
                     }
                 },
                 {
                     name: "posts",
                     model: {
-                        "id:int":{pk:true},
-                        "title:string":{},
-                        "user:int":{}
+                        "id:int": { pk: true },
+                        "title:string": {},
+                        "user:int": {}
                     }
                 }
             ]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i, posts: [
-                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
-                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
-                ]});
+            for (let i = 1; i < 50; i++) {
+                rows.push({
+                    id: i, num: i, posts: [
+                        i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                        i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                    ]
+                });
             }
             return nSQL.selectTable("users").loadJS(rows);
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50)});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50) });
             }
             return nSQL.selectTable("posts").loadJS(rows);
         }).then(() => {
@@ -960,40 +1047,44 @@ describe("Testing Other Features", () => {
                 {
                     name: "users",
                     model: {
-                        "id:int":{pk: true},
-                        "num:int":{},
+                        "id:int": { pk: true },
+                        "num:int": {},
                         "postIds:int[]": {}
                     },
                     indexes: {
-                        "postIds:int[]":{foreignKey: {target: "posts.list[]", onDelete: InanoSQLFKActions.CASCADE}}
+                        "postIds:int[]": { foreignKey: { target: "posts.list[]", onDelete: InanoSQLFKActions.CASCADE } }
                     }
                 },
                 {
                     name: "posts",
                     model: {
-                        "id:int":{pk:true},
-                        "title:string":{},
-                        "user:int":{},
+                        "id:int": { pk: true },
+                        "title:string": {},
+                        "user:int": {},
                         "list:any[]": {}
                     }
                 }
             ]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i, posts: [
-                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
-                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
-                ]});
+            for (let i = 1; i < 50; i++) {
+                rows.push({
+                    id: i, num: i, posts: [
+                        i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                        i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                    ]
+                });
             }
             return nSQL.selectTable("users").loadJS(rows);
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50), list: [
-                    i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
-                    i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
-                ]});
+            for (let i = 1; i < 50; i++) {
+                rows.push({
+                    id: i, title: uuid(), user: i % 10 === 0 ? 20 : Math.round(Math.random() * 50), list: [
+                        i % 10 === 0 ? 20 : Math.round(Math.random() * 50),
+                        i % 12 === 0 ? 30 : Math.round(Math.random() * 50)
+                    ]
+                });
             }
             return nSQL.selectTable("posts").loadJS(rows);
         }).then(() => {
@@ -1016,14 +1107,14 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 }
             }]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
@@ -1035,7 +1126,7 @@ describe("Testing Other Features", () => {
                     done(e);
                 }
             });
-            return nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec();
+            return nSQL.query("upsert", { num: 20 }).where(["id", "=", 30]).exec();
         }).then((pkRows) => {
 
         });
@@ -1047,14 +1138,14 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 }
             }]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
@@ -1072,8 +1163,8 @@ describe("Testing Other Features", () => {
                 }
             });
             return Promise.all([
-                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec(), 
-                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec()
+                nSQL.query("upsert", { num: 20 }).where(["id", "=", 30]).exec(),
+                nSQL.query("upsert", { num: 20 }).where(["id", "=", 30]).exec()
             ]);
         }).then((pkRows) => {
 
@@ -1086,18 +1177,18 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 }
             }]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
-            const observer = nSQL.query("select").where(["id", "=", 30]).listen({debounce: 10});
+            const observer = nSQL.query("select").where(["id", "=", 30]).listen({ debounce: 10 });
             let invocations = 0;
             observer.exec(() => {
                 invocations++;
@@ -1111,7 +1202,7 @@ describe("Testing Other Features", () => {
                     done(e);
                 }
             });
-            return nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec();
+            return nSQL.query("upsert", { num: 20 }).where(["id", "=", 30]).exec();
         }).then((pkRows) => {
 
         });
@@ -1123,18 +1214,18 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 }
             }]
         }).then(() => {
             let rows: any[] = [];
-            for (let i = 1; i < 50; i ++) {
-                rows.push({id: i, num: i});
+            for (let i = 1; i < 50; i++) {
+                rows.push({ id: i, num: i });
             }
             return nSQL.selectTable("test").loadJS(rows);
         }).then(() => {
-            const observer = nSQL.query("select").where(["id", "=", 30]).listen({debounce: 10});
+            const observer = nSQL.query("select").where(["id", "=", 30]).listen({ debounce: 10 });
             let invocations = 0;
             observer.exec(() => {
                 invocations++;
@@ -1149,9 +1240,9 @@ describe("Testing Other Features", () => {
                 }
             });
             setTimeout(() => {
-                nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec().then(() => {
+                nSQL.query("upsert", { num: 20 }).where(["id", "=", 30]).exec().then(() => {
                     setTimeout(() => {
-                        nSQL.query("upsert", {num: 20}).where(["id", "=", 30]).exec()
+                        nSQL.query("upsert", { num: 20 }).where(["id", "=", 30]).exec()
                     }, 100);
                 });
             }, 100);
@@ -1202,12 +1293,12 @@ describe("Testing Other Features", () => {
             result.runQuery(`SELECT * from posts`, [], (nSQL) => {
                 return nSQL.selectTable("users").query("select").join([
                     {
-                        with: {table: "posts"},
+                        with: { table: "posts" },
                         type: "inner",
                         on: ["users.id", "=", "posts.userId"]
                     },
                     {
-                        with: {table: "comments"},
+                        with: { table: "comments" },
                         type: "inner",
                         on: ["posts.id", "=", "comments.postId"]
                     }
@@ -1262,15 +1353,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Delete)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 100; i ++) {
-            rows.push({id: i, num: i});
+        for (let i = 1; i < 100; i++) {
+            rows.push({ id: i, num: i });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 },
                 indexes: {
                     "num:int": {}
@@ -1295,15 +1386,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Int)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: i});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: i });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 },
                 indexes: {
                     "num:int": {}
@@ -1326,15 +1417,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Int 2)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: i});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: i });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 },
                 indexes: {
                     "num:int": {}
@@ -1357,15 +1448,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Int 3)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: i});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: i });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 },
                 indexes: {
                     "num:int": {}
@@ -1388,17 +1479,19 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Int Nested)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: {prop: i}});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: { prop: i } });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:obj":{model: {
-                        "prop:int": {}
-                    }}
+                    "id:int": { pk: true },
+                    "num:obj": {
+                        model: {
+                            "prop:int": {}
+                        }
+                    }
                 },
                 indexes: {
                     "num.prop:int": {}
@@ -1422,15 +1515,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Compound Where)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: i + 10});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: i + 10 });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 }
             }]
         }).then(() => {
@@ -1450,15 +1543,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (Float)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 500; i ++) {
-            rows.push({id: i, num: Math.random()});
+        for (let i = 1; i < 500; i++) {
+            rows.push({ id: i, num: Math.random() });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:float":{}
+                    "id:int": { pk: true },
+                    "num:float": {}
                 },
                 indexes: {
                     "num:float": {}
@@ -1482,15 +1575,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Test (String)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: uuid()});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: uuid() });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:string":{}
+                    "id:int": { pk: true },
+                    "num:string": {}
                 },
                 indexes: {
                     "num:string": {}
@@ -1513,18 +1606,18 @@ describe("Testing Other Features", () => {
     it("Secondary Index Offset", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: i - 10});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: i - 10 });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:int":{}
+                    "id:int": { pk: true },
+                    "num:int": {}
                 },
                 indexes: {
-                    "num:int": {offset: 20}
+                    "num:int": { offset: 20 }
                 }
             }]
         }).then(() => {
@@ -1545,18 +1638,18 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
         let terms: any[] = [];
-        for (let i = 0; i < 20; i ++) {
+        for (let i = 0; i < 20; i++) {
             terms.push(uuid());
         }
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, arr: terms.filter(v => Math.random() < 0.2)});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, arr: terms.filter(v => Math.random() < 0.2) });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "arr:string[]":{}
+                    "id:int": { pk: true },
+                    "arr:string[]": {}
                 },
                 indexes: {
                     "arr:string[]": {}
@@ -1580,18 +1673,18 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
         let terms: any[] = [];
-        for (let i = 0; i < 20; i ++) {
+        for (let i = 0; i < 20; i++) {
             terms.push(uuid());
         }
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, prop: {arr: terms.filter(v => Math.random() < 0.2)}});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, prop: { arr: terms.filter(v => Math.random() < 0.2) } });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "prop:obj":{
+                    "id:int": { pk: true },
+                    "prop:obj": {
                         model: {
                             "arr:string[]": {}
                         }
@@ -1618,15 +1711,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Rebuild (with where statement)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: uuid()});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: uuid() });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:string":{}
+                    "id:int": { pk: true },
+                    "num:string": {}
                 },
                 indexes: {
                     "num:string": {}
@@ -1649,15 +1742,15 @@ describe("Testing Other Features", () => {
     it("Secondary Index Rebuild (without where statement)", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 50; i ++) {
-            rows.push({id: i, num: uuid()});
+        for (let i = 1; i < 50; i++) {
+            rows.push({ id: i, num: uuid() });
         }
         nSQL.connect({
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "num:string":{}
+                    "id:int": { pk: true },
+                    "num:string": {}
                 },
                 indexes: {
                     "num:string": {}
@@ -1678,7 +1771,7 @@ describe("Testing Other Features", () => {
     });
 
     it("Geo Data Type", (done: MochaDone) => {
-        const randomLoc = (): {lon: number, lat: number} => {
+        const randomLoc = (): { lon: number, lat: number } => {
             return {
                 lat: (Math.random() * 180) - 90,
                 lon: (Math.random() * 360) - 180
@@ -1686,8 +1779,8 @@ describe("Testing Other Features", () => {
         }
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 5000; i ++) {
-            rows.push({id: i, loc: randomLoc()});
+        for (let i = 1; i < 5000; i++) {
+            rows.push({ id: i, loc: randomLoc() });
         }
         const lat = (Math.random() * 180) - 90;
         const lon = (Math.random() * 360) - 180;
@@ -1695,8 +1788,8 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "loc:geo":{}
+                    "id:int": { pk: true },
+                    "loc:geo": {}
                 }
             }]
         }).then(() => {
@@ -1716,13 +1809,13 @@ describe("Testing Other Features", () => {
     });
 
     it("Geo Data Type (Indexed)", (done: MochaDone) => {
-        const randomLoc = (): {lon: number, lat: number} => {
-            return {lon: (Math.random() * 360) - 180, lat: (Math.random() * 180) - 90}
+        const randomLoc = (): { lon: number, lat: number } => {
+            return { lon: (Math.random() * 360) - 180, lat: (Math.random() * 180) - 90 }
         }
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 5000; i ++) {
-            rows.push({id: i, loc: randomLoc()});
+        for (let i = 1; i < 5000; i++) {
+            rows.push({ id: i, loc: randomLoc() });
         }
         const lat = (Math.random() * 140) - 70;
         const lon = (Math.random() * 360) - 180;
@@ -1730,8 +1823,8 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "loc:geo":{}
+                    "id:int": { pk: true },
+                    "loc:geo": {}
                 },
                 indexes: {
                     "loc:geo": {}
@@ -1757,13 +1850,13 @@ describe("Testing Other Features", () => {
     });
 
     it("Geo Data Type (Indexed Pole Query)", (done: MochaDone) => {
-        const randomLoc = (): {lon: number, lat: number} => {
-            return {lon: (Math.random() * 360) - 180, lat: (Math.random() * 180) - 90}
+        const randomLoc = (): { lon: number, lat: number } => {
+            return { lon: (Math.random() * 360) - 180, lat: (Math.random() * 180) - 90 }
         }
         const nSQL = new nanoSQL();
         let rows: any[] = [];
-        for (let i = 1; i < 5000; i ++) {
-            rows.push({id: i, loc: randomLoc()});
+        for (let i = 1; i < 5000; i++) {
+            rows.push({ id: i, loc: randomLoc() });
         }
         const lat = (Math.random() * 9) + 80;
         const lon = (Math.random() * 360) - 180;
@@ -1771,8 +1864,8 @@ describe("Testing Other Features", () => {
             tables: [{
                 name: "test",
                 model: {
-                    "id:int":{pk: true},
-                    "loc:geo":{}
+                    "id:int": { pk: true },
+                    "loc:geo": {}
                 },
                 indexes: {
                     "loc:geo": {}

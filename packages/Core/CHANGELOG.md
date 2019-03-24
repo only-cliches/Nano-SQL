@@ -4,6 +4,16 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.2] 3-24-2019
+- When using `.stream` the complete and error callbacks are now optional.
+- Sort By & Order by performance has been improved.
+- Fixed Issue [#132](https://github.com/ClickSimply/Nano-SQL/issues/132), multiple column order by now works consistently.
+- Fixed Issue [#133](https://github.com/ClickSimply/Nano-SQL/issues/133), indexes are now explicitly dropped before the table.
+- Fixed Issue [#134](https://github.com/ClickSimply/Nano-SQL/issues/134), aggregate functions will return an empty result if there are no rows selected.
+- Updated dependencies.
+- Improved error handling for upsert queries.
+
+
 ## [2.2.1] 3-6-2019
 - **BREAKING CHANGE** The default minified build is now ES6 since browser support has grown significantly.  There's still an ES5 friendly build generated at `nano-sql.min.es5.js` in the same folder.
 - Added support for function based column defaults:

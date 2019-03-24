@@ -118,13 +118,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             return;
         }
 
-        const requireQueryOpts = (requreiAction: boolean, cb: () => void) => {
-            if (typeof this.query.table !== "string") {
+        const requireQueryOpts = (requireAction: boolean, cb: () => void) => {
+            if (typeof this.query.table !== "string" || !this.query.table) {
                 this.query.state = "error";
-                this.error(`${this.query.action} query requires a string table argument!`);
+                this.error(`${this.query.action} query requires a table argument!`);
                 return;
             }
-            if (requreiAction && !this.query.actionArgs) {
+            if (requireAction && !this.query.actionArgs) {
                 this.query.state = "error";
                 this.error(`${this.query.action} query requires an additional argument!`);
                 return;
@@ -148,10 +148,14 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 this._select(finishQuery, this.error);
                 break;
             case "upsert":
-                this._upsert(this.progress, this.complete, this.error);
+                requireQueryOpts(true, () => {
+                    this._upsert(this.progress, this.complete, this.error);
+                });  
                 break;
             case "delete":
-                this._delete(this.progress, this.complete, this.error);
+                requireQueryOpts(false, () => {
+                    this._delete(this.progress, this.complete, this.error);
+                });  
                 break;
             case "show tables":
                 this._showTables();
@@ -648,7 +652,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
         const joinData: InanoSQLJoinArgs[] = Array.isArray(this.query.join) ? this.query.join : [this.query.join as any];
 
-        let joinedRows = 0;
         let rowCounter2 = 0;
         const graphBuffer = new _nanoSQLQueue((gRow, ct, nextGraph, err) => {
             if (this.query.graph) {
@@ -789,6 +792,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             if (tableIsString) {
                 this.nSQL.triggerEvent(selectEvent);
             }
+
             this._startTime = Date.now();
 
             if (this.query.returnEvent) {
@@ -812,10 +816,11 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             return;
         }
 
-
-        this._queryBuffer.sort((a: any, b: any) => {
+        const sortedRows = this._groupBy ? this._queryBuffer.sort((a: any, b: any) => {
             return this._sortObj(a, b, this._groupBy);
-        }).forEach((val, idx) => {
+        }) : this._queryBuffer;
+
+        sortedRows.forEach((val, idx) => {
 
             const groupByKey = this._groupBy.sort.map(k => {
                 return String(k.fn ? execFunction(this.query, k.fn, val, { result: undefined }).result : deepGet(k.path, val))
@@ -843,10 +848,9 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
         this._queryBuffer = [];
         if (this._hasAggrFn) {
-            // loop through the groups
-            this._sortGroups.forEach((group) => {
-                // find aggregate functions
-                let resultFns: { aggr: any, name: string, idx: number }[] = this._selectArgs.reduce((p, c, i) => {
+
+            const getResultFns = (): { aggr: any, name: string, idx: number }[] => {
+                return this._selectArgs.reduce((p, c, i) => {
                     const fnName = c.value.split("(").shift() as string;
                     if (c.isFn && this.nSQL.functions[fnName] && this.nSQL.functions[fnName].type === "A") {
                         p[i] = {
@@ -857,8 +861,14 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     }
                     return p;
                 }, [] as any[]);
+            }
 
-                let firstFn = resultFns.filter(f => f)[0];
+            // loop through the groups
+            this._sortGroups.forEach((group) => {
+
+                // find aggregate functions
+                const resultFns = getResultFns();
+                const firstFn = resultFns.filter(f => f)[0];
 
                 // calculate aggregate functions
                 group.reverse().forEach((row, i) => {
@@ -871,11 +881,22 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 // calculate simple functions and AS back into buffer
                 this._queryBuffer.push(this._selectArgs.reduce((prev, cur, i) => {
                     const col = cur.value;
-                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? execFunction(this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
+                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? execFunction(this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : deepGet(cur.value, resultFns[firstFn.idx].aggr.row) || null);
                     return prev;
                 }, {}));
-
             });
+
+            if (!this._queryBuffer.length) {
+                // find aggregate functions
+                const resultFns = getResultFns();
+                const firstFn = resultFns.filter(f => f)[0];
+
+                this._queryBuffer.push(this._selectArgs.reduce((prev, cur, i) => {
+                    const col = cur.value;
+                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? execFunction(this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : deepGet(cur.value, resultFns[firstFn.idx].aggr.row) || null);
+                    return prev;
+                }, {}));
+            }
         } else {
             this._sortGroups.forEach((group) => {
                 this._queryBuffer.push(this._streamAS(group.shift()));
@@ -1475,16 +1496,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
      * @memberof _MutateSelection
      */
     public _sortObj(objA: any, objB: any, columns: InanoSQLSortBy): number {
-        const id = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table as any].pkCol : [];
-        const A_id = id.length ? deepGet(id, objA) : false;
-        const B_id = id.length ? deepGet(id, objB) : false;
         return columns.sort.reduce((prev, cur) => {
-            let A = cur.fn ? execFunction(this.query, cur.fn, objA, { result: undefined }).result : deepGet(cur.path, objA);
-            let B = cur.fn ? execFunction(this.query, cur.fn, objB, { result: undefined }).result : deepGet(cur.path, objB);
+            const A = cur.fn ? execFunction(this.query, cur.fn, objA, { result: undefined }).result : deepGet(cur.path, objA);
+            const B = cur.fn ? execFunction(this.query, cur.fn, objB, { result: undefined }).result : deepGet(cur.path, objB);
+            if (A === B) return 0;
             if (!prev) {
-                if (A === B) return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
-                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
-            } else {
+                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1) + prev;
+            } else { 
                 return prev;
             }
         }, 0);
@@ -1803,11 +1821,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
     public _dropTable(table: string, complete: () => void, error: (err: any) => void): void {
 
-        let tablesToDrop = [table];
-        Object.keys(this.nSQL._tables[table].indexes).forEach((indexName) => {
-            tablesToDrop.push(indexName);
-        });
-
         new Promise((res, rej) => {
             if (this.nSQL._fkRels[table] && this.nSQL._fkRels[table].length) {
                 allAsync(this.nSQL._fkRels[table], (fkRestraint: InanoSQLForeignKey, i, next, err) => {
@@ -1858,8 +1871,15 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 res();
             }
         }).then(() => {
-            return allAsync(tablesToDrop, (dropTable, i, next, err) => {
-                if (i === 0) {
+
+            let tablesToDrop: string[] = [];
+            Object.keys(this.nSQL._tables[table].indexes).forEach((indexName) => {
+                tablesToDrop.push(indexName);
+            });
+            tablesToDrop.push(table);
+
+            return chainAsync(tablesToDrop, (dropTable, i, next, err) => {
+                if (i === tablesToDrop.length - 1) {
                     adapterFilters(this.nSQL, this.query).dropTable(dropTable, () => {
                         delete this.nSQL._tables[dropTable];
                         delete this.nSQL._tableIds[dropTable];

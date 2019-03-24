@@ -53,7 +53,6 @@ import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
 import { resolveMode } from "./adapter-detect";
 
-
 export {
     InanoSQLInstance
 }
@@ -1315,7 +1314,7 @@ export class nanoSQL implements InanoSQLInstance {
         }).filter(r => r);
     }
 
-    public loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]> {
+    public loadCSV(csvString: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]> {
 
         const table = this.state.selectedTable;
 
@@ -1323,7 +1322,8 @@ export class nanoSQL implements InanoSQLInstance {
             return Promise.reject("nSQL: Can't load CSV into temporary table!");
         }
 
-        let rowData = this.CSVtoJSON(csv, rowMap);
+        const rowData = this.CSVtoJSON(csvString, rowMap);
+        
         const async = parallel ? allAsync : chainAsync;
         let count = 0;
         return async(rowData, (row, i, nextRow, err) => {

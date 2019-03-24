@@ -104,10 +104,10 @@ To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.2/dist/nano-sql.min.js"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.es5.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.2/dist/nano-sql.min.es5.js"></script>
 ```
 
 ## Important

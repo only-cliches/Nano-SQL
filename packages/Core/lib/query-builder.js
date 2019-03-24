@@ -1,10 +1,13 @@
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = require("./utilities");
@@ -166,7 +169,8 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         this._query.returnEvent = events;
         if (this._db.state.exportQueryObj) {
             onRow(this._query);
-            complete();
+            if (complete)
+                complete();
         }
         else {
             var copyQ_1 = this._query.copyTo ? new utilities_1._nanoSQLQueue(function (item, cnt, next, qerr) {
@@ -175,7 +179,8 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
                     next();
                 }, qerr);
             }, err, function () {
-                complete();
+                if (complete)
+                    complete();
             }) : undefined;
             this._db.triggerQuery(this._query, function (row) {
                 if (copyQ_1) {
@@ -189,9 +194,10 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
                     copyQ_1.finished();
                 }
                 else {
-                    complete();
+                    if (complete)
+                        complete();
                 }
-            }, err);
+            }, err || utilities_1.noop);
         }
     };
     _nanoSQLQueryBuilder.prototype.cache = function (cacheReady, error, streamPages) {

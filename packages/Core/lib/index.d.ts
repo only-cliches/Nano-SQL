@@ -118,7 +118,7 @@ export declare class nanoSQL implements InanoSQLInstance {
     JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
     csvToArray(text: string): any[];
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
-    loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]>;
+    loadCSV(csvString: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void, parallel?: boolean): Promise<any[]>;
 }
 export declare const nSQLv1Config: (doConfig: (nSQLv1: (table?: string | undefined) => InanoSQLV1ConfigFn) => void) => InanoSQLConfig;
 export declare const nSQL: (table?: string | any[] | ((where?: any[] | ((row: {

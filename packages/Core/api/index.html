@@ -75,9 +75,9 @@
 						<img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
 					</a>
 				</p>
-				<p><h1 align="center">nanoSQL 2</h1></p>
+				<h1 align="center">nanoSQL 2</h1>
 				<p align="center">
-					<strong>Universal database layer for the client, server &amp; mobile devices.  It&#39;s like Lego for databases.</strong>
+					<strong>Universal database layer for the client, server & mobile devices.  It's like Lego for databases.</strong>
 				</p>
 				<p><a href="https://nanosql.gitbook.io/docs/">Documentation</a> | <a href="https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html">API Docs</a> | <a href="https://github.com/ClickSimply/Nano-SQL/issues">Bugs</a> | <a href="https://gitter.im/nano-sql/community">Chat</a></p>
 				<h1 id="what-is-nanosql-">What is nanoSQL?</h1>
@@ -95,144 +95,18 @@
 				<h3 id="other-cool-things">Other Cool Things</h3>
 				<p>Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import &amp; export, runs in every browser back to IE9 and starts at only 27KB!</p>
 				<h2 id="comparison-with-other-projects">Comparison with Other Projects</h2>
-				<table>
-					<thead>
-						<tr>
-							<th></th>
-							<th>nanoSQL</th>
-							<th>TaffyDB</th>
-							<th>NeDB</th>
-							<th>LoveField</th>
-							<th>PouchDB</th>
-							<th>alaSQL</th>
-							<th>RxDB</th>
-							<th>SQL.js</th>
-							<th>Lunr</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>Events</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Typescript</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Graph Queries</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Join Queries</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>IndexedDB</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>NodeJS</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Foreign Keys</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Query Functions</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Custom Backends</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Size (kb)</td>
-							<td>27</td>
-							<td>5</td>
-							<td>27</td>
-							<td>40</td>
-							<td>46</td>
-							<td>88</td>
-							<td>164</td>
-							<td>500</td>
-							<td>8</td>
-						</tr>
-					</tbody>
-				</table>
+				<p>|                 | nanoSQL | TaffyDB| NeDB | LoveField | PouchDB | alaSQL |  RxDB  | SQL.js |  Lunr  |
+					|-----------------|---------|--------|------|-----------|---------|--------|--------|--------|--------|
+					| Events          | ✓       | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      | ✕      |
+					| Typescript      | ✓       | ✕      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      | ✓      |
+					| Graph Queries   | ✓       | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✕      |
+					| Join Queries    | ✓       | ✓      | ✓    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
+					| IndexedDB       | ✓       | ✕      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      | ✕      |
+					| NodeJS          | ✓       | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      | ✓      |
+					| Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
+					| Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
+					| Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+				| Size (kb)       | 27      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |</p>
 				<h2 id="database-support">Database Support</h2>
 				<p>NanoSQL can save data to many different places, depending on the browser or environment it&#39;s being ran in.</p>
 				<ol>
@@ -261,32 +135,27 @@
 					<li><strong><a href="https://www.npmjs.com/package/@nano-sql/plugin-redis-index">Redis Index</a></strong></li>
 				</ul>
 				<h2 id="installation">Installation</h2>
-				<pre><code class="lang-sh">npm i @nano-sql/core --save
-</code></pre>
+				<pre><code class="language-sh">npm i @nano-sql/core --save</code></pre>
 				<p>Using in Typescript/Babel project:</p>
-				<pre><code class="lang-js"><span class="hljs-keyword">import</span> { nSQL } <span class="hljs-keyword">from</span> <span class="hljs-string">"@nano-sql/core"</span>;
-</code></pre>
+				<pre><code class="language-js"><span class="hljs-keyword">import</span> { nSQL } <span class="hljs-keyword">from</span> <span class="hljs-string">"@nano-sql/core"</span>;</code></pre>
 				<p>Using in Node:</p>
-				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;
-</code></pre>
+				<pre><code class="language-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"@nano-sql/core"</span>).nSQL;</code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-comment">&lt;!-- ES6 Only (Faster &amp; Smaller) --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+				<pre><code class="language-html"><span class="hljs-comment">&lt;!-- ES6 Only (Faster &amp; Smaller) --&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.2/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
 <span class="hljs-comment">&lt;!-- ES5 (Internet Explorer/Old Browser Support) --&gt;</span>
 <span class="hljs-comment">&lt;!-- Promise must be polyfilled as well --&gt;</span>
-<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.1/dist/nano-sql.min.es5.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
-</code></pre>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.2/dist/nano-sql.min.es5.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
 				<h2 id="important">Important</h2>
 				<p>If you are migrating from nanoSQL 1.X to 2.X, please read the <a href="https://nanosql.gitbook.io/docs/5-migration/1.x-2.0">migration guide</a>.</p>
 				<h1 id="cli">CLI</h1>
 				<p>The nanoSQL command line interface allows you to compile data models into typescript interface files.</p>
 				<p>Usage is as follows:</p>
-				<pre><code class="lang-sh">nsql --outDir www --files file1.ts file2.ts... --watch
-</code></pre>
+				<pre><code class="language-sh">nsql --outDir www --files file1.ts file2.ts... --watch</code></pre>
 				<p>If you don&#39;t pass <code>--watch</code> the CLI will compile the files into the given directory, then exit.  You can also optionally pass <code>--watchPolling</code> with an interval to enable polling on the watch system.</p>
 				<p>It&#39;s important to note the files must be formatted specifically for the CLI to read them correctly.</p>
 				<p>Each file should have an export named <code>tables</code> that is an array of <code>InanoSQLTableConfig</code> types.  The file below is a working example:</p>
-				<pre><code class="lang-ts"><span class="hljs-keyword">import</span> { InanoSQLTableConfig } <span class="hljs-keyword">from</span> <span class="hljs-string">"@nano-sql/core/lib/interfaces"</span>;
+				<pre><code class="language-ts"><span class="hljs-keyword">import</span> { InanoSQLTableConfig } <span class="hljs-keyword">from</span> <span class="hljs-string">"@nano-sql/core/lib/interfaces"</span>;
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> tables: InanoSQLTableConfig[] = [
     {
@@ -322,13 +191,11 @@ nSQL().connect({
     id: <span class="hljs-string">"my_db"</span>,
     tables: tables,
     types: types
-}).then..
-</code></pre>
+}).then..</code></pre>
 				<p>Assuming the above file is in the root directory of our project named index.ts, we could compile it to a typescript interface file with this command:</p>
-				<pre><code class="lang-sh">nsql --outDir www --files index.ts
-</code></pre>
+				<pre><code class="language-sh">nsql --outDir www --files index.ts</code></pre>
 				<p>The above command would produce the following file:</p>
-				<pre><code class="lang-ts"><span class="hljs-keyword">import</span> { uuid, timeId, timeIdms } <span class="hljs-keyword">from</span>  <span class="hljs-string">"@nano-sql/core/lib/interfaces"</span>;
+				<pre><code class="language-ts"><span class="hljs-keyword">import</span> { uuid, timeId, timeIdms } <span class="hljs-keyword">from</span>  <span class="hljs-string">"@nano-sql/core/lib/interfaces"</span>;
 
 <span class="hljs-keyword">export</span> <span class="hljs-keyword">interface</span> ItableUsers {
     id:uuid;
@@ -348,10 +215,9 @@ nSQL().connect({
     key:<span class="hljs-built_in">string</span>;
     value:<span class="hljs-built_in">any</span>;
 }
-
 </code></pre>
 				<h1 id="query-examples">Query Examples</h1>
-				<pre><code class="lang-ts"><span class="hljs-comment">// Persistent Database</span>
+				<pre><code class="language-ts"><span class="hljs-comment">// Persistent Database</span>
 nSQL().connect({
     id: <span class="hljs-string">"test"</span>,
     mode: <span class="hljs-string">"PERM"</span>,
@@ -484,28 +350,27 @@ nSQL().query(<span class="hljs-string">"select"</span>, [<span class="hljs-strin
         .....
     ]
     */</span>
-})
-</code></pre>
+})</code></pre>
 				<h1 id="2-0-progress">2.0 Progress</h1>
 				<ul>
-					<li>[x] Query Engine </li>
-					<li>[x] Hook/Filter System</li>
-					<li>[x] Memory/Local Storage Adapter</li>
-					<li>[x] Graph Query Support</li>
-					<li>[x] Event System</li>
-					<li>[x] Indexed DB/WebSQL/RocksDB Adapters</li>
-					<li>[x] Core Tests</li>
-					<li>[x] Adapter Tests</li>
-					<li>[x] 2.0 documentation</li>
-					<li>[x] 2.0 release</li>
-					<li>[x] SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters</li>
-					<li>[ ] GraphQL Support</li>
-					<li>[ ] Net Plugin (Offline Syncing)</li>
-					<li>[ ] Search Plugin</li>
-					<li>[ ] History Plugin</li>
-					<li>[ ] SQLite Query Support</li>
-					<li>[ ] MongoDB Query Support</li>
-					<li>[ ] ReQL Query Support</li>
+					<li><input checked="" disabled="" type="checkbox"> Query Engine </li>
+					<li><input checked="" disabled="" type="checkbox"> Hook/Filter System</li>
+					<li><input checked="" disabled="" type="checkbox"> Memory/Local Storage Adapter</li>
+					<li><input checked="" disabled="" type="checkbox"> Graph Query Support</li>
+					<li><input checked="" disabled="" type="checkbox"> Event System</li>
+					<li><input checked="" disabled="" type="checkbox"> Indexed DB/WebSQL/RocksDB Adapters</li>
+					<li><input checked="" disabled="" type="checkbox"> Core Tests</li>
+					<li><input checked="" disabled="" type="checkbox"> Adapter Tests</li>
+					<li><input checked="" disabled="" type="checkbox"> 2.0 documentation</li>
+					<li><input checked="" disabled="" type="checkbox"> 2.0 release</li>
+					<li><input checked="" disabled="" type="checkbox"> SQLite3, Cordova, Redis, ReactNative, MySQL, Amazon Dynamo DB Adapters</li>
+					<li><input disabled="" type="checkbox"> GraphQL Support</li>
+					<li><input disabled="" type="checkbox"> Net Plugin (Offline Syncing)</li>
+					<li><input disabled="" type="checkbox"> Search Plugin</li>
+					<li><input disabled="" type="checkbox"> History Plugin</li>
+					<li><input disabled="" type="checkbox"> SQLite Query Support</li>
+					<li><input disabled="" type="checkbox"> MongoDB Query Support</li>
+					<li><input disabled="" type="checkbox"> ReQL Query Support</li>
 				</ul>
 			</div>
 		</div>

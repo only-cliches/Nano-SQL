@@ -1,10 +1,13 @@
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var interfaces_1 = require("./interfaces");
@@ -44,13 +47,13 @@ var _nanoSQLQuery = /** @class */ (function () {
             this.error("Can't execute query before the database has connected!");
             return;
         }
-        var requireQueryOpts = function (requreiAction, cb) {
-            if (typeof _this.query.table !== "string") {
+        var requireQueryOpts = function (requireAction, cb) {
+            if (typeof _this.query.table !== "string" || !_this.query.table) {
                 _this.query.state = "error";
-                _this.error(_this.query.action + " query requires a string table argument!");
+                _this.error(_this.query.action + " query requires a table argument!");
                 return;
             }
-            if (requreiAction && !_this.query.actionArgs) {
+            if (requireAction && !_this.query.actionArgs) {
                 _this.query.state = "error";
                 _this.error(_this.query.action + " query requires an additional argument!");
                 return;
@@ -71,10 +74,14 @@ var _nanoSQLQuery = /** @class */ (function () {
                 this._select(finishQuery, this.error);
                 break;
             case "upsert":
-                this._upsert(this.progress, this.complete, this.error);
+                requireQueryOpts(true, function () {
+                    _this._upsert(_this.progress, _this.complete, _this.error);
+                });
                 break;
             case "delete":
-                this._delete(this.progress, this.complete, this.error);
+                requireQueryOpts(false, function () {
+                    _this._delete(_this.progress, _this.complete, _this.error);
+                });
                 break;
             case "show tables":
                 this._showTables();
@@ -519,7 +526,6 @@ var _nanoSQLQuery = /** @class */ (function () {
             return;
         }
         var joinData = Array.isArray(this.query.join) ? this.query.join : [this.query.join];
-        var joinedRows = 0;
         var rowCounter2 = 0;
         var graphBuffer = new utilities_1._nanoSQLQueue(function (gRow, ct, nextGraph, err) {
             if (_this.query.graph) {
@@ -675,9 +681,10 @@ var _nanoSQLQuery = /** @class */ (function () {
             this._queryBuffer = this._queryBuffer.map(function (b) { return _this._streamAS(b); });
             return;
         }
-        this._queryBuffer.sort(function (a, b) {
+        var sortedRows = this._groupBy ? this._queryBuffer.sort(function (a, b) {
             return _this._sortObj(a, b, _this._groupBy);
-        }).forEach(function (val, idx) {
+        }) : this._queryBuffer;
+        sortedRows.forEach(function (val, idx) {
             var groupByKey = _this._groupBy.sort.map(function (k) {
                 return String(k.fn ? utilities_1.execFunction(_this.query, k.fn, val, { result: undefined }).result : utilities_1.deepGet(k.path, val));
             }).join(".");
@@ -698,10 +705,8 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         this._queryBuffer = [];
         if (this._hasAggrFn) {
-            // loop through the groups
-            this._sortGroups.forEach(function (group) {
-                // find aggregate functions
-                var resultFns = _this._selectArgs.reduce(function (p, c, i) {
+            var getResultFns_1 = function () {
+                return _this._selectArgs.reduce(function (p, c, i) {
                     var fnName = c.value.split("(").shift();
                     if (c.isFn && _this.nSQL.functions[fnName] && _this.nSQL.functions[fnName].type === "A") {
                         p[i] = {
@@ -712,6 +717,11 @@ var _nanoSQLQuery = /** @class */ (function () {
                     }
                     return p;
                 }, []);
+            };
+            // loop through the groups
+            this._sortGroups.forEach(function (group) {
+                // find aggregate functions
+                var resultFns = getResultFns_1();
                 var firstFn = resultFns.filter(function (f) { return f; })[0];
                 // calculate aggregate functions
                 group.reverse().forEach(function (row, i) {
@@ -724,10 +734,20 @@ var _nanoSQLQuery = /** @class */ (function () {
                 // calculate simple functions and AS back into buffer
                 _this._queryBuffer.push(_this._selectArgs.reduce(function (prev, cur, i) {
                     var col = cur.value;
-                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
+                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns[firstFn.idx].aggr.row) || null);
                     return prev;
                 }, {}));
             });
+            if (!this._queryBuffer.length) {
+                // find aggregate functions
+                var resultFns_1 = getResultFns_1();
+                var firstFn_1 = resultFns_1.filter(function (f) { return f; })[0];
+                this._queryBuffer.push(this._selectArgs.reduce(function (prev, cur, i) {
+                    var col = cur.value;
+                    prev[cur.as || col] = cur.isFn && resultFns_1[i] ? resultFns_1[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns_1[firstFn_1.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns_1[firstFn_1.idx].aggr.row) || null);
+                    return prev;
+                }, {}));
+            }
         }
         else {
             this._sortGroups.forEach(function (group) {
@@ -1277,16 +1297,13 @@ var _nanoSQLQuery = /** @class */ (function () {
      */
     _nanoSQLQuery.prototype._sortObj = function (objA, objB, columns) {
         var _this = this;
-        var id = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table].pkCol : [];
-        var A_id = id.length ? utilities_1.deepGet(id, objA) : false;
-        var B_id = id.length ? utilities_1.deepGet(id, objB) : false;
         return columns.sort.reduce(function (prev, cur) {
             var A = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, objA, { result: undefined }).result : utilities_1.deepGet(cur.path, objA);
             var B = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, objB, { result: undefined }).result : utilities_1.deepGet(cur.path, objB);
+            if (A === B)
+                return 0;
             if (!prev) {
-                if (A === B)
-                    return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
-                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
+                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1) + prev;
             }
             else {
                 return prev;
@@ -1587,10 +1604,6 @@ var _nanoSQLQuery = /** @class */ (function () {
     };
     _nanoSQLQuery.prototype._dropTable = function (table, complete, error) {
         var _this = this;
-        var tablesToDrop = [table];
-        Object.keys(this.nSQL._tables[table].indexes).forEach(function (indexName) {
-            tablesToDrop.push(indexName);
-        });
         new Promise(function (res, rej) {
             if (_this.nSQL._fkRels[table] && _this.nSQL._fkRels[table].length) {
                 utilities_1.allAsync(_this.nSQL._fkRels[table], function (fkRestraint, i, next, err) {
@@ -1636,8 +1649,13 @@ var _nanoSQLQuery = /** @class */ (function () {
                 res();
             }
         }).then(function () {
-            return utilities_1.allAsync(tablesToDrop, function (dropTable, i, next, err) {
-                if (i === 0) {
+            var tablesToDrop = [];
+            Object.keys(_this.nSQL._tables[table].indexes).forEach(function (indexName) {
+                tablesToDrop.push(indexName);
+            });
+            tablesToDrop.push(table);
+            return utilities_1.chainAsync(tablesToDrop, function (dropTable, i, next, err) {
+                if (i === tablesToDrop.length - 1) {
                     utilities_1.adapterFilters(_this.nSQL, _this.query).dropTable(dropTable, function () {
                         delete _this.nSQL._tables[dropTable];
                         delete _this.nSQL._tableIds[dropTable];
