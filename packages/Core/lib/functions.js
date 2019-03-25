@@ -445,8 +445,8 @@ exports.attachDefaultFns = function (nSQL) {
             }
         }
     };
-    var MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "exp", "floor", "log", "max", "min", "pow", "random", "round", "sin", "sqrt", "tan"];
-    MathFns.forEach(function (key) {
+    var MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "exp", "floor", "log", "pow", "random", "round", "sin", "sqrt", "tan"];
+    MathFns.filter(function (f) { return ["min", "max"].indexOf(f) === -1; }).forEach(function (key) {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: function (query, row, prev) {
@@ -454,7 +454,7 @@ exports.attachDefaultFns = function (nSQL) {
                 for (var _i = 3; _i < arguments.length; _i++) {
                     args[_i - 3] = arguments[_i];
                 }
-                return { result: Math[key].apply(null, numVals(row, args)) };
+                return { result: Math[key].apply(null, numVals.apply(void 0, [row].concat(args))) };
             }
         };
     });

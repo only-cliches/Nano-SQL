@@ -515,7 +515,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 });
             }).then(function () {
                 if (_this.query.orderBy) {
-                    var sorted = _this._queryBuffer.sort(_this._orderByRows);
+                    var sorted = _this._orderBy.sort.length > 1 ? _this.quickSort(_this._queryBuffer, _this._orderBy) : _this._queryBuffer.sort(_this._orderByRows);
                     (doRange ? sorted.slice(range[0], range[1]) : sorted).forEach(_this.progress);
                 }
                 if (_this.query.cacheID && _this.query.cacheID === _this.query.queryID) {
@@ -617,7 +617,12 @@ var _nanoSQLQuery = /** @class */ (function () {
                     });
                 }
                 if (_this.query.orderBy && !_this._hasOrdered) { // order by
-                    _this._queryBuffer.sort(_this._orderByRows);
+                    if (_this._orderBy.sort.length > 1) {
+                        _this._queryBuffer = _this.quickSort(_this._queryBuffer, _this._orderBy);
+                    }
+                    else {
+                        _this._queryBuffer.sort(_this._orderByRows);
+                    }
                 }
                 if (doRange) { // limit / offset
                     _this._queryBuffer = _this._queryBuffer.slice(range[0], range[1]);
@@ -1281,6 +1286,49 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         return this.query.join ? this._combineRows(row) : row;
     };
+    _nanoSQLQuery.prototype.quickSort = function (arr, columns) {
+        var _this = this;
+        if (arr.length < 2)
+            return arr;
+        var pivotPoint = Math.floor(Math.random() * arr.length);
+        var getValues = function (row) {
+            return columns.sort.reduce(function (prev, cur, i) {
+                var result = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, row, { result: undefined }).result : utilities_1.deepGet(cur.path, row);
+                prev.push({ v: result, d: String(cur.dir).toUpperCase() });
+                return prev;
+            }, []);
+        };
+        var compare = function (element1, element2) {
+            var value = 0;
+            var i = 0;
+            while (i < element1.length) {
+                if (!value && element1[i].v !== element2[i].v) {
+                    value = (element1[i].v > element2[i].v ? 1 : -1) * (element1[i].d === "DESC" ? -1 : 1);
+                }
+                i++;
+            }
+            return value;
+        };
+        var pivot = getValues(arr[pivotPoint]);
+        var left = [];
+        var equal = [];
+        var right = [];
+        for (var _i = 0, arr_1 = arr; _i < arr_1.length; _i++) {
+            var row = arr_1[_i];
+            var element = getValues(row);
+            var result = compare(element, pivot);
+            if (result > 0) {
+                right.push(row);
+            }
+            else if (result < 0) {
+                left.push(row);
+            }
+            else {
+                equal.push(row);
+            }
+        }
+        return this.quickSort(left, columns).concat(equal).concat(this.quickSort(right, columns));
+    };
     _nanoSQLQuery.prototype._orderByRows = function (a, b) {
         return this._sortObj(a, b, this._orderBy);
     };
@@ -1303,7 +1351,7 @@ var _nanoSQLQuery = /** @class */ (function () {
             if (A === B)
                 return 0;
             if (!prev) {
-                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1) + prev;
+                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
             }
             else {
                 return prev;
@@ -2357,7 +2405,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                                         if (w[1] === "LIKE" && index.type !== "string") {
                                         }
                                         else {
-                                            if (isIndexCol_1 === false && utilities_1.objectsEqual(index.path, path_1) && index.isArray === false) {
+                                            if (isIndexCol_1 === false && utilities_1.objectsEqual(index.path, path_1) && index.isArray === false && w[2] !== "NOT NULL") {
                                                 isIndexCol_1 = true;
                                                 _this._indexesUsed.push(utilities_1.assign(w));
                                                 p.push({

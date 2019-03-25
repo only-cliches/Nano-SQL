@@ -11,7 +11,7 @@ export interface ICrowIndexQuery {
     lon: number
 }
 
-const numVals = (row: any, ...subjects): number[] => {
+const numVals = (row: any, ...subjects: any[]): number[] => {
     return subjects.map(s => parseFloat(isNaN(s) ? getFnValue(row, s) : s))
 };
 
@@ -431,13 +431,13 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
         }
     };
 
-    const MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs","acos","asin","atan","atan2","ceil","cos","exp","floor","log","max","min","pow","random","round","sin","sqrt","tan"];
+    const MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs","acos","asin","atan","atan2","ceil","cos","exp","floor","log","pow","random","round","sin","sqrt","tan"];
 
-    MathFns.forEach((key) => {
+    MathFns.filter(f => ["min", "max"].indexOf(f) === -1).forEach((key) => {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: (query, row, prev, ...args: string[]) => {
-                return {result: Math[key].apply(null, numVals(row, args))};
+                return {result: Math[key].apply(null, numVals(row, ...args))};
             }
         };
     });

@@ -150,12 +150,12 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             case "upsert":
                 requireQueryOpts(true, () => {
                     this._upsert(this.progress, this.complete, this.error);
-                });  
+                });
                 break;
             case "delete":
                 requireQueryOpts(false, () => {
                     this._delete(this.progress, this.complete, this.error);
-                });  
+                });
                 break;
             case "show tables":
                 this._showTables();
@@ -639,7 +639,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 });
             }).then(() => {
                 if (this.query.orderBy) {
-                    const sorted = this._queryBuffer.sort(this._orderByRows);
+                    const sorted = this._orderBy.sort.length > 1 ? this.quickSort(this._queryBuffer, this._orderBy) : this._queryBuffer.sort(this._orderByRows);
                     (doRange ? sorted.slice(range[0], range[1]) : sorted).forEach(this.progress);
                 }
                 if (this.query.cacheID && this.query.cacheID === this.query.queryID) {
@@ -745,7 +745,11 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 }
 
                 if (this.query.orderBy && !this._hasOrdered) { // order by
-                    this._queryBuffer.sort(this._orderByRows);
+                    if (this._orderBy.sort.length > 1) {
+                        this._queryBuffer = this.quickSort(this._queryBuffer, this._orderBy);
+                    } else {
+                        this._queryBuffer.sort(this._orderByRows);
+                    }
                 }
 
                 if (doRange) { // limit / offset
@@ -1481,6 +1485,52 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         return this.query.join ? this._combineRows(row) : row;
     }
 
+    public quickSort(arr: any[], columns: InanoSQLSortBy): any[] {
+        if (arr.length < 2) return arr;
+
+        const pivotPoint = Math.floor(Math.random() * arr.length);
+
+        const getValues = (row): {v: any, d: "ASC"|"DESC"}[] => {
+            return columns.sort.reduce((prev, cur, i) => {
+                const result = cur.fn ? execFunction(this.query, cur.fn, row, { result: undefined }).result : deepGet(cur.path, row);
+                prev.push({v: result, d: String(cur.dir).toUpperCase()});
+                return prev;
+            }, [] as any[]);
+        }
+
+        const compare = (element1, element2) => {
+            let value = 0;
+            let i = 0;
+            while(i < element1.length) {
+                if (!value && element1[i].v !== element2[i].v) {
+                    value = (element1[i].v > element2[i].v ? 1 : -1) * (element1[i].d === "DESC" ? -1 : 1);
+                }
+                i++;
+            }
+            return value;
+        }
+
+        const pivot = getValues(arr[pivotPoint]);
+
+        let left: any[] = [];
+        let equal: any[] = [];
+        let right: any[] = [];
+
+        for (let row of arr) {
+            const element = getValues(row);
+            const result = compare(element, pivot);
+            if (result > 0) {
+                right.push(row);
+            } else if (result < 0) {
+                left.push(row);
+            } else {
+                equal.push(row);
+            }
+        }
+
+        return this.quickSort(left, columns).concat(equal).concat(this.quickSort(right, columns));
+    }
+
     public _orderByRows(a: any, b: any): number {
         return this._sortObj(a, b, this._orderBy);
     }
@@ -1499,10 +1549,11 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         return columns.sort.reduce((prev, cur) => {
             const A = cur.fn ? execFunction(this.query, cur.fn, objA, { result: undefined }).result : deepGet(cur.path, objA);
             const B = cur.fn ? execFunction(this.query, cur.fn, objB, { result: undefined }).result : deepGet(cur.path, objB);
+
             if (A === B) return 0;
             if (!prev) {
-                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1) + prev;
-            } else { 
+                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
+            } else {
                 return prev;
             }
         }, 0);
@@ -2364,7 +2415,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             }
         }
 
-
         switch (compare) {
             // if column equal to given value. Supports arrays, objects and primitives
             case "=": return objectsEqual(givenValue, columnValue);
@@ -2638,7 +2688,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                                         if (w[1] === "LIKE" && index.type !== "string") {
 
                                         } else {
-                                            if (isIndexCol === false && objectsEqual(index.path, path) && index.isArray === false) {
+                                            if (isIndexCol === false && objectsEqual(index.path, path) && index.isArray === false && w[2] !== "NOT NULL") {
                                                 isIndexCol = true;
                                                 this._indexesUsed.push(assign(w));
                                                 p.push({

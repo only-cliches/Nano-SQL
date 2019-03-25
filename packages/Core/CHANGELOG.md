@@ -4,6 +4,14 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.3] 3-25-2019
+- Switched to VuePress for documentation and main website.
+- Fixed Issue [#135](https://github.com/ClickSimply/Nano-SQL/issues/135), js math 'max' and 'min' functions no longer overwrite the built in aggregate functions.
+- Fixed Issue [#136](https://github.com/ClickSimply/Nano-SQL/issues/136), empty lines in a CSV file are ignored.
+- JS Math functions weren't being calculated correctly, that is now fixed.
+- Added better handling for `undefined` in secondary indexes.
+- Issue [#132](https://github.com/ClickSimply/Nano-SQL/issues/132) was still not working reliably, implemented a custom sorting algorithm to make multi column sorting deterministic.
+
 ## [2.2.2] 3-24-2019
 - When using `.stream` the complete and error callbacks are now optional.
 - Sort By & Order by performance has been improved.

@@ -1094,6 +1094,10 @@ export class nanoSQL implements InanoSQLInstance {
                 if (m.notNull && (newObj[m.key] === null || newObj[m.key] === undefined)) {
                     error = `Data error, ${m.key} cannot be null!`;
                 }
+
+                if (newObj[m.key] === null) {
+                    newObj[m.key] = undefined;
+                }
             });
 
             if (error.length) {
@@ -1274,11 +1278,12 @@ export class nanoSQL implements InanoSQLInstance {
     public CSVtoJSON(csv: string, rowMap?: (row: any) => any): any {
         let t = this;
         let fields: Array<string> = [];
-        return csv.split(/\r?\n|\r|\t/gm).map((v, k) => {
+        return csv.split(/\r?\n|\r|\t/gmi).map((v, k) => {
             if (k === 0) {
                 fields = v.split(",").map(s => s.substring(1, s.length - 1));
                 return undefined;
             } else {
+                if (String(v).trim().length < 1) return undefined;
 
                 let row = this.csvToArray(v);
                 if (!row) return undefined;

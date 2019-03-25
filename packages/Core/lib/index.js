@@ -893,6 +893,9 @@ var nanoSQL = /** @class */ (function () {
                 if (m.notNull && (newObj[m.key] === null || newObj[m.key] === undefined)) {
                     error = "Data error, " + m.key + " cannot be null!";
                 }
+                if (newObj[m.key] === null) {
+                    newObj[m.key] = undefined;
+                }
             });
             if (error.length) {
                 throw new Error(error);
@@ -1069,12 +1072,14 @@ var nanoSQL = /** @class */ (function () {
         var _this = this;
         var t = this;
         var fields = [];
-        return csv.split(/\r?\n|\r|\t/gm).map(function (v, k) {
+        return csv.split(/\r?\n|\r|\t/gmi).map(function (v, k) {
             if (k === 0) {
                 fields = v.split(",").map(function (s) { return s.substring(1, s.length - 1); });
                 return undefined;
             }
             else {
+                if (String(v).trim().length < 1)
+                    return undefined;
                 var row = _this.csvToArray(v);
                 if (!row)
                     return undefined;

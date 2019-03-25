@@ -328,8 +328,8 @@ describe("Equivalent SQLite Queries Should Match", () => {
 
     it("Order By Query 3", (done: MochaDone) => {
         TestDBs().then((dbs) => {
-            dbs.runQuery(`SELECT * FROM comments ORDER BY name DESC, email;`, [], (nSQL) => {
-                return nSQL.selectTable("comments").query("select").orderBy(["name desc", "email"]).exec();
+            dbs.runQuery(`SELECT * FROM comments ORDER BY name DESC, email ASC;`, [], (nSQL) => {
+                return nSQL.selectTable("comments").query("select").orderBy(["name DESC", "email ASC"]).exec();
             }).then((result) => {
                 try {
                     expect(result[1]).to.deep.equal(result[0]);

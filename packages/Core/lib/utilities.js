@@ -186,7 +186,7 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            var value2 = value;
+            var value2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
             if (typeof value2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
@@ -206,7 +206,7 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            var key2 = value;
+            var key2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
             if (typeof key2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
@@ -226,7 +226,7 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            var key = pk;
+            var key = pk === "NULL" ? "__NULL__" : pk;
             // shift primary key query by offset
             if (typeof key === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key += nSQL._tables[table].indexes[indexName].props.offset || 0;
@@ -263,7 +263,10 @@ exports.adapterFilters = function (nSQL, query) {
                 if (!result)
                     return; // filter took over
                 var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
+                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, function (key, id) {
+                    if (key !== "__NULL__")
+                        result.res.onRowPK(key, id);
+                }, result.res.complete, result.res.error);
             }, error);
         }
     };

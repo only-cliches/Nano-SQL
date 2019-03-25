@@ -54,6 +54,7 @@ export declare class _nanoSQLQuery implements InanoSQLQueryExec {
     _describe(type?: "table" | "idx" | "fks"): void;
     _combineRows(rData: any): {};
     _streamAS(row: any): any;
+    quickSort(arr: any[], columns: InanoSQLSortBy): any[];
     _orderByRows(a: any, b: any): number;
     _tableID(): string;
     _createTable(table: InanoSQLTableConfig, alterTable: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void;
