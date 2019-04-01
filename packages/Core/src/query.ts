@@ -22,7 +22,6 @@ import {
     updateRowFilter,
     TableQueryResult,
     InanoSQLDatabaseEvent,
-    InanoSQLFunctionResult,
     addRowEventFilter,
     deleteRowEventFilter,
     updateRowEventFilter,
@@ -2320,7 +2319,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
                     let compareResult = false;
 
-                    if (Array.isArray(wArg[0])) { // nested where
+                    if (Array.isArray(wArg)) { // nested where
                         compareResult = this._where(singleRow, wArg as any);
                     } else {
                         compareResult = this._compare(wArg as IWhereCondition, singleRow);

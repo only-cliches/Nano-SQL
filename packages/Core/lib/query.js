@@ -2069,7 +2069,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }
                 else {
                     var compareResult = false;
-                    if (Array.isArray(wArg[0])) { // nested where
+                    if (Array.isArray(wArg)) { // nested where
                         compareResult = this._where(singleRow, wArg);
                     }
                     else {
