@@ -286,7 +286,7 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            var value2 = value;
+            var value2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
             if (typeof value2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
@@ -306,7 +306,7 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            var key2 = value;
+            var key2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
             if (typeof key2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
@@ -326,7 +326,7 @@ exports.adapterFilters = function (nSQL, query) {
                 error({ error: "Index " + indexName + " not found!" });
                 return;
             }
-            var key = pk;
+            var key = pk === "NULL" ? "__NULL__" : pk;
             // shift primary key query by offset
             if (typeof key === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key += nSQL._tables[table].indexes[indexName].props.offset || 0;
@@ -363,7 +363,10 @@ exports.adapterFilters = function (nSQL, query) {
                 if (!result)
                     return; // filter took over
                 var adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, result.res.onRowPK, result.res.complete, result.res.error);
+                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, function (key, id) {
+                    if (key !== "__NULL__")
+                        result.res.onRowPK(key, id);
+                }, result.res.complete, result.res.error);
             }, error);
         }
     };
@@ -1017,7 +1020,7 @@ exports.setFast = typeof Promise !== "undefined" ? function () {
 /***/ (function(module, exports) {
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VERSION = 2.21;
+exports.VERSION = 2.24;
 ;
 var InanoSQLFKActions;
 (function (InanoSQLFKActions) {
@@ -1040,13 +1043,16 @@ var IWhereType;
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = __webpack_require__(0);
@@ -1309,9 +1315,12 @@ module.exports = function equal(a, b) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1634,12 +1643,9 @@ if (typeof window !== "undefined") {
 /***/ (function(module, exports, __webpack_require__) {
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1668,7 +1674,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.10
+            version: 2.11
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
@@ -1737,13 +1743,16 @@ exports.SQLiteCordova = SQLiteCordova;
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var really_small_events_1 = __webpack_require__(11);
@@ -2629,6 +2638,9 @@ var nanoSQL = /** @class */ (function () {
                 if (m.notNull && (newObj[m.key] === null || newObj[m.key] === undefined)) {
                     error = "Data error, " + m.key + " cannot be null!";
                 }
+                if (newObj[m.key] === null) {
+                    newObj[m.key] = undefined;
+                }
             });
             if (error.length) {
                 throw new Error(error);
@@ -2805,12 +2817,14 @@ var nanoSQL = /** @class */ (function () {
         var _this = this;
         var t = this;
         var fields = [];
-        return csv.split(/\r?\n|\r|\t/gm).map(function (v, k) {
+        return csv.split(/\r?\n|\r|\t/gmi).map(function (v, k) {
             if (k === 0) {
                 fields = v.split(",").map(function (s) { return s.substring(1, s.length - 1); });
                 return undefined;
             }
             else {
+                if (String(v).trim().length < 1)
+                    return undefined;
                 var row = _this.csvToArray(v);
                 if (!row)
                     return undefined;
@@ -2847,13 +2861,13 @@ var nanoSQL = /** @class */ (function () {
             }
         }).filter(function (r) { return r; });
     };
-    nanoSQL.prototype.loadCSV = function (csv, rowMap, onProgress, parallel) {
+    nanoSQL.prototype.loadCSV = function (csvString, rowMap, onProgress, parallel) {
         var _this = this;
         var table = this.state.selectedTable;
         if (typeof table !== "string") {
             return Promise.reject("nSQL: Can't load CSV into temporary table!");
         }
-        var rowData = this.CSVtoJSON(csv, rowMap);
+        var rowData = this.CSVtoJSON(csvString, rowMap);
         var async = parallel ? utilities_1.allAsync : utilities_1.chainAsync;
         var count = 0;
         return async(rowData, function (row, i, nextRow, err) {
@@ -3456,8 +3470,8 @@ exports.attachDefaultFns = function (nSQL) {
             }
         }
     };
-    var MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "exp", "floor", "log", "max", "min", "pow", "random", "round", "sin", "sqrt", "tan"];
-    MathFns.forEach(function (key) {
+    var MathFns = Object.getOwnPropertyNames ? Object.getOwnPropertyNames(Math) : ["abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "exp", "floor", "log", "pow", "random", "round", "sin", "sqrt", "tan"];
+    MathFns.filter(function (f) { return ["min", "max"].indexOf(f) === -1; }).forEach(function (key) {
         nSQL.functions[key.toUpperCase()] = {
             type: "S",
             call: function (query, row, prev) {
@@ -3465,7 +3479,7 @@ exports.attachDefaultFns = function (nSQL) {
                 for (var _i = 3; _i < arguments.length; _i++) {
                     args[_i - 3] = arguments[_i];
                 }
-                return { result: Math[key].apply(null, numVals(row, args)) };
+                return { result: Math[key].apply(null, numVals.apply(void 0, [row].concat(args))) };
             }
         };
     });
@@ -3476,13 +3490,16 @@ exports.attachDefaultFns = function (nSQL) {
 /* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var interfaces_1 = __webpack_require__(1);
@@ -3522,13 +3539,13 @@ var _nanoSQLQuery = /** @class */ (function () {
             this.error("Can't execute query before the database has connected!");
             return;
         }
-        var requireQueryOpts = function (requreiAction, cb) {
-            if (typeof _this.query.table !== "string") {
+        var requireQueryOpts = function (requireAction, cb) {
+            if (typeof _this.query.table !== "string" || !_this.query.table) {
                 _this.query.state = "error";
-                _this.error(_this.query.action + " query requires a string table argument!");
+                _this.error(_this.query.action + " query requires a table argument!");
                 return;
             }
-            if (requreiAction && !_this.query.actionArgs) {
+            if (requireAction && !_this.query.actionArgs) {
                 _this.query.state = "error";
                 _this.error(_this.query.action + " query requires an additional argument!");
                 return;
@@ -3549,10 +3566,14 @@ var _nanoSQLQuery = /** @class */ (function () {
                 this._select(finishQuery, this.error);
                 break;
             case "upsert":
-                this._upsert(this.progress, this.complete, this.error);
+                requireQueryOpts(true, function () {
+                    _this._upsert(_this.progress, _this.complete, _this.error);
+                });
                 break;
             case "delete":
-                this._delete(this.progress, this.complete, this.error);
+                requireQueryOpts(false, function () {
+                    _this._delete(_this.progress, _this.complete, _this.error);
+                });
                 break;
             case "show tables":
                 this._showTables();
@@ -3986,7 +4007,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 });
             }).then(function () {
                 if (_this.query.orderBy) {
-                    var sorted = _this._queryBuffer.sort(_this._orderByRows);
+                    var sorted = _this._orderBy.sort.length > 1 ? _this.quickSort(_this._queryBuffer, _this._orderBy) : _this._queryBuffer.sort(_this._orderByRows);
                     (doRange ? sorted.slice(range[0], range[1]) : sorted).forEach(_this.progress);
                 }
                 if (_this.query.cacheID && _this.query.cacheID === _this.query.queryID) {
@@ -3997,7 +4018,6 @@ var _nanoSQLQuery = /** @class */ (function () {
             return;
         }
         var joinData = Array.isArray(this.query.join) ? this.query.join : [this.query.join];
-        var joinedRows = 0;
         var rowCounter2 = 0;
         var graphBuffer = new utilities_1._nanoSQLQueue(function (gRow, ct, nextGraph, err) {
             if (_this.query.graph) {
@@ -4089,7 +4109,12 @@ var _nanoSQLQuery = /** @class */ (function () {
                     });
                 }
                 if (_this.query.orderBy && !_this._hasOrdered) { // order by
-                    _this._queryBuffer.sort(_this._orderByRows);
+                    if (_this._orderBy.sort.length > 1) {
+                        _this._queryBuffer = _this.quickSort(_this._queryBuffer, _this._orderBy);
+                    }
+                    else {
+                        _this._queryBuffer.sort(_this._orderByRows);
+                    }
                 }
                 if (doRange) { // limit / offset
                     _this._queryBuffer = _this._queryBuffer.slice(range[0], range[1]);
@@ -4153,9 +4178,10 @@ var _nanoSQLQuery = /** @class */ (function () {
             this._queryBuffer = this._queryBuffer.map(function (b) { return _this._streamAS(b); });
             return;
         }
-        this._queryBuffer.sort(function (a, b) {
+        var sortedRows = this._groupBy ? this._queryBuffer.sort(function (a, b) {
             return _this._sortObj(a, b, _this._groupBy);
-        }).forEach(function (val, idx) {
+        }) : this._queryBuffer;
+        sortedRows.forEach(function (val, idx) {
             var groupByKey = _this._groupBy.sort.map(function (k) {
                 return String(k.fn ? utilities_1.execFunction(_this.query, k.fn, val, { result: undefined }).result : utilities_1.deepGet(k.path, val));
             }).join(".");
@@ -4176,10 +4202,8 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         this._queryBuffer = [];
         if (this._hasAggrFn) {
-            // loop through the groups
-            this._sortGroups.forEach(function (group) {
-                // find aggregate functions
-                var resultFns = _this._selectArgs.reduce(function (p, c, i) {
+            var getResultFns_1 = function () {
+                return _this._selectArgs.reduce(function (p, c, i) {
                     var fnName = c.value.split("(").shift();
                     if (c.isFn && _this.nSQL.functions[fnName] && _this.nSQL.functions[fnName].type === "A") {
                         p[i] = {
@@ -4190,6 +4214,11 @@ var _nanoSQLQuery = /** @class */ (function () {
                     }
                     return p;
                 }, []);
+            };
+            // loop through the groups
+            this._sortGroups.forEach(function (group) {
+                // find aggregate functions
+                var resultFns = getResultFns_1();
                 var firstFn = resultFns.filter(function (f) { return f; })[0];
                 // calculate aggregate functions
                 group.reverse().forEach(function (row, i) {
@@ -4202,10 +4231,20 @@ var _nanoSQLQuery = /** @class */ (function () {
                 // calculate simple functions and AS back into buffer
                 _this._queryBuffer.push(_this._selectArgs.reduce(function (prev, cur, i) {
                     var col = cur.value;
-                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns[firstFn.idx].aggr.row));
+                    prev[cur.as || col] = cur.isFn && resultFns[i] ? resultFns[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns[firstFn.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns[firstFn.idx].aggr.row) || null);
                     return prev;
                 }, {}));
             });
+            if (!this._queryBuffer.length) {
+                // find aggregate functions
+                var resultFns_1 = getResultFns_1();
+                var firstFn_1 = resultFns_1.filter(function (f) { return f; })[0];
+                this._queryBuffer.push(this._selectArgs.reduce(function (prev, cur, i) {
+                    var col = cur.value;
+                    prev[cur.as || col] = cur.isFn && resultFns_1[i] ? resultFns_1[i].aggr.result : (cur.isFn ? utilities_1.execFunction(_this.query, cur.value, resultFns_1[firstFn_1.idx].aggr.row, { result: undefined }).result : utilities_1.deepGet(cur.value, resultFns_1[firstFn_1.idx].aggr.row) || null);
+                    return prev;
+                }, {}));
+            }
         }
         else {
             this._sortGroups.forEach(function (group) {
@@ -4739,6 +4778,49 @@ var _nanoSQLQuery = /** @class */ (function () {
         }
         return this.query.join ? this._combineRows(row) : row;
     };
+    _nanoSQLQuery.prototype.quickSort = function (arr, columns) {
+        var _this = this;
+        if (arr.length < 2)
+            return arr;
+        var pivotPoint = Math.floor(Math.random() * arr.length);
+        var getValues = function (row) {
+            return columns.sort.reduce(function (prev, cur, i) {
+                var result = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, row, { result: undefined }).result : utilities_1.deepGet(cur.path, row);
+                prev.push({ v: result, d: String(cur.dir).toUpperCase() });
+                return prev;
+            }, []);
+        };
+        var compare = function (element1, element2) {
+            var value = 0;
+            var i = 0;
+            while (i < element1.length) {
+                if (!value && element1[i].v !== element2[i].v) {
+                    value = (element1[i].v > element2[i].v ? 1 : -1) * (element1[i].d === "DESC" ? -1 : 1);
+                }
+                i++;
+            }
+            return value;
+        };
+        var pivot = getValues(arr[pivotPoint]);
+        var left = [];
+        var equal = [];
+        var right = [];
+        for (var _i = 0, arr_1 = arr; _i < arr_1.length; _i++) {
+            var row = arr_1[_i];
+            var element = getValues(row);
+            var result = compare(element, pivot);
+            if (result > 0) {
+                right.push(row);
+            }
+            else if (result < 0) {
+                left.push(row);
+            }
+            else {
+                equal.push(row);
+            }
+        }
+        return this.quickSort(left, columns).concat(equal).concat(this.quickSort(right, columns));
+    };
     _nanoSQLQuery.prototype._orderByRows = function (a, b) {
         return this._sortObj(a, b, this._orderBy);
     };
@@ -4755,15 +4837,12 @@ var _nanoSQLQuery = /** @class */ (function () {
      */
     _nanoSQLQuery.prototype._sortObj = function (objA, objB, columns) {
         var _this = this;
-        var id = typeof this.query.table === "string" ? this.nSQL._tables[this.query.table].pkCol : [];
-        var A_id = id.length ? utilities_1.deepGet(id, objA) : false;
-        var B_id = id.length ? utilities_1.deepGet(id, objB) : false;
         return columns.sort.reduce(function (prev, cur) {
             var A = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, objA, { result: undefined }).result : utilities_1.deepGet(cur.path, objA);
             var B = cur.fn ? utilities_1.execFunction(_this.query, cur.fn, objB, { result: undefined }).result : utilities_1.deepGet(cur.path, objB);
+            if (A === B)
+                return 0;
             if (!prev) {
-                if (A === B)
-                    return A_id === B_id ? 0 : (A_id > B_id ? 1 : -1);
                 return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
             }
             else {
@@ -5065,10 +5144,6 @@ var _nanoSQLQuery = /** @class */ (function () {
     };
     _nanoSQLQuery.prototype._dropTable = function (table, complete, error) {
         var _this = this;
-        var tablesToDrop = [table];
-        Object.keys(this.nSQL._tables[table].indexes).forEach(function (indexName) {
-            tablesToDrop.push(indexName);
-        });
         new Promise(function (res, rej) {
             if (_this.nSQL._fkRels[table] && _this.nSQL._fkRels[table].length) {
                 utilities_1.allAsync(_this.nSQL._fkRels[table], function (fkRestraint, i, next, err) {
@@ -5114,8 +5189,13 @@ var _nanoSQLQuery = /** @class */ (function () {
                 res();
             }
         }).then(function () {
-            return utilities_1.allAsync(tablesToDrop, function (dropTable, i, next, err) {
-                if (i === 0) {
+            var tablesToDrop = [];
+            Object.keys(_this.nSQL._tables[table].indexes).forEach(function (indexName) {
+                tablesToDrop.push(indexName);
+            });
+            tablesToDrop.push(table);
+            return utilities_1.chainAsync(tablesToDrop, function (dropTable, i, next, err) {
+                if (i === tablesToDrop.length - 1) {
                     utilities_1.adapterFilters(_this.nSQL, _this.query).dropTable(dropTable, function () {
                         delete _this.nSQL._tables[dropTable];
                         delete _this.nSQL._tableIds[dropTable];
@@ -5481,7 +5561,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                 }
                 else {
                     var compareResult = false;
-                    if (Array.isArray(wArg[0])) { // nested where
+                    if (Array.isArray(wArg)) { // nested where
                         compareResult = this._where(singleRow, wArg);
                     }
                     else {
@@ -5817,7 +5897,7 @@ var _nanoSQLQuery = /** @class */ (function () {
                                         if (w[1] === "LIKE" && index.type !== "string") {
                                         }
                                         else {
-                                            if (isIndexCol_1 === false && utilities_1.objectsEqual(index.path, path_1) && index.isArray === false) {
+                                            if (isIndexCol_1 === false && utilities_1.objectsEqual(index.path, path_1) && index.isArray === false && w[2] !== "NOT NULL") {
                                                 isIndexCol_1 = true;
                                                 _this._indexesUsed.push(utilities_1.assign(w));
                                                 p.push({
@@ -5925,9 +6005,12 @@ exports._nanoSQLQuery = _nanoSQLQuery;
 /***/ (function(module, exports, __webpack_require__) {
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -6098,9 +6181,12 @@ exports.SyncStorage = SyncStorage;
 /***/ (function(module, exports, __webpack_require__) {
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -6322,13 +6408,16 @@ exports.IndexedDB = IndexedDB;
 /* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var utilities_1 = __webpack_require__(0);
@@ -6490,7 +6579,8 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
         this._query.returnEvent = events;
         if (this._db.state.exportQueryObj) {
             onRow(this._query);
-            complete();
+            if (complete)
+                complete();
         }
         else {
             var copyQ_1 = this._query.copyTo ? new utilities_1._nanoSQLQueue(function (item, cnt, next, qerr) {
@@ -6499,7 +6589,8 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
                     next();
                 }, qerr);
             }, err, function () {
-                complete();
+                if (complete)
+                    complete();
             }) : undefined;
             this._db.triggerQuery(this._query, function (row) {
                 if (copyQ_1) {
@@ -6513,9 +6604,10 @@ var _nanoSQLQueryBuilder = /** @class */ (function () {
                     copyQ_1.finished();
                 }
                 else {
-                    complete();
+                    if (complete)
+                        complete();
                 }
-            }, err);
+            }, err || utilities_1.noop);
         }
     };
     _nanoSQLQueryBuilder.prototype.cache = function (cacheReady, error, streamPages) {

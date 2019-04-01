@@ -17,7 +17,7 @@
   <strong>Allows you to run SQLite in Cordova with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/sqlite-cordova) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/sqlite-cordova.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 This adapter for nanoSQL 2 uses IndexedDB/WebSQL in the browser, then switches over to a full SQLite database on the device with exactly the same API and features. Test and develop your app in the browser, then get a full real database on the device with zero effort.
 
@@ -54,18 +54,21 @@ document.addEventListener(typeof cordova !== "undefined" ? "deviceready" : "DOMC
 ## Embedded
 If you're not using a module loader you can only test your app in the browser with `cordova run browser`.
 ```ts
+
+nSQL().on("ready", () => {
+    // Database is now ready to query against.
+
+    // ReactDOM.render()...
+    // VueApp.$mount()...
+    // platformBrowserDynamic().bootstrapModule(AppModule);
+});
+
 document.addEventListener("deviceready", () => {
     nSQL().connect({
         id: "my_db",
         mode: window.nSQLadapter.getMode(),
         tables: [...]
-    }).then(() => {
-      // Database is now ready to query against.
-
-      // ReactDOM.render()...
-      // VueApp.$mount()...
-      // platformBrowserDynamic().bootstrapModule(AppModule);
-    })
+    });
 });
 ```
 

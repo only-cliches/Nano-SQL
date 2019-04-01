@@ -25,7 +25,7 @@ export class SQLiteCordova  extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "SQLite Cordova Adapter",
-        version: 2.10
+        version: 2.11
     };
 
     nSQL: InanoSQLInstance;

@@ -4,7 +4,7 @@ var __extends = (this && this.__extends) || (function () {
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
             function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
         return extendStatics(d, b);
-    };
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -33,7 +33,7 @@ var SQLiteCordova = /** @class */ (function (_super) {
         var _this = _super.call(this, false, false) || this;
         _this.plugin = {
             name: "SQLite Cordova Adapter",
-            version: 2.10
+            version: 2.11
         };
         if (!window["sqlitePlugin"]) {
             throw Error("SQLite plugin not installed or nanoSQL plugin called before device ready!");
