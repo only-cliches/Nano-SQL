@@ -165,7 +165,7 @@ export class WebSQL extends nanoSQLMemoryIndex {
 
     private _size: number;
     private _id: string;
-    private _db: Database;
+    private _db: any;
     private _ai: { [table: string]: number };
     private _sqlite: SQLiteAbstractFns;
     private _tableConfigs: {
@@ -184,7 +184,7 @@ export class WebSQL extends nanoSQLMemoryIndex {
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
         try {
-            this._db = window.openDatabase(this._id, String(this.nSQL.config.version) || "1.0", this._id, (isAndroid ? 5000000 : this._size));
+            this._db = window["openDatabase"](this._id, String(this.nSQL.config.version) || "1.0", this._id, (isAndroid ? 5000000 : this._size));
         } catch (e) {
             error(e);
         }
@@ -201,7 +201,7 @@ export class WebSQL extends nanoSQLMemoryIndex {
 
     _query(allowWrite: boolean, sql: string, args: any[], onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void {
 
-        const doTransaction = (tx: SQLTransaction) => {
+        const doTransaction = (tx: any) => {
             tx.executeSql(sql, args, (tx2, result) => {
                 for (let i = 0; i < result.rows.length; i++) {
                     onRow(result.rows.item(i), i);

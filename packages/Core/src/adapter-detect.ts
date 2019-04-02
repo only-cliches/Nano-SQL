@@ -22,7 +22,7 @@ export const detectStorage = (): string => {
 
     // Safari / iOS always gets WebSQL (mobile and desktop)
     // newer versions of safari drop WebSQL, so also do feature detection
-    if (isSafari && typeof window.openDatabase !== "undefined") {
+    if (isSafari && typeof window["openDatabase"] !== "undefined") {
         return "WSQL";
     }
 
@@ -33,7 +33,7 @@ export const detectStorage = (): string => {
     }
 
     // fall back to WebSQL
-    if (typeof window.openDatabase !== "undefined") {
+    if (typeof window["openDatabase"] !== "undefined") {
         return "WSQL";
     }
 
