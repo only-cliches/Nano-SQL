@@ -55,5 +55,9 @@ function run() {
         echo $(cat dist/nano-sql.min.js) | gzip -9f | wc -c;
     }
     echo $(($(size)/1000)) Kb;
+    echo "nano-sql.min.js Hash:";
+    echo "sha384-$(cat dist/nano-sql.min.js | openssl dgst -sha384 -binary | openssl base64 -A)"
+    echo "nano-sql.min.es5.js Hash:";
+    echo "sha384-$(cat dist/nano-sql.min.es5.js | openssl dgst -sha384 -binary | openssl base64 -A)"
 }
 run
