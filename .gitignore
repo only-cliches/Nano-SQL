@@ -8,6 +8,8 @@ npm-debug.log*
 .vscode
 .vs
 public_html
+dist
+lib
 
 # Runtime data
 pids
