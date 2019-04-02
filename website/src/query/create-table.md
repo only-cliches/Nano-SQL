@@ -6,49 +6,8 @@ NanoSQL data models and indexes are loosely defined, you can easily change the d
 
 > **Extremely Important** After a table is created you can use `alter table` or tweak the table in your `connect()` call to adjust almost anything including adding or removing columns/indexes, changing the table name and many other things.  **The one thing you can't ever change is the primary key column or type.**  Once the table is created the primary key column and type is written in stone.  If you have to change the primary key column/type a new table has to be made and all the rows from the original table imported into it.
 
-The `create table` query accepts a single argument that's an object described by the `InanoSQLTableConfig` interface.
+The `create table` query accepts a single argument that's an object described by the [InanoSQLTableConfig interface](/api/interfaces/_interfaces_.inanosqltableconfig.html).
 
-**InanoSQLTableConfig Interface**
-
-| **Property** | Optional? | Type |
-| :--- | :--- | :--- |
-| name | false | String |
-| model | false | {\[columnAndType\]: InanoSQLDataModel} |
-| mode | true | String \| InanoSQLAdapter |
-| indexes | true | {\[columnAndType\]: InanoSQLTableIndexConfig} |
-| filter | true | \(row: any\) =&gt; any |
-| actions | true | InanoSQLActionOrView\[\] |
-| views | true | InanoSQLActionOrView\[\] |
-| props | true | any, for plugins/expansion |
-
-**InanoSQLDataModel Interface**
-
-| **Property** | Optional? | Type |
-| :--- | :--- | :--- |
-| ai | true | boolean |
-| pk | true | boolean |
-| default | true | any |
-| model | true | {\[columnAndType\]: InanoSQLDataModel} |
-| notNull | true | boolean |
-| max | true | number |
-| min | true | number |
-| \* | true | any additional properties are allowed for plugins/expansion |
-
-**InanoSQLTableIndexConfig Interface**
-
-| **Property** | Optional? | Type |
-| :--- | :--- | :--- |
-| offset | true | number |
-| unique | true | boolean |
-| \* | true | any additional properties are allowed ****for plugins/expansion |
-
-**InanoSQLActionOrView Interface**
-
-| **Property** | Optional? | Type |
-| :--- | :--- | :--- |
-| name | false | string |
-| args | true | string\[\] |
-| call | false | \(args: any, db: InanoSQLInstance\) =&gt; Promise&lt;any\[\]&gt; |
 
 ## Making Tables
 

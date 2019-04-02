@@ -40,7 +40,7 @@ export class Scylla implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "Scylla Adapter",
-        version: 2.04
+        version: 2.05
     };
 
     nSQL: InanoSQLInstance;

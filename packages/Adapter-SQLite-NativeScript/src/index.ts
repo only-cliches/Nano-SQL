@@ -7,7 +7,7 @@ export class NativeSQLite extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "NativeScript SQLite Adapter",
-        version: 2.00
+        version: 2.01
     };
 
     nSQL: InanoSQLInstance;

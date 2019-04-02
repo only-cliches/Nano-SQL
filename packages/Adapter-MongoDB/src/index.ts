@@ -11,7 +11,7 @@ export class MongoDB implements InanoSQLAdapter {
 
     plugin: InanoSQLPlugin = {
         name: "MongoDB Adapter",
-        version: 2.01
+        version: 2.02
     };
 
     nSQL: InanoSQLInstance;

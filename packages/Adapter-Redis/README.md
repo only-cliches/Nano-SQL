@@ -17,7 +17,7 @@
   <strong>Allows you to run Redis with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/redis.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 
@@ -74,3 +74,26 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+
+# Changelog
+
+## [2.0.7]
+- Documentation and dependency updates.
+
+## [2.0.6]
+- Package.json, performance, dependency & Readme updates.
+
+## [2.0.5]
+- Fixed package.json issue.
+
+## [2.0.4]
+- Adjusted secondary index read.
+
+## [2.0.3]
+- Added details to package.json
+
+## [2.0.1] & [2.0.2]
+- Fixed readme bug
+
+## [2.0.0]
+- First release

@@ -17,7 +17,7 @@
   <strong>Allows you use Redis for Indexes with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/redis) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/plugins/redis-index.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What's This For?
 Most of the adapters you can use in NodeJS (MySQL, DynamoDB, RocksDB, etc) must perform serialization of the secondary indexes for each indexed column in an upsert query and at least one serialization step for select queries.  The performance cost of this json serialization and read-modify-write cycles can slow down secondary indexes writes significantly.
@@ -92,3 +92,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+# Changelog
+
+## [2.0.4]
+- Dependency and documentation update.
+
+## [2.0.3]
+- Adjusted readme and dependencies.
+
+## [2.0.0]
+- First release

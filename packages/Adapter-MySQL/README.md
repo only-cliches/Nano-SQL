@@ -17,7 +17,7 @@
   <strong>Allows you to run MySQL with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/mysql) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/mysql.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 
 # Installation
@@ -73,3 +73,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+# Changelog
+
+## [2.0.4]
+- Documentation and dependency updates.
+
+## [2.0.3]
+- Readme and dependency updates.
+
+## [2.0.2]
+- Added quotes to table names.
+
+## [2.0.1]
+- Readme tweak
+
+## [2.0.0]
+- First release

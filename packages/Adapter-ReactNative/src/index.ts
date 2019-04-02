@@ -39,7 +39,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "React Native Adapter",
-        version: 2.04
+        version: 2.05
     };
 
     nSQL: InanoSQLInstance;

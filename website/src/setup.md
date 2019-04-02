@@ -54,19 +54,8 @@ nSQL().connect({
 })
 ```
 
-The connect method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use.  The object can be adjusted to change the behavior of nanoSQL.
+The [connect](/api/classes/_index_.nanosql.html#connect) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
 
-**Interface InanoSQLConfig**
+The object used in the connect function is described by the [InanoSQLConfig interface](/api/interfaces/_interfaces_.inanosqlconfig.html).
 
-| Property | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| id | String | true | unique id for this database |
-| queue | Boolean | false | If true, queries will happen one after another in series.  If false, they will happen as quickly as possible, sometimes in parallel.  Default is false. |
-| mode | String \| InanoSQLAdapter | false | Either a string describing the desired mode, or an adapter to use.  Read more [here](/adapters/built-in-adapters.html). |
-| plugins | InanoSQLPlugin\[\] | false | Plugins to use. |
-| planetRadius | Number | false | The planet radius used by `CROW` function.  Default is 6371 \(km\) |
-| version | Number | false | The database version. |
-| onVersionUpdate | \(oldVersion: number\) =&gt; Promise | false | Used to migrate to newer database versions as needed. |
-| tables | InanoSQLTableConfig\[\] | false | The tables to create and configure before completing `connect`.  Read about these in the [create table docs](/query/create-table.html). |
-| size | Number | false | The size declared by the WebSQL database. |
 

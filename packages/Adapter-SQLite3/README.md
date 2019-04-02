@@ -17,7 +17,7 @@
   <strong>Allows you to run SQLite in NodeJS with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/sqlite-nodejs) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/sqlite-nodejs.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 
@@ -71,3 +71,24 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+# Changelog
+
+## [2.0.6]
+- Documentation & Dependency updates.
+
+## [2.0.5]
+- Updated dependencies.
+- Updated readme.
+
+## [2.0.4]
+- Moved to SQLite streaming API.
+- Fixed dependencies.
+
+## [2.0.3]
+- Added git repo
+
+## [2.0.1] & [2.0.2]
+- Readme tweak
+
+## [2.0.0]
+- First release

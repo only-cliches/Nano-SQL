@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-react-native",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Easily Run React Native with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -25,10 +25,9 @@
     "react-native": "^0.58.4"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.1.6"
+    "@nano-sql/core": "^2.2.4"
   },
   "devDependencies": {
-    "@nano-sql/core": "^2.1.6",
     "ts-node": "^7.0.1",
     "typescript": "^3.2.2"
   }

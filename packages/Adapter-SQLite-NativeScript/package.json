@@ -1,8 +1,8 @@
 {
   "name": "@nano-sql/adapter-sqlite-nativescript",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Easily Run SQLite in NativeScript with nanoSQL 2!",
-  "main": "lib/index",
+  "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
     "build": "tsc"
@@ -46,10 +46,10 @@
     "nativescript-sqlite": "^2.3.2"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.1.7"
+    "@nano-sql/core": "^2.2.4"
   },
   "devDependencies": {
-    "@nano-sql/core": "^2.1.7",
+    "@nano-sql/core": "^2.2.4",
     "@types/node": "^10.12.23",
     "typescript": "^3.3.3"
   }

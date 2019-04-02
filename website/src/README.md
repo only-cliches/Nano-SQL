@@ -43,7 +43,7 @@ const nSQL = require("@nano-sql/core").nSQL;
 ```
 
 <center>
-<h1>Usage<h1>
+<h1>Usage</h1>
 </center>
 
 ## Use With An Array Of Objects

@@ -966,7 +966,9 @@ Can be used to adjust, suppress or listen for multi key index read requests into
       <td style="text-align:left">The query object for this action.</td>
     </tr>
   </tbody>
-</table>## More Filters
+</table>
+
+## More Filters
 
 If your plugin could use a filter that hasn't been provided, please [submit an issue](https://github.com/ClickSimply/Nano-SQL/issues) describing where you'd like to see the new filter\(s\).
 

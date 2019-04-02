@@ -147,7 +147,9 @@ The function must either return `false` if no index can be used to drop to norma
       <td style="text-align:left">The where value being compared against.</td>
     </tr>
   </tbody>
-</table>### queryIndex
+</table>
+
+### queryIndex
 
 If you don't return `false` from `checkIndex`, this will be called to perform the actual indexed query.
 

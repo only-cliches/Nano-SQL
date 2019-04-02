@@ -381,15 +381,7 @@ nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrd
 
 ### **Join**
 
-The join command takes an object or array of objects as it's argument with 3 properties.
-
-#### **Interface InanoSQLJoinArgs**
-
-| Property | Type |  |
-| :--- | :--- | :--- |
-| with | Object | The right side table in the join. [Options](/query/select#with-graph-join-syntax.html) |
-| type | String | The join type, accepts: `left`, `right`, `inner`, `outer`, and `cross`. |
-| on | Any\[\] | Condition to join the tables on, not used if the join type is cross. |
+The join command takes an object or array of objects as it's argument, described by the [InanoSQLJoinArgs Interface](/api/interfaces/_interfaces_.inanosqljoinargs.html)
 
 Let's look at some examples
 
@@ -422,21 +414,7 @@ Keep in mind join queries will use indexes where possible, so if you can reasona
 
 ### **Graph**
 
-The **graph** command takes an object or array of objects as it's argument with each object having 3 or more properties:
-
-#### Interface InanoSQLGraphArgs
-
-| Property | Required | Type |  |
-| :--- | :--- | :--- | :--- |
-| with | yes | Object | The table to graph against. [Options](/query/select.html#with-graph-join-syntax) |
-| on | yes | Any\[\] | Condition to graph the rows against. |
-| key | yes | String | The column name that the graphed rows will occupy. |
-| limit | no | Number | Same as `.limit()` , for graph results. |
-| offset | no | Number | Same as `.offset()`, for graph results. |
-| orderBy | no | String\[\] | Same as `.orderBy()`, for graph results. |
-| groupBy | no | String\[\] | Same as `.groupBy()` , for graph results. |
-| select | no | String\[\] | Same as arguments for `select` query, for graph results. |
-| graph | no | InanoSQLGraphArgs | Recursively nest graph queries, can also be an array of graph queries. |
+The **graph** command takes an object or array of objects as it's argument, described by the [InanoSQLGraphArgs Interface](/api/interfaces/_interfaces_.inanosqlgraphargs.html).
 
 Let's look at some examples.
 

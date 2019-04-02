@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-scylla",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Easily Use Scylla DB with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -30,7 +30,7 @@
     "redis": "^2.8.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.0.9"
+    "@nano-sql/core": "^2.2.4"
   },
   "devDependencies": {
     "@types/node": "^10.12.18",

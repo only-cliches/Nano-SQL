@@ -90,7 +90,7 @@ export const RedisIndex = (connectArgs?: redis.ClientOpts, getClient?: (redisCli
 
     return {
         name: "Redis Index",
-        version: 2.00,
+        version: 2.04,
         filters: [
             {
                 name: "adapterConnect",

@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/plugin-redis-index",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Use Redis to speed up nanoSQL 2 indexes!",
   "main": "lib/index.js",
   "scripts": {
@@ -25,10 +25,10 @@
     "redis": "^2.8.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.1.5"
+    "@nano-sql/core": "^2.2.4"
   },
   "devDependencies": {
-    "@nano-sql/core": "^2.1.5",
+    "@nano-sql/core": "^2.2.4",
     "@types/node": "^10.12.21",
     "ts-node": "^7.0.1",
     "typescript": "^3.3.1"

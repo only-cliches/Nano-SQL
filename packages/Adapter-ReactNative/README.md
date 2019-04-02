@@ -17,7 +17,7 @@
   <strong>Allows you to run React Native with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/react-native) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/react-native.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 
@@ -66,3 +66,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+# Changelog
+
+## [2.0.5]
+- Documentation and dependency updates.
+
+## [2.0.4]
+- Readme updates.
+
+## [2.0.3]
+- Added option to cache indexes.
+
+## [2.0.2]
+- Fixed index bug.
+
+## [2.0.1]
+- Fixed write bug
+
+## [2.0.0]
+- First release

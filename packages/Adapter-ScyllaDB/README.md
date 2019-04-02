@@ -17,7 +17,7 @@
   <strong>Allows you to run Scylla DB / Cassandra with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/adapters/scylla-db) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/scylladb.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 
@@ -77,7 +77,7 @@ Here are the possible queries you can modify, all properties are optional.
 # Limitations
 Auto increment integer primary keys will *technically* work for small tables, but don't do it.  Use `UUID`s as your primary keys, this will also help guarantee good distribution of data across your cluster.
 
-Avoid queries [that will lead to a full table scan](https://nanosql.gitbook.io/docs/performance) or you'll have a bad time.
+Avoid queries [that will lead to a full table scan](https://nanosql.io/performance.html) or you'll have a bad time.
 
 # MIT License
 
@@ -100,3 +100,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+# Changelog 
+
+## [2.0.5]
+- Dependency and documentation updates.
+
+## [2.0.4]
+- Added gitter link
+
+## [2.0.2] & [2.0.3]
+- Performance improvements
+
+## [2.0.1]
+- Readme fixes
+
+## [2.0.0]
+- Initial release

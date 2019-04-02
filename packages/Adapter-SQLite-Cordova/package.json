@@ -1,6 +1,6 @@
 {
     "name": "@nano-sql/adapter-sqlite-cordova",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "description": "Run SQLite on the device and IndexedDB in the browser with exactly the same API with nanoSQL 2!",
     "main": "lib/index.js",
     "scripts": {

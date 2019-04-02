@@ -155,7 +155,7 @@ nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrd
 
 ## [2.0.1] 1-15-2018
 - Complete rewrite of the whole library from the ground up.  Previous plugins and adapters developed for nanoSQL 1.X will NOT work for 2.X versions.
-- Changed config, table model, view, and action setup format.  View [Migration Docs](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
+- Changed config, table model, view, and action setup format.  View [Migration Docs](https://nanosql.io/migration.html).
 - Removed all ORM features, tries, history, observables and fuzzy search from core.
 - Added `CROW` function as well as geo spatial index feature for fast `CROW` queries.
 - You can now upsert nested values.  `nSQL("Table.column.nested.value").query("upsert", newValue).where([...]).exec()..`
