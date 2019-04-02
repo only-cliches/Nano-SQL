@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vuepress dev src",
-    "build": "rm -rf public_html && vuepress build src && mv src/.vuepress/dist public_html && typedoc --out public_html/api --target ES6 --exclude node_modules --excludeExternals --excludePrivate ../packages/Core/src/*"
+    "build": "rm -rf public_html && vuepress build src && mv src/.vuepress/dist public_html && typedoc --out public_html/api --target ES6 --gaID UA-131910187-2 --exclude node_modules --excludeExternals --excludePrivate ../packages/Core/src/*"
   },
   "keywords": [],
   "author": "",
