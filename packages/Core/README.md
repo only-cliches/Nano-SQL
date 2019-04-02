@@ -17,7 +17,7 @@
   <strong>Universal database layer for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
 
-[Documentation](https://nanosql.io/welcome.html) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/welcome.html) | [API Docs](https://nano-sql.io/api) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
