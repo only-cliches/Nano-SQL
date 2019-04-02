@@ -87,7 +87,7 @@ NanoSQL supports a wide range of ways to save your data in the browser, on the p
 </center>
 
 - [Documentation →](/setup.html) 
-- [API Docs →](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html)
+- [API Docs →](/api)
 - [Bugs →](https://github.com/ClickSimply/Nano-SQL/issues) 
 - [Chat →](https://gitter.im/nano-sql/community)
 
