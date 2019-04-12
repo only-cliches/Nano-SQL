@@ -92,8 +92,14 @@ export class SyncStorage extends nanoSQLMemoryIndex {
         }
 
         if (this._index[table].indexOf(pk) === -1) {
-            const loc = binarySearch(this._index[table], pk, false);
-            this._index[table].splice(loc, 0, pk);
+
+            if (this._ai[table]) {
+                this._index[table].push(pk);
+            } else {
+                const loc = binarySearch(this._index[table], pk, false);
+                this._index[table].splice(loc, 0, pk);
+            }
+
             if (this.useLS) {
                 localStorage.setItem(this._id + "->" + table + "_idx", JSON.stringify(this._index[table]));
                 localStorage.setItem(this._id + "->" + table + "_ai", String(this._ai[table]));

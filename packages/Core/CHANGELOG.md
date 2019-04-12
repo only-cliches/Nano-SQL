@@ -6,6 +6,8 @@
 
 ## [2.2.5]
 - Added integrity key to <script/> releases to prevent the CDN from silently tampering with future releases.
+- Improved performance of IndexedDB index requests.
+- Added table id to `describe table` queries.
 
 ## [2.2.4] 4-1-2019
 - Resolved issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85#issuecomment-478362526).

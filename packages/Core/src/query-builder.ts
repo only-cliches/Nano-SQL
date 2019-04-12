@@ -1,5 +1,5 @@
 import { InanoSQLQueryBuilder, InanoSQLObserverQuery, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
-import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign, _nanoSQLQueue } from "./utilities";
+import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign, _nanoSQLQueue, fastID } from "./utilities";
 import * as equal from "fast-deep-equal";
 
 // tslint:disable-next-line
@@ -235,7 +235,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     }
 
     public cache(cacheReady: (cacheId: string, recordCount: number) => void, error: (error: any) => void, streamPages?: {pageSize: number, onPage: (page: number, rows: any[]) => void, doNotCache?: boolean}): void {
-        const id = uuid();
+        const id = fastID();
         let buffer: any[] = [];
         let didPage: boolean = false;
         let pageNum = 0;

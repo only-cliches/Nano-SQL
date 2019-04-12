@@ -164,7 +164,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         const upperLimit = lowerLimit + limitOrHigh;
         let advancing: boolean = true;
         this.store(table, "readonly", (tr, store) => {
-            if ((store as any).getAll) {
+            if ((store as any).getAll) { // IndexedDB 2 (way faster)  
                 const request = (store as any).getAll(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), type === "offset" && !reverse ? limitOrHigh + offsetOrLow : undefined);
                 request.onsuccess = (event: any) => {
                     const result: any[] = reverse ? event.target.result.reverse() : event.target.result;
@@ -177,7 +177,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
                     complete();
                 }
                 request.onerror = error;
-            } else {
+            } else { // IndexedDB 1
                 store.openCursor(type !== "range" ? undefined : IDBKeyRange.bound(offsetOrLow, limitOrHigh, false, false), reverse ? "prev" : "next").onsuccess = (event: any) => {
                     const cursor: IDBCursorWithValue = event.target.result;
                     if (!cursor) {
@@ -211,15 +211,26 @@ export class IndexedDB extends nanoSQLMemoryIndex {
     getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
         let index: any[] = [];
         this.store(table, "readonly", (tr, store) => {
-            store.openCursor().onsuccess = (event: any) => {
-                const cursor: IDBCursorWithValue = event.target.result;
-                if (cursor) {
-                    index.push(deepGet(this._tableConfigs[table].pkCol, cursor.value));
-                    cursor.continue();
-                } else {
-                    complete(index);
-                }
-            };
+            if ((store as any).getAllKeys) { // IndexedDB 2 (way faster)
+                const request = (store as any).getAllKeys();
+                request.onsuccess = (event: any) => {
+                    complete(event.target.result);
+                };
+                request.onerror = error;
+            } else { // IndexedDB 1
+                const request = store.openCursor()
+                request.onsuccess = (event: any) => {
+                    const cursor: IDBCursorWithValue = event.target.result;
+                    if (cursor) {
+                        index.push(deepGet(this._tableConfigs[table].pkCol, cursor.value));
+                        cursor.continue();
+                    } else {
+                        complete(index);
+                    }
+                };
+                request.onerror = error;
+            }
+
         }, error);
 
     }

@@ -6,7 +6,7 @@ NanoSQL data models and indexes are loosely defined, you can easily change the d
 
 > **Extremely Important** After a table is created you can use `alter table` or tweak the table in your `connect()` call to adjust almost anything including adding or removing columns/indexes, changing the table name and many other things.  **The one thing you can't ever change is the primary key column or type.**  Once the table is created the primary key column and type is written in stone.  If you have to change the primary key column/type a new table has to be made and all the rows from the original table imported into it.
 
-The `create table` query accepts a single argument that's an object described by the [InanoSQLTableConfig interface](/api/interfaces/_interfaces_.inanosqltableconfig.html).
+The `create table` query accepts a single argument that's an object described by the [InanoSQLTableConfig interface](https://nanosql.io/api/interfaces/_interfaces_.inanosqltableconfig.html).
 
 
 ## Making Tables

@@ -7,7 +7,7 @@ const PATHS = {
 
 var options = {
     entry: {
-        'parser': [path.join(__dirname, 'parser.js')],
+        'parser': [path.join(__dirname, "src", 'index.ts')],
     },
     output: {
         path: __dirname,
@@ -15,10 +15,24 @@ var options = {
         libraryTarget: 'umd',
         umdNamedDefine: true
     },
+    externals: {
+        // "@nano-sql/core": "nSQL"
+    },
     resolve: {
-        extensions: ['.js']
+        extensions: ['.js', ".ts"]
     },
     plugins: [],
+    module: {
+        rules: [
+            {
+                test: /\.ts$/,
+                loader: 'ts-loader',
+                options: {
+
+                }
+            }
+        ]
+    }
 };
 
 module.exports = options;

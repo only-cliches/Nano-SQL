@@ -93,7 +93,7 @@ export const buildQuery = (nSQL: InanoSQLInstance, table: string | any[] | ((whe
         state: "pending",
         result: [],
         time: Date.now(),
-        queryID: uuid(),
+        queryID: fastID(),
         extend: [],
         comments: [],
         tags: []
@@ -484,9 +484,9 @@ export const chainAsync = (items: any[], callback: (item: any, i: number, next: 
         const step = () => {
             if (i < items.length) {
                 callback(items[i], i, (result) => {
-                    if (result) {
-                        results.push(result || 0);
-                    }
+
+                    results.push(result || 0);
+
                     i++;
                     i % 250 === 0 ? setFast(() => {
                         step();
@@ -495,7 +495,7 @@ export const chainAsync = (items: any[], callback: (item: any, i: number, next: 
                     rej(err);
                 });
             } else {
-                res(results.length ? results : undefined);
+                res(results);
             }
         };
         step();
@@ -510,6 +510,11 @@ export const chainAsync = (items: any[], callback: (item: any, i: number, next: 
  * @returns {Promise<any[]>}
  */
 export const allAsync = (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err: (err: any) => void) => void): Promise<any[]> => {
+
+    if (!items || !items.length) {
+        return Promise.resolve([]);
+    }
+    
     return Promise.all((items || []).map((item, i) => {
         return new Promise((res, rej) => {
             callback(item, i, res, rej);
@@ -592,6 +597,10 @@ export const intersect = (arr1: any[], arr2: any[]): boolean => {
     if (!arr1.length || !arr2.length) return false;
     return (arr1 || []).filter(item => (arr2 || []).indexOf(item) !== -1).length > 0;
 };
+
+export const fastID = (): string => {
+    return [0, 0].map(s => Math.round(Math.random() * 1024).toString(16)).join("");
+}
 
 /**
  * Generates a valid V4 UUID using the strongest crypto available.

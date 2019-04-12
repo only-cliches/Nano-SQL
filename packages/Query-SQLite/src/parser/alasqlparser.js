@@ -736,11 +736,7 @@ case 326:
 break;
 case 327:
 
-		  if($$[$0-2].length > 1 && ($$[$0-4].toUpperCase() == 'MAX' || $$[$0-4].toUpperCase() == 'MIN')) {
-		  	this.$ = new yy.FuncValue({funcid:$$[$0-4],args:$$[$0-2]});
-		  } else {
-			this.$ = new yy.AggrValue({aggregatorid: $$[$0-4].toUpperCase(), expression: $$[$0-2].pop(), over:$$[$0]}); 
-		  } 
+this.$ = new yy.FuncValue({funcid:$$[$0-4],args:$$[$0-2]});
 		
 break;
 case 328:
@@ -793,14 +789,7 @@ case 345:
  
 			var funcid = $$[$0-4];
 			var exprlist = $$[$0-1];
-			if(exprlist.length > 1 && (funcid.toUpperCase() == 'MIN' || funcid.toUpperCase() == 'MAX')) {
-					this.$ = new yy.FuncValue({funcid: funcid, args: exprlist}); 
-			} else if(alasql.aggr[$$[$0-4]]) {
-		    	this.$ = new yy.AggrValue({aggregatorid: 'REDUCE', 
-                      funcid: funcid, expression: exprlist.pop(),distinct:($$[$0-2]=='DISTINCT') });
-		    } else {
-			    this.$ = new yy.FuncValue({funcid: funcid, args: exprlist}); 
-			};
+			this.$ = new yy.FuncValue({funcid: funcid, args: exprlist}); 
 		
 break;
 case 346:

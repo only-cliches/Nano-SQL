@@ -10,6 +10,12 @@
   <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
   </a>
+  <a href="https://snyk.io/test/npm/@nano-sql/core">
+    <img src="https://snyk.io/test/npm/@nano-sql/core/badge.svg" alt="Known Vulnerabilities" data-canonical-src="https://snyk.io/test/npm/@nano-sql/core" style="max-width:100%;">
+  </a>
+  <a href="https://www.npmjs.com/package/@nano-sql/core">
+    <img src="https://img.shields.io/npm/dm/@nano-sql/core.svg">
+  </a>
 </p>
 
 <h1 align="center">nanoSQL 2</h1>

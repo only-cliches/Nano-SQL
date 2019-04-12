@@ -54,6 +54,7 @@ import {
     mutateRowTypes,
     maybeDate,
     blankTableDefinition,
+    fastID,
 } from "./utilities";
 import { resolveMode } from "./adapter-detect";
 
@@ -1423,7 +1424,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
     public _showTables() {
         Object.keys(this.nSQL._tables).forEach((table, i) => {
-            this.progress({ table: table }, i);
+            this.progress({ table: table, id: this.nSQL._tableIds[table] }, i);
         });
         this.complete();
     }
@@ -2231,7 +2232,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             }
 
         } else if (typeof this.query.table === "function") { // promise that returns array
-            this._getTable(this.query.tableAS || uuid(), this.query.where, this.query.table, (result) => {
+            this._getTable(this.query.tableAS || fastID(),  this.query.where, this.query.table, (result) => {
                 scanRecords(result.rows as any);
             });
         } else if (Array.isArray(this.query.table)) { // array

@@ -16,9 +16,15 @@
 </head>
 
 <body>
-    <button onclick="testNanoSQL()">Test nanoSQL</button>
-    <button onclick="testAlaSQL()">Test alaSQL</button>
+    <button onclick="testALL()">Run Test</button>
     <script>
+        function testALL() {
+            testNanoSQL(() => {
+                testAlaSQL(() => {
+                    console.log("TEST DONE");
+                })
+            });
+        }
         function makeid() {
             var text = "";
             var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -29,43 +35,48 @@
             return text;
         }
 
-        function testAlaSQL() {
-            console.log("Creating 100 in memory databases, writing 100 random rows to each.")
+        function testAlaSQL(done) {
+            console.log("Testing AlaSQL");
 
             function runTest(complete) {
 
                 var mybase = new alasql.Database();
-                mybase.exec(
-                    `CREATE TABLE users (
-                    id INT PRIMARY KEY AUTO_INCREMENT,
-                    name TEXT,
-                    pass TEXT,
-                    email TEXT
-                )`
-                );
+                var uuid = "a" + window["@nano-sql"].core.utilities.uuid().split("-")[0];
 
+                mybase.exec(`CREATE INDEXEDDB DATABASE IF NOT EXISTS ${uuid};`, [], () => {
 
-                let i = 0;
-                var start = Date.now();
-                const w = () => {
-                    if (i < 100) {
-                        mybase.exec(`INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [makeid(), makeid(),
-                            makeid()
-                        ], () => {
-                            i++;
-                            Promise.resolve().then(w);
-                        });
-                    } else {
+                    mybase.exec(`ATTACH INDEXEDDB DATABASE ${uuid};\
+                        USE ${uuid};\
+                        CREATE TABLE users (
+                        id INT PRIMARY KEY AUTO_INCREMENT,
+                        name TEXT,
+                        pass TEXT,
+                        email TEXT
+                    )`, [], () => {
+                        let i = 0;
+                        var start = Date.now();
+                        const w = () => {
+                            if (i < 100) {
+                                mybase.exec(
+                                    `USE ${uuid}; INSERT INTO users (name, pass, email) VALUES (?, ?, ?)`, [
+                                        makeid(), makeid(), makeid()
+                                    ], () => {
+                                        i++;
+                                        Promise.resolve().then(w);
+                                    });
+                            } else {
 
-                        // start = Date.now();
-                        // mybase.exec("UPDATE users SET name=? WHERE id BETWEEN 10 AND 30", [makeid()], (rows) => {
-                        // console.log("READ", (Date.now() - start))
-                        complete(Date.now() - start);
-                        // })
-                    }
+                                // start = Date.now();
+                                // mybase.exec("UPDATE users SET name=? WHERE id BETWEEN 10 AND 30", [makeid()], (rows) => {
+                                // console.log("READ", (Date.now() - start))
+                                complete(Date.now() - start);
+                                // })
+                            }
 
-                }
-                w();
+                        }
+                        w();
+                    });
+                });
             }
 
 
@@ -73,9 +84,8 @@
             let results = [];
 
             function nextTest() {
-                if (k < 100) {
+                if (k < 10) {
                     runTest(function (result) {
-                        console.log(k + ": " + result)
                         results.push(result);
                         k++;
                         Promise.resolve().then(nextTest);
@@ -84,13 +94,85 @@
                     console.log("AVG:" + results.reduce((prev, cur) => {
                         return prev + cur;
                     }, 0) / results.length);
+                    done();
                 }
             }
 
             nextTest();
         }
 
+        function testNanoSQL(done) {
+            console.log("Testing nanoSQL");
 
+            function runTest(complete) {
+
+                var db = new window["@nano-sql"].core.nanoSQL();
+
+                db.selectTable("users").connect({
+                    id: window["@nano-sql"].core.utilities.uuid(),
+                    queue: false,
+                    mode: "PERM",
+                    tables: [{
+                        name: "users",
+                        model: {
+                            "id:int": {
+                                pk: true,
+                                ai: true
+                            },
+                            "name:any": {},
+                            "pass:any": {},
+                            "email:any": {}
+                        }
+                    }]
+                }).then(function () {
+                    var start = Date.now();
+                    let i = 0;
+                    const w = () => {
+                        if (i < 100) {
+                            db.query("upsert", {
+                                name: makeid(),
+                                pass: makeid(),
+                                email: makeid()
+                            }).exec().then(() => {
+                                i++;
+                                Promise.resolve().then(w);
+                                // setTimeout(w, 10);
+                            });
+                        } else {
+                            // start = Date.now();
+                            // db.table("users").query("upsert", {name: makeid()}).where(["id", "BETWEEN", [10, 30]]).exec().then(() => {
+                            complete((Date.now() - start));
+                            // });
+                            //console.log("WRITE", (new Date().getTime() - start))
+                        }
+
+                    }
+                    w();
+                });
+            }
+            // runTest((time) => { console.log(time) });
+            // return;
+
+            let k = 0;
+            let results = [];
+
+            function nextTest() {
+                if (k < 10) {
+                    runTest(function (result) {
+                        results.push(result);
+                        k++;
+                        Promise.resolve().then(nextTest);
+                    })
+                } else {
+                    console.log("AVG:" + results.reduce((prev, cur) => {
+                        return prev + cur;
+                    }, 0) / results.length);
+                    done();
+                }
+            }
+
+            nextTest();
+        }
     </script>
 
 </body>

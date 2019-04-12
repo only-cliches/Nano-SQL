@@ -8,7 +8,7 @@
 
 function returnUndefined() {}
 
-exports = {
+module.exports = {
 	fn: function(yy) {
 
 		yy.extend = function(a, b) {
@@ -21,7 +21,7 @@ exports = {
 			return a;
 		};
 		// Option for case sensitive
-		yy.casesensitive = true;
+		yy.casesensitive = false;
 
 		var extendWrapper = function (params) {
 			return yy.extend(this, params);
@@ -107,18 +107,18 @@ exports = {
 		var Base = (yy.Base = function (params) {
 			return yy.extend(this, params);
 		});
-
+/*
 		Base.prototype.toString = function () {};
 		Base.prototype.toType = function () {};
 		Base.prototype.toJS = function () {};
 
 		//  var BaseClause = yy,BaseClause = function (params) { return yy.extend(this, params); };
-		Base.prototype.compile = returnUndefined;
+		// Base.prototype.compile = returnUndefined;
 		Base.prototype.exec = function () {};
 
 		//  var BaseStatement = yy,BaseStatement = function (params) { return yy.extend(this, params); };
-		Base.prototype.compile = returnUndefined;
-		Base.prototype.exec = function () {};
+		// Base.prototype.compile = returnUndefined;
+		Base.prototype.exec = function () {};*/
 
 	}
 };

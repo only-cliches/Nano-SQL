@@ -1310,11 +1310,7 @@ PrimitiveValue
 AggrValue
 	: Aggregator LPAR ExprList RPAR OverClause
 		{
-		  if($3.length > 1 && ($1.toUpperCase() == 'MAX' || $1.toUpperCase() == 'MIN')) {
-		  	$$ = new yy.FuncValue({funcid:$1,args:$3});
-		  } else {
-			$$ = new yy.AggrValue({aggregatorid: $1.toUpperCase(), expression: $3.pop(), over:$5}); 
-		  } 
+		  $$ = new yy.FuncValue({funcid:$1,args:$3});
 		}
 	| Aggregator LPAR DISTINCT Expression RPAR OverClause
 		{ $$ = new yy.AggrValue({aggregatorid: $1.toUpperCase(), expression: $4, distinct:true, over:$6}); }
@@ -1360,14 +1356,7 @@ FuncValue
 		{ 
 			var funcid = $1;
 			var exprlist = $4;
-			if(exprlist.length > 1 && (funcid.toUpperCase() == 'MIN' || funcid.toUpperCase() == 'MAX')) {
-					$$ = new yy.FuncValue({funcid: funcid, args: exprlist}); 
-			} else if(alasql.aggr[$1]) {
-		    	$$ = new yy.AggrValue({aggregatorid: 'REDUCE', 
-                      funcid: funcid, expression: exprlist.pop(),distinct:($3=='DISTINCT') });
-		    } else {
-			    $$ = new yy.FuncValue({funcid: funcid, args: exprlist}); 
-			};
+			$$ = new yy.FuncValue({funcid: funcid, args: exprlist}); 
 		}
 	| Literal LPAR RPAR
 		{ $$ = new yy.FuncValue({ funcid: $1 }) }

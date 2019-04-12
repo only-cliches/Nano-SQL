@@ -93,10 +93,10 @@ module.exports = {
         },
         lastUpdated: 'Last Updated',
         // Assumes GitHub. Can also be a full GitLab url.
-        repo: 'ClickSimply/nanoSQL2-website',
+        repo: 'ClickSimply/Nano-SQL',
         repoLabel: false,
         // if your docs are not at the root of the repo:
-        docsDir: 'docs',
+        docsDir: 'website',
         // defaults to false, set to true to enable
         editLinks: true,
         // custom text for edit link. Defaults to "Edit this page"
