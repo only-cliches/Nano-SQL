@@ -10,6 +10,12 @@
   <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
   </a>
+  <a href="https://snyk.io/test/npm/@nano-sql/core">
+    <img src="https://snyk.io/test/npm/@nano-sql/core/badge.svg" alt="Known Vulnerabilities" data-canonical-src="https://snyk.io/test/npm/@nano-sql/core" style="max-width:100%;">
+  </a>
+  <a href="https://www.npmjs.com/package/@nano-sql/core">
+    <img src="https://img.shields.io/npm/dm/@nano-sql/core.svg">
+  </a>
 </p>
 
 <h1 align="center">nanoSQL 2</h1>
@@ -17,7 +23,7 @@
   <strong>Universal database layer for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
 
-[Documentation](https://nanosql.gitbook.io/docs/) | [API Docs](https://gitcdn.xyz/repo/ClickSimply/Nano-SQL/2.0/packages/Core/api/index.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/welcome.html) | [API Docs](https://api.nano-sql.io) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
@@ -38,7 +44,7 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 27KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 28KB!
 
 
 ## Comparison with Other Projects
@@ -54,7 +60,7 @@ Built in geolocation indexing, autocomplete, observable queries, typescript supp
 | Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Size (kb)       | 27      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
+| Size (kb)       | 28      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
 
 
 ## Database Support
@@ -84,7 +90,7 @@ NanoSQL can save data to many different places, depending on the browser or envi
 
 ## Installation
 
-```bash
+```sh
 npm i @nano-sql/core --save
 ```
 
@@ -104,21 +110,21 @@ To use directly in the browser, drop the tag below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.2/dist/nano-sql.min.js"></script>
+<script integrity="sha384-AvG87stPH3sHDUsWYHDEhObW8qq1WulwdFg7QQXY+gyz0wN1ms+bNdpQ2Qjiuozk" src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.4/dist/nano-sql.min.js" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.2/dist/nano-sql.min.es5.js"></script>
+<script integrity="sha384-czRBPglhiGlZlwbDVzFmlvOkCXRcIjlUYbYB1uraeobKKyaFYDXxoxbgZYAvXQAD" src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.4/dist/nano-sql.min.es5.js" crossorigin="anonymous"></script>
 ```
 
 ## Important
-If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
+If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](https://nanosql.io/migration.html#_1-x-2-0-migration).
 
 # CLI
 
 The nanoSQL command line interface allows you to compile data models into typescript interface files.
 
 Usage is as follows:
-```bash
+```sh
 nsql --outDir www --files file1.ts file2.ts... --watch
 ```
 
@@ -170,7 +176,7 @@ nSQL().connect({
 
 Assuming the above file is in the root directory of our project named index.ts, we could compile it to a typescript interface file with this command:
 
-```bash
+```sh
 nsql --outDir www --files index.ts
 ```
 
@@ -358,3 +364,5 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
 - [ ] SQLite Query Support
 - [ ] MongoDB Query Support
 - [ ] ReQL Query Support
+
+

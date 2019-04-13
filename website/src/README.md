@@ -21,10 +21,10 @@ footer: MIT Licensed | Copyright © 2019-present Scott Lott
 Simply copy one of the script links below and drop it into your page head.
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.4/dist/nano-sql.min.js"></script>
+<script integrity="sha384-AvG87stPH3sHDUsWYHDEhObW8qq1WulwdFg7QQXY+gyz0wN1ms+bNdpQ2Qjiuozk" src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.4/dist/nano-sql.min.js" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.4/dist/nano-sql.min.es5.js"></script>
+<script integrity="sha384-czRBPglhiGlZlwbDVzFmlvOkCXRcIjlUYbYB1uraeobKKyaFYDXxoxbgZYAvXQAD" src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.4/dist/nano-sql.min.es5.js" crossorigin="anonymous"></script>
 ```
 
 ## NodeJS / Webpack / Browserify / etc

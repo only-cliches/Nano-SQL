@@ -54,8 +54,8 @@ nSQL().connect({
 })
 ```
 
-The [connect](https://nanosql.io/api/classes/_index_.nanosql.html#connect) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
+The [connect](https://api.nanosql.io/classes/_index_.nanosql.html#connect) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
 
-The object used in the connect function is described by the [InanoSQLConfig interface](https://nanosql.io/api/interfaces/_interfaces_.inanosqlconfig.html).
+The object used in the connect function is described by the [InanoSQLConfig interface](https://api.nanosql.io/interfaces/_interfaces_.inanosqlconfig.html).
 
 

@@ -381,7 +381,7 @@ nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrd
 
 ### **Join**
 
-The join command takes an object or array of objects as it's argument, described by the [InanoSQLJoinArgs Interface](https://nanosql.io/api/interfaces/_interfaces_.inanosqljoinargs.html)
+The join command takes an object or array of objects as it's argument, described by the [InanoSQLJoinArgs Interface](https://api.nanosql.io/interfaces/_interfaces_.inanosqljoinargs.html)
 
 Let's look at some examples
 
