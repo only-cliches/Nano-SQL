@@ -59,7 +59,7 @@ For each column the column name and column type are declared as a new key in the
 | pk       | boolean         | Use this column as the table's primary key.                                                                                                                    |
 | ai       | boolean         | Enable auto increment for `int` type primary keys.                                                                                                             |
 | notNull  | boolean         | Don't allow NULL values into this column.                                                                                                                      |
-| default  | any | () => any | The default value for this column if no value is provided on create.  If a function is used it will be called on each insert to get the value for this column. |
+| default  | any \| () => any | The default value for this column if no value is provided on create.  If a function is used it will be called on each insert to get the value for this column. |
 | max      | number          | If the column is a number type, limit the values to be no higher than this.                                                                                    |
 | min      | number          | If the column is a number type, limit the values to be no lower than this.                                                                                     |
 | model    | Object          | A nested data model.   |
