@@ -52,7 +52,19 @@ nanoSQL supports many types, including all primitive typescript types.  Here is 
 
 Any type is also supported as an array or array of arrays, \(or arrays of arrays of arrays...\) examples: `any[]`, `any[][]`, `number[]`, `string[]`, etc.
 
-When you use the `obj`, `object`, or `map` types you can also declare the inner structure of this type.  This can be nested infinitely, so if your rows contain complicated objects nanoSQL can type cast all the way down.  Objects are also supported as arrays, so if you need an array of objects type casted it's just as easy.
+For each column the column name and column type are declared as a new key in the data model, properties for that column are then added to the object for that column key. Supported properties are:
+
+| Property | Type            | Description                                                                                                                                                    |
+|:----------|:-----------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| pk       | boolean         | Use this column as the table's primary key.                                                                                                                    |
+| ai       | boolean         | Enable auto increment for `int` type primary keys.                                                                                                             |
+| notNull  | boolean         | Don't allow NULL values into this column.                                                                                                                      |
+| default  | any | () => any | The default value for this column if no value is provided on create.  If a function is used it will be called on each insert to get the value for this column. |
+| max      | number          | If the column is a number type, limit the values to be no higher than this.                                                                                    |
+| min      | number          | If the column is a number type, limit the values to be no lower than this.                                                                                     |
+| model    | Object          | A nested data model.   |
+
+When you use the `obj`, `object`, or `map` types you can declare a nested data model for that column.  This can be nested infinitely, so if your rows contain complicated objects nanoSQL will type cast all the way down.  Objects are also supported as arrays, so if you need an array of objects type casted it's just as easy.
 
 ```typescript
 nSQL().query("create table", {

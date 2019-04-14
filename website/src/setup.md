@@ -58,4 +58,5 @@ The [connect](https://api.nanosql.io/classes/_index_.nanosql.html#connect) metho
 
 The object used in the connect function is described by the [InanoSQLConfig interface](https://api.nanosql.io/interfaces/_interfaces_.inanosqlconfig.html).
 
+You can create tables using the [create table](/query/create-table.html) query or including them in the config object.
 
