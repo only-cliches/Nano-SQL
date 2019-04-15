@@ -54,15 +54,15 @@ Any type is also supported as an array or array of arrays, \(or arrays of arrays
 
 For each column the column name and column type are declared as a new key in the data model, properties for that column are then added to the object for that column key. Supported properties are:
 
-| Property | Type            | Description                                                                                                                                                    |
-|:----------|:-----------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| pk       | boolean         | Use this column as the table's primary key.                                                                                                                    |
-| ai       | boolean         | Enable auto increment for `int` type primary keys.                                                                                                             |
-| notNull  | boolean         | Don't allow NULL values into this column.                                                                                                                      |
+| Property | Type             | Description                                            |
+|:---------|:-----------------|:-------------------------------------------------------|
+| pk       | boolean          | Use this column as the table's primary key.            |
+| ai       | boolean          | Enable auto increment for `int` type primary keys.     |
+| notNull  | boolean          | Don't allow NULL values into this column.              |
 | default  | any \| () => any | The default value for this column if no value is provided on create.  If a function is used it will be called on each insert to get the value for this column. |
-| max      | number          | If the column is a number type, limit the values to be no higher than this.                                                                                    |
-| min      | number          | If the column is a number type, limit the values to be no lower than this.                                                                                     |
-| model    | Object          | A nested data model.   |
+| max      | number           | If the column is a number type, limit the values to be no higher than this.|
+| min      | number           | If the column is a number type, limit the values to be no lower than this. |
+| model    | Object           | A nested data model.   |
 
 When you use the `obj`, `object`, or `map` types you can declare a nested data model for that column.  This can be nested infinitely, so if your rows contain complicated objects nanoSQL will type cast all the way down.  Objects are also supported as arrays, so if you need an array of objects type casted it's just as easy.
 
@@ -137,7 +137,18 @@ nSQL().query("create table", {
 }).exec().then..
 ```
 
-Standard indexes can be used in `where` conditions with `=`, `IN`, `BETWEEN` , or `LIKE` conditions.
+Also like data model columns, each index can have additional properties attached to it that change the behavior of the index on that column.
+
+Supported properties are:
+
+| Property    | Type             | Description                                            |
+|:------------|:-----------------|:-------------------------------------------------------|
+| unique      | boolean          | Only allow one row per index value.  [More info](#unique-indexes)   |
+| ignore_case | boolean          | For `string` indexes, this will cause all inserts and queries into the index to be lowercase. [More info](#case-insensitive-indexes)  |
+| offset      | number           | For `float`, `int` or `number` indexes, offset inserts and queries by this amount.  [More info](#index-offsets) |
+| foreignKey  | {target: string, onDelete: InanoSQLFKActions } | Provide a foreign key value for this index.  [More Info](#foreign-keys) |
+
+Once created normal (non array type) indexes can be used in `where` conditions with `=`, `IN`, `BETWEEN` , or `LIKE` conditions.
 
 ```typescript
 // Indexed queries
@@ -154,11 +165,11 @@ nSQL("users").query("select").where(["age", "=", 25]).exec();
 nSQL("users").query("select").orderBy(["age ASC"]).exec();
 ```
 
-Using `LIKE` with indexes that are string type works like an autocomplete, pass in the beginning of the search term followed by "%" to signify the ending wildcard.  If this specific format isn't followed the `LIKE` condition will not use the index.
+Using `LIKE` with indexes that are `string` type works like an autocomplete, pass in the beginning of the search term followed by "%" to signify the ending wildcard.  If this specific format isn't followed the `LIKE` condition will not use the index.
 
-The indexed orderBy only works when you're using a single column in the `orderBy` query and that column is either a standard secondary index or primary key.
+Orderby queries can also use indexes, they only work when you're using a single column in the `orderBy` query and that column is either a standard (non array) secondary index or primary key.
 
-You can also safely index values inside arrays of your columns.  These don't count as "array type indexes" since each index is still holding a single value.
+You can also safely index values inside arrays of your columns.  These don't count as array indexes since each index row is still holding a single value.
 
 ```typescript
 // index values inside an array 
@@ -182,7 +193,9 @@ nSQL().query("create table", {
 }).exec().then..
 ```
 
-You can also set indexes to only allow a single row for each indexed value:
+### Unique Indexes
+
+Normally indexes allow multiple rows to be attached to each index value.  You can change this and set indexes to only allow a single row for each indexed value:
 
 ```typescript
 // index values inside an array 
@@ -226,12 +239,12 @@ nSQL().query("create table", {
 }).exec().then..
 ```
 
- Indexed array values only work with `INCLUDES`, `INTERSECT ALL` , `INTERSECT`,  and `INCLUDES LIKE` where conditions.  They will not work with `=`, `BETWEEN`, `IN` or `LIKE` used with standard indexes.
+Array indexes only work with `INCLUDES`, `INTERSECT ALL` , `INTERSECT`,  and `INCLUDES LIKE` where conditions.  They will not work with `=`, `BETWEEN`, `IN` or `LIKE` used with standard indexes.
 
 You can safely array index with `int`, `number`, `string`, and `float` types.
 
 ```typescript
-// some valid queries with indexed array values
+// some valid queries with array indexes
 nSQL("users").query("select").where(["favorites.sports", "INCLUDES", "baseball"]).exec();
 nSQL("users").query("select").where(["favorites.sports", "INTERSECT", ["soccor", "baseball"]]).exec();
 
@@ -242,7 +255,7 @@ nSQL("users").query("select").where(["favorites.sports", "INCLUDES LIKE", "base%
 
 ### Geo Data Type
 
-Finally, the `geo` data type has some special conditions with its indexing behavior.  First, the geo data type cannot be indexed if it's an array index type.
+The `geo` data type can be indexed but has some special conditions with its indexing behavior.  First, the geo data type cannot be indexed if it's an array index type.
 
 ```typescript
 nSQL().query("create table", {
@@ -263,6 +276,11 @@ nSQL().query("create table", {
 ```
 
 When inserting/reading values from the `geo` data type, you should be using or expecting an object with a `lat` and `lon` property containing the latitude and longitude coordinates.
+
+```typescript
+// valid geo data type:
+{lat: 37.331740, lon: -122.030448}
+```
 
 The only way to take advantage of the `geo` index is with the `CROW` function, like this:
 
@@ -312,11 +330,11 @@ nSQL().query("select").where(["name", "LIKE", "j%"]).exec().then((rows) => {
 
 ### Index Offsets
 
-When indexing `int`, `float` and `number` types you'll find that negative values don't always work with `BETWEEN` queries.  Database engines typically have problems with negative numbers since there isn't a real way to sort them correctly with positive numbers using binary.
+When indexing `int`, `float` and `number` types you'll find that negative values don't always work with `BETWEEN` queries.  Database engines typically have problems with sorting negative numbers & positive numbers since there isn't a real way to sort them correctly using binary.
 
-This doesn't really matter if you're indexing an array type like `int[]`, `float[]`, or `number[]` since `BETWEEN` queries don't work with these types anyway.  But if you're using a standard index where range queries will be needed, this can represent a problem.
+This doesn't really matter if you're using an array index like `int[]`, `float[]`, or `number[]` since `BETWEEN` queries don't work with these types anyway.  But if you're using a standard index where range queries will be needed, this can represent a problem.
 
-The solution is using an offset, where all numbers are raised by a specific amount so that no negative numbers make it into the index.  This would normally be a big pain in the neck to keep track of, but nanoSQL automates this for you.
+The solution is using an offset, where all numbers are raised by a specific amount so that no negative numbers make it into the index. 
 
 ```typescript
 nSQL().query("create table", {
@@ -484,5 +502,3 @@ nSQL("users").getView("get_user_by_name",{name:"Scott"}).then((rows) => {
 ```
 
 Actions are called with `.doAction()` and views are called with `.getView()`, they both have the same syntax and work identically.
-
-## 
