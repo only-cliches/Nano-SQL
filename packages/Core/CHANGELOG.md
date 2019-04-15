@@ -4,10 +4,13 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.2.5]
+## [2.2.5] 4-14-2019
+- **BREAKING CHANGE** Preset query api has been updated, check [the migration](https://nanosql.io/migration.html) docs out. 
 - Added integrity key to <script/> releases to prevent the CDN from silently tampering with future releases.
 - Improved performance of IndexedDB index requests.
 - Added table id to `describe table` queries.
+- Resolved issue [#137](https://github.com/ClickSimply/Nano-SQL/issues/137), rewrote `date` type behavior to be more intuitive.
+- Updated dependencies.
 
 ## [2.2.4] 4-1-2019
 - Resolved issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85#issuecomment-478362526).

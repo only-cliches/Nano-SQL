@@ -1231,11 +1231,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             rowToAdd.res = this.nSQL.default(maybeAssign(this.upsertPath ? deepSet(this.upsertPath, {}, rowToAdd.res) : rowToAdd.res), this.query.table as string);
 
+            const rowPK = deepGet(table.pkCol, rowToAdd.res);
+
             const indexValues = this._getIndexValues(this.nSQL._tables[this.query.table as any].indexes, rowToAdd.res);
 
-            this._checkUniqueIndexes(this.query.table as string, deepGet(table.pkCol, rowToAdd.res), rowToAdd.res, indexValues, () => {
+            this._checkUniqueIndexes(this.query.table as string, rowPK, rowToAdd.res, indexValues, () => {
 
-                adapterFilters(this.nSQL, this.query).write(this.query.table as string, deepGet(table.pkCol, rowToAdd.res), rowToAdd.res, (pk) => {
+                adapterFilters(this.nSQL, this.query).write(this.query.table as string, rowPK, rowToAdd.res, (pk) => {
                     deepSet(table.pkCol, rowToAdd.res, pk)
 
                     allAsync(Object.keys(indexValues), (indexName: string, i, next, err) => {
@@ -1243,14 +1245,14 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         if (table.indexes[indexName].isArray) {
                             const arrayOfValues = indexValues[indexName] || [];
                             allAsync(arrayOfValues, (value, i, nextArr) => {
-                                this._updateIndex(this.query.table as string, indexName, value, deepGet(table.pkCol, rowToAdd.res), true, () => {
+                                this._updateIndex(this.query.table as string, indexName, value, rowPK, true, () => {
                                     nextArr(null);
                                 }, err);
                             }).then(() => {
                                 next(null);
                             }).catch(err);
                         } else {
-                            this._updateIndex(this.query.table as string, indexName, indexValues[indexName], deepGet(table.pkCol, rowToAdd.res), true, () => {
+                            this._updateIndex(this.query.table as string, indexName, indexValues[indexName], rowPK, true, () => {
                                 next(null);
                             }, err);
                         }
@@ -1416,7 +1418,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
         return Object.keys(indexes).reduce((prev, cur) => {
             const value = deepGet(indexes[cur].path, row);
-            const type = indexes[cur].type;
+            const type = indexes[cur].isDate ? "string" : indexes[cur].type;
             prev[cur] = indexes[cur].isArray ? (Array.isArray(value) ? value : []).map(v => this.nSQL.indexTypes[type](v)) : this.nSQL.indexTypes[type](value);
             return prev;
         }, {});
@@ -1721,6 +1723,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             const tablePKType = table.res.primaryKey ? table.res.primaryKey.split(":")[1] : pkType(table.res.model);
 
+
             let newConfig: InanoSQLTable = {
                 id: tableID,
                 name: table.res.name,
@@ -1734,13 +1737,17 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     prev[query.name] = query;
                     return prev;
                 }, {}),
-                indexes: Object.keys(indexes).map(i => ({
-                    id: resolvePath(i.split(":")[0]).join("."),
-                    type: (i.split(":")[1] || "string").replace(/\[\]/gmi, ""),
-                    isArray: (i.split(":")[1] || "string").indexOf("[]") !== -1,
-                    path: resolvePath(i.split(":")[0]),
-                    props: indexes[i]
-                })).reduce((p, c) => {
+                indexes: Object.keys(indexes).map(i => {
+                    const type = (i.split(":")[1] || "string").replace(/\[\]/gmi, "");
+                    return {
+                        id: resolvePath(i.split(":")[0]).join("."),
+                        type: type === "date" ? "int" : type,
+                        isArray: (i.split(":")[1] || "string").indexOf("[]") !== -1,
+                        path: resolvePath(i.split(":")[0]),
+                        props: indexes[i],
+                        isDate: type === "date"
+                    };
+                }).reduce((p, c) => {
                     const allowedTypes = Object.keys(this.nSQL.indexTypes);
                     if (allowedTypes.indexOf(c.type) === -1) {
                         error = `Index "${c.id}" does not have a valid type!`;
@@ -1753,14 +1760,16 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                             type: "float",
                             isArray: false,
                             path: c.path.concat(["lon"]),
-                            props: { offset: 180 }
+                            props: { offset: 180 },
+                            isDate: false
                         }
                         p[c.id + ".lat"] = {
                             id: c.id + ".lat",
                             type: "float",
                             isArray: false,
                             path: c.path.concat(["lat"]),
-                            props: { offset: 90 }
+                            props: { offset: 90 },
+                            isDate: false
                         }
                     } else {
                         p[c.id] = c;
@@ -2157,7 +2166,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         index: "_pk_",
                         col: this.nSQL._tables[this.query.table as string].pkCol.join("."),
                         comp: "IN",
-                        value: getPKs
+                        value: getPKs,
+                        type: this.nSQL._tables[this.query.table as string].pkType
                     }, false, onRow, complete);
                 });
             }
@@ -2373,11 +2383,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     }
 
     public _getColValue(where: IWhereCondition, wholeRow: any): any {
-        if (where.fnString) {
-            return execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result;
-        } else {
-            return deepGet(where.col as string, wholeRow);
-        }
+        const value = where.fnString ? execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result : deepGet(where.col as string, wholeRow);
+        return where.type === "date" ? (Array.isArray(value) ? value.map(s => maybeDate(s)) : maybeDate(value)) : value;
     }
 
     /**
@@ -2392,7 +2399,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
      * @returns {boolean}
      */
     public _compare(where: IWhereCondition, wholeRow: any): boolean {
-
 
         const columnValue = this._getColValue(where, wholeRow);
         const givenValue = where.value as any;
@@ -2662,7 +2668,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         const path = doIndex ? resolvePath(w[0]) : [];
 
                         // convert date strings to date numbers
-                        w[2] = Array.isArray(w[2]) ? w[2].map(w => maybeDate(w)) : maybeDate(w[2]);
+                        // w[2] = Array.isArray(w[2]) ? w[2].map(w => maybeDate(w)) : maybeDate(w[2]);
 
                         if (["=", "BETWEEN", "IN", "LIKE"].indexOf(w[1]) !== -1 && doIndex) {
 
@@ -2674,13 +2680,15 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                                     if (w[1] === "LIKE" && pkType !== "string") {
 
                                     } else {
+                                        // pk queries don't work with BETWEEN when using date type
                                         isIndexCol = true;
                                         this._indexesUsed.push(assign(w));
                                         p.push({
                                             index: "_pk_",
                                             col: w[0],
                                             comp: w[1],
-                                            value: w[2]
+                                            value: w[2],
+                                            type: pkType
                                         });
                                     }
                                 } else { // check if we can use any secondary index
@@ -2695,7 +2703,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                                                     index: index.id,
                                                     col: w[0],
                                                     comp: w[1],
-                                                    value: w[2]
+                                                    value: w[2],
+                                                    type: this.nSQL._tables[this.query.table as string].indexes[index.id].type
                                                 });
                                             }
                                         }
@@ -2717,18 +2726,37 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                                             indexArray: true,
                                             col: w[0],
                                             comp: w[1],
-                                            value: w[2]
+                                            value: w[2],
+                                            type: this.nSQL._tables[this.query.table as string].indexes[index.id].type
                                         });
                                     }
                                 }
                             });
                         }
 
+                        const findColumnType = (columns: InanoSQLTableColumn[], path: string[]): string => {
+                            const getType = (pathIdx: number, cols: InanoSQLTableColumn[]) => {
+                                const colData = cols.filter(c => c.key === path[pathIdx])[0];
+
+                                if (!colData) return "";
+
+                                if (!path[pathIdx + 1]) return colData.type;
+
+                                if (!colData.model) return "";
+
+                                return getType(pathIdx + 1, colData.model);
+                            };
+                            return getType(0, columns);
+                        }
+
+                        const type = typeof this.query.table === "string" ? findColumnType(this.nSQL._tables[this.query.table].columns, resolvePath(w[0])) : "";
+
                         if (!isIndexCol) {
                             p.push({
                                 col: w[0],
                                 comp: w[1],
-                                value: w[2]
+                                value: type === "date" ? (Array.isArray(w[2]) ? w[2].map(s => maybeDate(s)) : maybeDate(w[2])) : w[2],
+                                type: type
                             });
                         }
                     }

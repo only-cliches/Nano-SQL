@@ -440,10 +440,7 @@ export class nanoSQL implements InanoSQLInstance {
         })
     }
 
-    public presetQuery(fn: string): {
-        promise: (args: any) => Promise<any[]>;
-        stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => void
-    } {
+    public presetQuery(fn: string, args?: any): InanoSQLQueryBuilder {
         if (typeof this.state.selectedTable !== "string") {
             throw new Error(`Can't get table queries without selecting a table!`);
         }
@@ -452,44 +449,18 @@ export class nanoSQL implements InanoSQLInstance {
             throw new Error(`Can't find preset query ${fn}!`);
         }
 
-        let queryRunning = false;
-
-        return {
-            promise: (args: any) => {
-                return new Promise((res, rej) => {
-                    if (queryRunning) {
-                        rej(`Query already streaming!`);
-                        return;
-                    }
-                    queryRunning = true;
-                    const fnArgs = this._tables[this.state.selectedTable as string].queries[fn].args;
-                    let filteredArgs: any = {};
-                    if (fnArgs) {
-                        filteredArgs = cleanArgs2(args, fnArgs, this);
-                    }
-
-                    let buffer: any[] = [];
-                    this._tables[this.state.selectedTable as string].queries[fn].call(this, filteredArgs, (row) => {
-                        buffer.push(row);
-                    }, () => {
-                        res(buffer);
-                    }, rej);
-                })
-            },
-            stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => {
-                if (queryRunning) {
-                    error("Query already using promise!");
-                    return;
-                }
-                queryRunning = true;
-                const fnArgs = this._tables[this.state.selectedTable as string].queries[fn].args;
-                let filteredArgs: any = {};
-                if (fnArgs) {
-                    filteredArgs = cleanArgs2(args, fnArgs, this);
-                }
-                this._tables[this.state.selectedTable as string].queries[fn].call(this, filteredArgs, onRow, complete, error);
-            }
+        const fnArgs = this._tables[this.state.selectedTable as string].queries[fn].args;
+        let filteredArgs: any = {};
+        if (fnArgs) {
+            filteredArgs = cleanArgs2(args, fnArgs, this);
         }
+
+        const q = this._tables[this.state.selectedTable as string].queries[fn].call(this, filteredArgs);
+
+        const queryBuilder = this.query("");
+        queryBuilder._query = q;
+
+        return queryBuilder;
     }
 
     public connect(config: InanoSQLConfig): Promise<any> {
@@ -521,7 +492,6 @@ export class nanoSQL implements InanoSQLInstance {
 
 
                 this.adapter = resolveMode(this.config.mode || "TEMP", this.config);
-
 
                 if (this.adapter.plugin) {
                     (this.config.plugins || []).push(this.adapter.plugin);
@@ -932,7 +902,7 @@ export class nanoSQL implements InanoSQLInstance {
                 return Object.keys(this.eventFNs[cur][key].eventListeners).length + p;
             }, 0);
             return length > 0 ? true : prev;
-        }, false);
+        }, false as boolean);
 
         return this;
     }

@@ -1,6 +1,55 @@
 # Migration
 
-## 1.X - 2.0 Migration
+## 2.2.4 => 2.2.5
+
+### Preset Query API
+
+The old preset query objects would look like this:
+```ts
+name: "getById",
+args: {
+    "id:uuid":{}
+},
+call: (db, args, onRow, complete, error) => {
+    db.query("select").where(["id", "=", args.id]).stream(onRow, complete, error);
+}
+```
+
+The `call` property function has changed.  the `onRow`, `complete`, and `error` callbacks have been removed and the `call` function now must return a nanoSQL query object.
+
+The needed change is pretty simple, updating to conform to the new API looks like this:
+
+```ts
+name: "getById",
+args: {
+    "id:uuid":{}
+},
+call: (db, args) => {
+    return db.query("select").where(["id", "=", args.id]).emit();
+}
+```
+
+When calling `presetQuery` the usage is a little different as well.
+
+```ts
+// <= 2.2.4 syntax
+nSQL("table").presetQuery("getById").promise({id: "123"}).then...
+// or
+nSQL("table").presetQuery("getById").stream({id: "123"}, onRow, onComplete, onError);
+
+// >= 2.2.5 syntax
+nSQL("table").presetQuery("getById", {id: "123"}).exec().then..
+// or
+nSQL("table").presetQuery("getById", {id: "123"}).stream(onRow, onComplete, onError)
+// or
+nSQL("table").presetQuery("getById", {id: "123"}).toCSV().then..
+// ... or any other supported query result.
+```
+
+The new api allows you to take advantage of things like `.cache()` and any other future additions to the normal query exports.
+
+
+## 1.X => 2.0 Migration
 
 ### Transfer
 

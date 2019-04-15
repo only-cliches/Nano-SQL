@@ -47,10 +47,12 @@ nanoSQL supports many types, including all primitive typescript types.  Here is 
 | uuid, timeId, timeIdms | An extension of the `string` type.  Doesn't perform any validation beyond making sure the value is a string.  If any of these are used in a primary key column they will autogenerate as needed. |
 | object, obj, map | Only allows javascript objects `{}` into the column. |
 | boolean, bool | `true` and the number `1` resolve to `true`, everything else resolves to `false`. |
-| date | ISO 8601 date field |
+| date | ISO8601 date field |
 | geo | An object containing `lat` and `lon` properties, represents a geographic coordinate. |
 
 Any type is also supported as an array or array of arrays, \(or arrays of arrays of arrays...\) examples: `any[]`, `any[][]`, `number[]`, `string[]`, etc.
+
+> **Primary Keys** cannot be `geo`, `object`, `obj`, `array` or `map` types.
 
 For each column the column name and column type are declared as a new key in the data model, properties for that column are then added to the object for that column key. Supported properties are:
 
@@ -110,7 +112,7 @@ nSQL().query("create table", {
 
 NanoSQL supports secondary indexes on any column, including nested columns or values inside array columns.
 
-The index syntax is very similar to data model syntax and supports these types: `int`, `float`, `number`, and `string`, these types can also be indexed as one dimensional arrays.  `geo` type can also be indexed, but not as an array.
+The index syntax is very similar to data model syntax and supports these types: `int`, `float`, `number`, `date`, and `string`, these types can also be indexed as one dimensional arrays.  `geo` type can also be indexed, but not as an array.
 
 ### Standard Secondary Indexes
 
@@ -429,8 +431,9 @@ nSQL().connect({
                     args: {
                         "id:uuid":{}
                     },
-                    call: (db, args, onRow, complete, error) => {
-                        db.query("select").where(["id", "=", args.id]).stream(onRow, complete, error);
+                    call: (db, args) => {
+                        // use .emit() to export query
+                        return db.query("select").where(["id", "=", args.id]).emit();
                     }
                 }
             ]     
@@ -439,66 +442,16 @@ nSQL().connect({
 })
 ```
 
-Then, to use the above preset query you can use one of two methods:
+Then, to use the preset query simply call the `presetQuery` method with the arguments of the desired query, then execute as normal.
+
+The result of `presetQuery` is a standard query object, it works the same as any other query.
 
 ```typescript
-// use promise
-nSQL("users").presetQuery("getById").promise({id: "xxx"}).then((results) => {
+const query = nSQL("users").presetQuery("getById", {id: "xxx"});
 
-}).catch((err) => {
-
-});
-
-// use stream
-nSQL("users").presetQuery("getById").stream({id: "xxx"}, (row) => {
-    // row recieved
-}, () => {
-    // query complete
-}, () => {
-    // query error
-})
+// any of these will work
+query.exec().then..
+query.stream(onRow, onComplete, onError)
+query.cache(cacheReady, error)
+query.toCSV().then..
 ```
-
-If you always expect a specific query to return a small number of results, it's fine to use `.promise()`, but if there's a chance the records will be in the thousands the streaming api is usually a better choice.
-
-## Actions & Views \(Depreciated\)
-
-> This feature is still in place to make 1.X migration easier but planned to be depreciated since it doesn't support the new types syntax or streaming api.
-
-Think of Actions kind of like Redux reducers and Views are a way to declare all the ways you plan to display data in your app. Both views and actions are completely optional and work identically.
-
-#### Example
-
-```typescript
-nSQL().query("create table", {
-    name: "users",
-    model: {
-        "id:uuid": {pk: true}, // pk = primary key
-        "name:string" {},
-        "balance:int": {}
-    },
-    views: [
-        {
-            name: 'get_user_by_name',
-            args: ['name:string'], //<= notice the optional type casting, you could also just do ['name']
-            call: function(opts, db) {
-                // Because of the args property our "opts" argument looks like this:
-                // {name:"SomeString"}
-                // nanoSQL will force the name property to a string and prevent any other arguments from being passed through.
-    
-                // Finally, the "db" argument is the nSQL var with the most recent selected table still selected.
-                return db.query('select').where(['name', '=', opts.name]).exec();
-            }
-        }
-    ]
-}).exec()...
-
-// using our view
-nSQL("users").getView("get_user_by_name",{name:"Scott"}).then((rows) => {
-    console.log(rows) // <= result of the view
-});
-
-
-```
-
-Actions are called with `.doAction()` and views are called with `.getView()`, they both have the same syntax and work identically.

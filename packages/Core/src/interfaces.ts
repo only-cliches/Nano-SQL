@@ -55,10 +55,7 @@ export declare class InanoSQLInstance {
     _rebuildFKs()
     doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
     getCache(id: string, args?: { offset: number, limit: number }): any[];
-    presetQuery(fn: string): {
-        promise: (args: any) => Promise<any[]>;
-        stream: (args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => void
-    }
+    presetQuery(fn: string, args?: any): InanoSQLQueryBuilder
     clearCache(id: string): boolean;
     every(args: {length: number, every?: number, offset?: number}): number[];
     clearTTL(primaryKey: any): Promise<any>;
@@ -407,7 +404,7 @@ export interface InanoSQLTableConfig {
         returns?: {
             [colAndType: string]: InanoSQLDataModel;
         } | string;
-        call: (db: InanoSQLInstance, args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+        call: (db: InanoSQLInstance, args: any) => InanoSQLQuery;
     }[],
     filter?: (row: any) => any;
     actions?: InanoSQLActionOrView[];
@@ -451,7 +448,7 @@ export interface InanoSQLTable {
             returns?: {
                 [colAndType: string]: InanoSQLDataModel;
             } | string;
-            call: (db: InanoSQLInstance, args: any, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => any;
+            call: (db: InanoSQLInstance, args?: any) => InanoSQLQuery;
         }
     },
     filter?: (row: any) => any;
@@ -560,6 +557,7 @@ export interface InanoSQLIndex {
         [key: string]: any;
     };
     path: string[];
+    isDate: boolean;
 }
 
 export interface ISelectArgs {
@@ -585,6 +583,7 @@ export interface IWhereCondition {
     col?: string;
     comp: string;
     value: any;
+    type?: string;
 }
 
 export interface IWhereArgs {

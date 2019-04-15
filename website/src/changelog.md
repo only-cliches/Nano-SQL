@@ -4,6 +4,14 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.5] 4-14-2019
+- **BREAKING CHANGE** Preset query api has been updated, check [the migration](https://nanosql.io/migration.html) docs out. 
+- Added integrity key to <script/> releases to prevent the CDN from silently tampering with future releases.
+- Improved performance of IndexedDB index requests.
+- Added table id to `describe table` queries.
+- Resolved issue [#137](https://github.com/ClickSimply/Nano-SQL/issues/137), rewrote `date` type behavior to be more intuitive.
+- Updated dependencies.
+
 ## [2.2.4] 4-1-2019
 - Resolved issue [#85](https://github.com/ClickSimply/Nano-SQL/issues/85#issuecomment-478362526).
 
@@ -152,7 +160,7 @@ nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrd
 
 ## [2.0.1] 1-15-2018
 - Complete rewrite of the whole library from the ground up.  Previous plugins and adapters developed for nanoSQL 1.X will NOT work for 2.X versions.
-- Changed config, table model, view, and action setup format.  View [Migration Docs](https://nanosql.gitbook.io/docs/5-migration/1.x-2.0).
+- Changed config, table model, view, and action setup format.  View [Migration Docs](https://nanosql.io/migration.html).
 - Removed all ORM features, tries, history, observables and fuzzy search from core.
 - Added `CROW` function as well as geo spatial index feature for fast `CROW` queries.
 - You can now upsert nested values.  `nSQL("Table.column.nested.value").query("upsert", newValue).where([...]).exec()..`

@@ -100,9 +100,21 @@ export const buildQuery = (nSQL: InanoSQLInstance, table: string | any[] | ((whe
     };
 };
 
+export const keyToDate = (nSQL: InanoSQLInstance, type: string, pk: any): any => {
+    if (!pk) return pk;
+
+    if (type === "date") {
+        return Date.parse(pk);
+    }
+    return pk;
+}
+
 export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) => {
     return {
         write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
+
+            pk = keyToDate(nSQL, nSQL._tables[table].pkType, pk);
+
             nSQL.doFilter<adapterWriteFilter>("adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
@@ -113,6 +125,8 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
 
+            pk = keyToDate(nSQL, nSQL._tables[table].pkType, pk);
+
             nSQL.doFilter<adapterReadFilter>("adapterRead", { res: { table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
 
@@ -122,17 +136,39 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                         result.res.complete(undefined);
                         return;
                     }
-                    result.res.complete(row);
+                    if (nSQL._tables[result.res.table].pkType === "date") {
+                        const setRow = {
+                            ...row
+                        };
+                        deepSet(nSQL._tables[result.res.table].pkCol, setRow, new Date(result.res.pk).toISOString());
+                        result.res.complete(setRow);
+                    } else {
+                        result.res.complete(row);
+                    }
+                    
                 }, result.res.error);
 
             }, error as any);
         },
         readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
+            
+            offsetOrLow = keyToDate(nSQL, nSQL._tables[table].pkType, offsetOrLow);
+            limitOrHigh = keyToDate(nSQL, nSQL._tables[table].pkType, limitOrHigh);
+    
             nSQL.doFilter<adapterReadMultiFilter>("adapterReadMulti", { res: { table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
                 adapter.readMulti(nSQL._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (row, i) => {
-                    result.res.onRow(row, i)
+                    if (nSQL._tables[result.res.table].pkType === "date") {
+                        const setRow = {
+                            ...row
+                        };
+                        const pk = deepGet(nSQL._tables[result.res.table].pkCol, setRow);
+                        deepSet(nSQL._tables[result.res.table].pkCol, setRow, new Date(pk).toISOString());
+                        result.res.onRow(setRow, i);
+                    } else {
+                        result.res.onRow(row, i)
+                    }
                 }, () => {
                     result.res.complete();
                 }, result.res.error);
@@ -166,6 +202,8 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
             }, error);
         },
         delete: (table: string, pk: any, complete: () => void, error: (err: any) => void) => {
+            pk = keyToDate(nSQL, nSQL._tables[table].pkType, pk);
+
             nSQL.doFilter<adapterDeleteFilter>("adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
@@ -219,6 +257,9 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 value2 = String(value2 || "").toUpperCase();
             }
 
+            value2 = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", value2);
+
+
             nSQL.doFilter<adapterAddIndexValueFilter>("adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
@@ -230,17 +271,19 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 error({ error: `Index ${indexName} not found!` });
                 return;
             }
-            let key2 = value === undefined || value === "undefined" ? "__NULL__" : value;
+            let value2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
-            if (typeof key2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
-                key2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            if (typeof value2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
+                value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
             }
 
             if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
-                key2 = String(key2 || "").toUpperCase();
+                value2 = String(value2 || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterDeleteIndexValueFilter>("adapterDeleteIndexValue", { res: { table: table, indexName, key, value: key2, complete, error }, query }, (result) => {
+            value2 = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", value2);
+
+            nSQL.doFilter<adapterDeleteIndexValueFilter>("adapterDeleteIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
                 adapter.deleteIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
@@ -259,6 +302,8 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
             if (typeof key === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
                 key += nSQL._tables[table].indexes[indexName].props.offset || 0;
             }
+
+            key = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", key);
 
             if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
                 key = String(key || "").toUpperCase();
@@ -288,6 +333,9 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
                 }
             }
 
+            lower = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", lower);
+            higher = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", higher);
+
             if (type === "range" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
                 lower = String(lower || "").toUpperCase();
                 higher = String(higher || "").toUpperCase();
@@ -304,13 +352,9 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
     };
 };
 
-export const ISO_8601_FULL = /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(([+-]\d\d:\d\d)|Z)?$/i;
-
 export const maybeDate = (value: any): any => {
-    if (value && typeof value === "string" && ISO_8601_FULL.test(value)) {
-        return Date.parse(value);
-    }
-    return value;
+    const parsed = Date.parse(value);
+    return isNaN(parsed) ? value : parsed;
 }
 
 export const mutateRowTypes = (replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
@@ -816,14 +860,11 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: 
     const doCast = (castType: string, castVal: any) => {
         switch (castType) {
             case "safestr": return doCast("string", castVal).replace(/[&<>"'`=\/]/gmi, (s) => entityMap[s]);
-            case "date":
-                if (t === "string") {
-                    return Date.parse(castVal);
-                }
             case "int": return (t !== "number" || castVal % 1 !== 0) ? Math.round(nan(castVal)) : castVal;
             case "number":
             case "float": return t !== "number" ? nan(castVal) : castVal;
             case "array": return Array.isArray(castVal) ? castVal : [];
+            case "date":
             case "uuid":
             case "timeId":
             case "timeIdms":

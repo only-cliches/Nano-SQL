@@ -6,9 +6,9 @@ import { nanoSQL, nSQL as nSQLDefault } from "../src";
 import { InanoSQLInstance, InanoSQLFKActions, InanoSQLAdapter } from "../src/interfaces";
 import { uuid, crowDistance, assign, noop } from "../src/utilities";
 import { SyncStorage } from "../src/adapters/syncStorage";
+import { randomString } from "./utils";
 import * as fs from "fs";
 import * as path from "path";
-
 
 describe("Testing Other Features", () => {
 
@@ -1883,6 +1883,216 @@ describe("Testing Other Features", () => {
 
             try {
                 expect(filterRows).to.deep.equal(resultRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Date Data Type (Primary Key)", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        const now = Date.now();
+        for (let i = 1; i < 500; i++) {
+            const time = new Date(now + (i * 1000));
+            rows.push({ id: time.toISOString(), name: randomString() });
+        }
+
+        const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 499)]));
+
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:date": { pk: true },
+                    "name:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["id", "=", get.id]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(get).to.deep.equal(resultRows[0]);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Date Data Type (Primary Key Range)", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        const now = Date.now();
+        for (let i = 1; i < 500; i++) {
+            const time = new Date(now + (i * 1000));
+            rows.push({ id: time.toISOString(), name: randomString() });
+        }
+
+        const range = assign(rows).filter((v, i) => i > 200 && i < 300);
+
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:date": { pk: true },
+                    "name:string": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["id", "BETWEEN", [range[0].id, range[range.length -1].id]]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(range).to.deep.equal(resultRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Date Data Type (Secondary Index)", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        const now = Date.now();
+        for (let i = 1; i < 500; i++) {
+            const time = new Date(now + (i * 1000));
+            rows.push({ id: i, time: time.toISOString() });
+        }
+
+        const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 499)]));
+
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int": {pk: true },
+                    "time:date": {}
+                },
+                indexes: {
+                    "time:date": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["time", "=", get.time]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(get).to.deep.equal(resultRows[0]);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Date Data Type (Secondary Index Range)", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        const now = Date.now();
+        for (let i = 1; i < 500; i++) {
+            const time = new Date(now + (i * 1000));
+            rows.push({ id: i, time: time.toISOString() });
+        }
+
+        const range = assign(rows).filter((v, i) => i > 200 && i < 300);
+
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int": {pk: true },
+                    "time:date": {}
+                },
+                indexes: {
+                    "time:date": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["time", "BETWEEN", [range[0].time, range[range.length -1].time]]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(range).to.deep.equal(resultRows);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Date Data Type (No Index)", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        const now = Date.now();
+        for (let i = 1; i < 500; i++) {
+            const time = new Date(now + (i * 1000));
+            rows.push({ id: i, time: time.toISOString() });
+        }
+
+        const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 499)]));
+
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int": {pk: true },
+                    "time:date": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["time", "=", get.time]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(get).to.deep.equal(resultRows[0]);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
+    it("Date Data Type (No Index Range)", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+        let rows: any[] = [];
+        const now = Date.now();
+        for (let i = 1; i < 500; i++) {
+            const time = new Date(now + (i * 1000));
+            rows.push({ id: i, time: time.toISOString() });
+        }
+
+        const range = assign(rows).filter((v, i) => i > 200 && i < 300);
+
+        nSQL.connect({
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int": {pk: true },
+                    "time:date": {}
+                }
+            }]
+        }).then(() => {
+            return nSQL.selectTable("test").loadJS(rows);
+        }).then(() => {
+            return nSQL.query("select").where(["time", "BETWEEN", [range[0].time, range[range.length -1].time]]).exec();
+        }).then((resultRows) => {
+            try {
+                expect(range).to.deep.equal(resultRows);
                 done();
             } catch (e) {
                 done(e);

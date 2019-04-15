@@ -177,7 +177,8 @@ export class nanoSQLAdapterTest {
                             isArray: false,
                             type: "string",
                             path: ["name"],
-                            props: {}
+                            props: {},
+                            isDate: false
                         }
                     },
                     actions: [],
