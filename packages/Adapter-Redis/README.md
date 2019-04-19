@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-redis --save
 import { Redis } from "@nano-sql/adapter-redis";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new Redis(),
     tables: [...]

@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-dynamo --save
 import { DynamoDB } from "@nano-sql/adapter-dynamo";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new DynamoDB(),
     tables: [...]
@@ -67,7 +67,7 @@ import { nSQL } from "@nano-sql/core";
 import * as AWS from "aws-sdk";
 
 // example filter for schema
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new DynamoDB({}, {
         filterSchema: (schemaArgs: AWS.DynamoDB.CreateTableInput) => {

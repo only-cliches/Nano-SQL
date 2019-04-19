@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-mongo --save
 import { MongoDB } from "@nano-sql/adapter-mongo";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new MongoDB("mongodb://localhost:27017"),
     tables: [...]

@@ -15,14 +15,14 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
     public static execMap: any;
 
-    constructor(db: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), queryArgs?: any, actionOrView?: string) {
+    constructor(public databaseID: string, db: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), queryArgs?: any, actionOrView?: string) {
         this._db = db;
 
         this._AV = actionOrView || "";
 
         if (typeof queryAction === "string") {
             this._query = {
-                ...buildQuery(db, table, queryAction),
+                ...buildQuery(databaseID, db, table, queryAction),
                 comments: [],
                 state: "pending",
                 action: queryAction,
@@ -193,12 +193,12 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
     }
 
     public listen(args?: {debounce?: number, unique?: boolean, compareFn?: (rowsA: any[], rowsB: any[]) => boolean}): _nanoSQLObserverQuery {
-        return new _nanoSQLObserverQuery(this._query, args && args.debounce, args && args.unique, args && args.compareFn);
+        return new _nanoSQLObserverQuery(this.databaseID, this._query, args && args.debounce, args && args.unique, args && args.compareFn);
     }
 
     public stream(onRow: (row: any) => void, complete?: () => void, err?: (error: any) => void, events?: boolean): void {
         this._query.returnEvent = events;
-        if (this._db.state.exportQueryObj) {
+        if (this._db.dbs[this.databaseID] && this._db.getDB(this.databaseID).state.exportQueryObj) {
 
             onRow(this._query);
 
@@ -207,8 +207,8 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         } else {
 
             const copyQ = this._query.copyTo ? new _nanoSQLQueue((item, cnt, next, qerr) => {
-                this._query.parent.triggerQuery({
-                    ...buildQuery(this._query.parent, this._query.copyTo && this._query.copyTo.table || "", "upsert"),
+                this._query.parent.triggerQuery(this.databaseID, {
+                    ...buildQuery(this.databaseID, this._query.parent, this._query.copyTo && this._query.copyTo.table || "", "upsert"),
                     actionArgs: this._query.copyTo && this._query.copyTo.mutate(item)
                 }, noop, () => {
                     onRow(item);
@@ -218,7 +218,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
                 if (complete) complete();
             }) : undefined;
 
-            this._db.triggerQuery(this._query, (row) => {
+            this._db.triggerQuery(this.databaseID, this._query, (row) => {
                 if (copyQ) {
                     copyQ.newItem(row);
                 } else {
@@ -259,7 +259,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
                 }
             }
             if (!streamObj.doNotCache) {
-                this._db._queryCache[id] = buffer;
+                this._db.getDB(this.databaseID)._queryCache[id] = buffer;
                 cacheReady(id, buffer.length);
             } else {
                 buffer = [];
@@ -290,7 +290,7 @@ class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
         exec: [(rows: any[], error?: any) => void, boolean]
     }
     
-    constructor(public query: InanoSQLQuery, public debounce: number = 500, public unique: boolean = false, public compareFn: (rowsA: any[], rowsB: any[]) => boolean = equal) {
+    constructor(public databaseID: string, public query: InanoSQLQuery, public debounce: number = 500, public unique: boolean = false, public compareFn: (rowsA: any[], rowsB: any[]) => boolean = equal) {
         this.trigger = this.trigger.bind(this);
         this._doQuery = this._doQuery.bind(this);
         this._throttleTrigger = this._doQuery.bind(this);
@@ -347,12 +347,12 @@ class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
         switch(this._mode) {
             case observerType.stream:
                 this.query.returnEvent = this._cbs.stream[3];
-                this.query.parent.triggerQuery(this.query, this._cbs.stream[0], this._cbs.stream[1], this._cbs.stream[2]);
+                this.query.parent.triggerQuery(this.databaseID, this.query, this._cbs.stream[0], this._cbs.stream[1], this._cbs.stream[2]);
             break;
             case observerType.exec: 
                 this.query.returnEvent = this._cbs.exec[1];
                 let rows: any[] = [];
-                this.query.parent.triggerQuery(this.query, (row) => {
+                this.query.parent.triggerQuery(this.databaseID, this.query, (row) => {
                     rows.push(row);
                 }, () => {
                     if (this.unique) {

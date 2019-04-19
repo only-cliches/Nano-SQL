@@ -116,7 +116,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         this._ai[table] = Math.max(pk, this._ai[table]);
 
         if (this._tableConfigs[table].ai) {
-            this._ai[table] = cast("int", Math.max(this._ai[table] || 0, pk));
+            this._ai[table] = cast(this._id, "int", Math.max(this._ai[table] || 0, pk));
             localStorage.setItem(this._id + "_" + table + "_idb_ai", String(this._ai[table]));
         }
 

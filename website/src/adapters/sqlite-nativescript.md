@@ -33,7 +33,7 @@ tns plugin add @nano-sql/adapter-sqlite-nativescript
 import { NativeSQLite } from "@nano-sql/adapter-sqlite-nativescript";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new NativeSQLite(),
     tables: [...]

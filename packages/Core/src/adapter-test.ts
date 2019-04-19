@@ -72,7 +72,14 @@ export class nanoSQLAdapterTest {
     public static newTable(adapter: InanoSQLAdapter, nSQL: InanoSQLInstance, tableName: string, tableConfig: InanoSQLTable, complete: () => void, error: () => void) {
         adapter.nSQL = nSQL;
         adapter.createTable(tableName, tableConfig, () => {
-            nSQL._tables[tableName] = tableConfig;
+            if (!nSQL.dbs["123"]) {
+                nSQL.dbs["123"] = {
+                    adapter: adapter,
+                    _tables: {},
+                    _tableIds: {},
+                } as any;
+            }
+            nSQL.getDB("123")._tables[tableName] = tableConfig;
             complete();
         }, error);
     }

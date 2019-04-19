@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-sqlite --save
 import { SQLite } from "@nano-sql/adapter-sqlite";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new SQLite(),
     tables: [...]

@@ -15,7 +15,7 @@ In the browser you can use IndexedDB, WebSQL or Local Storage. The best way to g
 ### Autodetect
 
 ```typescript
-nSQL().connect({
+nSQL().createDatabase({
     mode: "PERM" // autodetect best method and persist data.
     id: "my_db",
     tables: [...]
@@ -45,7 +45,7 @@ As a result of the chart above, when you pass in `PERM` the autodetect method ty
 With NodeJS you really have only two choices: Memory or RocksDB. The same API in the browser also works in nodeJS:
 
 ```typescript
-nSQL().connect({
+nSQL().createDatabase({
     mode: "PERM" // autodetect best method and persist data.
     id: "my_db",
     tables: [...]

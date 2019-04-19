@@ -81,6 +81,7 @@ module.exports = {
                 ["/welcome", "Welcome" ],
                 ["/cli", "CLI"],
                 ["/setup", "Setup"],
+                ["/databases", "Databases"],
                 ["/query/", "Query →"],
                 ["/adapters/", "Adapters →"],
                 ["/plugins/", "Plugins →"],

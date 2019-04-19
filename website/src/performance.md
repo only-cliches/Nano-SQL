@@ -27,7 +27,7 @@ Indexing boils down to one idea: if you can know the exact id or range of ids on
 Let's look at a simple example when we have orders and we know a common query will be getting the orders from the last day.  We could setup a data model like this:
 
 ```typescript
-nSQL().connect({
+nSQL().createDatabase({
     tables: [
         {
             name: "orders",
@@ -53,7 +53,7 @@ The problem here is _every single order row will have to checked_ to see if the 
 With a small tweak to our data model and query, we can increase the performance of this kind of query exponentially:
 
 ```typescript
-nSQL().connect({
+nSQL().createDatabase({
     tables: [
         {
             name: "orders",
@@ -103,7 +103,7 @@ Let's look at some examples:
 
 ```typescript
 // example data model
-nSQL().connect({
+nSQL().createDatabase({
     tables: [
         {
             name: "orders",

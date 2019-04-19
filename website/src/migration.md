@@ -1,5 +1,27 @@
 # Migration
 
+## 2.2.5 => 2.26
+
+The `connect()` method is now `createDatabase()`.
+
+```ts
+// old syntax
+nSQL().connect({
+    id: "my_db",
+    mode: "PERM",
+    tables: [..]
+}).then...
+
+// new syntax
+nSQL().createDatabase({
+    id: "my_db",
+    mode: "PERM",
+    tables: [..]
+}).then...
+```
+
+The old `connect()` method will continue to work to prevent breaking changes, but the new method is now considered best practice.
+
 ## 2.2.4 => 2.2.5
 
 ### Preset Query API

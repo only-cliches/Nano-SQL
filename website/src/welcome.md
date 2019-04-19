@@ -28,6 +28,9 @@
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
 
+### Multiple Database Support
+Run several databases in parallel, each database can use it's own adapter.  This means you could have one nanoSQL instance running a Redis based database, a MySQL based database and a RocksDB based database at the same time seamlessly!
+
 ### Identical API Everywhere
 Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
@@ -44,7 +47,7 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 28KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 29KB!
 
 
 ## Comparison with Other Projects
@@ -60,7 +63,7 @@ Built in geolocation indexing, autocomplete, observable queries, typescript supp
 | Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Size (kb)       | 28      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
+| Size (kb)       | 29      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
 
 
 ## Database Support
@@ -106,14 +109,14 @@ Using in Node:
 const nSQL = require("@nano-sql/core").nSQL;
 ```
 
-To use directly in the browser, drop the tag below into your `<head>`.
+To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.5/dist/nano-sql.min.js" integrity="sha256-3IxuRAQ9oXPMAKub/GFaDYs0HmpeXoeqzoHM35NkULE=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.6/dist/nano-sql.min.js" integrity="sha256-ziW9q4EqmKiwdQI6KIb3hk5vkrKoQJRrRZ6cSrMC3+4=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.5/dist/nano-sql.min.es5.js" integrity="sha256-zWjH22E8JIeun1GKLKNAqx+xXZO15hhy7gyWG/2/rYw=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.6/dist/nano-sql.min.es5.js" integrity="sha256-MCMif4Gk/Y6kgQN7RF6/nTNF1Do6JICsfxL8VlzU/Cw=" crossorigin="anonymous"></script>
 ```
 
 ## Important
@@ -167,7 +170,7 @@ export const types = {
 
 // using the above object in nSQL
 import { nSQL } from "@nano-sql/core";
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     tables: tables,
     types: types
@@ -210,7 +213,7 @@ export interface ItypeMeta {
 
 ```ts
 // Persistent Database
-nSQL().connect({
+nSQL().createDatabase({
     id: "test",
     mode: "PERM",
     tables: [
@@ -364,5 +367,3 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
 - [ ] SQLite Query Support
 - [ ] MongoDB Query Support
 - [ ] ReQL Query Support
-
-

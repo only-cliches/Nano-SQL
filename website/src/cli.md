@@ -37,7 +37,7 @@ export const tables: InanoSQLTableConfig[] = [
 
 // using the above object in nSQL
 import { nSQL } from "@nano-sql/core";
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     tables: tables
 }).then..

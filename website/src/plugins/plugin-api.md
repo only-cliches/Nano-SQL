@@ -28,7 +28,7 @@ export const myPlugin = (): InanoSQLPlugin => {
 }
 
 // using your plugin:
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: "PERM",
     plugins: [

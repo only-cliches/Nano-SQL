@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-scylla --save
 import { Scylla } from "@nano-sql/adapter-scylla";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db", // used as Scylla Keyspace
     mode: new Scylla({
       contactPoints: ['127.0.0.1:9042']

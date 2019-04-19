@@ -416,7 +416,7 @@ Foreign keys are a pretty complicated topic, you can read more [on this website]
 You can setup preset queries, these are useful for securing server side requests coming from clients or declaring all the data setters/getters inline with the table.
 
 ```typescript
-nSQL().connect({
+nSQL().createDatabase({
     tables: [
         {
             name: "users",

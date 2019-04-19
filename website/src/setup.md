@@ -6,10 +6,10 @@
 Simply copy one of the script links below and drop it into your page head.
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.5/dist/nano-sql.min.js" integrity="sha256-3IxuRAQ9oXPMAKub/GFaDYs0HmpeXoeqzoHM35NkULE=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.6/dist/nano-sql.min.js" integrity="sha256-ziW9q4EqmKiwdQI6KIb3hk5vkrKoQJRrRZ6cSrMC3+4=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.5/dist/nano-sql.min.es5.js" integrity="sha256-zWjH22E8JIeun1GKLKNAqx+xXZO15hhy7gyWG/2/rYw=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.6/dist/nano-sql.min.es5.js" integrity="sha256-MCMif4Gk/Y6kgQN7RF6/nTNF1Do6JICsfxL8VlzU/Cw=" crossorigin="anonymous"></script>
 ```
 
 ### NodeJS / Webpack / Browserify / etc
@@ -27,36 +27,4 @@ import { nSQL } from "@nano-sql/core";
 const nSQL = require("@nano-sql/core").nSQL;
 ```
 
-
-## Using nanoSQL
-
-NanoSQL requires very little boilerplate code to start using.  Simply call the `connect` method and pass in an object describing your tables and other properties, then it's ready to use!
-
-```typescript
-// basic setup
-nSQL().connect({
-    id: "my_db",
-    mode: "PERM", // save changes to IndexedDB, WebSQL or RocksDB!
-    tables: [
-        {
-            name: "users",
-            model: {
-                "id:uuid": {pk: true},
-                "name:string": {},
-                "age:int": {}
-            }
-        }
-    ]
-}).then(() => {
-    // ready to query!
-}).catch(() => {
-    // ran into a problem
-})
-```
-
-The [connect](https://api.nanosql.io/classes/_index_.nanosql.html#connect) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
-
-The object used in the connect function is described by the [InanoSQLConfig interface](https://api.nanosql.io/interfaces/_interfaces_.inanosqlconfig.html).
-
-You can create tables using the [create table](/query/create-table.html) query or including them in the config object.
-
+Now that nanoSQL is setup in your environment you can [create your first database](/databases.html)!

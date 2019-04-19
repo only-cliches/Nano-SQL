@@ -180,7 +180,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
         CAST: {
             type: "S",
             call: (query, row, prev, column, type) => {
-                return {result: cast(getFnValue(row, type), getFnValue(row, column), false, query.parent)};
+                return {result: cast(query.databaseID, getFnValue(row, type), getFnValue(row, column), false, query.parent)};
             }
         },
         CONCAT: {
@@ -264,7 +264,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
             },
             checkIndex: (query, fnArgs, where) => {
                 if (where[1] === "<" || where[1] === "<=") {
-                    const indexes: {[id: string]: InanoSQLIndex} = typeof query.table === "string" ? nSQL._tables[query.table].indexes : {};
+                    const indexes: {[id: string]: InanoSQLIndex} = typeof query.table === "string" ? nSQL.getDB(query.databaseID)._tables[query.table].indexes : {};
                     const crowColumn = resolvePath(fnArgs[0]);
                     let crowCols: string[] = [];
                     // find the lat/lon indexes for the crow calculation
@@ -355,7 +355,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                     }
 
                     // read values from seconday index
-                    adapterFilters(nSQL, query).readIndexKeys(table, index, "range", ranges[0], ranges[1], false, (pk, id) => {
+                    adapterFilters(query.databaseID, nSQL, query).readIndexKeys(table, index, "range", ranges[0], ranges[1], false, (pk, id) => {
                         if (!pks[pk]) {
                             pks[pk] = {
                                 key: pk,
@@ -398,7 +398,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
 
                     allAsync(rowsToRead, (rowData: ICrowIndexQuery, i, next, err) => {
 
-                        adapterFilters(query.parent, query).read(query.table as string, rowData.key, (row) => {
+                        adapterFilters(query.databaseID, query.parent, query).read(query.table as string, rowData.key, (row) => {
                             if (!row) {
                                 next(null);
                                 return;
@@ -417,7 +417,7 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                             const crowDist = crowDistance(rowLat, rowLon, centerLat, centerLon, nSQL.planetRadius);
                             const doRow = condition === "<" ? crowDist < distance : crowDist <= distance;
                             if (doRow) {
-                                onRow(onlyPKs ? deepGet(nSQL._tables[query.table as string].pkCol, row) : row, counter);
+                                onRow(onlyPKs ? deepGet(nSQL.getDB(query.databaseID)._tables[query.table as string].pkCol, row) : row, counter);
                                 counter++;
                             }
 

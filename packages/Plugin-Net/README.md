@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-mysql --save
 import { MySQL } from "@nano-sql/adapter-mysql";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new MySQL({ // required
 		host: "localhost",

@@ -12,7 +12,7 @@ export class MyAdapter implements InanoSQLAdapter {
 }
 
 // using the custom adapter
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new MyAdapter()
 })

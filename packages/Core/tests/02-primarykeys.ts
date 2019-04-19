@@ -10,6 +10,7 @@ describe("Primary Keys", () => {
     it("Auto Incriment with Int primary key.", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "test",
@@ -36,6 +37,7 @@ describe("Primary Keys", () => {
     it("UUID primary keys should auto generate.", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "test",
@@ -62,6 +64,7 @@ describe("Primary Keys", () => {
     it("timeId primary keys should auto generate", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "test",
@@ -88,6 +91,7 @@ describe("Primary Keys", () => {
     it("timeIdms primary keys should auto generate", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "test",

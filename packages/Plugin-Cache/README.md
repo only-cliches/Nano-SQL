@@ -46,7 +46,7 @@ npm i @nano-sql/plugin-redis-index --save
 import { RedisIndex } from "@nano-sql/plugin-redis-index";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: "PERM", // or any NodeJS adapter
     plugins: [

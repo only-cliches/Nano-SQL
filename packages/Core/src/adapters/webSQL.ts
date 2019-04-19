@@ -184,7 +184,7 @@ export class WebSQL extends nanoSQLMemoryIndex {
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
         try {
-            this._db = window["openDatabase"](this._id, String(this.nSQL.config.version) || "1.0", this._id, (isAndroid ? 5000000 : this._size));
+            this._db = window["openDatabase"](this._id, this.nSQL.dbs[id] ? String(this.nSQL.getDB(id).config.version || "1.0") : "1.0", this._id, (isAndroid ? 5000000 : this._size));
         } catch (e) {
             error(e);
         }

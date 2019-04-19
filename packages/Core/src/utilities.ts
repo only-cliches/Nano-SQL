@@ -85,9 +85,10 @@ export const slugify = (str: string): string => {
     return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 }
 
-export const buildQuery = (nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
+export const buildQuery = (selectedDB: string|undefined, nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
     return {
-        table: table || nSQL.state.selectedTable,
+        databaseID: selectedDB,
+        table: table || nSQL.selectedTable,
         parent: nSQL,
         action: action,
         state: "pending",
@@ -109,38 +110,38 @@ export const keyToDate = (nSQL: InanoSQLInstance, type: string, pk: any): any =>
     return pk;
 }
 
-export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) => {
+export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLInstance, query?: InanoSQLQuery) => {
     return {
         write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
+            if (!selectedDB) return;
+            pk = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, pk);
 
-            pk = keyToDate(nSQL, nSQL._tables[table].pkType, pk);
-
-            nSQL.doFilter<adapterWriteFilter>("adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterWriteFilter>(selectedDB, "adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.write(nSQL._tableIds[result.res.table], result.res.pk, result.res.row, (pk) => {
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.write(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, result.res.row, (pk) => {
                     result.res.complete(pk);
                 }, result.res.error);
             }, error as any);
         },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
+            if (!selectedDB) return;
+            pk = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, pk);
 
-            pk = keyToDate(nSQL, nSQL._tables[table].pkType, pk);
-
-            nSQL.doFilter<adapterReadFilter>("adapterRead", { res: { table, pk, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterReadFilter>(selectedDB, "adapterRead", { res: { table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
 
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.read(nSQL._tableIds[result.res.table], result.res.pk, (row) => {
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.read(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, (row) => {
                     if (!row) {
                         result.res.complete(undefined);
                         return;
                     }
-                    if (nSQL._tables[result.res.table].pkType === "date") {
+                    if (nSQL.getDB(selectedDB)._tables[result.res.table].pkType === "date") {
                         const setRow = {
                             ...row
                         };
-                        deepSet(nSQL._tables[result.res.table].pkCol, setRow, new Date(result.res.pk).toISOString());
+                        deepSet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, setRow, new Date(result.res.pk).toISOString());
                         result.res.complete(setRow);
                     } else {
                         result.res.complete(row);
@@ -151,20 +152,20 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
             }, error as any);
         },
         readMulti: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
-            
-            offsetOrLow = keyToDate(nSQL, nSQL._tables[table].pkType, offsetOrLow);
-            limitOrHigh = keyToDate(nSQL, nSQL._tables[table].pkType, limitOrHigh);
+            if (!selectedDB) return;
+            offsetOrLow = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, offsetOrLow);
+            limitOrHigh = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, limitOrHigh);
     
-            nSQL.doFilter<adapterReadMultiFilter>("adapterReadMulti", { res: { table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterReadMultiFilter>(selectedDB, "adapterReadMulti", { res: { table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.readMulti(nSQL._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (row, i) => {
-                    if (nSQL._tables[result.res.table].pkType === "date") {
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.readMulti(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (row, i) => {
+                    if (nSQL.getDB(selectedDB)._tables[result.res.table].pkType === "date") {
                         const setRow = {
                             ...row
                         };
-                        const pk = deepGet(nSQL._tables[result.res.table].pkCol, setRow);
-                        deepSet(nSQL._tables[result.res.table].pkCol, setRow, new Date(pk).toISOString());
+                        const pk = deepGet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, setRow);
+                        deepSet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, setRow, new Date(pk).toISOString());
                         result.res.onRow(setRow, i);
                     } else {
                         result.res.onRow(row, i)
@@ -176,122 +177,133 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
 
         },
         connect: (id: string, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterConnectFilter>("adapterConnect", { res: { id, complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterConnectFilter>(selectedDB, "adapterConnect", { res: { id, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.connect(result.res.id, result.res.complete, result.res.error);
+                nSQL.getDB(selectedDB).adapter.connect(result.res.id, result.res.complete, result.res.error);
             }, error);
         },
         disconnect: (complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterDisconnectFilter>("adapterDisconnect", { res: { complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterDisconnectFilter>(selectedDB, "adapterDisconnect", { res: { complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                nSQL.adapter.disconnect(result.res.complete, result.res.error);
+                nSQL.getDB(selectedDB).adapter.disconnect(result.res.complete, result.res.error);
             }, error);
         },
         createTable: (table: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterCreateTableFilter>("adapterCreateTable", { res: { table, tableData, complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterCreateTableFilter>(selectedDB, "adapterCreateTable", { res: { table, tableData, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = tableData.mode || nSQL.adapter;
-                adapter.createTable(nSQL._tableIds[result.res.table], result.res.tableData, result.res.complete, result.res.error);
+                const adapter = tableData.mode || nSQL.getDB(selectedDB).adapter;
+                adapter.createTable(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.tableData, result.res.complete, result.res.error);
             }, error);
         },
         dropTable: (table: string, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterDropTableFilter>("adapterDropTable", { res: { table: table, complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterDropTableFilter>(selectedDB, "adapterDropTable", { res: { table: table, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.dropTable(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.dropTable(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         delete: (table: string, pk: any, complete: () => void, error: (err: any) => void) => {
-            pk = keyToDate(nSQL, nSQL._tables[table].pkType, pk);
+            if (!selectedDB) return;
+            pk = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, pk);
 
-            nSQL.doFilter<adapterDeleteFilter>("adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterDeleteFilter>(selectedDB, "adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.delete(nSQL._tableIds[result.res.table], result.res.pk, result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.delete(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, result.res.complete, result.res.error);
             }, error);
         },
         getTableIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterGetTableIndexFilter>("adapterGetTableIndex", { res: { table: table, complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterGetTableIndexFilter>(selectedDB, "adapterGetTableIndex", { res: { table: table, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.getTableIndex(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.getTableIndex(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         getTableIndexLength: (table: string, complete: (length: number) => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterGetTableIndexLengthFilter>("adapterGetTableIndexLength", { res: { table: table, complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterGetTableIndexLengthFilter>(selectedDB, "adapterGetTableIndexLength", { res: { table: table, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.getTableIndexLength(nSQL._tableIds[result.res.table], result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.getTableIndexLength(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.complete, result.res.error);
             }, error);
         },
         createIndex: (table: string, indexName: string, type: string, complete: () => void, error: (err: any) => void) => {
-            nSQL.doFilter<adapterCreateIndexFilter>("adapterCreateIndex", { res: { table: table, indexName, type, complete, error }, query }, (result) => {
+            if (!selectedDB) return;
+            nSQL.doFilter<adapterCreateIndexFilter>(selectedDB, "adapterCreateIndex", { res: { table: table, indexName, type, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.createIndex(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.createIndex(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.complete, result.res.error);
             }, error);
         },
         deleteIndex: (table: string, indexName: string, complete: () => void, error: (err: any) => void) => {
-            if (!nSQL._tables[table].indexes[indexName]) {
+            if (!selectedDB) return;
+            if (!nSQL.getDB(selectedDB)._tables[table].indexes[indexName]) {
                 error({ error: `Index ${indexName} not found!` });
                 return;
             }
-            nSQL.doFilter<adapterDeleteIndexFilter>("adapterDeleteIndex", { res: { table: table, indexName, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterDeleteIndexFilter>(selectedDB, "adapterDeleteIndex", { res: { table: table, indexName, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.deleteIndex(nSQL._tableIds[result.res.table], result.res.indexName, result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.deleteIndex(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.complete, result.res.error);
             }, error);
         },
         addIndexValue: (table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => {
-            if (!nSQL._tables[table].indexes[indexName]) {
+            if (!selectedDB) return;
+            if (!nSQL.getDB(selectedDB)._tables[table].indexes[indexName]) {
                 error({ error: `Index ${indexName} not found!` });
                 return;
             }
             let value2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
-            if (typeof value2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
-                value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            if (typeof value2 === "number" && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset) {
+                value2 += nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset || 0;
             }
 
-            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+            if (nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.ignore_case) {
                 value2 = String(value2 || "").toUpperCase();
             }
 
-            value2 = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", value2);
+            value2 = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].indexes[indexName].isDate ? "date" : "", value2);
 
 
-            nSQL.doFilter<adapterAddIndexValueFilter>("adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterAddIndexValueFilter>(selectedDB, "adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.addIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.addIndexValue(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
         },
         deleteIndexValue: (table: string, indexName: string, key: any, value: any, complete: () => void, error: (err: any) => void) => {
-            if (!nSQL._tables[table].indexes[indexName]) {
+            if (!selectedDB) return;
+            if (!nSQL.getDB(selectedDB)._tables[table].indexes[indexName]) {
                 error({ error: `Index ${indexName} not found!` });
                 return;
             }
             let value2 = value === undefined || value === "undefined" ? "__NULL__" : value;
             // shift primary key query by offset
-            if (typeof value2 === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
-                value2 += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            if (typeof value2 === "number" && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset) {
+                value2 += nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset || 0;
             }
 
-            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+            if (nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.ignore_case) {
                 value2 = String(value2 || "").toUpperCase();
             }
 
-            value2 = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", value2);
+            value2 = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].indexes[indexName].isDate ? "date" : "", value2);
 
-            nSQL.doFilter<adapterDeleteIndexValueFilter>("adapterDeleteIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterDeleteIndexValueFilter>(selectedDB, "adapterDeleteIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.deleteIndexValue(nSQL._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.deleteIndexValue(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
         },
         readIndexKey: (table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void) => {
-
-            if (!nSQL._tables[table].indexes[indexName]) {
+            if (!selectedDB) return;
+            if (!nSQL.getDB(selectedDB)._tables[table].indexes[indexName]) {
                 error({ error: `Index ${indexName} not found!` });
                 return;
             }
@@ -299,52 +311,52 @@ export const adapterFilters = (nSQL: InanoSQLInstance, query?: InanoSQLQuery) =>
             let key = pk === "NULL" ? "__NULL__" : pk;
 
             // shift primary key query by offset
-            if (typeof key === "number" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.offset) {
-                key += nSQL._tables[table].indexes[indexName].props.offset || 0;
+            if (typeof key === "number" && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset) {
+                key += nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset || 0;
             }
 
-            key = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", key);
+            key = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].indexes[indexName].isDate ? "date" : "", key);
 
-            if (nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+            if (nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.ignore_case) {
                 key = String(key || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterReadIndexKeyFilter>("adapterReadIndexKey", { res: { table: table, indexName, pk: key, onRowPK, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterReadIndexKeyFilter>(selectedDB, "adapterReadIndexKey", { res: { table: table, indexName, pk: key, onRowPK, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.readIndexKey(nSQL._tableIds[result.res.table], result.res.indexName, result.res.pk, result.res.onRowPK, result.res.complete, result.res.error);
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.readIndexKey(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.pk, result.res.onRowPK, result.res.complete, result.res.error);
             }, error);
         },
         readIndexKeys: (table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, id: any) => void, complete: () => void, error: (err: any) => void) => {
-
+            if (!selectedDB) return;
             let lower = offsetOrLow;
             let higher = limitOrHigh;
 
-            if (!nSQL._tables[table].indexes[indexName]) {
+            if (!nSQL.getDB(selectedDB)._tables[table].indexes[indexName]) {
                 error({ error: `Index ${indexName} not found!` });
                 return;
             }
 
             // shift range query by offset
             if (typeof lower === "number" && typeof higher === "number" && type === "range") {
-                if (nSQL._tables[table].indexes[indexName] && nSQL._tables[table].indexes[indexName].props.offset) {
-                    lower += nSQL._tables[table].indexes[indexName].props.offset || 0;
-                    higher += nSQL._tables[table].indexes[indexName].props.offset || 0;
+                if (nSQL.getDB(selectedDB)._tables[table].indexes[indexName] && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset) {
+                    lower += nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset || 0;
+                    higher += nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.offset || 0;
                 }
             }
 
-            lower = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", lower);
-            higher = keyToDate(nSQL, nSQL._tables[table].indexes[indexName].isDate ? "date" : "", higher);
+            lower = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].indexes[indexName].isDate ? "date" : "", lower);
+            higher = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].indexes[indexName].isDate ? "date" : "", higher);
 
-            if (type === "range" && nSQL._tables[table].indexes[indexName].props && nSQL._tables[table].indexes[indexName].props.ignore_case) {
+            if (type === "range" && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props && nSQL.getDB(selectedDB)._tables[table].indexes[indexName].props.ignore_case) {
                 lower = String(lower || "").toUpperCase();
                 higher = String(higher || "").toUpperCase();
             }
 
-            nSQL.doFilter<adapterReadIndexKeysFilter>("adapterReadIndexKeys", { res: { table: table, indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error }, query }, (result) => {
+            nSQL.doFilter<adapterReadIndexKeysFilter>(selectedDB, "adapterReadIndexKeys", { res: { table: table, indexName, type, offsetOrLow: lower, limitOrHigh: higher, reverse, onRowPK, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                const adapter = nSQL._tables[result.res.table].mode || nSQL.adapter;
-                adapter.readIndexKeys(nSQL._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (key, id) => {
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+                adapter.readIndexKeys(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (key, id) => {
                     if (key !== "__NULL__") result.res.onRowPK(key, id);
                 }, result.res.complete, result.res.error);
             }, error);
@@ -357,9 +369,11 @@ export const maybeDate = (value: any): any => {
     return isNaN(parsed) ? value : parsed;
 }
 
-export const mutateRowTypes = (replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
+export const mutateRowTypes = (selectedDB:string|undefined, replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
 
-    if (!nSQL._tables[table]) {
+    if (!selectedDB) return replaceObj;
+
+    if (!nSQL.getDB(selectedDB)._tables[table]) {
         throw new Error(`nSQL: Table "${table}" not found!`);
     }
 
@@ -402,7 +416,7 @@ export const mutateRowTypes = (replaceObj: any, table: string, nSQL: InanoSQLIns
         return useObj;
     };
 
-    return resolveModel(nSQL._tables[table].columns, replaceObj);
+    return resolveModel(nSQL.getDB(selectedDB)._tables[table].columns, replaceObj);
 }
 
 export const noop = () => { };
@@ -698,7 +712,7 @@ export const generateID = (primaryKeyType: string, incrimentValue?: number): any
     return idTypes[primaryKeyType] ? idTypes[primaryKeyType](incrimentValue || 1) : undefined;
 };
 
-export const cleanArgs2 = (args: any, dataModel: { [colAndType: string]: InanoSQLDataModel } | string, nSQL: InanoSQLInstance): any => {
+export const cleanArgs2 = (selectedDB: string, args: any, dataModel: { [colAndType: string]: InanoSQLDataModel } | string, nSQL: InanoSQLInstance): any => {
     let returnObj = {};
 
     const conformType = (strType: string, obj: any, dModel: { [colAndType: string]: InanoSQLDataModel } | string): any => {
@@ -711,8 +725,8 @@ export const cleanArgs2 = (args: any, dataModel: { [colAndType: string]: InanoSQ
         }
         if (typeof dModel === "string") {
             let findModel = dModel.replace(/\[\]/gmi, "");
-            let typeModel = Object.keys(nSQL.config.types || {}).reduce((prev, cur) => {
-                if (cur === findModel) return (nSQL.config.types || {})[cur];
+            let typeModel = Object.keys(nSQL.getDB(selectedDB).config.types || {}).reduce((prev, cur) => {
+                if (cur === findModel) return (nSQL.getDB(selectedDB).config.types || {})[cur];
                 return prev;
             }, undefined);
             if (!typeModel) {
@@ -729,7 +743,7 @@ export const cleanArgs2 = (args: any, dataModel: { [colAndType: string]: InanoSQ
                     getOtherCols = true;
                 } else {
                     definedCols.push(split[0]);
-                    returnObj[split[0]] = cast(split[1], obj[split[0]], false, nSQL);
+                    returnObj[split[0]] = cast(selectedDB, split[1], obj[split[0]], false, nSQL);
                 }
             });
             if (getOtherCols && isObject(obj)) {
@@ -751,14 +765,14 @@ export const cleanArgs2 = (args: any, dataModel: { [colAndType: string]: InanoSQ
  * @param {StdObject<any>} args
  * @returns {StdObject<any>}
  */
-export const cleanArgs = (argDeclarations: string[], args: { [key: string]: any }, nSQL: InanoSQLInstance): { [key: string]: any } => {
+export const cleanArgs = (selectedDB: string, argDeclarations: string[], args: { [key: string]: any }, nSQL: InanoSQLInstance): { [key: string]: any } => {
     let a: { [key: string]: any } = {};
     let i = argDeclarations.length;
-    const customTypes = Object.keys(nSQL.config.types || {});
+    const customTypes = Object.keys(nSQL.getDB(selectedDB).config.types || {});
     while (i--) {
         let k2: string[] = argDeclarations[i].split(":");
         if (k2.length > 1) {
-            a[k2[0]] = cast(k2[1], args[k2[0]] || undefined, true, nSQL);
+            a[k2[0]] = cast(selectedDB, k2[1], args[k2[0]] || undefined, true, nSQL);
         } else {
             a[k2[0]] = args[k2[0]] || undefined;
         }
@@ -813,7 +827,7 @@ export const execFunction = (query: InanoSQLQuery, fnString: string, row: any, p
  * @param {*} [val]
  * @returns {*}
  */
-export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: InanoSQLInstance): any => {
+export const cast = (selectedDB: string|undefined, type: string, val: any, allowUknownTypes?: boolean, nSQL?: InanoSQLInstance): any => {
 
     if (type === "any" || type === "blob" || type === "*") return val;
 
@@ -823,7 +837,7 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: 
         // value should be array but isn't, cast it to one
         if (!Array.isArray(val)) return [];
         // we have an array, cast array of types
-        return val.map((v) => cast(arrayOf, v, allowUknownTypes));
+        return val.map((v) => cast(selectedDB, arrayOf, v, allowUknownTypes));
     }
 
     const t = typeof val;
@@ -839,7 +853,7 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: 
         "=": "&#x3D;"
     };
 
-    const types = nSQL ? nSQL.config.types || {} : {};
+    const types = nSQL && selectedDB ? nSQL.getDB(selectedDB).config.types || {} : {};
 
     // custom type found
     if (Object.keys(types).indexOf(type) !== -1) {
@@ -849,7 +863,7 @@ export const cast = (type: string, val: any, allowUknownTypes?: boolean, nSQL?: 
             const typeObj = types[type];
             let returnObj = Object.keys(typeObj).reduce((prev, cur) => {
                 const key = cur.split(":");
-                prev[key[0]] = cast(key[1], val[key[0]], allowUknownTypes, nSQL);
+                prev[key[0]] = cast(selectedDB, key[1], val[key[0]], allowUknownTypes, nSQL);
                 return prev;
             }, {})
             return returnObj;

@@ -141,7 +141,7 @@ If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](
 
 ```ts
 // Persistent Database
-nSQL().connect({
+nSQL().createDatabase({
     id: "test",
     mode: "PERM",
     tables: [

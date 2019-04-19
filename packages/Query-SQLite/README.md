@@ -36,7 +36,7 @@ const sqlite = new nSQLite(new nanoSQL());
 // sqlite.nSQL => same as normal nSQL usage.
 // sqlite.query => use SQLite syntax on nSQL database.
 
-sqlite.nSQL().connect({
+sqlite.nSQL().createDatabase({
     id: "my-db",
     mode: "PERM"
 }).then(() => {

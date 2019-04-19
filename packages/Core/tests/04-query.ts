@@ -534,7 +534,7 @@ describe("Testing Other Features", () => {
         }
 
         nSQL().connect({
-            id: 'test',
+            id: "test",
             mode: 'TEMP',
             tables: [
                 {
@@ -609,6 +609,7 @@ describe("Testing Other Features", () => {
     it("PK & Normal Between behave identically.", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -648,6 +649,7 @@ describe("Testing Other Features", () => {
             }
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -677,6 +679,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "posts",
@@ -706,6 +709,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "posts",
@@ -735,6 +739,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "posts",
@@ -764,6 +769,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "posts",
@@ -797,6 +803,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "posts",
@@ -836,6 +843,7 @@ describe("Testing Other Features", () => {
             }
         }
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "users",
@@ -881,6 +889,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "users",
@@ -931,6 +940,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "users",
@@ -987,6 +997,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "users",
@@ -1043,6 +1054,7 @@ describe("Testing Other Features", () => {
         const nSQL = new nanoSQL();
 
         nSQL.connect({
+            id: "test",
             tables: [
                 {
                     name: "users",
@@ -1104,6 +1116,7 @@ describe("Testing Other Features", () => {
     it("Change Events work", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1135,6 +1148,7 @@ describe("Testing Other Features", () => {
     it("Change Events work twice", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1174,6 +1188,7 @@ describe("Testing Other Features", () => {
     it("Observer work", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1211,6 +1226,7 @@ describe("Testing Other Features", () => {
     it("Observer work twice", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1252,6 +1268,7 @@ describe("Testing Other Features", () => {
     it("Clone Queries Work", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "posts",
                 model: {
@@ -1268,7 +1285,7 @@ describe("Testing Other Features", () => {
                 mode: new SyncStorage(),
                 getAdapter: (adapter: InanoSQLAdapter) => {
                     let rows: any[] = [];
-                    const tableId = nSQL._tableIds["posts"];
+                    const tableId = nSQL.getDB("test")._tableIds["posts"];
                     adapter.readMulti(tableId, "all", 0, 0, false, (row) => {
                         rows.push(row);
                     }, () => {
@@ -1317,6 +1334,7 @@ describe("Testing Other Features", () => {
     it("Copy To Queries Work", (done: MochaDone) => {
         const nSQL = new nanoSQL();
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "posts",
                 model: {
@@ -1357,6 +1375,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: i });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1390,6 +1409,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: i });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1421,6 +1441,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: i });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1452,6 +1473,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: i });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1483,6 +1505,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: { prop: i } });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1519,6 +1542,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: i + 10 });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1547,6 +1571,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: Math.random() });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1579,6 +1604,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: uuid() });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1610,6 +1636,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: i - 10 });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1645,6 +1672,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, arr: terms.filter(v => Math.random() < 0.2) });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1680,6 +1708,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, prop: { arr: terms.filter(v => Math.random() < 0.2) } });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1715,6 +1744,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: uuid() });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1746,6 +1776,7 @@ describe("Testing Other Features", () => {
             rows.push({ id: i, num: uuid() });
         }
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1785,6 +1816,7 @@ describe("Testing Other Features", () => {
         const lat = (Math.random() * 180) - 90;
         const lon = (Math.random() * 360) - 180;
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1820,6 +1852,7 @@ describe("Testing Other Features", () => {
         const lat = (Math.random() * 140) - 70;
         const lon = (Math.random() * 360) - 180;
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1861,6 +1894,7 @@ describe("Testing Other Features", () => {
         const lat = (Math.random() * 9) + 80;
         const lon = (Math.random() * 360) - 180;
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1903,6 +1937,7 @@ describe("Testing Other Features", () => {
         const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 499)]));
 
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1937,6 +1972,7 @@ describe("Testing Other Features", () => {
         const range = assign(rows).filter((v, i) => i > 200 && i < 300);
 
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -1971,6 +2007,7 @@ describe("Testing Other Features", () => {
         const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 499)]));
 
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -2008,6 +2045,7 @@ describe("Testing Other Features", () => {
         const range = assign(rows).filter((v, i) => i > 200 && i < 300);
 
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -2045,6 +2083,7 @@ describe("Testing Other Features", () => {
         const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 499)]));
 
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {
@@ -2079,6 +2118,7 @@ describe("Testing Other Features", () => {
         const range = assign(rows).filter((v, i) => i > 200 && i < 300);
 
         nSQL.connect({
+            id: "test",
             tables: [{
                 name: "test",
                 model: {

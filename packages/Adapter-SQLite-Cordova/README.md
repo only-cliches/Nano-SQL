@@ -43,7 +43,7 @@ nSQL().on("ready", () => {
 });
 
 document.addEventListener(typeof cordova !== "undefined" ? "deviceready" : "DOMContentLoaded", () => {
-    nSQL().connect({
+    nSQL().createDatabase({
         id: "my_db",
         mode: getMode(),
         tables: [...]
@@ -64,7 +64,7 @@ nSQL().on("ready", () => {
 });
 
 document.addEventListener("deviceready", () => {
-    nSQL().connect({
+    nSQL().createDatabase({
         id: "my_db",
         mode: window.nSQLadapter.getMode(),
         tables: [...]

@@ -1,72 +1,94 @@
 import { ReallySmallEvents } from "really-small-events";
+import { _nanoSQLQueue } from "./utilities";
 
-export const VERSION = 2.25;
+export const VERSION = 2.26;
 
 export type uuid = String;
 export type timeId = String;
 export type timeIdms = String;
 
-export declare class InanoSQLInstance {
+export interface InanoSQLDBConfig {
     config: InanoSQLConfig;
     adapter: InanoSQLAdapter;
-    version: number;
+    _ttlTimer: any;
     filters: {
         [filterName: string]: ((inputArgs: any, complete: (args: any) => void, cancel: (info: any) => void) => void)[];
     };
-    functions: {
-        [fnName: string]: InanoSQLFunction;
-    };
-    planetRadius: number;
     _tables: {
         [tableName: string]: InanoSQLTable;
     };
     _tableIds: {
         [tableName: string]: string;
     }
+    _fkRels: {
+        [tableName: string]: {
+            selfPath: string[];
+            selfIsArray: boolean;
+            onDelete: InanoSQLFKActions;
+            childTable: string;
+            childPath: string[];
+            childIsArray: boolean;
+            childIndex: string;
+        }[];
+    }
     state: {
         activeAV: string;
         hasAnyEvents: boolean;
         id: string;
         pid: string;
-        cacheId: uuid,
         peers: string[];
         peerEvents: string[];
         focused: boolean;
         peerMode: boolean;
+        cacheId: uuid,
         connected: boolean;
         ready: boolean;
         exportQueryObj: boolean;
-        selectedTable: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     };
-    _fkRels: {
-        [tableName: string]: InanoSQLForeignKey[];
-    }
     _queryCache: {
         [id: string]: any[];
     };
+    eventFNs: {
+        Core: { [path: string]: ReallySmallEvents };
+        [eventName: string]: { [path: string]: ReallySmallEvents };
+    };
+    _Q: _nanoSQLQueue;
+}
+
+export declare class InanoSQLInstance {
+
+    version: number;
+    functions: {
+        [fnName: string]: InanoSQLFunction;
+    };
+    planetRadius: number;
+    selectedDB: string;
+    dbs: {
+        [id: string]: InanoSQLDBConfig;
+    }
+    selectedTable: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>);
     indexTypes: {
         [type: string]: (value: any) => any;
     };
-    eventFNs: {
-        Core: {[path: string]: ReallySmallEvents};
-        [eventName: string]: {[path: string]: ReallySmallEvents};
-    };
+    getDB(id?:string): InanoSQLDBConfig;
     constructor();
     _rebuildFKs()
-    doFilter<T>(filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
+    doFilter<T>(databaseID: string|undefined, filterName: string, args: T, complete: (result: T) => void, cancelled: (error: any) => void): void;
     getCache(id: string, args?: { offset: number, limit: number }): any[];
     presetQuery(fn: string, args?: any): InanoSQLQueryBuilder
     clearCache(id: string): boolean;
     every(args: {length: number, every?: number, offset?: number}): number[];
     clearTTL(primaryKey: any): Promise<any>;
     expires(primaryKey: any): Promise<any>;
-    _ttlTimer;
     _checkTTL(): void;
     _saveTableIds(): Promise<any>
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
     _initPlugins(config);
     connect(config: InanoSQLConfig): Promise<any>;
+    createDatabase(config: InanoSQLConfig): Promise<any>;
+    useDatabase(id: string): InanoSQLInstance;
+    dropDatabase(id: string): Promise<any>;
     _initPeers();
     on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
     off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
@@ -75,9 +97,9 @@ export declare class InanoSQLInstance {
     doAction(actionName: string, actionArgs: any): Promise<any>;
     _doAV(AVType, table, AVName, AVargs);
     query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder;
-    triggerQuery(query: InanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
-    triggerEvent(eventData: InanoSQLDatabaseEvent, ignoreStarTable?: boolean): InanoSQLInstance;
-    default(replaceObj?: any, table?: string): {
+    triggerQuery(databaseID: string|undefined, query: InanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void;
+    triggerEvent(databaseID: string|undefined, eventData: InanoSQLDatabaseEvent, ignoreStarTable?: boolean): InanoSQLInstance;
+    default(databaseID: string|undefined, replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
     rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: {
@@ -88,7 +110,7 @@ export declare class InanoSQLInstance {
             [key: string]: any;
         }[];
     }, indexes: boolean, onProgress?: (percent: number) => void): Promise<any>;
-    disconnect(): Promise<any>;
+    disconnect(dbID?: string): Promise<any>;
     extend(scope: string, ...args: any[]): any | InanoSQLInstance;
     loadJS(rows: {
         [key: string]: any;
@@ -109,7 +131,8 @@ export interface InanoSQLForeignKey {
     childIndex: string;
 }
 export declare class InanoSQLObserverQuery {
-    constructor(query: InanoSQLQuery, debounce: number, unique: boolean, compareFn: (rowsA: any[], rowsB: any[]) => boolean)
+    databaseID: string;
+    constructor(databaseID: string, query: InanoSQLQuery, debounce: number, unique: boolean, compareFn: (rowsA: any[], rowsB: any[]) => boolean)
     trigger()
     stream(onRow: (row: any) => void, complete: () => void, error: (err: any) => void, events?: boolean)
     exec(callback: (rows: any[], error?: any) => void, events?: boolean)
@@ -120,8 +143,9 @@ export declare class InanoSQLQueryBuilder {
     _error: string;
     _AV: string;
     _query: InanoSQLQuery;
+    databaseID: string;
     static execMap: any;
-    constructor(db: InanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), queryArgs?: any, actionOrView?: string);
+    constructor(databaseID: string, db: InanoSQLInstance, table: string | any[] | (() => Promise<any[]>), queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), queryArgs?: any, actionOrView?: string);
     where(args: any[] | ((row: {
         [key: string]: any;
     }, i?: number) => boolean)): InanoSQLQueryBuilder;
@@ -159,6 +183,7 @@ export declare class InanoSQLQueryBuilder {
 
 
 export declare class InanoSQLQueryExec {
+    databaseID: string | undefined;
     nSQL: InanoSQLInstance;
     query: InanoSQLQuery;
     progress: (row: any, i: number) => void;
@@ -178,7 +203,7 @@ export declare class InanoSQLQueryExec {
     _groupByColumns: string[];
     _orderBy: InanoSQLSortBy;
     _groupBy: InanoSQLSortBy;
-    constructor(nSQL: InanoSQLInstance, query: InanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
+    constructor(databaseID: string | undefined, nSQL: InanoSQLInstance, query: InanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void);
     _maybeJoin(joinData, leftRow, onRow, complete);
     _select(complete, onError);
     _groupByRows();
@@ -514,6 +539,7 @@ export interface InanoSQLUnionArgs {
 }
 
 export interface InanoSQLQuery {
+    databaseID: string|undefined;
     table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
     tableAS?: string;
     action: string;

@@ -31,7 +31,7 @@ npm i @nano-sql/adapter-react-native --save
 import { NativeStorage } from "@nano-sql/adapter-react-native";
 import { nSQL } from "@nano-sql/core";
 
-nSQL().connect({
+nSQL().createDatabase({
     id: "my_db",
     mode: new NativeStorage(true), // true to enable index cache, leave blank otherwise
     tables: [...]
