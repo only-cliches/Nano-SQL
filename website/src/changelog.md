@@ -4,6 +4,11 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.6] 4-19-2019
+- Added new multi database API.  Events, queries, TTL, indexes and tables are all scoped to each database.
+- Fixed issue with `create table` query requiring table argument passed in.
+- `connect` method is now `createDatabase`.  Old `connect` method will be kept around to prevent breaking changes.
+
 ## [2.2.5] 4-14-2019
 - **BREAKING CHANGE** Preset query api has been updated, check [the migration](https://nanosql.io/migration.html) docs out. 
 - Added integrity key to <script/> releases to prevent the CDN from silently tampering with future releases.
