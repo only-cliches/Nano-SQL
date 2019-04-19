@@ -948,14 +948,12 @@ export class nanoSQL implements InanoSQLInstance {
     }
 
     public query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder {
-        if (this.selectedTable) {
-            const query = new _nanoSQLQueryBuilder(this.selectedDB, this, this.selectedTable, action, args, "");
-            this.selectedTable = undefined;
-            return query;
-        } else {
+        if (this.selectedDB) {
             const av = this.getDB().state.activeAV;
             this.getDB().state.activeAV = "";
             return new _nanoSQLQueryBuilder(this.selectedDB, this, this.selectedTable, action, args, av);
+        } else {
+            return new _nanoSQLQueryBuilder(this.selectedDB, this, this.selectedTable, action, args, "");
         }
     }
 
