@@ -816,6 +816,33 @@ nSQL("users").query("select", ["UPPER(name)"]).exec();
 nSQL("users").query("select", ["name"]).orderBy(["UPPER(name) ASC"]).exec();
 ```
 
+### FORMAT_NUMBER
+
+This function takes a number and converts it to a formated string, optionally fixing the string to a specific length.
+
+If no second argument is passed, the number will be truncated to 2 decimal places.
+
+**Syntax**
+
+```bash
+FORMAT_NUMBER(expression, truncate)
+```
+
+**Parameter Values**
+
+| **Parameters** | Description |
+| :--- | :--- |
+| expression | Column or number to mutate. |
+| truncate | The number of decimal places to truncate to. |
+
+**Examples**
+
+```typescript
+// returns uppercase of every users's name
+nSQL("users").query("select", ["FORMAT_NUMBER(balance)"]).exec();
+// result: 10,00,203.38
+```
+
 ### TRIM
 
 This function takes a row column and removes trailing and leading whitespace.

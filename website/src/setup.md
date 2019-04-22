@@ -6,10 +6,10 @@
 Simply copy one of the script links below and drop it into your page head.
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.7/dist/nano-sql.min.js" integrity="sha256-HbGybc64uPDRB38Ljg/S1Wy07GV1LwZSW9xMwW0dN7o=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.8/dist/nano-sql.min.js" integrity="sha256-Bg5eKiy40Dc3Y+PG2avLwk65fLg5xtyvpDvDPLGKEuc=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.7/dist/nano-sql.min.es5.js" integrity="sha256-q+1cZU8FfLVC5yFQxrmxk9oP/smAbkkAPlxRBN5UEJM=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.8/dist/nano-sql.min.es5.js" integrity="sha256-a+6SWcT8qd9Tk3PbXJ9w2CIITOrjsRxWyBHjnb+0Uvk=" crossorigin="anonymous"></script>
 ```
 
 ### NodeJS / Webpack / Browserify / etc

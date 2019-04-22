@@ -23,7 +23,7 @@
   <strong>Universal database layer for the client, server & mobile devices.  It's like Lego for databases.</strong>
 </p>
 
-[Documentation](https://nanosql.io/welcome.html) | [API Docs](https://api.nano-sql.io) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/setup.html) | [API Docs](https://api.nano-sql.io) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
@@ -113,10 +113,10 @@ To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.7/dist/nano-sql.min.js" integrity="sha256-HbGybc64uPDRB38Ljg/S1Wy07GV1LwZSW9xMwW0dN7o=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.8/dist/nano-sql.min.js" integrity="sha256-Bg5eKiy40Dc3Y+PG2avLwk65fLg5xtyvpDvDPLGKEuc=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.7/dist/nano-sql.min.es5.js" integrity="sha256-q+1cZU8FfLVC5yFQxrmxk9oP/smAbkkAPlxRBN5UEJM=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.8/dist/nano-sql.min.es5.js" integrity="sha256-a+6SWcT8qd9Tk3PbXJ9w2CIITOrjsRxWyBHjnb+0Uvk=" crossorigin="anonymous"></script>
 ```
 
 ## Important

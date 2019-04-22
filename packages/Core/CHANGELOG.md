@@ -9,6 +9,7 @@
 - `config` option is now optional.
 - Added method to list databases.
 - Fixed issue with nested function calls.
+- Added `FORMAT_NUMBER` function.
 
 ## [2.2.7] 4-19-2019
 - Fixed an issue with select table code.

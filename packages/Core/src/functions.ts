@@ -171,6 +171,13 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                 return {result: String(getFnValue(row, column)).trim()};
             }
         },
+        FORMAT_NUMBER: {
+            type: "S",
+            call: (query, row, prev, subject1, sujbect2) => {
+                const [subjVal1, subjVal2] = numVals(row, subject1, sujbect2 || 2);
+                return {result: subjVal1.toFixed(subjVal2).toLocaleString()};
+            }
+        },
         UPPER: {
             type: "S",
             call: (query, row, prev, column) => {

@@ -45,7 +45,7 @@ nSQL().createDatabase({
 })
 ```
 
-The [createDatabase](https://api.nanosql.io/classes/_index_.nanosql.html#createDatabase) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
+The [createDatabase](https://api.nanosql.io/classes/_index_.nanosql.html#createdatabase) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
 
 The object used in the createDatabase function is described by the [InanoSQLConfig interface](https://api.nanosql.io/interfaces/_interfaces_.inanosqlconfig.html).
 
