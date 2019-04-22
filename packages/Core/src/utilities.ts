@@ -813,7 +813,16 @@ export const execFunction = (query: InanoSQLQuery, fnString: string, row: any, p
     if (!fnArgs[0]) return { result: undefined }
     const args = fnArgs[0].substr(1, fnArgs[0].length - 2).split(/\,\s?(?![^\(]*\))/).map(s => s.trim());
     const fnName = fnString.split("(").shift() as string;
-    const calcArgs = args.map(s => s.indexOf("(") !== -1 ? execFunction(query, s, row, prev).result : s);
+    const calcArgs = args.map(s => {
+        if (s.indexOf("(") !== -1) {
+            const result = execFunction(query, s, row, prev).result;
+            if (typeof result === "number") return result;
+            if (typeof result === "string") return '"' + result + '"';
+            return result;
+        } else {
+            return s;
+        }
+    });
     if (!query.parent.functions[fnName]) {
         return { result: undefined }
     }
@@ -968,6 +977,7 @@ export const resolvePath = (pathQuery: string): string[] => {
 };
 
 export const getFnValue = (row: any, valueOrPath: string): any => {
+    if (typeof valueOrPath === "number") return valueOrPath;
     return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : deepGet(valueOrPath, row);
 };
 

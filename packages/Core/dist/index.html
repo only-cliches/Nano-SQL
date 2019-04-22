@@ -178,16 +178,17 @@
         const now = Date.now();
         for (let i = 1; i < 50; i++) {
             const time = new Date(now + (i * 1000));
-            rows.push({ id: i, time: time.toISOString() });
+            rows.push({ id: i, name: makeid(), time: time.toISOString() });
         }
 
-        const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 49)]));
+        // const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 49)]));
 
         nSQL().createDatabase().then(() => {
             return nSQL().query("create table", {
                 name: "test",
                 model: {
                     "id:int": {pk: true },
+                    "name:string": {},
                     "time:date": {}
                 },
                 indexes: {
@@ -197,9 +198,9 @@
         }).then(() => {
             return nSQL().selectTable("test").loadJS(rows);
         }).then(() => {
-            return nSQL().query("select").where(["time", "=", get.time]).exec();
+            return nSQL().query("select", ["UPPER(UPPER(name))"]).limit(10).exec();
         }).then((resultRows) => {
-            console.log(resultRows[0], get);
+            console.log(resultRows);
         });
     </script>
 

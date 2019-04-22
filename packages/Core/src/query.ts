@@ -93,7 +93,24 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public upsertPath: string[];
     private _hasOrdered: boolean;
     private _startTime: number;
-    
+    public _indexesUsed: string[];
+
+    public static _whereMemoized: {
+        [key: string]: IWhereArgs;
+    } = {};
+
+    public static _sortMemoized: {
+        [key: string]: InanoSQLSortBy;
+    } = {};
+
+    public static _selectArgsMemoized: {
+        [key: string]: {
+            hasAggrFn: boolean;
+            args: ISelectArgs[]
+        }
+    } = {};
+
+    public _hasAggrFn: boolean;
 
     constructor(
         public databaseID: string|undefined,
@@ -2466,10 +2483,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     }
 
 
-    public static _sortMemoized: {
-        [key: string]: InanoSQLSortBy;
-    } = {};
-
     public _parseSort(sort: string[], checkforIndexes: boolean): InanoSQLSortBy {
         const key = (sort && sort.length ? hash(JSON.stringify(sort)) : "") + (typeof this.query.table === "string" ? this.nSQL.getDB(this.databaseID).state.cacheId : "");
         if (!key) return { sort: [], index: "" };
@@ -2517,15 +2530,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         };
         return _nanoSQLQuery._sortMemoized[key];
     }
-
-    public static _selectArgsMemoized: {
-        [key: string]: {
-            hasAggrFn: boolean;
-            args: ISelectArgs[]
-        }
-    } = {};
-
-    public _hasAggrFn: boolean;
 
     public _parseSelect() {
         const selectArgsKey = (this.query.actionArgs && this.query.actionArgs.length ? JSON.stringify(this.query.actionArgs) : "") + (typeof this.query.table === "string" ? this.nSQL.getDB(this.databaseID).state.cacheId : "");
@@ -2582,10 +2586,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             this._stream = false;
         }
     }
-
-    public static _whereMemoized: {
-        [key: string]: IWhereArgs;
-    } = {};
 
 
 
