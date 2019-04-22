@@ -85,8 +85,9 @@ export declare class InanoSQLInstance {
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
     _initPlugins(config);
-    connect(config: InanoSQLConfig): Promise<any>;
-    createDatabase(config: InanoSQLConfig): Promise<any>;
+    connect(config?: InanoSQLConfig): Promise<any>;
+    createDatabase(config?: InanoSQLConfig): Promise<any>;
+    listDatabases(): string[];
     useDatabase(id: string): InanoSQLInstance;
     dropDatabase(id: string): Promise<any>;
     _initPeers();

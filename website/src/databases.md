@@ -58,10 +58,15 @@ You can switch between different databases on the fly with the `useDatabase` fun
 ```ts
 nSQL().useDatabase("my_db");
 // you can now create tables, select data, or otherwise use database "my_db"
+// "my_db" database will be used for all queries until another database is selected.
+nSQL("posts").query("select").exec().then...
 
 nSQL().useDatabase("2");
 // you can now create tables, select data, or otherwise use database "2"
+// subsequent queries will happen on database "2"
+nSQL("users").query("select").exec().then...
 
+// you can also chain useDatabase with queries.
 // select from "users" table on database "2"
 nSQL("users").useDatabase("2").query("select").exec().then...
 ```
@@ -87,6 +92,14 @@ Once you select a database or table that database/table combination will remain 
 
 When you create a database or table that database/table is automatically selected for subsequent queries.
 
+## Listing Databases
+
+To see the databases in nanoSQL you can call the `listDatabases` method.
+
+```ts
+const dbList = nSQL().listDatabases();
+console.log(dbList) // ["db1", "db2", ...]
+```
 
 ## Dropping A Database
 

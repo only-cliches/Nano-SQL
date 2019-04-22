@@ -4,7 +4,12 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.2.7] 4-29-2019
+## [2.2.8] 4-22-2019
+- Fixed issue with `create table` query.
+- `config` option is now optional.
+- Added method to list databases.
+
+## [2.2.7] 4-19-2019
 - Fixed an issue with select table code.
 
 ## [2.2.6] 4-19-2019

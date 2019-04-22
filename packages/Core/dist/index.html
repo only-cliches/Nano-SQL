@@ -183,8 +183,8 @@
 
         const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 49)]));
 
-        nSQL().connect({
-            tables: [{
+        nSQL().createDatabase().then(() => {
+            return nSQL().query("create table", {
                 name: "test",
                 model: {
                     "id:int": {pk: true },
@@ -193,7 +193,7 @@
                 indexes: {
                     "time:date": {}
                 }
-            }]
+            }).exec();
         }).then(() => {
             return nSQL().selectTable("test").loadJS(rows);
         }).then(() => {

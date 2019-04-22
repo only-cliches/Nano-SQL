@@ -70,6 +70,8 @@ const globalTableCache: {
     }
 } = {};
 
+
+
 // tslint:disable-next-line
 export class _nanoSQLQuery implements InanoSQLQueryExec {
 
@@ -91,7 +93,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public upsertPath: string[];
     private _hasOrdered: boolean;
     private _startTime: number;
-    private _indexesUsed: any[];
+    
 
     constructor(
         public databaseID: string|undefined,
@@ -107,7 +109,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const action = query.action.toLowerCase().trim();
         this._orderByRows = this._orderByRows.bind(this);
         this._onError = this._onError.bind(this);
-        if (["select", "clone"].indexOf(action) === -1 && typeof query.table !== "string") {
+        if (["select", "clone", "create table", "create table if not exists"].indexOf(action) === -1 && typeof query.table !== "string") {
             this.query.state = "error";
             this.error(`Only "select" and "clone" queries are available for this resource!`);
             return;

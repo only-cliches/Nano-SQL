@@ -400,8 +400,12 @@ export class nanoSQL implements InanoSQLInstance {
         return this;
     }
 
-    public createDatabase(config: InanoSQLConfig): Promise<any> {
+    public createDatabase(config?: InanoSQLConfig): Promise<any> {
         return this.connect(config);
+    }
+
+    public listDatabases(): string[] {
+        return Object.keys(this.dbs);
     }
 
     public dropDatabase(id: string): Promise<any> {
@@ -424,7 +428,7 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
-    public connect(config: InanoSQLConfig): Promise<any> {
+    public connect(config: InanoSQLConfig = {}): Promise<any> {
         let t = this;
 
         const newDatabaseID = String(config.id) || "nSQL_DB";
