@@ -38,6 +38,19 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Select Nested Function", (done: MochaDone) => {
+        nSQLDefault([
+            { name: "bill" }
+        ]).query("select", ["UPPER(UPPER(name)) as name"]).exec().then((rows) => {
+            try {
+                expect(rows).to.deep.equal([{name: "BILL"}]);
+                done();
+            } catch (e) {
+                done(e);
+            }
+        });
+    });
+
     it("Select Not Equals", (done: MochaDone) => {
         nSQLDefault([
             { id: 60 }

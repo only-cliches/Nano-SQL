@@ -45,7 +45,6 @@ import {
     buildQuery,
     deepSet,
     _nanoSQLQueue,
-    uuid,
     adapterFilters,
     execFunction,
     cast,
@@ -128,7 +127,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         this._onError = this._onError.bind(this);
         if (["select", "clone", "create table", "create table if not exists"].indexOf(action) === -1 && typeof query.table !== "string") {
             this.query.state = "error";
-            this.error(`Only "select" and "clone" queries are available for this resource!`);
+            this.error(`Only "select", "clone" & "create table" queries are available for this resource!`);
             return;
         }
 

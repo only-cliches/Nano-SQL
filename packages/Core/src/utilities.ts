@@ -976,9 +976,12 @@ export const resolvePath = (pathQuery: string): string[] => {
     return objectPathCache[pathQuery].slice();
 };
 
+export const fnRegex = /^[\"|\'](.*)[\"|\']$/gmi;
+
 export const getFnValue = (row: any, valueOrPath: string): any => {
     if (typeof valueOrPath === "number") return valueOrPath;
-    return valueOrPath.match(/\".*\"|\'.*\'/gmi) ? valueOrPath.replace(/\"|\'/gmi, "") : deepGet(valueOrPath, row);
+    const regexResult = fnRegex.exec(valueOrPath);
+    return regexResult ? regexResult[1] : deepGet(valueOrPath, row);
 };
 
 /**

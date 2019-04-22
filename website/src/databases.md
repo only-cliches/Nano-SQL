@@ -14,7 +14,7 @@ nSQL([
 ]).query("select").where(["age", "=", 20]).exec().then..
 
 // temporary table from promise
-nSQL(fetch("data.json").then(d => d.json())).query("select").where(["age", "=", 20]).exec().then..
+nSQL(() => fetch("data.json").then(d => d.json())).query("select").where(["age", "=", 20]).exec().then..
 ```
 
 After a database is created you can still use temporary tables for queries, they won't affect your persistent data in any way.

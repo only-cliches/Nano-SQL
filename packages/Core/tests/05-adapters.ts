@@ -31,6 +31,7 @@ describe("Adapter Tests", () => {
             done(new Error(err));
         });
     });
+
     it("RocksDB Storage", (done: MochaDone) => {
         new nanoSQLAdapterTest(RocksDB, []).test().then(() => {
             rimraf(path.join(__dirname, "../", "db_123"));
@@ -150,6 +151,6 @@ describe("Adapter Tests", () => {
                 })();
             });
         });
-    }).timeout(60000);
+    }).timeout(120000);
 
 });
