@@ -2,7 +2,7 @@
     "name": "NanoSQL 2 Docs",
     "short_name": "nSQL 2 Docs",
     "start_url": ".",
-    "display": "minimal-ui",
+    "display": "fullscreen",
     "background_color": "#fff",
     "theme_color": "#ac1c8c",
     "description": "Documentation for nanoSQL 2",
