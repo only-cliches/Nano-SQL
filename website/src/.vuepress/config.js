@@ -3,6 +3,9 @@ module.exports = {
     description: "Universal database layer for the client, server & mobile devices.  It's like Lego for databases.",
     ga: "UA-131910187-2",
     serviceWorker: true,
+    head: [
+        ["link", {rel: "manifest", href: "manifest.webmanifest"}]
+    ],
     themeConfig: {
         logo: '/icon.png',
         algolia: {

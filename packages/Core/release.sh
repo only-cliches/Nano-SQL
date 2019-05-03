@@ -7,9 +7,7 @@ function run() {
     #clean up
     rm -rf dist/*.js
     rm -rf *.d.ts
-    rm -rf api
     rm -rf lib
-    mkdir api
 
     echo "${bold}(1/5) Clean Completed...${normal}"
 
@@ -35,8 +33,6 @@ function run() {
     fi
 
 
-    #copy from examples into dist folder
-    #yes | cp -rf examples/nano-sql.min.js dist/nano-sql.min.js
     rm -rf src/*.js
     find ../../ -name ".DS_Store" -delete
     rm lib/cli.d.ts lib/cli.js.map
