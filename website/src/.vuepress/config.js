@@ -4,7 +4,8 @@ module.exports = {
     ga: "UA-131910187-2",
     serviceWorker: true,
     head: [
-        ["link", {rel: "manifest", href: "manifest.webmanifest"}]
+        ["link", {rel: "manifest", href: "manifest.webmanifest"}],
+        ["link", {rel: "apple-touch-icon", href: "apple-touch-icon.png"}]
     ],
     themeConfig: {
         logo: '/icon.png',
