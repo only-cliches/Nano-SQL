@@ -95,6 +95,7 @@ export class nanoSQLAdapterTest {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
                     name: "test",
+                    count: 0,
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -164,6 +165,7 @@ export class nanoSQLAdapterTest {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
                     name: "test",
+                    count: 0,
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -313,6 +315,7 @@ export class nanoSQLAdapterTest {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
                     name: "test",
+                    count: 0,
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -468,6 +471,7 @@ export class nanoSQLAdapterTest {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
                     name: "test",
+                    count: 0,
                     model: {
                         "id:uuid": {pk: true},
                         "name:string": {}
@@ -589,6 +593,7 @@ export class nanoSQLAdapterTest {
                 nanoSQLAdapterTest.newTable(adapter, nSQL, "test", {
                     id: uuid(),
                     name: "test",
+                    count: 0,
                     model: {
                         "id:int": {pk: true, ai: true},
                         "name:string": {},
@@ -621,9 +626,11 @@ export class nanoSQLAdapterTest {
         }).then(() => {
             // make sure new rows are added correctly
             return new Promise((res, rej) => {
-                adapter.write("test", null, { name: "Test", posts: [1, 2]}, (pk) => {
+                adapter.write("test", null, { name: "Test",
+                count: 0, posts: [1, 2]}, (pk) => {
                     adapter.read("test", pk, (row) => {
-                        const expectRow = {name: "Test", id: 1, posts: [1, 2]};
+                        const expectRow = {name: "Test",
+                        count: 0, id: 1, posts: [1, 2]};
                         const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Insert Test");
                         condition ? res() : rej({e: expectRow, g: row});
@@ -677,6 +684,7 @@ export class nanoSQLAdapterTest {
                         nanoSQLAdapterTest.newTable(adapter, nSQL, t, {
                             id: uuid(),
                             name: "test",
+                            count: 0,
                             model: {
                                 "test": {
                                     "id:int": {pk: true, ai: true},

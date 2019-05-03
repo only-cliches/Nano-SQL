@@ -4,6 +4,12 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.2.9] 5-03-2019
+- Fixed a few small issues with the new database API.
+- Added a new `total` query to quickly get the total number of records in a table.
+- If a column value is not passed, the default behavior is now to ignore the column instead of defaulting to a value.
+- Updated dependencies.
+
 ## [2.2.8] 4-22-2019
 - Fixed issue with `create table` query.
 - `config` option is now optional.

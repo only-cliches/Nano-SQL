@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _nanoSQLQueue } from "./utilities";
 
-export const VERSION = 2.28;
+export const VERSION = 2.29;
 
 export type uuid = String;
 export type timeId = String;
@@ -81,7 +81,7 @@ export declare class InanoSQLInstance {
     clearTTL(primaryKey: any): Promise<any>;
     expires(primaryKey: any): Promise<any>;
     _checkTTL(): void;
-    _saveTableIds(): Promise<any>
+    _saveTableIds(databaseID: string): Promise<any>
     selectTable(table?: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance;
     getPeers(): any;
     _initPlugins(config);
@@ -90,6 +90,7 @@ export declare class InanoSQLInstance {
     listDatabases(): string[];
     useDatabase(id: string): InanoSQLInstance;
     dropDatabase(id: string): Promise<any>;
+    saveCount(databaseID: string, tableName: string, complete?: (err?: any) => void): void;
     _initPeers();
     on(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
     off(action: string, callBack: (event: InanoSQLDatabaseEvent) => void, selectTable?: string): void;
@@ -460,6 +461,7 @@ export interface InanoSQLTable {
         [colAndType: string]: InanoSQLDataModel;
     } | string;
     id: string;
+    count: number;
     name: string;
     mode?: InanoSQLAdapter;
     columns: InanoSQLTableColumn[];

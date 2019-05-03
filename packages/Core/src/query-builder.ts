@@ -38,6 +38,14 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         }
     }
 
+    /**
+     * Selects a collection of rows from the database based on provided conditions.
+     * 
+     *
+     * @param {(any[] | ((row: { [key: string]: any }, i?: number) => boolean))} args
+     * @returns {_nanoSQLQueryBuilder}
+     * @memberof _nanoSQLQueryBuilder
+     */
     public where(args: any[] | ((row: { [key: string]: any }, i?: number) => boolean)): _nanoSQLQueryBuilder {
         this._query.where = args;
         return this;

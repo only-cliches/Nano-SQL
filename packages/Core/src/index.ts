@@ -66,7 +66,7 @@ export class nanoSQL implements InanoSQLInstance {
         [id: string]: InanoSQLDBConfig;
     } = {};
 
-    public selectedDB: string;
+    public selectedDB: string = "nSQL_DB";
 
     public indexTypes: {
         [type: string]: (value: any) => any;
@@ -360,13 +360,13 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
-    public _saveTableIds(): Promise<any> {
+    public _saveTableIds(databaseID: string): Promise<any> {
         return new Promise((res, rej) => {
-            this.triggerQuery(this.selectedDB, {
-                ...buildQuery(this.selectedDB, this, "_util", "upsert"),
+            this.triggerQuery(databaseID, {
+                ...buildQuery(databaseID, this, "_util", "upsert"),
                 actionArgs: assign({
                     key: "tableIds",
-                    value: this.getDB(this.selectedDB)._tableIds
+                    value: this.getDB(databaseID)._tableIds
                 })
             }, noop, res, rej);
         })
@@ -431,7 +431,7 @@ export class nanoSQL implements InanoSQLInstance {
     public connect(config: InanoSQLConfig = {}): Promise<any> {
         let t = this;
 
-        const newDatabaseID = String(config.id) || "nSQL_DB";
+        const newDatabaseID = config.id ? String(config.id) : "nSQL_DB";
 
         if (this.dbs[newDatabaseID]) {
             throw new Error(`nSQL: ${newDatabaseID} database has already been created!`);
@@ -952,7 +952,7 @@ export class nanoSQL implements InanoSQLInstance {
     }
 
     public query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder {
-        if (this.selectedDB) {
+        if (this.selectedDB && typeof this.selectTable === "string") {
             const av = this.getDB().state.activeAV;
             this.getDB().state.activeAV = "";
             return new _nanoSQLQueryBuilder(this.selectedDB, this, this.selectedTable, action, args, av);
@@ -1031,6 +1031,21 @@ export class nanoSQL implements InanoSQLInstance {
         });
 
         return this;
+    }
+
+    public saveCount(databaseID: string, tableName: string, complete?: (err?: any) => void) {
+        const total = this.getDB(databaseID)._tables[tableName].count;
+        const id = this.getDB(databaseID)._tables[tableName].id;
+        this.triggerQuery(databaseID, {
+            ...buildQuery(databaseID, this, "_util", "upsert"),
+            actionArgs: {key: "total_" + id, value: total},
+            skipQueue: true
+        }, noop, () => {
+            if (complete) complete();
+        }, (err) => {
+            if (complete) complete(err);
+            console.error("nSQL: Error updating table total.", err);
+        });
     }
 
     public default(databaseID: string|undefined, replaceObj?: any, table?: string): { [key: string]: any } | Error {
@@ -1141,6 +1156,8 @@ export class nanoSQL implements InanoSQLInstance {
             return p += tables[c].length, p;
         }, 0);
 
+        const selectedDB = this.selectedDB;
+
         const usableTables = Object.keys(this.getDB()._tables);
         const importTables: string[] = indexes ? Object.keys(tables) : Object.keys(tables).filter(t => usableTables.indexOf(t) !== -1);
 
@@ -1150,21 +1167,25 @@ export class nanoSQL implements InanoSQLInstance {
                 const tableName = table.split(".")[0];
                 const indexName = table.split(".")[1];
                 chainAsync(tables[table], (indexRow, ii, nextIdx, errIdx) => {
-                    adapterFilters(this.selectedDB, this).addIndexValue(tableName, indexName, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
+                    adapterFilters(selectedDB, this).addIndexValue(tableName, indexName, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
                 }).then(next).catch(err);
             } else {
                 const pk = this.getDB()._tables[table].pkCol;
+                this.getDB()._tables[table].count = tables[table].length;
                 chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
                     if (!deepGet(pk, row) && rowErr) {
                         rowErr("No primary key found, can't import: " + JSON.stringify(row));
                         return;
                     }
-                    adapterFilters(this.selectedDB, this).write(table, deepGet(pk, row), row, (newRow) => {
+                    adapterFilters(selectedDB, this).write(table, deepGet(pk, row), row, (newRow) => {
                         nextRow();
                         progress++;
                         if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
                     }, rowErr || noop);
-                }).then(next).catch(err);
+                }).then(() => {
+                    this.saveCount(selectedDB, table);
+                    next();
+                }).catch(err);
             }
         });
     }
@@ -1198,6 +1219,7 @@ export class nanoSQL implements InanoSQLInstance {
         if (typeof table !== "string") {
             return Promise.reject("nSQL: Can't load JS into temporary table!");
         }
+
         const total = rows.length;
         let count = 0;
         const async = parallel ? allAsync : chainAsync;

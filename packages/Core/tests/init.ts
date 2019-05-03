@@ -51,6 +51,7 @@ export const cleanNsqlJoin = (rows: any[]): any[] => {
 export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsql: (nSQL: InanoSQLInstance) => Promise<any>) => Promise<[any[], any[]]> }> {
     const nSQL = new nanoSQL();
     const db = new sqlite3.Database(":memory:");
+    
 
     return new Promise((res, rej) => {
 

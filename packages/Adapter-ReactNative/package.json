@@ -22,9 +22,9 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "react-native": "^0.58.4"
   },
   "peerDependencies": {
+    "react-native": "^0.58.4",
     "@nano-sql/core": "^2.2.4"
   },
   "devDependencies": {

@@ -32,6 +32,7 @@ declare var global: any;
 
 export const blankTableDefinition: InanoSQLTable = {
     id: "",
+    count: 0,
     name: "",
     model: {},
     columns: [],
@@ -848,6 +849,8 @@ export const cast = (selectedDB: string|undefined, type: string, val: any, allow
         // we have an array, cast array of types
         return val.map((v) => cast(selectedDB, arrayOf, v, allowUknownTypes));
     }
+
+    if (val === undefined) return val;
 
     const t = typeof val;
 

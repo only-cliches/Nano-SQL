@@ -166,6 +166,38 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             case "select":
                 this._select(finishQuery, this.error);
                 break;
+            case "total":
+                requireQueryOpts(false, () => {
+                    const args = this.query.actionArgs;
+                    if (args && args.rebuild) {
+                        try {
+                            adapterFilters(this.databaseID, this.nSQL, this.query).getTableIndexLength(this.query.table as string, (count) => {
+
+                                this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].count = count;
+
+                                this.nSQL.saveCount(this.databaseID || "", this.query.table as string, (err) => {
+                                    if (err) {
+                                        this.error(err);
+                                    } else {
+                                        this.progress({total: count}, 0);
+                                        this.complete();
+                                    }
+                                });
+                            }, this.error);
+                        } catch (e) {
+                            this.error(e);
+                        }
+                    } else {
+                        try {
+                            const total = this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].count;
+                            this.progress({total: total}, 0);
+                            this.complete();
+                        } catch (e) {
+                            this.error(e);
+                        }
+                    }
+                });
+                break;
             case "upsert":
                 requireQueryOpts(true, () => {
                     this._upsert(this.progress, this.complete, this.error);
@@ -1021,7 +1053,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
     public _upsert(onRow: (row: any, i: number) => void, complete: () => void, error: (err) => void) {
         if (!this.query.actionArgs) {
-            error("Can't upsert without records!");
+            error("nSQL: Can't upsert without records!");
             this.query.state = "error";
         }
 
@@ -1065,6 +1097,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
                 }
             }).then(() => {
+                this.nSQL.saveCount(this.databaseID || "", this.query.table as string);
                 complete();
             }).catch(this._onError);
         } else { // find records and update them
@@ -1074,9 +1107,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 return;
             }
 
-            let updatedRecords = 0;
             const upsertBuffer = new _nanoSQLQueue((row, i, done, err) => {
-                updatedRecords++;
                 this._updateRow(upsertRecords[0], row, (evOrRow) => {
                     onRow(evOrRow, i);
                     done();
@@ -1291,6 +1322,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                                 this.nSQL.triggerEvent(this.databaseID, event.res);
                             }
                             this._startTime = Date.now();
+                            this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].count++;
                             complete(this.query.returnEvent ? event.res : rowToAdd.res);
                         }, error);
                     });
@@ -1364,6 +1396,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             }).then(() => {
                 this._removeRowAndIndexes(tableConfig, row, (delRowOrEvent) => {
                     onRow(delRowOrEvent, i);
+                    this.nSQL.getDB(this.databaseID)._tables[tableConfig.name].count--;
                     done();
                 }, err);
             }).catch(err);
@@ -1374,6 +1407,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         this._getRecords((row, i) => {
             deleteBuffer.newItem(row);
         }, () => {
+            this.nSQL.saveCount(this.databaseID || "", tableConfig.name);
             deleteBuffer.finished();
         }, error);
 
@@ -1743,6 +1777,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             let newConfig: InanoSQLTable = {
                 id: tableID,
                 name: table.res.name,
+                count: 0,
                 mode: table.res.mode ? resolveMode(table.res.mode) : undefined,
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
@@ -1842,6 +1877,27 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 return Promise.resolve(newConfig);
             }
         }).then((newConfig: InanoSQLTable) => {
+            if (this.query.table as string === "_util") {
+                return Promise.resolve(newConfig);
+            }
+            // get table size count from util table
+            return new Promise((res, rej) => {
+                if (alterTable) {
+                    res(newConfig);
+                    return;
+                }
+                this.nSQL.triggerQuery(this.databaseID, {
+                    ...buildQuery(this.databaseID, this.nSQL, "_util", "select"),
+                    where: ["key", "=", "total_" + newConfig.id]
+                }, (row) => {
+                    if (row.value) {
+                        newConfig.count = row.value;
+                    }
+                }, () => {
+                    res(newConfig);
+                }, rej);
+            })
+        }).then((newConfig: InanoSQLTable) => {
 
             const oldIndexes = alterTable ? Object.keys(this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].indexes) : [];
             const newIndexes = Object.keys(newConfig.indexes);
@@ -1888,7 +1944,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             if (this.query.table as string === "_util") {
                 return Promise.resolve();
             }
-            return this.nSQL._saveTableIds();
+            return this.nSQL._saveTableIds(this.databaseID || "");
         }).then(() => {
             complete();
         }).catch(error);
@@ -1959,7 +2015,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     adapterFilters(this.databaseID, this.nSQL, this.query).dropTable(dropTable, () => {
                         delete this.nSQL.getDB(this.databaseID)._tables[dropTable];
                         delete this.nSQL.getDB(this.databaseID)._tableIds[dropTable];
-                        this.nSQL._saveTableIds().then(() => {
+                        this.nSQL._saveTableIds(this.databaseID || "").then(() => {
                             next(dropTable);
                         }).catch(err);
                     }, err);
@@ -1967,6 +2023,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     adapterFilters(this.databaseID, this.nSQL, this.query).deleteIndex(table, dropTable, next as any, err);
                 }
             }).then(() => {
+                this.nSQL.getDB(this.databaseID)._tables[table].count = 0;
+                this.nSQL.saveCount(this.databaseID || "", table);
                 complete();
             })
         }).catch(error);

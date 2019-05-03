@@ -176,18 +176,18 @@
 
         let rows = [];
         const now = Date.now();
-        for (let i = 1; i < 50; i++) {
+        for (let i = 1; i < 10; i++) {
             const time = new Date(now + (i * 1000));
-            rows.push({ id: i, name: makeid(), time: time.toISOString() });
+            rows.push({ name: makeid(), time: time.toISOString() });
         }
 
         // const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 49)]));
 
-        nSQL().createDatabase().then(() => {
+        nSQL().createDatabase({mode: "PERM", tables: undefined}).then(() => {
             return nSQL().query("create table", {
                 name: "test",
                 model: {
-                    "id:int": {pk: true },
+                    "id:int": {pk: true, ai: true },
                     "name:string": {},
                     "time:date": {}
                 },
@@ -200,7 +200,10 @@
         }).then(() => {
             return nSQL().query("select", ["UPPER(UPPER(name))"]).limit(10).exec();
         }).then((resultRows) => {
-            console.log(resultRows);
+            console.log(resultRows, nSQL());
+            nSQL().query("total").exec().then((rows) => {
+                console.log(rows);
+            })
         });
     </script>
 

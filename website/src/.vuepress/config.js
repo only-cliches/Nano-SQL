@@ -2,6 +2,7 @@ module.exports = {
     title: 'nanoSQL 2',
     description: "Universal database layer for the client, server & mobile devices.  It's like Lego for databases.",
     ga: "UA-131910187-2",
+    serviceWorker: true,
     themeConfig: {
         logo: '/icon.png',
         algolia: {
@@ -27,6 +28,7 @@ module.exports = {
                 ["../welcome", "← Back" ],
                 ["", "Query" ],
                 ["select", "Select" ],
+                ["total", "Total" ],
                 ["upsert", "Upsert" ],
                 ["delete", "Delete" ],
                 ["clone", "Clone" ],
