@@ -88,6 +88,7 @@ NanoSQL can save data to many different places, depending on the browser or envi
 9. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
 
 ## Plugins
+- **[Fuzzy Search](https://www.npmjs.com/package/@nano-sql/plugin-fuzzy-search)**
 - **[Redis Index](https://www.npmjs.com/package/@nano-sql/plugin-redis-index)**
 
 
@@ -113,10 +114,10 @@ To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.9/dist/nano-sql.min.js" integrity="sha256-0RTEE2oPOpuP7avUUGeF+n/rzAoNTduAqJHeickbCrk=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.0/dist/nano-sql.min.js" integrity="sha256-22bPMnqlhjvm+H659Q/hZmF9kiaaKn9WIs6se5KAPv4=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.2.9/dist/nano-sql.min.es5.js" integrity="sha256-PdxRKEOiNEo6uOhdZWqSgozV3h6HmKY2Y89HxiY9mqw=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.0/dist/nano-sql.min.es5.js" integrity="sha256-j3M6w3EiHdlLESLuB/jNEz+fOf/qF9nV0MaBl4UGYFE=" crossorigin="anonymous"></script>
 ```
 
 ## Important

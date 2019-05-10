@@ -96,6 +96,7 @@ export class nanoSQLAdapterTest {
                     id: uuid(),
                     name: "test",
                     count: 0,
+                    rowLocks: {},
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -166,6 +167,7 @@ export class nanoSQLAdapterTest {
                     id: uuid(),
                     name: "test",
                     count: 0,
+                    rowLocks: {},
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -316,6 +318,7 @@ export class nanoSQLAdapterTest {
                     id: uuid(),
                     name: "test",
                     count: 0,
+                    rowLocks: {},
                     model: {
                         "id:int": {ai: true, pk: true},
                         "name:string": {}
@@ -472,6 +475,7 @@ export class nanoSQLAdapterTest {
                     id: uuid(),
                     name: "test",
                     count: 0,
+                    rowLocks: {},
                     model: {
                         "id:uuid": {pk: true},
                         "name:string": {}
@@ -594,6 +598,7 @@ export class nanoSQLAdapterTest {
                     id: uuid(),
                     name: "test",
                     count: 0,
+                    rowLocks: {},
                     model: {
                         "id:int": {pk: true, ai: true},
                         "name:string": {},
@@ -627,10 +632,12 @@ export class nanoSQLAdapterTest {
             // make sure new rows are added correctly
             return new Promise((res, rej) => {
                 adapter.write("test", null, { name: "Test",
-                count: 0, posts: [1, 2]}, (pk) => {
+                count: 0,
+                rowLocks: {}, posts: [1, 2]}, (pk) => {
                     adapter.read("test", pk, (row) => {
                         const expectRow = {name: "Test",
-                        count: 0, id: 1, posts: [1, 2]};
+                        count: 0,
+                        rowLocks: {}, id: 1, posts: [1, 2]};
                         const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Insert Test");
                         condition ? res() : rej({e: expectRow, g: row});
@@ -685,6 +692,7 @@ export class nanoSQLAdapterTest {
                             id: uuid(),
                             name: "test",
                             count: 0,
+                            rowLocks: {},
                             model: {
                                 "test": {
                                     "id:int": {pk: true, ai: true},

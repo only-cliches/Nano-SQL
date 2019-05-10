@@ -67,7 +67,7 @@ module.exports = {
                 ["", "Plugins" ],
                 ["net-offline-syncing", "Net / Offline Syncing (WIP)" ],
                 ["redis-index", "Redis Index" ],
-                ["search", "Search (WIP)" ],
+                ["search", "Search" ],
                 ["backups", "Backups (WIP)" ],
                 ["encryption", "Encryption (WIP)" ],
                 ["history", "History (WIP)" ],

@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _nanoSQLQueue } from "./utilities";
 
-export const VERSION = 2.29;
+export const VERSION = 2.30;
 
 export type uuid = String;
 export type timeId = String;
@@ -255,7 +255,7 @@ export interface InanoSQLConfig {
     id?: string;
     peer?: boolean;
     cache?: boolean;
-    queue?: boolean;
+    // queue?: boolean;
     mode?: string | InanoSQLAdapter;
     plugins?: InanoSQLPlugin[];
     planetRadius?: number;
@@ -462,6 +462,9 @@ export interface InanoSQLTable {
     } | string;
     id: string;
     count: number;
+    rowLocks: {
+        [key: string]: boolean;
+    }
     name: string;
     mode?: InanoSQLAdapter;
     columns: InanoSQLTableColumn[];
@@ -566,7 +569,6 @@ export interface InanoSQLQuery {
     distinct?: string[];
     ttl?: number;
     ttlCols?: string[];
-    skipQueue?: boolean;
     union?: InanoSQLUnionArgs;
     cacheID?: string;
     parent: InanoSQLInstance;

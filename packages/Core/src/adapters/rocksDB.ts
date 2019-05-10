@@ -22,19 +22,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "RocksDB Adapter",
-        version: VERSION,
-        filters: [
-            {
-                name: "postConnect",
-                priority: 1000,
-                call: (args: postConnectFilter, complete: (args: postConnectFilter) => void, cancel: (info: any) => void) => {
-                    if (typeof args.res.queue === "undefined") {
-                        args.res.queue = false;
-                    }
-                    complete(args);
-                }
-            }
-        ]
+        version: VERSION
     };
 
     nSQL: InanoSQLInstance;

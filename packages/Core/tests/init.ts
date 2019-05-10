@@ -222,6 +222,7 @@ export function TestDBs(): Promise<{ runQuery: (sql: string, sqlArgs: any[], nsq
                 }));
             })
         ]).then(() => {
+
             res({
                 runQuery: (sql, sqlArgs, runNano) => {
                     return new Promise((res, rej) => {

@@ -540,7 +540,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         // full table scan on right table :(
                         this.nSQL.triggerQuery(this.databaseID, {
                             ...buildQuery(this.databaseID, this.nSQL, join.with.table, "select"),
-                            skipQueue: true,
                             cacheID: this.query.cacheID,
                             where: withPK ? [withPK, "NOT IN", rightHashes] : undefined
                         }, (row) => {
@@ -565,8 +564,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 ...buildQuery(this.databaseID, this.nSQL, join.with.table, "select"),
                 tableAS: join.with.as,
                 cacheID: this.query.cacheID,
-                where: join.on && join.type !== "cross" ? this._buildCombineWhereJoin(join.on, join.with.as || join.with.table as string, rowData) : undefined,
-                skipQueue: true
+                where: join.on && join.type !== "cross" ? this._buildCombineWhereJoin(join.on, join.with.as || join.with.table as string, rowData) : undefined
             }, eachRow, rowsDone, (err) => {
                 this.query.state = "error";
                 this.error(err);
@@ -1030,7 +1028,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         orderBy: graph.orderBy,
                         groupBy: graph.groupBy,
                         graph: graph.graph,
-                        skipQueue: true,
                         cacheID: this.query.cacheID
                     }, (graphRow) => {
                         if (graph.single) {
@@ -1056,7 +1053,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             error("nSQL: Can't upsert without records!");
             this.query.state = "error";
         }
-
+        
         // nested upsert
         if ((this.query.table as string).indexOf(".") !== -1 || (this.query.table as string).indexOf("[") !== -1) {
             const path = resolvePath(this.query.table as string);
@@ -1108,10 +1105,24 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             }
 
             const upsertBuffer = new _nanoSQLQueue((row, i, done, err) => {
-                this._updateRow(upsertRecords[0], row, (evOrRow) => {
-                    onRow(evOrRow, i);
-                    done();
-                }, err);
+
+                const PKpath = this.nSQL.getDB(this.query.databaseID)._tables[this.query.table as string].pkCol;
+                const PK = deepGet(PKpath, row);
+
+                const checkLock = () => {
+                    if (this.nSQL.getDB(this.query.databaseID)._tables[this.query.table as string].rowLocks[String(PK)]) {
+                        setTimeout(checkLock, 10);
+                    } else {
+                        this.nSQL.getDB(this.query.databaseID)._tables[this.query.table as string].rowLocks[String(PK)] = true;
+                        this._updateRow(upsertRecords[0], row, (evOrRow) => {
+                            delete this.nSQL.getDB(this.query.databaseID)._tables[this.query.table as string].rowLocks[String(PK)];
+                            onRow(evOrRow, i);
+                            done();
+                        }, err);
+                    }
+                }
+                checkLock();
+
             }, error, () => {
                 complete();
             });
@@ -1251,20 +1262,41 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         }, error);
     }
 
+    private _indexLocks: {
+        [lockID: string]: {
+            [indexValue: string]: boolean;
+        }
+    } = {};
+
     private _updateIndex(table: string, indexName: string, value: any, pk: any, addToIndex: boolean, done: () => void, err: (error) => void) {
+        const lockID = this.query.databaseID + table + indexName;
+        if (!this._indexLocks[lockID]) {
+            this._indexLocks[lockID] = {};
+        }
 
         const newItem: InanoSQLupdateIndex = { table, indexName, value, pk, addToIndex, done, err, query: this.query, nSQL: this.nSQL };
 
         this.nSQL.doFilter<updateIndexFilter>(this.databaseID, "updateIndex", { res: newItem, query: this.query }, (update) => {
             secondaryIndexQueue[this.nSQL.getDB(this.databaseID).state.id + update.res.indexName].newItem(update.res, (item: InanoSQLupdateIndex, done, error) => {
-                const fn = item.addToIndex ? adapterFilters(this.databaseID, item.nSQL, item.query).addIndexValue : adapterFilters(this.databaseID, item.nSQL, item.query).deleteIndexValue;
-                fn(item.table, item.indexName, item.pk, item.value, () => {
-                    item.done();
-                    done();
-                }, (err) => {
-                    item.err(err);
-                    done();
-                });
+                
+                const doUpdate = () => {
+                    if (this._indexLocks[lockID][String(item.value)]) {
+                        setTimeout(doUpdate, 10);
+                    } else {
+                        this._indexLocks[lockID][String(item.value)] = true;
+                        const fn = item.addToIndex ? adapterFilters(this.databaseID, item.nSQL, item.query).addIndexValue : adapterFilters(this.databaseID, item.nSQL, item.query).deleteIndexValue;
+                        fn(item.table, item.indexName, item.pk, item.value, () => {
+                            delete this._indexLocks[lockID][String(item.value)];
+                            item.done();
+                            done();
+                        }, (err) => {
+                            delete this._indexLocks[lockID][String(item.value)];
+                            item.err(err);
+                            done();
+                        });
+                    }
+                }
+                doUpdate();
             });
         }, err);
 
@@ -1777,6 +1809,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             let newConfig: InanoSQLTable = {
                 id: tableID,
                 name: table.res.name,
+                rowLocks: {},
                 count: 0,
                 mode: table.res.mode ? resolveMode(table.res.mode) : undefined,
                 model: computedDataModel,
@@ -2490,7 +2523,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         if (["IN", "NOT IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
             if (!Array.isArray(givenValue)) {
                 this.query.state = "error";
-                this.query.error(`WHERE "${compare}" comparison requires an array value!`);
+                this.error(`WHERE "${compare}" comparison requires an array value!`);
                 return false;
             }
         }

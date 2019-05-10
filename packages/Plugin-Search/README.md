@@ -4,8 +4,8 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://badge.fury.io/js/%40nano-sql%2Fplugin-redis-index">
-    <img src="https://badge.fury.io/js/%40nano-sql%2Fplugin-redis-index.svg" alt="nanoSQL Logo">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fplugin-fuzzy-search">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fplugin-fuzzy-search.svg" alt="nanoSQL Logo">
   </a>
   <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
@@ -17,7 +17,7 @@
   <strong>Allows you to build and use dynamic fuzzy search with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.io/plugins/redis-index.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/plugins/search.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # What's This For?
 Add fuzzy search capability to your NanoSQL apps, the special indexing in this plugin is well suited for fuzzy name matching, document search, or anywhere else you need to match words that sound or look similar together.
@@ -86,12 +86,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 # Changelog
-
-## [2.0.4]
-- Dependency and documentation update.
-
-## [2.0.3]
-- Adjusted readme and dependencies.
 
 ## [2.0.0]
 - First release

@@ -34,6 +34,7 @@ export const blankTableDefinition: InanoSQLTable = {
     id: "",
     count: 0,
     name: "",
+    rowLocks: {},
     model: {},
     columns: [],
     indexes: {},

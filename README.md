@@ -19,13 +19,13 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 
 ## Plugins
 - [Redis Index](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-RedisIndex)
+- [Search](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Search)
 
 # WIP
 Items here are planned but not yet released.
 
 ### Plugins
 - [Net](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Net)
-- [Search](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Search)
 - [Backups](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Backups)
 - [Encryption](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-Encryption)
 - [History](https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Plugin-History)

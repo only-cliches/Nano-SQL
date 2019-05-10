@@ -4,6 +4,12 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.0] 5-09-2019
+- Fixed issue with inserts.
+- Removed query queue and implemented row & index locking.
+- Added fuzzy search plugin.
+- Working on moving RocksDB to external plugin.
+
 ## [2.2.9] 5-03-2019
 - Fixed a few small issues with the new database API.
 - Added a new `total` query to quickly get the total number of records in a table.

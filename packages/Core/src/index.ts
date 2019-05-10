@@ -457,7 +457,6 @@ export class nanoSQL implements InanoSQLInstance {
             },
             config: {
                 id: newDatabaseID,
-                queue: false
             },
             _tables: {},
             _fkRels: {},
@@ -965,27 +964,9 @@ export class nanoSQL implements InanoSQLInstance {
 
 
         const execQuery = (setQuery) => {
-
-            if (databaseID && typeof setQuery.res.table === "string" && this.getDB(databaseID).config.queue && !setQuery.res.skipQueue) {
-                this.getDB(databaseID)._Q.newItem({
-                    query: setQuery.res,
-                    onRow: onRow,
-                    complete: complete,
-                    error: error
-                }, (item: { query: InanoSQLQuery, onRow: any, complete: any, error: any }, done, err) => {
-                    new _nanoSQLQuery(databaseID, this, item.query, item.onRow, () => {
-                        done();
-                        item.complete();
-                    }, (err) => {
-                        done();
-                        item.error(err);
-                    });
-                });
-            } else {
-                new _nanoSQLQuery(databaseID, this, setQuery.res, (row) => {
-                    onRow(row);
-                }, complete, error);
-            }
+            new _nanoSQLQuery(databaseID, this, setQuery.res, (row) => {
+                onRow(row);
+            }, complete, error);
         };
 
         if (typeof query.table === "string") {
@@ -1034,12 +1015,15 @@ export class nanoSQL implements InanoSQLInstance {
     }
 
     public saveCount(databaseID: string, tableName: string, complete?: (err?: any) => void) {
+        if (tableName.indexOf("_") === 0) {
+            if (complete) complete();
+            return;
+        }
         const total = this.getDB(databaseID)._tables[tableName].count;
         const id = this.getDB(databaseID)._tables[tableName].id;
         this.triggerQuery(databaseID, {
             ...buildQuery(databaseID, this, "_util", "upsert"),
             actionArgs: {key: "total_" + id, value: total},
-            skipQueue: true
         }, noop, () => {
             if (complete) complete();
         }, (err) => {
