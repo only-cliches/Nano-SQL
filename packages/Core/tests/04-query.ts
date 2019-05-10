@@ -1893,7 +1893,7 @@ describe("Testing Other Features", () => {
                 done(e);
             }
         });
-    });
+    }).timeout(4000);
 
     it("Geo Data Type (Indexed Pole Query)", (done: MochaDone) => {
         const randomLoc = (): { lon: number, lat: number } => {
@@ -1935,7 +1935,7 @@ describe("Testing Other Features", () => {
                 done(e);
             }
         });
-    });
+    }).timeout(4000);
 
     it("Date Data Type (Primary Key)", (done: MochaDone) => {
 

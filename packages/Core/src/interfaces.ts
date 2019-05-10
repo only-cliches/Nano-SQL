@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _nanoSQLQueue } from "./utilities";
 
-export const VERSION = 2.30;
+export const VERSION = 2.31;
 
 export type uuid = String;
 export type timeId = String;

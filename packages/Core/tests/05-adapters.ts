@@ -33,7 +33,7 @@ describe("Adapter Tests", () => {
     });
 
     it("RocksDB Storage", (done: MochaDone) => {
-        new nanoSQLAdapterTest(RocksDB, []).test().then(() => {
+        new nanoSQLAdapterTest(RocksDB, [undefined, true]).test().then(() => {
             rimraf(path.join(__dirname, "../", "db_123"));
             done();
         }).catch((err) => {

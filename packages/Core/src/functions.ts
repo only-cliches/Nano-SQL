@@ -402,7 +402,6 @@ export const attachDefaultFns = (nSQL: InanoSQLInstance) => {
                         return;
                     }
 
-
                     allAsync(rowsToRead, (rowData: ICrowIndexQuery, i, next, err) => {
 
                         adapterFilters(query.databaseID, query.parent, query).read(query.table as string, rowData.key, (row) => {

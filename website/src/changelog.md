@@ -4,6 +4,24 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.1] 5-10-2019
+- Removed secondary index queue.
+- Fixed issue with falsey secondary index values.
+- Added optional wasm index to RocksDB adapter.  Increases offset/limit and index request performance exponentially.
+- Fixed a few small bugs.
+
+## [2.3.0] 5-09-2019
+- Fixed issue with inserts.
+- Removed query queue and implemented row & index locking.
+- Added fuzzy search plugin.
+- Working on moving RocksDB to external plugin.
+
+## [2.2.9] 5-03-2019
+- Fixed a few small issues with the new database API.
+- Added a new `total` query to quickly get the total number of records in a table.
+- If a column value is not passed, the default behavior is now to ignore the column instead of defaulting to a value.
+- Updated dependencies.
+
 ## [2.2.8] 4-22-2019
 - Fixed issue with `create table` query.
 - `config` option is now optional.
@@ -11,7 +29,7 @@
 - Fixed issue with nested function calls.
 - Added `FORMAT_NUMBER` function.
 
-## [2.2.7] 4-29-2019
+## [2.2.7] 4-19-2019
 - Fixed an issue with select table code.
 
 ## [2.2.6] 4-19-2019

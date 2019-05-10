@@ -5,15 +5,16 @@ function run() {
     normal=$(tput sgr0)
 
     #clean up
-    rm -rf dist/*.js
-    rm -rf *.d.ts
+    #rm -rf dist/*.js
+    #rm -rf *.d.ts
     rm -rf lib
 
     echo "${bold}(1/5) Clean Completed...${normal}"
 
     #type declerations & node build
     ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
-
+    cp src/db-index.js lib/db-index.js
+    cp src/db-index.wasm lib/db-index.wasm
     echo "${bold}(2/5) Node Build & Type Declarations Completed...${normal}"
 
     #browser build
@@ -33,7 +34,7 @@ function run() {
     fi
 
 
-    rm -rf src/*.js
+    # rm -rf src/*.js
     find ../../ -name ".DS_Store" -delete
     rm lib/cli.d.ts lib/cli.js.map
 

@@ -40,11 +40,15 @@ export class RocksDB extends nanoSQLMemoryIndex {
         [tableName: string]: InanoSQLTable;
     }
 
+    private _indexNum: {
+        [tableName: string]: number;
+    } = {};
+
     constructor(
         public path?: string | ((dbID: string, tableName: string, tableData: InanoSQLTable) => { lvld: any, args?: any }),
         public indexCache?: boolean
     ) {
-        super(false, typeof indexCache === "undefined" ? true : indexCache);
+        super(false, false);
         this._levelDBs = {};
         this._ai = {};
         this._tableConfigs = {};
@@ -82,8 +86,22 @@ export class RocksDB extends nanoSQLMemoryIndex {
                 error(err);
                 return;
             }
-            this._levelDBs[tableName] = db;
-            complete();
+            if (this.indexCache) {
+
+                const checkWasm = () => {
+                    if (global._wasm.loaded) {
+                        this._levelDBs[tableName] = db;
+                        complete();
+                    } else {
+                        setTimeout(checkWasm, 10);
+                    }
+                }
+                checkWasm();
+            } else {
+                this._levelDBs[tableName] = db;
+                complete();
+            }
+
         });
     }
 
@@ -106,15 +124,39 @@ export class RocksDB extends nanoSQLMemoryIndex {
                 return;
             }
             this._levelDBs[tableName] = db;
+            this._indexNum[tableName] = tableData.isPkNum ? global._wasm.new_index() : global._wasm.new_index_str();
+ 
             this._levelDBs["_ai_store_"].get(Buffer.from(tableName, "utf-8"), (err, value) => {
                 this._ai[tableName] = value ? value.ai || 0 : 0;
-                complete();
+                if (this.indexCache) {
+                    this._levelDBs[tableName]
+                    .createKeyStream()
+                    .on("data", (data) => {
+                        const wasm = global._wasm;
+                        if (tableData.isPkNum) {
+                            wasm.add_to_index(this._indexNum[tableName], data);
+                        } else {
+                            wasm.add_to_index_str(this._indexNum[tableName], data);
+                        }
+                    })
+                    .on("end", () => {
+                        complete();
+                    })
+                    .on("error", error);
+                } else {
+                    complete();
+                }
+                
             });
         });
     }
 
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
+        if (this.indexCache) {
+            const wasm = global._wasm;
+            this._tableConfigs[table].isPkNum ? wasm.empty_index(this._indexNum[table]) : wasm.empty_index_str(this._indexNum[table]);
+        }
         this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(() => {
             this._levelDBs[table].close((err) => {
                 try {
@@ -131,6 +173,10 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     disconnect(complete: () => void, error: (err: any) => void) {
         allAsync(Object.keys(this._levelDBs), (table, i, next, error) => {
+            if (this.indexCache) {
+                const wasm = global._wasm;
+                this._tableConfigs[table].isPkNum ? wasm.empty_index(this._indexNum[table]) : wasm.empty_index_str(this._indexNum[table]);
+            }
             this._levelDBs[table].close((err) => {
                 if (err) {
                     error(err);
@@ -153,6 +199,15 @@ export class RocksDB extends nanoSQLMemoryIndex {
         }
 
         deepSet(this._tableConfigs[table].pkCol, row, pk);
+
+        if (this.indexCache) {
+            const wasm = global._wasm;
+            if (this._tableConfigs[table].isPkNum) {
+                wasm.add_to_index(this._indexNum[table], pk);
+            } else {
+                wasm.add_to_index_str(this._indexNum[table], pk);
+            }    
+        }
 
         this._levelDBs[table].put(this._encodePk(table, pk), row, (err) => {
             if (err) {
@@ -182,6 +237,34 @@ export class RocksDB extends nanoSQLMemoryIndex {
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
 
         let i = 0;
+
+        if (this.indexCache && type === "offset") {
+            const wasm = global._wasm;
+            const ptrFn = this._tableConfigs[table].isPkNum ? wasm.read_index_offset : wasm.read_index_offset_str;
+            const nextFn = this._tableConfigs[table].isPkNum ? wasm.read_index_offset_next : wasm.read_index_offset_str_next;
+            const it = ptrFn(this._indexNum[table], reverse ? 1 : 0, offsetOrLow);
+            let nextKey: any = 0;
+            let lastKey: any;
+            let count = 0;
+
+            const nextRow = () => {
+                nextKey = nextFn(this._indexNum[table], it, reverse ? 1 : 0, limitOrHigh, count);
+                if (nextKey === lastKey) {
+                    complete();
+                } else {
+                    this.read(table, nextKey, (row) => {
+                        if (row) {
+                            onRow(row, count);
+                        }
+                        nextRow();
+                    }, error);
+                    lastKey = nextKey;
+                }
+                count++;
+            }
+            nextRow();
+            return;
+        }
 
         this._levelDBs[table]
             .createValueStream(type === "range" ? {
@@ -252,6 +335,32 @@ export class RocksDB extends nanoSQLMemoryIndex {
     }
 
     getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+        if (this.indexCache) {
+            const wasm = global._wasm;
+            const ptrFn = this._tableConfigs[table].isPkNum ? wasm.read_index : wasm.read_index_str;
+            const nextFn = this._tableConfigs[table].isPkNum ? wasm.read_index_next : wasm.read_index_str_next;
+    
+            const it = ptrFn(this._indexNum[table], 0);
+            let nextKey: any = 0;
+            let lastKey: any;
+            let isDone = false;
+            let count = 0;
+            let keys: any[] = [];
+            
+            while(!isDone) {
+                nextKey = nextFn(this._indexNum, it, 0, count);
+                if (nextKey === lastKey) {
+                    isDone = true;
+                } else {
+                    count++;
+                    keys.push(nextKey);
+                    lastKey = nextKey;
+                }
+            }
+            complete(keys);
+            return;
+        }
+
         let index: any[] = [];
         this._levelDBs[table]
             .createKeyStream()
@@ -265,6 +374,12 @@ export class RocksDB extends nanoSQLMemoryIndex {
     }
 
     getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
+
+        if (this.indexCache) {
+            const wasm = global._wasm;
+            complete(this._tableConfigs[table].isPkNum ? wasm.get_total(this._indexNum[table]) : wasm.get_total_str(this._indexNum[table]));
+            return;
+        }
 
         let count = 0;
         this._levelDBs[table]
