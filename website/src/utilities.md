@@ -7,7 +7,7 @@ nanoSQL uses numerous utility functions that you can take advantage of in your p
 **Using with &lt;script&gt;**
 
 ```typescript
-const utils = window["@nano-sql"].core.utilities;
+const utils = window["@nano-sql/core"].utilities;
 // uuid function:
 utils.uuid();
 ```

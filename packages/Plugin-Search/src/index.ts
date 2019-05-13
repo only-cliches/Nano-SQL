@@ -11,7 +11,7 @@ export interface FuzzySearchTokenizer {
     }[]
 }
 
-const stopWords = [
+export const stopWords = [
     "a", "about", "after", "all", "also", "am", "an", "and", "andor", "another", "any",
     "are", "as", "at", "be", "because", "been", "before", "being", "between",
     "both", "but", "by", "came", "can", "come", "could", "did", "do", "each",
@@ -26,7 +26,7 @@ const stopWords = [
 ];
 
 
-const defaultTokenizer = (type: "english" | "english-meta" | "english-stem", stpWrds: string[], decimalPoints: number = 4): FuzzySearchTokenizer => {
+export const defaultTokenizer = (type: "english" | "english-meta" | "english-stem", stpWrds: string[], decimalPoints: number = 4): FuzzySearchTokenizer => {
     return (tableName, tableId, path, value) => {
 
         const isStopWord = (word: string): boolean => {
@@ -94,7 +94,7 @@ let indexLocks: {
     }
 } = {};
 
-const addRowToFuzzy = (newRow: any, tableId: string, pkPath: string[], nSQL: InanoSQLInstance, query: InanoSQLQuery, complete: () => void, error: (err: any) => void) => {
+const addRowToFuzzy = (newRow: any, tableId: string, pkPath: string[], nSQL: InanoSQLInstance, query: InanoSQLQuery, complete: (err?: any) => void) => {
     const newRowData = newRow;
     const newRowPK = deepGet(pkPath, newRowData);
     const filters = adapterFilters(query.databaseID, nSQL, query);
@@ -170,7 +170,103 @@ const addRowToFuzzy = (newRow: any, tableId: string, pkPath: string[], nSQL: Ina
 
     }).then(() => {
         complete();
-    }).catch(error);
+    }).catch(complete);
+}
+
+const rmRowFromFuzzy = (newRowData: any, pkPath: string[], databaseID: string, nSQL: InanoSQLInstance, query: InanoSQLQuery, tableId: string, complete: (err?: any) => void) => {
+
+    const newRowPK = deepGet(pkPath, newRowData);
+    const filters = adapterFilters(databaseID, nSQL, query);
+
+    allAsync(searchIndexes[tableId], (item: IFuzzyIndex, i, next, err) => {
+        const indexTableNameWords = "_" + tableId + "_fuzzy_words_" + item.path.join(".");
+        const indexTableNameWordsId = nSQL.getDB(databaseID)._tableIds[indexTableNameWords];
+        // remove row data cache
+        filters.delete(indexTableNameWords, newRowPK, () => {
+
+            const phrase = deepGet(item.path, newRowData);
+
+            if (typeof phrase !== "string" || !phrase) { // nothing to delete
+                next();
+                return;
+            }
+
+            const indexTable = "_" + tableId + "_fuzzy_" + item.path.join(".");
+            const indexTableId = nSQL.getDB(databaseID)._tableIds[indexTable];
+            const tokens = item.tokenizer(item.tableName, item.tableId, item.path, phrase);
+            const mergedTokens: { [token: string]: number[] } = tokens.reduce((prev, cur) => {
+                if (!prev[cur.w]) {
+                    prev[cur.w] = [];
+                }
+                prev[cur.w].push(cur.i);
+                return prev;
+            }, {});
+
+            allAsync(Object.keys(mergedTokens), (word: string, k, nextToken, errToken) => {
+
+                const writeToken = () => {
+                    filters.read(indexTable, word, (tokenRow?: { wrd: string, ids: { id: any, i: number[] }[] }) => {
+                        const useRow = maybeAssign(tokenRow) || {
+                            wrd: word,
+                            ids: [] as { id: any, i: number[] }[]
+                        }
+                        let idx = -1;
+                        let i = useRow.ids.length;
+                        while (i-- && idx === -1) {
+                            if (useRow.ids[i].id === newRowPK) {
+                                idx === i;
+                            }
+                        }
+                        if (idx !== -1) {
+                            useRow.ids.splice(idx, 1);
+
+                            if (!useRow.ids.length) { // no rows left for this token
+                                filters.delete(indexTable, word, () => {
+                                    delete indexLocks[tableId][word];
+                                    nextToken();
+                                }, (err) => {
+                                    delete indexLocks[tableId][word];
+                                    errToken(err);
+                                })
+                            } else { // write other row data back
+                                filters.write(indexTable, word, useRow, () => {
+                                    delete indexLocks[tableId][word];
+                                    nextToken();
+                                }, (err) => {
+                                    delete indexLocks[tableId][word];
+                                    errToken(err);
+                                })
+                            }
+
+                        } else {
+                            delete indexLocks[tableId][word];
+                            nextToken();
+                        }
+                    }, (err) => {
+                        delete indexLocks[tableId][word];
+                        errToken(err);
+                    });
+                };
+
+                const checkTokenLock = () => {
+                    if (indexLocks[tableId][word]) {
+                        setTimeout(() => {
+                            checkTokenLock();
+                        }, 2);
+                    } else {
+                        indexLocks[tableId][word] = true;
+                        writeToken();
+                    }
+                }
+                checkTokenLock();
+
+            }).then(next).catch(err);
+
+        }, err);
+
+    }).then(() => {
+        complete();
+    }).catch(complete);
 }
 
 export const FuzzyUserSanitize = (str: string) => {
@@ -183,7 +279,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
 
     return {
         name: "Fuzzy Search",
-        version: 2.00,
+        version: 2.01,
         filters: [
             {
                 name: "willConnect",
@@ -205,6 +301,17 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                             // no indexes on this table
                             if (!searchIndexes[tableId] || !searchIndexes[tableId].length) {
                                 return false;
+                            }
+
+                            // search all fuzzy indexes
+                            if (fnArgs[0] === "*") {
+                                return {
+                                    index: "*",
+                                    parsedFn: { name: "SEARCH", args: fnArgs },
+                                    comp: where[1],
+                                    value: where[2],
+                                    col: String(-1)
+                                };
                             }
 
                             const indexPath = resolvePath(fnArgs[0]);
@@ -270,12 +377,22 @@ export const FuzzySearch = (): InanoSQLPlugin => {
 
                             const tableId = nSQL.getDB(query.databaseID)._tableIds[query.table as string];
 
+                            let searchTheseIndexes = (parseInt(where.col as any) !== -1 ? [where.index] : searchIndexes[tableId].map(s => s.indexId)) as string[];
+
                             let secondaryIndexPKS: any[] = [];
 
-                            const getNextSearchTerm = (searchIdx: number) => {
+                            const getNextSearchTerm = (searchIdx: number, indexNum: number) => {
 
-                                if (!(where.parsedFn as any).args[searchIdx]) {
+                                // search done
+                                if (!searchTheseIndexes[indexNum]) {
                                     getRows(secondaryIndexPKS);
+                                    return;
+                                }
+
+                                // out of search terms for this index
+                                // move to next index
+                                if (!(where.parsedFn as any).args[searchIdx]) { 
+                                    getNextSearchTerm(1, indexNum + 1);
                                     return;
                                 }
 
@@ -285,7 +402,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                                 const hasQuotes = quoteRegex.exec(searchValue);
                                 const useSeachValue = hasQuotes ? hasQuotes[1] : searchValue;
 
-                                const useIndex = searchIndexes[tableId][parseInt(where.col as any)];
+                                const useIndex = searchIndexes[tableId][indexNum];
 
                                 if (!useIndex) {
                                     error("Erro getting fuzzy index!");
@@ -323,7 +440,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
 
 
                                 // get exact matches from secondary index
-                                filters.readIndexKey(query.table as string, where.index as string, useSeachValue, (pk) => {
+                                filters.readIndexKey(query.table as string, searchTheseIndexes[indexNum], useSeachValue, (pk) => {
                                     secondaryIndexPKS.push(pk);
                                 }, () => {
 
@@ -358,13 +475,13 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                                                 Object.keys(tokenLocs).forEach((word) => {
                                                     secondaryIndexPKS = secondaryIndexPKS.concat(tokenLocs[word].ids.map(r => r.id));
                                                 });
-                                                getNextSearchTerm(searchIdx + 1);
+                                                getNextSearchTerm(searchIdx + 1, indexNum);
                                             } else {
                                                 if (secondaryIndexPKS.length) {
-                                                    getNextSearchTerm(searchIdx + 1);
+                                                    getNextSearchTerm(searchIdx + 1, indexNum);
                                                 } else {
                                                     // no matches
-                                                    getNextSearchTerm(searchIdx + 1);
+                                                    getNextSearchTerm(searchIdx + 1, indexNum);
                                                 }
 
                                             }
@@ -487,7 +604,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                                                 }
                                             });
 
-                                            getNextSearchTerm(searchIdx + 1);
+                                            getNextSearchTerm(searchIdx + 1, indexNum);
 
                                         }
                                     });
@@ -496,7 +613,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
 
                             }
 
-                            getNextSearchTerm(1);
+                            getNextSearchTerm(1, 0);
                         }
                     }
                 }
@@ -599,9 +716,13 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                     if (!searchIndexes[tableId] || !searchIndexes[tableId].length) {  // no indexes for this table
                         complete(inputArgs);
                     } else {  // add new row
-                        addRowToFuzzy(inputArgs.res.result, tableId, pkPath, nSQL, inputArgs.query, () => {
-                            complete(inputArgs);
-                        }, cancel);
+                        addRowToFuzzy(inputArgs.res.result, tableId, pkPath, nSQL, inputArgs.query, (err) => {
+                            if (err) {
+                                cancel(err);
+                            } else {
+                                complete(inputArgs);
+                            }
+                        });
                     }
                 }
             },
@@ -634,7 +755,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                                     return;
                                 }
 
-                                const phraseHash = hash(phrase);
+                                const phraseHash = hash(String(phrase));
                                 if (phraseHash === useRow.hash) { // no changes in index data
                                     next();
                                     return;
@@ -788,99 +909,13 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                     if (!searchIndexes[tableId] || !searchIndexes[tableId].length) { // no indexes for this table
                         complete(inputArgs);
                     } else { // delete row data
-                        const newRowData = inputArgs.res as any;
-                        const newRowPK = deepGet(pkPath, newRowData);
-                        const filters = adapterFilters(inputArgs.query.databaseID, nSQL, inputArgs.query);
-
-                        allAsync(searchIndexes[tableId], (item: IFuzzyIndex, i, next, err) => {
-                            const indexTableNameWords = "_" + tableId + "_fuzzy_words_" + item.path.join(".");
-                            const indexTableNameWordsId = nSQL.getDB(inputArgs.query.databaseID)._tableIds[indexTableNameWords];
-                            // remove row data cache
-                            filters.delete(indexTableNameWords, newRowPK, () => {
-
-                                const phrase = deepGet(item.path, newRowData);
-
-                                if (typeof phrase !== "string" || !phrase) { // nothing to delete
-                                    next();
-                                    return;
-                                }
-
-                                const indexTable = "_" + tableId + "_fuzzy_" + item.path.join(".");
-                                const indexTableId = nSQL.getDB(inputArgs.query.databaseID)._tableIds[indexTable];
-                                const tokens = item.tokenizer(item.tableName, item.tableId, item.path, phrase);
-                                const mergedTokens: { [token: string]: number[] } = tokens.reduce((prev, cur) => {
-                                    if (!prev[cur.w]) {
-                                        prev[cur.w] = [];
-                                    }
-                                    prev[cur.w].push(cur.i);
-                                    return prev;
-                                }, {});
-
-                                allAsync(Object.keys(mergedTokens), (word: string, k, nextToken, errToken) => {
-
-                                    const writeToken = () => {
-                                        filters.read(indexTable, word, (tokenRow?: { wrd: string, ids: { id: any, i: number[] }[] }) => {
-                                            const useRow = maybeAssign(tokenRow) || {
-                                                wrd: word,
-                                                ids: [] as { id: any, i: number[] }[]
-                                            }
-                                            let idx = -1;
-                                            let i = useRow.ids.length;
-                                            while (i-- && idx === -1) {
-                                                if (useRow.ids[i].id === newRowPK) {
-                                                    idx === i;
-                                                }
-                                            }
-                                            if (idx !== -1) {
-                                                useRow.ids.splice(idx, 1);
-
-                                                if (!useRow.ids.length) { // no rows left for this token
-                                                    filters.delete(indexTable, word, () => {
-                                                        delete indexLocks[tableId][word];
-                                                        nextToken();
-                                                    }, (err) => {
-                                                        delete indexLocks[tableId][word];
-                                                        errToken(err);
-                                                    })
-                                                } else { // write other row data back
-                                                    filters.write(indexTable, word, useRow, () => {
-                                                        delete indexLocks[tableId][word];
-                                                        nextToken();
-                                                    }, (err) => {
-                                                        delete indexLocks[tableId][word];
-                                                        errToken(err);
-                                                    })
-                                                }
-
-                                            } else {
-                                                delete indexLocks[tableId][word];
-                                                nextToken();
-                                            }
-                                        }, (err) => {
-                                            delete indexLocks[tableId][word];
-                                            errToken(err);
-                                        });
-                                    };
-
-                                    const checkTokenLock = () => {
-                                        if (indexLocks[tableId][word]) {
-                                            setTimeout(() => {
-                                                checkTokenLock();
-                                            }, 2);
-                                        } else {
-                                            indexLocks[tableId][word] = true;
-                                            writeToken();
-                                        }
-                                    }
-                                    checkTokenLock();
-
-                                }).then(next).catch(err);
-
-                            }, err);
-
-                        }).then(() => {
-                            complete(inputArgs);
-                        });
+                        rmRowFromFuzzy(inputArgs.res, pkPath, inputArgs.query.databaseID as string, nSQL, inputArgs.query, tableId, (err) => {
+                            if (err) {
+                                cancel(err);
+                            } else {
+                                complete(inputArgs);
+                            }
+                        })
                     }
                 }
             },
@@ -898,44 +933,85 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                             const pkPath = nSQL.getDB(inputArgs.query.databaseID)._tables[inputArgs.query.table as string].pkCol;
                             if (!searchIndexes[tableId] || !searchIndexes[tableId].length) { // no indexes for this table
                                 inputArgs.complete();
-                            } else { // add new row
-                                // do rebuild
-                                allAsync(searchIndexes[tableId], (item: IFuzzyIndex, i, next, err) => {
-                                    // remove all existing index data
-                                    const indexTableName = "_" + tableId + "_fuzzy_" + item.path.join(".");
-                                    const indexTableNameWords = "_" + tableId + "_fuzzy_words_" + item.path.join(".");
-                                    nSQL.triggerQuery(inputArgs.query.databaseID, {
-                                        ...buildQuery(inputArgs.query.databaseID, nSQL, indexTableName, "delete")
-                                    }, noop, () => {
-                                        nSQL.triggerQuery(inputArgs.query.databaseID, {
-                                            ...buildQuery(inputArgs.query.databaseID, nSQL, indexTableNameWords, "delete")
-                                        }, noop, () => {
-                                            // index data removed
-                                            next();
-                                        }, err);
-                                    }, err);
-                                }).then(() => {
-                                    // build new index data for every row
-                                    return new Promise((res, rej) => {
-                                        // add to index
-                                        const queue = new _nanoSQLQueue((newRow, i, done, err) => {
-                                            addRowToFuzzy(newRow, tableId, pkPath, nSQL, inputArgs.query, () => {
-                                                inputArgs.onRow(newRow, i);
-                                            }, err);
-                                        }, rej, res);
+                            } else { // rebuild indexes
 
-                                        // select all rows
-                                        nSQL.triggerQuery(inputArgs.query.databaseID, {
-                                            ...buildQuery(inputArgs.query.databaseID, nSQL, inputArgs.query.table, "select")
-                                        }, (row) => {
-                                            queue.newItem(row);
-                                        }, () => {
-                                            queue.finished();
-                                        }, rej);
+                                if (inputArgs.query.where) { // rebuild specific indexes
+                                    const rebuildQ = new _nanoSQLQueue((item, i, done, error) => {
+                                        rmRowFromFuzzy(item, pkPath, inputArgs.query.databaseID as string, nSQL, inputArgs.query, tableId, (err) => {
+                                            if (err) {
+                                                error(err);
+                                            } else {
+                                                addRowToFuzzy(item, tableId, pkPath, nSQL, inputArgs.query, (err2) => {
+                                                    if (err2) {
+                                                        error(err2);
+                                                    } else {
+                                                        done();
+                                                    }
+                                                });
+                                            }
+                                        })
+                                    }, inputArgs.error, () => {
+                                        inputArgs.complete();
                                     })
-                                }).then(() => {
-                                    inputArgs.complete();
-                                }).catch(inputArgs.error);
+                                    nSQL.triggerQuery(inputArgs.query.databaseID, {
+                                        ...buildQuery(inputArgs.query.databaseID, nSQL, inputArgs.query.table, "select"),
+                                        where: inputArgs.query.where
+                                    }, (row) => {
+                                        if (row) {
+                                            rebuildQ.newItem(row);
+                                        }
+                                    }, () => {
+                                        rebuildQ.finished();
+                                    }, inputArgs.error);
+
+
+                                } else { // rebuild all indexes
+
+                                    // do rebuild
+                                    allAsync(searchIndexes[tableId], (item: IFuzzyIndex, i, next, err) => {
+                                        // remove all existing index data
+                                        const indexTableName = "_" + tableId + "_fuzzy_" + item.path.join(".");
+                                        const indexTableNameWords = "_" + tableId + "_fuzzy_words_" + item.path.join(".");
+                                        nSQL.triggerQuery(inputArgs.query.databaseID, {
+                                            ...buildQuery(inputArgs.query.databaseID, nSQL, indexTableName, "delete")
+                                        }, noop, () => {
+                                            nSQL.triggerQuery(inputArgs.query.databaseID, {
+                                                ...buildQuery(inputArgs.query.databaseID, nSQL, indexTableNameWords, "delete")
+                                            }, noop, () => {
+                                                // index data removed
+                                                next();
+                                            }, err);
+                                        }, err);
+                                    }).then(() => {
+                                        // build new index data for every row
+                                        return new Promise((res, rej) => {
+                                            // add to index
+                                            const queue = new _nanoSQLQueue((newRow, i, done, err) => {
+                                                addRowToFuzzy(newRow, tableId, pkPath, nSQL, inputArgs.query, (error) => {
+                                                    if (error) {
+                                                        err(error);
+                                                    } else {
+                                                        inputArgs.onRow(newRow, i);
+                                                    }
+                                                    done();
+                                                });
+                                            }, rej, res);
+
+                                            // select all rows
+                                            nSQL.triggerQuery(inputArgs.query.databaseID, {
+                                                ...buildQuery(inputArgs.query.databaseID, nSQL, inputArgs.query.table, "select")
+                                            }, (row) => {
+                                                queue.newItem(row);
+                                            }, () => {
+                                                queue.finished();
+                                            }, rej);
+                                        })
+                                    }).then(() => {
+                                        inputArgs.complete();
+                                    }).catch(inputArgs.error);
+                                }
+
+
 
                             }
                         }
@@ -949,6 +1025,8 @@ export const FuzzySearch = (): InanoSQLPlugin => {
 }
 
 /*
+import { nSQL as nanoSQL } from "@nano-sql/core";
+
 nanoSQL().connect({
     plugins: [
         FuzzySearch()
@@ -958,23 +1036,23 @@ nanoSQL().connect({
         name: "testing",
         model: {
             "id:int": { pk: true, ai: true },
+            "name:string": {},
             "phrase:string": {}
         },
         indexes: {
+            "name": {search: true},
             "phrase": { search: true }
         }
     }).exec();
 }).then(() => {
     console.log("CONNECTED");
-    return nanoSQL("testing").query("upsert", { phrase: "hello there billy" }).exec();
+    return nanoSQL("testing").query("upsert", { name: "bill", phrase: "hello there billy" }).exec();
 }).then(() => {
-    return nanoSQL("testing").query("upsert", { phrase: "hello there" }).exec();
+    return nanoSQL("testing").query("upsert", { name: "ted", phrase: "hello there" }).exec();
 }).then(() => {
-    return nanoSQL("testing").query("upsert", { phrase: "I am running" }).exec();
-}).then(() => {
-    return nanoSQL("testing").query("upsert", { id: 3, phrase: "something else hello hello" }).exec();
+    return nanoSQL("testing").query("upsert", { name: "rufus", phrase: "I am running" }).exec();
 }).then((result) => {
-    return nanoSQL("testing").query("select").where(["SEARCH(phrase, 'hello there billy')", ">=", 0]).exec();
+    return nanoSQL("testing").query("select").where(["SEARCH(*, 'hello there billy')", ">=", 0]).exec();
 }).then((result) => {
     console.log(result);
 }).catch((err) => {

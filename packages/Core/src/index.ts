@@ -1442,8 +1442,8 @@ if (typeof window !== "undefined") {
         utilities: utils,
         nSQLv1Config
     };
+    window["@nano-sql/core"] = window["@nano-sql"].core;
 }
-
 
 /*
 // used to test browser adapters with live reload

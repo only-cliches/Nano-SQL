@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/plugin-fuzzy-search",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Integrate Elastic Search style indexing in NanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -26,6 +26,8 @@
   "devDependencies": {
     "@nano-sql/core": "^2.2.9",
     "@types/node": "^12.0.0",
-    "typescript": "^3.4.5"
+    "ts-loader": "^6.0.0",
+    "typescript": "^3.4.5",
+    "webpack": "^4.31.0"
   }
 }

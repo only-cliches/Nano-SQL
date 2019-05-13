@@ -264,6 +264,9 @@ The old ORM system is no longer supported.  You'll need to reimplement the desir
 
 The api for observable queries has changed dramatically, you can read about the new syntax [here](/query/select.html#observer-queries).
 
+### HAVE
+The `HAVE` where condition is now `INCLUDES`.  Change all instances of `HAVE` in your code with `INCLUDES`.
+
 ### Other Changes
 
 * Plugins built for 1.X won't work with 2.X.  Read the new [plugin docs](/plugins/plugin-api.html).
@@ -272,9 +275,31 @@ The api for observable queries has changed dramatically, you can read about the 
 
 ## 1.X - 2.0 Depreciated Features
 
-### Trie & Fuzzy Search
+### Trie Indexes
 
-Indexing with a trie and fuzzy search aren't yet supported in 2.0.  We plan to add them back in when the new Search plugin is implemented.
+All `string` type secondary indexes support trie queries using `LIKE` in nanoSQL 2.  You can read about the new syntax [here](/query/create-table.html#indexes).
+
+```ts
+// 1.X syntax
+nSQL("users").query("select").trieSearch("name", "bi").exec()...
+
+// 2.X syntax
+nSQL("users").query("select").where(["name", "LIKE", "bi%"]).exec()...
+```
+
+### Fuzzy Search
+
+A new fuzzy search plugin handles this use case, read about it [here](/plugins/search.html).
+
+You'll have to install and setup the plugin, once that's done changes will look like this:
+
+```ts
+// 1.X syntax
+nSQL("posts").query("select").where(["search(title, body)", ">0.4", "some search term"]).exec();
+
+/// 2.X syntax
+nSQL("posts").query("select").where(["SEARCH(*, 'some search term')", "<=", 4]).exec();
+```
 
 ### History
 
