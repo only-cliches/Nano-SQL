@@ -6,7 +6,7 @@ import { nanoSQL } from "../src";
 import { InanoSQLInstance } from "../src/interfaces";
 import { nanoSQLAdapterTest } from "../src/adapter-test";
 import { SyncStorage } from "../src/adapters/syncStorage";
-import { RocksDB, rimraf } from "../src/adapters/rocksDB";
+import { SnapDBAdapter, rimraf } from "../src/adapters/snapDB";
 
 
 const webpack = require("webpack");
@@ -32,8 +32,8 @@ describe("Adapter Tests", () => {
         });
     });
 
-    it("RocksDB Storage", (done: MochaDone) => {
-        new nanoSQLAdapterTest(RocksDB, [undefined, true]).test().then(() => {
+    it("SnapDB Storage", (done: MochaDone) => {
+        new nanoSQLAdapterTest(SnapDBAdapter, []).test().then(() => {
             rimraf(path.join(__dirname, "../", "db_123"));
             done();
         }).catch((err) => {
@@ -41,7 +41,7 @@ describe("Adapter Tests", () => {
             rimraf(path.join(__dirname, "../", "db_123"));
             done(new Error(err));
         });
-    });
+    }).timeout(20000);
 
     it("WebSQL, IndexedDB & LocalStorage", (done: MochaDone) => {
 

@@ -6,16 +6,16 @@ import { InanoSQLAdapter } from "./interfaces";
 
 declare var global: any;
 
-let RocksDB: any;
+let SnapDB: any;
 if (typeof global !== "undefined") {
-    RocksDB = (global as any)._rocksAdapter;
+    SnapDB = global._snapAdapter;
 }
 
 export const detectStorage = (): string => {
 
     // NodeJS
     if (typeof window === "undefined") {
-        return "RKS";
+        return "SNP";
     }
 
     // Browser
@@ -58,8 +58,11 @@ export const resolveMode = (mode: string | InanoSQLAdapter, args?: {size?: numbe
             case "IDB":
                 return new IndexedDB(args && args.version);
             case "RKS":
+                throw new Error("RocksDB is no longer built in!  Grab it here https://www.npmjs.com/package/@nano-sql/adapter-rocksdb");
             case "LVL":
-                return new RocksDB(args && args.path);
+                throw new Error("LevelDB is no longer build in!  Grab it here https://www.npmjs.com/package/@nano-sql/adapter-leveldb");
+            case "SNP":
+                return new SnapDB();
             default:
                 throw new Error(`Cannot find mode ${mode}!`);
         }

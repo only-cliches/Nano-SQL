@@ -4,43 +4,43 @@
   </a>
 </p>
 <p align="center">
-  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-rocksdb">
-    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-rocksdb.svg" alt="nanoSQL Logo">
+  <a href="https://badge.fury.io/js/%40nano-sql%2Fadapter-leveldb">
+    <img src="https://badge.fury.io/js/%40nano-sql%2Fadapter-leveldb.svg" alt="nanoSQL Logo">
   </a>
   <a href="https://github.com/ClickSimply/@nano-sql/core/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="nanoSQL Logo">
   </a>
 </p>
 
-<h1 align="center">nanoSQL 2 RocksDB Adapter</h1>
+<h1 align="center">nanoSQL 2 LevelDB Adapter</h1>
 <p align="center">
-  <strong>Allows you to run RocksDB in NodeJS with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
+  <strong>Allows you to run LevelDB in NodeJS with <a href="https://www.npmjs.com/package/@nano-sql/core">nanoSQL 2</a></strong>
 </p>
 
-[Documentation](https://nanosql.io/adapters/rocksdb.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
+[Documentation](https://nanosql.io/adapters/leveldb.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
 # Installation
 
 ```sh
-npm i @nano-sql/adapter-rocksdb --save
+npm i @nano-sql/adapter-leveldb --save
 ```
 
 # Usage
 
 ```ts
-import { RocksDB } from "@nano-sql/adapter-rocksdb";
+import { LevelDB } from "@nano-sql/adapter-leveldb";
 import { nSQL } from "@nano-sql/core";
 
 nSQL().createDatabase({
     id: "my_db",
-    mode: new RocksDB(),
+    mode: new LevelDB(),
     tables: [...]
 }).then(...)
 ```
 
 # API
 
-The `RocksDB` class accepts two optional constructor arguments.
+The `LevelDB` class accepts two optional constructor arguments.
 
 ## path:string (optional)
 Can be `undefined` to use default (`__dirname`), allows you to specify which folder to place the database folders into.
@@ -77,8 +77,7 @@ SOFTWARE.
 # Changelog
 
 ## [2.0.1]
-- Fixed a few issues with the wasm index.
-- Added info to readme.
+- Fixed an issue with a file not being copied to the lib folder.
 
 ## [2.0.0]
 - First release

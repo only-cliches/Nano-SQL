@@ -1,7 +1,7 @@
 import { nanoSQLAdapterTest } from "@nano-sql/core/lib/adapter-test";
-import { RocksDB } from "./index";
+import { LevelDB } from "./index";
 
-new nanoSQLAdapterTest(RocksDB, []).test().then(() => {
+new nanoSQLAdapterTest(LevelDB, []).test().then(() => {
     console.log("Test Passed");
     setTimeout(() => {
         process.exit();

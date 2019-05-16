@@ -1,5 +1,39 @@
 # Migration
 
+## 2.3.1 => 2.3.2
+
+RocksDB is no longer installed as the default database for NodeJS.  If you've been using NanoSQL in NodeJS with the default `PERM` option you'll need to follow the steps below to restore access to your database.
+
+### Step 1
+Install the new RocksDB adapter from NPM.
+```
+npm i @nano-sql/adapter-rocksdb --save
+```
+
+### Step 2
+Replace `PERM` in your create database call with `new RocksDB()`.
+
+```ts
+import { RocksDB } from "@nano-sql/adapter-rocksdb";
+
+// what you had before...
+nSQL().createDatabase({
+    id: "my_db",
+    mode: "PERM",
+    tables: [..]
+}).then...
+
+// what you should have now
+nSQL().createDatabase({
+    id: "my_db",
+    mode: new RocksDB(),
+    tables: [..]
+}).then...
+```
+
+That's it!  Everything should be working exactly as it was before the update.
+
+
 ## 2.2.5 => 2.26
 
 The `connect()` method is now `createDatabase()`.

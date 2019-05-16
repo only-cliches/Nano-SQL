@@ -4,11 +4,20 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.2] 5-16-2019
+**BREAKING CHANGE** RocksDB has been replaced by [SnapDB](https://www.npmjs.com/package/snap-db) as the default NodeJS store for `PERM`. See the [migration guide](https://nanosql.io/migration.html) for steps to restore the old behavior.
+- Moved `window["@nano-sql"].core` to `window["@nano-sql/core"]` for webpack externals compatibility.
+- Added RocksDB & LevelDB adapters to readme.
+- Removed all node dependencies.
+- Resolved issue [138](https://github.com/ClickSimply/Nano-SQL/issues/138) and previouse other issues with RocksDB switch.
+- Hopefully resolved issue [139](https://github.com/ClickSimply/Nano-SQL/issues/139) by removing all node dependencies.  Unable to test since Nativescript doesn't work with NPM link...
+
 ## [2.3.1] 5-10-2019
 - Removed secondary index queue.
 - Fixed issue with falsey secondary index values.
 - Added optional wasm index to RocksDB adapter.  Increases offset/limit and index request performance exponentially.
 - Fixed a few small bugs.
+- Restored row filter feature.
 
 ## [2.3.0] 5-09-2019
 - Fixed issue with inserts.

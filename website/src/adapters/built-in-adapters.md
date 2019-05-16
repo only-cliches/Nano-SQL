@@ -1,7 +1,5 @@
 # Built in Adapters
 
-
-
 NanoSQL comes with several adapters built into the library, you can use them without any additional libraries.
 
 By default no data is saved, an in memory database is created and used.
@@ -28,11 +26,10 @@ If you want specify which persistent method to use you can pass different string
 | :--- | :--- | :--- | :--- |
 | TEMP | Memory | Everything | 100MB+ |
 | PERM | Autodetect | All Browsers | 5 - 100MB+ |
-| IDB | Indexed DB | All Browsers\* | 50MB+ |
-| WSQL | Web SQL | Chrome & Safari | 100MB+ |
+| IDB | Indexed DB | All Browsers\*\* | 50MB+ |
+| WSQL | Web SQL | Chrome & Safari\*\* | 100MB+ |
 | LS | Local Storage | All Browsers | 5MB |
 
-* \* Safari doesn't _really_ support IndexedDB.  It works, but not reliably.
 * \*\* Indexed DB and WebSQL aren't supported by older browsers.
 
 As a result of the chart above, when you pass in `PERM` the autodetect method typically drops the browsers in like this:
@@ -52,8 +49,10 @@ nSQL().createDatabase({
 }).then...
 ```
 
-You can pass `PERM` or `RKS` into the config `mode` property and end up with the same result: All data will be saved to RocksDB.
+You can pass `PERM` or `SNP` into the config `mode` property and end up with the same result: All data will be saved to [SnapDB](https://www.npmjs.com/package/snap-db).
+
+The SnapDB store isn't good for high volume, production systems.  It's recommended you switch to [LevelDB](https://www.npmjs.com/package/@nano-sql/adapter-leveldb) or [RocksDB](https://www.npmjs.com/package/@nano-sql/adapter-rocksdd) if performance is important or if you plan to have a very large database (10 GB+).
 
 You can also use the `TEMP` mode which just saves to memory.
 
-There are other options to store data with NodeJS but they all use an adapter plugin. Installation and usage of these is always straightforward. You can read about them below.
+There are other options to store data with NodeJS and they all use an adapter plugin. Installation and usage of these is always straightforward. You can read about them in the other sections.

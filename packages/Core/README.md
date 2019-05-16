@@ -72,20 +72,22 @@ NanoSQL can save data to many different places, depending on the browser or envi
 
 1. **Included In The Box**
     - Memory (Browser/NodeJS/Electron)
-    - Rocks DB (NodeJS/Electron)
+    - Snap DB (NodeJS/Electron)
     - Indexed DB (Browser)
     - WebSQL (Browser)
     - Local Storage (Browser)
 
-2. **[SQLite (NodeJS/Electron)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
-3. **[SQLite (Cordova)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-cordova)**
-3. **[SQLite (NativeScript)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-nativescript)**
-4. **[React Native](https://www.npmjs.com/package/@nano-sql/adapter-react-native)**
-5. **[Redis](https://www.npmjs.com/package/@nano-sql/adapter-redis)**
-6. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
-7. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
-8. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
-9. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
+2. **[RocksDB (NodeJS/Electron)](https://www.npmjs.com/package/@nano-sql/adapter-rocksdb)**
+3. **[LevelDB (NodeJS/Electron)](https://www.npmjs.com/package/@nano-sql/adapter-leveldb)**
+4. **[SQLite (NodeJS/Electron)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite)**
+5. **[SQLite (Cordova)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-cordova)**
+6. **[SQLite (NativeScript)](https://www.npmjs.com/package/@nano-sql/adapter-sqlite-nativescript)**
+7. **[React Native](https://www.npmjs.com/package/@nano-sql/adapter-react-native)**
+8. **[Redis](https://www.npmjs.com/package/@nano-sql/adapter-redis)**
+9. **[MySQL](https://www.npmjs.com/package/@nano-sql/adapter-mysql)**
+10. **[Amazon Dynamo DB](https://www.npmjs.com/package/@nano-sql/adapter-dynamo)**
+11. **[MongoDB](https://www.npmjs.com/package/@nano-sql/adapter-mongo)**
+12. **[ScyllaDB](https://www.npmjs.com/package/@nano-sql/adapter-scylla)**
 
 ## Plugins
 - **[Fuzzy Search](https://www.npmjs.com/package/@nano-sql/plugin-fuzzy-search)**
@@ -114,10 +116,10 @@ To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.1/dist/nano-sql.min.js" integrity="sha256-xF/5h1OzPDORkPG8P5/72vQpPY6agXsmKi+nUiWprfA=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.2/dist/nano-sql.min.js" integrity="sha256-sOydNXCPr6sSkdnlYvBmf4xA7vgdjA+mzMvlDKz3qFw=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.1/dist/nano-sql.min.es5.js" integrity="sha256-Va2BAfhMVkNFKsQX/i/VW7F7Eh3A7x3vvIOmqFIi01Y=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.2/dist/nano-sql.min.es5.js" integrity="sha256-Ass7b2o4aKazjmZZoMALh16k0kaqgmMFGQPLl4TcuSM=" crossorigin="anonymous"></script>
 ```
 
 ## Important

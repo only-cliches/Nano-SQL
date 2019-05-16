@@ -1,7 +1,7 @@
 {
-  "name": "@nano-sql/adapter-rocksdb",
+  "name": "@nano-sql/adapter-leveldb",
   "version": "2.0.1",
-  "description": "Easily Run RocksDB in NodeJS with nanoSQL 2!",
+  "description": "Easily Run LevelDB in NodeJS with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
@@ -17,15 +17,16 @@
     "sqlite",
     "nanosql",
     "rdbms",
-    "rocksdb"
+    "leveldb"
   ],
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
+    "@nano-sql/core": "^2.3.1",
     "encoding-down": "^6.0.2",
+    "leveldown": "^5.0.3",
     "levelup": "^4.0.1",
-    "lexicographic-integer-encoding": "^1.0.1",
-    "rocksdb": "^3.1.0"
+    "lexicographic-integer-encoding": "^1.0.1"
   },
   "peerDependencies": {
     "@nano-sql/core": "^2.3.1"

@@ -357,6 +357,31 @@ export class nanoSQLAdapterTest {
                 }).then(res);
             });
         }).then(() => {
+            // Select entire table
+            return new Promise((res, rej) => {
+                let rows: any[] = [];
+                adapter.readMulti("test", "all", undefined, undefined, false, (row, idx) => {
+                    rows.push(row);
+                }, () => {
+                    const condition = objectsEqual(rows, allRows);
+                    myConsole.assert(condition, "Select Entire Table");
+                    condition ? res() : rej({e: allRows, g: rows});
+                }, rej);
+            });
+        }).then(() => {
+            // Select a range of rows using a range of the index with reverse
+            return new Promise((res, rej) => {
+                let rows: any[] = [];
+                adapter.readMulti("test", "all", undefined, undefined, true, (row, idx) => {
+                    rows.push(row);
+                }, () => {
+                    const filterRows = allRows.slice().reverse();
+                    const condition = objectsEqual(rows, filterRows);
+                    myConsole.assert(condition, "Select All Rows Test (reverse)");
+                    condition ? res() : rej({e: filterRows, g: rows});
+                }, rej);
+            });
+        }).then(() => {
             // Select a range of rows using a range of the index with reverse
             return new Promise((res, rej) => {
                 let rows: any[] = [];
@@ -383,19 +408,6 @@ export class nanoSQLAdapterTest {
                 }, rej);
             });
         }).then(() => {
-            // Select a range of rows using a range of the index with reverse
-            return new Promise((res, rej) => {
-                let rows: any[] = [];
-                adapter.readMulti("test", "all", undefined, undefined, true, (row, idx) => {
-                    rows.push(row);
-                }, () => {
-                    const filterRows = allRows.slice().reverse();
-                    const condition = objectsEqual(rows, filterRows);
-                    myConsole.assert(condition, "Select All Rows Test (reverse)");
-                    condition ? res() : rej({e: filterRows, g: rows});
-                }, rej);
-            });
-        }).then(() => {
             // Select a range of rows using a range of the index
             return new Promise((res, rej) => {
                 let rows: any[] = [];
@@ -418,18 +430,6 @@ export class nanoSQLAdapterTest {
                     const condition = objectsEqual(rows, allRows.filter(r => r.id > 10 && r.id <= 30));
                     myConsole.assert(condition, "Select Offset / Limit Test");
                     condition ? res() : rej({g: rows, e: allRows.filter(r => r.id > 10 && r.id <= 30)});
-                }, rej);
-            });
-        }).then(() => {
-            // Select entire table
-            return new Promise((res, rej) => {
-                let rows: any[] = [];
-                adapter.readMulti("test", "all", undefined, undefined, false, (row, idx) => {
-                    rows.push(row);
-                }, () => {
-                    const condition = objectsEqual(rows, allRows);
-                    myConsole.assert(condition, "Select Entire Table");
-                    condition ? res() : rej({e: allRows, g: rows});
                 }, rej);
             });
         }).then(() => {
@@ -633,7 +633,9 @@ export class nanoSQLAdapterTest {
             return new Promise((res, rej) => {
                 adapter.write("test", null, { name: "Test",
                 count: 0,
-                rowLocks: {}, posts: [1, 2]}, (pk) => {
+                rowLocks: {}, 
+                posts: [1, 2]
+            }, (pk) => {
                     adapter.read("test", pk, (row) => {
                         const expectRow = {name: "Test",
                         count: 0,

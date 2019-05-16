@@ -51,6 +51,8 @@ module.exports = {
                 ["../welcome", "← Back" ],
                 ["", "Adapters" ],
                 ["built-in-adapters", "Build In Adapters" ],
+                ["rocksdb", "RocksDB" ],
+                ["leveldb", "LevelDB" ],
                 ["mysql", "MySQL / MariaDB" ],
                 ["dynamodb", "DynamoDB" ],
                 ["redis", "Redis" ],

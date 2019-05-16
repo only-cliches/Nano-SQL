@@ -1,6 +1,6 @@
 {
 	"name": "@nano-sql/core",
-	"version": "2.3.1",
+	"version": "2.3.2",
 	"description": "Like Lego For Databases",
 	"main": "lib/index-node.js",
 	"browser": "lib/index.js",
@@ -109,16 +109,13 @@
 	"dependencies": {
 		"fast-deep-equal": "^2.0.1",
 		"levenshtein-edit-distance": "^2.0.3",
-		"really-small-events": "^1.1.0"
+		"really-small-events": "^1.1.0",
+		"snap-db": "^1.0.2"
 	},
 	"optionalDependencies": {
 		"chalk": "^2.4.2",
 		"chokidar": "^3.0.0",
-		"command-line-args": "^5.1.1",
-		"encoding-down": "^6.0.2",
-		"levelup": "^4.0.1",
-		"lexicographic-integer-encoding": "^1.0.1",
-		"rocksdb": "^3.1.0"
+		"command-line-args": "^5.1.1"
 	},
 	"contributors": [
 		{

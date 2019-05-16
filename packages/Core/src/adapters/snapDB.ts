@@ -1,0 +1,224 @@
+import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "../interfaces";
+import { noop, deepFreeze, generateID, binarySearch, assign, cast, blankTableDefinition, deepSet, chainAsync } from "../utilities";
+import { nanoSQLMemoryIndex } from "./memoryIndex";
+import { SnapDB } from "snap-db";
+import * as fs from "fs";
+import * as path from "path";
+
+export class SnapDBAdapter extends nanoSQLMemoryIndex {
+
+    plugin: InanoSQLPlugin = {
+        name: "SnapDB Adapter",
+        version: VERSION
+    };
+
+    nSQL: InanoSQLInstance;
+
+    _id: string;
+
+    _ai: {
+        [tableName: string]: number;
+    };
+
+    _tableConfigs: {
+        [tableName: string]: InanoSQLTable;
+    }
+
+    _tables: {
+        [tableName: string]: SnapDB<any>
+    }
+
+    _baseFolder: string;
+
+    constructor() {
+        super(true, false);
+        this._ai = {};
+        this._tableConfigs = {};
+        this._tables = {};
+    }
+
+    connect(id: string, complete: () => void, error: (err: any) => void) {
+        this._id = id;
+        this._baseFolder = path.join(process.cwd(), "db_" + id);
+
+        const connectAIStore = () => {
+            this._tables["_ai_store"] = new SnapDB(path.join(this._baseFolder, "_ai_store"), "string");
+            this._tables["_ai_store"].ready().then(() => {
+                complete();
+            }).catch(error);
+        }
+
+        if (fs.existsSync(this._baseFolder)) {
+            connectAIStore();
+        } else {
+            fs.mkdirSync(this._baseFolder);
+            connectAIStore();
+        }
+    }
+
+    createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
+        this._tableConfigs[tableName] = tableData;
+
+        this._tables[tableName] = new SnapDB(path.join(this._baseFolder, tableName), tableData.isPkNum ? "float" : "string");
+
+        if (this._tableConfigs[tableName].ai) {
+            this._tables["_ai_store"].get(tableName).then((aiValue) => {
+                this._ai[tableName] = parseInt(aiValue || "0");
+                this._tables[tableName].ready().then(complete).catch(error);
+            }).catch(error);
+        } else {
+            this._tables[tableName].ready().then(complete).catch(error);
+        }
+    }
+
+    dropTable(tableName: string, complete: () => void, error: (err: any) => void) {
+        if (this._tableConfigs[tableName].ai) {
+            this._tables["_ai_store"].delete(tableName).then(() => {
+                this._ai[tableName] = 0;
+                return this._tables[tableName].empty();
+            }).then(() => {
+                return this._tables[tableName].close();
+            }).then(() => {
+                delete this._tables[tableName];
+                delete this._tableConfigs[tableName];
+                complete();
+            }).catch(error);
+        } else {
+            this._tables[tableName].empty().then(() => {
+                return this._tables[tableName].close();
+            }).then(() => {
+                delete this._tables[tableName];
+                delete this._tableConfigs[tableName];
+                complete();
+            }).catch(error);
+        }
+    }
+
+    disconnect(complete: () => void, error: (err: any) => void) {
+        chainAsync(Object.keys(this._tables), (table, i, next, err) => {
+            this._tables[table].close().then(() => {
+                delete this._tables[table];
+                delete this._tableConfigs[table];
+                next();
+            }).catch(err);
+        }).then(complete).catch(error);
+    }
+
+    write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
+
+        pk = pk || generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
+
+        if (typeof pk === "undefined") {
+            error(new Error("Can't add a row without a primary key!"));
+            return;
+        }
+
+        if (this._tableConfigs[table].ai) {
+            this._ai[table] = Math.max(this._ai[table] || 0, pk);
+        }
+
+        deepSet(this._tableConfigs[table].pkCol, row, pk);
+
+        this._tables[table].put(pk, JSON.stringify(row)).then(() => {
+            if (this._tableConfigs[table].ai) {
+                return this._tables["_ai_store"].put(table, String(this._ai[table]));
+            }
+            return Promise.resolve();
+        }).then(() => {
+            complete(pk);
+        }).catch(error);
+
+    }
+
+    read(table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) {
+        this._tables[table].get(pk).then((row) => {
+            // found
+            complete(JSON.parse(row))
+        }).catch(() => {
+            // row not found
+            complete(undefined);
+        });
+    }
+
+    delete(table: string, pk: any, complete: () => void, error: (err: any) => void) {
+        this._tables[table].delete(pk).then(() => {
+            complete();
+        }).catch(error);
+    }
+
+    readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
+
+        let ct = 0;
+        switch(type) {
+            case "range":
+                this._tables[table].range(offsetOrLow, limitOrHigh, (key, data) => {
+                    onRow(JSON.parse(data), ct);
+                    ct++;
+                }, (err) => {
+                    if (err) {
+                        error(err);
+                    } else {
+                        complete();
+                    }
+                }, reverse);
+            break;
+            case "offset":
+                const ranges = reverse ? [(offsetOrLow || 0) + 2, limitOrHigh] : [(offsetOrLow || 0) + 1, limitOrHigh];
+                this._tables[table].offset(ranges[0], ranges[1], (key, data) => {
+                    onRow(JSON.parse(data), ct);
+                    ct++;
+                }, (err) => {
+                    if (err) {
+                        error(err);
+                    } else {
+                        complete();
+                    }
+                }, reverse);
+            break;
+            case "all":
+                this._tables[table].getAll((key, data) => {
+                    onRow(JSON.parse(data), ct);
+                    ct++;
+                }, (err) => {
+                    if (err) {
+                        error(err);
+                    } else {
+                        complete();
+                    }
+                }, reverse);
+            break;
+        }
+    }
+
+    getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
+        let idx: any[] = [];
+        this._tables[table].getAllKeys((key) => {
+            idx.push(key);
+        }, (err) => {
+            if (err) {
+                error(err);
+            } else {
+                complete(idx);
+            }
+        });
+    }
+
+    getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
+        this._tables[table].getCount().then(complete).catch(error);
+    }
+}
+
+
+export const rimraf = (dir_path: string) => {
+    if (fs.existsSync(dir_path)) {
+        fs.readdirSync(dir_path).forEach(function(entry) {
+            const entry_path = path.join(dir_path, entry);
+            if (fs.lstatSync(entry_path).isDirectory()) {
+                rimraf(entry_path);
+            } else {
+                fs.unlinkSync(entry_path);
+            }
+        });
+        fs.rmdirSync(dir_path);
+    }
+};
