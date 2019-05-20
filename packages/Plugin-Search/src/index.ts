@@ -279,7 +279,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
 
     return {
         name: "Fuzzy Search",
-        version: 2.01,
+        version: 2.02,
         filters: [
             {
                 name: "willConnect",
@@ -1058,3 +1058,12 @@ nanoSQL().connect({
 }).catch((err) => {
     console.error(err);
 })*/
+
+if (typeof window !== "undefined") {
+    window["@nano-sql/plugin-fuzzy-search"] = {
+        FuzzySearch,
+        FuzzyUserSanitize,
+        defaultTokenizer,
+        stopWords
+    }
+}

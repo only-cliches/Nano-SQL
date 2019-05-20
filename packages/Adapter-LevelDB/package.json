@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-leveldb",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Easily Run LevelDB in NodeJS with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -22,14 +22,13 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "@nano-sql/core": "^2.3.1",
     "encoding-down": "^6.0.2",
     "leveldown": "^5.0.3",
     "levelup": "^4.0.1",
     "lexicographic-integer-encoding": "^1.0.1"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.3.1"
+    "@nano-sql/core": "^2.3.2"
   },
   "devDependencies": {
     "@types/node": "^12.0.2",

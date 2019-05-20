@@ -29,7 +29,7 @@ export class LevelDB extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "LevelDB Adapter",
-        version: 2.02
+        version: 2.03
     };
 
     nSQL: InanoSQLInstance;
@@ -140,9 +140,9 @@ export class LevelDB extends nanoSQLMemoryIndex {
                     .createKeyStream()
                     .on("data", (data) => {
                         if (tableData.isPkNum) {
-                            wasm.add_to_index(this._indexNum[tableName], data);
+                            wasm.add_to_index(this._indexNum[tableName], isNaN(data) ? 0 : parseFloat(data));
                         } else {
-                            wasm.add_to_index_str(this._indexNum[tableName], data);
+                            wasm.add_to_index_str(this._indexNum[tableName], String(data || ""));
                         }
                     })
                     .on("end", () => {
@@ -159,9 +159,7 @@ export class LevelDB extends nanoSQLMemoryIndex {
 
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
-        if (this.indexCache && this._tableConfigs[table]) {
-            this._tableConfigs[table].isPkNum ? wasm.empty_index(this._indexNum[table]) : wasm.empty_index_str(this._indexNum[table]);
-        }
+  
         this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(() => {
             this._levelDBs[table].close((err) => {
                 try {
@@ -214,9 +212,9 @@ export class LevelDB extends nanoSQLMemoryIndex {
 
         if (this.indexCache) {
             if (this._tableConfigs[table].isPkNum) {
-                wasm.add_to_index(this._indexNum[table], pk);
+                wasm.add_to_index(this._indexNum[table], isNaN(pk) ? 0 : parseFloat(pk));
             } else {
-                wasm.add_to_index_str(this._indexNum[table], pk);
+                wasm.add_to_index_str(this._indexNum[table], String(pk || ""));
             }    
         }
 
@@ -303,7 +301,7 @@ export class LevelDB extends nanoSQLMemoryIndex {
             .on("error", error);
     }
 
-    _writeNumberBuffer(table: string, num: number): any {
+    _writeNumberBuffer(table: string, num: number): number|Buffer {
 
         switch (this._tableConfigs[table].pkType) {
             case "int":
@@ -328,7 +326,7 @@ export class LevelDB extends nanoSQLMemoryIndex {
         }
     }
 
-    _encodePk(table: string, pk: any): any {
+    _encodePk(table: string, pk: any): number|Buffer {
         return this._tableConfigs[table].isPkNum ? this._writeNumberBuffer(table, pk) : Buffer.from(pk, "utf-8");
     }
 
@@ -344,9 +342,9 @@ export class LevelDB extends nanoSQLMemoryIndex {
             } else {
                 if (this.indexCache && this._tableConfigs[table]) {
                     if (this._tableConfigs[table].isPkNum) {
-                        wasm.del_key(this._indexNum[table], pk);
+                        wasm.del_key(this._indexNum[table], isNaN(pk) ? 0 : parseFloat(pk));
                     } else {
-                        wasm.del_key_str(this._indexNum[table], pk);
+                        wasm.del_key_str(this._indexNum[table], String(pk || ""));
                     }    
                 }
                 complete();

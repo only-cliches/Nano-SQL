@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-rocksdb",
-  "version": "2.0.2",
+  "version": "2.0.4",
   "description": "Easily Run RocksDB in NodeJS with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "rocksdb": "^3.1.0"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.3.1"
+    "@nano-sql/core": "^2.3.2"
   },
   "devDependencies": {
     "@types/node": "^12.0.2",

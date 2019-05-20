@@ -1289,6 +1289,12 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             return;
         }
 
+        // 0 length strings cannot be indexed
+        if (String(value).length === 0) {
+            done();
+            return;
+        }
+
         const newItem: InanoSQLupdateIndex = { table, indexName, value, pk, addToIndex, done, err, query: this.query, nSQL: this.nSQL };
 
         this.nSQL.doFilter<updateIndexFilter>(this.databaseID, "updateIndex", { res: newItem, query: this.query }, (update) => {
@@ -2437,13 +2443,26 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
                 // indexes are now empty
                 const readQueue = new _nanoSQLQueue((row, i, complete, err) => {
-                    const indexValues = this._getIndexValues(this.nSQL.getDB(this.databaseID)._tables[rebuildTables].indexes, row);
-                    const rowPK = deepGet(this.nSQL.getDB(this.databaseID)._tables[rebuildTables].pkCol, row);
+                    const tableData = this.nSQL.getDB(this.databaseID)._tables[rebuildTables];
+                    const indexValues = this._getIndexValues(tableData.indexes, row);
+                    const rowPK = deepGet(tableData.pkCol, row);
                     allAsync(Object.keys(indexValues), (indexName, jj, nextIdx, errIdx) => {
                         const idxValue = indexValues[indexName];
-                        this._updateIndex(rebuildTables, indexName, idxValue, rowPK, true, () => {
-                            nextIdx();
-                        }, errIdx);
+                        if (tableData.indexes[indexName].isArray) {
+                            const arrayOfValues = indexValues[indexName] || [];
+                            allAsync(arrayOfValues, (value, i, nextArr) => {
+                                this._updateIndex(this.query.table as string, indexName, value, rowPK, true, () => {
+                                    nextArr(null);
+                                }, errIdx);
+                            }).then(() => {
+                                nextIdx();
+                            }).catch(errIdx);
+                        } else {
+                            this._updateIndex(rebuildTables, indexName, idxValue, rowPK, true, () => {
+                                nextIdx();
+                            }, errIdx);
+                        }
+
                     }).then(() => {
                         progress(row, i);
                         complete();

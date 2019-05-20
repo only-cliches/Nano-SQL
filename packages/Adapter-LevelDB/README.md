@@ -76,7 +76,7 @@ SOFTWARE.
 
 # Changelog
 
-## [2.0.2]
+## [2.0.3]
 - Fixed issue with WASM index.
 
 ## [2.0.1]
