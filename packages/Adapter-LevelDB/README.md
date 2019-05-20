@@ -76,6 +76,9 @@ SOFTWARE.
 
 # Changelog
 
+## [2.0.2]
+- Fixed issue with WASM index.
+
 ## [2.0.1]
 - Fixed an issue with a file not being copied to the lib folder.
 

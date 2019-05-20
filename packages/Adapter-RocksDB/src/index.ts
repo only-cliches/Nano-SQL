@@ -29,7 +29,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "RocksDB Adapter",
-        version: 2.01
+        version: 2.02
     };
 
     nSQL: InanoSQLInstance;
@@ -135,7 +135,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
  
             this._levelDBs["_ai_store_"].get(Buffer.from(tableName, "utf-8"), (err, value) => {
                 this._ai[tableName] = value ? value.ai || 0 : 0;
-                if (this.indexCache) {
+                if (this.indexCache && tableData) {
                     this._levelDBs[tableName]
                     .createKeyStream()
                     .on("data", (data) => {
@@ -159,7 +159,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
 
     dropTable(table: string, complete: () => void, error: (err: any) => void) {
-        if (this.indexCache) {
+        if (this.indexCache && this._tableConfigs[table]) {
             this._tableConfigs[table].isPkNum ? wasm.empty_index(this._indexNum[table]) : wasm.empty_index_str(this._indexNum[table]);
         }
         this._levelDBs["_ai_store_"].del(Buffer.from(table, "utf-8")).then(() => {
@@ -170,7 +170,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
                     error(e);
                     return;
                 }
-                if (this.indexCache) {
+                if (this.indexCache && this._tableConfigs[table]) {
                     if (this._tableConfigs[table].isPkNum) {
                         wasm.empty_index(this._indexNum[table]);
                     } else {
@@ -185,7 +185,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     disconnect(complete: () => void, error: (err: any) => void) {
         allAsync(Object.keys(this._levelDBs), (table, i, next, error) => {
-            if (this.indexCache) {
+            if (this.indexCache && this._tableConfigs[table]) {
                 this._tableConfigs[table].isPkNum ? wasm.empty_index(this._indexNum[table]) : wasm.empty_index_str(this._indexNum[table]);
             }
             this._levelDBs[table].close((err) => {
@@ -193,6 +193,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
                     error(err);
                     return;
                 } 
+                delete this._tableConfigs[table];
                 next(null);
             });
         }).then(complete).catch(error);
@@ -251,23 +252,25 @@ export class RocksDB extends nanoSQLMemoryIndex {
         if (this.indexCache && type === "offset") {
             const ptrFn = this._tableConfigs[table].isPkNum ? wasm.read_index_offset : wasm.read_index_offset_str;
             const nextFn = this._tableConfigs[table].isPkNum ? wasm.read_index_offset_next : wasm.read_index_offset_str_next;
-            const it = ptrFn(this._indexNum[table], reverse ? 1 : 0, offsetOrLow);
+            const it = ptrFn(this._indexNum[table], reverse ? 1 : 0, reverse ? offsetOrLow + 2 : offsetOrLow + 1);
             let nextKey: any = 0;
-            let lastKey: any;
             let count = 0;
 
             const nextRow = () => {
                 nextKey = nextFn(this._indexNum[table], it, reverse ? 1 : 0, limitOrHigh, count);
-                if (nextKey === lastKey) {
-                    complete();
-                } else {
+                if (count < limitOrHigh) {
                     this.read(table, nextKey, (row) => {
                         if (row) {
                             onRow(row, count);
                         }
-                        nextRow();
+                        if (count % 500 === 0) {
+                            setFast(nextRow);
+                        } else {
+                            nextRow();
+                        }
                     }, error);
-                    lastKey = nextKey;
+                } else {
+                    complete();
                 }
                 count++;
             }
@@ -339,7 +342,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
             if (err) {
                 throw Error(err);
             } else {
-                if (this.indexCache) {
+                if (this.indexCache && this._tableConfigs[table]) {
                     if (this._tableConfigs[table].isPkNum) {
                         wasm.del_key(this._indexNum[table], pk);
                     } else {
@@ -352,27 +355,19 @@ export class RocksDB extends nanoSQLMemoryIndex {
     }
 
     getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void) {
-        if (this.indexCache) {
+        if (this.indexCache && this._tableConfigs[table]) {
 
             const ptrFn = this._tableConfigs[table].isPkNum ? wasm.read_index : wasm.read_index_str;
             const nextFn = this._tableConfigs[table].isPkNum ? wasm.read_index_next : wasm.read_index_str_next;
     
-            const it = ptrFn(this._indexNum[table], 0);
+            const it = ptrFn(this._indexNum[table], 0).split(",").map(s => parseInt(s));
             let nextKey: any = 0;
-            let lastKey: any;
-            let isDone = false;
             let count = 0;
             let keys: any[] = [];
-            
-            while(!isDone) {
-                nextKey = nextFn(this._indexNum, it, 0, count);
-                if (nextKey === lastKey) {
-                    isDone = true;
-                } else {
-                    count++;
-                    keys.push(nextKey);
-                    lastKey = nextKey;
-                }
+            while(count < it[1]) {
+                nextKey = nextFn(this._indexNum[table], it[0], 0, count);
+                count++;
+                keys.push(nextKey);
             }
             complete(keys);
             return;
@@ -392,7 +387,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void) {
 
-        if (this.indexCache) {
+        if (this.indexCache && this._tableConfigs[table]) {
             complete(this._tableConfigs[table].isPkNum ? wasm.get_total(this._indexNum[table]) : wasm.get_total_str(this._indexNum[table]));
             return;
         }

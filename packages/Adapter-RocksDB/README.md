@@ -76,6 +76,9 @@ SOFTWARE.
 
 # Changelog
 
+## [2.0.2]
+- Fixed drop issue with wasm index.
+
 ## [2.0.1]
 - Fixed a few issues with the wasm index.
 - Added info to readme.
