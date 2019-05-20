@@ -24,14 +24,23 @@ Add fuzzy search capability to your NanoSQL apps, the special indexing in this p
 
 ### Features
 - Single word and phrase searches.
+- Similar functionality as Elastic Search.
 - Filter results by relevance to search.
 - Use custom tokenizer function.
 - Dynamic index can be updated on the fly.
+- Works in NodeJS or any modern Browser.
+- Only 10KB gzipped.
 
 # Installation
 
+For NodeJS or with a bundler (webpack, parcel, etc)
 ```sh
 npm i @nano-sql/plugin-fuzzy-search --save
+```
+
+To use in the browser, just drop this into your head AFTER nanoSQL core script
+```html
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/plugin-fuzzy-search@2.0.2/dist/plugin-fuzzy-search.min.js" integrity="sha256-czgrUq1EccktG3O5AGuW/LoeMWeaQrkQzvj1S45ZiXw=" crossorigin="anonymous"></script>
 ```
 
 # Usage
@@ -39,10 +48,13 @@ npm i @nano-sql/plugin-fuzzy-search --save
 ```ts
 import { FuzzySearch } from "@nano-sql/plugin-fuzzy-search";
 import { nSQL } from "@nano-sql/core";
+// or with <script> usage
+const { FuzzySearch } = window["@nano-sql/plugin-fuzzy-search"];
+const { nSQL } = window["@nano-sql/core"];
 
 nSQL().createDatabase({
     id: "my_db",
-    mode: "PERM",
+    mode: "PERM", // or any adapter
     plugins: [
       FuzzySearch()
     ]
@@ -246,6 +258,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 # Changelog
+
+## [2.0.2]
+- Added script install option.
+- Readme updates.
 
 ## [2.0.1]
 - Fixed a bug with non string indexes.
