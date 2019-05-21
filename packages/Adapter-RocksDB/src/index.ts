@@ -29,7 +29,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "RocksDB Adapter",
-        version: 2.04
+        version: 2.07
     };
 
     nSQL: InanoSQLInstance;
@@ -94,7 +94,6 @@ export class RocksDB extends nanoSQLMemoryIndex {
                 return;
             }
             if (this.indexCache) {
-
                 const checkWasm = () => {
                     if (wasm.loaded) {
                         this._levelDBs[tableName] = db;
@@ -131,7 +130,10 @@ export class RocksDB extends nanoSQLMemoryIndex {
                 return;
             }
             this._levelDBs[tableName] = db;
-            this._indexNum[tableName] = tableData.isPkNum ? wasm.new_index() : wasm.new_index_str();
+
+            if (this.indexCache) {
+                this._indexNum[tableName] = tableData.isPkNum ? wasm.new_index() : wasm.new_index_str();
+            }
  
             this._levelDBs["_ai_store_"].get(Buffer.from(tableName, "utf-8"), (err, value) => {
                 this._ai[tableName] = value ? value.ai || 0 : 0;
@@ -198,6 +200,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
     }
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
+
         pk = pk || generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
         if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
@@ -245,15 +248,21 @@ export class RocksDB extends nanoSQLMemoryIndex {
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
 
-        let i = 0;
-
         if (this.indexCache && type === "offset") {
+
             const ptrFn = this._tableConfigs[table].isPkNum ? wasm.read_index_offset : wasm.read_index_offset_str;
+
             const nextFn = this._tableConfigs[table].isPkNum ? wasm.read_index_offset_next : wasm.read_index_offset_str_next;
             const it = ptrFn(this._indexNum[table], reverse ? 1 : 0, reverse ? offsetOrLow + 2 : offsetOrLow + 1);
+
+            if (it === 0) {
+                complete();
+                return;
+            }
+
             let nextKey: any = 0;
             let count = 0;
-
+            
             const nextRow = () => {
                 nextKey = nextFn(this._indexNum[table], it, reverse ? 1 : 0, limitOrHigh, count);
                 if (count < limitOrHigh) {
@@ -262,7 +271,7 @@ export class RocksDB extends nanoSQLMemoryIndex {
                             onRow(row, count);
                         }
                         if (count % 500 === 0) {
-                            setFast(nextRow);
+                            setTimeout(nextRow, 0);
                         } else {
                             nextRow();
                         }
@@ -275,6 +284,8 @@ export class RocksDB extends nanoSQLMemoryIndex {
             nextRow();
             return;
         }
+
+        let i = 0;
 
         this._levelDBs[table]
             .createValueStream(type === "range" ? {
@@ -358,7 +369,12 @@ export class RocksDB extends nanoSQLMemoryIndex {
             const ptrFn = this._tableConfigs[table].isPkNum ? wasm.read_index : wasm.read_index_str;
             const nextFn = this._tableConfigs[table].isPkNum ? wasm.read_index_next : wasm.read_index_str_next;
     
-            const it = ptrFn(this._indexNum[table], 0).split(",").map(s => parseInt(s));
+            let it = ptrFn(this._indexNum[table], 0)
+            if (!it) {
+                complete([]);
+                return;
+            }
+            it = it.split(",").map(s => parseInt(s));
             let nextKey: any = 0;
             let count = 0;
             let keys: any[] = [];

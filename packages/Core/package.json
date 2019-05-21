@@ -22,7 +22,7 @@
 	"devDependencies": {
 		"@types/chai": "^4.1.7",
 		"@types/mocha": "^5.2.6",
-		"@types/node": "^12.0.0",
+		"@types/node": "^12.0.2",
 		"@types/websql": "0.0.27",
 		"chai": "^4.2.0",
 		"colors": "^1.3.3",
@@ -30,21 +30,21 @@
 		"mocha": "^6.1.4",
 		"npm-run-all": "^4.1.5",
 		"papaparse": "^4.6.3",
-		"puppeteer": "^1.15.0",
-		"rollup": "^1.11.0",
-		"rollup-plugin-commonjs": "^9.3.4",
+		"puppeteer": "^1.16.0",
+		"rollup": "^1.12.3",
+		"rollup-plugin-commonjs": "^10.0.0",
 		"rollup-plugin-replace": "^2.2.0",
 		"rollup-plugin-typescript": "^1.0.1",
 		"rollup-plugin-uglify": "^6.0.2",
-		"sqlite3": "^4.0.6",
+		"sqlite3": "^4.0.8",
 		"stoppable": "^1.1.0",
-		"ts-loader": "^5.4.5",
+		"ts-loader": "^6.0.1",
 		"tslint": "^5.16.0",
 		"typescript": "^3.4.5",
-		"uglifyjs-webpack-plugin": "^2.1.2",
-		"webpack": "^4.30.0",
-		"webpack-cli": "^3.3.1",
-		"webpack-dev-server": "^3.3.1"
+		"uglifyjs-webpack-plugin": "^2.1.3",
+		"webpack": "^4.32.0",
+		"webpack-cli": "^3.3.2",
+		"webpack-dev-server": "^3.4.1"
 	},
 	"keywords": [
 		"database",
@@ -108,9 +108,9 @@
 	"license": "MIT",
 	"dependencies": {
 		"fast-deep-equal": "^2.0.1",
-		"levenshtein-edit-distance": "^2.0.3",
+		"levenshtein-edit-distance": "^2.0.4",
 		"really-small-events": "^1.1.0",
-		"snap-db": "^1.0.2"
+		"snap-db": "^1.0.3"
 	},
 	"optionalDependencies": {
 		"chalk": "^2.4.2",

@@ -76,6 +76,9 @@ SOFTWARE.
 
 # Changelog
 
+## [2.0.4]
+- Moved to new index code.
+
 ## [2.0.3]
 - Fixed issue with WASM index.
 

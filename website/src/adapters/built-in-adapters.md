@@ -39,7 +39,7 @@ As a result of the chart above, when you pass in `PERM` the autodetect method ty
 
 ## NodeJS
 
-With NodeJS you really have only two choices: Memory or RocksDB. The same API in the browser also works in nodeJS:
+With NodeJS you really have only two choices: Memory or SnapDB. The same API in the browser also works in nodeJS:
 
 ```typescript
 nSQL().createDatabase({

@@ -76,6 +76,9 @@ SOFTWARE.
 
 # Changelog
 
+## [2.0.6]
+- Moved new Wasm index file into correct place.
+
 ## [2.0.4]
 - Fixed drop issue with wasm index.
 - Fixed read/write issues with wasm index.
