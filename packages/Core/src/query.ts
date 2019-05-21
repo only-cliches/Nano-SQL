@@ -828,6 +828,12 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         });
 
         const tableIsString = typeof this.query.table === "string";
+
+        // check to see if we can skip most of the query processing and export result right away
+        let superFastQuery = !this.query.join && !this.query.distinct && !this.query.graph && !this.query.actionArgs && !this.query.having && !this.query.groupBy;
+        if (superFastQuery && this.query.orderBy) {
+            superFastQuery = this._pkOrderBy;
+        }
         // query path start
         this._getRecords((row, i) => { // SELECT rows
 
@@ -850,11 +856,13 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             if (this.query.returnEvent) {
                 this.progress(selectEvent, i);
+            } else if (superFastQuery) {
+                this.progress(row, i);
             } else {
                 selectBuffer.newItem(row);
             }
         }, () => {
-            if (this.query.returnEvent) {
+            if (this.query.returnEvent || superFastQuery) {
                 complete();
             } else {
                 selectBuffer.finished();

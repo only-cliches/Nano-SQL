@@ -47,7 +47,7 @@ Instantly convert data models into typescript interfaces.
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 29KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 30KB!
 
 
 ## Comparison with Other Projects
@@ -63,7 +63,7 @@ Built in geolocation indexing, autocomplete, observable queries, typescript supp
 | Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
-| Size (kb)       | 29      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
+| Size (kb)       | 30      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
 
 
 ## Database Support
@@ -116,101 +116,15 @@ To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.2/dist/nano-sql.min.js" integrity="sha256-sOydNXCPr6sSkdnlYvBmf4xA7vgdjA+mzMvlDKz3qFw=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.3/dist/nano-sql.min.js" integrity="sha256-rMu9OODIi1wTkpKMdSY8rbmelYOo3/uoGohEZDbHaVU=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.2/dist/nano-sql.min.es5.js" integrity="sha256-Ass7b2o4aKazjmZZoMALh16k0kaqgmMFGQPLl4TcuSM=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.3/dist/nano-sql.min.es5.js" integrity="sha256-1sHMq8+9Zy1Qk+egrnjU151TOx43wsTQy/oX4g7fNs8=" crossorigin="anonymous"></script>
 ```
 
 ## Important
 If you are migrating from nanoSQL 1.X to 2.X, please read the [migration guide](https://nanosql.io/migration.html#_1-x-2-0-migration).
 
-# CLI
-
-The nanoSQL command line interface allows you to compile data models into typescript interface files.
-
-Usage is as follows:
-```sh
-nsql --outDir www --files file1.ts file2.ts... --watch
-```
-
-If you don't pass `--watch` the CLI will compile the files into the given directory, then exit.  You can also optionally pass `--watchPolling` with an interval to enable polling on the watch system.
-
-It's important to note the files must be formatted specifically for the CLI to read them correctly.
-
-Each file should have an export named `tables` that is an array of `InanoSQLTableConfig` types.  The file below is a working example:
-
-```ts
-import { InanoSQLTableConfig } from "@nano-sql/core/lib/interfaces";
-
-export const tables: InanoSQLTableConfig[] = [
-    {
-        name: "users",
-        model: {
-            "id:uuid": {pk: true},
-            "age:float": {notNull: true},
-            "name:string[]": {default: []},
-            "properties:meta[]": {},
-            "address:obj": {
-                model: {
-                    "street:string":{},
-                    "city:string":{},
-                    "zip:string":{},
-                    "state:string":{}
-                }
-            },
-            "*:any": {}
-        }
-    }
-];
-
-export const types = {
-    meta: {
-        "key:string": {notNull: true},
-        "value:any": {notNull: true}
-    }
-}
-
-// using the above object in nSQL
-import { nSQL } from "@nano-sql/core";
-nSQL().createDatabase({
-    id: "my_db",
-    tables: tables,
-    types: types
-}).then..
-```
-
-Assuming the above file is in the root directory of our project named index.ts, we could compile it to a typescript interface file with this command:
-
-```sh
-nsql --outDir www --files index.ts
-```
-
-The above command would produce the following file:
-
-```ts
-import { uuid, timeId, timeIdms } from  "@nano-sql/core/lib/interfaces";
-
-export interface ItableUsers {
-	id:uuid;
-	age:number;
-	name:string[];
-	properties?:ItypeMeta[];
-	address?:{
-		street?:string;
-		city?:string;
-		zip?:string;
-		state?:string;
-	};
-	[key: string]: any;
-}
-
-export interface ItypeMeta {
-	key:string;
-	value:any;
-}
-
-```
 
 # Query Examples
 
@@ -349,6 +263,93 @@ nSQL().query("select", ["posts.id AS id", "posts.title AS title", "comments.name
     ]
     */
 })
+```
+
+# CLI
+
+The nanoSQL command line interface allows you to compile data models into typescript interface files.
+
+Usage is as follows:
+```sh
+nsql --outDir www --files file1.ts file2.ts... --watch
+```
+
+If you don't pass `--watch` the CLI will compile the files into the given directory, then exit.  You can also optionally pass `--watchPolling` with an interval to enable polling on the watch system.
+
+It's important to note the files must be formatted specifically for the CLI to read them correctly.
+
+Each file should have an export named `tables` that is an array of `InanoSQLTableConfig` types.  The file below is a working example:
+
+```ts
+import { InanoSQLTableConfig } from "@nano-sql/core/lib/interfaces";
+
+export const tables: InanoSQLTableConfig[] = [
+    {
+        name: "users",
+        model: {
+            "id:uuid": {pk: true},
+            "age:float": {notNull: true},
+            "name:string[]": {default: []},
+            "properties:meta[]": {},
+            "address:obj": {
+                model: {
+                    "street:string":{},
+                    "city:string":{},
+                    "zip:string":{},
+                    "state:string":{}
+                }
+            },
+            "*:any": {}
+        }
+    }
+];
+
+export const types = {
+    meta: {
+        "key:string": {notNull: true},
+        "value:any": {notNull: true}
+    }
+}
+
+// using the above object in nSQL
+import { nSQL } from "@nano-sql/core";
+nSQL().createDatabase({
+    id: "my_db",
+    tables: tables,
+    types: types
+}).then..
+```
+
+Assuming the above file is in the root directory of our project named index.ts, we could compile it to a typescript interface file with this command:
+
+```sh
+nsql --outDir www --files index.ts
+```
+
+The above command would produce the following file:
+
+```ts
+import { uuid, timeId, timeIdms } from  "@nano-sql/core/lib/interfaces";
+
+export interface ItableUsers {
+	id:uuid;
+	age:number;
+	name:string[];
+	properties?:ItypeMeta[];
+	address?:{
+		street?:string;
+		city?:string;
+		zip?:string;
+		state?:string;
+	};
+	[key: string]: any;
+}
+
+export interface ItypeMeta {
+	key:string;
+	value:any;
+}
+
 ```
 
 # 2.0 Progress

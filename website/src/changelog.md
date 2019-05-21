@@ -4,6 +4,12 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.3] 5-20-2019
+- Fixed issue with rebuilding list type indexes
+- Fixed issue with empty string values in secondary indexes.
+- Added console warning for breaking change in previous release.
+- Made a few performance improvements.
+
 ## [2.3.2] 5-16-2019
 **BREAKING CHANGE** RocksDB has been replaced by [SnapDB](https://www.npmjs.com/package/snap-db) as the default NodeJS store for `PERM`. See the [migration guide](https://nanosql.io/migration.html) for steps to restore the old behavior.
 - Moved `window["@nano-sql"].core` to `window["@nano-sql/core"]` for webpack externals compatibility.
