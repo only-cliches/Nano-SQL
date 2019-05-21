@@ -15,6 +15,7 @@ export const detectStorage = (): string => {
 
     // NodeJS
     if (typeof window === "undefined") {
+        console.warn("RocksDB has been removed in default nanoSQL!  Follow this guide to restore RocksDB databases: https://nanosql.io/migration.html#_2-3-1-2-3-2");
         return "SNP";
     }
 

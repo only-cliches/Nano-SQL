@@ -7,7 +7,7 @@ export class NativeSQLite extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "NativeScript SQLite Adapter",
-        version: 2.01
+        version: 2.03
     };
 
     nSQL: InanoSQLInstance;
@@ -26,14 +26,14 @@ export class NativeSQLite extends nanoSQLMemoryIndex {
         super(false, true);
         this._ai = {};
         this._query = this._query.bind(this);
-        this._filename = fileName || ":memory:";
+        this._filename = fileName || "";
         this._tableConfigs = {};
         this._sqlite = SQLiteAbstract(this._query, 500);
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
-        new NSSQLite(this._filename, (err, db) => {
+        new NSSQLite(this._filename && this._filename.length ? this._filename : id, (err, db) => {
             if (err) {
                 error(err);
                 return;

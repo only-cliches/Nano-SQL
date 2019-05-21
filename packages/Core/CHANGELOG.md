@@ -7,7 +7,7 @@
 ## [2.3.3]
 - Fixed issue with rebuilding list type indexes
 - Fixed issue with empty string values in secondary indexes.
-
+- Added console warning for breaking change in previous release.
 
 ## [2.3.2] 5-16-2019
 **BREAKING CHANGE** RocksDB has been replaced by [SnapDB](https://www.npmjs.com/package/snap-db) as the default NodeJS store for `PERM`. See the [migration guide](https://nanosql.io/migration.html) for steps to restore the old behavior.

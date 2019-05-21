@@ -19,7 +19,7 @@
 
 [Documentation](https://nanosql.io/adapters/sqlite-nativescript.html) | [Bugs](https://github.com/ClickSimply/Nano-SQL/issues) | [Chat](https://gitter.im/nano-sql/community)
 
-Includes all typings.
+Includes all typings, runs in iOS or Android
 
 # Installation
 
@@ -31,7 +31,8 @@ tns plugin add @nano-sql/adapter-sqlite-nativescript
 
 ```ts
 import { NativeSQLite } from "@nano-sql/adapter-sqlite-nativescript";
-import { nSQL } from "@nano-sql/core";
+// MUST include nSQL from the lib path.
+import { nSQL } from "@nano-sql/core/lib/index";
 
 nSQL().createDatabase({
     id: "my_db",
@@ -45,7 +46,7 @@ nSQL().createDatabase({
 The `NativeSQLite` class accepts one optional arguments in it's constructor.
 
 ### Filename
-The first argument is the filename to the SQLite database to connect to, default is `:memory:` which creates a temporary database.
+The first argument is the filename to the SQLite database to connect to, default is to use the database ID as the filename.
 
 # MIT License
 
@@ -70,6 +71,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 # Changelog
+
+## [2.0.2]
+- SQLite now uses database ID as name instead of ":memory:" by default.
 
 ## [2.0.1]
 - Dependency & Documentation updates.
