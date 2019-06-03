@@ -82,6 +82,14 @@ export class nanoSQL implements InanoSQLInstance {
 
     public selectedTable: any;
 
+    public txs: {
+        [id: string]: {
+            table: string,
+            type: "put"|"del"|"idx-add"|"idx-rem",
+            data: any;
+        }[]
+    } = {};
+
     constructor() {
 
         const str = (value: any) => {
@@ -406,6 +414,69 @@ export class nanoSQL implements InanoSQLInstance {
 
     public listDatabases(): string[] {
         return Object.keys(this.dbs);
+    }
+
+    /**
+     * Perform a set of writes/deletes in a batch.
+     * Not supported by all adapters, will fallback to standard writes/deletes if it isn't supported.
+     *
+     * @param {InanoSQLQuery[]} queries
+     * @returns {Promise<any[]>}
+     * @memberof nanoSQL
+     */
+    public transaction(queries: InanoSQLQuery[]): Promise<any[]> {
+        if (!queries.length) {
+            return Promise.resolve([]);
+        }
+        let i = queries.length;
+        let txId = uuidFN();
+        const databaseID = queries[0].databaseID;
+        while(i--) {
+            if (["upsert", "delete"].indexOf(queries[i].action) === -1) {
+                return Promise.reject("Transactions only support upsert and delete queries!");
+            }
+            const table = queries[i].table;
+            if (typeof table !== "string") {
+                return Promise.reject("Transactions only support for internal tables!");
+            }
+            queries[i].transactionId = txId;
+        }
+        this.txs[txId] = [];
+        
+        return new Promise((res, rej) => {
+            // get all the writes/deletes needed for this transaction
+            allAsync(queries, (query, i, next, err) => {
+                this.triggerQuery(databaseID, query, noop, () => {
+                    next();
+                }, err);
+            }).then(() => {
+                // transactions are now qued up
+                const batchFn = this.getDB(databaseID).adapter.batch;
+                if (batchFn) { // has batch fn, commit transaction
+                    batchFn(this.txs[txId], res, rej);
+                } else { // doesn't have batch fn, use fallback
+                    console.warn(`Adapter "${this.getDB(databaseID).adapter.plugin.name}" doesn't have transaction support, using fallback method.`);
+                    chainAsync(this.txs[txId], (txItem, i, next, err) => {
+                        switch(txItem.type) {
+                            case "del":
+                                this.getDB(databaseID).adapter.delete(txItem.table, txItem.data, next, err);
+                            break;
+                            case "put":
+                                const tableData = this.getDB(databaseID)._tables[txItem.table];
+                                const PK = deepGet(tableData.pkCol, txItem.data);
+                                this.getDB(databaseID).adapter.write(txItem.table, PK, txItem.data, next, err);
+                            break;
+                            case "idx-add":
+                                this.getDB(databaseID).adapter.addIndexValue(txItem.table, txItem.data.index, txItem.data.key, txItem.data.value, next, err);
+                            break;
+                            case "idx-rem":
+                                this.getDB(databaseID).adapter.deleteIndexValue(txItem.table, txItem.data.index, txItem.data.key, txItem.data.value, next, err);
+                            break;
+                        }
+                    }).then(res).catch(rej);
+                }
+            }).catch(rej);
+        })
     }
 
     public dropDatabase(id: string): Promise<any> {

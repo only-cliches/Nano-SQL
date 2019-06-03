@@ -105,8 +105,69 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         open(transaction, transaction.objectStore(table));
     }
 
+    batch(actions: {type: "put"|"del"|"idx-add"|"idx-rem", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
+        const txs: {[table: string]: {type: "put"|"del"|"idx-add"|"idx-rem", table: string, data: any}[]} = {};
+        actions.forEach((action) => {
+            if (!txs[action.table]) {
+                txs[action.table] = [];
+            }
+            txs[action.table].push(action);
+        });
+        allAsync(Object.keys(txs), (table, i, next, err) => {
+            const batch = txs[table];
+            this.store(table, "readwrite", (tx, store) => {
+                tx.onerror = err;
+                let results: any[] = [];
+                tx.oncomplete = () => {
+                    next(results);
+                }
+                allAsync(batch, (action, ii, nextA, errA) => {
+                    switch(action.type) {
+                        case "put":
+                            const row = action.data;
+                            let writePk = false;
+                            let pk = deepGet(this._tableConfigs[table].pkCol, row);
+                            if (typeof pk === "undefined") {
+                                writePk = true;
+                                pk = generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
+                            }
+
+                            if (typeof pk === "undefined") {
+                                error(new Error("Can't add a row without a primary key!"));
+                                return;
+                            }
+
+                            if (writePk) {
+                                deepSet(this._tableConfigs[table].pkCol, row, pk);
+                            }
+                    
+                            this._ai[table] = Math.max(pk, this._ai[table]);
+                            store.put(row);
+                            nextA(pk);
+                        break;
+                        case "del":
+                            store.delete(action.data);
+                            nextA(action.data);
+                        break;
+                        case "idx-add":
+
+                        break;
+                        case "idx-rem":
+
+                        break;
+                    }
+                });
+            }, err);
+        }).then(success).catch(error);
+    }
+
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
-        pk = pk || generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
+
+        let writePk = false;
+        if (typeof pk === "undefined") {
+            writePk = true;
+            pk = generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
+        }
 
         if (typeof pk === "undefined") {
             error(new Error("Can't add a row without a primary key!"));
@@ -120,7 +181,9 @@ export class IndexedDB extends nanoSQLMemoryIndex {
             localStorage.setItem(this._id + "_" + table + "_idb_ai", String(this._ai[table]));
         }
 
-        deepSet(this._tableConfigs[table].pkCol, row, pk);
+        if (writePk) {
+            deepSet(this._tableConfigs[table].pkCol, row, pk);
+        }
 
         this.store(table, "readwrite", (transaction, store) => {
             try {

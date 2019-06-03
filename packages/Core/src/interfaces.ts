@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _nanoSQLQueue } from "./utilities";
 
-export const VERSION = 2.33;
+export const VERSION = 2.34;
 
 export type uuid = String;
 export type timeId = String;
@@ -70,6 +70,13 @@ export declare class InanoSQLInstance {
     indexTypes: {
         [type: string]: (value: any) => any;
     };
+    txs: {
+        [id: string]: {
+            table: string;
+            type: "put"|"del"|"idx-add"|"idx-rem";
+            data: any;
+        }[]
+    }
     getDB(id?:string): InanoSQLDBConfig;
     constructor();
     _rebuildFKs()
@@ -104,6 +111,7 @@ export declare class InanoSQLInstance {
     default(databaseID: string|undefined, replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
+    transaction(queries: InanoSQLQuery[]): Promise<any[]>;
     rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: {
         [key: string]: any;
     }) => void): Promise<any>;
@@ -251,17 +259,33 @@ export declare class InanoSQLQueryExec {
     _parseWhere(qWhere, ignoreIndexes?);
 }
 
+/**
+ * id: the database name/id.  Must remain identical between app loads to persist data
+ * peer: (false) Connect database events/state between browser tabs.
+ * cache:  (false) Save query results in memory, returns the cache if the table hasn't changed.
+ * mode: ("TEMP") How and where to persist data.  Can be a string or adapter.
+ * plugins: (undefined) Array of plugins to use in this database
+ * planetRadis: (6,371) The number to use as the radius in CROW calculations.  Change to 3959 for miles.
+ * version: The current database version configuration.
+ * onVersionUpdate: (oldVersion: number) => Promise<number> Used to migrate database versions.
+ * path: (undefined) The path to drop file based databases into.  Does not work for all database adapters.
+ * disableTTL: (false)  Database uses timers to check for TTL queries, disable them here.  
+ * tables: (undefined) The database tables to use, can be added later with "create table" queries.
+ * types: (undefined) A collection of types that can be used in table column definitions. Types export to interface filesw ith CLI.
+ *
+ * @export
+ * @interface InanoSQLConfig
+ */
 export interface InanoSQLConfig {
     id?: string;
     peer?: boolean;
     cache?: boolean;
-    // queue?: boolean;
     mode?: string | InanoSQLAdapter;
     plugins?: InanoSQLPlugin[];
     planetRadius?: number;
     version?: number;
     size?: number; // size of WebSQL database
-    path?: string | ((dbID: string, tableName: string) => {lvld: any, args?: any}); // RocksDB path
+    path?: string; // database path (if supported)
     disableTTL?: boolean;
     tables?: InanoSQLTableConfig[];
     types?: {
@@ -343,6 +367,8 @@ export interface InanoSQLAdapter {
     dropTable(table: string, complete: () => void, error: (err: any) => void);
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
+
+    batch?(actions: {type: "put"|"del"|"idx-add"|"idx-rem", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
 
     read(table: string, pk: any, complete: (row: {[key: string]: any} | undefined) => void, error: (err: any) => void);
 
@@ -573,6 +599,7 @@ export interface InanoSQLQuery {
     cacheID?: string;
     parent: InanoSQLInstance;
     returnEvent?: boolean;
+    transactionId?: string;
     [key: string]: any;
 }
 

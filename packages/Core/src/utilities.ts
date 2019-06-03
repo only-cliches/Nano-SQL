@@ -533,7 +533,7 @@ export class _nanoSQLQueue {
  * @param {(item: any, i: number, next: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export const chainAsync = (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err: (err?: any) => void) => void): Promise<any[]> => {
+export const chainAsync = <T>(items: T[], callback: (item: T, i: number, next: (value?: any) => void, err: (err?: any) => void) => void): Promise<any[]> => {
     return new Promise((res, rej) => {
         if (!items || !items.length) {
             res([]);
@@ -569,7 +569,7 @@ export const chainAsync = (items: any[], callback: (item: any, i: number, next: 
  * @param {(item: any, i: number, done: (result?: any) => void) => void} callback
  * @returns {Promise<any[]>}
  */
-export const allAsync = (items: any[], callback: (item: any, i: number, next: (value?: any) => void, err: (err: any) => void) => void): Promise<any[]> => {
+export const allAsync = <T>(items: T[], callback: (item: T, i: number, next: (value?: any) => void, err: (err: any) => void) => void): Promise<any[]> => {
 
     if (!items || !items.length) {
         return Promise.resolve([]);
@@ -851,7 +851,7 @@ export const cast = (selectedDB: string|undefined, type: string, val: any, allow
         return val.map((v) => cast(selectedDB, arrayOf, v, allowUknownTypes));
     }
 
-    if (val === undefined) return val;
+    if (val === undefined || val === null) return undefined;
 
     const t = typeof val;
 
@@ -898,7 +898,7 @@ export const cast = (selectedDB: string|undefined, type: string, val: any, allow
             case "string": return t !== "string" ? String(castVal) : castVal;
             case "object":
             case "obj":
-            case "map": return isObject(castVal) ? castVal : {};
+            case "map": return isObject(castVal) ? castVal : undefined;
             case "boolean":
             case "bool": return castVal === true || castVal === 1 ? true : false;
         }
@@ -907,12 +907,12 @@ export const cast = (selectedDB: string|undefined, type: string, val: any, allow
         return allowUknownTypes ? val : null;
     };
 
-    if (typeof val === "undefined" || val === null) return null;
+    if (val === undefined || val === null) return undefined;
 
     const newVal = doCast(String(type || "").toLowerCase(), val);
 
     // force numerical values to be a number and not NaN.
-    if (newVal !== undefined && ["int", "float", "number"].indexOf(type) > -1) {
+    if (newVal !== undefined && ["int", "float", "number"].indexOf(type) !== -1) {
         return isNaN(newVal) ? 0 : newVal;
     }
 
