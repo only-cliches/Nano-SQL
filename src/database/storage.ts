@@ -743,6 +743,10 @@ export class _NanoSQLStorage {
                             done();
                         } else {
                             fastALL(Object.keys(indexGroups[item]), (rowKey, i, next, err) => {
+                                if (!rowKey) {
+                                    next();
+                                    return;
+                                }
                                 this.adapterWrite(idxTable, rowKey, {
                                     id: rowKey,
                                     rows: indexGroups[item][rowKey].sort()
@@ -1124,6 +1128,10 @@ export class _NanoSQLStorage {
                 this.adapters[0].adapter.read(idxTable, column, (row) => {
                     let indexRow: { id: DBKey, rows: any[] } = row ? (Object.isFrozen(row) ? _assign(row) : row) : { id: column, rows: [] };
                     indexRow.rows.push(pk);
+                    if (!column) {
+                        done();
+                        return;
+                    }
                     // indexRow.rows.sort();
                     // indexRow.rows = removeDuplicates(indexRow.rows);
                     this.adapterWrite(idxTable, column, indexRow, done, error);

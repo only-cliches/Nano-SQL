@@ -78,7 +78,7 @@ export class _SyncStore implements NanoSQLStorageAdapter {
 
         pk = pk || generateID(this._dbIndex[table].pkType, this._dbIndex[table].ai) as DBKey;
 
-        if (typeof pk !== "string" && !pk) {
+        if (!pk) {
             error(new Error("nSQL: Can't add a row without a primary key!"));
             return;
         }

@@ -1,14 +1,15 @@
 # Change Log
 
-## [1.8.4] 6-3-2019
+## [1.8.5] 6-3-2019
 - Fixed issue with range queries and LevelDB.
+- Fixed issue with empty value secondary indexes.
 
 ## [1.8.3] 1-21-2019
 - Added notice of nanoSQL 2 release to readme.
 
 ## [1.8.2] 1-11-2019
 - Adjusted promise return value.
-
+`
 ## [1.8.1] 1-7-2019
 - Fixed issue with WebSQL attempting to update existing rows in some cases.
 
