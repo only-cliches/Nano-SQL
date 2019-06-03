@@ -144,6 +144,23 @@ export declare const cast: (type: string, val?: any) => any;
  * @returns {number}
  */
 export declare const binarySearch: (arr: any[], value: any, startVal?: number | undefined, endVal?: number | undefined) => number;
+export declare const resolvePath: (pathQuery: string) => string[];
+export declare const noop: () => void;
+export declare class _nanoSQLQueue {
+    processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined;
+    onError?: ((err: any) => void) | undefined;
+    onComplete?: (() => void) | undefined;
+    private _items;
+    private _going;
+    private _done;
+    private _count;
+    private _triggeredComplete;
+    constructor(processItem?: ((item: any, count: number, complete: () => void, error: (err: any) => void) => void) | undefined, onError?: ((err: any) => void) | undefined, onComplete?: (() => void) | undefined);
+    private _progressBuffer;
+    finished(): void;
+    newItem(item: any, processFn?: (item: any, complete: () => void, err?: (error: any) => void) => void): void;
+}
+export declare const deepGet: (pathQuery: string | string[], object: any) => any;
 /**
  * Recursively freeze a javascript object to prevent it from being modified.
  *

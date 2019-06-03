@@ -1,5 +1,8 @@
 # Change Log
 
+## [1.8.4] 6-3-2019
+- Fixed issue with range queries and LevelDB.
+
 ## [1.8.3] 1-21-2019
 - Added notice of nanoSQL 2 release to readme.
 

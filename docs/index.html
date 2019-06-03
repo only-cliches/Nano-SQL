@@ -63,11 +63,11 @@
 		<div class="col-8 col-content">
 			<div class="tsd-panel tsd-typography">
 				<p>Super flexible database/datastore for the client, server &amp; mobile devices.</p>
-				<p><img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/1.X/logo.png" alt="nanoSQL Logo"></p>
+				<img src="https://raw.githubusercontent.com/ClickSimply/Nano-SQL/1.X/logo.png" alt="nanoSQL Logo">
 				<p><a href="https://github.com/ClickSimply/nano-sql/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/express.svg?style=flat-square" alt="npm"></a>
 					<img src="https://img.shields.io/badge/tslint-passing-green.svg?style=flat-square" alt="TSlint">
 				<a href="https://www.npmjs.com/package/nano-sql"><img src="https://img.shields.io/npm/dm/nano-sql.svg?style=flat-square" alt="npm downloads"></a></p>
-				<p><a href="https://nodei.co/npm/nano-sql/"><img src="https://nodei.co/npm/nano-sql.png?downloads=true&amp;stars=true" alt="NPM"></a></p>
+				<p><a href="https://nodei.co/npm/nano-sql/"><img src="https://nodei.co/npm/nano-sql.png?downloads=true&stars=true" alt="NPM"></a></p>
 				<p>NanoSQL is the smallest and quickest way to get SQL power into your app. You get tons of RDBMS perks like joins, groupby, functions and orderby with strong runtime type casting, events, IndexedDB support, transactions and an ORM.  </p>
 				<p>Persistence supports <code>Local Storage</code>, <code>Indexed DB</code>, and <code>WebSQL</code> in the browser, and <code>Level DB</code> in NodeJS <em>with the same API</em>.  The storage engine is automatically selected based on the browser/environment, or can be manually selected.</p>
 				<h2 id="new-improved-nanosql-2-is-out-check-it-out-here-"><strong>NEW</strong> Improved nanoSQL 2 is out, <a href="https://www.npmjs.com/package/@nano-sql/core">check it out here</a>!</h2>
@@ -88,7 +88,7 @@
 				</ul>
 				<h2 id="new-observable-queries">NEW: Observable Queries</h2>
 				<p>Use observables to subscribe to table changes and automatically update your views.</p>
-				<pre><code class="lang-ts">nSQL().observable(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+				<pre><code class="language-ts">nSQL().observable(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
     <span class="hljs-keyword">return</span> nSQL(<span class="hljs-string">"users"</span>).query(<span class="hljs-string">"select"</span>).emit(); <span class="hljs-comment">// use .emit() instead of .exec()</span>
 })
 .debounce(<span class="hljs-number">1000</span>) <span class="hljs-comment">// dont trigger more than every second (optional)</span>
@@ -100,10 +100,9 @@
 .take(<span class="hljs-number">10</span>) <span class="hljs-comment">// only get the first n elements (optional)</span>
 .subscribe(<span class="hljs-function">(<span class="hljs-params">rows</span>) =&gt;</span> {
     <span class="hljs-comment">// Update view here, this will be called each time the "users" table changes</span>
-})
-</code></pre>
+})</code></pre>
 				<h2 id="new-fuzzy-search">NEW: Fuzzy Search</h2>
-				<pre><code class="lang-ts"><span class="hljs-comment">// first set which columns are indexed</span>
+				<pre><code class="language-ts"><span class="hljs-comment">// first set which columns are indexed</span>
 nSQL(<span class="hljs-string">"posts"</span>)
 .model([
     {key: <span class="hljs-string">"id"</span>, <span class="hljs-keyword">type</span>: <span class="hljs-string">"uuid"</span>, props: [<span class="hljs-string">"pk"</span>]},
@@ -112,8 +111,7 @@ nSQL(<span class="hljs-string">"posts"</span>)
 ]).connect().then(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
     <span class="hljs-comment">// search the title and body columns for items with above .4 relevance for "some search term"</span>
     <span class="hljs-keyword">return</span> nSQL(<span class="hljs-string">"posts"</span>).query(<span class="hljs-string">"select"</span>).where([<span class="hljs-string">"search(title, body)"</span>, <span class="hljs-string">"&gt;0.4"</span>, <span class="hljs-string">"some search term"</span>]).exec();
-})....
-</code></pre>
+})....</code></pre>
 				<h2 id="browser-support">Browser Support</h2>
 				<table>
 					<thead>
@@ -126,157 +124,28 @@ nSQL(<span class="hljs-string">"posts"</span>)
 							<th><img src="https://raw.github.com/alrra/browser-logos/master/src/archive/internet-explorer_9-11/internet-explorer_9-11_48x48.png" alt="IE"></th>
 						</tr>
 					</thead>
-					<tbody>
-						<tr>
+					<tbody><tr>
 							<td>Latest ✔</td>
 							<td>Latest ✔</td>
 							<td>Latest ✔</td>
 							<td>Latest ✔</td>
 							<td>Latest ✔</td>
 							<td>9+ ✔</td>
-							<td></td>
 						</tr>
-					</tbody>
-				</table>
+				</tbody></table>
 				<h2 id="comparison-with-other-projects">Comparison With Other Projects</h2>
-				<table>
-					<thead>
-						<tr>
-							<th></th>
-							<th>nanoSQL</th>
-							<th>TaffyDB</th>
-							<th>LokiJS</th>
-							<th>NeDB</th>
-							<th>LoveField</th>
-							<th>PouchDB</th>
-							<th>alaSQL</th>
-							<th>RxDB</th>
-							<th>SQL.js</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td>Events</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Typescript</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Undo/Redo</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>ORM</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>IndexedDB</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Node</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Observables</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Fuzzy Search</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-						</tr>
-						<tr>
-							<td>Query Functions</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✕</td>
-							<td>✓</td>
-							<td>✕</td>
-							<td>✓</td>
-						</tr>
-						<tr>
-							<td>Size (kb)</td>
-							<td>32</td>
-							<td>5</td>
-							<td>19</td>
-							<td>27</td>
-							<td>40</td>
-							<td>46</td>
-							<td>88</td>
-							<td>183</td>
-							<td>500</td>
-						</tr>
-					</tbody>
-				</table>
+				<p>|           | nanoSQL | TaffyDB  | LokiJS | NeDB | LoveField | PouchDB | alaSQL | RxDB | SQL.js |
+					|-----------|---------|---------|--------|------|-----------|---------|--------|--------|--------|
+					| Events    | ✓       | ✓      | ✓      | ✕    | ✓         | ✓       | ✕      | ✓      | ✕      |
+					| Typescript| ✓       | ✕      | ✓      | ✓    | ✓         | ✓       | ✕      | ✓      | ✓      |
+					| Undo/Redo | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✓      | ✕      |
+					| ORM       | ✓       | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✓      | ✕      |
+					| IndexedDB | ✓       | ✕      | ✓      | ✕    | ✓         | ✓       | ✓      | ✓      | ✕      |
+					| Node      | ✓       | ✓      | ✓      | ✓    | ✕         | ✓       | ✓      | ✓      | ✓      |
+					| Observables| ✓      | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✓      | ✕      |
+					| Fuzzy Search| ✓     | ✕      | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      |
+					| Query Functions | ✓ | ✕      | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      |
+				| Size (kb) | 32      | 5       | 19      | 27   | 40         | 46      | 88     | 183     | 500    |</p>
 				<h2 id="database-support">Database Support</h2>
 				<p>NanoSQL can save data to several different places, depending on the browser or environment it&#39;s being ran in.</p>
 				<ol>
@@ -299,20 +168,16 @@ nSQL(<span class="hljs-string">"posts"</span>)
 					<li><strong><a href="https://www.npmjs.com/package/nano-trivial">Trivial DB (JSON File Store)</a></strong></li>
 				</ol>
 				<h2 id="installation">Installation</h2>
-				<pre><code class="lang-sh">npm i nano-sql --save
-</code></pre>
+				<pre><code class="language-sh">npm i nano-sql --save</code></pre>
 				<p>Using in Typescript/Babel project:</p>
-				<pre><code class="lang-js"><span class="hljs-keyword">import</span> { nSQL } <span class="hljs-keyword">from</span> <span class="hljs-string">"nano-sql"</span>;
-</code></pre>
+				<pre><code class="language-js"><span class="hljs-keyword">import</span> { nSQL } <span class="hljs-keyword">from</span> <span class="hljs-string">"nano-sql"</span>;</code></pre>
 				<p>Using in Node:</p>
-				<pre><code class="lang-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"nano-sql"</span>).nSQL;
-</code></pre>
+				<pre><code class="language-js"><span class="hljs-keyword">const</span> nSQL = <span class="hljs-built_in">require</span>(<span class="hljs-string">"nano-sql"</span>).nSQL;</code></pre>
 				<p>To use directly in the browser, drop the tag below into your <code>&lt;head&gt;</code>.</p>
-				<pre><code class="lang-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/nano-sql@1.8.3/dist/nano-sql.min.js"</span>&gt;</span><span class="undefined"></span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
-</code></pre>
+				<pre><code class="language-html"><span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"https://cdn.jsdelivr.net/npm/nano-sql@1.8.3/dist/nano-sql.min.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></code></pre>
 				<h2 id="simple-usage">Simple Usage</h2>
 				<p>1 minute minimal quick start:</p>
-				<pre><code class="lang-js"><span class="hljs-comment">// Use an instance table to query and organize existing tables of data.</span>
+				<pre><code class="language-js"><span class="hljs-comment">// Use an instance table to query and organize existing tables of data.</span>
 nSQL([
     {<span class="hljs-attr">name</span>: <span class="hljs-string">"bill"</span>, <span class="hljs-attr">age</span>: <span class="hljs-number">20</span>},
     {<span class="hljs-attr">name</span>: <span class="hljs-string">"bob"</span>, <span class="hljs-attr">age</span>: <span class="hljs-number">25</span>},
@@ -341,13 +206,12 @@ nSQL(<span class="hljs-string">'users'</span>) <span class="hljs-comment">//  "u
 .then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
     <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">// &lt;= [{id:1, name:"bill", age: 20}]</span>
 })
-
 </code></pre>
 				<p><a href="https://docs.nanosql.io/">Documentation</a></p>
 				<h2 id="detailed-usage">Detailed Usage</h2>
 				<p>First you declare your models, connect the db, then you execute queries.</p>
 				<h3 id="1-declare-model-setup">1. Declare Model &amp; Setup</h3>
-				<pre><code class="lang-js">nSQL(<span class="hljs-string">'users'</span>)<span class="hljs-comment">// Table/Store Name, required to declare model and attach it to this store.</span>
+				<pre><code class="language-js">nSQL(<span class="hljs-string">'users'</span>)<span class="hljs-comment">// Table/Store Name, required to declare model and attach it to this store.</span>
 .model([ <span class="hljs-comment">// Data Model, required</span>
     {<span class="hljs-attr">key</span>:<span class="hljs-string">'id'</span>,<span class="hljs-attr">type</span>:<span class="hljs-string">'uuid'</span>,<span class="hljs-attr">props</span>:[<span class="hljs-string">'pk'</span>]}, <span class="hljs-comment">// This has the primary key value</span>
     {<span class="hljs-attr">key</span>:<span class="hljs-string">'name'</span>,<span class="hljs-attr">type</span>:<span class="hljs-string">'string'</span>, <span class="hljs-attr">default</span>:<span class="hljs-string">"None"</span>}, <span class="hljs-comment">// The 'default' will cause inserts to always use "None" if no value is provided.</span>
@@ -386,10 +250,9 @@ nSQL(<span class="hljs-string">'users'</span>) <span class="hljs-comment">//  "u
         }
     }                       
 ])
-
 </code></pre>
 				<h3 id="2-connect-the-db-and-execute-queries">2. Connect the DB and execute queries</h3>
-				<pre><code class="lang-js"><span class="hljs-comment">// Initializes the db.</span>
+				<pre><code class="language-js"><span class="hljs-comment">// Initializes the db.</span>
 nSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">result</span>) </span>{
     <span class="hljs-comment">// DB ready to use.</span>
     nSQL().doAction(<span class="hljs-string">'add_new_user'</span>,{<span class="hljs-attr">user</span>:{
@@ -408,11 +271,10 @@ nSQL().connect().then(<span class="hljs-function"><span class="hljs-keyword">fun
         <span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">//  &lt;- single object array containing the row we inserted.</span>
     });
 });
-
 </code></pre>
 				<p><a href="https://docs.nanosql.io/">Documentation</a></p>
 				<p>Some examples of queries you can do.</p>
-				<pre><code class="lang-js"><span class="hljs-comment">// Listen for changes on the users table</span>
+				<pre><code class="language-js"><span class="hljs-comment">// Listen for changes on the users table</span>
 nSQL(<span class="hljs-string">"users"</span>).on(<span class="hljs-string">"change"</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">dbEvent</span>) </span>{ ... });
 
 <span class="hljs-comment">// Listen for changes on any table</span>
@@ -455,10 +317,9 @@ nSQL(<span class="hljs-string">"users"</span>)
 .where([[<span class="hljs-string">"name"</span>,<span class="hljs-string">"="</span>,<span class="hljs-string">"John"</span>],<span class="hljs-string">"AND"</span>,[<span class="hljs-string">"age"</span>,<span class="hljs-string">"&gt;"</span>,<span class="hljs-number">25</span>]]) <span class="hljs-comment">// Where statements can't use AS aliases</span>
 .orderBy({<span class="hljs-attr">username</span>:<span class="hljs-string">"desc"</span>,<span class="hljs-attr">age</span>:<span class="hljs-string">"asc"</span>}) <span class="hljs-comment">// But order by does!</span>
 .exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{})
-
 </code></pre>
 				<p>And here are some more advanced query examples.</p>
-				<pre><code class="lang-js">
+				<pre><code class="language-js">
 <span class="hljs-comment">// Relatively simple join</span>
 nSQL(<span class="hljs-string">"users"</span>)
 .query(<span class="hljs-string">"select"</span>,[<span class="hljs-string">"orders.id"</span>, <span class="hljs-string">"users.name"</span>,<span class="hljs-string">"orders.total"</span>])
@@ -491,19 +352,17 @@ nSQL(<span class="hljs-string">"users"</span>)
 .orderBy({<span class="hljs-attr">Total</span>:<span class="hljs-string">"desc"</span>})
 .limit(<span class="hljs-number">20</span>)
 .exec().then(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">rows</span>) </span>{...})
-
 </code></pre>
 				<h2 id="history">History</h2>
 				<p>The Undo/Redo system is super easy to use.  First, enable it in the config object.</p>
-				<pre><code class="lang-js">nSQL(<span class="hljs-string">"table"</span>)
+				<pre><code class="language-js">nSQL(<span class="hljs-string">"table"</span>)
 .model([...])
 .config({
     <span class="hljs-attr">history</span>: <span class="hljs-literal">true</span>
 })
-.connect().then....
-</code></pre>
+.connect().then....</code></pre>
 				<p>Then use it!  Every query that changes row data will be tracked as a history point.</p>
-				<pre><code class="lang-js"><span class="hljs-comment">// Roll the database back one query.</span>
+				<pre><code class="language-js"><span class="hljs-comment">// Roll the database back one query.</span>
 nSQL().extend(<span class="hljs-string">"hist"</span>, <span class="hljs-string">"&lt;"</span>);
 
 <span class="hljs-comment">// Roll it forward one query.</span>
@@ -520,7 +379,6 @@ nSQL().extend(<span class="hljs-string">"hist"</span>, <span class="hljs-string"
     <span class="hljs-comment">// If the length and point are equal, redo does nothing.</span>
     <span class="hljs-comment">// if the point is zero, undo will do nothing.</span>
 });
-
 </code></pre>
 				<p>Writes are quite a bit slower when the history system is used, and your database takes up more space.  You can disable the history system from being activated by not calling <code>history</code> in the config object.</p>
 				<h1 id="help">Help</h1>

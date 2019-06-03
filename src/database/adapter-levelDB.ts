@@ -147,7 +147,7 @@ export class _LevelStore implements NanoSQLStorageAdapter {
 
         pk = pk || generateID(this._pkType[table], this._dbIndex[table].ai) as DBKey;
 
-        if (!pk) {
+        if (typeof pk !== "string" && !pk) {
             error(new Error("Can't add a row without a primary key!"));
             return;
         }
@@ -214,10 +214,16 @@ export class _LevelStore implements NanoSQLStorageAdapter {
         const lower = usePK && usefulValues ? from : keys[ranges[0]];
         const higher = usePK && usefulValues ? to : keys[ranges[1]];
 
+        // offset/limit is outside key range
+        if (!usePK && !lower && !higher) {
+            complete();
+            return;
+        }
+
         this._levelDBs[table]
             .createValueStream({
-                gte: this._isPKnum[table] ? new global._Int64BE(lower as any).toBuffer() : lower,
-                lte: this._isPKnum[table] ? new global._Int64BE(higher as any).toBuffer() : higher
+                gte: this._isPKnum[table] && lower ? new global._Int64BE(lower as any).toBuffer() : lower,
+                lte: this._isPKnum[table] && higher ? new global._Int64BE(higher as any).toBuffer() : higher
             })
             .on("data", (data) => {
                 rows.push(JSON.parse(data));

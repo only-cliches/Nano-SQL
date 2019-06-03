@@ -397,7 +397,7 @@ export declare class _NanoSQLStorage {
      * @param {(rows: DBRow[]) => void} complete
      * @memberof _NanoSQLStorage
      */
-    _rangeRead(table: string, from: any, to: any, usePKs: boolean, complete: (rows: DBRow[]) => void): void;
+    _rangeRead(table: string, from: any, to: any, usePKs: boolean, complete: (rows: DBRow[]) => void, filter?: (row: any) => boolean): void;
     /**
      * Full table scan if a function is passed in OR read an array of primary keys.
      *
