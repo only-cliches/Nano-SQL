@@ -10,7 +10,6 @@
     <script async src="https://cdnjs.cloudflare.com/ajax/libs/alasql/0.4.3/alasql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/es6-promise/4.1.0/es6-promise.auto.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.min.js"></script>
-    <script src="plugin-fuzzy-search.min.js"></script>
     <script>
 
     </script>
@@ -184,7 +183,7 @@
 
         // const get = JSON.parse(JSON.stringify(rows[Math.round(Math.random() * 49)]));
 
-        nSQL().createDatabase({mode: "PERM", tables: undefined}).then(() => {
+        nSQL().createDatabase({mode: "PERM"}).then(() => {
             return nSQL().query("create table", {
                 name: "test",
                 model: {

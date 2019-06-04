@@ -163,9 +163,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
 
-        let writePk = false;
         if (typeof pk === "undefined") {
-            writePk = true;
             pk = generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
         }
 
@@ -181,9 +179,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
             localStorage.setItem(this._id + "_" + table + "_idb_ai", String(this._ai[table]));
         }
 
-        if (writePk) {
-            deepSet(this._tableConfigs[table].pkCol, row, pk);
-        }
+        deepSet(this._tableConfigs[table].pkCol, row, pk);
 
         this.store(table, "readwrite", (transaction, store) => {
             try {

@@ -1085,22 +1085,41 @@ export class nanoSQL implements InanoSQLInstance {
         return this;
     }
 
+    private _countTimers: {
+        [key: string]: (nSQL: InanoSQLInstance ,dbId: string, tableName: string) => void;
+    } = {};
+
     public saveCount(databaseID: string, tableName: string, complete?: (err?: any) => void) {
         if (tableName.indexOf("_") === 0) {
             if (complete) complete();
             return;
         }
-        const total = this.getDB(databaseID)._tables[tableName].count;
-        const id = this.getDB(databaseID)._tables[tableName].id;
-        this.triggerQuery(databaseID, {
-            ...buildQuery(databaseID, this, "_util", "upsert"),
-            actionArgs: {key: "total_" + id, value: total},
-        }, noop, () => {
-            if (complete) complete();
-        }, (err) => {
-            if (complete) complete(err);
-            console.error("nSQL: Error updating table total.", err);
-        });
+
+        const doUpdate = (parent: InanoSQLInstance, dbID: string, table: string, done?: (err?: any) => void) => {
+            const total = parent.getDB(dbID)._tables[table].count;
+            const id = parent.getDB(dbID)._tables[table].id;
+            parent.triggerQuery(dbID, {
+                ...buildQuery(dbID, parent, "_util", "upsert"),
+                actionArgs: {key: "total_" + id, value: total},
+            }, noop, () => {
+                if (done) done();
+            }, (err) => {
+                if (done) done(err);
+                console.error("nSQL: Error updating table total.", err);
+            });
+        }
+
+        // do now
+        if (complete) {
+            doUpdate(this, databaseID, tableName, complete);
+            return;
+        }
+
+        // do later
+        if (!this._countTimers[databaseID + tableName]) {
+            this._countTimers[databaseID + tableName] = utils.throttle(undefined, doUpdate, 1000);
+        }
+        this._countTimers[databaseID + tableName](this, databaseID, tableName);
     }
 
     public default(databaseID: string|undefined, replaceObj?: any, table?: string): { [key: string]: any } | Error {

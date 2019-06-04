@@ -9,6 +9,7 @@
 - SnapDB now honors `path` variable in config.
 - Added transaction api.  Not all adapters support transactions, each one will need to implement it's own transaction methods.
 - Added transaction support to built in adapters where possible.
+- Added throttle to count update to improve performance.
 
 ## [2.3.3] 5-20-2019
 - Fixed issue with rebuilding list type indexes
