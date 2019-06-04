@@ -1,4 +1,4 @@
-import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION } from "../interfaces";
+import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, configFilter } from "../interfaces";
 import { noop, deepFreeze, generateID, binarySearch, assign, cast, blankTableDefinition, deepSet, chainAsync } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 import { SnapDB } from "snap-db";
@@ -9,7 +9,19 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "SnapDB Adapter",
-        version: VERSION
+        version: VERSION,
+        filters: [
+            {
+                name: "config",
+                priority: 1000,
+                call: (inputArgs: configFilter, complete, cancel) => {
+                    if (inputArgs.res.path && inputArgs.res.path.length) {
+                        this._path = inputArgs.res.path;
+                    }
+                    complete(inputArgs);
+                }
+            }
+        ]
     };
 
     nSQL: InanoSQLInstance;
@@ -30,6 +42,8 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
 
     _baseFolder: string;
 
+    _path: string = process.cwd();
+
     constructor() {
         super(true, false);
         this._ai = {};
@@ -39,21 +53,17 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
-        this._baseFolder = path.join(process.cwd(), "db_" + id);
+        this._baseFolder = path.join(this._path, "db_" + id);
 
-        const connectAIStore = () => {
-            this._tables["_ai_store"] = new SnapDB(path.join(this._baseFolder, "_ai_store"), "string");
-            this._tables["_ai_store"].ready().then(() => {
-                complete();
-            }).catch(error);
-        }
-
-        if (fs.existsSync(this._baseFolder)) {
-            connectAIStore();
-        } else {
+        if (!fs.existsSync(this._baseFolder)) {
             fs.mkdirSync(this._baseFolder);
-            connectAIStore();
         }
+            
+        this._tables["_ai_store"] = new SnapDB(path.join(this._baseFolder, "_ai_store"), "string");
+        this._tables["_ai_store"].ready().then(() => {
+            complete();
+        }).catch(error);
+
     }
 
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {

@@ -2295,7 +2295,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     const addIndexBuffer = (pk) => {
                         indexBuffer[pk] = (indexBuffer[pk] || 0) + 1;
                     };
-                    this._resolveFastWhere(true, fastWhere, false, addIndexBuffer, next);
+                    this._resolveFastWhere(true, fastWhere as IWhereCondition, false, addIndexBuffer, next);
                 }).then(() => {
 
                     let getPKs: any[] = [];

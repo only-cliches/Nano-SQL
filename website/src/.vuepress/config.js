@@ -35,6 +35,7 @@ module.exports = {
                 ["total", "Total" ],
                 ["upsert", "Upsert" ],
                 ["delete", "Delete" ],
+                ["transactions", "Transactions"],
                 ["clone", "Clone" ],
                 ["rebuild-index", "Rebuild Index" ],
                 ["conform-rows", "Conform Rows" ],
