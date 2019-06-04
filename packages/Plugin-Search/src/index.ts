@@ -8,6 +8,7 @@ export interface FuzzySearchTokenizer {
     (tableName: string, tableId: string, path: string[], value: string): {
         w: string; // tokenized output
         i: number; // location of word in string
+        o: string; // original string
     }[]
 }
 
@@ -54,20 +55,23 @@ export const defaultTokenizer = (type: "english" | "english-meta" | "english-ste
         switch (type) {
             case "english": return words.map((w, i) => ({ // 220 words/ms
                 i: i,
-                w: isNaN(w as any) ? (isStopWord(w) ? "" : metaphone(stemmer(w))) : w
+                w: isNaN(w as any) ? (isStopWord(w) ? "" : metaphone(stemmer(w))) : w,
+                o: isStopWord(w) ? "" : stemmer(w)
             })).filter(f => f.w);
             case "english-stem": return words.map((w, i) => ({ // 560 words/ms
                 i: i,
-                w: isNaN(w as any) ? (isStopWord(w) ? "" : stemmer(w)) : w
+                w: isNaN(w as any) ? (isStopWord(w) ? "" : stemmer(w)) : w,
+                o: isStopWord(w) ? "" : stemmer(w)
             })).filter(f => f.w);
             case "english-meta": return words.map((w, i) => ({ // 270 words/ms
                 i: i,
-                w: isNaN(w as any) ? (isStopWord(w) ? "" : metaphone(w)) : w
+                w: isNaN(w as any) ? (isStopWord(w) ? "" : metaphone(w)) : w,
+                o: isStopWord(w) ? "" : stemmer(w)
             })).filter(f => f.w);
         }
 
         // no tokenization: 2,684 words/ms
-        return words.map((w, i) => ({ w, i }));
+        return words.map((w, i) => ({ w, i, o: w }));
     }
 }
 
@@ -115,11 +119,10 @@ const addRowToFuzzy = (newRow: any, tableId: string, pkPath: string[], nSQL: Ina
             prev[cur.w].push(cur.i);
             return prev;
         }, {});
-        const tokenArray = tokens.map(s => s.i + ":" + s.w);
+        const tokenArray = tokens.map(s => s.i + ":" + s.o);
 
 
         const indexTableNameWords = "_" + tableId + "_fuzzy_words_" + item.path.join(".");
-        const indexTableNameWordsId = nSQL.getDB(query.databaseID)._tableIds[indexTableNameWords];
 
         // write cache of row index data
         filters.write(indexTableNameWords, newRowPK, {
@@ -696,7 +699,28 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                                         "tokens:any": {},
                                     }
                                 }
-                            }, noop, next, err);
+                            }, noop, () => {
+
+                                const indexTableFullNameWords = "_" + tableId + "_fuzzy_full_words_" + item.path.join(".");
+
+                                nSQL.triggerQuery(inputArgs.query.databaseID, {
+                                    ...buildQuery(inputArgs.query.databaseID, nSQL, "", "create table"),
+                                    actionArgs: {
+                                        name: indexTableFullNameWords,
+                                        _internal: true,
+                                        model: {
+                                            "wrd:string": { pk: true },
+                                            "ids:any[]": {
+                                                notNull: true,
+                                                model: {
+                                                    [pkKey]: {},
+                                                    "i:int[]": {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }, noop, next, err);
+                            }, err);
                         }, err);
                     }).then(() => {
                         complete(inputArgs);
@@ -765,7 +789,7 @@ export const FuzzySearch = (): InanoSQLPlugin => {
                                 const indexTableId = nSQL.getDB(inputArgs.query.databaseID)._tableIds[indexTable];
 
                                 const tokens = item.tokenizer(item.tableName, item.tableId, item.path, phrase);
-                                const tokenArray = tokens.map(s => s.i + ":" + s.w);
+                                const tokenArray = tokens.map(s => s.i + ":" + s.o);
 
                                 const deleteTokens = useRow.tokens.filter(t => tokenArray.indexOf(t) === -1);
                                 const addTokens = tokenArray.filter(t => useRow.tokens.indexOf(t) === -1);

@@ -28,6 +28,8 @@
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
 
+One of the big items that lead me to build NanoSQL was how NoSQL stores are becoming so popular and performant yet none of them have SQL semantics when you need them. It’s like you have to choose between good performance (noSQL/Document Store) or having stable data modeling with advanced query capability. It seems to me that you can have both, you just have to realize that when you want to do complicated queries their is a performance cost. One of the main concepts with NanoSQL is it’s got the strong data modeling (which is critical in my opinion) and noSQL level performance if you play inside a [small set of rules](https://nanosql.io/performance.html). You can jump outside those rules whenever you like at the cost of speed…and that’s the point. YOU the developer get to make the choice when and how that happens.
+
 ### Multiple Database Support
 Run several databases in parallel, each database can use it's own adapter.  This means you could have one nanoSQL instance running a Redis based database, a MySQL based database and a RocksDB based database at the same time seamlessly!
 
