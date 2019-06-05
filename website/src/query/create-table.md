@@ -150,7 +150,7 @@ Supported properties are:
 | offset      | number           | For `float`, `int` or `number` indexes, offset inserts and queries by this amount.  [More info](#index-offsets) |
 | foreignKey  | {target: string, onDelete: InanoSQLFKActions } | Provide a foreign key value for this index.  [More Info](#foreign-keys) |
 
-Once created normal (non array type) indexes can be used in `where` conditions with `=`, `IN`, `BETWEEN` , or `LIKE` conditions.
+Once created normal (non array type) indexes can be used in `where` conditions with `=`, `IN`, `BETWEEN` , or `LIKE` conditions.  Other conditions can be used but will lead to a full table scan that ignores the index.
 
 ```typescript
 // Indexed queries

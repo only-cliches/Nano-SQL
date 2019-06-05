@@ -28,13 +28,13 @@
 # What is nanoSQL?
 nanoSQL core provides a standardized query language, data modeling, indexing and plugin system that can use almost any database technology for data storage and query; providing a consistent experience across environments and database engines.  You can mix and match database backends, query languages and plugins to get the ideal environnement for rapid development.
 
-One of the big items that lead me to build NanoSQL was how NoSQL stores are becoming so popular and performant yet none of them have SQL semantics when you need them. It’s like you have to choose between good performance (noSQL/Document Store) or having stable data modeling with advanced query capability. It seems to me that you can have both, you just have to realize that when you want to do complicated queries their is a performance cost. One of the main concepts with NanoSQL is it’s got the strong data modeling (which is critical in my opinion) and noSQL level performance if you play inside a [small set of rules](https://nanosql.io/performance.html). You can jump outside those rules whenever you like at the cost of speed…and that’s the point. YOU the developer get to make the choice when and how that happens.
+One of the big items that lead me to build nanoSQL was how NoSQL stores are becoming so popular and performant yet none of them have SQL semantics when you need them. It’s like you have to choose between good performance (noSQL/Document Store) or having stable data modeling with advanced query capability (SQL Style). It seems to me that you can have both, you just have to be aware of the tradeoffs. The big idea here is to build a SQL style parser on top of noSQL datastores.   This buys you the strong data models (which is critical in my opinion) of SQL style systems and noSQL level performance if you play inside a [small set of rules](https://nanosql.io/performance.html). You can jump outside those rules whenever you like at the cost of speed…and that’s the point. YOU the developer get to make the choice when and how that happens.
 
-### Multiple Database Support
-Run several databases in parallel, each database can use it's own adapter.  This means you could have one nanoSQL instance running a Redis based database, a MySQL based database and a RocksDB based database at the same time seamlessly!
+### Multiple Database & Adapter Support
+Run several databases in parallel, each database can use it's own backend adapter.  This means you could have one nanoSQL instance running a Redis based database, a MySQL based database and a RocksDB based database at the same time seamlessly!
 
 ### Identical API Everywhere
-Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  NanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
+Develop your application with an embedded database like RocksDB, then deploy into production with Redis, Amazon Dynamo, MySQL or many others.  nanoSQL even runs in the browser on top of IndexedDB, WebSQL or LocalStorage.  **All data is portable and all features are isomorphic**; jumping between different databases and environments is trivial.
 
 ### Not Only NoSQL 
 Classical RDBMS queries like aggregate functions, joins and group bys are also supported.  You can even write your own query functions and use foreign keys!
@@ -43,13 +43,13 @@ Classical RDBMS queries like aggregate functions, joins and group bys are also s
 The best of both worlds: Use RDBMS style data models to tune performance but still allow arbitrary columns.  Change your data model as often as you want and do type casting only when you need it.
 
 ### Data Models => TypeScript Files
-Instantly convert data models into typescript interfaces.
+Instantly convert nanoSQL data models into typescript interface files.
 
 ### Graph Queries
 Use indexing to build nested graph queries on your data with the power of RDBMS and flexibility of noSQL.
 
 ### Other Cool Things
-Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, runs in every browser back to IE9 and starts at only 30KB!
+Built in geolocation indexing, autocomplete, observable queries, typescript support, event system, CSV/JSON import & export, fuzzy search, runs in every browser back to IE9 and starts at only 30KB!
 
 
 ## Comparison with Other Projects
@@ -65,8 +65,10 @@ Built in geolocation indexing, autocomplete, observable queries, typescript supp
 | Foreign Keys    | ✓       | ✕      | ✕    | ✓         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Query Functions | ✓       | ✕      | ✕    | ✕         | ✕       | ✓      | ✕      | ✓      | ✕      |
 | Custom Backends | ✓       | ✕      | ✕    | ✕         | ✓       | ✕      | ✓      | ✕      | ✕      |
+| Fuzzy Search *  | ✓       | ✕      | ✕    | ✕         | ✕       | ✕      | ✕      | ✕      | ✓      |
 | Size (kb)       | 30      | 5      | 27   | 40        | 46      | 88     | 164    | 500    | 8      |
 
+\* Requires additional plugin not included in the bundle size shown in the table.
 
 ## Database Support
 
