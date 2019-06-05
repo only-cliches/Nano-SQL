@@ -1,5 +1,5 @@
 import { InanoSQLAdapter, InanoSQLDataModel, InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, VERSION, SQLiteAbstractFns } from "../interfaces";
-import { isAndroid, generateID, setFast, deepSet, uuid, noop, deepGet } from "../utilities";
+import { isAndroid, generateID, setFast, deepSet, uuid, noop, deepGet, allAsync } from "../utilities";
 import { nanoSQLMemoryIndex } from "./memoryIndex";
 
 
@@ -22,7 +22,7 @@ export const SQLiteAbstract = (
         }
     };
 
-    return {
+    const SQLFns = {
         createAI: (complete: () => void, error: (err: any) => void) => {
             _query(true, `CREATE TABLE IF NOT EXISTS "_ai" (id TEXT PRIMARY KEY UNIQUE, inc BIGINT)`, [], noop, complete, error);
         },
@@ -90,6 +90,30 @@ export const SQLiteAbstract = (
 
 
         },
+        batch: (actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => {
+            _query(true, "BEGIN TRANSACTION", [], noop, () => {
+                allAsync(actions, (action, i, next, err) => {
+                    switch(action.type) {
+                        case "put":
+                            SQLFns.write(tableConfigs[action.table].pkType, tableConfigs[action.table].pkCol, action.table, deepGet(tableConfigs[action.table].pkCol, action.data), action.data, tableConfigs[action.table].ai, {}, next, err);
+                        break;
+                        case "del":
+                            SQLFns.remove(action.table, action.data, next, err);
+                        break;
+                        case "idx-put":
+
+                        break;
+                        case "idx-del":
+
+                        break;
+                    }
+                }).then((results) => {
+                    _query(true, "END TRANSACTION", [], noop, () => {
+                        success(results);
+                    }, error);
+                }).catch(error);
+            }, error);
+        },
         read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => {
             let rows: any[] = [];
             _query(false, `SELECT data FROM ${checkTable(table)} WHERE id = ?`, [pk], (result) => {
@@ -151,6 +175,8 @@ export const SQLiteAbstract = (
 
         }
     };
+
+    return SQLFns;
 };
 
 
@@ -237,6 +263,10 @@ export class WebSQL extends nanoSQLMemoryIndex {
 
     delete(table: string, pk: any, complete: () => void, error: (err: any) => void) {
         this._sqlite.remove(table, pk, complete, error);
+    }
+
+    batch(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
+        this._sqlite.batch(actions, success, error);
     }
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {

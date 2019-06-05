@@ -105,13 +105,22 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         open(transaction, transaction.objectStore(table));
     }
 
-    batch(actions: {type: "put"|"del"|"idx-add"|"idx-rem", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
-        const txs: {[table: string]: {type: "put"|"del"|"idx-add"|"idx-rem", table: string, data: any}[]} = {};
+    batch(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
+        const txs: {[table: string]: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[]} = {};
+        console.warn("IndexedDB does not fully support transactions, specifically with secondary indexes.");
         actions.forEach((action) => {
-            if (!txs[action.table]) {
-                txs[action.table] = [];
+            if (action.data && action.data.indexName) {
+                const indexName = `_idx_${action.data.tableId}_${action.data.indexName}`;
+                if (!txs[indexName]) {
+                    txs[indexName] = [];
+                }
+                txs[indexName].push(action);
+            } else {
+                if (!txs[action.table]) {
+                    txs[action.table] = [];
+                }
+                txs[action.table].push(action);
             }
-            txs[action.table].push(action);
         });
         allAsync(Object.keys(txs), (table, i, next, err) => {
             const batch = txs[table];
@@ -121,6 +130,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
                 tx.oncomplete = () => {
                     next(results);
                 }
+
                 allAsync(batch, (action, ii, nextA, errA) => {
                     switch(action.type) {
                         case "put":
@@ -143,20 +153,28 @@ export class IndexedDB extends nanoSQLMemoryIndex {
                     
                             this._ai[table] = Math.max(pk, this._ai[table]);
                             store.put(row);
-                            nextA(pk);
+                            results.push(pk);
+                            nextA();
                         break;
                         case "del":
                             store.delete(action.data);
-                            nextA(action.data);
+                            results.push(action.data);
+                            nextA();
                         break;
-                        case "idx-add":
-
+                        case "idx-put":
+                            this.addIndexValue(action.data.tableId, action.data.indexName, action.data.key, action.data.value, () => {
+                                results.push(action.data.key);
+                                nextA();
+                            }, errA)
                         break;
-                        case "idx-rem":
-
+                        case "idx-del":
+                            this.deleteIndexValue(action.data.tableId, action.data.indexName, action.data.key, action.data.value, () => {
+                                results.push(action.data.key);
+                                nextA();
+                            }, errA)
                         break;
                     }
-                });
+                }).catch(err);
             }, err);
         }).then(success).catch(error);
     }
