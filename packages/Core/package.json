@@ -8,6 +8,7 @@
 		"dist": "npm-run-all lint test release",
 		"rollup-test": "rollup -c",
 		"serve": "webpack-dev-server --mode=development",
+		"serve-link": "tsc -w --stripInternal -d --moduleResolution \"node\" -t \"es5\" --rootDir  \"./src\" --module \"commonjs\" --outDir \"./lib\"",
 		"bundle": "webpack -p --display-modules && webpack -p --es5 --display-modules",
 		"release": "npm run test && bash release.sh",
 		"test": "mocha -r ts-node/register tests/index.ts",
