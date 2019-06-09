@@ -1,7 +1,9 @@
 import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance } from "@nano-sql/core/lib/interfaces";
 import { generateID, deepSet, allAsync, binarySearch, chainAsync } from "@nano-sql/core/lib/utilities";
 import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
-import { AsyncStorage } from "react-native";
+import AsyncStorage from "@react-native-community/async-storage";
+
+
 
 export const binaryInsert = (arr: any[], value: any, remove: boolean, startVal?: number, endVal?: number): boolean => {
 
@@ -39,7 +41,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "React Native Adapter",
-        version: 2.05
+        version: 2.06
     };
 
     nSQL: InanoSQLInstance;

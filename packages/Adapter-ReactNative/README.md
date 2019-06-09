@@ -68,6 +68,10 @@ SOFTWARE.
 
 # Changelog
 
+## [2.0.6]
+- Dependency updates, moved to `@react-native-community/async-storage`. Resolves Issue [146](https://github.com/ClickSimply/Nano-SQL/issues/146).
+
+
 ## [2.0.5]
 - Documentation and dependency updates.
 

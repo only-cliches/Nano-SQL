@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-react-native",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "Easily Run React Native with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -22,13 +22,14 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
+    "@nano-sql/core": "^2.3.3",
+    "@react-native-community/async-storage": "^1.4.2"
   },
   "peerDependencies": {
-    "react-native": "^0.58.4",
-    "@nano-sql/core": "^2.2.4"
+    "@nano-sql/core": "^2.3.3"
   },
   "devDependencies": {
-    "ts-node": "^7.0.1",
-    "typescript": "^3.2.2"
+    "ts-node": "^8.2.0",
+    "typescript": "^3.5.1"
   }
 }
