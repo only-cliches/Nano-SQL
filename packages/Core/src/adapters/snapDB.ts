@@ -42,7 +42,7 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
 
     _baseFolder: string;
 
-    _path: string = process.cwd();
+    _path: string = typeof process !== "undefined" ? process.cwd() : "";
 
     constructor() {
         super(true, false);

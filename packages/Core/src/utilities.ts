@@ -120,6 +120,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterWriteFilter>(selectedDB, "adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
+                if (query && query.transactionId) {
+                    nSQL.txs[query.transactionId].push({table: table, type: "put", data: result.res.row});
+                    result.res.complete(null);
+                    return;
+                }
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.write(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, result.res.row, (pk) => {
                     result.res.complete(pk);
@@ -214,6 +219,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterDeleteFilter>(selectedDB, "adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
+                if (query && query.transactionId) {
+                    nSQL.txs[query.transactionId].push({table: table, type: "del", data: result.res.pk});
+                    result.res.complete();
+                    return;
+                }
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.delete(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, result.res.complete, result.res.error);
             }, error);
@@ -275,6 +285,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterAddIndexValueFilter>(selectedDB, "adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
+                if (query && query.transactionId) {
+                    nSQL.txs[query.transactionId].push({table: table, type: "idx-put", data: {indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value}});
+                    result.res.complete();
+                    return;
+                }
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.addIndexValue(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
@@ -299,6 +314,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterDeleteIndexValueFilter>(selectedDB, "adapterDeleteIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
+                if (query && query.transactionId) {
+                    nSQL.txs[query.transactionId].push({table: table, type: "idx-del", data: {indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value}});
+                    result.res.complete();
+                    return;
+                }
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.deleteIndexValue(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);

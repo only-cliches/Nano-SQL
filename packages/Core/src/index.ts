@@ -85,7 +85,7 @@ export class nanoSQL implements InanoSQLInstance {
     public txs: {
         [id: string]: {
             table: string,
-            type: "put"|"del"|"idx-add"|"idx-rem",
+            type: "put"|"del"|"idx-put"|"idx-del";
             data: any;
         }[]
     } = {};
@@ -453,7 +453,13 @@ export class nanoSQL implements InanoSQLInstance {
                 // transactions are now qued up
                 const batchFn = this.getDB(databaseID).adapter.batch;
                 if (batchFn) { // has batch fn, commit transaction
-                    batchFn(this.txs[txId], res, rej);
+                    batchFn(this.txs[txId], (result) => {
+                        delete this.txs[txId];
+                        res(result);
+                    }, (err) => {
+                        delete this.txs[txId];
+                        rej(err);
+                    });
                 } else { // doesn't have batch fn, use fallback
                     console.warn(`Adapter "${this.getDB(databaseID).adapter.plugin.name}" doesn't have transaction support, using fallback method.`);
                     chainAsync(this.txs[txId], (txItem, i, next, err) => {
@@ -466,14 +472,20 @@ export class nanoSQL implements InanoSQLInstance {
                                 const PK = deepGet(tableData.pkCol, txItem.data);
                                 this.getDB(databaseID).adapter.write(txItem.table, PK, txItem.data, next, err);
                             break;
-                            case "idx-add":
+                            case "idx-put":
                                 this.getDB(databaseID).adapter.addIndexValue(txItem.table, txItem.data.index, txItem.data.key, txItem.data.value, next, err);
                             break;
-                            case "idx-rem":
+                            case "idx-del":
                                 this.getDB(databaseID).adapter.deleteIndexValue(txItem.table, txItem.data.index, txItem.data.key, txItem.data.value, next, err);
                             break;
                         }
-                    }).then(res).catch(rej);
+                    }).then((result) => {
+                        delete this.txs[txId];
+                        res(result);
+                    }).catch((err) => {
+                        delete this.txs[txId];
+                        rej(err);
+                    });
                 }
             }).catch(rej);
         })
@@ -1085,22 +1097,41 @@ export class nanoSQL implements InanoSQLInstance {
         return this;
     }
 
+    private _countTimers: {
+        [key: string]: (nSQL: InanoSQLInstance ,dbId: string, tableName: string) => void;
+    } = {};
+
     public saveCount(databaseID: string, tableName: string, complete?: (err?: any) => void) {
         if (tableName.indexOf("_") === 0) {
             if (complete) complete();
             return;
         }
-        const total = this.getDB(databaseID)._tables[tableName].count;
-        const id = this.getDB(databaseID)._tables[tableName].id;
-        this.triggerQuery(databaseID, {
-            ...buildQuery(databaseID, this, "_util", "upsert"),
-            actionArgs: {key: "total_" + id, value: total},
-        }, noop, () => {
-            if (complete) complete();
-        }, (err) => {
-            if (complete) complete(err);
-            console.error("nSQL: Error updating table total.", err);
-        });
+
+        const doUpdate = (parent: InanoSQLInstance, dbID: string, table: string, done?: (err?: any) => void) => {
+            const total = parent.getDB(dbID)._tables[table].count;
+            const id = parent.getDB(dbID)._tables[table].id;
+            parent.triggerQuery(dbID, {
+                ...buildQuery(dbID, parent, "_util", "upsert"),
+                actionArgs: {key: "total_" + id, value: total},
+            }, noop, () => {
+                if (done) done();
+            }, (err) => {
+                if (done) done(err);
+                console.error("nSQL: Error updating table total.", err);
+            });
+        }
+
+        // do now
+        if (complete) {
+            doUpdate(this, databaseID, tableName, complete);
+            return;
+        }
+
+        // do later
+        if (!this._countTimers[databaseID + tableName]) {
+            this._countTimers[databaseID + tableName] = utils.throttle(undefined, doUpdate, 1000);
+        }
+        this._countTimers[databaseID + tableName](this, databaseID, tableName);
     }
 
     public default(databaseID: string|undefined, replaceObj?: any, table?: string): { [key: string]: any } | Error {

@@ -1692,10 +1692,12 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _createTable(table: InanoSQLTableConfig, alterTable: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void {
 
         const tableID = this.nSQL.getDB(this.databaseID)._tableIds[table.name] || this._tableID();
-
+        
+        let tableQuery = this.query.table as string
         // table already exists, set to alter table query
         if (!alterTable && Object.keys(this.nSQL.getDB(this.databaseID)._tables).indexOf(table.name) !== -1) {
             alterTable = true;
+            tableQuery = table.name
         }
 
         new Promise((res, rej) => {
@@ -1946,7 +1948,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 return Promise.resolve(newConfig);
             }
         }).then((newConfig: InanoSQLTable) => {
-            if (this.query.table as string === "_util") {
+            if (tableQuery === "_util") {
                 return Promise.resolve(newConfig);
             }
             // get table size count from util table
@@ -1967,8 +1969,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 }, rej);
             })
         }).then((newConfig: InanoSQLTable) => {
-
-            const oldIndexes = alterTable ? Object.keys(this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].indexes) : [];
+            const oldIndexes = alterTable ? Object.keys(this.nSQL.getDB(this.databaseID)._tables[tableQuery].indexes) : [];
             const newIndexes = Object.keys(newConfig.indexes);
 
             const addIndexes = newIndexes.filter(v => oldIndexes.indexOf(v) === -1);
@@ -2010,7 +2011,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             });
         }).then(() => {
             this.nSQL._rebuildFKs();
-            if (this.query.table as string === "_util") {
+            if (tableQuery === "_util") {
                 return Promise.resolve();
             }
             return this.nSQL._saveTableIds(this.databaseID || "");

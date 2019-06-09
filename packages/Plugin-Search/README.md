@@ -259,6 +259,9 @@ SOFTWARE.
 
 # Changelog
 
+## [2.0.3]
+- Added `o` property to tokenizer, allows prefix searches now.
+
 ## [2.0.2]
 - Added script install option.
 - Readme updates.
