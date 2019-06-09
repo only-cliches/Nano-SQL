@@ -22,7 +22,10 @@
 # Installation
 
 ```sh
+# install adapter
 npm i @nano-sql/adapter-react-native --save
+# link async storage
+react-native link @react-native-community/async-storage
 ```
 
 # Usage
@@ -70,6 +73,7 @@ SOFTWARE.
 
 ## [2.0.6]
 - Dependency updates, moved to `@react-native-community/async-storage`. Resolves Issue [146](https://github.com/ClickSimply/Nano-SQL/issues/146).
+- Fixed issue with duplicate primary keys. Resolves Issue [147](https://github.com/ClickSimply/Nano-SQL/issues/147).
 
 
 ## [2.0.5]

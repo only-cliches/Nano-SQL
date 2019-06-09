@@ -5,6 +5,7 @@
   "main": "lib/index.js",
   "scripts": {
     "test": "ts-node src/test",
+    "serve": "tsc --watch",
     "build": "tsc"
   },
   "repository": {
@@ -22,7 +23,6 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "@nano-sql/core": "^2.3.3",
     "@react-native-community/async-storage": "^1.4.2"
   },
   "peerDependencies": {

@@ -1,5 +1,6 @@
 # IDE Idea
 .idea
+.watchmanconfig
 
 # Logs
 logs

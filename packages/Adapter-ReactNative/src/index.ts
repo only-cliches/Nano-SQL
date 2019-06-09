@@ -4,18 +4,16 @@ import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
 import AsyncStorage from "@react-native-community/async-storage";
 
 
-
 export const binaryInsert = (arr: any[], value: any, remove: boolean, startVal?: number, endVal?: number): boolean => {
 
     const start = startVal || 0;
     const end = endVal || arr.length;
 
-
-    if (arr[start] >= value) {
+    if (arr[start] > value) {
         if (!remove) arr.unshift(value);
         return remove ? false : true;
     }
-    if (arr[end] <= value) {
+    if (arr[end] < value) {
         if (!remove) arr.push(value);
         return remove ? false : true;
     }
@@ -85,11 +83,13 @@ export class NativeStorage extends nanoSQLMemoryIndex {
                     rej(err);
                     return;
                 }
+
+                const index = JSON.parse(result || "[]");
                 if (this.cacheIndexes) {
-                    this._indexes[table] = JSON.parse(result || "[]");
+                    this._indexes[table] = index;
                     res(this._indexes[table]);
                 } else {
-                    res(JSON.parse(result || "[]"));
+                    res(index);
                 }
             });
         });
@@ -103,33 +103,59 @@ export class NativeStorage extends nanoSQLMemoryIndex {
                 error(err);
                 return;
             }
-            if (result) {
-                this._indexes[tableName] = JSON.parse(result);
-                AsyncStorage.getItem(this.key(tableName, "__AI__"), (err, ai) => {
-                    if (err) {
-                        error(err);
-                        return;
+
+            // remove duplicate index from bug.
+            new Promise((res, rej) => {
+                AsyncStorage.getItem(this.key(tableName, "__FX__"), (err, result2) => {
+                    if (result2) {
+                        res(result ? JSON.parse(result || "[]") : undefined);
+                    } else {
+                        const index = JSON.parse(result || "[]").filter((v, i, s) => s.indexOf(v) === i);
+                        AsyncStorage.setItem(this.key(tableName, "__IDX__"), JSON.stringify(index), (err) => {
+                            AsyncStorage.setItem(this.key(tableName, "__FX__"), "true", (err) => {
+                                if (err) {
+                                    error(err);
+                                    return;
+                                }
+                                res(index);
+                            })
+                        });
                     }
-                    this._ai[tableName] = ai ? parseInt(ai) : 0;
-                    complete();
-                })
-            } else {
-                this._ai[tableName] = 0;
-                this._indexes[tableName] = [];
-                AsyncStorage.setItem(this.key(tableName, "__IDX__"), "[]", (err) => {
-                    if (err) {
-                        error(err);
-                        return;
+                });
+            }).then((index?: any[]) => {
+
+                if (index) {
+                
+                    if (this.cacheIndexes) {
+                        this._indexes[tableName] = index;
                     }
-                    AsyncStorage.setItem(this.key(tableName, "__AI__"), "0", (err) => {
+                    AsyncStorage.getItem(this.key(tableName, "__AI__"), (err, ai) => {
                         if (err) {
                             error(err);
                             return;
                         }
+                        this._ai[tableName] = ai ? parseInt(ai) : 0;
                         complete();
                     })
-                })
-            }
+                } else {
+                    this._ai[tableName] = 0;
+                    this._indexes[tableName] = [];
+                    AsyncStorage.setItem(this.key(tableName, "__IDX__"), "[]", (err) => {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+                        AsyncStorage.setItem(this.key(tableName, "__AI__"), "0", (err) => {
+                            if (err) {
+                                error(err);
+                                return;
+                            }
+                            complete();
+                        })
+                    })
+                }
+            })
+
         });
 
     }
@@ -172,6 +198,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
             return;
         }
 
+
         if (this._tableConfigs[table].ai) {
             this._ai[table] = Math.max(pk, this._ai[table]);
         }
@@ -179,6 +206,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
         const json = JSON.stringify(deepSet(this._tableConfigs[table].pkCol, row, pk));
         this.getIndex(table).then((index) => {
             const didUpdate = binaryInsert(index, pk, false);
+
             return allAsync([0, 1, 2], (idx, i, next, err) => {
                 switch(idx) {
                     case 0:
@@ -271,7 +299,7 @@ export class NativeStorage extends nanoSQLMemoryIndex {
                 }
             });
         }).then((getPKs: any[]) => {
-            return chainAsync(reverse ? getPKs.reverse() : getPKs, (pk, i, next, err) => {
+            return allAsync(reverse ? getPKs.reverse() : getPKs, (pk, i, next, err) => {
                 this.read(table, pk, (row) => {
                     onRow(row || {}, i);
                     next();
