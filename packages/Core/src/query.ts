@@ -1853,6 +1853,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 model: computedDataModel,
                 columns: generateColumns(computedDataModel),
                 filter: table.res.filter,
+                select: table.res.select,
                 actions: table.res.actions || [],
                 views: table.res.views || [],
                 queries: (table.res.queries || []).reduce((prev, query) => {

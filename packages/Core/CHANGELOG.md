@@ -5,7 +5,7 @@
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
 ## [2.3.4]
-- Updated SnapDB version.
+- Updated dependencies.
 - SnapDB now honors `path` variable in config.
 - Added transaction api.  Not all adapters support transactions, each one will need to implement it's own transaction methods.
 - Added transaction support to built in adapters where possible.

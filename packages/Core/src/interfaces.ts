@@ -460,6 +460,7 @@ export interface InanoSQLTableConfig {
         call: (db: InanoSQLInstance, args: any) => InanoSQLQuery;
     }[],
     filter?: (row: any) => any;
+    select?: (row: any) => any;
     actions?: InanoSQLActionOrView[];
     views?: InanoSQLActionOrView[];
     props?: {
@@ -509,6 +510,7 @@ export interface InanoSQLTable {
         }
     },
     filter?: (row: any) => any;
+    select?: (row: any) => any;
     actions: InanoSQLActionOrView[];
     views: InanoSQLActionOrView[];
     pkType: string;
