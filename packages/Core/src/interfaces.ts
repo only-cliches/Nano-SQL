@@ -290,7 +290,12 @@ export interface InanoSQLConfig {
     tables?: InanoSQLTableConfig[];
     types?: {
         [typeName: string]: {
-            [colAndType: string]: InanoSQLDataModel;
+            onInsert?: (colValue: any) => any,
+            onSelect?: (colValue: any) => any,
+            interfaceText?: string;
+            model?: {
+                [colAndType: string]: InanoSQLDataModel;
+            }
         }
     };
     onVersionUpdate?: (oldVersion: number) => Promise<number>;

@@ -8,9 +8,16 @@
 - Updated dependencies.
 - SnapDB now honors `path` variable in config.
 - Added transaction api.  Not all adapters support transactions, each one will need to implement it's own transaction methods.
-- Added transaction support to built in adapters where possible.
 - Added throttle to count update to improve performance.
 - Added `serve-link` run script for `npm link` situations.
+
+### TODO
+- Fixed secondary index array not being used in SELECT unless WHERE is nested.
+- Added feature to createDatabase `types` to implement custom types with a function instead of with an object.
+- Added `immutable` property to column definitions, allows you to prevent column updates after the initial insert.
+- Added `.updateImmutable()` query argument to force immutable column updates.
+- Added custom function type definitions to take care of
+
 
 ## [2.3.3] 5-20-2019
 - Fixed issue with rebuilding list type indexes
