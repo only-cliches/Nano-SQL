@@ -61,6 +61,7 @@ For each column the column name and column type are declared as a new key in the
 | pk       | boolean          | Use this column as the table's primary key.            |
 | ai       | boolean          | Enable auto increment for `int` type primary keys.     |
 | notNull  | boolean          | Don't allow NULL values into this column.              |
+| immutable| boolean          | Don't allow this column to be updated after it's inserted into the database.  You can optionally [force updates](/query/upsert.html#updating-immutable-rows) as needed.  |
 | default  | any \| () => any | The default value for this column if no value is provided on create.  If a function is used it will be called on each insert to get the value for this column. |
 | max      | number           | If the column is a number type, limit the values to be no higher than this.|
 | min      | number           | If the column is a number type, limit the values to be no lower than this. |
@@ -371,7 +372,7 @@ Let's take a look at a simple example, keeping track of user posts.
 import { nSQL } from "nano-sql";
 import { InanoSQLFKActions } from "@nano-sql/core/lib/interfaces";
 
-nSQL.connect({
+nSQL().createDatabase({
     tables: [
         {
             name: "users",
@@ -455,3 +456,29 @@ query.stream(onRow, onComplete, onError)
 query.cache(cacheReady, error)
 query.toCSV().then..
 ```
+
+### Filtering Row Data
+You can optionally modify rows coming into and out of the database table with the `filter` and `select` properties.
+
+```typescript
+nSQL().query("create table", {
+    name: "users",
+    model: {
+        "id:uuid": {pk: true}, // pk = primary key
+        "name:string" {},
+        "balance:int": {}
+    },
+    filter: (row) => { // ran as rows are being inserted/updated
+        if (row.balance < 0) {
+            // send email to customer
+        }
+        return row;
+    },
+    select: (row) => { // ran as rows are coming out of database, can be used to add or modify columns.
+        row.name = String(row.name || "").toUppercase();
+        return row;
+    }
+}).exec().then..
+```
+
+The `filter` and `select` properties can be used to prevent values from being set for specific columns, limit columns to specific values, trigger actions based on values being inserted, or implement custom types.

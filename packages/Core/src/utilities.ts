@@ -395,9 +395,15 @@ export const mutateRowTypes = (selectedDB:string|undefined, replaceObj: any, tab
 
     if (!selectedDB) return replaceObj;
 
-    if (!nSQL.getDB(selectedDB)._tables[table]) {
+    const dbObj = nSQL.getDB(selectedDB);
+
+    const tableObj = nSQL.getDB(selectedDB)._tables[table];
+
+    if (!tableObj) {
         throw new Error(`nSQL: Table "${table}" not found!`);
     }
+
+    const customTypes = dbObj.config.types || {};
 
     const resolveModel = (cols: InanoSQLTableColumn[], useObj: any, nestedModel?: string): any => {
         if (!useObj) return useObj;
@@ -415,30 +421,34 @@ export const mutateRowTypes = (selectedDB:string|undefined, replaceObj: any, tab
         cols.forEach((m) => {
 
             if (m.model) {
-                if (m.type.indexOf("[]") !== -1) {
-                    const arr = typeof useObj !== "undefined" ? useObj[m.key] : [];
-                    if (!Array.isArray(arr)) {
-                        useObj[m.key] = [];
-                    } else {
-                        useObj[m.key] = arr.map(a => resolveModel(m.model as any[], a, m.type.slice(0, m.type.lastIndexOf("[]"))));
-                    }
-                } else {
-                    useObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
-                }
+                useObj[m.key] = resolveModel(m.model, typeof useObj !== "undefined" ? useObj[m.key] : undefined);
             } else {
-                switch (m.type) {
-                    case "date": 
-                        useObj[m.key] = new Date(useObj[m.key]).toISOString();
-                    break;
-                    default:
-                        useObj[m.key] = useObj[m.key];
+                const checkType = m.type.replace(/\[\]/gmi, "");
+                const custType = customTypes[checkType];
+
+                if (custType && custType.onSelect) { // converting custom types
+
+                    useObj[m.key] = custType.onSelect(useObj[m.key]);
+
+                } else {
+                    // converting normal types 
+                    switch (m.type) {
+                        case "date": 
+                            useObj[m.key] = new Date(useObj[m.key]).toISOString();
+                        break;
+                        default:
+                            // useObj[m.key] = useObj[m.key];
+                    }
                 }
+
             }
         });
         return useObj;
     };
 
-    return resolveModel(nSQL.getDB(selectedDB)._tables[table].columns, replaceObj);
+    const useRow = tableObj.select ? tableObj.select(replaceObj) : replaceObj;
+
+    return resolveModel(nSQL.getDB(selectedDB)._tables[table].columns, useRow);
 }
 
 export const noop = () => { };
@@ -754,7 +764,25 @@ export const cleanArgs2 = (selectedDB: string, args: any, dataModel: { [colAndTy
             if (!typeModel) {
                 throw new Error(`Can't find type ${findModel}!`);
             }
-            return conformType(dModel, args, typeModel);
+
+            const customType = (cType: string) => {
+                if (cType.indexOf("[]") !== -1) {
+                    const arrayOf = cType.slice(0, cType.lastIndexOf("[]"));
+                    if (!Array.isArray(args)) return [];
+                    return args.map(v => customType(arrayOf));
+                }
+                if (!typeModel) {
+                    throw new Error(`Can't find type ${findModel}!`);
+                }
+                
+                if (typeModel.model) {
+                    return conformType(dModel, args, typeModel.model);
+                } else {
+                    return obj;
+                }
+            }
+            customType(dModel);
+            
         } else {
             let returnObj = {};
             let getOtherCols: boolean = false;
@@ -890,18 +918,22 @@ export const cast = (selectedDB: string|undefined, type: string, val: any, allow
 
     // custom type found
     if (Object.keys(types).indexOf(type) !== -1) {
-        if (isObject(val)) {
-            let keys: string[] = [];
-            let customType: string = "";
-            const typeObj = types[type];
-            let returnObj = Object.keys(typeObj).reduce((prev, cur) => {
-                const key = cur.split(":");
-                prev[key[0]] = cast(selectedDB, key[1], val[key[0]], allowUknownTypes, nSQL);
-                return prev;
-            }, {})
-            return returnObj;
+
+        const typeObj = types[type];
+        if (typeObj.model) {
+            if (isObject(val)) {
+                return Object.keys(typeObj.model).reduce((prev, cur) => {
+                    const key = cur.split(":");
+                    prev[key[0]] = cast(selectedDB, key[1], val[key[0]], allowUknownTypes, nSQL);
+                    return prev;
+                }, {});
+            }
+            return {};
+        } else if (typeObj.onSelect) {
+            return typeObj.onSelect(val);
+        } else {
+            return undefined;
         }
-        return {};
     }
 
     const doCast = (castType: string, castVal: any) => {

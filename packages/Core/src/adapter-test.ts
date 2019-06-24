@@ -104,11 +104,13 @@ export class nanoSQLAdapterTest {
                     columns: [
                         {
                             key: "id",
-                            type: "int"
+                            type: "int",
+                            immutable: false
                         },
                         {
                             key: "name",
-                            type: "string"
+                            type: "string",
+                            immutable: false
                         }
                     ],
                     indexes: {},
@@ -175,11 +177,13 @@ export class nanoSQLAdapterTest {
                     columns: [
                         {
                             key: "id",
-                            type: "int"
+                            type: "int",
+                            immutable: false
                         },
                         {
                             key: "name",
-                            type: "string"
+                            type: "string",
+                            immutable: false
                         }
                     ],
                     indexes: {
@@ -326,11 +330,13 @@ export class nanoSQLAdapterTest {
                     columns: [
                         {
                             key: "id",
-                            type: "int"
+                            type: "int",
+                            immutable: false
                         },
                         {
                             key: "name",
-                            type: "string"
+                            type: "string",
+                            immutable: false
                         }
                     ],
                     indexes: {},
@@ -483,11 +489,13 @@ export class nanoSQLAdapterTest {
                     columns: [
                         {
                             key: "id",
-                            type: "uuid"
+                            type: "uuid",
+                            immutable: false
                         },
                         {
                             key: "name",
-                            type: "string"
+                            type: "string",
+                            immutable: false
                         }
                     ],
                     indexes: {},
@@ -607,15 +615,18 @@ export class nanoSQLAdapterTest {
                     columns: [
                         {
                             key: "id",
-                            type: "int"
+                            type: "int",
+                            immutable: false
                         },
                         {
                             key: "name",
-                            type: "string"
+                            type: "string",
+                            immutable: false
                         },
                         {
                             key: "posts",
-                            type: "string[]"
+                            type: "string[]",
+                            immutable: false
                         }
                     ],
                     indexes: {},

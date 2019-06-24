@@ -105,6 +105,11 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return this;
     }
 
+    public updateImmutable(rowData: {[key: string]: any}): _nanoSQLQueryBuilder {
+        this._query.updateImmutable = rowData;
+        return this;
+    } 
+
     public comment(comment: string): _nanoSQLQueryBuilder {
         this._query.comments.push(comment);
         return this;

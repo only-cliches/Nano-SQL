@@ -13,8 +13,6 @@ function run() {
 
     #type declerations & node build
     ./node_modules/.bin/tsc --stripInternal -d --moduleResolution "node" -t "es5" --rootDir  "./src" --module "commonjs" --outDir "./lib"
-    cp src/db-index.js lib/db-index.js
-    cp src/db-index.wasm lib/db-index.wasm
     echo "${bold}(2/5) Node Build & Type Declarations Completed...${normal}"
 
     #browser build

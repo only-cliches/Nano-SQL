@@ -184,6 +184,7 @@ export declare class InanoSQLQueryBuilder {
         as?: string
     }): InanoSQLQueryBuilder;
     copyTo(table: string, mutate?: (row: any) => any): InanoSQLQueryBuilder;
+    updateImmutable(rowData: {[key: string]: any}): InanoSQLQueryBuilder;
     into(table: string): InanoSQLQueryBuilder;
     on(table: string): InanoSQLQueryBuilder;
     exec(exportEvent?: boolean): Promise<{
@@ -306,6 +307,7 @@ export interface InanoSQLDataModel {
     ai?: boolean;
     pk?: boolean;
     default?: any;
+    immutable?: boolean;
     model?: {
         [colAndType: string]: InanoSQLDataModel;
     }
@@ -531,6 +533,7 @@ export interface InanoSQLTableColumn {
     model?: InanoSQLTableColumn[];
     notNull?: boolean;
     default?: any;
+    immutable: boolean;
     max?: number;
     min?: number;
     ai?: boolean;
@@ -606,6 +609,7 @@ export interface InanoSQLQuery {
     cacheID?: string;
     parent: InanoSQLInstance;
     returnEvent?: boolean;
+    updateImmutable?: any;
     transactionId?: string;
     [key: string]: any;
 }

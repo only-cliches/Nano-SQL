@@ -146,7 +146,16 @@ const parseFile = (file: string, idx: number): string => {
         delete require.cache[file];
         let mod: {
             tables?: InanoSQLTableConfig[];
-            types?: {[type: string]: {[colName: string]: InanoSQLDataModel}};
+            types?: {
+                [typeName: string]: {
+                    onInsert?: (colValue: any) => any,
+                    onSelect?: (colValue: any) => any,
+                    interfaceText?: string;
+                    model?: {
+                        [colAndType: string]: InanoSQLDataModel;
+                    }
+                }
+            };
         } = require(file);
 
         let tsFile = `import { uuid, timeId, timeIdms } from  "@nano-sql/core/lib/interfaces";\n\n`;
@@ -197,10 +206,15 @@ const parseFile = (file: string, idx: number): string => {
         if (mod.types) {
             Object.keys(mod.types).forEach((type) => {
                 const typeObj = (mod.types || {})[type];
-                tsFile += `export interface Itype${useOptions.ignoreCasing ? type : titleCase(type)} {\n`;
-                tsFile += parseModel("", 0, true, typeObj);
-                tsFile += `}`
-                tsFile += "\n\n";
+                if (typeObj.interfaceText) {
+                    tsFile += typeObj.interfaceText;
+                    tsFile += "\n\n";
+                } else if (typeObj.model) {
+                    tsFile += `export interface Itype${useOptions.ignoreCasing ? type : titleCase(type)} {\n`;
+                    tsFile += parseModel("", 0, true, typeObj.model);
+                    tsFile += `}`
+                    tsFile += "\n\n";
+                }
             })
         }
         console.log(`${idx + 1}. "${(file.split(/\\|\//gmi).pop() || "")}" types rendered.`);

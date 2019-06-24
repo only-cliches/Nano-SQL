@@ -104,7 +104,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         transaction.onerror = error;
         open(transaction, transaction.objectStore(table));
     }
-
+/*
     batch(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
         const txs: {[table: string]: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[]} = {};
         console.warn("IndexedDB does not fully support transactions, specifically with secondary indexes.");
@@ -178,6 +178,7 @@ export class IndexedDB extends nanoSQLMemoryIndex {
             }, err);
         }).then(success).catch(error);
     }
+*/
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
 

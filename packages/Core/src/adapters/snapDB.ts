@@ -56,10 +56,10 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
         this._baseFolder = path.join(this._path, "db_" + id);
 
         if (!fs.existsSync(this._baseFolder)) {
-            fs.mkdirSync(this._baseFolder);
+            fs.mkdirSync(this._baseFolder, {recursive: true});
         }
             
-        this._tables["_ai_store"] = new SnapDB(path.join(this._baseFolder, "_ai_store"), "string");
+        this._tables["_ai_store"] = new SnapDB({dir: path.join(this._baseFolder, "_ai_store"), key: "string"});
         this._tables["_ai_store"].ready().then(() => {
             complete();
         }).catch(error);
@@ -69,42 +69,36 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
         this._tableConfigs[tableName] = tableData;
 
-        this._tables[tableName] = new SnapDB(path.join(this._baseFolder, tableName), tableData.isPkNum ? "float" : "string");
+        this._tables[tableName] = new SnapDB({dir: path.join(this._baseFolder, tableName), key: tableData.isPkNum ? "float" : "string"});
 
         if (this._tableConfigs[tableName].ai) {
             this._tables["_ai_store"].get(tableName).then((aiValue) => {
                 this._ai[tableName] = parseInt(aiValue || "0");
                 this._tables[tableName].ready().then(complete).catch(error);
-            }).catch(error);
+            }).catch(() => {
+                this._ai[tableName] = 0;
+                this._tables[tableName].ready().then(complete).catch(error);
+            });
         } else {
             this._tables[tableName].ready().then(complete).catch(error);
         }
     }
 
     dropTable(tableName: string, complete: () => void, error: (err: any) => void) {
-        if (this._tableConfigs[tableName].ai) {
-            this._tables["_ai_store"].delete(tableName).then(() => {
-                this._ai[tableName] = 0;
-                return this._tables[tableName].empty();
-            }).then(() => {
-                return this._tables[tableName].close();
-            }).then(() => {
-                delete this._tables[tableName];
-                delete this._tableConfigs[tableName];
-                complete();
-            }).catch(error);
-        } else {
-            this._tables[tableName].empty().then(() => {
-                return this._tables[tableName].close();
-            }).then(() => {
-                delete this._tables[tableName];
-                delete this._tableConfigs[tableName];
-                complete();
-            }).catch(error);
-        }
+        this._tables["_ai_store"].delete(tableName).then(() => {
+            this._ai[tableName] = 0;
+            return this._tables[tableName].empty();
+        }).then(() => {
+            return this._tables[tableName].close();
+        }).then(() => {
+            delete this._tables[tableName];
+            delete this._tableConfigs[tableName];
+            complete();
+        }).catch(error);
     }
 
     disconnect(complete: () => void, error: (err: any) => void) {
+
         chainAsync(Object.keys(this._tables), (table, i, next, err) => {
             this._tables[table].close().then(() => {
                 delete this._tables[table];
@@ -173,7 +167,7 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
                 }, reverse);
             break;
             case "offset":
-                const ranges = reverse ? [(offsetOrLow || 0) + 2, limitOrHigh] : [(offsetOrLow || 0) + 1, limitOrHigh];
+                const ranges = reverse ? [(offsetOrLow || 0) + 1, limitOrHigh] : [(offsetOrLow || 0), limitOrHigh];
                 this._tables[table].offset(ranges[0], ranges[1], (key, data) => {
                     onRow(JSON.parse(data), ct);
                     ct++;

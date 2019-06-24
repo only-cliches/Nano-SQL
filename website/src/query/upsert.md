@@ -27,6 +27,19 @@ nSQL("users")
 nSQL("users.age").query("upsert", 50).where(["name", "=", "billy"]).exec()..
 ```
 
+### Updating Immutable Rows
+
+Columns can be frozen with the `immutable` property set to `true`, this makes the columns ignore normal updates.  You can optionally force immutable rows to be updated with the `.updateImmutable` method.  When you call the method, include an object with the keys and values of the immutable property(s) to update.  The argument passed into `updateImmutable` works much like what you'd pass into the regular `upsert` query, except it allows immutable columns to update.
+
+```ts
+// update the immutable slug column with a new value
+nSQL("posts")
+.query("upsert",{})
+.where(["id", "=", 3])
+.updateImmutable({slug: "some-post-slug"})
+.exec().then...
+```
+
 ### Upserting A Large Number Of Records
 
 In some cases you may want to modify or add thousands of records.  In this case it's a good idea to use the `.stream()` api.  With the normal `.exec()` the modified/added rows are stored in memory and returned with the result.  This can be a problem if you are modifying more rows than you have memory for, so the stream api solves this by not storing the rows in memory.  It's easy to use instead of `.exec()`, just replace `.exec()` with `.stream()` and add a few callbacks:

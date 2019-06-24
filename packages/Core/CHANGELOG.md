@@ -4,20 +4,17 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.3.4]
+## [2.3.4] 06-24-2019
 - Updated dependencies.
 - SnapDB now honors `path` variable in config.
 - Added transaction api.  Not all adapters support transactions, each one will need to implement it's own transaction methods.
 - Added throttle to count update to improve performance.
 - Added `serve-link` run script for `npm link` situations.
-
-### TODO
-- Fixed secondary index array not being used in SELECT unless WHERE is nested.
+- Added `select` option to table creation to mutate rows as they are selected.
 - Added feature to createDatabase `types` to implement custom types with a function instead of with an object.
 - Added `immutable` property to column definitions, allows you to prevent column updates after the initial insert.
 - Added `.updateImmutable()` query argument to force immutable column updates.
-- Added custom function type definitions to take care of
-
+- Added custom function type definitions to take care of.
 
 ## [2.3.3] 5-20-2019
 - Fixed issue with rebuilding list type indexes

@@ -1159,6 +1159,21 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 finalRow = filter(finalRow);
             }
 
+            const cols = this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].columns;
+            let k = cols.length;
+            while(k--) {
+                if (cols[k].immutable) {
+                    delete finalRow[cols[k].key];
+                }
+            }
+
+            if (this.query.updateImmutable) {
+                finalRow = {
+                    ...finalRow,
+                    ...this.query.updateImmutable
+                }
+            }
+
             this._diffUpdates(this.query.table as string, oldRow, finalRow, () => {
 
                 const changeEvent: InanoSQLDatabaseEvent = {
@@ -1591,6 +1606,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _streamAS(row: any): any {
         const distinctArgs = (this.query.distinct || []).map(s => ({ isFn: false, value: s }))
         const selectArgs = (this._selectArgs || []).concat(distinctArgs);
+
         if (selectArgs.length) {
             let result = {};
             selectArgs.forEach((arg) => {
@@ -1788,6 +1804,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     ai: dataModels[d].ai,
                     pk: dataModels[d].pk,
                     default: dataModels[d].default,
+                    immutable: dataModels[d].immutalbe || false,
                     notNull: dataModels[d].notNull,
                     max: dataModels[d].max,
                     min: dataModels[d].min,
@@ -2774,6 +2791,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const recursiveParse = (ww: any[], level: number): (IWhereCondition | string)[] => {
 
             const doIndex = !ignoreIndexes && level === 0;
+
             return ww.reduce((p, w, i) => {
                 if (i % 2 === 1) { // AND or OR
                     if (typeof w !== "string") {

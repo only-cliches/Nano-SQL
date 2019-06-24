@@ -34,15 +34,15 @@ describe("Adapter Tests", () => {
 
     it("SnapDB Storage", (done: MochaDone) => {
         new nanoSQLAdapterTest(SnapDBAdapter, []).test().then(() => {
-            rimraf(path.join(__dirname, "../", "db_123"));
+            // rimraf(path.join(__dirname, "../", "db_123"));
             done();
         }).catch((err) => {
-            console.log(err);
-            rimraf(path.join(__dirname, "../", "db_123"));
+            // rimraf(path.join(__dirname, "../", "db_123"));
+            console.trace(err);
             done(new Error(err));
         });
-    }).timeout(20000);
-
+    }).timeout(60000);
+/*
     it("WebSQL, IndexedDB & LocalStorage", (done: MochaDone) => {
 
         webpack({
@@ -152,5 +152,5 @@ describe("Adapter Tests", () => {
             });
         });
     }).timeout(120000);
-
+*/
 });
