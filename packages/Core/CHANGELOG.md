@@ -4,6 +4,10 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.5]
+- Updated dependencies.
+- Fixed issue [155](https://github.com/ClickSimply/Nano-SQL/issues/155), added create database documentation.
+
 ## [2.3.4] 06-24-2019
 - Updated dependencies.
 - SnapDB now honors `path` variable in config.
