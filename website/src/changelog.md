@@ -224,7 +224,7 @@ nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrd
 - `limit().offset()` queries now do the same as the `.range()` query modifier use to do when there aren't orderby/groupby arguments.  
 - `.range()` is also no longer supported.
 - `union`, `join` and `graph` queries now use indexes when possible/available.
-- Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/functions.ts).
+- Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/functions.ts).
 - Events can now target nested row values. `nSQL("Table.column.nested.value").on("change", () => {})`.
 - Plugins and adapters can declare core/plugin version dependencies which are validated at runtime.
 - Added new index `offset` feature for secondary indexes.  Primary keys (used for the secondary indexes) often don't support negative values, the offset feature lets you index negative values that are less than the offset value provided in the index config.

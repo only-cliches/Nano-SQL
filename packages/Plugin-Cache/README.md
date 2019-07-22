@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
-    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Core">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/master/graphics/logo.png" alt="nanoSQL Logo">
   </a>
 </p>
 <p align="center">
