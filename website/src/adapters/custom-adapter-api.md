@@ -22,10 +22,10 @@ While it's possible to write an adapter in ES5 or ES6, using Typescript will mak
 
 You can also reference existing adapter code:
 
-* [IndexedDB Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/adapters/indexedDB.ts)
-* [RocksDB Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/adapters/rocksDB.ts)
-* [Memory / Local Storage Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/adapters/syncStorage.ts)
-* [WebSQL Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/adapters/webSQL.ts)
+* [IndexedDB Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/adapters/indexedDB.ts)
+* [RocksDB Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/adapters/rocksDB.ts)
+* [Memory / Local Storage Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/adapters/syncStorage.ts)
+* [WebSQL Adapter Source](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/adapters/webSQL.ts)
 
 Here are the methods/objects in an adapter class:
 
