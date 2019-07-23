@@ -24,11 +24,11 @@ After a database is created you can still use temporary tables for queries, they
 NanoSQL requires very little boilerplate code to start using.  Simply call the `createDatabase` method and pass in an object describing your tables and other properties, then it's ready to use!
 
 ```typescript
-// basic setup
+// typical setup
 nSQL().createDatabase({
     id: "my_db", // can be anything that's a string
-    mode: "PERM", // save changes to IndexedDB, WebSQL or RocksDB!
-    tables: [ // tables can be created as part of createDatabase or created later
+    mode: "PERM", // save changes to IndexedDB, WebSQL or SnapDB!
+    tables: [ // tables can be created as part of createDatabase or created later with create table queries
         {
             name: "users",
             model: {
@@ -37,7 +37,24 @@ nSQL().createDatabase({
                 "age:int": {}
             }
         }
-    ]
+    ],
+    version: 3, // current schema/database version
+    onVersionUpdate: (prevVersion) => { // migrate versions
+         return new Promise((res, rej) => {
+             switch(prevVersion) {
+                 case 1:
+                     // migrate v1 to v2
+                    res(2);
+                    break;
+                 case 2:
+                     // migrate v2 to v3
+                     res(3);
+                     break;
+             }
+
+         });
+
+     }
 }).then(() => {
     // ready to query!
 }).catch(() => {
@@ -48,6 +65,23 @@ nSQL().createDatabase({
 The [createDatabase](https://api.nanosql.io/classes/_index_.nanosql.html#createdatabase) method accepts one object as its argument and returns a promise.  When the promise resolves the database is ready to use. 
 
 The object used in the createDatabase function is described by the [InanoSQLConfig interface](https://api.nanosql.io/interfaces/_interfaces_.inanosqlconfig.html).
+
+The properties of that interface are described in the table below.
+
+
+  
+ GeneratePut tabs between columnsCompact mode
+Result (click "Generate" to refresh) Copy to clipboard
+| Property        | Type                                    | Required | Details                                                                                                                                                                                                                                             |
+|-----------------|-----------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| id              | string                                  | yes      | The database name/id.  Must remain the same to persist data between page/app reloads.                                                                                                                                                               |
+| mode            | string \| InanoSQLAdapter               | no       | Either a string describing a built in adapter or an adapter class to use an external adapter.  Fully described [here](/adapters/built-in-adapters.html).                                                                                            |
+| plugins         | InanoSQLPlugin[]                        | no       | An array of plugins to initiate with the database.                                                                                                                                                                                                  |
+| planetRadius    | number                                  | no       | When using the CROW function this is used to scale the results to different units.  Default is 6,371 to return results in KM.  Set to 3,958.8 to get results in miles.                                                                              |
+| path            | string                                  | no       | Some modes/adapters will save the database to a folder (like LevelDB, RocksDB, and SQLite).  Set this to the folder you'd like the adapter to save the database into.  Not supported by all adapters.                                               |
+| tables          | InanoSQLTableConfig[]                   | no       | Can be used to include the table data models in database setup.  This is the same as calling `createTable` a bunch of times after setting up the database.  You can read about how to set up tables [here](/query/create-table.html#making-tables). |
+| version         | number                                  | no       | The current schema/database version.                                                                                                                                                                                                                |
+| onVersionUpdate | (oldVersion: number) => Promise\<number\> | no       | The database version is persisted to a utility table on each app load.  If an older version is found this function is called until it returns the current version.  You can use this function to perform migration actions between versions.        |
 
 Keep in mind that nanoSQL has no way of saving database config data between reloads of your app (only table data), so the `createDatabase` method should be called on the first and every subsequent app load you intend to use the database in.  If the database and tables already exist the `createDatabase` method just attaches nanoSQL to the existing data, otherwise the tables and indexes are created as needed.
 

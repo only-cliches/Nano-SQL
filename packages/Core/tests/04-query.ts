@@ -2153,4 +2153,26 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Triggers ready for event handler before database is created.", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+
+        // make event listener first for database that doesn't exist yet
+        nSQL.useDatabase("test").on("ready", () => {
+            done();
+        })
+
+        // connect to new database
+        nSQL.connect({
+            id: "test",
+            tables: [{
+                name: "test",
+                model: {
+                    "id:int": {pk: true },
+                    "time:date": {}
+                }
+            }]
+        });
+    });
+
 });

@@ -104,81 +104,27 @@ export class IndexedDB extends nanoSQLMemoryIndex {
         transaction.onerror = error;
         open(transaction, transaction.objectStore(table));
     }
-/*
-    batch(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
-        const txs: {[table: string]: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[]} = {};
-        console.warn("IndexedDB does not fully support transactions, specifically with secondary indexes.");
-        actions.forEach((action) => {
-            if (action.data && action.data.indexName) {
-                const indexName = `_idx_${action.data.tableId}_${action.data.indexName}`;
-                if (!txs[indexName]) {
-                    txs[indexName] = [];
+
+    batch(table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
+        
+        this.store(table, "readwrite", (tx, store) => {
+            tx.onerror = error;
+
+            let i = 0;
+
+            while(i < actions.length) {
+                const value = actions[i];
+                if (value.type === "put") {
+                    store.put(value.data);
+                } else {
+                    store.delete(value.data);
                 }
-                txs[indexName].push(action);
-            } else {
-                if (!txs[action.table]) {
-                    txs[action.table] = [];
-                }
-                txs[action.table].push(action);
+                i++;
             }
-        });
-        allAsync(Object.keys(txs), (table, i, next, err) => {
-            const batch = txs[table];
-            this.store(table, "readwrite", (tx, store) => {
-                tx.onerror = err;
-                let results: any[] = [];
-                tx.oncomplete = () => {
-                    next(results);
-                }
-
-                allAsync(batch, (action, ii, nextA, errA) => {
-                    switch(action.type) {
-                        case "put":
-                            const row = action.data;
-                            let writePk = false;
-                            let pk = deepGet(this._tableConfigs[table].pkCol, row);
-                            if (typeof pk === "undefined") {
-                                writePk = true;
-                                pk = generateID(this._tableConfigs[table].pkType, this._ai[table] + 1);
-                            }
-
-                            if (typeof pk === "undefined") {
-                                error(new Error("Can't add a row without a primary key!"));
-                                return;
-                            }
-
-                            if (writePk) {
-                                deepSet(this._tableConfigs[table].pkCol, row, pk);
-                            }
-                    
-                            this._ai[table] = Math.max(pk, this._ai[table]);
-                            store.put(row);
-                            results.push(pk);
-                            nextA();
-                        break;
-                        case "del":
-                            store.delete(action.data);
-                            results.push(action.data);
-                            nextA();
-                        break;
-                        case "idx-put":
-                            this.addIndexValue(action.data.tableId, action.data.indexName, action.data.key, action.data.value, () => {
-                                results.push(action.data.key);
-                                nextA();
-                            }, errA)
-                        break;
-                        case "idx-del":
-                            this.deleteIndexValue(action.data.tableId, action.data.indexName, action.data.key, action.data.value, () => {
-                                results.push(action.data.key);
-                                nextA();
-                            }, errA)
-                        break;
-                    }
-                }).catch(err);
-            }, err);
-        }).then(success).catch(error);
+            
+            tx.oncomplete = () => success([]);
+        }, error);
     }
-*/
 
     write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
 
