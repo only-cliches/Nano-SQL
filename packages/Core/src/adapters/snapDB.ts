@@ -44,7 +44,13 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
 
     _path: string = typeof process !== "undefined" ? process.cwd() : "";
 
-    constructor() {
+    constructor(public snapDBArgs?: {
+        dir: string;
+        key: "string" | "float" | "int";
+        cache?: boolean;
+        autoFlush?: number | boolean;
+        mainThread?: boolean;
+    }) {
         super(true, false);
         this._ai = {};
         this._tableConfigs = {};
@@ -69,7 +75,11 @@ export class SnapDBAdapter extends nanoSQLMemoryIndex {
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
         this._tableConfigs[tableName] = tableData;
 
-        this._tables[tableName] = new SnapDB({dir: path.join(this._baseFolder, tableName), key: tableData.isPkNum ? "float" : "string"});
+        this._tables[tableName] = new SnapDB({
+            dir: path.join(this._baseFolder, tableName), 
+            key: tableData.isPkNum ? "float" : "string",
+            ...this.snapDBArgs ? this.snapDBArgs : {}
+        });
 
         if (this._tableConfigs[tableName].ai) {
             this._tables["_ai_store"].get(tableName).then((aiValue) => {

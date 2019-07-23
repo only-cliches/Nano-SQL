@@ -5,8 +5,11 @@
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
 ## [2.3.5]
+- *BREAKING CHANGE* Removed WIP transaction API, to be implemented in history plugin.
 - Updated dependencies.
 - Fixed issue [155](https://github.com/ClickSimply/Nano-SQL/issues/155), added create database documentation.
+- Fixed issue [156](https://github.com/ClickSimply/Nano-SQL/issues/156), events created before a database is setup will now work as expected.
+
 
 ## [2.3.4] 06-24-2019
 - Updated dependencies.

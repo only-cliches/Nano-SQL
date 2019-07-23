@@ -113,7 +113,6 @@ export declare class InanoSQLInstance {
     default(databaseID: string|undefined, replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
-    transaction(queries: InanoSQLQuery[]): Promise<any[]>;
     rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: {
         [key: string]: any;
     }) => void): Promise<any>;
@@ -378,7 +377,7 @@ export interface InanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
 
-    batch?(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
+    batch?(actions: {type: "put"|"del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
 
     read(table: string, pk: any, complete: (row: {[key: string]: any} | undefined) => void, error: (err: any) => void);
 
