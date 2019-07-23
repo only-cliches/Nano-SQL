@@ -78,6 +78,13 @@ export class nanoSQL implements InanoSQLInstance {
         [fnName: string]: InanoSQLFunction;
     };
 
+    public events: {
+        [id: string]: {
+            Core: { [path: string]: ReallySmallEvents };
+            [eventName: string]: { [path: string]: ReallySmallEvents };
+        };
+    } = {};
+
     public planetRadius: number = 6371;
 
     public selectedTable: any;
@@ -161,7 +168,7 @@ export class nanoSQL implements InanoSQLInstance {
             return;
         }
         
-        if (this.getDB(databaseID).filters[filterName]) {
+        if (this.dbs[databaseID] && this.getDB(databaseID).filters[filterName]) {
             chainAsync(this.getDB(databaseID).filters[filterName], (item, i, nextFilter) => {
                 this.getDB(databaseID).filters[filterName][i](args, (newArgs) => {
                     args = newArgs;
@@ -511,6 +518,17 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
+    public maybeCreateEventObject(id: string) {
+        if (!this.events[id]) {
+            this.events[id] = {
+                Core: {
+                    "*": new ReallySmallEvents()
+                },
+                "*": { "*": new ReallySmallEvents() }
+            }
+        }
+    }
+
     public connect(config: InanoSQLConfig = {}): Promise<any> {
         let t = this;
 
@@ -519,6 +537,8 @@ export class nanoSQL implements InanoSQLInstance {
         if (this.dbs[newDatabaseID]) {
             throw new Error(`nSQL: ${newDatabaseID} database has already been created!`);
         }
+
+        this.maybeCreateEventObject(newDatabaseID);
 
         this.dbs[newDatabaseID] = {
             adapter: new SyncStorage(),
@@ -545,16 +565,12 @@ export class nanoSQL implements InanoSQLInstance {
             _fkRels: {},
             _tableIds: { "_util": "_util", "_ttl": "_ttl" },
             _queryCache: {},
-            filters: {},
-            eventFNs: {
-                Core: {
-                    "*": new ReallySmallEvents()
-                },
-                "*": { "*": new ReallySmallEvents() }
-            }
+            filters: {}
         }
 
         this.selectedDB = newDatabaseID;
+
+        this._refreshEventChecker();
 
         return this._initPlugins(config).then(() => {
             return new Promise((res, rej) => {
@@ -874,7 +890,11 @@ export class nanoSQL implements InanoSQLInstance {
  
         let l: string = selectTable || (typeof this.selectedTable !== "string" ? "" : this.selectedTable) as string;
 
-        this.doFilter<onEventFilter>(this.selectedDB, "onEvent", { res: { action, callback: callBack } }, (newEvent) => {
+        const selDB = this.selectedDB;
+
+        this.maybeCreateEventObject(selDB);
+
+        this.doFilter<onEventFilter>(selDB, "onEvent", { res: { action, callback: callBack } }, (newEvent) => {
 
             switch (newEvent.res.action) {
                 case "connect":
@@ -882,7 +902,7 @@ export class nanoSQL implements InanoSQLInstance {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                    this.getDB().eventFNs.Core["*"].on(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB].Core["*"].on(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
                 case "change":
@@ -890,31 +910,31 @@ export class nanoSQL implements InanoSQLInstance {
                 case "upsert":
                 case "*":
                     const table = resolvePath(l);
-                    if (!this.getDB().eventFNs[table[0]]) {
-                        this.getDB().eventFNs[table[0]] = {
+                    if (!this.events[selDB][table[0]]) {
+                        this.events[selDB][table[0]] = {
                             "*": new ReallySmallEvents()
                         };
                     }
                     const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
-                    if (!this.getDB().eventFNs[table[0]][nestedPath]) {
-                        this.getDB().eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
+                    if (!this.events[selDB][table[0]][nestedPath]) {
+                        this.events[selDB][table[0]][nestedPath] = new ReallySmallEvents();
                     }
-                    this.getDB().eventFNs[table[0]][nestedPath].on(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB][table[0]][nestedPath].on(newEvent.res.action, newEvent.res.callback);
                     break;
                 default:
                     new Promise((res, rej) => {
-                        this.doFilter<customEventFilter>(this.selectedDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                        this.doFilter<customEventFilter>(selDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
                     }).then((evData: customEventFilter) => {
                         if (evData.res.nameSpace) {
-                            if (!this.getDB().eventFNs[evData.res.nameSpace]) {
-                                this.getDB().eventFNs[evData.res.nameSpace] = {
+                            if (!this.events[selDB][evData.res.nameSpace]) {
+                                this.events[selDB][evData.res.nameSpace] = {
                                     "*": new ReallySmallEvents()
                                 };
                             }
-                            if (!this.getDB().eventFNs[evData.res.nameSpace][evData.res.path]) {
-                                this.getDB().eventFNs[evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
+                            if (!this.events[selDB][evData.res.nameSpace][evData.res.path]) {
+                                this.events[selDB][evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
                             }
-                            this.getDB().eventFNs[evData.res.nameSpace][evData.res.path].on(newEvent.res.action, newEvent.res.callback);
+                            this.events[selDB][evData.res.nameSpace][evData.res.path].on(newEvent.res.action, newEvent.res.callback);
                         } else {
                             throw new Error(`Invalid event "${action}"!`);
                         }
@@ -931,7 +951,11 @@ export class nanoSQL implements InanoSQLInstance {
 
         let l: string = selectTable || (typeof this.selectedTable !== "string" ? "" : this.selectedTable) as string;
 
-        this.doFilter<offEventFilter>(this.selectedDB, "onEvent", { res: { action, callback: callBack } }, (newEvent) => {
+        const selDB = this.selectedDB;
+
+        this.maybeCreateEventObject(selDB);
+
+        this.doFilter<offEventFilter>(selDB, "offEvent", { res: { action, callback: callBack } }, (newEvent) => {
 
             switch (newEvent.res.action) {
                 case "connect":
@@ -939,7 +963,7 @@ export class nanoSQL implements InanoSQLInstance {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                    this.getDB().eventFNs.Core["*"].off(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB].Core["*"].off(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
                 case "change":
@@ -947,31 +971,31 @@ export class nanoSQL implements InanoSQLInstance {
                 case "upsert":
                 case "*":
                     const table = resolvePath(l);
-                    if (!this.getDB().eventFNs[table[0]]) {
-                        this.getDB().eventFNs[table[0]] = {
+                    if (!this.events[selDB][table[0]]) {
+                        this.events[selDB][table[0]] = {
                             "*": new ReallySmallEvents()
                         };
                     }
                     const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
-                    if (!this.getDB().eventFNs[table[0]][nestedPath]) {
-                        this.getDB().eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
+                    if (!this.events[selDB][table[0]][nestedPath]) {
+                        this.events[selDB][table[0]][nestedPath] = new ReallySmallEvents();
                     }
-                    this.getDB().eventFNs[table[0]][nestedPath].off(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB][table[0]][nestedPath].off(newEvent.res.action, newEvent.res.callback);
                     break;
                 default:
                     new Promise((res, rej) => {
-                        this.doFilter<customEventFilter>(this.selectedDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                        this.doFilter<customEventFilter>(selDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
                     }).then((evData: customEventFilter) => {
                         if (evData.res.nameSpace) {
-                            if (!this.getDB().eventFNs[evData.res.nameSpace]) {
-                                this.getDB().eventFNs[evData.res.nameSpace] = {
+                            if (!this.events[selDB][evData.res.nameSpace]) {
+                                this.events[selDB][evData.res.nameSpace] = {
                                     "*": new ReallySmallEvents()
                                 };
                             }
-                            if (!this.getDB().eventFNs[evData.res.nameSpace][evData.res.path]) {
-                                this.getDB().eventFNs[evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
+                            if (!this.events[selDB][evData.res.nameSpace][evData.res.path]) {
+                                this.events[selDB][evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
                             }
-                            this.getDB().eventFNs[evData.res.nameSpace][evData.res.path].off(newEvent.res.action, newEvent.res.callback);
+                            this.events[selDB][evData.res.nameSpace][evData.res.path].off(newEvent.res.action, newEvent.res.callback);
                         } else {
                             throw new Error(`Invalid event "${action}"!`);
                         }
@@ -986,10 +1010,12 @@ export class nanoSQL implements InanoSQLInstance {
 
     public _refreshEventChecker(): InanoSQLInstance {
 
-        this.getDB().state.hasAnyEvents = Object.keys(this.getDB().eventFNs).reduce((prev, cur) => {
+        if (!this.dbs[this.selectedDB]) return this;
+
+        this.getDB().state.hasAnyEvents = Object.keys(this.events[this.selectedDB]).reduce((prev, cur) => {
             if (prev === true) return true;
-            const length = Object.keys(this.getDB().eventFNs[cur]).reduce((p, key) => {
-                return Object.keys(this.getDB().eventFNs[cur][key].eventListeners).length + p;
+            const length = Object.keys(this.events[this.selectedDB][cur]).reduce((p, key) => {
+                return Object.keys(this.events[this.selectedDB][cur][key].eventListeners).length + p;
             }, 0);
             return length > 0 ? true : prev;
         }, false as boolean);
@@ -1069,23 +1095,25 @@ export class nanoSQL implements InanoSQLInstance {
 
         if (!databaseID) return this;
 
+        if (!this.events[databaseID]) return this;
+
         this.doFilter<eventFilter>(databaseID, "event", { res: eventData }, (event) => {
             if (this.getDB(databaseID).state.hasAnyEvents) {
                 setFast(() => {
                     event.res.events.forEach((evnt) => {
                         if (!ignoreStarTable) {
-                            Object.keys(this.getDB(databaseID).eventFNs["*"]).forEach((path) => {
-                                this.getDB(databaseID).eventFNs["*"][path].trigger(evnt, event.res);
+                            Object.keys(this.events[databaseID]["*"]).forEach((path) => {
+                                this.events[databaseID]["*"][path].trigger(evnt, event.res);
                             });
                         }
-                        if (!this.getDB(databaseID).eventFNs[event.res.target]) return;
+                        if (!this.events[databaseID][event.res.target]) return;
                         if (event.res.path === "_all_") {
-                            Object.keys(this.getDB(databaseID).eventFNs[event.res.target]).forEach((path) => {
-                                this.getDB(databaseID).eventFNs[event.res.target][path].trigger(evnt, event.res);
+                            Object.keys(this.events[databaseID][event.res.target]).forEach((path) => {
+                                this.events[databaseID][event.res.target][path].trigger(evnt, event.res);
                             });
                         } else {
-                            if (!this.getDB(databaseID).eventFNs[event.res.target][event.res.path]) return;
-                            this.getDB(databaseID).eventFNs[event.res.target][event.res.path].trigger(evnt, event.res);
+                            if (!this.events[databaseID][event.res.target][event.res.path]) return;
+                            this.events[databaseID][event.res.target][event.res.path].trigger(evnt, event.res);
                         }
                     });
                 });

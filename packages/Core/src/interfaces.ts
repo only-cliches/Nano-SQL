@@ -48,10 +48,6 @@ export interface InanoSQLDBConfig {
     _queryCache: {
         [id: string]: any[];
     };
-    eventFNs: {
-        Core: { [path: string]: ReallySmallEvents };
-        [eventName: string]: { [path: string]: ReallySmallEvents };
-    };
     _Q: _nanoSQLQueue;
 }
 
@@ -65,6 +61,12 @@ export declare class InanoSQLInstance {
     selectedDB: string;
     dbs: {
         [id: string]: InanoSQLDBConfig;
+    }
+    events: {
+        [id: string]: {
+            Core: { [path: string]: ReallySmallEvents };
+            [eventName: string]: { [path: string]: ReallySmallEvents };
+        };
     }
     selectedTable: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>);
     indexTypes: {
@@ -127,6 +129,7 @@ export declare class InanoSQLInstance {
     }[], onProgress?: (percent: number) => void): Promise<any[]>;
     JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
     csvToArray(text: string): any[];
+    maybeCreateEventObject(id: string);
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
     loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
 }

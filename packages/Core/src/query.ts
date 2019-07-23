@@ -371,7 +371,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     };
                     if (this.nSQL.getDB(this.databaseID).state.hasAnyEvents) {
                         this.nSQL.triggerEvent(this.databaseID || "", changeEvent);
-                        Object.keys(this.nSQL.getDB(this.databaseID).eventFNs[this.query.table as string]).forEach((path) => {
+                        Object.keys(this.nSQL.events[this.databaseID || ""][this.query.table as string]).forEach((path) => {
                             if (path !== "*") {
                                 if (!objectsEqual(deepGet(path, item), deepGet(path, setRow.res))) {
                                     this.nSQL.triggerEvent(this.databaseID || "", {
@@ -1192,8 +1192,8 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     if (typeof this.query.table === "string") {
                         this.nSQL.triggerEvent(this.databaseID, event.res);
 
-                        if (this.nSQL.getDB(this.databaseID).eventFNs[this.query.table as string]) {
-                            Object.keys(this.nSQL.getDB(this.databaseID).eventFNs[this.query.table as string]).forEach((path) => {
+                        if (this.nSQL.events[this.databaseID || ""][this.query.table as string]) {
+                            Object.keys(this.nSQL.events[this.databaseID || ""][this.query.table as string]).forEach((path) => {
                                 if (path !== "*") {
                                     if (!objectsEqual(deepGet(path, oldRow), deepGet(path, finalRow))) {
                                         this.nSQL.triggerEvent(this.databaseID, {
