@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://github.com/ClickSimply/Nano-SQL/tree/2.0/packages/Core">
-    <img src="https://github.com/ClickSimply/Nano-SQL/raw/2.0/graphics/logo.png" alt="nanoSQL Logo">
+  <a href="https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Core">
+    <img src="https://github.com/ClickSimply/Nano-SQL/raw/master/graphics/logo.png" alt="nanoSQL Logo">
   </a>
 </p>
 <p align="center">
@@ -114,10 +114,10 @@ To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.4/dist/nano-sql.min.js" integrity="sha256-rP17OIsCkONYao3UcOBb/TV615sTOgIiuT+BHhSyNgs=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.5/dist/nano-sql.min.js" integrity="sha256-2mCkd02RC5bO9d+MEmFay+4agkR/8a1+ehNaCmSAGwQ=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.4/dist/nano-sql.min.es5.js" integrity="sha256-eAaFuIGNTeouRINuSva3YyLwnzkDdcjeA/IcU/cB/Fo=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.5/dist/nano-sql.min.es5.js" integrity="sha256-vuyNJTTaouHeBXSVyOK7gQVjViSYDhGwzRrFW7R3Ra8=" crossorigin="anonymous"></script>
 ```
 
 ## Important

@@ -14,7 +14,7 @@
         "lib": ["dom", "es2015", "es5"]
     },
     "include": [
-        "src/*"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules"

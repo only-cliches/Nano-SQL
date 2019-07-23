@@ -48,10 +48,6 @@ export interface InanoSQLDBConfig {
     _queryCache: {
         [id: string]: any[];
     };
-    eventFNs: {
-        Core: { [path: string]: ReallySmallEvents };
-        [eventName: string]: { [path: string]: ReallySmallEvents };
-    };
     _Q: _nanoSQLQueue;
 }
 
@@ -65,6 +61,12 @@ export declare class InanoSQLInstance {
     selectedDB: string;
     dbs: {
         [id: string]: InanoSQLDBConfig;
+    }
+    events: {
+        [id: string]: {
+            Core: { [path: string]: ReallySmallEvents };
+            [eventName: string]: { [path: string]: ReallySmallEvents };
+        };
     }
     selectedTable: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>);
     indexTypes: {
@@ -111,7 +113,6 @@ export declare class InanoSQLInstance {
     default(databaseID: string|undefined, replaceObj?: any, table?: string): {
         [key: string]: any;
     } | Error;
-    transaction(queries: InanoSQLQuery[]): Promise<any[]>;
     rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: {
         [key: string]: any;
     }) => void): Promise<any>;
@@ -127,6 +128,7 @@ export declare class InanoSQLInstance {
     }[], onProgress?: (percent: number) => void): Promise<any[]>;
     JSONtoCSV(json: any[], printHeaders?: boolean, useHeaders?: string[]): string;
     csvToArray(text: string): any[];
+    maybeCreateEventObject(id: string);
     CSVtoJSON(csv: string, rowMap?: (row: any) => any): any;
     loadCSV(csv: string, rowMap?: (row: any) => any, onProgress?: (percent: number) => void): Promise<any[]>;
 }
@@ -375,7 +377,7 @@ export interface InanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
 
-    batch?(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
+    batch?(table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
 
     read(table: string, pk: any, complete: (row: {[key: string]: any} | undefined) => void, error: (err: any) => void);
 
@@ -683,7 +685,7 @@ export interface SQLiteAbstractFns {
     }, complete: (pk: any) => void, error: (err: any) => void) => void;
     read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => void;
     remove: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
-    batch: (actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => void;
+    batch: (table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => void;
     getIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => void;
     getNumberOfRecords: (table: string, complete: (length: number) => void, error: (err: any) => void) => void;
     readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {

@@ -12,6 +12,22 @@ The supported database events are:
 
 Database events ignore table selection and aren't effected by which table is selected in the query.  For example `nSQL("users").on("ready", ...)` will do exactly the same thing as `nSQL().on("ready", ...)`.
 
+You can attach database events before a database has been created, but you must first select the new database with `useDatabase` if you're using a custom database name.
+
+```ts
+// listen for ready event on database "my-db"
+nSQL().useDatabase("my-db").on("ready", () => {
+
+});
+
+// create/connect to the database
+nSQL().createDatabase({
+    id: "my-db",
+    mode: "PERM",
+    tables: [...]
+}).then...
+```
+
 Supported table specific events are:
 
 * **select** called when a row is selected on this table

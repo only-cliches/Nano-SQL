@@ -4,6 +4,15 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.5] 07-23-2019
+- *BREAKING CHANGE* Removed WIP transaction API, to be implemented in history plugin.
+- Updated dependencies.
+- Fixed issue [155](https://github.com/ClickSimply/Nano-SQL/issues/155), added create database documentation.
+- Fixed issue [156](https://github.com/ClickSimply/Nano-SQL/issues/156), events created before a database is setup will now work as expected.
+- Fixed issue [141](https://github.com/ClickSimply/Nano-SQL/issues/141), `rawImport` now uses transactions for bulk queries to increase performance when possible.
+- Fixed issue [159](https://github.com/ClickSimply/Nano-SQL/issues/159), added documentation for `.union` queries.
+- Added new batch API in the adapters for improved raw import performance.
+
 ## [2.3.4] 06-24-2019
 - Updated dependencies.
 - SnapDB now honors `path` variable in config.
@@ -236,7 +245,7 @@ nSQL("orders").query("select", ["COUNT(*) AS totalOrders", "AVG(total) AS avgOrd
 - `limit().offset()` queries now do the same as the `.range()` query modifier use to do when there aren't orderby/groupby arguments.  
 - `.range()` is also no longer supported.
 - `union`, `join` and `graph` queries now use indexes when possible/available.
-- Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/functions.ts).
+- Custom query functions can now conditionally index columns/values.  Check out example `CROW` function: [source](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/functions.ts).
 - Events can now target nested row values. `nSQL("Table.column.nested.value").on("change", () => {})`.
 - Plugins and adapters can declare core/plugin version dependencies which are validated at runtime.
 - Added new index `offset` feature for secondary indexes.  Primary keys (used for the secondary indexes) often don't support negative values, the offset feature lets you index negative values that are less than the offset value provided in the index config.

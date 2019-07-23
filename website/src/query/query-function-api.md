@@ -13,7 +13,7 @@ nSQL("users").query("select", ["COUNT(*)"]).where(["COUNT(age)", "=", 1]).orderB
 
 Functions must conform to the `InanoSQLFunction` interface and can be of an aggregate type or simple type.
 
-Built in functions are located in [this source file](https://github.com/ClickSimply/Nano-SQL/blob/2.0/packages/Core/src/functions.ts) and might prove a useful resource for helping you explore how the API works.
+Built in functions are located in [this source file](https://github.com/ClickSimply/Nano-SQL/blob/master/packages/Core/src/functions.ts) and might prove a useful resource for helping you explore how the API works.
 
 ## Simple Functions
 

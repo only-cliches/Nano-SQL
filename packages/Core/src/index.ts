@@ -78,6 +78,13 @@ export class nanoSQL implements InanoSQLInstance {
         [fnName: string]: InanoSQLFunction;
     };
 
+    public events: {
+        [id: string]: {
+            Core: { [path: string]: ReallySmallEvents };
+            [eventName: string]: { [path: string]: ReallySmallEvents };
+        };
+    } = {};
+
     public planetRadius: number = 6371;
 
     public selectedTable: any;
@@ -161,7 +168,7 @@ export class nanoSQL implements InanoSQLInstance {
             return;
         }
         
-        if (this.getDB(databaseID).filters[filterName]) {
+        if (this.dbs[databaseID] && this.getDB(databaseID).filters[filterName]) {
             chainAsync(this.getDB(databaseID).filters[filterName], (item, i, nextFilter) => {
                 this.getDB(databaseID).filters[filterName][i](args, (newArgs) => {
                     args = newArgs;
@@ -416,81 +423,6 @@ export class nanoSQL implements InanoSQLInstance {
         return Object.keys(this.dbs);
     }
 
-    /**
-     * Perform a set of writes/deletes in a batch.
-     * Not supported by all adapters, will fallback to standard writes/deletes if it isn't supported.
-     *
-     * @param {InanoSQLQuery[]} queries
-     * @returns {Promise<any[]>}
-     * @memberof nanoSQL
-     */
-    public transaction(queries: InanoSQLQuery[]): Promise<any[]> {
-        if (!queries.length) {
-            return Promise.resolve([]);
-        }
-        let i = queries.length;
-        let txId = uuidFN();
-        const databaseID = queries[0].databaseID;
-        while(i--) {
-            if (["upsert", "delete"].indexOf(queries[i].action) === -1) {
-                return Promise.reject("Transactions only support upsert and delete queries!");
-            }
-            const table = queries[i].table;
-            if (typeof table !== "string") {
-                return Promise.reject("Transactions only support for internal tables!");
-            }
-            queries[i].transactionId = txId;
-        }
-        this.txs[txId] = [];
-        
-        return new Promise((res, rej) => {
-            // get all the writes/deletes needed for this transaction
-            allAsync(queries, (query, i, next, err) => {
-                this.triggerQuery(databaseID, query, noop, () => {
-                    next();
-                }, err);
-            }).then(() => {
-                // transactions are now qued up
-                const batchFn = this.getDB(databaseID).adapter.batch;
-                if (batchFn) { // has batch fn, commit transaction
-                    batchFn(this.txs[txId], (result) => {
-                        delete this.txs[txId];
-                        res(result);
-                    }, (err) => {
-                        delete this.txs[txId];
-                        rej(err);
-                    });
-                } else { // doesn't have batch fn, use fallback
-                    console.warn(`Adapter "${this.getDB(databaseID).adapter.plugin.name}" doesn't have transaction support, using fallback method.`);
-                    chainAsync(this.txs[txId], (txItem, i, next, err) => {
-                        switch(txItem.type) {
-                            case "del":
-                                this.getDB(databaseID).adapter.delete(txItem.table, txItem.data, next, err);
-                            break;
-                            case "put":
-                                const tableData = this.getDB(databaseID)._tables[txItem.table];
-                                const PK = deepGet(tableData.pkCol, txItem.data);
-                                this.getDB(databaseID).adapter.write(txItem.table, PK, txItem.data, next, err);
-                            break;
-                            case "idx-put":
-                                this.getDB(databaseID).adapter.addIndexValue(txItem.table, txItem.data.index, txItem.data.key, txItem.data.value, next, err);
-                            break;
-                            case "idx-del":
-                                this.getDB(databaseID).adapter.deleteIndexValue(txItem.table, txItem.data.index, txItem.data.key, txItem.data.value, next, err);
-                            break;
-                        }
-                    }).then((result) => {
-                        delete this.txs[txId];
-                        res(result);
-                    }).catch((err) => {
-                        delete this.txs[txId];
-                        rej(err);
-                    });
-                }
-            }).catch(rej);
-        })
-    }
-
     public dropDatabase(id: string): Promise<any> {
         return new Promise((res, rej) => {
             // drop all tables
@@ -511,6 +443,17 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
+    public maybeCreateEventObject(id: string) {
+        if (!this.events[id]) {
+            this.events[id] = {
+                Core: {
+                    "*": new ReallySmallEvents()
+                },
+                "*": { "*": new ReallySmallEvents() }
+            }
+        }
+    }
+
     public connect(config: InanoSQLConfig = {}): Promise<any> {
         let t = this;
 
@@ -519,6 +462,8 @@ export class nanoSQL implements InanoSQLInstance {
         if (this.dbs[newDatabaseID]) {
             throw new Error(`nSQL: ${newDatabaseID} database has already been created!`);
         }
+
+        this.maybeCreateEventObject(newDatabaseID);
 
         this.dbs[newDatabaseID] = {
             adapter: new SyncStorage(),
@@ -545,16 +490,12 @@ export class nanoSQL implements InanoSQLInstance {
             _fkRels: {},
             _tableIds: { "_util": "_util", "_ttl": "_ttl" },
             _queryCache: {},
-            filters: {},
-            eventFNs: {
-                Core: {
-                    "*": new ReallySmallEvents()
-                },
-                "*": { "*": new ReallySmallEvents() }
-            }
+            filters: {}
         }
 
         this.selectedDB = newDatabaseID;
+
+        this._refreshEventChecker();
 
         return this._initPlugins(config).then(() => {
             return new Promise((res, rej) => {
@@ -874,7 +815,11 @@ export class nanoSQL implements InanoSQLInstance {
  
         let l: string = selectTable || (typeof this.selectedTable !== "string" ? "" : this.selectedTable) as string;
 
-        this.doFilter<onEventFilter>(this.selectedDB, "onEvent", { res: { action, callback: callBack } }, (newEvent) => {
+        const selDB = this.selectedDB;
+
+        this.maybeCreateEventObject(selDB);
+
+        this.doFilter<onEventFilter>(selDB, "onEvent", { res: { action, callback: callBack } }, (newEvent) => {
 
             switch (newEvent.res.action) {
                 case "connect":
@@ -882,7 +827,7 @@ export class nanoSQL implements InanoSQLInstance {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                    this.getDB().eventFNs.Core["*"].on(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB].Core["*"].on(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
                 case "change":
@@ -890,31 +835,31 @@ export class nanoSQL implements InanoSQLInstance {
                 case "upsert":
                 case "*":
                     const table = resolvePath(l);
-                    if (!this.getDB().eventFNs[table[0]]) {
-                        this.getDB().eventFNs[table[0]] = {
+                    if (!this.events[selDB][table[0]]) {
+                        this.events[selDB][table[0]] = {
                             "*": new ReallySmallEvents()
                         };
                     }
                     const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
-                    if (!this.getDB().eventFNs[table[0]][nestedPath]) {
-                        this.getDB().eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
+                    if (!this.events[selDB][table[0]][nestedPath]) {
+                        this.events[selDB][table[0]][nestedPath] = new ReallySmallEvents();
                     }
-                    this.getDB().eventFNs[table[0]][nestedPath].on(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB][table[0]][nestedPath].on(newEvent.res.action, newEvent.res.callback);
                     break;
                 default:
                     new Promise((res, rej) => {
-                        this.doFilter<customEventFilter>(this.selectedDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                        this.doFilter<customEventFilter>(selDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
                     }).then((evData: customEventFilter) => {
                         if (evData.res.nameSpace) {
-                            if (!this.getDB().eventFNs[evData.res.nameSpace]) {
-                                this.getDB().eventFNs[evData.res.nameSpace] = {
+                            if (!this.events[selDB][evData.res.nameSpace]) {
+                                this.events[selDB][evData.res.nameSpace] = {
                                     "*": new ReallySmallEvents()
                                 };
                             }
-                            if (!this.getDB().eventFNs[evData.res.nameSpace][evData.res.path]) {
-                                this.getDB().eventFNs[evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
+                            if (!this.events[selDB][evData.res.nameSpace][evData.res.path]) {
+                                this.events[selDB][evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
                             }
-                            this.getDB().eventFNs[evData.res.nameSpace][evData.res.path].on(newEvent.res.action, newEvent.res.callback);
+                            this.events[selDB][evData.res.nameSpace][evData.res.path].on(newEvent.res.action, newEvent.res.callback);
                         } else {
                             throw new Error(`Invalid event "${action}"!`);
                         }
@@ -931,7 +876,11 @@ export class nanoSQL implements InanoSQLInstance {
 
         let l: string = selectTable || (typeof this.selectedTable !== "string" ? "" : this.selectedTable) as string;
 
-        this.doFilter<offEventFilter>(this.selectedDB, "onEvent", { res: { action, callback: callBack } }, (newEvent) => {
+        const selDB = this.selectedDB;
+
+        this.maybeCreateEventObject(selDB);
+
+        this.doFilter<offEventFilter>(selDB, "offEvent", { res: { action, callback: callBack } }, (newEvent) => {
 
             switch (newEvent.res.action) {
                 case "connect":
@@ -939,7 +888,7 @@ export class nanoSQL implements InanoSQLInstance {
                 case "disconnect":
                 case "peer change":
                 case "slow query":
-                    this.getDB().eventFNs.Core["*"].off(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB].Core["*"].off(newEvent.res.action, newEvent.res.callback);
                     break;
                 case "select":
                 case "change":
@@ -947,31 +896,31 @@ export class nanoSQL implements InanoSQLInstance {
                 case "upsert":
                 case "*":
                     const table = resolvePath(l);
-                    if (!this.getDB().eventFNs[table[0]]) {
-                        this.getDB().eventFNs[table[0]] = {
+                    if (!this.events[selDB][table[0]]) {
+                        this.events[selDB][table[0]] = {
                             "*": new ReallySmallEvents()
                         };
                     }
                     const nestedPath = table.filter((v, i) => i > 0).join(".") || "*";
-                    if (!this.getDB().eventFNs[table[0]][nestedPath]) {
-                        this.getDB().eventFNs[table[0]][nestedPath] = new ReallySmallEvents();
+                    if (!this.events[selDB][table[0]][nestedPath]) {
+                        this.events[selDB][table[0]][nestedPath] = new ReallySmallEvents();
                     }
-                    this.getDB().eventFNs[table[0]][nestedPath].off(newEvent.res.action, newEvent.res.callback);
+                    this.events[selDB][table[0]][nestedPath].off(newEvent.res.action, newEvent.res.callback);
                     break;
                 default:
                     new Promise((res, rej) => {
-                        this.doFilter<customEventFilter>(this.selectedDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
+                        this.doFilter<customEventFilter>(selDB, "customEvent", { res: { nameSpace: "", path: "*" }, selectedTable: l, action: action, on: true }, res, rej);
                     }).then((evData: customEventFilter) => {
                         if (evData.res.nameSpace) {
-                            if (!this.getDB().eventFNs[evData.res.nameSpace]) {
-                                this.getDB().eventFNs[evData.res.nameSpace] = {
+                            if (!this.events[selDB][evData.res.nameSpace]) {
+                                this.events[selDB][evData.res.nameSpace] = {
                                     "*": new ReallySmallEvents()
                                 };
                             }
-                            if (!this.getDB().eventFNs[evData.res.nameSpace][evData.res.path]) {
-                                this.getDB().eventFNs[evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
+                            if (!this.events[selDB][evData.res.nameSpace][evData.res.path]) {
+                                this.events[selDB][evData.res.nameSpace][evData.res.path] = new ReallySmallEvents();
                             }
-                            this.getDB().eventFNs[evData.res.nameSpace][evData.res.path].off(newEvent.res.action, newEvent.res.callback);
+                            this.events[selDB][evData.res.nameSpace][evData.res.path].off(newEvent.res.action, newEvent.res.callback);
                         } else {
                             throw new Error(`Invalid event "${action}"!`);
                         }
@@ -986,10 +935,12 @@ export class nanoSQL implements InanoSQLInstance {
 
     public _refreshEventChecker(): InanoSQLInstance {
 
-        this.getDB().state.hasAnyEvents = Object.keys(this.getDB().eventFNs).reduce((prev, cur) => {
+        if (!this.dbs[this.selectedDB]) return this;
+
+        this.getDB().state.hasAnyEvents = Object.keys(this.events[this.selectedDB]).reduce((prev, cur) => {
             if (prev === true) return true;
-            const length = Object.keys(this.getDB().eventFNs[cur]).reduce((p, key) => {
-                return Object.keys(this.getDB().eventFNs[cur][key].eventListeners).length + p;
+            const length = Object.keys(this.events[this.selectedDB][cur]).reduce((p, key) => {
+                return Object.keys(this.events[this.selectedDB][cur][key].eventListeners).length + p;
             }, 0);
             return length > 0 ? true : prev;
         }, false as boolean);
@@ -1069,23 +1020,25 @@ export class nanoSQL implements InanoSQLInstance {
 
         if (!databaseID) return this;
 
+        if (!this.events[databaseID]) return this;
+
         this.doFilter<eventFilter>(databaseID, "event", { res: eventData }, (event) => {
             if (this.getDB(databaseID).state.hasAnyEvents) {
                 setFast(() => {
                     event.res.events.forEach((evnt) => {
                         if (!ignoreStarTable) {
-                            Object.keys(this.getDB(databaseID).eventFNs["*"]).forEach((path) => {
-                                this.getDB(databaseID).eventFNs["*"][path].trigger(evnt, event.res);
+                            Object.keys(this.events[databaseID]["*"]).forEach((path) => {
+                                this.events[databaseID]["*"][path].trigger(evnt, event.res);
                             });
                         }
-                        if (!this.getDB(databaseID).eventFNs[event.res.target]) return;
+                        if (!this.events[databaseID][event.res.target]) return;
                         if (event.res.path === "_all_") {
-                            Object.keys(this.getDB(databaseID).eventFNs[event.res.target]).forEach((path) => {
-                                this.getDB(databaseID).eventFNs[event.res.target][path].trigger(evnt, event.res);
+                            Object.keys(this.events[databaseID][event.res.target]).forEach((path) => {
+                                this.events[databaseID][event.res.target][path].trigger(evnt, event.res);
                             });
                         } else {
-                            if (!this.getDB(databaseID).eventFNs[event.res.target][event.res.path]) return;
-                            this.getDB(databaseID).eventFNs[event.res.target][event.res.path].trigger(evnt, event.res);
+                            if (!this.events[databaseID][event.res.target][event.res.path]) return;
+                            this.events[databaseID][event.res.target][event.res.path].trigger(evnt, event.res);
                         }
                     });
                 });
@@ -1211,8 +1164,12 @@ export class nanoSQL implements InanoSQLInstance {
 
         return resolveModel(this.getDB(databaseID)._tables[table].columns, replaceObj);
     }
+/*
+    public batch(tables: {[table: string]: {[place: string]: {type: "put"|"del", data: any}}}, complete: () => void, error: (message) => void) {
 
+    }
 
+*/
     public rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: { [key: string]: any }) => void): Promise<any> {
 
         const exportTables = indexes ? tables : Object.keys(this.getDB()._tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);
@@ -1252,26 +1209,44 @@ export class nanoSQL implements InanoSQLInstance {
                 // tableName:IndexName
                 const tableName = table.split(".")[0];
                 const indexName = table.split(".")[1];
+
                 chainAsync(tables[table], (indexRow, ii, nextIdx, errIdx) => {
                     adapterFilters(selectedDB, this).addIndexValue(tableName, indexName, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
                 }).then(next).catch(err);
+
             } else {
                 const pk = this.getDB()._tables[table].pkCol;
-                this.getDB()._tables[table].count = tables[table].length;
-                chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
-                    if (!deepGet(pk, row) && rowErr) {
-                        rowErr("No primary key found, can't import: " + JSON.stringify(row));
-                        return;
-                    }
-                    adapterFilters(selectedDB, this).write(table, deepGet(pk, row), row, (newRow) => {
-                        nextRow();
+                // this.getDB()._tables[table].count = tables[table].length;
+                const batchFN = this.getDB().adapter.batch;
+                if (batchFN) { // batch writes supported
+                    const tableId = this.getDB()._tableIds[table];
+                    batchFN.apply(this.getDB().adapter, [tableId, tables[table].map((r) => {
                         progress++;
                         if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
-                    }, rowErr || noop);
-                }).then(() => {
-                    this.saveCount(selectedDB, table);
-                    next();
-                }).catch(err);
+                        return {type: "put", data: r}
+                    }), () => {
+                        next();
+                    }, err]);
+                } else { // not supported
+
+                    console.warn("Batch import not using transaction, transactions not supported by adapter!");
+
+                    chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
+                        if (!deepGet(pk, row) && rowErr) {
+                            rowErr("No primary key found, can't import: " + JSON.stringify(row));
+                            return;
+                        }
+                        adapterFilters(selectedDB, this).write(table, deepGet(pk, row), row, (newRow) => {
+                            nextRow();
+                            progress++;
+                            if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
+                        }, rowErr || noop);
+                    }).then(() => {
+                        this.saveCount(selectedDB, table);
+                        next();
+                    }).catch(err);
+                }
+
             }
         });
     }

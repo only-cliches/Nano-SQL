@@ -90,21 +90,15 @@ export const SQLiteAbstract = (
 
 
         },
-        batch: (actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => {
+        batch: (table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => {
             _query(true, "BEGIN TRANSACTION", [], noop, () => {
                 allAsync(actions, (action, i, next, err) => {
                     switch(action.type) {
                         case "put":
-                            SQLFns.write(tableConfigs[action.table].pkType, tableConfigs[action.table].pkCol, action.table, deepGet(tableConfigs[action.table].pkCol, action.data), action.data, tableConfigs[action.table].ai, {}, next, err);
+                            SQLFns.write(tableConfigs[table].pkType, tableConfigs[table].pkCol, table, deepGet(tableConfigs[table].pkCol, action.data), action.data, tableConfigs[table].ai, {}, next, err);
                         break;
                         case "del":
-                            SQLFns.remove(action.table, action.data, next, err);
-                        break;
-                        case "idx-put":
-
-                        break;
-                        case "idx-del":
-
+                            SQLFns.remove(table, action.data, next, err);
                         break;
                     }
                 }).then((results) => {
@@ -265,8 +259,8 @@ export class WebSQL extends nanoSQLMemoryIndex {
         this._sqlite.remove(table, pk, complete, error);
     }
 
-    batch(actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
-        this._sqlite.batch(actions, success, error);
+    batch(table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void) {
+        this._sqlite.batch(table, actions, success, error);
     }
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) {
