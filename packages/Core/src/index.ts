@@ -1164,8 +1164,12 @@ export class nanoSQL implements InanoSQLInstance {
 
         return resolveModel(this.getDB(databaseID)._tables[table].columns, replaceObj);
     }
+/*
+    public batch(tables: {[table: string]: {[place: string]: {type: "put"|"del", data: any}}}, complete: () => void, error: (message) => void) {
 
+    }
 
+*/
     public rawDump(tables: string[], indexes: boolean, onRow: (table: string, row: { [key: string]: any }) => void): Promise<any> {
 
         const exportTables = indexes ? tables : Object.keys(this.getDB()._tables).filter(t => tables.length ? tables.indexOf(t) !== -1 : true);

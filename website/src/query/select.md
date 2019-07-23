@@ -451,6 +451,29 @@ It's also possible to have multiple graph queries simply by passing an array of 
 
 Keep in mind graph queries will use indexes where possible, so if you can reasonably use `on` conditions that check against primary key or secondary index values you'll see improved performance.
 
+### **Union**
+
+The **union** command allows you to combine and aggregate results from a set of queries.  It accepts two arguments, the first is an array of functions that return a promise and the second is a boolean that tells the union to wether to remove duplicate rows.  By default duplicate rows are removed, pass `true` into the second argument to include all rows (including duplicate ones).
+
+The union command can be used in combination with `.distinct()` to make sure specific columns are unique among all the returned results.
+
+Query modifiers like `.orderBy`, `.where` and select arguments are applied to the results of the union.
+
+```ts
+// union results from two json endpoints
+nSQL().query("select").union([
+    () => fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()),
+    () => fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json())
+]).exec().then...
+
+// union results from three nanoSQL queries, distinct on id.
+nSQL().query("select").union([
+    () => nSQL("users").query("select").exec(),
+    () => nSQL("posts").query("select").exec(),
+    () => nSQL("order").query("select").exec()
+]).distinct(["id"]).exec().then...
+```
+
 ### **Group By**
 
 `GroupBy` is used to combine rows with the same value into a single row, almost exclusively used with aggregate functions. It takes exactly the same arguments as `orderBy`.
