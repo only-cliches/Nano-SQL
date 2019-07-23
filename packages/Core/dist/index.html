@@ -188,17 +188,20 @@
                 name: "test",
                 model: {
                     "id:int": {pk: true, ai: true },
-                    "name:string": {},
-                    "time:date": {}
-                },
-                indexes: {
-                    "time:date": {}
+                    "albumId:int": {},
+                    "title:string": {},
+                    "url:string": {},
+                    "thumbnailUrl:string": {}
                 }
             }).exec();
         }).then(() => {
-            return nSQL().selectTable("test").loadJS(rows);
+            return fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json());
+        }).then((data) => {
+            console.time("WRITE");
+            return nSQL().rawImport({"test": data})
         }).then(() => {
-            return nSQL().query("select", ["UPPER(UPPER(name))"]).limit(10).exec();
+            console.timeEnd("WRITE");
+            return nSQL("test").query("select").limit(10).exec();
         }).then((resultRows) => {
             console.log(resultRows, nSQL());
             nSQL().query("total").exec().then((rows) => {

@@ -377,7 +377,7 @@ export interface InanoSQLAdapter {
 
     write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void);
 
-    // batch?(actions: {type: "put"|"del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
+    batch?(table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void): void;
 
     read(table: string, pk: any, complete: (row: {[key: string]: any} | undefined) => void, error: (err: any) => void);
 
@@ -685,7 +685,7 @@ export interface SQLiteAbstractFns {
     }, complete: (pk: any) => void, error: (err: any) => void) => void;
     read: (table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void) => void;
     remove: (table: string, pk: any, complete: () => void, error: (err: any) => void) => void;
-    batch: (actions: {type: "put"|"del"|"idx-put"|"idx-del", table: string, data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => void;
+    batch: (table: string, actions: {type: "put"|"del", data: any}[], success: (result: any[]) => void, error: (msg: any) => void) => void;
     getIndex: (table: string, complete: (index: any[]) => void, error: (err: any) => void) => void;
     getNumberOfRecords: (table: string, complete: (length: number) => void, error: (err: any) => void) => void;
     readMulti: (table: string, type: "all" | "range" | "offset", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {

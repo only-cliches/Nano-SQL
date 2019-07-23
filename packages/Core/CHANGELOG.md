@@ -9,6 +9,7 @@
 - Updated dependencies.
 - Fixed issue [155](https://github.com/ClickSimply/Nano-SQL/issues/155), added create database documentation.
 - Fixed issue [156](https://github.com/ClickSimply/Nano-SQL/issues/156), events created before a database is setup will now work as expected.
+- Fixed issue [141](https://github.com/ClickSimply/Nano-SQL/issues/141), `rawImport` now uses transactions for bulk queries to increase performance when possible.
 
 
 ## [2.3.4] 06-24-2019

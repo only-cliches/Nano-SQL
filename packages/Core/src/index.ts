@@ -1205,26 +1205,44 @@ export class nanoSQL implements InanoSQLInstance {
                 // tableName:IndexName
                 const tableName = table.split(".")[0];
                 const indexName = table.split(".")[1];
+
                 chainAsync(tables[table], (indexRow, ii, nextIdx, errIdx) => {
                     adapterFilters(selectedDB, this).addIndexValue(tableName, indexName, indexRow.rowId, indexRow.indexId, nextIdx, errIdx);
                 }).then(next).catch(err);
+
             } else {
                 const pk = this.getDB()._tables[table].pkCol;
-                this.getDB()._tables[table].count = tables[table].length;
-                chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
-                    if (!deepGet(pk, row) && rowErr) {
-                        rowErr("No primary key found, can't import: " + JSON.stringify(row));
-                        return;
-                    }
-                    adapterFilters(selectedDB, this).write(table, deepGet(pk, row), row, (newRow) => {
-                        nextRow();
+                // this.getDB()._tables[table].count = tables[table].length;
+                const batchFN = this.getDB().adapter.batch;
+                if (batchFN) { // batch writes supported
+                    const tableId = this.getDB()._tableIds[table];
+                    batchFN.apply(this.getDB().adapter, [tableId, tables[table].map((r) => {
                         progress++;
                         if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
-                    }, rowErr || noop);
-                }).then(() => {
-                    this.saveCount(selectedDB, table);
-                    next();
-                }).catch(err);
+                        return {type: "put", data: r}
+                    }), () => {
+                        next();
+                    }, err]);
+                } else { // not supported
+
+                    console.warn("Batch import not using transaction, transactions not supported by adapter!");
+
+                    chainAsync(tables[table], (row, ii, nextRow, rowErr) => {
+                        if (!deepGet(pk, row) && rowErr) {
+                            rowErr("No primary key found, can't import: " + JSON.stringify(row));
+                            return;
+                        }
+                        adapterFilters(selectedDB, this).write(table, deepGet(pk, row), row, (newRow) => {
+                            nextRow();
+                            progress++;
+                            if (onProgress) onProgress(Math.round((progress / totalLength) * 10000) / 100);
+                        }, rowErr || noop);
+                    }).then(() => {
+                        this.saveCount(selectedDB, table);
+                        next();
+                    }).catch(err);
+                }
+
             }
         });
     }

@@ -92,7 +92,9 @@ There is also a third optional argument, if you pass `true` into the fourth argu
 
 These methods let you move data in and out of the database table objects directly. You get a massive performance benefit but with some significant tradeoffs.
 
-None of the methods in this section will cause any database events to be triggered.
+None of the methods in this section will cause any database events to be triggered or can any of these methods be filtered.
+
+Internally the database adapters typically use transactions for these queries.  If you need transactions this is currently the only supported way to get them, but the transactions do not work across tables.
 
 ### Raw Export
 
