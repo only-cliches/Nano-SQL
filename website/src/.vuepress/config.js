@@ -106,7 +106,6 @@ module.exports = {
         repoLabel: false,
         // if your docs are not at the root of the repo:
         docsDir: 'website/src',
-        docsBranch: '2.0',
         // defaults to false, set to true to enable
         editLinks: true,
         // custom text for edit link. Defaults to "Edit this page"
