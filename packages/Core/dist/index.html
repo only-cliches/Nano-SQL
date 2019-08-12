@@ -181,6 +181,114 @@
             rows.push({ name: makeid(), time: time.toISOString() });
         }
 
+        fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json()).then((data) => {
+            nSQL().query("select").from(data).limit(10).offset(10).exec().then((rows) => {
+                console.log(rows);
+            })
+        })
+/*
+        nSQL().createDatabase({
+            id: "my-db",
+            mode: "TEMP",
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "id:int": { pk: true, ai: true },
+                        "name:string": {},
+                        "username:string": {},
+                        "email:string": {},
+                        "address:obj": {
+                            model: {
+                                "street:string": {},
+                                "suite:string": {},
+                                "city:string": {},
+                                "zipcode:string": {},
+                                "geo:obj": { model: { "lat:float": {}, "lng:float": {} } }
+                            }
+                        },
+                        "phone:string": {},
+                        "website:string": {},
+                        "company:obj": {
+                            model: {
+                                "name:string": {},
+                                "catchPhrase:string": {},
+                                "bs:string": {}
+                            }
+                        }
+                    }
+                },
+                {
+                    name: "photos",
+                    model: {
+                        "id:int": { pk: true, ai: true },
+                        "albumId:int": {},
+                        "title:string": {},
+                        "url:string": {},
+                        "thumbnailUrl:string": {}
+                    }
+                },
+                {
+                    name: "posts",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "body:string": {}
+                    }
+                },
+                {
+                    name: "comments",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "postId:int": {},
+                        "name:string": {},
+                        "email:string": {},
+                        "body:string": {}
+                    }
+                },
+                {
+                    name: "albums",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {}
+                    }
+                },
+                {
+                    name: "todos",
+                    model: {
+                        "id:int": { ai: true, pk: true },
+                        "userId:int": {},
+                        "title:string": {},
+                        "completed:bool": {}
+                    }
+                }
+            ]
+        })
+        .then(() => {
+            // insert all test data
+            return Promise.all([
+                fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json()).then(data => nSQL("users").loadJS(data)),
+                fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json()).then(data => nSQL("photos").loadJS(data)),
+                fetch("https://jsonplaceholder.typicode.com/posts").then(d => d.json()).then(data => nSQL("posts").loadJS(data)),
+                fetch("https://jsonplaceholder.typicode.com/comments").then(d => d.json()).then(data => nSQL("comments").loadJS(data)),
+                fetch("https://jsonplaceholder.typicode.com/albums").then(d => d.json()).then(data => nSQL("albums").loadJS(data)),
+                fetch("https://jsonplaceholder.typicode.com/todos").then(d => d.json()).then(data => nSQL("todos").loadJS(data))
+            ])
+        })
+        .then(() => {
+            // select all photos
+            return nSQL("photos").query("select").join({
+            type: "left",
+            with: {table: "albums"},
+            on: ["albums.id","=","photos.albumId"]
+            }).orderBy(["photos.title ASC", "albums.title ASC"]).exec();
+        })
+        .then((result) => {
+            console.log(result);
+        })
+/*
         nSQL().query("select").union([
             () => fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json()),
             () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json())

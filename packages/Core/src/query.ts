@@ -104,12 +104,14 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
     public static _selectArgsMemoized: {
         [key: string]: {
+            hasFn: boolean;
             hasAggrFn: boolean;
-            args: ISelectArgs[]
+            args: ISelectArgs[];
         }
     } = {};
 
     public _hasAggrFn: boolean;
+    public _hasFn: boolean;
 
     public _didRangeAlready: boolean;
 
@@ -784,7 +786,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 this._graph(this.query.graph || [], this.query.tableAS || this.query.table as string, row, i, next);
             }).then((newBuffer) => {
                 this._queryBuffer = newBuffer;
-                // Group by, functions and AS
+                // Group by & functions
                 this._groupByRows();
 
                 if (this.query.having) { // having
@@ -816,7 +818,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                         }
                     }
                     if (isDistinct) {
-                        this.progress(row, i);
+                        this.progress(this._streamAS(row, this._hasFn), i);
                     }
                 });
 
@@ -834,6 +836,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         if (superFastQuery && this.query.orderBy) {
             superFastQuery = this._pkOrderBy;
         }
+
         // query path start
         this._getRecords((row, i) => { // SELECT rows
 
@@ -854,11 +857,23 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             this._startTime = Date.now();
 
-            if (this.query.returnEvent) {
-                this.progress(selectEvent, i);
-            } else if (superFastQuery) {
-                this.progress(row, i);
-            } else {
+            if (this.query.returnEvent) { // return event (no mutation possible)
+                if (doRange) {
+                    if (i >= range[0] && i < range[1]) {
+                        this.progress(selectEvent, i);
+                    }
+                } else {
+                    this.progress(selectEvent, i);
+                }
+            } else if (superFastQuery) { // no mutations needed
+                if (doRange && !this._didRangeAlready) {
+                    if (i >= range[0] && i < range[1]) {
+                        this.progress(row, i + range[0]);
+                    }
+                } else {
+                    this.progress(row, i);
+                }
+            } else { // do needed query mutations
                 selectBuffer.newItem(row);
             }
         }, () => {
@@ -873,7 +888,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _groupByRows() {
 
         if (!this.query.groupBy && !this._hasAggrFn) {
-            this._queryBuffer = this._queryBuffer.map(b => this._streamAS(b));
+            // this._queryBuffer = this._queryBuffer.map(b => this._streamAS(b));
             return;
         }
 
@@ -960,7 +975,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             }
         } else {
             this._sortGroups.forEach((group) => {
-                this._queryBuffer.push(this._streamAS(group.shift()));
+                this._queryBuffer.push(group.shift());
             });
         }
     }
@@ -1603,7 +1618,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         }, {});
     }
 
-    public _streamAS(row: any): any {
+    public _streamAS(row: any, ignoreFns?: boolean): any {
         const distinctArgs = (this.query.distinct || []).map(s => ({ isFn: false, value: s }))
         const selectArgs = (this._selectArgs || []).concat(distinctArgs);
 
@@ -1611,17 +1626,22 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             let result = {};
             selectArgs.forEach((arg) => {
                 if (arg.isFn) {
-                    result[arg.as || arg.value] = execFunction(this.query, arg.value, row, {} as any).result;
+                    if (!ignoreFns) {
+                        result[arg.as || arg.value] = execFunction(this.query, arg.value, row, {} as any).result;
+                    } else {
+                        result[arg.as || arg.value] = row[arg.as || arg.value];
+                    }
                 } else {
                     result[arg.as || arg.value] = deepGet(arg.value, row);
                 }
             });
-            return this.query.join ? this._combineRows(result) : result;
+            return result;
         }
         return this.query.join ? this._combineRows(row) : row;
     }
 
     public quickSort(arr: any[], columns: InanoSQLSortBy): any[] {
+
         if (arr.length < 2) return arr;
 
         const pivotPoint = Math.floor(Math.random() * arr.length);
@@ -2426,7 +2446,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             });
         } else if (Array.isArray(this.query.table)) { // array
             scanRecords(this.query.table);
-        } else {
+        } else if (this.query.table) {
             error(`Can't get selected table!`);
         }
     }
@@ -2718,6 +2738,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             if (_nanoSQLQuery._selectArgsMemoized[selectArgsKey]) {
                 this._hasAggrFn = _nanoSQLQuery._selectArgsMemoized[selectArgsKey].hasAggrFn;
                 this._selectArgs = _nanoSQLQuery._selectArgsMemoized[selectArgsKey].args;
+                this._hasFn = _nanoSQLQuery._selectArgsMemoized[selectArgsKey].hasFn;
             } else {
                 (this.query.actionArgs || []).forEach((val: string) => {
                     const splitVal = val.split(/\s+as\s+/i).map(s => s.trim());
@@ -2729,6 +2750,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                             this.query.state = "error";
                             this.error(`Function "${fnName}" not found!`);
                         } else {
+                            this._hasFn = true;
                             if (this.nSQL.functions[fnName].type === "A") {
                                 this._hasAggrFn = true;
                             }
@@ -2738,7 +2760,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     }
                 });
                 if (this.query.state !== "error") {
-                    _nanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: this._hasAggrFn, args: this._selectArgs };
+                    _nanoSQLQuery._selectArgsMemoized[selectArgsKey] = { hasAggrFn: this._hasAggrFn, hasFn: this._hasFn, args: this._selectArgs };
                 }
             }
 
