@@ -4,7 +4,7 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
-## [2.3.6]
+## [2.3.6] 08-12-2019
 - Fixed issue [161](https://github.com/ClickSimply/Nano-SQL/issues/161), join queries weren't working as expected with `AS` queries.
 - Fixed issue [162](https://github.com/ClickSimply/Nano-SQL/issues/162), compound select with join/graph queries is now working as expected.
 - Fixed issue [162](https://github.com/ClickSimply/Nano-SQL/issues/162), offset/limit are working as expected on fast query paths now.
