@@ -836,6 +836,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         if (superFastQuery && this.query.orderBy) {
             superFastQuery = this._pkOrderBy;
         }
+
         // query path start
         this._getRecords((row, i) => { // SELECT rows
 
@@ -856,11 +857,23 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
 
             this._startTime = Date.now();
 
-            if (this.query.returnEvent) {
-                this.progress(selectEvent, i);
-            } else if (superFastQuery) {
-                this.progress(row, i);
-            } else {
+            if (this.query.returnEvent) { // return event (no mutation possible)
+                if (doRange) {
+                    if (i >= range[0] && i < range[1]) {
+                        this.progress(selectEvent, i);
+                    }
+                } else {
+                    this.progress(selectEvent, i);
+                }
+            } else if (superFastQuery) { // no mutations needed
+                if (doRange && !this._didRangeAlready) {
+                    if (i >= range[0] && i < range[1]) {
+                        this.progress(row, i + range[0]);
+                    }
+                } else {
+                    this.progress(row, i);
+                }
+            } else { // do needed query mutations
                 selectBuffer.newItem(row);
             }
         }, () => {
@@ -2433,7 +2446,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
             });
         } else if (Array.isArray(this.query.table)) { // array
             scanRecords(this.query.table);
-        } else {
+        } else if (this.query.table) {
             error(`Can't get selected table!`);
         }
     }

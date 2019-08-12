@@ -180,6 +180,12 @@
             const time = new Date(now + (i * 1000));
             rows.push({ name: makeid(), time: time.toISOString() });
         }
+
+        fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json()).then((data) => {
+            nSQL().query("select").from(data).limit(10).offset(10).exec().then((rows) => {
+                console.log(rows);
+            })
+        })
 /*
         nSQL().createDatabase({
             id: "my-db",
