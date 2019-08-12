@@ -180,7 +180,7 @@
             const time = new Date(now + (i * 1000));
             rows.push({ name: makeid(), time: time.toISOString() });
         }
-
+/*
         nSQL().query("select").union([
             () => fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json()),
             () => fetch("https://jsonplaceholder.typicode.com/users").then(d => d.json())

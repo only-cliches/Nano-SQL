@@ -4,6 +4,9 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.6]
+- Fixed issue [161](https://github.com/ClickSimply/Nano-SQL/issues/161), join queries weren't working as expected with `AS` queries.
+
 ## [2.3.5] 07-23-2019
 - *BREAKING CHANGE* Removed WIP transaction API, to be implemented in history plugin.
 - Updated dependencies.
