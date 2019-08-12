@@ -6,6 +6,7 @@
 
 ## [2.3.6]
 - Fixed issue [161](https://github.com/ClickSimply/Nano-SQL/issues/161), join queries weren't working as expected with `AS` queries.
+- Fixed issue [162](https://github.com/ClickSimply/Nano-SQL/issues/162), compound select with join/graph queries is now working as expected.
 
 ## [2.3.5] 07-23-2019
 - *BREAKING CHANGE* Removed WIP transaction API, to be implemented in history plugin.
