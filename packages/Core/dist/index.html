@@ -181,12 +181,6 @@
             rows.push({ name: makeid(), time: time.toISOString() });
         }
 
-        fetch("https://jsonplaceholder.typicode.com/photos").then(d => d.json()).then((data) => {
-            nSQL().query("select").from(data).limit(10).offset(10).exec().then((rows) => {
-                console.log(rows);
-            })
-        })
-/*
         nSQL().createDatabase({
             id: "my-db",
             mode: "TEMP",
@@ -278,12 +272,9 @@
             ])
         })
         .then(() => {
+            nSQL().selectedTable = undefined;
             // select all photos
-            return nSQL("photos").query("select").join({
-            type: "left",
-            with: {table: "albums"},
-            on: ["albums.id","=","photos.albumId"]
-            }).orderBy(["photos.title ASC", "albums.title ASC"]).exec();
+            return nSQL().query("show tables").exec();
         })
         .then((result) => {
             console.log(result);

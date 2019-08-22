@@ -129,7 +129,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const action = query.action.toLowerCase().trim();
         this._orderByRows = this._orderByRows.bind(this);
         this._onError = this._onError.bind(this);
-        if (["select", "clone", "create table", "create table if not exists"].indexOf(action) === -1 && typeof query.table !== "string") {
+        if (["select", "clone", "create table", "create table if not exists", "show tables"].indexOf(action) === -1 && typeof query.table !== "string") {
             this.query.state = "error";
             this.error(`Only "select", "clone" & "create table" queries are available for this resource!`);
             return;
