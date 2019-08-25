@@ -1,6 +1,6 @@
 {
   "name": "@nano-sql/adapter-sqlite",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Easily Run SQLite in NodeJS with nanoSQL 2!",
   "main": "lib/index.js",
   "scripts": {
@@ -21,14 +21,14 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "sqlite3": "^4.0.6"
+    "better-sqlite3": "^5.4.2"
   },
   "peerDependencies": {
-    "@nano-sql/core": "^2.2.4"
+    "@nano-sql/core": "^2.3.6"
   },
   "devDependencies": {
-    "@types/node": "^10.12.18",
-    "ts-node": "^7.0.1",
-    "typescript": "^3.2.2"
+    "@types/node": "^12.7.2",
+    "ts-node": "^8.3.0",
+    "typescript": "^3.5.3"
   }
 }

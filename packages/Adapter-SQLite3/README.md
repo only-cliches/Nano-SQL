@@ -45,9 +45,9 @@ The `SQLite` class accepts two optional arguments in it's constructor.
 ### Filename
 The first argument is the filename to the SQLite database to connect to, default is `:memory:` which creates a temporary database.
 
-### Database Mode
+### Database Arguments
 
-The SQLite database mode can be set with this argument, the feature is fully documented [here](https://github.com/mapbox/node-sqlite3/wiki/API#new-sqlite3databasefilename-mode-callback).
+Passed into the underlying database constructor for SQLite, fully documented [here](https://github.com/JoshuaWise/better-sqlite3/blob/master/docs/api.md#new-databasepath-options).
 
 # MIT License
 
@@ -72,6 +72,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 # Changelog
+
+## [2.0.7]
+- Switched to better-sqlite3 https://github.com/JoshuaWise/better-sqlite3.
+- Dependency updates.
 
 ## [2.0.6]
 - Documentation & Dependency updates.
