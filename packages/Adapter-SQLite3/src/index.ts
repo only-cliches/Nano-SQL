@@ -17,7 +17,7 @@ export class SQLite extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "SQLite Adapter",
-        version: 2.07
+        version: 2.08
     };
 
     nSQL: InanoSQLInstance;
@@ -37,7 +37,7 @@ export class SQLite extends nanoSQLMemoryIndex {
         super(false, true);
         this._ai = {};
         this._query = this._query.bind(this);
-        this._filename = fileName || ":memory:";
+        this._filename = fileName || "";
         this._args = sqliteOptions && typeof sqliteOptions !== "number" ? sqliteOptions : undefined;
         this._tableConfigs = {};
         this._sqlite = SQLiteAbstract(this._query, batchSize || 500);
@@ -46,8 +46,8 @@ export class SQLite extends nanoSQLMemoryIndex {
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
         try {
-            this._db = new sqlite3(this._filename, {
-                memory: this._filename === ":memory:" ? true : (this._args && this._args.memory),
+            this._db = new sqlite3(this._filename && this._filename.length ? this._filename : this._id, {
+                memory: this._filename === "" ? true : (this._args && this._args.memory === true ? true : false),
                 ...(this._args || {})
             });
             this._sqlite.createAI(complete, error);

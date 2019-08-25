@@ -43,7 +43,7 @@ nSQL().createDatabase({
 The `SQLite` class accepts two optional arguments in it's constructor.
 
 ### Filename
-The first argument is the filename to the SQLite database to connect to, default is `:memory:` which creates a temporary database.
+The first argument is the filename to the SQLite database to connect to, if no filename is provided or an empty string if provided the nanoSQL database ID will be used instead.
 
 ### Database Arguments
 
@@ -72,6 +72,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 # Changelog
+
+## [2.0.8]
+- Database/table Id is now the filename if no filename is provided.
+- Fixed memory property issue.
 
 ## [2.0.7]
 - Switched to better-sqlite3 https://github.com/JoshuaWise/better-sqlite3.
