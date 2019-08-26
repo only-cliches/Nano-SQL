@@ -2402,6 +2402,9 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 case IWhereType.slow:
                 case IWhereType.none:
                 case IWhereType.fn:
+                    if (this.query.action === "select" && this.query.databaseID && this.nSQL.getDB(this.query.databaseID) && this.nSQL.getDB(this.query.databaseID).config.warnOnSlowQuery) {
+                        console.warn("Slow Query: Use secondary indexes or primary keys to perform SELECT.  Avoid full table scans!", this.query);
+                    }
                     const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
 
                     const canDoOrderBy = this.query.orderBy ? this._pkOrderBy === true : true;

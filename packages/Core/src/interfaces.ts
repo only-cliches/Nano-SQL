@@ -286,6 +286,7 @@ export interface InanoSQLConfig {
     mode?: string | InanoSQLAdapter;
     plugins?: InanoSQLPlugin[];
     planetRadius?: number;
+    warnOnSlowQuery?: boolean;
     version?: number;
     size?: number; // size of WebSQL database
     path?: string; // database path (if supported)
