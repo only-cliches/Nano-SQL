@@ -590,6 +590,7 @@ export interface InanoSQLQuery {
     action: string;
     actionArgs?: any;
     state: "pending" | "processing" | "complete" | "error";
+    error?: any;
     result: any[];
     time: number;
     extend: {scope: string, args: any[]}[];
@@ -615,6 +616,20 @@ export interface InanoSQLQuery {
     updateImmutable?: any;
     transactionId?: string;
     [key: string]: any;
+}
+
+export interface _nanoSQLPreparedQuery {
+    query: InanoSQLQuery
+    type: 1|2|3; // 1 = fast, 2 = medium, 3 = complete
+    whereArgs: IWhereArgs;
+    havingArgs: IWhereArgs;
+    orderBy: InanoSQLSortBy;
+    groupBy: InanoSQLSortBy;
+    pkOrderBy: boolean;
+    idxOrderBy: boolean;
+    hasFn: boolean;
+    hasAggrFn: boolean;
+    selectArgs: ISelectArgs[];
 }
 
 export interface InanoSQLIndex {
@@ -663,6 +678,7 @@ export interface IWhereArgs {
     whereFn?: (row: { [name: string]: any }, index: number) => boolean;
     fastWhere?: (IWhereCondition|string)[];
     slowWhere?: (IWhereCondition|string|(IWhereCondition|string)[])[];
+    indexesUsed?: string[];
 }
 
 // tslint:disable-next-line
