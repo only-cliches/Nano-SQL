@@ -13,7 +13,7 @@ const globalTableCache: {
     }
 } = {};
 
-export const _prepareQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery): _nanoSQLPreparedQuery => {
+export const prepareQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery): _nanoSQLPreparedQuery => {
     const orderBy = _parseSort(query.orderBy || [], typeof query.table === "string");
     const groupBy = _parseSort(query.groupBy || [], false);
     const whereArgs = query.where ? _parseWhere(nSQL, nSQL.getDB(query.databaseID), query, query.where, typeof query.table !== "string" || typeof query.union !== "undefined") : { type: IWhereType.none };
