@@ -1,7 +1,6 @@
-import { fastID, mutateRowTypes, adapterFilters, hash, resolvePath, objectsEqual, assign, maybeDate, execFunction, deepGet, chainAsync, _nanoSQLQueue, allAsync } from "./utilities";
-import { InanoSQLQuery, IWhereType, IWhereArgs, InanoSQLSortBy, ISelectArgs, InanoSQLInstance, IWhereCondition, InanoSQLIndex, InanoSQLTableColumn, InanoSQLDBConfig, _nanoSQLPreparedQuery, TableQueryResult } from "./interfaces";
+import { fastID, mutateRowTypes, adapterFilters, hash, resolvePath, objectsEqual, assign, maybeDate, execFunction, deepGet, chainAsync, _nanoSQLQueue, allAsync, deepSet } from "./utilities";
+import { InanoSQLQuery, IWhereType, IWhereArgs, InanoSQLSortBy, ISelectArgs, InanoSQLInstance, IWhereCondition, InanoSQLIndex, InanoSQLTableColumn, InanoSQLDBConfig, _nanoSQLPreparedQuery, TableQueryResult, InanoSQLupdateIndex, updateIndexFilter } from "./interfaces";
 import { _nanoSQLQuery } from "./query";
-import { error } from "util";
 
 const globalTableCache: {
     [cacheID: string]: {
@@ -14,8 +13,8 @@ const globalTableCache: {
 } = {};
 
 export const prepareQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery): _nanoSQLPreparedQuery => {
-    const orderBy = _parseSort(query.orderBy || [], typeof query.table === "string");
-    const groupBy = _parseSort(query.groupBy || [], false);
+    const orderBy = _parseSort(nSQL, query, query.orderBy || [], typeof query.table === "string");
+    const groupBy = _parseSort(nSQL, query, query.groupBy || [], false);
     const whereArgs = query.where ? _parseWhere(nSQL, nSQL.getDB(query.databaseID), query, query.where, typeof query.table !== "string" || typeof query.union !== "undefined") : { type: IWhereType.none };
     const havingArgs = query.having ? _parseWhere(nSQL, nSQL.getDB(query.databaseID), query, query.having, true) : { type: IWhereType.none };
 
@@ -119,18 +118,14 @@ export const _parseWhere = (nSQL: InanoSQLInstance, database: InanoSQLDBConfig, 
         return ww.reduce((p, w, i) => {
             if (i % 2 === 1) { // AND or OR
                 if (typeof w !== "string") {
-                    query.state = "error";
-                    error("Malformed WHERE statement!");
-                    return p;
+                    throw new Error("Malformed WHERE statement!");
                 }
                 p.push(w);
                 return p;
             } else { // where conditions
 
                 if (!Array.isArray(w)) {
-                    query.state = "error";
-                    error("Malformed WHERE statement!");
-                    return p;
+                    throw new Error("Malformed WHERE statement!");
                 }
                 if (Array.isArray(w[0])) { // nested array
                     p.push(recursiveParse(w, level + 1));
@@ -140,9 +135,7 @@ export const _parseWhere = (nSQL: InanoSQLInstance, database: InanoSQLDBConfig, 
                     const fnName: string = w[0].split("(")[0].trim().toUpperCase();
                     let hasIndex = false;
                     if (!nSQL.functions[fnName]) {
-                        query.state = "error";
-                        error(`Function "${fnName}" not found!`);
-                        return p;
+                        throw new Error(`Function "${fnName}" not found!`);
                     }
 
                     if (doIndex && nSQL.functions[fnName] && nSQL.functions[fnName].checkIndex) {
@@ -313,7 +306,144 @@ export const _parseWhere = (nSQL: InanoSQLInstance, database: InanoSQLDBConfig, 
     }
 }
 
-export const _where = (singleRow: any, where: (IWhereCondition | string | (IWhereCondition | string)[])[]): boolean => {
+export const _getIndexValues = (nSQL: InanoSQLInstance, indexes: { [id: string]: InanoSQLIndex }, row: any): { [indexName: string]: any } => {
+
+    return Object.keys(indexes).reduce((prev, cur) => {
+        const value = deepGet(indexes[cur].path, row);
+        const type = indexes[cur].isDate ? "string" : indexes[cur].type;
+        prev[cur] = indexes[cur].isArray ? (Array.isArray(value) ? value : []).map(v => nSQL.indexTypes[type](v)) : nSQL.indexTypes[type](value);
+        return prev;
+    }, {});
+}
+
+export const _checkUniqueIndexes = (nSQL: InanoSQLInstance,  query: InanoSQLQuery, pk: any, oldRow: any, newIndexValues: { [index: string]: any }, done: () => void, error: (err: any) => void) => {
+    allAsync(Object.keys(newIndexValues), (index, i, next, err) => {
+        const indexProps = nSQL.getDB(query.databaseID)._tables[query.table as any].indexes[index].props || {};
+        if (indexProps && indexProps.unique) { // check for unique
+            let indexPKs: any[] = [];
+            adapterFilters(query.databaseID, nSQL, query).readIndexKey(query.table as string, index, newIndexValues[index], (rowPK) => {
+                if (rowPK !== pk) indexPKs.push(rowPK);
+            }, () => {
+                if (indexPKs.length > 0) {
+                    err({ error: "Unique Index Collision!", row: oldRow, query: query });
+                } else {
+                    next(null);
+                }
+            }, err);
+        } else { // no need to check for unique
+            next(null);
+        }
+    }).then(done).catch(error);
+}
+
+export const _diffUpdates = (nSQL: InanoSQLInstance,  query: InanoSQLQuery, oldRow: any, finalRow: any, done: () => void, error: (err: any) => void) => {
+    const newIndexValues = _getIndexValues(nSQL, nSQL.getDB(query.databaseID)._tables[query.table as any].indexes, finalRow);
+    const oldIndexValues = _getIndexValues(nSQL, nSQL.getDB(query.databaseID)._tables[query.table as any].indexes, oldRow);
+    const table = nSQL.getDB(query.databaseID)._tables[query.table as string];
+
+    _checkUniqueIndexes(nSQL, query, deepGet(table.pkCol, oldRow), oldRow, newIndexValues, () => {
+
+        allAsync(Object.keys(oldIndexValues).concat(["__pk__"]), (indexName: string, i, next, err) => {
+            if (indexName === "__pk__") { // main row
+                adapterFilters(query.databaseID, nSQL, query).write(query.table as string, deepGet(table.pkCol, finalRow), finalRow, (pk) => {
+                    deepSet(table.pkCol, finalRow, pk);
+                    next(null);
+                }, err);
+            } else { // indexes
+                const tableName = query.table as string;
+                if (objectsEqual(newIndexValues[indexName], oldIndexValues[indexName]) === false) { // only update changed index values
+
+                    if (table.indexes[indexName].isArray) {
+                        let addValues: any[] = newIndexValues[indexName].filter((v, i, s) => oldIndexValues[indexName].indexOf(v) === -1);
+                        let removeValues: any[] = oldIndexValues[indexName].filter((v, i, s) => newIndexValues[indexName].indexOf(v) === -1);
+                        allAsync([addValues, removeValues], (arrayOfValues, j, nextValues) => {
+                            if (!arrayOfValues.length) {
+                                nextValues(null);
+                                return;
+                            }
+                            allAsync(arrayOfValues, (value, i, nextArr) => {
+                                _updateIndex(nSQL, query, tableName, indexName, value, deepGet(table.pkCol, finalRow), j === 0, () => {
+                                    nextArr(null);
+                                }, err);
+                            }).then(nextValues);
+                        }).then(next);
+                    } else {
+                        chainAsync(["rm", "add"], (job, i, nextJob) => {
+                            switch (job) {
+                                case "add": // add new index value
+                                    _updateIndex(nSQL, query, tableName, indexName, newIndexValues[indexName], deepGet(table.pkCol, finalRow), true, () => {
+                                        nextJob(null);
+                                    }, err);
+                                    break;
+                                case "rm": // remove old index value
+                                    _updateIndex(nSQL, query, tableName, indexName, oldIndexValues[indexName], deepGet(table.pkCol, finalRow), false, () => {
+                                        nextJob(null);
+                                    }, err);
+                                    break;
+                            }
+                        }).then(next);
+                    }
+                } else {
+                    next(null);
+                }
+            }
+        }).then(done).catch(error);
+    }, error);
+}
+
+const _indexLocks: {
+    [lockID: string]: {
+        [indexValue: string]: boolean;
+    }
+} = {};
+
+export const _updateIndex = (nSQL: InanoSQLInstance, query: InanoSQLQuery, table: string, indexName: string, value: any, pk: any, addToIndex: boolean, done: () => void, err: (error) => void) => {
+    const lockID = query.databaseID + table + indexName;
+    if (!_indexLocks[lockID]) {
+        _indexLocks[lockID] = {};
+    }
+
+    // the number zero is the only falsey value you can index
+    if (!value && value !== 0) {
+        done();
+        return;
+    }
+
+    // 0 length strings cannot be indexed
+    if (String(value).length === 0) {
+        done();
+        return;
+    }
+
+    const newItem: InanoSQLupdateIndex = { table, indexName, value, pk, addToIndex, done, err, query: query, nSQL: nSQL };
+
+    nSQL.doFilter<updateIndexFilter>(query.databaseID, "updateIndex", { res: newItem, query: query }, (update) => {
+        
+        const item = update.res;
+            
+        const doUpdate = () => {
+            if (_indexLocks[lockID][String(item.value)]) {
+                setTimeout(doUpdate, 10);
+            } else {
+                _indexLocks[lockID][String(item.value)] = true;
+                const fn = item.addToIndex ? adapterFilters(query.databaseID, item.nSQL, item.query).addIndexValue : adapterFilters(query.databaseID, item.nSQL, item.query).deleteIndexValue;
+                fn(item.table, item.indexName, item.pk, item.value, () => {
+                    delete _indexLocks[lockID][String(item.value)];
+                    item.done();
+                    done();
+                }, (err) => {
+                    delete _indexLocks[lockID][String(item.value)];
+                    item.err(err);
+                    done();
+                });
+            }
+        }
+        doUpdate();
+
+    }, err);
+}
+
+export const _where = (query: InanoSQLQuery, singleRow: any, where: (IWhereCondition | string | (IWhereCondition | string)[])[]): boolean => {
 
     if (where.length > 1) { // compound where statements
 
@@ -329,9 +459,9 @@ export const _where = (singleRow: any, where: (IWhereCondition | string | (IWher
                 let compareResult = false;
 
                 if (Array.isArray(wArg)) { // nested where
-                    compareResult = this._where(singleRow, wArg as any);
+                    compareResult = _where(query, singleRow, wArg as any);
                 } else {
-                    compareResult = this._compare(wArg as IWhereCondition, singleRow);
+                    compareResult = _compare(query, wArg as IWhereCondition, singleRow);
                 }
 
                 if (idx === 0) {
@@ -349,18 +479,45 @@ export const _where = (singleRow: any, where: (IWhereCondition | string | (IWher
         return matches;
 
     } else { // single where statement
-        return _compare(where[0] as IWhereCondition, singleRow);
+        return _compare(query, where[0] as IWhereCondition, singleRow);
     }
 }
 
-export const _getColValue = (where: IWhereCondition, wholeRow: any): any => {
-    const value = where.fnString ? execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result : deepGet(where.col as string, wholeRow);
+const likeCache: { [likeQuery: string]: RegExp } = {};
+
+export const _processLIKE = (columnValue: string, givenValue: string): boolean => {
+    if (!likeCache[givenValue]) {
+        let prevChar = "";
+        const len = givenValue.split("").length - 1;
+        likeCache[givenValue] = new RegExp(givenValue.split("").map((s, i) => {
+            if (prevChar === "\\") {
+                prevChar = s;
+                return s;
+            }
+            prevChar = s;
+            if (s === "%") return ".*";
+            if (s === "_") return ".";
+            return (i === 0 ? "^" + s : i === len ? s + "$" : s);
+        }).join(""), "gmi");
+    }
+    if (typeof columnValue !== "string") {
+        if (typeof columnValue === "number") {
+            return String(columnValue).match(likeCache[givenValue]) !== null;
+        } else {
+            return JSON.stringify(columnValue).match(likeCache[givenValue]) !== null;
+        }
+    }
+    return columnValue.match(likeCache[givenValue]) !== null;
+}
+
+export const _getColValue = (query: InanoSQLQuery, where: IWhereCondition, wholeRow: any): any => {
+    const value = where.fnString ? execFunction(query, where.fnString, wholeRow, { result: undefined }).result : deepGet(where.col as string, wholeRow);
     return where.type === "date" ? (Array.isArray(value) ? value.map(s => maybeDate(s)) : maybeDate(value)) : value;
 }
 
-export const _compare = (where: IWhereCondition, wholeRow: any): boolean => {
+export const _compare = (query: InanoSQLQuery, where: IWhereCondition, wholeRow: any): boolean => {
 
-    const columnValue = _getColValue(where, wholeRow);
+    const columnValue = _getColValue(query, where, wholeRow);
     const givenValue = where.value as any;
     const compare = where.comp;
 
@@ -375,9 +532,7 @@ export const _compare = (where: IWhereCondition, wholeRow: any): boolean => {
 
     if (["IN", "NOT IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
         if (!Array.isArray(givenValue)) {
-            this.query.state = "error";
-            this.error(`WHERE "${compare}" comparison requires an array value!`);
-            return false;
+            throw new Error(`WHERE type "${compare}" requires an array value!`);
         }
     }
 
@@ -402,9 +557,9 @@ export const _compare = (where: IWhereCondition, wholeRow: any): boolean => {
         case "REGEXP":
         case "REGEX": return (columnValue || "").match(givenValue) !== null;
         // if given value exists in column value
-        case "LIKE": return this._processLIKE((columnValue || ""), givenValue);
+        case "LIKE": return _processLIKE((columnValue || ""), givenValue);
         // if given value does not exist in column value
-        case "NOT LIKE": return !this._processLIKE((columnValue || ""), givenValue);
+        case "NOT LIKE": return !_processLIKE((columnValue || ""), givenValue);
         // if the column value is between two given numbers
         case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
         // if the column value is not between two given numbers
@@ -412,7 +567,7 @@ export const _compare = (where: IWhereCondition, wholeRow: any): boolean => {
         // if single value exists in array column
         case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
         // if LIKE value exists in array column
-        case "INCLUDES LIKE": return (columnValue || []).filter(v => this._processLIKE(v, givenValue)).length > 0;
+        case "INCLUDES LIKE": return (columnValue || []).filter(v => _processLIKE(v, givenValue)).length > 0;
         // if single value does not exist in array column
         case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
         // if array of values intersects with array column
@@ -425,8 +580,8 @@ export const _compare = (where: IWhereCondition, wholeRow: any): boolean => {
     }
 }
 
-export const _parseSort = (sort: string[], checkforIndexes: boolean): InanoSQLSortBy => {
-    const key = (sort && sort.length ? hash(JSON.stringify(sort)) : "") + (typeof this.query.table === "string" ? this.nSQL.getDB(this.databaseID).state.cacheId : "");
+export const _parseSort = (nSQL: InanoSQLInstance, query: InanoSQLQuery, sort: string[], checkforIndexes: boolean): InanoSQLSortBy => {
+    const key = (sort && sort.length ? hash(JSON.stringify(sort)) : "") + (typeof query.table === "string" ? nSQL.getDB(query.databaseID).state.cacheId : "");
     if (!key) return { sort: [], index: "" };
     if (_nanoSQLQuery._sortMemoized[key]) return _nanoSQLQuery._sortMemoized[key];
 
@@ -436,13 +591,6 @@ export const _parseSort = (sort: string[], checkforIndexes: boolean): InanoSQLSo
         if (hasFn) {
             isThereFn = true;
         }
-        /*
-        const fnArgs: string[] = hasFn ? c[0].split("(")[1].replace(")", "").split(",").map(v => v.trim()).filter(a => a) : [];
-        const fnName = hasFn ? c[0].split("(")[0].trim().toUpperCase() : undefined;
-        if (fnName && !this.nSQL.functions[fnName]) {
-            this.query.state = "error";
-            this.error(`Function "${fnName}" not found!`);
-        }*/
         p.push({
             path: hasFn ? [] : resolvePath(c[0]),
             fn: hasFn ? c[0] : undefined,
@@ -453,15 +601,15 @@ export const _parseSort = (sort: string[], checkforIndexes: boolean): InanoSQLSo
 
     let index = "";
     if (checkforIndexes && isThereFn === false && result.length === 1) {
-        const pkKey: string[] = typeof this.query.table === "string" ? this.nSQL.getDB(this.databaseID)._tables[this.query.table].pkCol : [];
+        const pkKey: string[] = typeof query.table === "string" ? nSQL.getDB(query.databaseID)._tables[query.table].pkCol : [];
         if (result[0].path[0].length && objectsEqual(result[0].path, pkKey)) {
             index = "_pk_";
         } else {
-            const indexKeys = Object.keys(this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].indexes);
+            const indexKeys = Object.keys(nSQL.getDB(query.databaseID)._tables[query.table as string].indexes);
             let i = indexKeys.length;
             while (i-- && !index) {
-                if (objectsEqual(this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].indexes[indexKeys[i]], result[0].path)) {
-                    index = this.nSQL.getDB(this.databaseID)._tables[this.query.table as string].indexes[indexKeys[i]].id;
+                if (objectsEqual(nSQL.getDB(query.databaseID)._tables[query.table as string].indexes[indexKeys[i]], result[0].path)) {
+                    index = nSQL.getDB(query.databaseID)._tables[query.table as string].indexes[indexKeys[i]].id;
                 }
             }
         }
@@ -472,8 +620,8 @@ export const _parseSort = (sort: string[], checkforIndexes: boolean): InanoSQLSo
     }
 }
 
-export const _getTable = (tableName: string, whereCond: any[] | ((row: { [key: string]: any; }, i?: number) => boolean) | undefined, table: any, callback: (result: TableQueryResult) => void, error: (err: any) => void) => {
-    const cacheID = this.query.cacheID as string;
+export const _getTable = (query: InanoSQLQuery, tableName: string, whereCond: any[] | ((row: { [key: string]: any; }, i?: number) => boolean) | undefined, table: any, callback: (result: TableQueryResult) => void, error: (err: any) => void) => {
+    const cacheID = query.cacheID as string;
 
     if (typeof table === "function") {
         if (!globalTableCache[cacheID]) {
@@ -491,7 +639,7 @@ export const _getTable = (tableName: string, whereCond: any[] | ((row: { [key: s
         }
         if (globalTableCache[cacheID][tableName].loading) {
             setTimeout(() => {
-                _getTable(tableName, whereCond, table, callback, error);
+                _getTable(query, tableName, whereCond, table, callback, error);
             }, 10);
             return;
         }
@@ -730,7 +878,7 @@ export const _getQueryRecords = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPrepare
                         onRow(rows[i], i);
                     }
                 } else {
-                    if (_where(rows[i], pQuery.whereArgs.slowWhere as any)) {
+                    if (_where(pQuery.query, rows[i], pQuery.whereArgs.slowWhere as any)) {
                         onRow(rows[i], i);
                     }
                 }
@@ -755,7 +903,7 @@ export const _getQueryRecords = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPrepare
             // primary key or secondary index query followed by slow query
             case IWhereType.medium:
                 _fastQuery(nSQL, pQuery, (row, i) => {
-                    if (_where(row, pQuery.whereArgs.slowWhere as any)) {
+                    if (_where(pQuery.query, row, pQuery.whereArgs.slowWhere as any)) {
                         onRow(mutateRowTypes(pQuery.query.databaseID, row, pQuery.query.table as string, nSQL), i);
                     }
                 }, complete, error);
@@ -784,7 +932,7 @@ export const _getQueryRecords = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPrepare
                     adapterFilters(pQuery.query.databaseID, nSQL, pQuery.query).readMulti(pQuery.query.table, "all", undefined, undefined, isReversed, (row, i) => {
 
                         if (pQuery.whereArgs.type === IWhereType.slow) {
-                            if (_where(row, pQuery.whereArgs.slowWhere as any)) {
+                            if (_where(pQuery.query, row, pQuery.whereArgs.slowWhere as any)) {
                                 onRow(mutateRowTypes(pQuery.query.databaseID, row, pQuery.query.table as string, nSQL), i);
                             }
                         } else if (pQuery.whereArgs.type === IWhereType.fn && pQuery.whereArgs.whereFn) {
@@ -804,7 +952,7 @@ export const _getQueryRecords = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPrepare
         }
 
     } else if (typeof pQuery.query.table === "function") { // promise that returns array
-        _getTable(pQuery.query.tableAS || fastID(), pQuery.query.where, pQuery.query.table, (result) => {
+        _getTable(pQuery.query, pQuery.query.tableAS || fastID(), pQuery.query.where, pQuery.query.table, (result) => {
             scanRecords(result.rows as any);
         }, error);
     } else if (Array.isArray(pQuery.query.table)) { // array

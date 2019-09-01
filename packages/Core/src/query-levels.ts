@@ -11,12 +11,15 @@ New idea is this (WIP for sure)
 This way each class has a single query path (instead of multiple branching options) and will be easier to follow and maintain.
 */
 import { InanoSQLInstance, InanoSQLQuery, _nanoSQLPreparedQuery, InanoSQLTableConfig, customQueryFilter, InanoSQLAdapter, conformRowFilter } from "./interfaces";
-import { prepareQuery, _getQueryRecords } from "./query-levels-utils";
+import { prepareQuery, _getQueryRecords, _diffUpdates } from "./query-levels-utils";
 import { adapterFilters, assign, chainAsync, allAsync, _nanoSQLQueue, deepGet, noop, blankTableDefinition, objectsEqual, deepSet } from "./utilities";
 import { resolveMode } from "./adapter-detect";
 
 
 export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => {
+
+    const startTime = Date.now();
+
     const prepared = prepareQuery(nSQL, query);
 
     query.state = "processing";
@@ -81,10 +84,14 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery, progr
             });
             break;
         case "delete":
-        case "conform rows":
         case "rebuild indexes":
             requireQueryOpts(false, () => {
                 _nanoSQLMutationQuery(nSQL, prepared, progress, complete, error);
+            });
+            break;
+        case "conform rows":
+            requireQueryOpts(false, () => {
+                _conformQuery(nSQL, prepared, progress, complete, error, startTime);
             });
             break;
         case "drop":
@@ -355,7 +362,9 @@ export const _cloneQuery = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPreparedQuer
     }, error);
 }
 
-export const _conformQuery = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPreparedQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => {
+
+
+export const _conformQuery = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPreparedQuery, progress: (row: any, i: number) => void, complete: () => void, error: (err: any) => void, startTime) => {
     const conformTable = pQuery.query.table as string;
     const conformFilter = pQuery.query.actionArgs || function (r) { return r };
 
@@ -367,13 +376,13 @@ export const _conformQuery = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPreparedQu
     const conformQueue = new _nanoSQLQueue((item, i, done, err) => {
         const newRow = nSQL.default(pQuery.query.databaseID || "", item, conformTable);
         nSQL.doFilter<conformRowFilter>(pQuery.query.databaseID, "conformRow", { res: newRow, oldRow: item, query: pQuery.query }, (setRow) => {
-            _diffUpdates(pQuery.query.table as string, item, setRow.res, () => {
+            _diffUpdates(nSQL, pQuery.query, item, setRow.res, () => {
                 const changeEvent = {
                     target: conformTable,
                     path: "*",
                     events: ["upsert", "change", "*"],
                     time: Date.now(),
-                    performance: Date.now() - _startTime,
+                    performance: Date.now() - startTime,
                     result: setRow.res,
                     oldRow: item,
                     query: pQuery.query.query,
@@ -389,7 +398,7 @@ export const _conformQuery = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPreparedQu
                                     path: path,
                                     events: ["upsert", "change", "*"],
                                     time: Date.now(),
-                                    performance: Date.now() - _startTime,
+                                    performance: Date.now() - startTime,
                                     result: setRow.res,
                                     oldRow: item,
                                     query: pQuery.query,
@@ -414,60 +423,5 @@ export const _conformQuery = (nSQL: InanoSQLInstance, pQuery: _nanoSQLPreparedQu
         conformQueue.newItem(conformFilter(row));
     }, () => {
         conformQueue.finished();
-    }, error);
-}
-
-export const _diffUpdates = (queryTable: string, oldRow: any, finalRow: any, done: () => void, error: (err: any) => void) => {
-    const newIndexValues = _getIndexValues(nSQL.getDB(databaseID)._tables[query.table as any].indexes, finalRow);
-    const oldIndexValues = _getIndexValues(nSQL.getDB(databaseID)._tables[query.table as any].indexes, oldRow);
-    const table = nSQL.getDB(databaseID)._tables[queryTable];
-
-    _checkUniqueIndexes(queryTable, deepGet(table.pkCol, oldRow), oldRow, newIndexValues, () => {
-
-        allAsync(Object.keys(oldIndexValues).concat(["__pk__"]), (indexName: string, i, next, err) => {
-            if (indexName === "__pk__") { // main row
-                adapterFilters(databaseID, nSQL, query).write(queryTable, deepGet(table.pkCol, finalRow), finalRow, (pk) => {
-                    deepSet(table.pkCol, finalRow, pk);
-                    next(null);
-                }, err);
-            } else { // indexes
-                const tableName = query.table as string;
-                if (objectsEqual(newIndexValues[indexName], oldIndexValues[indexName]) === false) { // only update changed index values
-
-                    if (table.indexes[indexName].isArray) {
-                        let addValues: any[] = newIndexValues[indexName].filter((v, i, s) => oldIndexValues[indexName].indexOf(v) === -1);
-                        let removeValues: any[] = oldIndexValues[indexName].filter((v, i, s) => newIndexValues[indexName].indexOf(v) === -1);
-                        allAsync([addValues, removeValues], (arrayOfValues, j, nextValues) => {
-                            if (!arrayOfValues.length) {
-                                nextValues(null);
-                                return;
-                            }
-                            allAsync(arrayOfValues, (value, i, nextArr) => {
-                                _updateIndex(tableName, indexName, value, deepGet(table.pkCol, finalRow), j === 0, () => {
-                                    nextArr(null);
-                                }, err);
-                            }).then(nextValues);
-                        }).then(next);
-                    } else {
-                        chainAsync(["rm", "add"], (job, i, nextJob) => {
-                            switch (job) {
-                                case "add": // add new index value
-                                    _updateIndex(tableName, indexName, newIndexValues[indexName], deepGet(table.pkCol, finalRow), true, () => {
-                                        nextJob(null);
-                                    }, err);
-                                    break;
-                                case "rm": // remove old index value
-                                    _updateIndex(tableName, indexName, oldIndexValues[indexName], deepGet(table.pkCol, finalRow), false, () => {
-                                        nextJob(null);
-                                    }, err);
-                                    break;
-                            }
-                        }).then(next);
-                    }
-                } else {
-                    next(null);
-                }
-            }
-        }).then(done).catch(error);
     }, error);
 }
