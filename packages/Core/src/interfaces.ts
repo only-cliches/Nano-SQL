@@ -630,6 +630,7 @@ export interface _nanoSQLPreparedQuery {
     hasFn: boolean;
     hasAggrFn: boolean;
     selectArgs: ISelectArgs[];
+    indexes: string[];
 }
 
 export interface InanoSQLIndex {

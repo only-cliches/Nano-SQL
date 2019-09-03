@@ -7,7 +7,7 @@
 ## [2.3.7]
 - Fixed issue [165](https://github.com/ClickSimply/Nano-SQL/issues/165), show tables query now works when no tables are selected.
 - Added `warnOnSlowQuery` property to database create call to optionally emit console warnings when a full table scan is performed.
-- Started query engine rewrite.
+- Major refactor of the query engine.
 
 ## [2.3.6] 08-12-2019
 - Fixed issue [161](https://github.com/ClickSimply/Nano-SQL/issues/161), join queries weren't working as expected with `AS` queries.

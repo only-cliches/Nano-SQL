@@ -2607,7 +2607,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     /**
      * Compare function used by WHERE to determine if a given value matches a given condition.
      *
-     * Accepts single where arguments (compound arguments not allowed).
+     * Accepts single where arguments (compound arguments not handled).
      *
      *
      * @param {*} val1
