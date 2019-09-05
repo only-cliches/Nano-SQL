@@ -8,6 +8,8 @@ NanoSQL makes it easy to do full table scans so it's there when you need it, but
 
 While it's usually impossible to never perform a full table scan, we can get clever about the way we setup the application and database so that the full table scans are extremely infrequent.
 
+You can optionally pass `warnOnSlowQuery` into the `createDatabase` object to have nanoSQL warn you when queries that require a full table scan are performed.
+
 ## Never Use Offset/Limit
 
 NanoSQL has a query caching feature that allows you to save the results of a complete query in memory, then paginate through them as desired.  This works with any query type and doesn't require any changes to your data models.
@@ -16,7 +18,7 @@ NanoSQL has a query caching feature that allows you to save the results of a com
 
 This is a much better alternative to using `.offset()` and `.limit` in your queries.  
 
-> FYI: Limit and offset work by selecting the entire result set, then cutting it down to the desired size.  So each time you paginate through a query using limit/offset the entire query result set must be selected.
+> FYI: Limit and offset typically work by selecting the entire result set, then cutting it down to the desired size.  So each time you paginate through a query using limit/offset the entire query result set must be selected.
 
 ## Index All The Things
 

@@ -120,10 +120,10 @@ To use directly in the browser, drop one of the tags below into your `<head>`.
 
 ```html
 <!-- ES6 Only (Faster & Smaller) -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.6/dist/nano-sql.min.js" integrity="sha256-Ua+lzcp0TwbaEtqZifYWjTe+74eh3qmdzIrsURkk36Y=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.7/dist/nano-sql.min.js" integrity="sha256-W1pVgKda7GC4fwXqq9jfOrssBDJJXZqck+ultRPVzmc=" crossorigin="anonymous"></script>
 <!-- ES5 (Internet Explorer/Old Browser Support) -->
 <!-- Promise must be polyfilled as well -->
-<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.6/dist/nano-sql.min.es5.js" integrity="sha256-zmOci6aM3Kw978T22FDJo7qe8hHrWYqKwjpZOgYbQ8Y=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@nano-sql/core@2.3.7/dist/nano-sql.min.es5.js" integrity="sha256-1t9VlpFUgHaxlLQy6HM9ROQvTiuUv2M12Fp1oTh3+yg=" crossorigin="anonymous"></script>
 ```
 
 ## Important

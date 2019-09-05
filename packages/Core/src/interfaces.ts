@@ -1,7 +1,7 @@
 import { ReallySmallEvents } from "really-small-events";
 import { _nanoSQLQueue } from "./utilities";
 
-export const VERSION = 2.34;
+export const VERSION = 2.37;
 
 export type uuid = String;
 export type timeId = String;
@@ -286,6 +286,7 @@ export interface InanoSQLConfig {
     mode?: string | InanoSQLAdapter;
     plugins?: InanoSQLPlugin[];
     planetRadius?: number;
+    warnOnSlowQuery?: boolean;
     version?: number;
     size?: number; // size of WebSQL database
     path?: string; // database path (if supported)
@@ -385,6 +386,8 @@ export interface InanoSQLAdapter {
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
 
+    readMulti2?(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number, getNext: () => void) => void, complete: () => void, error: (err: any) => void);
+
     getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
     getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void);
@@ -400,6 +403,8 @@ export interface InanoSQLAdapter {
     readIndexKey(table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void);
 
     readIndexKeys(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any) => void, complete: () => void, error: (err: any) => void);
+
+    readIndexKeys2?(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any, getNext: () => void) => void, complete: () => void, error: (err: any) => void);
 }
 
 
@@ -589,6 +594,7 @@ export interface InanoSQLQuery {
     action: string;
     actionArgs?: any;
     state: "pending" | "processing" | "complete" | "error";
+    error?: any;
     result: any[];
     time: number;
     extend: {scope: string, args: any[]}[];
@@ -614,6 +620,21 @@ export interface InanoSQLQuery {
     updateImmutable?: any;
     transactionId?: string;
     [key: string]: any;
+}
+
+export interface _nanoSQLPreparedQuery {
+    query: InanoSQLQuery
+    type: 1|2|3; // 1 = fast, 2 = medium, 3 = complete
+    whereArgs: IWhereArgs;
+    havingArgs: IWhereArgs;
+    orderBy: InanoSQLSortBy;
+    groupBy: InanoSQLSortBy;
+    pkOrderBy: boolean;
+    idxOrderBy: boolean;
+    hasFn: boolean;
+    hasAggrFn: boolean;
+    selectArgs: ISelectArgs[];
+    indexes: string[];
 }
 
 export interface InanoSQLIndex {
@@ -662,6 +683,7 @@ export interface IWhereArgs {
     whereFn?: (row: { [name: string]: any }, index: number) => boolean;
     fastWhere?: (IWhereCondition|string)[];
     slowWhere?: (IWhereCondition|string|(IWhereCondition|string)[])[];
+    indexesUsed?: string[];
 }
 
 // tslint:disable-next-line

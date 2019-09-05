@@ -129,7 +129,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
         const action = query.action.toLowerCase().trim();
         this._orderByRows = this._orderByRows.bind(this);
         this._onError = this._onError.bind(this);
-        if (["select", "clone", "create table", "create table if not exists"].indexOf(action) === -1 && typeof query.table !== "string") {
+        if (["select", "clone", "create table", "create table if not exists", "show tables"].indexOf(action) === -1 && typeof query.table !== "string") {
             this.query.state = "error";
             this.error(`Only "select", "clone" & "create table" queries are available for this resource!`);
             return;
@@ -350,6 +350,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void) {
         const conformTable = this.query.table as string;
         const conformFilter = this.query.actionArgs || function (r) { return r };
+        this._whereArgs = this.query.where ? this._parseWhere(this.query.where, typeof this.query.table !== "string" || typeof this.query.union !== "undefined") : { type: IWhereType.none };
 
         if (!this.databaseID || !this.nSQL.getDB(this.databaseID)._tables[conformTable]) {
             error(new Error(`Table ${conformTable} not found for conforming!`));
@@ -2021,7 +2022,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     const newTable = { name: tableOrIndexName, conf: newConfig };
                     this.nSQL.getDB(this.databaseID)._tableIds[newTable.name] = newConfig.id;
                     if (alterTable) {
-                        delete this.nSQL.getDB(this.databaseID)._tableIds[this.query.table as string];
                         const removeIndexes = oldIndexes.filter(v => newIndexes.indexOf(v) === -1);
                         allAsync(removeIndexes, (indexName, i, nextIndex, indexError) => {
                             adapterFilters(this.databaseID, this.nSQL, this.query).deleteIndex(tableOrIndexName, indexName, () => {
@@ -2402,6 +2402,9 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                 case IWhereType.slow:
                 case IWhereType.none:
                 case IWhereType.fn:
+                    if (this.query.action === "select" && this.query.databaseID && this.nSQL.getDB(this.query.databaseID) && this.nSQL.getDB(this.query.databaseID).config.warnOnSlowQuery) {
+                        console.warn("Slow Query: Use secondary indexes or primary keys to perform SELECT.  Avoid full table scans!", this.query);
+                    }
                     const isReversed = this._pkOrderBy && this._orderBy.sort[0].dir === "DESC";
 
                     const canDoOrderBy = this.query.orderBy ? this._pkOrderBy === true : true;
@@ -2604,7 +2607,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     /**
      * Compare function used by WHERE to determine if a given value matches a given condition.
      *
-     * Accepts single where arguments (compound arguments not allowed).
+     * Accepts single where arguments (compound arguments not handled).
      *
      *
      * @param {*} val1

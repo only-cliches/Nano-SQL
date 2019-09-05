@@ -2175,4 +2175,86 @@ describe("Testing Other Features", () => {
         });
     });
 
+    it("Allows a table to be used after alter table query.", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+
+        nSQL.createDatabase({
+            id: "my-db",
+            mode: "TEMP",
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                    "uuid:uuid": { pk: true },
+                    "name:string": {},
+                    "age:int": {}
+                    }
+                }
+            ]
+        })
+        .then(() => {
+            // insert all test data
+            return nSQL.selectTable("users").query("upsert", [
+            {name: "John", age: 23},
+            {name: "Dane", age: 27}
+            ]).exec()
+        })
+        .then(() => {
+            return nSQL.selectTable("users").query("alter table", {
+                    name: "users",
+                    model: {
+                    "uuid:uuid": { pk: true },
+                    // "id:int": { pk: true, ai: true },/
+                    "name:string": {},},
+                    "last:string": {},
+                    "age:int": {}
+            }).exec()
+        })
+        .then(() => {
+            // upsert
+            return nSQL.selectTable("users").query("upsert", [
+            {name: "Pete", last: "Col", age: 30}
+            ])
+            .exec()
+        }).then(() => {
+            done();
+        }).catch((e) => {
+            done(e);
+        })
+    });
+
+    it("Conform Rows query works on entire table without select table.", (done: MochaDone) => {
+
+        const nSQL = new nanoSQL();
+
+        nSQL.createDatabase({
+            id: "my-db",
+            mode: "TEMP",
+            tables: [
+                {
+                    name: "users",
+                    model: {
+                        "uuid:uuid": { pk: true },
+                        "name:string": {},
+                        "age:int": {}
+                    }
+                }
+            ]
+        })
+        .then(() => {
+            // insert test data
+            return nSQL.selectTable("users").query("upsert", [
+                {name: "John", age: 23},
+                {name: "Dane", age: 27}
+            ]).exec()
+        })
+        .then(() => {
+            return nSQL.selectTable("users").query("conform rows").exec();
+        }).then(() => {
+            done();
+        }).catch((e) => {
+            done(e);
+        })
+    });
 });

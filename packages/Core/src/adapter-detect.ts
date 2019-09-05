@@ -21,15 +21,8 @@ export const detectStorage = (): string => {
 
     // Browser
 
-    // Safari / iOS always gets WebSQL (mobile and desktop)
-    // newer versions of safari drop WebSQL, so also do feature detection
-    if (isSafari && typeof window["openDatabase"] !== "undefined") {
-        return "WSQL";
-    }
-
-    // everyone else (FF + Chrome + Edge + IE)
     // check for support for indexed db
-    if (typeof indexedDB !== "undefined") { // use indexed DB if possible
+    if (typeof indexedDB !== "undefined") {
         return "IDB";
     }
 

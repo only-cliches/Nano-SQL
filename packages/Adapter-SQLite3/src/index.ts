@@ -1,52 +1,59 @@
 import { InanoSQLTable, InanoSQLPlugin, InanoSQLInstance, SQLiteAbstractFns } from "@nano-sql/core/lib/interfaces";
 import { nanoSQLMemoryIndex } from "@nano-sql/core/lib/adapters/memoryIndex";
-import { SQLiteAbstract } from "@nano-sql/core/lib/adapters/webSQL"; 
-import { Database } from "sqlite3";
+import { SQLiteAbstract } from "@nano-sql/core/lib/adapters/webSQL";
 
-export const sqlite3 = require('sqlite3');
+export const sqlite3 = require('better-sqlite3');
+
+export interface SQLiteOptions {
+    memory?: boolean,
+    readonly?: boolean,
+    fileMustExist?: boolean,
+    timeout?: number,
+    verbose?: (logMessage: string) => void
+}
 
 
-export class SQLite  extends nanoSQLMemoryIndex {
+export class SQLite extends nanoSQLMemoryIndex {
 
     plugin: InanoSQLPlugin = {
         name: "SQLite Adapter",
-        version: 2.06
+        version: 2.08
     };
 
     nSQL: InanoSQLInstance;
 
     private _id: string;
-    private _db: Database;
-    private _ai: {[table: string]: number};
+    private _db: any;
+    private _ai: { [table: string]: number };
     private _sqlite: SQLiteAbstractFns;
     private _tableConfigs: {
         [tableName: string]: InanoSQLTable;
     }
 
     private _filename: string;
-    private _mode: any;
+    private _args?: SQLiteOptions;
 
-    constructor(fileName?: string, mode?: any, batchSize?: number) {
+    constructor(fileName?: string, sqliteOptions?: SQLiteOptions, batchSize?: number) {
         super(false, true);
         this._ai = {};
         this._query = this._query.bind(this);
-        this._filename = fileName || ":memory:";
-        this._mode = mode || (sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE);
+        this._filename = fileName || "";
+        this._args = sqliteOptions && typeof sqliteOptions !== "number" ? sqliteOptions : undefined;
         this._tableConfigs = {};
         this._sqlite = SQLiteAbstract(this._query, batchSize || 500);
     }
 
     connect(id: string, complete: () => void, error: (err: any) => void) {
         this._id = id;
-        this._db = new sqlite3.Database(this._filename, this._mode || (sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE), (err) => {
-
-            if (err) {
-                error(err);
-                return;
-            }
-
+        try {
+            this._db = new sqlite3(this._filename && this._filename.length ? this._filename : this._id, {
+                memory: this._filename === "" ? true : (this._args && this._args.memory === true ? true : false),
+                ...(this._args || {})
+            });
             this._sqlite.createAI(complete, error);
-        });
+        } catch (err) {
+            error(err);
+        }
     }
 
     createTable(tableName: string, tableData: InanoSQLTable, complete: () => void, error: (err: any) => void) {
@@ -56,31 +63,37 @@ export class SQLite  extends nanoSQLMemoryIndex {
 
     _query(allowWrite: boolean, sql: string, args: any[], onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void): void {
 
-        if (allowWrite) {
-            this._db.run(sql, args, (err) => {
-                if (err) {
-                    error(err);
-                    return;
+        const stmt = this._db.prepare(sql);
+  
+        while(true) {
+            if (allowWrite) {
+                try {
+                    stmt.run(...args);
+                    complete();
+                    break;
+                } catch (e) {
+                    if (e.message !== 'This database connection is busy executing a query') {
+                        error(e);
+                        break;
+                    }
                 }
-                complete();
-            });
-        } else {
-            let count = 0;
-
-            this._db.each(sql, args, (err, row) => {
-                if (err) {
-                    error(err);
-                    return;
+            } else {
+                try {
+                    let k = 0;
+                    const results = stmt.all(...args);
+                    while (k < results.length) {
+                        onRow(results[k], k);
+                        k++;
+                    }
+                    complete();
+                    break;
+                } catch (e) {
+                    if (e.message !== 'This database connection is busy executing a query') {
+                        error(e);
+                        break;
+                    }
                 }
-                onRow(row, count);
-                count++;
-            }, (err) => {
-                if (err) {
-                    error(err);
-                    return;
-                }
-                complete();
-            });
+            }
         }
     }
 
@@ -92,7 +105,7 @@ export class SQLite  extends nanoSQLMemoryIndex {
         complete();
     }
 
-    write(table: string, pk: any, row: {[key: string]: any}, complete: (pk: any) => void, error: (err: any) => void) {
+    write(table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) {
         this._sqlite.write(this._tableConfigs[table].pkType, this._tableConfigs[table].pkCol, table, pk, row, this._tableConfigs[table].ai, this._ai, complete, error);
     }
 

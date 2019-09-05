@@ -4,6 +4,14 @@
 - Use [unfetch](https://github.com/developit/unfetch), [sockette](https://github.com/lukeed/sockette) and [Websocket Node](https://github.com/theturtle32/WebSocket-Node) for new client/server code.
 - Add SDL schema support. [Link](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51/).
 
+## [2.3.7]
+- Fixed issue [165](https://github.com/ClickSimply/Nano-SQL/issues/165), show tables query now works when no tables are selected.
+- Fixed issue [169](https://github.com/ClickSimply/Nano-SQL/issues/169), alter table queries were breaking the affected table.
+- Fixed issue [168](https://github.com/ClickSimply/Nano-SQL/issues/168), conform rows query works with or without where statement.
+- Fixed issue [167](https://github.com/ClickSimply/Nano-SQL/issues/167), WebSQL is only used if IndexedDB is not present.
+- Added `warnOnSlowQuery` property to database create call to optionally emit console warnings when a full table scan is performed.
+- Started major refactor of the query engine.
+
 ## [2.3.6] 08-12-2019
 - Fixed issue [161](https://github.com/ClickSimply/Nano-SQL/issues/161), join queries weren't working as expected with `AS` queries.
 - Fixed issue [162](https://github.com/ClickSimply/Nano-SQL/issues/162), compound select with join/graph queries is now working as expected.
