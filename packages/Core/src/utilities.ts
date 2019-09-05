@@ -87,7 +87,7 @@ export const slugify = (str: string): string => {
     return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 }
 
-export const buildQuery = (selectedDB: string|undefined, nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
+export const buildQuery = (selectedDB: string | undefined, nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
     return {
         databaseID: selectedDB,
         table: table || nSQL.selectedTable,
@@ -121,7 +121,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             nSQL.doFilter<adapterWriteFilter>(selectedDB, "adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 if (query && query.transactionId) {
-                    nSQL.txs[query.transactionId].push({table: table, type: "put", data: result.res.row});
+                    nSQL.txs[query.transactionId].push({ table: table, type: "put", data: result.res.row });
                     result.res.complete(null);
                     return;
                 }
@@ -153,7 +153,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
                     } else {
                         result.res.complete(row);
                     }
-                    
+
                 }, result.res.error);
 
             }, error as any);
@@ -162,7 +162,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             if (!selectedDB) return;
             offsetOrLow = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, offsetOrLow);
             limitOrHigh = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, limitOrHigh);
-    
+
             nSQL.doFilter<adapterReadMultiFilter>(selectedDB, "adapterReadMulti", { res: { table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
@@ -220,7 +220,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             nSQL.doFilter<adapterDeleteFilter>(selectedDB, "adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 if (query && query.transactionId) {
-                    nSQL.txs[query.transactionId].push({table: table, type: "del", data: result.res.pk});
+                    nSQL.txs[query.transactionId].push({ table: table, type: "del", data: result.res.pk });
                     result.res.complete();
                     return;
                 }
@@ -286,7 +286,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             nSQL.doFilter<adapterAddIndexValueFilter>(selectedDB, "adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 if (query && query.transactionId) {
-                    nSQL.txs[query.transactionId].push({table: table, type: "idx-put", data: {indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value}});
+                    nSQL.txs[query.transactionId].push({ table: table, type: "idx-put", data: { indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value } });
                     result.res.complete();
                     return;
                 }
@@ -315,7 +315,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             nSQL.doFilter<adapterDeleteIndexValueFilter>(selectedDB, "adapterDeleteIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
                 if (query && query.transactionId) {
-                    nSQL.txs[query.transactionId].push({table: table, type: "idx-del", data: {indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value}});
+                    nSQL.txs[query.transactionId].push({ table: table, type: "idx-del", data: { indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value } });
                     result.res.complete();
                     return;
                 }
@@ -391,7 +391,7 @@ export const maybeDate = (value: any): any => {
     return isNaN(parsed) ? value : parsed;
 }
 
-export const mutateRowTypes = (selectedDB:string|undefined, replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
+export const mutateRowTypes = (selectedDB: string | undefined, replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
 
     if (!selectedDB) return replaceObj;
 
@@ -433,11 +433,11 @@ export const mutateRowTypes = (selectedDB:string|undefined, replaceObj: any, tab
                 } else {
                     // converting normal types 
                     switch (m.type) {
-                        case "date": 
+                        case "date":
                             useObj[m.key] = new Date(useObj[m.key]).toISOString();
-                        break;
+                            break;
                         default:
-                            // useObj[m.key] = useObj[m.key];
+                        // useObj[m.key] = useObj[m.key];
                     }
                 }
 
@@ -604,7 +604,7 @@ export const allAsync = <T>(items: T[], callback: (item: T, i: number, next: (va
     if (!items || !items.length) {
         return Promise.resolve([]);
     }
-    
+
     return Promise.all((items || []).map((item, i) => {
         return new Promise((res, rej) => {
             callback(item, i, res, rej);
@@ -774,7 +774,7 @@ export const cleanArgs2 = (selectedDB: string, args: any, dataModel: { [colAndTy
                 if (!typeModel) {
                     throw new Error(`Can't find type ${findModel}!`);
                 }
-                
+
                 if (typeModel.model) {
                     return conformType(dModel, args, typeModel.model);
                 } else {
@@ -782,7 +782,7 @@ export const cleanArgs2 = (selectedDB: string, args: any, dataModel: { [colAndTy
                 }
             }
             customType(dModel);
-            
+
         } else {
             let returnObj = {};
             let getOtherCols: boolean = false;
@@ -886,7 +886,7 @@ export const execFunction = (query: InanoSQLQuery, fnString: string, row: any, p
  * @param {*} [val]
  * @returns {*}
  */
-export const cast = (selectedDB: string|undefined, type: string, val: any, allowUknownTypes?: boolean, nSQL?: InanoSQLInstance): any => {
+export const cast = (selectedDB: string | undefined, type: string, val: any, allowUknownTypes?: boolean, nSQL?: InanoSQLInstance): any => {
 
     if (type === "any" || type === "blob" || type === "*") return val;
 

@@ -386,6 +386,8 @@ export interface InanoSQLAdapter {
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
 
+    readMulti2?(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number, getNext: () => void) => void, complete: () => void, error: (err: any) => void);
+
     getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
     getTableIndexLength(table: string, complete: (length: number) => void, error: (err: any) => void);
@@ -401,6 +403,8 @@ export interface InanoSQLAdapter {
     readIndexKey(table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void);
 
     readIndexKeys(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any) => void, complete: () => void, error: (err: any) => void);
+
+    readIndexKeys2?(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any, getNext: () => void) => void, complete: () => void, error: (err: any) => void);
 }
 
 
