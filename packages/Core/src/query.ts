@@ -2021,7 +2021,6 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
                     const newTable = { name: tableOrIndexName, conf: newConfig };
                     this.nSQL.getDB(this.databaseID)._tableIds[newTable.name] = newConfig.id;
                     if (alterTable) {
-                        delete this.nSQL.getDB(this.databaseID)._tableIds[this.query.table as string];
                         const removeIndexes = oldIndexes.filter(v => newIndexes.indexOf(v) === -1);
                         allAsync(removeIndexes, (indexName, i, nextIndex, indexError) => {
                             adapterFilters(this.databaseID, this.nSQL, this.query).deleteIndex(tableOrIndexName, indexName, () => {
