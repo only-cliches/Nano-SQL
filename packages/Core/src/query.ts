@@ -350,6 +350,7 @@ export class _nanoSQLQuery implements InanoSQLQueryExec {
     public _conform(progress: (row: any, i: number) => void, finished: () => void, error: (err: any) => void) {
         const conformTable = this.query.table as string;
         const conformFilter = this.query.actionArgs || function (r) { return r };
+        this._whereArgs = this.query.where ? this._parseWhere(this.query.where, typeof this.query.table !== "string" || typeof this.query.union !== "undefined") : { type: IWhereType.none };
 
         if (!this.databaseID || !this.nSQL.getDB(this.databaseID)._tables[conformTable]) {
             error(new Error(`Table ${conformTable} not found for conforming!`));

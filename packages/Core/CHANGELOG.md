@@ -7,6 +7,7 @@
 ## [2.3.7]
 - Fixed issue [165](https://github.com/ClickSimply/Nano-SQL/issues/165), show tables query now works when no tables are selected.
 - Fixed issue [169](https://github.com/ClickSimply/Nano-SQL/issues/169), alter table queries were breaking the affected table.
+- Fixed issue [168](https://github.com/ClickSimply/Nano-SQL/issues/168), conform rows query works with or without where statement.
 - Added `warnOnSlowQuery` property to database create call to optionally emit console warnings when a full table scan is performed.
 - Started major refactor of the query engine.
 
