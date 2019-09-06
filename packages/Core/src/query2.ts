@@ -1,6 +1,6 @@
 import { InanoSQLQuery, InanoSQLInstance, InanoSQLDBConfig, TableQueryResult, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLUnionArgs } from "./interfaces";
-import { _generateAST } from "./query2-ast";
-import { _prepareQuery } from "./query2-prepare";
+import { QueryAST } from "./query2-ast";
+import { PrepareQuery } from "./query2-prepare";
 
 /**
  * Query Order:
@@ -18,10 +18,10 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery, progr
     
     try {
         // step 1, process query AST
-        const queryAST = _generateAST(query);
+        const queryAST = QueryAST.generate(query);
 
         // step 2, prepare query
-        const preparedQuery = _prepareQuery(nSQL, queryAST);
+        const preparedQuery = PrepareQuery.prepare(nSQL, queryAST);
 
         // step 3, execute query
 
