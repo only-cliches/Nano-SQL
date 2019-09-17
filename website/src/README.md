@@ -7,7 +7,7 @@ features:
 - title: Runs Everywhere
   details: Works in IE9+, NodeJS, Electron, NativeScript, React Native and everywhere else javascript does.
 - title: Powered By Typescript
-  details: Built from the ground up with Typescript to make API discovery and usage a brease.
+  details: Built from the ground up with Typescript to make API discovery and usage a breeze.
 - title: Dynamic Queries
   details: Graph, Join, Filter, Select and Order your data in dozens of ways.
 footer: MIT Licensed | Copyright © 2019-present Scott Lott
