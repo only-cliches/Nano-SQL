@@ -612,6 +612,10 @@ export const allAsync = <T>(items: T[], callback: (item: T, i: number, next: (va
     }));
 };
 
+export const isFunction = (obj: any): boolean => {
+    return !!(obj && obj.constructor && obj.call && obj.apply);
+}
+
 
 const ua = typeof window === "undefined" ? "" : (navigator.userAgent || "");
 // Detects iOS device OR Safari running on desktop
@@ -1120,4 +1124,32 @@ export const setFast = typeof Promise !== "undefined" ? (...args: any[]) => {
     setTimeout(() => {
         fastApply(args);
     }, 0);
+}
+
+export class QueryArguments {
+
+
+    constructor(
+        public table: string, 
+        public where?: any[], 
+        public offset?: number, 
+        public limit?: number, 
+        public orderBy?: string[]
+    ) {
+
+    }
+
+    public toJSON() {
+        return {
+            table: this.table,
+            where: this.where,
+            offset: this.offset,
+            limit: this.limit,
+            orderBy: this.orderBy
+        }
+    }
+
+    public toSQL(): string {
+        return "";
+    }
 }

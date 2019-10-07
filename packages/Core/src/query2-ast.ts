@@ -1,50 +1,7 @@
-import { TableQueryResult, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLUnionArgs, InanoSQLQuery } from "./interfaces";
+import { TableQueryResult, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLQueryAST, InanoSQLProcessedSort, InanoSQLUnionArgs,InanoSQLFunctionQuery, InanoSQLWhereQuery, InanoSQLProcessedWhere, InanoSQLQuery, InanoSQLQuery2 } from "./interfaces";
+import { isFunction, isObject } from "./utilities";
 
 
-export interface InanoSQLQueryAST {
-    table: {
-        str: string,
-        arr: any[],
-        prms: (where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>
-    }
-    action: string;
-    args: {
-        raw?: any;
-        select?: {as?: string, value: (string | InanoSQLFunctionQuery)}[]
-    }
-    where?: InanoSQLProcessedWhere;
-    having?: InanoSQLProcessedWhere;
-    range?: [number, number];
-    orderBy?: InanoSQLProcessedSort[];
-    groupBy?: InanoSQLProcessedSort[];
-    distinct?: (InanoSQLFunctionQuery | string)[];
-    graph?: InanoSQLGraphArgs[] | undefined;
-    join?: InanoSQLJoinArgs[] | undefined;
-    updateImmutable?: boolean;
-    union?: InanoSQLUnionArgs;
-}
-
-export interface InanoSQLFunctionQuery {
-    name: string,
-    args: (string | InanoSQLFunctionQuery)[]
-}
-
-export interface InanoSQLProcessedSort { 
-    value: string | InanoSQLFunctionQuery, 
-    dir: "asc"|"desc" 
-}
-
-export interface InanoSQLProcessedWhere {
-    type: "fn"|"arr",
-    eval?: (row: {[key: string]: any; }, i?: number) => boolean,
-    arr?: InanoSQLWhereQuery
-}
-
-export interface InanoSQLWhereQuery {
-    ANDOR?: "AND"|"OR",
-    STMT?: [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery],
-    NESTED?: InanoSQLWhereQuery[]
-}
 
 
 export class QueryAST {
@@ -57,15 +14,16 @@ export class QueryAST {
      * @returns {InanoSQLQueryAST}
      * @memberof QueryAST
      */
-    static generate(query: InanoSQLQuery): InanoSQLQueryAST {
+    static generate(query: InanoSQLQuery2): InanoSQLQueryAST {
     
         const action = String(query.action).trim().toLowerCase();
 
         return {
             table: {
-                str: typeof query.table === "string" ? query.table : "",
-                arr: Array.isArray(query.table) ? query.table : [],
-                prms: typeof query.table === "function" ? query.table : () => Promise.resolve({rows: [], filtered: false})
+                str: typeof query.table === "string" ? query.table : undefined,
+                arr: Array.isArray(query.table) ? query.table : undefined,
+                prms:  isFunction(query.table) ? (query.table as any) : undefined,
+                db: isObject(query.table) && (query.table as any).query ? (query.table as any) : undefined
             },
             action: action,
             args: {
@@ -73,7 +31,9 @@ export class QueryAST {
                 select: action === "select" && query.actionArgs ? QueryAST.select(query.actionArgs) : undefined,
             },
             where: QueryAST.where(query.where),
+            originalWhere: query.where as any[],
             having: QueryAST.where(query.having),
+            originalHaving: query.having as any[],
             range: QueryAST.offsetLimit(query.offset || 0, query.limit || 0),
             orderBy: QueryAST.sortBy(query.orderBy),
             groupBy: QueryAST.sortBy(query.groupBy),
@@ -180,17 +140,18 @@ export class QueryAST {
 
         // prevent undefined behavior
         if (typeof functionString !== "string") return "";
+
+        const end = functionString.lastIndexOf(")");
     
         
         const start = functionString.indexOf("(")
     
         // no functions in this string
-        if (start === -1) return functionString;
-    
-        const end = functionString.lastIndexOf(")");
-    
-        if (end === -1) {
-            throw new Error(functionString + " has no closing parentheses!");
+        if (start === -1 && end === -1) return functionString;
+        
+        // parentheses don't having matching pairs
+        if (start === -1 || end === -1) {
+            throw new Error(functionString + " has no matching parentheses!");
         }
     
         const functionName = functionString.slice(0, start).toLowerCase();

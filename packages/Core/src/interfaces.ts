@@ -1,5 +1,5 @@
 import { ReallySmallEvents } from "really-small-events";
-import { _nanoSQLQueue } from "./utilities";
+import { _nanoSQLQueue, QueryArguments } from "./utilities";
 
 export const VERSION = 2.37;
 
@@ -622,6 +622,41 @@ export interface InanoSQLQuery {
     [key: string]: any;
 }
 
+export interface InanoSQLQuery2 {
+    databaseID: string|undefined;
+    table: string | any[] | (() => Promise<any[]> )| {as: string, query: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void};
+    tableAS?: string;
+    action: string;
+    actionArgs?: any;
+    state: "pending" | "processing" | "complete" | "error";
+    error?: any;
+    result: any[];
+    time: number;
+    extend: {scope: string, args: any[]}[];
+    queryID: string;
+    tags: string[];
+    copyTo?: {table: string, mutate: (row: any) => any};
+    comments: string[];
+    where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean);
+    graph?: InanoSQLGraphArgs | InanoSQLGraphArgs[];
+    orderBy?: string[];
+    groupBy?: string[];
+    having?: any[] | ((row: {[key: string]: any}, i?: number) => boolean);
+    join?: InanoSQLJoinArgs | InanoSQLJoinArgs[];
+    limit?: number;
+    offset?: number;
+    distinct?: string[];
+    ttl?: number;
+    ttlCols?: string[];
+    union?: InanoSQLUnionArgs;
+    cacheID?: string;
+    parent: InanoSQLInstance;
+    returnEvent?: boolean;
+    updateImmutable?: any;
+    transactionId?: string;
+    [key: string]: any;
+}
+
 export interface _nanoSQLPreparedQuery {
     query: InanoSQLQuery
     type: 1|2|3; // 1 = fast, 2 = medium, 3 = complete
@@ -1048,4 +1083,52 @@ export interface updateIndexFilter extends abstractFilter {
 export interface configTableSystemFilter extends abstractFilter {
     res: InanoSQLTable;
     query: InanoSQLQuery;
+}
+
+export interface InanoSQLQueryAST {
+    table: {
+        str?: string,
+        arr?: any[],
+        prms?: () => Promise<any[]>
+        db?: {as: string, query: (args: QueryArguments) => Promise<any[]>}
+    }
+    action: string;
+    args: {
+        raw?: any;
+        select?: {as?: string, value: (string | InanoSQLFunctionQuery)}[]
+    }
+    where?: InanoSQLProcessedWhere;
+    having?: InanoSQLProcessedWhere;
+    range?: [number, number];
+    orderBy?: InanoSQLProcessedSort[];
+    groupBy?: InanoSQLProcessedSort[];
+    distinct?: (InanoSQLFunctionQuery | string)[];
+    graph?: InanoSQLGraphArgs[];
+    join?: InanoSQLJoinArgs[];
+    updateImmutable?: boolean;
+    union?: InanoSQLUnionArgs;
+    originalWhere?: any[];
+    originalHaving?: any[];
+}
+
+export interface InanoSQLFunctionQuery {
+    name: string,
+    args: (string | InanoSQLFunctionQuery)[]
+}
+
+export interface InanoSQLProcessedSort {
+    value: string | InanoSQLFunctionQuery,
+    dir: "asc"|"desc"
+}
+
+export interface InanoSQLProcessedWhere {
+    type: "fn"|"arr",
+    eval?: (row: {[key: string]: any; }, i?: number) => boolean,
+    arr?: InanoSQLWhereQuery
+}
+
+export interface InanoSQLWhereQuery {
+    ANDOR?: "AND"|"OR",
+    STMT?: [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery],
+    NESTED?: InanoSQLWhereQuery[]
 }

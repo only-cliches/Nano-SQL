@@ -1,6 +1,6 @@
-import { InanoSQLQuery, InanoSQLInstance, InanoSQLDBConfig, TableQueryResult, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLUnionArgs } from "./interfaces";
+import { InanoSQLQuery2, InanoSQLInstance, InanoSQLDBConfig, TableQueryResult, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLUnionArgs } from "./interfaces";
 import { QueryAST } from "./query2-ast";
-import { PrepareQuery } from "./query2-prepare";
+import { QueryPrepare } from "./query2-prepare";
 
 /**
  * Query Order:
@@ -14,14 +14,14 @@ import { PrepareQuery } from "./query2-prepare";
  * 7. Offset & Limit
  */
 
-export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery, progress: (row: any, i: number) => void, complete: (err?: string) => void) => {
+export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, progress: (row: any, i: number) => void, complete: (err?: string) => void) => {
     
     try {
         // step 1, process query AST
         const queryAST = QueryAST.generate(query);
 
         // step 2, prepare query
-        const preparedQuery = PrepareQuery.prepare(nSQL, queryAST);
+        const preparedQuery = QueryPrepare.prepare(nSQL, queryAST);
 
         // step 3, execute query
 
