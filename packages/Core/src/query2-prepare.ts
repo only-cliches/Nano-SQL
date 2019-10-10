@@ -3,12 +3,20 @@ import {
     InanoSQLQueryAST,
     InanoSQLProcessedSort,
     InanoSQLUnionArgs,
-    InanoSQLFunctionQuery, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLProcessedWhere, InanoSQLTable, InanoSQLAdapter
+    InanoSQLFunctionQuery,
+    InanoSQLGraphArgs,
+    InanoSQLJoinArgs,
+    InanoSQLProcessedWhere,
+    InanoSQLTable,
+    InanoSQLAdapter,
+    customQueryFilter, InanoSQLWhereQuery, InanoSQLWhereStaement
 } from "./interfaces";
 import { QueryArguments } from "./utilities";
 import has = Reflect.has;
 
 export enum InanoSQLActions {
+    doWhere,
+    customQuery,
     dropTable,
     createTable,
     alterTable,
@@ -39,7 +47,7 @@ export enum InanoSQLActions {
 export interface InanoSQLQueryActions {
     do: InanoSQLActions,
     args: {
-        table_str?: string;
+        table_str?: {name: string, reverse: boolean};
         table_arr?: any[];
         table_prms?: () => Promise<any[]>;
         table_db?: {
@@ -57,7 +65,7 @@ export interface InanoSQLQueryActions {
         where?: InanoSQLProcessedWhere;
         range?: [number, number]
         rebuildTotal?: boolean;
-        upsert?: any;
+        upsert?: any | any[];
         describeIndexes?: boolean;
         tableQuery?: InanoSQLTable,
         conformFn?: (oldRow: any) => any;
@@ -65,7 +73,8 @@ export interface InanoSQLQueryActions {
             mode: string | InanoSQLAdapter,
             id?: string
             getAdapter?: (adapter: InanoSQLAdapter) => void;
-        }
+        },
+        customQueryArg?: any;
     }
 }
 
@@ -86,74 +95,78 @@ export class QueryPrepare {
         const queryWillSelect = ["select", "upsert", "delete", "rebuild indexes", "conform rows", "clone"].indexOf(pQuery.action) !== -1;
         const isSelect = pQuery.action === "select";
 
-        const queryMethods = queryWillSelect ? this.resolveSelectActions(nSQL, pQuery) : {actions: [], alreadyOrderBy: false, alreadyRange: false};
+        const queryProcess = queryWillSelect ? this.resolveSelectActions(nSQL, pQuery) : {actions: [], alreadyOrderBy: false, alreadyRange: false};
 
-
-        if (queryWillSelect && isSelect) {
+        if (queryWillSelect) {
 
             const hasAggregateFn: boolean = this.hasAggrFn(nSQL, pQuery);
 
-            if (pQuery.union) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.union,
-                    args: {union: pQuery.union}
-                })
-            }
+            if (isSelect) {
+                if (pQuery.union) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.union,
+                        args: {union: pQuery.union}
+                    })
+                }
 
-            if (pQuery.graph) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.graph,
-                    args: {graph: pQuery.graph}
-                })
-            }
+                if (pQuery.graph) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.graph,
+                        args: {graph: pQuery.graph}
+                    })
+                }
 
-            if (pQuery.join) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.join,
-                    args: {join: pQuery.join}
-                });
-            }
+                if (pQuery.join) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.join,
+                        args: {join: pQuery.join}
+                    });
+                }
 
-            if (pQuery.groupBy) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.group,
-                    args: {groupBy: pQuery.groupBy, reduce: hasAggregateFn && pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined}
-                })
-            }
+                if (pQuery.groupBy) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.group,
+                        args: {
+                            groupBy: pQuery.groupBy,
+                            reduce: hasAggregateFn && pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined
+                        }
+                    })
+                }
 
-            if (pQuery.args.select && pQuery.args.select.length) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.functions,
-                    args: {select: pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined}
-                })
-            }
+                if (pQuery.args.select && pQuery.args.select.length) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.functions,
+                        args: {select: pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined}
+                    })
+                }
 
-            if (pQuery.distinct) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.distinct,
-                    args: {distinct: pQuery.distinct}
-                })
-            }
+                if (pQuery.distinct) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.distinct,
+                        args: {distinct: pQuery.distinct}
+                    })
+                }
 
-            if (pQuery.orderBy && !queryMethods.alreadyOrderBy) {
-                queryMethods.actions.push({
-                    do: InanoSQLActions.order,
-                    args: {orderBy: pQuery.orderBy}
-                })
+                if (pQuery.orderBy && !queryProcess.alreadyOrderBy) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.order,
+                        args: {orderBy: pQuery.orderBy}
+                    })
+                }
             }
 
             if (pQuery.having) {
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.where,
                     args: {where: pQuery.having}
                 })
             }
 
-            if (pQuery.range && pQuery.range.length && !queryMethods.alreadyRange) {
-                queryMethods.actions.push({
+            if (pQuery.range && pQuery.range.length && !queryProcess.alreadyRange) {
+                queryProcess.actions.push({
                     do: InanoSQLActions.range,
                     args: {range: pQuery.range}
-                })
+                });
             }
         }
 
@@ -162,85 +175,88 @@ export class QueryPrepare {
                 // nothing to do, this is needed to prevent SELECT from doing default case
                 break;
             case "total":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.total,
                     args: {rebuildTotal: !!(pQuery.args.raw && pQuery.args.raw.rebuild)}
                 });
                 break;
             case "upsert":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.upsert,
                     args: {upsert: pQuery.args.raw}
                 });
                 break;
             case "delete":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.delete,
                     args: {}
                 });
                 break;
             case "show tables":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.show_tables,
                     args: {}
                 });
                 break;
             case "describe":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.describe,
                     args: {}
                 });
                 break;
             case "describe indexes":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.describe,
                     args: {describeIndexes: true}
                 });
                 break;
             case "drop":
             case "drop table":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.dropTable,
                     args: {}
                 });
                 break;
             case "create table":
             case "create table if not exists":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.createTable,
                     args: {tableQuery: pQuery.args.raw}
                 });
                 break;
             case "alter table":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.alterTable,
                     args: {tableQuery: pQuery.args.raw}
                 });
                 break;
             case "rebuild indexes":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.rebuildIndexes,
                     args: {}
                 });
                 break;
             case "conform rows":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.conform,
                     args: {conformFn: pQuery.args.raw}
                 });
                 break;
             case "clone":
-                queryMethods.actions.push({
+                queryProcess.actions.push({
                     do: InanoSQLActions.clone,
                     args: {clone: pQuery.args.raw}
                 });
                 break;
             default:
                 // custom query
-
+                queryProcess.actions.push({
+                    do: InanoSQLActions.customQuery,
+                    args: {customQueryArg: pQuery.args.raw}
+                })
         }
 
-        return queryMethods.actions;
+        return queryProcess.actions;
     }
 
     static resolveSelectActions(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): {actions: InanoSQLQueryActions[], alreadyOrderBy: boolean, alreadyRange: boolean} {
@@ -256,6 +272,13 @@ export class QueryPrepare {
                     table_prms: pQuery.table.prms
                 }
             });
+
+            if (pQuery.where) {
+                actions.push({
+                    do: InanoSQLActions.doWhere,
+                    args: {where: pQuery.where}
+                })
+            }
             
             return {
                 actions: actions,
@@ -288,10 +311,57 @@ export class QueryPrepare {
 
         } else { // local database
 
+            const actions: InanoSQLQueryActions[] = [];
+
+            // step 1, see if we have a WHERE statement
+
+            let whereIndexes: {type: "idx" | "pk" | "andor" | "null", value: string}[] = [];
+
+            if (pQuery.where) {
+                if (pQuery.where.type === "fn") { // function WHERE, full table scan
+
+                    actions.push({
+                        do: InanoSQLActions.selectFull,
+                        args: {
+                            table_arr: pQuery.table.arr,
+                            table_prms: pQuery.table.prms
+                        }
+                    });
+
+                    actions.push({
+                        do: InanoSQLActions.doWhere,
+                        args: {where: pQuery.where}
+                    });
+
+                } else { // array where, need to figure out fastest select method
+
+                    const whereStatements = pQuery.where.arr as InanoSQLWhereQuery;
+
+                    if (whereStatements.STMT) { // single where
+                        whereIndexes = [this.findWhereIndexes(whereStatements.STMT, nSQL, pQuery)];
+                    } else if(whereStatements.NESTED) { // compound where
+                        whereStatements.NESTED.forEach((val, i) => {
+                            if (val.STMT) {
+                                whereIndexes.push(this.findWhereIndexes(val.STMT, nSQL, pQuery));
+                            } else if (val.NESTED) { // nested array WHERE will not be evaluated
+                                whereIndexes.push({type: "null", value: ""});
+                            } else if (val.ANDOR) {
+                                whereIndexes.push({type: "andor", value: val.ANDOR});
+                            }
+                        });
+                    }
+                }
+            }
         }
     }
 
-    private static hasAggrFn(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): boolean {
+    static findWhereIndexes(where: InanoSQLWhereStaement, nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): {type: "idx" | "pk" | "andor" | "null", value: string} {
+
+        return {type: "pk", value: ""};
+    }
+
+
+    static hasAggrFn(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): boolean {
         if (pQuery.args.select && pQuery.args.select.length) {
 
             // only checks top level of SELECT arguments

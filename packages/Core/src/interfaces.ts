@@ -1129,6 +1129,8 @@ export interface InanoSQLProcessedWhere {
 
 export interface InanoSQLWhereQuery {
     ANDOR?: "AND"|"OR",
-    STMT?: [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery],
+    STMT?: InanoSQLWhereStaement,
     NESTED?: InanoSQLWhereQuery[]
 }
+
+export type InanoSQLWhereStaement = [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery];
