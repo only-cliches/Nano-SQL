@@ -9,10 +9,9 @@ import {
     InanoSQLProcessedWhere,
     InanoSQLTable,
     InanoSQLAdapter,
-    customQueryFilter, InanoSQLWhereQuery, InanoSQLWhereStaement
+    customQueryFilter, InanoSQLWhereQuery, InanoSQLWhereStatement, InanoSQLDBConfig, InanoSQLIndex, InanoSQLWhereIndex
 } from "./interfaces";
-import { QueryArguments } from "./utilities";
-import has = Reflect.has;
+import {objectsEqual, QueryArguments, resolvePath} from "./utilities";
 
 export enum InanoSQLActions {
     doWhere,
@@ -31,6 +30,7 @@ export enum InanoSQLActions {
     selectIndex, 
     selectPK, 
     selectExternal,
+    selectCompound,
     functions,
     range, 
     where, 
@@ -47,7 +47,8 @@ export enum InanoSQLActions {
 export interface InanoSQLQueryActions {
     do: InanoSQLActions,
     args: {
-        table_str?: {name: string, reverse: boolean};
+        selectMultiple?: (InanoSQLActions|string)[],
+        table_str?: string;
         table_arr?: any[];
         table_prms?: () => Promise<any[]>;
         table_db?: {
@@ -62,7 +63,9 @@ export interface InanoSQLQueryActions {
         join?: InanoSQLJoinArgs[];
         reduce?: (InanoSQLFunctionQuery | string)[];
         select?: (InanoSQLFunctionQuery | string)[];
-        where?: InanoSQLProcessedWhere;
+        where?: InanoSQLWhereQuery;
+        whereFn?: (row: {[key: string]: any; }, i?: number) => boolean;
+        singleWhere?: InanoSQLWhereStatement;
         range?: [number, number]
         rebuildTotal?: boolean;
         upsert?: any | any[];
@@ -75,6 +78,7 @@ export interface InanoSQLQueryActions {
             getAdapter?: (adapter: InanoSQLAdapter) => void;
         },
         customQueryArg?: any;
+        reverse?: boolean;
     }
 }
 
@@ -158,7 +162,10 @@ export class QueryPrepare {
             if (pQuery.having) {
                 queryProcess.actions.push({
                     do: InanoSQLActions.where,
-                    args: {where: pQuery.having}
+                    args: {
+                        where: pQuery.having.type === "arr" ? pQuery.having.arr : undefined,
+                        whereFn: pQuery.having.type === "fn" ? pQuery.having.eval : undefined
+                    }
                 })
             }
 
@@ -276,7 +283,10 @@ export class QueryPrepare {
             if (pQuery.where) {
                 actions.push({
                     do: InanoSQLActions.doWhere,
-                    args: {where: pQuery.where}
+                    args: {
+                        where: pQuery.where.type === "arr" ? pQuery.where.arr : undefined,
+                        whereFn: pQuery.where.type === "fn" ? pQuery.where.eval : undefined
+                    }
                 })
             }
             
@@ -315,23 +325,35 @@ export class QueryPrepare {
 
             // step 1, see if we have a WHERE statement
 
-            let whereIndexes: {type: "idx" | "pk" | "andor" | "null", value: string}[] = [];
+            let whereIndexes: InanoSQLWhereIndex[] = [];
+
+            const fullTableScan = (didSort?: boolean, reverse?: boolean, range?: [number, number]) => {
+                actions.push({
+                    do: InanoSQLActions.selectFull,
+                    args: {
+                        table_str: pQuery.table as string,
+                        reverse: reverse,
+                        range: range
+                    }
+                });
+
+                if (pQuery.where) {
+                    actions.push({
+                        do: InanoSQLActions.doWhere,
+                        args: {
+                            where: pQuery.where.type === "arr" ? pQuery.where.arr : undefined,
+                            whereFn: pQuery.where.type === "fn" ? pQuery.where.eval : undefined
+                        }
+                    });
+                }
+
+                return {actions: actions, alreadyOrderBy: didSort || false, alreadyRange: range ? true : false};
+            }
 
             if (pQuery.where) {
                 if (pQuery.where.type === "fn") { // function WHERE, full table scan
 
-                    actions.push({
-                        do: InanoSQLActions.selectFull,
-                        args: {
-                            table_arr: pQuery.table.arr,
-                            table_prms: pQuery.table.prms
-                        }
-                    });
-
-                    actions.push({
-                        do: InanoSQLActions.doWhere,
-                        args: {where: pQuery.where}
-                    });
+                    return fullTableScan();
 
                 } else { // array where, need to figure out fastest select method
 
@@ -344,20 +366,118 @@ export class QueryPrepare {
                             if (val.STMT) {
                                 whereIndexes.push(this.findWhereIndexes(val.STMT, nSQL, pQuery));
                             } else if (val.NESTED) { // nested array WHERE will not be evaluated
-                                whereIndexes.push({type: "null", value: ""});
+                                whereIndexes.push({type: "null", value: [], where: ["", "", ""]});
                             } else if (val.ANDOR) {
-                                whereIndexes.push({type: "andor", value: val.ANDOR});
+                                whereIndexes.push({type: "andor", value: [val.ANDOR], where: ["", "", ""]});
                             }
                         });
                     }
+
+                    // if the first WHERE isn't an index/primary key we do full table scan
+                    if (["pk", "idx"].indexOf(whereIndexes[0].type) === -1) {
+                        return fullTableScan();
+                    }
+
+                    let didOrderBy = false;
+                    let didRange = false;
+
+                    if (whereIndexes.length === 1) { // single where statement
+
+                        const pkAction: InanoSQLQueryActions  = {
+                            do: whereIndexes[0].type === "pk" ? InanoSQLActions.selectPK : InanoSQLActions.selectIndex,
+                            args: {singleWhere: whereIndexes[0].where}
+                        };
+
+                        if (pQuery.orderBy && pQuery.orderBy.length === 1) {
+                            if (typeof pQuery.orderBy[0].value === "string") {
+                                const col = resolvePath(pQuery.orderBy[0].value);
+                                if (objectsEqual(col, whereIndexes[0].value)) {
+                                    didOrderBy = true;
+                                    if (pQuery.orderBy[0].dir === "desc") {
+                                        pkAction.args.reverse = true;
+                                    }
+                                }
+                            }
+                        } else if (!pQuery.orderBy) {
+                            didOrderBy = true;
+                        }
+
+                        if (didOrderBy && !pQuery.groupBy && pQuery.range) {
+                            didRange = true;
+                            pkAction.args.range = pQuery.range;
+                        }
+
+                        return {actions: [pkAction], alreadyRange: didRange, alreadyOrderBy: didOrderBy};
+
+                    } else { // compound where statement
+
+                        const compoundAction: InanoSQLQueryActions = {do: InanoSQLActions.selectCompound, args: {selectMultiple: []}}
+
+                        whereIndexes.forEach((whereIndex, i) => {
+                            if (i % 1 === 1) {
+
+                            } else if (["pk", "idx"].indexOf(whereIndex.type) !== -1) {
+                                (compoundAction.args.selectMultiple as any).push({
+                                    do: whereIndex.type === "pk" ? InanoSQLActions.selectPK : InanoSQLActions.selectIndex,
+                                    args: {singleWhere: whereIndex.where}
+                                });
+                                if (i === 0) {
+
+                                }
+                            }
+                        });
+                    }
+                }
+            } else {
+                // no WHERE statement
+                if (!pQuery.groupBy && pQuery.range) {
+
                 }
             }
         }
     }
 
-    static findWhereIndexes(where: InanoSQLWhereStaement, nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): {type: "idx" | "pk" | "andor" | "null", value: string} {
+    static findWhereIndexes(where: InanoSQLWhereStatement, nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): InanoSQLWhereIndex {
 
-        return {type: "pk", value: ""};
+        // if there is no database selected, then no query optizations are possible.
+        if (!pQuery.db || pQuery.table !== "string") return {type: "null", value: [], where: ["", "", ""]};
+
+        const tableId = (pQuery.db as InanoSQLDBConfig)._tableIds[pQuery.table as string];
+        const tableCnfg = (pQuery.db as InanoSQLDBConfig)._tables[tableId];
+
+        const supportedMatches = ["LIKE", "BETWEEN", "=", "IN", ">=", "<=", "<", ">"];
+        const supportedMatchesArr = ["INCLUDES", "INTERSECT ALL", "INTERSECT", "INCLUDES LIKE"];
+
+        if (typeof where[0] === "string") {
+            const objectPath = resolvePath(where[0]);
+            const objectMatchType = where[1];
+            if (objectsEqual(objectPath, tableCnfg.pkCol)) {
+                return {type: "pk", value: objectPath, where: where};
+            }
+            const index = Object.keys(tableCnfg.indexes).reduce((prev, index) => {
+                const idx = tableCnfg.indexes[index];
+                if (objectsEqual(objectPath, idx.path)) {
+                    if (idx.isArray) {
+                        if (supportedMatchesArr.indexOf(objectMatchType) !== -1) {
+                            return {type: "idx", value: objectPath, index: idx, where: where};
+                        }
+                    } else {
+                        if (supportedMatches.indexOf(objectMatchType) !== -1) {
+                            return {type: "idx", value: objectPath, index: idx, where: where};
+                        }
+                    }
+                }
+                return prev;
+            }, undefined);
+            if (index) return (index as any);
+        } else {
+            // where statement with function on left side isn't supported for indexing
+            // TODO: evaluate arguments/functions recursively to discover if we can resolve to index or primary key
+            return {type: "null", value: [], where: ["", "", ""]};
+        }
+
+
+        return {type: "null", value: [], where: ["", "", ""]};
     }
 
 

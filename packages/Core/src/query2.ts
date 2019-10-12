@@ -18,7 +18,7 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
     
     try {
         // step 1, process query AST
-        const queryAST = QueryAST.generate(query);
+        const queryAST = QueryAST.generate(nSQL, query);
 
         // step 2, prepare query
         const preparedQuery = QueryPrepare.prepare(nSQL, queryAST);

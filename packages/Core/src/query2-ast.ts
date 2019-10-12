@@ -1,4 +1,17 @@
-import { TableQueryResult, InanoSQLGraphArgs, InanoSQLJoinArgs, InanoSQLQueryAST, InanoSQLProcessedSort, InanoSQLUnionArgs,InanoSQLFunctionQuery, InanoSQLWhereQuery, InanoSQLProcessedWhere, InanoSQLQuery, InanoSQLQuery2 } from "./interfaces";
+import {
+    TableQueryResult,
+    InanoSQLGraphArgs,
+    InanoSQLJoinArgs,
+    InanoSQLQueryAST,
+    InanoSQLProcessedSort,
+    InanoSQLUnionArgs,
+    InanoSQLFunctionQuery,
+    InanoSQLWhereQuery,
+    InanoSQLProcessedWhere,
+    InanoSQLQuery,
+    InanoSQLQuery2,
+    InanoSQLInstance
+} from "./interfaces";
 import { isFunction, isObject } from "./utilities";
 
 
@@ -14,7 +27,7 @@ export class QueryAST {
      * @returns {InanoSQLQueryAST}
      * @memberof QueryAST
      */
-    static generate(query: InanoSQLQuery2): InanoSQLQueryAST {
+    static generate(nSQL: InanoSQLInstance, query: InanoSQLQuery2): InanoSQLQueryAST {
     
         const action = String(query.action).trim().toLowerCase();
 
@@ -25,6 +38,7 @@ export class QueryAST {
                 prms:  isFunction(query.table) ? (query.table as any) : undefined,
                 db: isObject(query.table) && (query.table as any).query ? (query.table as any) : undefined
             },
+            db: query.databaseID ? nSQL.getDB(query.databaseID) : (Object.keys(nSQL.dbs).length ? nSQL.dbs[Object.keys(nSQL.dbs)[0]] : undefined),
             action: action,
             args: {
                 raw: query.actionArgs,

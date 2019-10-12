@@ -1092,6 +1092,7 @@ export interface InanoSQLQueryAST {
         prms?: () => Promise<any[]>
         db?: {as: string, query: (args: QueryArguments) => Promise<any[]>}
     }
+    db?: InanoSQLDBConfig,
     action: string;
     args: {
         raw?: any;
@@ -1122,15 +1123,22 @@ export interface InanoSQLProcessedSort {
 }
 
 export interface InanoSQLProcessedWhere {
-    type: "fn"|"arr",
+    type: "fn"|"arr"|"none",
     eval?: (row: {[key: string]: any; }, i?: number) => boolean,
     arr?: InanoSQLWhereQuery
 }
 
 export interface InanoSQLWhereQuery {
     ANDOR?: "AND"|"OR",
-    STMT?: InanoSQLWhereStaement,
+    STMT?: InanoSQLWhereStatement,
     NESTED?: InanoSQLWhereQuery[]
 }
 
-export type InanoSQLWhereStaement = [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery];
+export type InanoSQLWhereStatement = [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery];
+
+export interface InanoSQLWhereIndex {
+    type: "idx" | "pk" | "andor" | "null",
+    value: string[],
+    where: InanoSQLWhereStatement,
+    index?: InanoSQLIndex
+}
