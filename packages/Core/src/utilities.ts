@@ -391,6 +391,17 @@ export const maybeDate = (value: any): any => {
     return isNaN(parsed) ? value : parsed;
 }
 
+export const callOnce = (callback: (...args: any[]) => void) => {
+    let hasCalled = false;
+    return (...args: any[]) => {
+
+        if (hasCalled) return;
+        hasCalled = true;
+
+        callback.apply(null, args);
+    }
+}
+
 export const mutateRowTypes = (selectedDB: string | undefined, replaceObj: any, table: string, nSQL: InanoSQLInstance): any => {
 
     if (!selectedDB) return replaceObj;

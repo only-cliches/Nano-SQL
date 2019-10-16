@@ -50,6 +50,7 @@ export class QueryPrepare {
                 if (pQuery.union) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.union,
+                        name: "union",
                         args: pQuery.union
                     })
                 }
@@ -57,6 +58,7 @@ export class QueryPrepare {
                 if (pQuery.graph) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.graph,
+                        name: "graph",
                         args: pQuery.graph
                     })
                 }
@@ -64,6 +66,7 @@ export class QueryPrepare {
                 if (pQuery.join) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.join,
+                        name: "join",
                         args: pQuery.join
                     });
                 }
@@ -71,6 +74,7 @@ export class QueryPrepare {
                 if (pQuery.groupBy) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.group,
+                        name: "groupBy",
                         args: {
                             groupBy: pQuery.groupBy,
                             reduce: hasAggregateFn && pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined
@@ -81,6 +85,7 @@ export class QueryPrepare {
                 if (pQuery.args.select && pQuery.args.select.length) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.functions,
+                        name: "functions",
                         args: pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined
                     })
                 }
@@ -88,6 +93,7 @@ export class QueryPrepare {
                 if (pQuery.distinct) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.distinct,
+                        name: "distinct",
                         args: pQuery.distinct
                     })
                 }
@@ -95,6 +101,7 @@ export class QueryPrepare {
                 if (pQuery.orderBy && !queryProcess.alreadyOrderBy) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.order,
+                        name: "orderBy",
                         args: pQuery.orderBy
                     })
                 }
@@ -104,11 +111,13 @@ export class QueryPrepare {
                 if (pQuery.having.type === "arr") {
                     queryProcess.actions.push({
                         do: InanoSQLActions.filter_arr,
+                        name: "filter by array",
                         args: pQuery.having.arr
                     })
                 } else {
                     queryProcess.actions.push({
                         do: InanoSQLActions.filter_fn,
+                        name: "filter by function",
                         args: pQuery.having.eval
                     })
                 }
@@ -117,6 +126,7 @@ export class QueryPrepare {
             if (pQuery.range && pQuery.range.length && !queryProcess.alreadyRange) {
                 queryProcess.actions.push({
                     do: InanoSQLActions.range,
+                    name: "offset / limit",
                     args: pQuery.range
                 });
             }
@@ -129,36 +139,42 @@ export class QueryPrepare {
             case "total":
                 queryProcess.actions.push({
                     do: InanoSQLActions.total,
+                    name: "total",
                     args: !!(pQuery.args.raw && pQuery.args.raw.rebuild)
                 });
                 break;
             case "upsert":
                 queryProcess.actions.push({
                     do: InanoSQLActions.upsert,
+                    name: "upsert",
                     args: Array.isArray(pQuery.args.raw) ? pQuery.args.raw : [pQuery.args.raw]
                 });
                 break;
             case "delete":
                 queryProcess.actions.push({
                     do: InanoSQLActions.delete,
+                    name: "delete",
                     args: undefined
                 });
                 break;
             case "show tables":
                 queryProcess.actions.push({
                     do: InanoSQLActions.show_tables,
+                    name: "show_tables",
                     args: undefined
                 });
                 break;
             case "describe":
                 queryProcess.actions.push({
                     do: InanoSQLActions.describe,
+                    name: "describe",
                     args: false
                 });
                 break;
             case "describe indexes":
                 queryProcess.actions.push({
                     do: InanoSQLActions.describe,
+                    name: "describe",
                     args: true
                 });
                 break;
@@ -166,6 +182,7 @@ export class QueryPrepare {
             case "drop table":
                 queryProcess.actions.push({
                     do: InanoSQLActions.drop_table,
+                    name: "drop table",
                     args: pQuery.table.str
                 });
                 break;
@@ -173,12 +190,14 @@ export class QueryPrepare {
             case "create table if not exists":
                 queryProcess.actions.push({
                     do: InanoSQLActions.create_table,
+                    name: "create table",
                     args: pQuery.args.raw
                 });
                 break;
             case "alter table":
                 queryProcess.actions.push({
                     do: InanoSQLActions.alter_table,
+                    name: "alter table",
                     args: {
                         table: pQuery.table.str,
                         config: pQuery.args.raw
@@ -187,12 +206,14 @@ export class QueryPrepare {
                 break;
             case "rebuild indexes":
                 queryProcess.actions.push({
+                    name: "rebuild indexes",
                     do: InanoSQLActions.rebuild_indexes,
                     args: undefined
                 });
                 break;
             case "conform rows":
                 queryProcess.actions.push({
+                    name: "conform rows",
                     do: InanoSQLActions.conform,
                     args: pQuery.args.raw
                 });
@@ -200,6 +221,7 @@ export class QueryPrepare {
             case "clone":
                 queryProcess.actions.push({
                     do: InanoSQLActions.clone,
+                    name: "clone",
                     args: pQuery.args.raw
                 });
                 break;
@@ -207,6 +229,7 @@ export class QueryPrepare {
                 // custom query
                 queryProcess.actions.push({
                     do: InanoSQLActions.custom_query,
+                    name: "custom query",
                     args: pQuery.args.raw
                 })
         }
@@ -234,11 +257,13 @@ export class QueryPrepare {
             if (pQuery.table.arr) {
                 actions.push({
                     do: InanoSQLActions.select_arr,
+                    name: "select array",
                     args: {table: pQuery.table.arr, as: pQuery.table.as || ""}
                 });
             } else {
                 actions.push({
                     do: InanoSQLActions.select_fn,
+                    name: "select function",
                     args: {table: pQuery.table.fn, as: pQuery.table.as || ""}
                 });
             }
@@ -247,11 +272,13 @@ export class QueryPrepare {
                 if (pQuery.where.type === "arr") {
                     actions.push({
                         do: InanoSQLActions.filter_arr,
+                        name: "filter by array",
                         args: pQuery.where.arr
                     })
                 } else {
                     actions.push({
                         do: InanoSQLActions.filter_fn,
+                        name: "filter by function",
                         args: pQuery.where.eval
                     })
                 }
@@ -269,6 +296,7 @@ export class QueryPrepare {
 
             actions.push({
                 do: InanoSQLActions.select_external,
+                name: "select external data",
                 args: {
                     as: pQuery.table.as || "",
                     query: pQuery.table.query,
@@ -299,6 +327,7 @@ export class QueryPrepare {
             const fullTableScan = (didSort?: boolean, reverse?: boolean, range?: [number, number]) => {
                 actions.push({
                     do: InanoSQLActions.select_pk,
+                    name: "select by primary key",
                     args: {
                         table: pQuery.table.str,
                         as: pQuery.table.as || "",
@@ -311,11 +340,13 @@ export class QueryPrepare {
                     if (pQuery.where.type === "arr") {
                         actions.push({
                             do: InanoSQLActions.filter_arr,
+                            name: "filter by array",
                             args: pQuery.where.arr
                         })
                     } else {
                         actions.push({
                             do: InanoSQLActions.filter_fn,
+                            name: "filter by function",
                             args: pQuery.where.eval
                         })
                     }
@@ -363,6 +394,7 @@ export class QueryPrepare {
 
                         const pkAction: InanoSQLQueryActions = {
                             do: whereIndexes[0].type === "pk" ? InanoSQLActions.select_pk : InanoSQLActions.select_index,
+                            name:  whereIndexes[0].type === "pk" ? "Select by Primary Key" : "Select by Index",
                             args: {
                                 where: whereIndexes[0].where ? whereIndexes[0].where.STMT : undefined,
                                 index: whereIndexes[0].index
@@ -398,7 +430,7 @@ export class QueryPrepare {
                             return fullTableScan();
                         }
 
-                        const compoundAction: InanoSQLQueryActions = {do: InanoSQLActions.select_compound, args: []};
+                        const compoundAction: InanoSQLQueryActions = {do: InanoSQLActions.select_compound, name: "Select by Compound Index / Primary Key Queries", args: []};
                         const slowAction: InanoSQLWhereQuery[] = [];
                         let isSlow = false;
 
@@ -418,6 +450,7 @@ export class QueryPrepare {
                             } else if (["pk", "idx"].indexOf(whereIndex.type) !== -1 && nextValue.value[0] === "AND") {
                                 const pkAction: InanoSQLQueryActions = {
                                     do: whereIndex.type === "pk" ? InanoSQLActions.select_pk : InanoSQLActions.select_index,
+                                    name:  whereIndexes[0].type === "pk" ? "Select by Primary Key" : "Select by Index",
                                     args: {
                                         where: whereIndex.where ? whereIndex.where.STMT : undefined,
                                         index: whereIndex.index
@@ -445,7 +478,7 @@ export class QueryPrepare {
                             }
                         });
                         return {
-                            actions: [compoundAction, {do: InanoSQLActions.filter_arr, args: {NESTED: slowAction}}],
+                            actions: [compoundAction, {do: InanoSQLActions.filter_arr, name: "Filter By Array", args: {NESTED: slowAction}}],
                             alreadyRange: false,
                             alreadyOrderBy: didOrderBy
                         };
@@ -470,11 +503,13 @@ export class QueryPrepare {
                                     if (pQuery.orderBy[0].dir === "desc") {
                                         selectActions.push({
                                             do: InanoSQLActions.select_pk,
+                                            name: "Select by Primary Key",
                                             args: {reverse: true}
                                         })
                                     } else {
                                         selectActions.push({
                                             do: InanoSQLActions.select_pk,
+                                            name: "Select by Primary Key",
                                             args: {}
                                         })
                                     }
@@ -488,11 +523,13 @@ export class QueryPrepare {
                                             if ((pQuery.orderBy as any)[0].dir === "desc") {
                                                 selectActions.push({
                                                     do: InanoSQLActions.select_index,
+                                                    name: "Select by Index",
                                                     args: {reverse: true, index: index}
                                                 })
                                             } else {
                                                 selectActions.push({
                                                     do: InanoSQLActions.select_index,
+                                                    name: "Select by Index",
                                                     args: {index: index}
                                                 })
                                             }
@@ -504,6 +541,7 @@ export class QueryPrepare {
                             // no order by
                             selectActions.push({
                                 do: InanoSQLActions.select_pk,
+                                name: "Select by Primary Key",
                                 args: {}
                             })
                             didOrderBy = true;
@@ -511,6 +549,7 @@ export class QueryPrepare {
                             // arbitrary order by
                             selectActions.push({
                                 do: InanoSQLActions.select_pk,
+                                name: "Select by Primary Key",
                                 args: {}
                             })
                         }

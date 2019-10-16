@@ -1134,7 +1134,13 @@ export interface InanoSQLWhereIndex {
 }
 
 export enum InanoSQLActions {
-    custom_query,
+    select_arr,
+    select_fn,
+    select_index,
+    select_pk,
+    select_external,
+    select_compound,
+    total,
     drop_table,
     create_table,
     alter_table,
@@ -1145,12 +1151,6 @@ export enum InanoSQLActions {
     join,
     order,
     group,
-    select_arr,
-    select_fn,
-    select_index,
-    select_pk,
-    select_external,
-    select_compound,
     functions,
     range,
     filter_arr,
@@ -1161,13 +1161,13 @@ export enum InanoSQLActions {
     conform,
     rebuild_indexes,
     clone,
-    plugin,
-    total
+    custom_query
 }
 
 export interface InanoSQLQueryActions {
-    do: InanoSQLActions,
-    args: any
+    do: InanoSQLActions;
+    name: string;
+    args: any;
 }
 
 export type ActionArgs_union = InanoSQLUnionArgs;
