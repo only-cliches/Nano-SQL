@@ -558,20 +558,14 @@ export interface InanoSQLDatabaseEvent {
 
 export interface InanoSQLJoinArgs {
     type: "left" | "inner" | "right" | "cross" | "outer";
-    with: {
-        table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
-        as?: string;
-    };
+    with: InanoSQLSelectTable;
     on?: any[];
 }
 
 
 export interface InanoSQLGraphArgs {
     key: string;
-    with: {
-        table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
-        as?: string;
-    };
+    with: InanoSQLSelectTable;
     select?: string[];
     single?: boolean;
     offset?: number;
@@ -584,7 +578,7 @@ export interface InanoSQLGraphArgs {
 
 export interface InanoSQLUnionArgs {
     type: "all" | "distinct", 
-    queries: (() => Promise<any[]>)[]
+    tables: (InanoSQLSelectTable | InanoSQLQuery2)[]
 }
 
 export interface InanoSQLQuery {
@@ -622,16 +616,13 @@ export interface InanoSQLQuery {
     [key: string]: any;
 }
 
+export type InanoSQLSelectTable = string | any[] | (() => Promise<any[]>) | {as: string, table?: (string | any[] | (() => Promise<any[]> )), query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void};
+
 export interface InanoSQLQuery2 {
     databaseID: string|undefined;
-    table: string | any[] | (() => Promise<any[]> )| {as: string, query: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void};
-    tableAS?: string;
+    table: InanoSQLSelectTable
     action: string;
     actionArgs?: any;
-    state: "pending" | "processing" | "complete" | "error";
-    error?: any;
-    result: any[];
-    time: number;
     extend: {scope: string, args: any[]}[];
     queryID: string;
     tags: string[];
@@ -653,8 +644,6 @@ export interface InanoSQLQuery2 {
     parent: InanoSQLInstance;
     returnEvent?: boolean;
     updateImmutable?: any;
-    transactionId?: string;
-    [key: string]: any;
 }
 
 export interface _nanoSQLPreparedQuery {
@@ -1087,10 +1076,11 @@ export interface configTableSystemFilter extends abstractFilter {
 
 export interface InanoSQLQueryAST {
     table: {
+        as?: string;
         str?: string,
         arr?: any[],
-        prms?: () => Promise<any[]>
-        db?: {as: string, query: (args: QueryArguments) => Promise<any[]>}
+        fn?: () => Promise<any[]>,
+        query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
     }
     db?: InanoSQLDBConfig,
     action: string;
@@ -1137,8 +1127,106 @@ export interface InanoSQLWhereQuery {
 export type InanoSQLWhereStatement = [string | InanoSQLFunctionQuery, string, any | InanoSQLFunctionQuery];
 
 export interface InanoSQLWhereIndex {
-    type: "idx" | "pk" | "andor" | "null",
+    type: "idx" | "pk" | "andor" | "query",
     value: string[],
-    where: InanoSQLWhereStatement,
+    where?: InanoSQLWhereQuery,
     index?: InanoSQLIndex
 }
+
+export enum InanoSQLActions {
+    custom_query,
+    drop_table,
+    create_table,
+    alter_table,
+    describe,
+    show_tables,
+    union,
+    graph,
+    join,
+    order,
+    group,
+    select_arr,
+    select_fn,
+    select_index,
+    select_pk,
+    select_external,
+    select_compound,
+    functions,
+    range,
+    filter_arr,
+    filter_fn,
+    distinct,
+    upsert,
+    delete,
+    conform,
+    rebuild_indexes,
+    clone,
+    plugin,
+    total
+}
+
+export interface InanoSQLQueryActions {
+    do: InanoSQLActions,
+    args: any
+}
+
+export type ActionArgs_union = InanoSQLUnionArgs;
+export type ActionArgs_graph = InanoSQLGraphArgs[];
+export type ActionArgs_join = InanoSQLJoinArgs[];
+export type ActionArgs_group = {
+    groupBy: InanoSQLProcessedSort[],
+    reduce: (InanoSQLFunctionQuery | string)[]
+}
+export type ActionArgs_functions = (InanoSQLFunctionQuery | string)[];
+export type ActionArgs_distinct = (InanoSQLFunctionQuery | string)[];
+export type ActionArgs_order = InanoSQLProcessedSort[];
+export type ActionArgs_filter_arr = InanoSQLWhereQuery;
+export type ActionArgs_filter_fn = (row: {[key: string]: any; }, i?: number) => boolean;
+export type ActionArgs_range = [number, number];
+export type ActionArgs_total = boolean;
+export type ActionArgs_upsert = any[];
+export type ActionArgs_delete = undefined;
+export type ActionArgs_show_tables = undefined;
+export type ActionArgs_describe = boolean;
+export type ActionArgs_drop_table = string;
+export type ActionArgs_create_table = InanoSQLTableConfig;
+export type ActionArgs_alter_table = {
+    table: string,
+    config: InanoSQLTableConfig
+}
+
+export type ActionArgs_rebuild_indexes = undefined;
+export type ActionArgs_conform = (oldRow: any) => any;
+export type ActionArgs_clone = {
+    mode: string | InanoSQLAdapter;
+    id?: string;
+    getAdapter?: (adapter: InanoSQLAdapter) => void;
+};
+export type ActionArgs_custom_query = any;
+export type ActionArgs_select_arr = {table: any[], as: string}
+export type ActionArgs_select_fn = {table: () => Promise<any[]>, as: string}
+export type ActionArgs_select_external = {
+    as: string;
+    query: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void;
+    args: QueryArguments;
+}
+export type ActionArgs_select_pk = {
+    as: string;
+    table: string;
+    reverse?: boolean;
+    range?: [number, number];
+    where?: InanoSQLWhereStatement;
+}
+
+export type ActionArgs_select_index = {
+    table: string;
+    index: InanoSQLIndex,
+    reverse?: boolean;
+    range?: [number, number];
+    where?: InanoSQLWhereStatement;
+};
+
+export type ActionArgs_select_compound = ({
+    do: InanoSQLActions.select_index | InanoSQLActions.select_pk,
+    args: ActionArgs_select_index | ActionArgs_select_pk
+}|string)[]

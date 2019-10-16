@@ -12,7 +12,7 @@ import {
     InanoSQLQuery2,
     InanoSQLInstance
 } from "./interfaces";
-import { isFunction, isObject } from "./utilities";
+import {isFunction, isObject, QueryArguments} from "./utilities";
 
 
 
@@ -31,13 +31,20 @@ export class QueryAST {
     
         const action = String(query.action).trim().toLowerCase();
 
+        const tableObj: {
+            as?: string;
+            str?: string,
+            arr?: any[],
+            fn?: () => Promise<any[]>,
+            query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
+        } = isObject(query.table) ? (query.table as any) : {
+            str: typeof query.table === "string" ? query.table : undefined,
+            arr: Array.isArray(query.table) ? query.table : undefined,
+            fn: isFunction(query.table) ? query.table : undefined,
+        };
+
         return {
-            table: {
-                str: typeof query.table === "string" ? query.table : undefined,
-                arr: Array.isArray(query.table) ? query.table : undefined,
-                prms:  isFunction(query.table) ? (query.table as any) : undefined,
-                db: isObject(query.table) && (query.table as any).query ? (query.table as any) : undefined
-            },
+            table: tableObj,
             db: query.databaseID ? nSQL.getDB(query.databaseID) : (Object.keys(nSQL.dbs).length ? nSQL.dbs[Object.keys(nSQL.dbs)[0]] : undefined),
             action: action,
             args: {

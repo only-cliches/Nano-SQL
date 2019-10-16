@@ -5,7 +5,7 @@ import { QueryPrepare } from "./query2-prepare";
 /**
  * Query Order:
  * 0. Process, Prepare then Execute
- * 1. Where / Index Select (possibly do indexed orderby)
+ * 1. Where / Index Select (possibly do indexed orderby and/or indexed offset/limit)
  * 2. Union, Join & Graph
  * 3. Group By, Functions & Distinct
  * 4. Apply AS
@@ -14,7 +14,7 @@ import { QueryPrepare } from "./query2-prepare";
  * 7. Offset & Limit
  */
 
-export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, progress: (row: any, i: number) => void, complete: (err?: string) => void) => {
+export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, progress: (row: any, i: number) => void, complete: (err?: Error) => void) => {
     
     try {
         // step 1, process query AST
@@ -24,6 +24,7 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
         const preparedQuery = QueryPrepare.prepare(nSQL, queryAST);
 
         // step 3, execute query
+
 
     } catch (e) {
         complete(e);
