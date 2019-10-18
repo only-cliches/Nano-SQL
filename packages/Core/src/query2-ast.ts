@@ -37,28 +37,36 @@ export class QueryAST {
             arr?: any[],
             fn?: () => Promise<any[]>,
             query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
-        } = isObject(query.table) ? (query.table as any) : {
+        } = isObject(query.table) ? {
+            as: (query.table as any).as as any,
+            str: typeof (query.table as any).table === "string" ? (query.table as any).table : undefined,
+            arr: Array.isArray((query.table as any).table) ? (query.table as any).table : undefined,
+            fn: isFunction((query.table as any).table) ? (query.table as any).table : undefined,
+            query: (query.table as any).query
+        } : {
             str: typeof query.table === "string" ? query.table : undefined,
             arr: Array.isArray(query.table) ? query.table : undefined,
             fn: isFunction(query.table) ? query.table : undefined,
         };
 
         return {
+            dbId: query.databaseID || "",
+            parent: nSQL,
             table: tableObj,
             db: query.databaseID ? nSQL.getDB(query.databaseID) : (Object.keys(nSQL.dbs).length ? nSQL.dbs[Object.keys(nSQL.dbs)[0]] : undefined),
             action: action,
             args: {
                 raw: query.actionArgs,
-                select: action === "select" && query.actionArgs ? QueryAST.select(query.actionArgs) : undefined,
+                select: action === "select" && query.actionArgs ? QueryAST.select(nSQL, query.actionArgs) : undefined,
             },
-            where: QueryAST.where(query.where),
+            where: QueryAST.where(nSQL, query.where),
             originalWhere: query.where as any[],
-            having: QueryAST.where(query.having),
+            having: QueryAST.where(nSQL, query.having),
             originalHaving: query.having as any[],
             range: QueryAST.offsetLimit(query.offset || 0, query.limit || 0),
-            orderBy: QueryAST.sortBy(query.orderBy),
-            groupBy: QueryAST.sortBy(query.groupBy),
-            distinct: query.distinct && Array.isArray(query.distinct) ? query.distinct.map(q => QueryAST.functionString(q)) : undefined,
+            orderBy: QueryAST.sortBy(nSQL, query.orderBy),
+            groupBy: QueryAST.sortBy(nSQL, query.groupBy),
+            distinct: query.distinct && Array.isArray(query.distinct) ? query.distinct.map(q => QueryAST.functionString(nSQL, q)) : undefined,
             graph: query.graph && !Array.isArray(query.graph) ? [query.graph] : query.graph as InanoSQLGraphArgs[],
             join: query.join && !Array.isArray(query.join) ? [query.join] : query.join as InanoSQLJoinArgs[],
             updateImmutable: query.updateImmutable,
@@ -74,18 +82,18 @@ export class QueryAST {
      * @returns {(undefined | InanoSQLProcessedSort[])}
      * @memberof QueryAST
      */
-    static sortBy(sortArgs?: string[] | {[column: string]: string}): undefined | InanoSQLProcessedSort[] {
+    static sortBy(nSQL: InanoSQLInstance, sortArgs?: string[] | {[column: string]: string}): undefined | InanoSQLProcessedSort[] {
         if (!sortArgs) return undefined;
     
         if (Array.isArray(sortArgs)) { // parse V2 format
             return sortArgs.map((v) => {
                 const splitValue = v.split(" ").map(s => s.trim());
-                return QueryAST.singleSortBy(splitValue[0], splitValue[1]);
+                return QueryAST.singleSortBy(nSQL, splitValue[0], splitValue[1]);
             })
         } else { // parse V1 format
             return Object.keys(sortArgs).map((col) => {
                 const dir = sortArgs[col];
-                return QueryAST.singleSortBy(col, dir);
+                return QueryAST.singleSortBy(nSQL, col, dir);
             })
         }
     }
@@ -99,13 +107,13 @@ export class QueryAST {
      * @returns {InanoSQLProcessedSort}
      * @memberof QueryAST
      */
-    static singleSortBy(column: string, direction?: string): InanoSQLProcessedSort {
+    static singleSortBy(nSQL: InanoSQLInstance, column: string, direction?: string): InanoSQLProcessedSort {
 
         const dir = String(direction || "").trim().toLowerCase() || "asc";
     
         return {
             dir: dir !== "asc" && dir !== "desc" ? "asc" : dir,
-            value: QueryAST.functionString(column)
+            value: QueryAST.functionString(nSQL, column)
         }
     }
 
@@ -117,14 +125,14 @@ export class QueryAST {
      * @returns
      * @memberof QueryAST
      */
-    static select(args: string[] | undefined) {
+    static select(nSQL: InanoSQLInstance, args: string[] | undefined) {
         // prevent undefined behavior
         if (!args || !Array.isArray(args)) return undefined;
     
         return args.map(v => {
             const splitVal = String(v).split(/\s+as\s+/gmi).map(s => s.trim());
             return {
-                value: QueryAST.functionString(splitVal[0]),
+                value: QueryAST.functionString(nSQL, splitVal[0]),
                 as: splitVal[1],
             }
         });
@@ -157,7 +165,7 @@ export class QueryAST {
      * @returns {(string | InanoSQLFunctionQuery)}
      * @memberof QueryAST
      */
-    static functionString(functionString: string): string | InanoSQLFunctionQuery {
+    static functionString(nSQL: InanoSQLInstance, functionString: string): string | InanoSQLFunctionQuery {
 
         // prevent undefined behavior
         if (typeof functionString !== "string") return "";
@@ -172,11 +180,15 @@ export class QueryAST {
         
         // parentheses don't having matching pairs
         if (start === -1 || end === -1) {
-            throw new Error(functionString + " has no matching parentheses!");
+            throw new Error("nSQL: " + functionString + " has no matching parentheses!");
         }
     
         const functionName = functionString.slice(0, start).toLowerCase();
         const functionArgs = functionString.slice(start + 1, end);
+
+        if (!nSQL.functions[functionName]) {
+            throw new Error(`nSQL: Function ${functionName} not found!`);
+        }
     
         // find all the commas that are not inside nested function calls
         let splitCommas: number[] = [-1];
@@ -204,7 +216,7 @@ export class QueryAST {
     
             const section: [number, number] = [splitCommas[i] + 1, splitCommas[i + 1]];
             const fnArg = functionArgs.slice(...section).trim();
-            prev.push(QueryAST.functionString(fnArg));
+            prev.push(QueryAST.functionString(nSQL, fnArg));
             return prev;
         }, []) : [functionArgs.replace(/\,/gmi, "").trim()];
     
@@ -222,7 +234,7 @@ export class QueryAST {
      * @returns {InanoSQLWhereQuery}
      * @memberof QueryAST
      */
-    static arrayWhere(whereStatement: any[]): InanoSQLWhereQuery {
+    static arrayWhere(nSQL: InanoSQLInstance, whereStatement: any[]): InanoSQLWhereQuery {
 
         // prevent undefined behavior
         if (Array.isArray(whereStatement) !== true) {
@@ -230,11 +242,36 @@ export class QueryAST {
         }
     
         if (typeof whereStatement[0] === "string") { // bottom of nested structure
+
+            if ([
+                whereStatement.indexOf(undefined),
+                whereStatement.indexOf(null),
+                whereStatement.indexOf("")
+            ].filter(v => v === -1).length !== 3) {
+                throw new Error(`nSQL: Can't use undefined, null or empty string in WHERE.  Please use 'NULL' string if you're querying for empty rows.`);
+            }
+
+            if (["IN", "NOT IN", "INCLUDES", "INCLUDES LIKE", "NOT INCLUDES", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(whereStatement[1]) !== -1 && !Array.isArray(whereStatement[2])) {
+                throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires an array argument on the right side!`);
+            }
+
+            if (["REGEXP", "REGEX"].indexOf(whereStatement[1]) !== -1 && !(whereStatement[2] instanceof RegExp)) {
+                throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires a regular expression on the right!`);
+            }
+
+            if (["BETWEEN", "NOT BETWEEN"].indexOf(whereStatement[1]) !== -1 && (!Array.isArray(whereStatement[2]) || whereStatement[2].length !== 2)) {
+                throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires an array argument on the right side of length 2!`);
+            }
+
+            if (["LIKE"].indexOf(whereStatement[1]) !== -1 && (typeof whereStatement[2] !== "string")) {
+                throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires a string argument!`);
+            }
+
             return {
                 STMT: [
-                    QueryAST.functionString(whereStatement[0]), // maybe function or string
+                    QueryAST.functionString(nSQL, whereStatement[0]), // maybe function or string
                     whereStatement[1], // should be string of LIKE, =, !=, etc
-                    typeof whereStatement[2] === "string" ? QueryAST.functionString(whereStatement[2]) : whereStatement[2] // could be string, function string or anything else
+                    typeof whereStatement[2] === "string" ? QueryAST.functionString(nSQL, whereStatement[2]) : whereStatement[2] // could be string, function string or anything else
                 ]
             }
         } else {
@@ -247,7 +284,7 @@ export class QueryAST {
                         }
                         return {ANDOR: ANDOR};
                     }
-                    return QueryAST.arrayWhere(where);
+                    return QueryAST.arrayWhere(nSQL, where);
                 })
             }
         }
@@ -261,7 +298,7 @@ export class QueryAST {
      * @returns {(undefined | InanoSQLProcessedWhere)}
      * @memberof QueryAST
      */
-    static where(whereStatement: any[] | ((row: {[key: string]: any; }, i?: number) => boolean) | undefined): undefined | InanoSQLProcessedWhere {
+    static where(nSQL: InanoSQLInstance, whereStatement: any[] | ((row: {[key: string]: any; }, i?: number) => boolean) | undefined): undefined | InanoSQLProcessedWhere {
         // no where statement
         if (typeof whereStatement === "undefined") {
             return undefined;
@@ -278,7 +315,7 @@ export class QueryAST {
         // where statement is array or array of arrays
         return {
             type: "arr",
-            arr: QueryAST.arrayWhere(whereStatement)
+            arr: QueryAST.arrayWhere(nSQL, whereStatement)
         }
     }
 

@@ -17,16 +17,25 @@ import {
     ActionArgs_select_pk,
     ActionArgs_show_tables,
     ActionArgs_total,
-    ActionArgs_union, ActionArgs_upsert,
-    InanoSQLActions,
+    ActionArgs_union, ActionArgs_upsert, customQueryFilter,
+    InanoSQLActions, InanoSQLFunctionQuery,
     InanoSQLInstance,
     InanoSQLQuery2,
     InanoSQLQueryActions,
-    InanoSQLQueryAST
+    InanoSQLQueryAST, InanoSQLSortBy, IWhereCondition
 } from "./interfaces";
 import {QueryAST} from "./query2-ast";
 import {QueryPrepare} from "./query2-prepare";
-import {callOnce} from "./utilities";
+import {
+    adapterFilters,
+    allAsync,
+    callOnce,
+    chainAsync,
+    deepGet,
+    execFunction,
+    maybeDate,
+    objectsEqual
+} from "./utilities";
 
 
 export interface nanoSQLQueryArgs {
@@ -35,7 +44,7 @@ export interface nanoSQLQueryArgs {
     state: nanoSQLQueryState,
     inputRow: any,
     inputIndex: number,
-    nextRow: (row: any, i: number, err?: Error) => void
+    nextRow: (i: number, row?: {[table: string]: any}, err?: Error) => void
 }
 
 export interface nanoSQLQueryState {
@@ -67,10 +76,16 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
         let queryState: nanoSQLQueryState = {
             perf: [{what: "start", time: Date.now(), delta: 0, total: 0}],
             savedTables: {}
-        }
+        };
+
+        const once = callOnce(complete);
 
         // step 3, execute query
-        nanoSQLQuery2.stepQuery(nSQL, queryState, queryAST, preparedQuery, 0, undefined, 0, progress, callOnce(complete));
+        nanoSQLQuery2._stepQuery(nSQL, queryState, queryAST, preparedQuery, 0, undefined, 0, (row, i) => {
+            if (!once.finished) {
+                progress(row, i);
+            }
+        }, once.call);
 
     } catch (e) {
         complete(e);
@@ -78,12 +93,12 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
 }
 
 export class nanoSQLQuery2 {
-    static stepQuery(nSQL: InanoSQLInstance, state: nanoSQLQueryState, pQuery: InanoSQLQueryAST, actions: InanoSQLQueryActions[], actionIndex: number, inputRow: any, inputIndex: number, onRow: (row: any, i: number) => void, complete: (err?:  Error) => void) {
+    static _stepQuery(nSQL: InanoSQLInstance, state: nanoSQLQueryState, pQuery: InanoSQLQueryAST, actions: InanoSQLQueryActions[], actionIndex: number, inputRow: any, inputIndex: number, onRow: (row: any, i: number) => void, complete: (err?:  Error) => void) {
         const action = actions[actionIndex];
 
         const nextAction = actions[actionIndex + 1];
 
-        const nextRow = (row: any, i: number, err?: Error) => {
+        const nextRow = (i: number, row?: {[table: string]: any}, err?: Error) => {
             if (err) {
                 complete(err);
                 return;
@@ -98,13 +113,13 @@ export class nanoSQLQuery2 {
                 if (!nextAction) {
                     complete();
                 } else {
-                    nanoSQLQuery2.stepQuery(nSQL, state, pQuery,  actions, actionIndex + 1, row, i, onRow, complete);
+                    nanoSQLQuery2._stepQuery(nSQL, state, pQuery,  actions, actionIndex + 1, row, i, onRow, complete);
                 }
                 return;
             }
 
             if (nextAction) {
-                nanoSQLQuery2.stepQuery(nSQL, state, pQuery, actions, actionIndex + 1, row, i, onRow, complete);
+                nanoSQLQuery2._stepQuery(nSQL, state, pQuery, actions, actionIndex + 1, row, i, onRow, complete);
             } else {
                 onRow(row, i);
             }
@@ -121,206 +136,526 @@ export class nanoSQLQuery2 {
 
         switch(action.do) {
             case InanoSQLActions.select_arr:
-                nanoSQLQuery2.select_arr(queryArgs, action.args);
+                nanoSQLQuery2._select_arr(queryArgs, action.args);
                 break;
             case InanoSQLActions.select_fn:
-                nanoSQLQuery2.select_fn(queryArgs, action.args);
+                nanoSQLQuery2._select_fn(queryArgs, action.args);
                 break;
             case InanoSQLActions.select_index:
-                nanoSQLQuery2.select_index(queryArgs, action.args);
+                nanoSQLQuery2._select_index(queryArgs, action.args);
                 break;
             case InanoSQLActions.select_pk:
-                nanoSQLQuery2.select_pk(queryArgs, action.args);
+                nanoSQLQuery2._select_pk(queryArgs, action.args);
                 break;
             case InanoSQLActions.select_external:
-                nanoSQLQuery2.select_external(queryArgs, action.args);
+                nanoSQLQuery2._select_external(queryArgs, action.args);
                 break;
             case InanoSQLActions.select_compound:
-                nanoSQLQuery2.select_compound(queryArgs, action.args);
+                nanoSQLQuery2._select_compound(queryArgs, action.args);
                 break;
             case InanoSQLActions.total:
-                nanoSQLQuery2.total(queryArgs, action.args);
+                nanoSQLQuery2._total(queryArgs, action.args);
                 break;
             case InanoSQLActions.filter_arr:
-                nanoSQLQuery2.filter_arr(queryArgs, action.args);
+                nanoSQLQuery2._filter_arr(queryArgs, action.args);
                 break;
             case InanoSQLActions.filter_fn:
-                nanoSQLQuery2.filter_fn(queryArgs, action.args);
+                nanoSQLQuery2._filter_fn(queryArgs, action.args);
                 break;
             case InanoSQLActions.union:
-                nanoSQLQuery2.union(queryArgs, action.args);
+                nanoSQLQuery2._union(queryArgs, action.args);
                 break;
             case InanoSQLActions.graph:
-                nanoSQLQuery2.graph(queryArgs, action.args);
+                nanoSQLQuery2._graph(queryArgs, action.args);
                 break;
             case InanoSQLActions.join:
-                nanoSQLQuery2.join(queryArgs, action.args);
+                nanoSQLQuery2._join(queryArgs, action.args);
                 break;
             case InanoSQLActions.order:
-                nanoSQLQuery2.order(queryArgs, action.args);
+                nanoSQLQuery2._order(queryArgs, action.args);
                 break;
             case InanoSQLActions.group:
-                nanoSQLQuery2.group(queryArgs, action.args);
+                nanoSQLQuery2._group(queryArgs, action.args);
                 break;
             case InanoSQLActions.functions:
-                nanoSQLQuery2.functions(queryArgs, action.args);
+                nanoSQLQuery2._functions(queryArgs, action.args);
                 break;
             case InanoSQLActions.range:
-                nanoSQLQuery2.range(queryArgs, action.args);
+                nanoSQLQuery2._range(queryArgs, action.args);
                 break;
             case InanoSQLActions.distinct:
-                nanoSQLQuery2.distinct(queryArgs, action.args);
+                nanoSQLQuery2._distinct(queryArgs, action.args);
                 break;
             case InanoSQLActions.drop_table:
-                nanoSQLQuery2.drop_table(queryArgs, action.args);
+                nanoSQLQuery2._drop_table(queryArgs, action.args);
                 break;
             case InanoSQLActions.create_table:
-                nanoSQLQuery2.create_table(queryArgs, action.args);
+                nanoSQLQuery2._create_table(queryArgs, action.args);
                 break;
             case InanoSQLActions.alter_table:
-                nanoSQLQuery2.alter_table(queryArgs, action.args);
+                nanoSQLQuery2._alter_table(queryArgs, action.args);
                 break;
             case InanoSQLActions.describe:
-                nanoSQLQuery2.describe(queryArgs, action.args);
+                nanoSQLQuery2._describe(queryArgs, action.args);
                 break;
             case InanoSQLActions.show_tables:
-                nanoSQLQuery2.show_tables(queryArgs, action.args);
+                nanoSQLQuery2._show_tables(queryArgs, action.args);
                 break;
             case InanoSQLActions.upsert:
-                nanoSQLQuery2.upsert(queryArgs, action.args);
+                nanoSQLQuery2._upsert(queryArgs, action.args);
                 break;
             case InanoSQLActions.delete:
-                nanoSQLQuery2.delete(queryArgs, action.args);
+                nanoSQLQuery2._delete(queryArgs, action.args);
                 break;
             case InanoSQLActions.conform:
-                nanoSQLQuery2.conform(queryArgs, action.args);
+                nanoSQLQuery2._conform(queryArgs, action.args);
                 break;
             case InanoSQLActions.rebuild_indexes:
-                nanoSQLQuery2.rebuild_indexes(queryArgs, action.args);
+                nanoSQLQuery2._rebuild_indexes(queryArgs, action.args);
                 break;
             case InanoSQLActions.clone:
-                nanoSQLQuery2.clone(queryArgs, action.args);
+                nanoSQLQuery2._clone(queryArgs, action.args);
                 break;
             case InanoSQLActions.custom_query:
-                nanoSQLQuery2.custom_query(queryArgs, action.args);
+                nSQL.doFilter<customQueryFilter>(pQuery.dbId, "customQuery", { res: undefined, query: pQuery, onRow: onRow, complete: () => { complete() }, error: (err) => { complete(err) } }, () => {
+                    complete(Error(`nSQL: Query type ${pQuery.action} not supported!`));
+                }, (err) => {
+                    complete(err instanceof Error ? err : Error(err));
+                });
                 break;
             default:
-                complete(Error("Uknonwn action requested!"));
+                complete(Error("nSQL: Uknonwn action requested!"));
         }
 
     }
 
 
-    static select_arr(query: nanoSQLQueryArgs, args: ActionArgs_select_arr) {
+    static _select_arr(query: nanoSQLQueryArgs, args: ActionArgs_select_arr) {
+
+        const rows = args.table;
+        let i = 0;
+        while(i < rows.length) {
+            query.nextRow(i, {[args.as]: rows[i]});
+            i++;
+        }
+        query.nextRow(-1);
 
     }
 
-    static select_fn(query: nanoSQLQueryArgs, args: ActionArgs_select_fn) {
+    static _select_fn(query: nanoSQLQueryArgs, args: ActionArgs_select_fn) {
+        if (args.as.length && query.state.savedTables[args.as]) {
+            const rows = query.state.savedTables[args.as];
+            let i = 0;
+            while(i < rows.length) {
+                query.nextRow(i, {[args.as]: rows[i]});
+                i++;
+            }
+            query.nextRow(-1);
+        } else {
+            args.table().then((rows) => {
+
+                if (!Array.isArray(rows)) {
+                    query.nextRow(-1, {}, Error("nSQL: Promise table did not return array!"));
+                    return;
+                }
+
+                if (args.as && args.as.length) {
+                    query.state.savedTables[args.as] = rows;
+                }
+
+                let i = 0;
+                while(i < rows.length) {
+                    query.nextRow(i, {[args.as]: rows[i]});
+                    i++;
+                }
+                query.nextRow(-1);
+
+            }).catch((err) => {
+                query.nextRow(-1, {}, err);
+            })
+        }
+    }
+
+    static _select_external(query: nanoSQLQueryArgs, args: ActionArgs_select_external) {
+        args.query(args.queryArgs, (row, i) => {
+            query.nextRow(i, {[args.as]: row});
+        }, (err) => {
+            query.nextRow(-1, {}, err);
+        });
+    }
+
+    static _select_index(query: nanoSQLQueryArgs, args: ActionArgs_select_index, onlyPKs?: boolean) {
+
 
     }
 
-    static select_index(query: nanoSQLQueryArgs, args: ActionArgs_select_index) {
+    static _select_pk(query: nanoSQLQueryArgs, args: ActionArgs_select_pk, onlyPKs?: boolean) {
+
+        const tableID = query.
+
+        if (args.where && (args.where[1] === "=" || args.where[1] === "IN")) {
+
+            const pks = (args.where[1] === "=" ? [args.where[2]] : args.where[2] as any[]).map(v => nanoSQLQueryUtils._maybeResolveFunction(query.nSQL, query.pQuery, v));
+
+            if (onlyPKs) {
+                let i = 0;
+                while(i < pks.length) {
+                    query.nextRow(i, pks[i]);
+                    i++;
+                }
+                query.nextRow(-1, undefined);
+
+            } else {
+                chainAsync(pks, (pk, i, next, error) => {
+                    adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(args.table, pk, (row) => {
+                        query.nextRow(i, {[args.as || args.table || ""]: row});
+                        next();
+                    }, (err) => {
+                        error(err);
+                    });
+                }).then(() => {
+                    query.nextRow(-1, undefined);
+                }).catch((err) => {
+                    query.nextRow(-1, {}, err);
+                })
+            }
+        } else if (args.where && args.where[1] === "LIKE") { // LIKE query
+
+
+        } else if (args.where && args.where[1] === "BETWEEN") { // Range query
+            let i = 0;
+            const readRows = onlyPKs ? adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMultiIndex : adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMulti;
+            readRows(args.table, "range", args.where[2][0], args.where[2][1], args.reverse || false, (row) => {
+                query.nextRow(i, onlyPKs ? row : {[args.as || args.table || ""]: row});
+                i++;
+            }, () => {
+                query.nextRow(-1);
+            }, (err) => {
+                query.nextRow(-1, {}, err);
+            });
+        } else { // full table scan
+            let i = 0;
+            const readRows = onlyPKs ? adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMultiIndex : adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMulti;
+            readRows(args.table, "all", undefined, undefined, args.reverse || false, (row) => {
+                query.nextRow(i, onlyPKs ? row : {[args.as || args.table || ""]: row});
+                i++;
+            }, () => {
+                query.nextRow(-1);
+            }, (err) => {
+                query.nextRow(-1, {}, err);
+            });
+        }
 
     }
 
-    static select_pk(query: nanoSQLQueryArgs, args: ActionArgs_select_pk) {
+    static _select_compound(query: nanoSQLQueryArgs, args: ActionArgs_select_compound) {
 
     }
 
-    static select_external(query: nanoSQLQueryArgs, args: ActionArgs_select_external) {
+    static _total(query: nanoSQLQueryArgs, args: ActionArgs_total) {
 
     }
 
-    static select_compound(query: nanoSQLQueryArgs, args: ActionArgs_select_compound) {
+    static _drop_table(query: nanoSQLQueryArgs, args: ActionArgs_drop_table) {
 
     }
 
-    static total(query: nanoSQLQueryArgs, args: ActionArgs_total) {
+    static _create_table(query: nanoSQLQueryArgs, args: ActionArgs_create_table) {
 
     }
 
-    static drop_table(query: nanoSQLQueryArgs, args: ActionArgs_drop_table) {
+    static _alter_table(query: nanoSQLQueryArgs, args: ActionArgs_alter_table) {
 
     }
 
-    static create_table(query: nanoSQLQueryArgs, args: ActionArgs_create_table) {
+    static _describe(query: nanoSQLQueryArgs, args: ActionArgs_describe) {
 
     }
 
-    static alter_table(query: nanoSQLQueryArgs, args: ActionArgs_alter_table) {
+    static _show_tables(query: nanoSQLQueryArgs, args: ActionArgs_show_tables) {
 
     }
 
-    static describe(query: nanoSQLQueryArgs, args: ActionArgs_describe) {
+    static _union(query: nanoSQLQueryArgs, args: ActionArgs_union) {
 
     }
 
-    static show_tables(query: nanoSQLQueryArgs, args: ActionArgs_show_tables) {
+    static _graph(query: nanoSQLQueryArgs, args: ActionArgs_graph) {
 
     }
 
-    static union(query: nanoSQLQueryArgs, args: ActionArgs_union) {
+    static _join(query: nanoSQLQueryArgs, args: ActionArgs_join) {
 
     }
 
-    static graph(query: nanoSQLQueryArgs, args: ActionArgs_graph) {
+    static _order(query: nanoSQLQueryArgs, args: ActionArgs_order) {
 
     }
 
-    static join(query: nanoSQLQueryArgs, args: ActionArgs_join) {
+    static _group(query: nanoSQLQueryArgs, args: ActionArgs_group) {
 
     }
 
-    static order(query: nanoSQLQueryArgs, args: ActionArgs_order) {
+    static _functions(query: nanoSQLQueryArgs, args: ActionArgs_functions) {
 
     }
 
-    static group(query: nanoSQLQueryArgs, args: ActionArgs_group) {
+    static _range(query: nanoSQLQueryArgs, args: ActionArgs_range) {
 
     }
 
-    static functions(query: nanoSQLQueryArgs, args: ActionArgs_functions) {
+    static _filter_arr(query: nanoSQLQueryArgs, args: ActionArgs_filter_arr) {
 
     }
 
-    static range(query: nanoSQLQueryArgs, args: ActionArgs_range) {
+    static _filter_fn(query: nanoSQLQueryArgs, args: ActionArgs_filter_fn) {
 
     }
 
-    static filter_arr(query: nanoSQLQueryArgs, args: ActionArgs_filter_arr) {
+    static _distinct(query: nanoSQLQueryArgs, args: ActionArgs_distinct) {
 
     }
 
-    static filter_fn(query: nanoSQLQueryArgs, args: ActionArgs_filter_fn) {
+    static _upsert(query: nanoSQLQueryArgs, args: ActionArgs_upsert) {
 
     }
 
-    static distinct(query: nanoSQLQueryArgs, args: ActionArgs_distinct) {
+    static _delete(query: nanoSQLQueryArgs, args: ActionArgs_delete) {
 
     }
 
-    static upsert(query: nanoSQLQueryArgs, args: ActionArgs_upsert) {
+    static _conform(query: nanoSQLQueryArgs, args: ActionArgs_conform) {
 
     }
 
-    static delete(query: nanoSQLQueryArgs, args: ActionArgs_delete) {
+    static _rebuild_indexes(query: nanoSQLQueryArgs, args: ActionArgs_rebuild_indexes) {
 
     }
 
-    static conform(query: nanoSQLQueryArgs, args: ActionArgs_conform) {
+    static _clone(query: nanoSQLQueryArgs, args: ActionArgs_clone) {
 
     }
 
-    static rebuild_indexes(query: nanoSQLQueryArgs, args: ActionArgs_rebuild_indexes) {
+}
+
+export class nanoSQLQueryUtils {
+
+    static _indexLocks: {
+        [lockID: string]: {
+            [indexValue: string]: boolean;
+        }
+    } = {};
+
+    static _maybeResolveFunction(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, fn: any | InanoSQLFunctionQuery) {
+        if (fn && fn.name && fn.args) { // function
+            const useFn = nSQL.functions[fn.name];
+            if (!useFn) return fn;
+            const fnReturn = useFn.call(query, fn.args[0], {result: undefined}, ...fn.args.slice(1));
+            if (fnReturn.result) return fnReturn.result;
+            return fnReturn;
+        } else { // not a function
+            return fn;
+        }
 
     }
 
-    static clone(query: nanoSQLQueryArgs, args: ActionArgs_clone) {
+    static quickSort(arr: any[], columns: InanoSQLSortBy): any[] {
 
+        if (arr.length < 2) return arr;
+
+        const pivotPoint = Math.floor(Math.random() * arr.length);
+
+        const getValues = (row): {v: any, d: "ASC"|"DESC"}[] => {
+            return columns.sort.reduce((prev, cur, i) => {
+                const result = cur.fn ? execFunction(this.query, cur.fn, row, { result: undefined }).result : deepGet(cur.path, row);
+                prev.push({v: result, d: String(cur.dir).toUpperCase()});
+                return prev;
+            }, [] as any[]);
+        }
+
+        const compare = (element1, element2) => {
+            let value = 0;
+            let i = 0;
+            while(i < element1.length) {
+                if (!value && element1[i].v !== element2[i].v) {
+                    value = (element1[i].v > element2[i].v ? 1 : -1) * (element1[i].d === "DESC" ? -1 : 1);
+                }
+                i++;
+            }
+            return value;
+        }
+
+        const pivot = getValues(arr[pivotPoint]);
+
+        let left: any[] = [];
+        let equal: any[] = [];
+        let right: any[] = [];
+
+        for (let row of arr) {
+            const element = getValues(row);
+            const result = compare(element, pivot);
+            if (result > 0) {
+                right.push(row);
+            } else if (result < 0) {
+                left.push(row);
+            } else {
+                equal.push(row);
+            }
+        }
+
+        return this.quickSort(left, columns).concat(equal).concat(this.quickSort(right, columns));
     }
 
-    static custom_query(query: nanoSQLQueryArgs, args: ActionArgs_custom_query) {
+    static _sortObj(objA: any, objB: any, columns: InanoSQLSortBy): number {
+        return columns.sort.reduce((prev, cur) => {
+            const A = cur.fn ? execFunction(this.query, cur.fn, objA, { result: undefined }).result : deepGet(cur.path, objA);
+            const B = cur.fn ? execFunction(this.query, cur.fn, objB, { result: undefined }).result : deepGet(cur.path, objB);
 
+            if (A === B) return 0;
+            if (!prev) {
+                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
+            } else {
+                return prev;
+            }
+        }, 0);
     }
 
+    static _where(singleRow: any, where: (IWhereCondition | string | (IWhereCondition | string)[])[]): boolean {
+
+        if (where.length > 1) { // compound where statements
+
+            let prevCondition: string = "AND";
+            let matches = true;
+            let idx = 0;
+            while (idx < where.length) {
+                const wArg = where[idx];
+                if (idx % 2 === 1) {
+                    prevCondition = wArg as string;
+                } else {
+
+                    let compareResult = false;
+
+                    if (Array.isArray(wArg)) { // nested where
+                        compareResult = this._where(singleRow, wArg as any);
+                    } else {
+                        compareResult = this._compare(wArg as IWhereCondition, singleRow);
+                    }
+
+                    if (idx === 0) {
+                        matches = compareResult;
+                    } else {
+                        if (prevCondition === "AND") {
+                            matches = matches && compareResult;
+                        } else {
+                            matches = matches || compareResult;
+                        }
+                    }
+                }
+                idx++;
+            }
+            return matches;
+
+        } else { // single where statement
+            return this._compare(where[0] as IWhereCondition, singleRow);
+        }
+    }
+
+    static _likeCache: { [likeQuery: string]: RegExp } = {};
+
+    static _processLIKE(columnValue: string, givenValue: string): boolean {
+        if (!this._likeCache[givenValue]) {
+            let prevChar = "";
+            const len = givenValue.split("").length - 1;
+            this._likeCache[givenValue] = new RegExp(givenValue.split("").map((s, i) => {
+                if (prevChar === "\\") {
+                    prevChar = s;
+                    return s;
+                }
+                prevChar = s;
+                if (s === "%") return ".*";
+                if (s === "_") return ".";
+                return (i === 0 ? "^" + s : i === len ? s + "$" : s);
+            }).join(""), "gmi");
+        }
+        if (typeof columnValue !== "string") {
+            if (typeof columnValue === "number") {
+                return String(columnValue).match(this._likeCache[givenValue]) !== null;
+            } else {
+                return JSON.stringify(columnValue).match(this._likeCache[givenValue]) !== null;
+            }
+        }
+        return columnValue.match(this._likeCache[givenValue]) !== null;
+    }
+
+    static _getColValue(where: IWhereCondition, wholeRow: any): any {
+        const value = where.fnString ? execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result : deepGet(where.col as string, wholeRow);
+        return where.type === "date" ? (Array.isArray(value) ? value.map(s => maybeDate(s)) : maybeDate(value)) : value;
+    }
+
+    static _compare(where: IWhereCondition, wholeRow: any): boolean {
+
+        const columnValue = this._getColValue(where, wholeRow);
+        const givenValue = where.value as any;
+        const compare = where.comp;
+
+        if (givenValue === "NULL" || givenValue === "NOT NULL") {
+            const isNull = [undefined, null, ""].indexOf(columnValue) !== -1;
+            const isEqual = compare === "=" || compare === "LIKE";
+            switch (givenValue) {
+                case "NULL": return isEqual ? isNull : !isNull;
+                case "NOT NULL": return isEqual ? !isNull : isNull;
+            }
+        }
+
+        if (["IN", "NOT IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
+            if (!Array.isArray(givenValue)) {
+                this.query.state = "error";
+                this.error(`WHERE "${compare}" comparison requires an array value!`);
+                return false;
+            }
+        }
+
+        switch (compare) {
+            // if column equal to given value. Supports arrays, objects and primitives
+            case "=": return objectsEqual(givenValue, columnValue);
+            // if column not equal to given value. Supports arrays, objects and primitives
+            case "!=": return !objectsEqual(givenValue, columnValue);
+            // if column greather than given value
+            case ">": return columnValue > givenValue;
+            // if column less than given value
+            case "<": return columnValue < givenValue;
+            // if column less than or equal to given value
+            case "<=": return columnValue <= givenValue;
+            // if column greater than or equal to given value
+            case ">=": return columnValue >= givenValue;
+            // if column value exists in given array
+            case "IN": return givenValue.indexOf(columnValue) !== -1;
+            // if column does not exist in given array
+            case "NOT IN": return givenValue.indexOf(columnValue) === -1;
+            // regexp search the column
+            case "REGEXP":
+            case "REGEX": return (columnValue || "").match(givenValue) !== null;
+            // if given value exists in column value
+            case "LIKE": return this._processLIKE((columnValue || ""), givenValue);
+            // if given value does not exist in column value
+            case "NOT LIKE": return !this._processLIKE((columnValue || ""), givenValue);
+            // if the column value is between two given numbers
+            case "BETWEEN": return givenValue[0] <= columnValue && givenValue[1] >= columnValue;
+            // if the column value is not between two given numbers
+            case "NOT BETWEEN": return givenValue[0] >= columnValue || givenValue[1] <= columnValue;
+            // if single value exists in array column
+            case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
+            // if LIKE value exists in array column
+            case "INCLUDES LIKE": return (columnValue || []).filter(v => this._processLIKE(v, givenValue)).length > 0;
+            // if single value does not exist in array column
+            case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
+            // if array of values intersects with array column
+            case "INTERSECT": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length > 0;
+            // if every value in the provided array exists in the array column
+            case "INTERSECT ALL": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === givenValue.length;
+            // if array of values does not intersect with array column
+            case "NOT INTERSECT": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === 0;
+            default: return false;
+        }
+    }
 }

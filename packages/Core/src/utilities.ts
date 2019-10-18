@@ -22,7 +22,7 @@ import {
     InanoSQLFunctionResult,
     InanoSQLDataModel,
     InanoSQLTableColumn,
-    InanoSQLAdapter
+    InanoSQLAdapter, InanoSQLQueryAST, adapterReadMultiIndexFilter
 } from "./interfaces";
 import { _nanoSQLQuery } from "./query";
 import * as leven from "levenshtein-edit-distance";
@@ -112,7 +112,7 @@ export const keyToDate = (nSQL: InanoSQLInstance, type: string, pk: any): any =>
     return pk;
 }
 
-export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLInstance, query?: InanoSQLQuery) => {
+export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLInstance, query?: InanoSQLQueryAST) => {
     return {
         write: (table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void) => {
             if (!selectedDB) return;
@@ -120,11 +120,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterWriteFilter>(selectedDB, "adapterWrite", { res: { table, pk, row, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                if (query && query.transactionId) {
+                /*if (query && query.transactionId) {
                     nSQL.txs[query.transactionId].push({ table: table, type: "put", data: result.res.row });
                     result.res.complete(null);
                     return;
-                }
+                }*/
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.write(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, result.res.row, (pk) => {
                     result.res.complete(pk);
@@ -183,6 +183,44 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             }, error);
 
         },
+        readMultiIndex: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
+            if (!selectedDB) return;
+            offsetOrLow = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, offsetOrLow);
+            limitOrHigh = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, limitOrHigh);
+
+            nSQL.doFilter<adapterReadMultiIndexFilter>(selectedDB, "adapterReadMulti", { res: { table, type, offsetOrLow, limitOrHigh, reverse, onRow, complete, error }, query }, (result) => {
+                if (!result) return; // filter took over
+                const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
+
+                if (adapter.readMultiIndex) {
+                    adapter.readMultiIndex(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (pk, i) => {
+                        if (nSQL.getDB(selectedDB)._tables[result.res.table].pkType === "date") {
+                            result.res.onRow(new Date(pk).toISOString(), i);
+                        } else {
+                            result.res.onRow(pk, i)
+                        }
+                    }, () => {
+                        result.res.complete();
+                    }, result.res.error);
+                } else {
+                    adapter.readMulti(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.type, result.res.offsetOrLow, result.res.limitOrHigh, result.res.reverse, (row, i) => {
+                        if (nSQL.getDB(selectedDB)._tables[result.res.table].pkType === "date") {
+                            const setRow = {
+                                ...row
+                            };
+                            const pk = deepGet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, setRow);
+                            deepSet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, setRow, new Date(pk).toISOString());
+                            result.res.onRow(deepGet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, setRow), i);
+                        } else {
+                            result.res.onRow(deepGet(nSQL.getDB(selectedDB)._tables[result.res.table].pkCol, row), i)
+                        }
+                    }, () => {
+                        result.res.complete();
+                    }, result.res.error);
+                }
+            }, error);
+
+        },
         connect: (id: string, complete: () => void, error: (err: any) => void) => {
             if (!selectedDB) return;
             nSQL.doFilter<adapterConnectFilter>(selectedDB, "adapterConnect", { res: { id, complete, error }, query }, (result) => {
@@ -219,11 +257,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterDeleteFilter>(selectedDB, "adapterDelete", { res: { table: table, pk, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                if (query && query.transactionId) {
+                /*if (query && query.transactionId) {
                     nSQL.txs[query.transactionId].push({ table: table, type: "del", data: result.res.pk });
                     result.res.complete();
                     return;
-                }
+                }*/
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.delete(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.pk, result.res.complete, result.res.error);
             }, error);
@@ -285,11 +323,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterAddIndexValueFilter>(selectedDB, "adapterAddIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                if (query && query.transactionId) {
+                /*if (query && query.transactionId) {
                     nSQL.txs[query.transactionId].push({ table: table, type: "idx-put", data: { indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value } });
                     result.res.complete();
                     return;
-                }
+                }*/
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.addIndexValue(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
@@ -314,11 +352,11 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
 
             nSQL.doFilter<adapterDeleteIndexValueFilter>(selectedDB, "adapterDeleteIndexValue", { res: { table: table, indexName, key, value: value2, complete, error }, query }, (result) => {
                 if (!result) return; // filter took over
-                if (query && query.transactionId) {
+                /*if (query && query.transactionId) {
                     nSQL.txs[query.transactionId].push({ table: table, type: "idx-del", data: { indexName: result.res.indexName, tableId: nSQL.getDB(selectedDB)._tableIds[result.res.table], key: result.res.key, value: result.res.value } });
                     result.res.complete();
                     return;
-                }
+                }*/
                 const adapter = nSQL.getDB(selectedDB)._tables[result.res.table].mode || nSQL.getDB(selectedDB).adapter;
                 adapter.deleteIndexValue(nSQL.getDB(selectedDB)._tableIds[result.res.table], result.res.indexName, result.res.key, result.res.value, result.res.complete, result.res.error);
             }, error);
@@ -393,12 +431,15 @@ export const maybeDate = (value: any): any => {
 
 export const callOnce = (callback: (...args: any[]) => void) => {
     let hasCalled = false;
-    return (...args: any[]) => {
+    return {
+        call: (...args: any[]) => {
 
-        if (hasCalled) return;
-        hasCalled = true;
+            if (hasCalled) return;
+            hasCalled = true;
 
-        callback.apply(null, args);
+            callback.apply(null, args);
+        },
+        finished: hasCalled
     }
 }
 
@@ -1049,7 +1090,8 @@ export const resolvePath = (pathQuery: string): string[] => {
 
 export const fnRegex = /^[\"|\'](.*)[\"|\']$/gmi;
 
-export const getFnValue = (row: any, valueOrPath: string): any => {
+export const getFnValue = (row: any, valueOrPath?: string): any => {
+    if (!valueOrPath) return row;
     if (typeof valueOrPath === "number") return valueOrPath;
     const regexResult = fnRegex.exec(valueOrPath);
     return regexResult ? regexResult[1] : deepGet(valueOrPath, row);
@@ -1141,7 +1183,7 @@ export class QueryArguments {
 
 
     constructor(
-        public table: string, 
+        public table: string,
         public where?: any[], 
         public offset?: number, 
         public limit?: number, 

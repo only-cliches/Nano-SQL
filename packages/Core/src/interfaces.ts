@@ -386,7 +386,7 @@ export interface InanoSQLAdapter {
 
     readMulti(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number) => void, complete: () => void, error: (err: any) => void);
 
-    readMulti2?(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: {[key: string]: any}, i: number, getNext: () => void) => void, complete: () => void, error: (err: any) => void);
+    readMultiIndex?(table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (pk: any, i: number) => void, complete: () => void, error: (err: any) => void);
 
     getTableIndex(table: string, complete: (index: any[]) => void, error: (err: any) => void);
 
@@ -403,8 +403,6 @@ export interface InanoSQLAdapter {
     readIndexKey(table: string, indexName: string, pk: any, onRowPK: (key: any) => void, complete: () => void, error: (err: any) => void);
 
     readIndexKeys(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any) => void, complete: () => void, error: (err: any) => void);
-
-    readIndexKeys2?(table: string, indexName: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRowPK: (key: any, value: any, getNext: () => void) => void, complete: () => void, error: (err: any) => void);
 }
 
 
@@ -424,9 +422,9 @@ export interface InanoSQLFunctionResult {
 export interface InanoSQLFunction {
     type: "A" | "S"; // aggregate or simple function
     aggregateStart?: {result: any, row?: any, [key: string]: any};
-    call: (query: InanoSQLQuery, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => InanoSQLFunctionResult; // function call
-    checkIndex?: (query: InanoSQLQuery, fnArgs: string[], where: string[]) => IWhereCondition | false;
-    queryIndex?: (query: InanoSQLQuery, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
+    call: (query: InanoSQLQueryAST, row: any, prev: {result: any, row?: any, [key: string]: any}, ...args: any[]) => InanoSQLFunctionResult; // function call
+    checkIndex?: (query: InanoSQLQueryAST, fnArgs: string[], where: string[]) => IWhereCondition | false;
+    queryIndex?: (query: InanoSQLQueryAST, where: IWhereCondition, onlyPKs: boolean, onRow: (row, i) => void, complete: () => void, error: (err: any) => void) => void;
 }
 
 export interface InanoSQLV1ConfigFn {
@@ -646,21 +644,6 @@ export interface InanoSQLQuery2 {
     updateImmutable?: any;
 }
 
-export interface _nanoSQLPreparedQuery {
-    query: InanoSQLQuery
-    type: 1|2|3; // 1 = fast, 2 = medium, 3 = complete
-    whereArgs: IWhereArgs;
-    havingArgs: IWhereArgs;
-    orderBy: InanoSQLSortBy;
-    groupBy: InanoSQLSortBy;
-    pkOrderBy: boolean;
-    idxOrderBy: boolean;
-    hasFn: boolean;
-    hasAggrFn: boolean;
-    selectArgs: ISelectArgs[];
-    indexes: string[];
-}
-
 export interface InanoSQLIndex {
     id: string;
     type: string;
@@ -800,7 +783,7 @@ export interface disconnectFilter extends abstractFilter { }
 // tslint:disable-next-line
 export interface customQueryFilter extends abstractFilter {
     res: undefined;
-    query: InanoSQLQuery;
+    query: InanoSQLQueryAST,
     onRow: (row: any, i: number) => void;
     complete: () => void;
     error: (err: any) => void;
@@ -816,7 +799,7 @@ export interface customEventFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface adapterReadFilter extends abstractFilter { 
     res: { table: string, pk: any, complete: (row: { [key: string]: any } | undefined) => void, error: (err: any) => void }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -831,13 +814,15 @@ export interface adapterReadMultiFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     };
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
+
+export type adapterReadMultiIndexFilter = adapterReadMultiFilter;
 
 // tslint:disable-next-line
 export interface adapterWriteFilter extends abstractFilter { 
     res: {table: string, pk: any, row: { [key: string]: any }, complete: (pk: any) => void, error: (err: any) => void};
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -847,7 +832,7 @@ export interface adapterConnectFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -856,7 +841,7 @@ export interface adapterDisconnectFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -867,7 +852,7 @@ export interface adapterCreateTableFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -877,7 +862,7 @@ export interface adapterDropTableFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -888,7 +873,7 @@ export interface adapterDeleteFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -898,7 +883,7 @@ export interface adapterGetTableIndexFilter extends abstractFilter {
         complete: (index: any[]) => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -908,7 +893,7 @@ export interface adapterGetTableIndexLengthFilter extends abstractFilter {
         complete: (index: number) => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -920,7 +905,7 @@ export interface adapterCreateIndexFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -931,7 +916,7 @@ export interface adapterDeleteIndexFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -944,7 +929,7 @@ export interface adapterAddIndexValueFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -957,7 +942,7 @@ export interface adapterDeleteIndexValueFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -970,7 +955,7 @@ export interface adapterReadIndexKeyFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -986,7 +971,7 @@ export interface adapterReadIndexKeysFilter extends abstractFilter {
         complete: () => void, 
         error: (err: any) => void
     }
-    query?: InanoSQLQuery;
+    query?: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
@@ -999,7 +984,7 @@ export interface loadIndexCacheFilter extends abstractFilter {
 export interface conformRowFilter extends abstractFilter { 
     res: any;
     oldRow: any;
-    query: InanoSQLQuery
+    query: InanoSQLQueryAST
 }
 
 // tslint:disable-next-line
@@ -1014,17 +999,17 @@ export interface offEventFilter extends abstractFilter {
 
 // tslint:disable-next-line
 export interface deleteRowFilter extends abstractFilter { 
-    query: InanoSQLQuery;
+    query: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
 export interface addRowFilter extends abstractFilter { 
-    query: InanoSQLQuery;
+    query: InanoSQLQueryAST;
 }
 
 // tslint:disable-next-line
 export interface updateRowFilter extends abstractFilter { 
-    query: InanoSQLQuery;
+    query: InanoSQLQueryAST;
     row: any;
 }
 
@@ -1039,7 +1024,7 @@ export interface readyFilter extends abstractFilter {
 
 export interface addRowEventFilter extends abstractFilter {
     res: InanoSQLDatabaseEvent;
-    query: InanoSQLQuery;
+    query: InanoSQLQueryAST;
 }
 
 export interface deleteRowEventFilter extends abstractFilter {
@@ -1075,6 +1060,8 @@ export interface configTableSystemFilter extends abstractFilter {
 }
 
 export interface InanoSQLQueryAST {
+    dbId: string;
+    parent: InanoSQLInstance,
     table: {
         as?: string;
         str?: string,
@@ -1175,9 +1162,9 @@ export type ActionArgs_graph = InanoSQLGraphArgs[];
 export type ActionArgs_join = InanoSQLJoinArgs[];
 export type ActionArgs_group = {
     groupBy: InanoSQLProcessedSort[],
-    reduce: (InanoSQLFunctionQuery | string)[]
+    reduce: {as: string, value: InanoSQLFunctionQuery | string}[];
 }
-export type ActionArgs_functions = (InanoSQLFunctionQuery | string)[];
+export type ActionArgs_functions = {as: string, value: InanoSQLFunctionQuery | string}[];
 export type ActionArgs_distinct = (InanoSQLFunctionQuery | string)[];
 export type ActionArgs_order = InanoSQLProcessedSort[];
 export type ActionArgs_filter_arr = InanoSQLWhereQuery;
@@ -1208,7 +1195,7 @@ export type ActionArgs_select_fn = {table: () => Promise<any[]>, as: string}
 export type ActionArgs_select_external = {
     as: string;
     query: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void;
-    args: QueryArguments;
+    queryArgs: QueryArguments;
 }
 export type ActionArgs_select_pk = {
     as: string;

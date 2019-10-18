@@ -50,7 +50,7 @@ export class QueryPrepare {
                 if (pQuery.union) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.union,
-                        name: "union",
+                        name: "Union",
                         args: pQuery.union
                     })
                 }
@@ -58,7 +58,7 @@ export class QueryPrepare {
                 if (pQuery.graph) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.graph,
-                        name: "graph",
+                        name: "Graph",
                         args: pQuery.graph
                     })
                 }
@@ -66,7 +66,7 @@ export class QueryPrepare {
                 if (pQuery.join) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.join,
-                        name: "join",
+                        name: "Join",
                         args: pQuery.join
                     });
                 }
@@ -74,34 +74,34 @@ export class QueryPrepare {
                 if (pQuery.groupBy) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.group,
-                        name: "groupBy",
+                        name: "Group By",
                         args: {
                             groupBy: pQuery.groupBy,
-                            reduce: hasAggregateFn && pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined
+                            reduce: hasAggregateFn && pQuery.args.select ? pQuery.args.select : undefined
                         }
-                    })
-                }
-
-                if (pQuery.args.select && pQuery.args.select.length) {
-                    queryProcess.actions.push({
-                        do: InanoSQLActions.functions,
-                        name: "functions",
-                        args: pQuery.args.select ? pQuery.args.select.map(v => v.value) : undefined
                     })
                 }
 
                 if (pQuery.distinct) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.distinct,
-                        name: "distinct",
+                        name: "Distinct",
                         args: pQuery.distinct
+                    })
+                }
+
+                if (pQuery.args.select && pQuery.args.select.length) {
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.functions,
+                        name: "Functions & AS",
+                        args: pQuery.args.select ? pQuery.args.select : undefined
                     })
                 }
 
                 if (pQuery.orderBy && !queryProcess.alreadyOrderBy) {
                     queryProcess.actions.push({
                         do: InanoSQLActions.order,
-                        name: "orderBy",
+                        name: "Order By",
                         args: pQuery.orderBy
                     })
                 }
@@ -111,13 +111,13 @@ export class QueryPrepare {
                 if (pQuery.having.type === "arr") {
                     queryProcess.actions.push({
                         do: InanoSQLActions.filter_arr,
-                        name: "filter by array",
+                        name: "Filter With Array",
                         args: pQuery.having.arr
                     })
                 } else {
                     queryProcess.actions.push({
                         do: InanoSQLActions.filter_fn,
-                        name: "filter by function",
+                        name: "Filter with Function",
                         args: pQuery.having.eval
                     })
                 }
@@ -126,7 +126,7 @@ export class QueryPrepare {
             if (pQuery.range && pQuery.range.length && !queryProcess.alreadyRange) {
                 queryProcess.actions.push({
                     do: InanoSQLActions.range,
-                    name: "offset / limit",
+                    name: "Offset / Limit",
                     args: pQuery.range
                 });
             }
@@ -139,42 +139,42 @@ export class QueryPrepare {
             case "total":
                 queryProcess.actions.push({
                     do: InanoSQLActions.total,
-                    name: "total",
+                    name: "Total",
                     args: !!(pQuery.args.raw && pQuery.args.raw.rebuild)
                 });
                 break;
             case "upsert":
                 queryProcess.actions.push({
                     do: InanoSQLActions.upsert,
-                    name: "upsert",
+                    name: "Upsert",
                     args: Array.isArray(pQuery.args.raw) ? pQuery.args.raw : [pQuery.args.raw]
                 });
                 break;
             case "delete":
                 queryProcess.actions.push({
                     do: InanoSQLActions.delete,
-                    name: "delete",
+                    name: "Delete",
                     args: undefined
                 });
                 break;
             case "show tables":
                 queryProcess.actions.push({
                     do: InanoSQLActions.show_tables,
-                    name: "show_tables",
+                    name: "Show Tables",
                     args: undefined
                 });
                 break;
             case "describe":
                 queryProcess.actions.push({
                     do: InanoSQLActions.describe,
-                    name: "describe",
+                    name: "Describe Tables",
                     args: false
                 });
                 break;
             case "describe indexes":
                 queryProcess.actions.push({
                     do: InanoSQLActions.describe,
-                    name: "describe",
+                    name: "Describe Indexes",
                     args: true
                 });
                 break;
@@ -182,7 +182,7 @@ export class QueryPrepare {
             case "drop table":
                 queryProcess.actions.push({
                     do: InanoSQLActions.drop_table,
-                    name: "drop table",
+                    name: "Drop Table",
                     args: pQuery.table.str
                 });
                 break;
@@ -190,14 +190,14 @@ export class QueryPrepare {
             case "create table if not exists":
                 queryProcess.actions.push({
                     do: InanoSQLActions.create_table,
-                    name: "create table",
+                    name: "Create Table",
                     args: pQuery.args.raw
                 });
                 break;
             case "alter table":
                 queryProcess.actions.push({
                     do: InanoSQLActions.alter_table,
-                    name: "alter table",
+                    name: "Alter Table",
                     args: {
                         table: pQuery.table.str,
                         config: pQuery.args.raw
@@ -206,14 +206,14 @@ export class QueryPrepare {
                 break;
             case "rebuild indexes":
                 queryProcess.actions.push({
-                    name: "rebuild indexes",
+                    name: "Rebuild Indexes",
                     do: InanoSQLActions.rebuild_indexes,
                     args: undefined
                 });
                 break;
             case "conform rows":
                 queryProcess.actions.push({
-                    name: "conform rows",
+                    name: "Conform Rows",
                     do: InanoSQLActions.conform,
                     args: pQuery.args.raw
                 });
@@ -221,7 +221,7 @@ export class QueryPrepare {
             case "clone":
                 queryProcess.actions.push({
                     do: InanoSQLActions.clone,
-                    name: "clone",
+                    name: "Clone",
                     args: pQuery.args.raw
                 });
                 break;
@@ -229,7 +229,7 @@ export class QueryPrepare {
                 // custom query
                 queryProcess.actions.push({
                     do: InanoSQLActions.custom_query,
-                    name: "custom query",
+                    name: "Custom Query",
                     args: pQuery.args.raw
                 })
         }
@@ -257,13 +257,13 @@ export class QueryPrepare {
             if (pQuery.table.arr) {
                 actions.push({
                     do: InanoSQLActions.select_arr,
-                    name: "select array",
+                    name: "Select From Array",
                     args: {table: pQuery.table.arr, as: pQuery.table.as || ""}
                 });
             } else {
                 actions.push({
                     do: InanoSQLActions.select_fn,
-                    name: "select function",
+                    name: "Select From Function",
                     args: {table: pQuery.table.fn, as: pQuery.table.as || ""}
                 });
             }
@@ -272,13 +272,13 @@ export class QueryPrepare {
                 if (pQuery.where.type === "arr") {
                     actions.push({
                         do: InanoSQLActions.filter_arr,
-                        name: "filter by array",
+                        name: "Filter With Array",
                         args: pQuery.where.arr
                     })
                 } else {
                     actions.push({
                         do: InanoSQLActions.filter_fn,
-                        name: "filter by function",
+                        name: "Filter With Function",
                         args: pQuery.where.eval
                     })
                 }
@@ -296,11 +296,11 @@ export class QueryPrepare {
 
             actions.push({
                 do: InanoSQLActions.select_external,
-                name: "select external data",
+                name: "Select From External Source",
                 args: {
                     as: pQuery.table.as || "",
                     query: pQuery.table.query,
-                    args: new QueryArguments(
+                    queryArgs: new QueryArguments(
                         pQuery.table.as || "",
                         pQuery.originalWhere,
                         pQuery.range ? pQuery.range[0] : undefined,
@@ -320,14 +320,12 @@ export class QueryPrepare {
 
             const actions: InanoSQLQueryActions[] = [];
 
-            // step 1, see if we have a WHERE statement
 
-            let whereIndexes: InanoSQLWhereIndex[] = [];
 
             const fullTableScan = (didSort?: boolean, reverse?: boolean, range?: [number, number]) => {
                 actions.push({
                     do: InanoSQLActions.select_pk,
-                    name: "select by primary key",
+                    name: "Select By Primary Key",
                     args: {
                         table: pQuery.table.str,
                         as: pQuery.table.as || "",
@@ -340,13 +338,13 @@ export class QueryPrepare {
                     if (pQuery.where.type === "arr") {
                         actions.push({
                             do: InanoSQLActions.filter_arr,
-                            name: "filter by array",
+                            name: "Filter By Array",
                             args: pQuery.where.arr
                         })
                     } else {
                         actions.push({
                             do: InanoSQLActions.filter_fn,
-                            name: "filter by function",
+                            name: "Filter By Function",
                             args: pQuery.where.eval
                         })
                     }
@@ -355,8 +353,13 @@ export class QueryPrepare {
                 return {actions: actions, alreadyOrderBy: didSort || false, alreadyRange: range ? true : false};
             }
 
+
+            // check if we have a WHERE statement, possibly optimize the WHERE query
             if (pQuery.where) {
-                if (pQuery.where.type === "fn") { // function WHERE, full table scan
+
+
+
+                if (pQuery.where.type === "fn") { // function WHERE, full table scan (nothing to optimize)
 
                     return fullTableScan();
 
@@ -364,13 +367,15 @@ export class QueryPrepare {
 
                     const whereStatements = pQuery.where.arr as InanoSQLWhereQuery;
 
+                    let whereIndexes: InanoSQLWhereIndex[] = [];
+
                     if (whereStatements.STMT) { // single where
                         whereIndexes = [this.findWhereIndexes(whereStatements.STMT, nSQL, pQuery)];
                     } else if(whereStatements.NESTED) { // compound where
                         whereStatements.NESTED.forEach((val, i) => {
                             if (val.STMT) {
                                 whereIndexes.push(this.findWhereIndexes(val.STMT, nSQL, pQuery));
-                            } else if (val.NESTED) { // nested array WHERE will not be evaluated
+                            } else if (val.NESTED) { // further nested array WHERE will not be checked for optimized query path
                                 whereIndexes.push({type: "query", value: [], where: val});
                             } else if (val.ANDOR) {
                                 whereIndexes.push({type: "andor", value: [val.ANDOR]});
@@ -478,7 +483,7 @@ export class QueryPrepare {
                             }
                         });
                         return {
-                            actions: [compoundAction, {do: InanoSQLActions.filter_arr, name: "Filter By Array", args: {NESTED: slowAction}}],
+                            actions: slowAction.length ? [compoundAction, {do: InanoSQLActions.filter_arr, name: "Filter By Array", args: {NESTED: slowAction}}] : [compoundAction],
                             alreadyRange: false,
                             alreadyOrderBy: didOrderBy
                         };
@@ -561,7 +566,11 @@ export class QueryPrepare {
                         }
 
                         return {
-                            actions: selectActions,
+                            actions: selectActions.length ? selectActions : [{
+                                do: InanoSQLActions.select_pk,
+                                name: "Select by Primary Key",
+                                args: {}
+                            }],
                             alreadyOrderBy: didOrderBy,
                             alreadyRange: didRange
                         }
