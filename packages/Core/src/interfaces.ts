@@ -1170,7 +1170,7 @@ export type ActionArgs_order = InanoSQLProcessedSort[];
 export type ActionArgs_filter_arr = InanoSQLWhereQuery;
 export type ActionArgs_filter_fn = (row: {[key: string]: any; }, i?: number) => boolean;
 export type ActionArgs_range = [number, number];
-export type ActionArgs_total = boolean;
+export type ActionArgs_total = {doRebuild: boolean, table: string};
 export type ActionArgs_upsert = any[];
 export type ActionArgs_delete = undefined;
 export type ActionArgs_show_tables = undefined;
@@ -1213,7 +1213,11 @@ export type ActionArgs_select_index = {
     where?: InanoSQLWhereStatement;
 };
 
-export type ActionArgs_select_compound = ({
-    do: InanoSQLActions.select_index | InanoSQLActions.select_pk,
-    args: ActionArgs_select_index | ActionArgs_select_pk
-}|string)[]
+export type ActionArgs_select_compound = {
+    table: string,
+    as: string,
+    where: ({
+        do: InanoSQLActions.select_index | InanoSQLActions.select_pk,
+        args: ActionArgs_select_index | ActionArgs_select_pk
+    }|string)[]
+}

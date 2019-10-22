@@ -1,14 +1,21 @@
 import {
-    ActionArgs_alter_table, ActionArgs_clone, ActionArgs_conform,
-    ActionArgs_create_table, ActionArgs_custom_query, ActionArgs_delete,
-    ActionArgs_describe, ActionArgs_distinct,
-    ActionArgs_drop_table, ActionArgs_filter_arr, ActionArgs_filter_fn,
+    ActionArgs_alter_table,
+    ActionArgs_clone,
+    ActionArgs_conform,
+    ActionArgs_create_table,
+    ActionArgs_delete,
+    ActionArgs_describe,
+    ActionArgs_distinct,
+    ActionArgs_drop_table,
+    ActionArgs_filter_arr,
+    ActionArgs_filter_fn,
     ActionArgs_functions,
     ActionArgs_graph,
     ActionArgs_group,
     ActionArgs_join,
     ActionArgs_order,
-    ActionArgs_range, ActionArgs_rebuild_indexes,
+    ActionArgs_range,
+    ActionArgs_rebuild_indexes,
     ActionArgs_select_arr,
     ActionArgs_select_compound,
     ActionArgs_select_external,
@@ -17,12 +24,17 @@ import {
     ActionArgs_select_pk,
     ActionArgs_show_tables,
     ActionArgs_total,
-    ActionArgs_union, ActionArgs_upsert, customQueryFilter,
-    InanoSQLActions, InanoSQLFunctionQuery,
+    ActionArgs_union,
+    ActionArgs_upsert,
+    customQueryFilter,
+    InanoSQLActions,
+    InanoSQLFunctionQuery,
     InanoSQLInstance,
     InanoSQLQuery2,
     InanoSQLQueryActions,
-    InanoSQLQueryAST, InanoSQLSortBy, IWhereCondition
+    InanoSQLQueryAST,
+    InanoSQLSortBy, InanoSQLWhereStatement,
+    IWhereCondition
 } from "./interfaces";
 import {QueryAST} from "./query2-ast";
 import {QueryPrepare} from "./query2-prepare";
@@ -291,9 +303,14 @@ export class nanoSQLQuery2 {
 
     static _select_pk(query: nanoSQLQueryArgs, args: ActionArgs_select_pk, onlyPKs?: boolean) {
 
-        const tableID = query.
+        const tableID = query.pQuery.db ? query.pQuery.db._tableIds[query.pQuery.table.str || ""] : "";
 
-        if (args.where && (args.where[1] === "=" || args.where[1] === "IN")) {
+        if (!tableID) {
+            query.nextRow(-1, {}, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
+            return;
+        }
+
+        if (args.where && (args.where[1] === "=" || args.where[1] === "IN")) { // IN or =
 
             const pks = (args.where[1] === "=" ? [args.where[2]] : args.where[2] as any[]).map(v => nanoSQLQueryUtils._maybeResolveFunction(query.nSQL, query.pQuery, v));
 
@@ -307,7 +324,7 @@ export class nanoSQLQuery2 {
 
             } else {
                 chainAsync(pks, (pk, i, next, error) => {
-                    adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(args.table, pk, (row) => {
+                    adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
                         query.nextRow(i, {[args.as || args.table || ""]: row});
                         next();
                     }, (err) => {
@@ -319,24 +336,34 @@ export class nanoSQLQuery2 {
                     query.nextRow(-1, {}, err);
                 })
             }
-        } else if (args.where && args.where[1] === "LIKE") { // LIKE query
+        } else {
 
+            const rangeArgs = (() => {
+                if (args.where && args.where[1] === "LIKE") { // LIKE
+                    return {
+                        type: "range" as any,
+                        lower: args.where[2].replace(/\%/gmi, "") + "0",
+                        higher: args.where[2].replace(/\%/gmi, "") + "Z",
+                    }
+                } else if (args.where && args.where[1] === "BETWEEN") { // BETWEEN
+                    return {
+                        type: "range" as any,
+                        lower: args.where[2][0],
+                        higher: args.where[2][1],
+                    }
+                } else { // full table scan
+                    return {
+                        type: "all" as any,
+                        lower: undefined,
+                        higher: undefined,
+                    }
+                }
+            })();
 
-        } else if (args.where && args.where[1] === "BETWEEN") { // Range query
             let i = 0;
             const readRows = onlyPKs ? adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMultiIndex : adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMulti;
-            readRows(args.table, "range", args.where[2][0], args.where[2][1], args.reverse || false, (row) => {
-                query.nextRow(i, onlyPKs ? row : {[args.as || args.table || ""]: row});
-                i++;
-            }, () => {
-                query.nextRow(-1);
-            }, (err) => {
-                query.nextRow(-1, {}, err);
-            });
-        } else { // full table scan
-            let i = 0;
-            const readRows = onlyPKs ? adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMultiIndex : adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMulti;
-            readRows(args.table, "all", undefined, undefined, args.reverse || false, (row) => {
+
+            readRows(tableID, rangeArgs.type, rangeArgs.lower, rangeArgs.higher, args.reverse || false, (row) => {
                 query.nextRow(i, onlyPKs ? row : {[args.as || args.table || ""]: row});
                 i++;
             }, () => {
@@ -350,10 +377,120 @@ export class nanoSQLQuery2 {
 
     static _select_compound(query: nanoSQLQueryArgs, args: ActionArgs_select_compound) {
 
+        let pks: {[pk: string]: number} = {};
+        let max = 0;
+
+        /*
+        const tableID = query.pQuery.db ? query.pQuery.db._tableIds[query.pQuery.table.str || ""] : "";
+
+        if (!tableID) {
+            query.nextRow(-1, {}, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
+            return;
+        }
+
+        const tableConfig = query.pQuery.db ? query.pQuery.db._tables[tableID] : undefined;
+
+        if (!tableConfig) {
+            query.nextRow(-1, {}, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
+            return;
+        }*/
+
+        allAsync(args.where, (where, i, next, error) => {
+            if (typeof where === "string") { // AND
+                next();
+            } else {
+                max++;
+                const select = where.do === InanoSQLActions.select_index ? this._select_index : this._select_pk;
+
+                select({
+                    ...query,
+                    nextRow: (i, pk: any, err) => {
+                        if (err) {
+                            error(err);
+                            return;
+                        }
+
+                        if (i === -1) {
+                            next();
+                            return;
+                        }
+
+                        if (!pks[pk]) {
+                            pks[pk] = 1;
+                        } else {
+                            pks[pk]++;
+                        }
+                    }
+                }, where.args as any, true);
+
+            }
+        }).then(() => {
+            const getPKs: any[] = [];
+            const allPks = Object.keys(pks);
+            let i = allPks.length;
+            while(i--) {
+                const k = allPks[i];
+                if (pks[k] === max) {
+                    getPKs.unshift(k);
+                }
+            }
+
+            this._select_pk(query, {
+                as: args.as,
+                table: args.table,
+                where: ["", "IN", getPKs]
+            });
+
+        }).catch((err) => {
+            query.nextRow(-1, undefined, err);
+        })
     }
 
     static _total(query: nanoSQLQueryArgs, args: ActionArgs_total) {
+        const doRebuild = args.doRebuild;
 
+        if (!query.pQuery.db) {
+            query.nextRow(-1, {}, Error(`nSQL: Database "${query.pQuery.dbId}" not found!`));
+            return;
+        }
+
+        const tableID = query.pQuery.db ? query.pQuery.db._tableIds[query.pQuery.table.str || ""] : "";
+
+        if (!tableID) {
+            query.nextRow(-1, {}, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
+            return;
+        }
+
+        if (doRebuild) {
+            adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).getTableIndexLength(args.table, (count) => {
+
+                if (query.pQuery.db) {
+                    query.pQuery.db._tables[tableID].count = count;
+                    query.nSQL.saveCount(query.pQuery.dbId || "", args.table, (err) => {
+                        if (err) {
+                            query.nextRow(-1, undefined, Error(err));
+                        } else {
+                            query.nextRow(0, {total: count},);
+                            query.nextRow(-1);
+                        }
+                    });
+                }
+
+            }, (err) => {
+                query.nextRow(-1, undefined, Error(err));
+            });
+        } else {
+
+            try {
+                const total = query.pQuery.db._tables[tableID].count;
+
+                query.nextRow(0, {total: total},);
+                query.nextRow(-1);
+            } catch (e) {
+                query.nextRow(-1, undefined, Error(e));
+            }
+
+        }
     }
 
     static _drop_table(query: nanoSQLQueryArgs, args: ActionArgs_drop_table) {

@@ -140,7 +140,10 @@ export class QueryPrepare {
                 queryProcess.actions.push({
                     do: InanoSQLActions.total,
                     name: "Total",
-                    args: !!(pQuery.args.raw && pQuery.args.raw.rebuild)
+                    args: {
+                        doRebuild: !!(pQuery.args.raw && pQuery.args.raw.rebuild),
+                        table: pQuery.table.str
+                    }
                 });
                 break;
             case "upsert":
@@ -435,7 +438,7 @@ export class QueryPrepare {
                             return fullTableScan();
                         }
 
-                        const compoundAction: InanoSQLQueryActions = {do: InanoSQLActions.select_compound, name: "Select by Compound Index / Primary Key Queries", args: []};
+                        const compoundAction: InanoSQLQueryActions = {do: InanoSQLActions.select_compound, name: "Select by Compound Index / Primary Key Queries", args: {as: pQuery.table.as || "", table: pQuery.table.str, where: []}};
                         const slowAction: InanoSQLWhereQuery[] = [];
                         let isSlow = false;
 
@@ -447,7 +450,7 @@ export class QueryPrepare {
                                 if (isSlow) {
                                     slowAction.push({ANDOR: whereIndex.value[0] as any});
                                 } else if (whereIndex.value[0]) {
-                                    (compoundAction.args as any).push(whereIndex.value[0]);
+                                    compoundAction.args.where.push(whereIndex.value[0]);
                                 }
 
                             } else if (isSlow) {
@@ -476,7 +479,7 @@ export class QueryPrepare {
                                         didOrderBy = true;
                                     }
                                 }
-                                (compoundAction.args as any).push(pkAction);
+                                compoundAction.args.where.push(pkAction);
                             } else {
                                 isSlow = true;
                                 slowAction.push(whereIndex.where as any);
