@@ -44,7 +44,7 @@ export class QueryPrepare {
 
         if (queryWillSelect) {
 
-            const hasAggregateFn: boolean = this.hasAggrFn(nSQL, pQuery);
+            const hasAggregateFn: boolean = isSelect && this.hasAggrFn(nSQL, pQuery);
 
             if (isSelect) {
                 if (pQuery.union) {
@@ -150,7 +150,10 @@ export class QueryPrepare {
                 queryProcess.actions.push({
                     do: InanoSQLActions.upsert,
                     name: "Upsert",
-                    args: Array.isArray(pQuery.args.raw) ? pQuery.args.raw : [pQuery.args.raw]
+                    args: {
+                        insert: Array.isArray(pQuery.args.raw) ? pQuery.args.raw : [pQuery.args.raw],
+                        doUpdate: queryProcess.actions.length > 0
+                    }
                 });
                 break;
             case "delete":
@@ -323,8 +326,6 @@ export class QueryPrepare {
 
             const actions: InanoSQLQueryActions[] = [];
 
-
-
             const fullTableScan = (didSort?: boolean, reverse?: boolean, range?: [number, number]) => {
                 actions.push({
                     do: InanoSQLActions.select_pk,
@@ -359,8 +360,6 @@ export class QueryPrepare {
 
             // check if we have a WHERE statement, possibly optimize the WHERE query
             if (pQuery.where) {
-
-
 
                 if (pQuery.where.type === "fn") { // function WHERE, full table scan (nothing to optimize)
 
@@ -493,8 +492,18 @@ export class QueryPrepare {
                     }
                 }
             } else {
+                // no WHERE statement
+
+                if (pQuery.action === "upsert") {
+                    return {
+                        actions: [],
+                        alreadyOrderBy: false,
+                        alreadyRange: false
+                    }
+                }
+
                 try {
-                    // no WHERE statement
+
                     const tableData = pQuery.db ? pQuery.db._tables[pQuery.db._tableIds[pQuery.table.str || ""]] : undefined;
 
                     const selectActions: InanoSQLQueryActions[] = [];
@@ -606,7 +615,7 @@ export class QueryPrepare {
         const tableCnfg = (pQuery.db as InanoSQLDBConfig)._tables[tableId];
 
         const supportedMatches = ["LIKE", "BETWEEN", "=", "IN"];
-        const supportedMatchesArr = ["INCLUDES", "INCLUDES LIKE", "INCLUDES BETWEEN", "INTERSECT", "INTERSECT ALL"];
+        const supportedMatchesArr = ["INCLUDES", "INCLUDES LIKE", "INCLUDES BETWEEN", "INTERSECT", "INTERSECT ALL", "INTERSECT ANY"];
 
         if (typeof where[0] === "string") {
 

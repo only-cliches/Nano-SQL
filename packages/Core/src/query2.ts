@@ -56,7 +56,7 @@ export interface nanoSQLQueryArgs {
     state: nanoSQLQueryState,
     inputRow: any,
     inputIndex: number,
-    nextRow: (i: number, row?: {[table: string]: any}, err?: Error) => void
+    nextRow: (i: number, row?: any, err?: Error) => void
 }
 
 export interface nanoSQLQueryState {
@@ -92,10 +92,13 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
 
         const once = callOnce(complete);
 
+        let k = 0;
+
         // step 3, execute query
         nanoSQLQuery2._stepQuery(nSQL, queryState, queryAST, preparedQuery, 0, undefined, 0, (row, i) => {
             if (!once.finished) {
-                progress(row, i);
+                progress(row, k);
+                k++;
             }
         }, once.call);
 
@@ -110,7 +113,7 @@ export class nanoSQLQuery2 {
 
         const nextAction = actions[actionIndex + 1];
 
-        const nextRow = (i: number, row?: {[table: string]: any}, err?: Error) => {
+        const nextRow = (i: number, row?: any, err?: Error) => {
             if (err) {
                 complete(err);
                 return;
@@ -124,10 +127,8 @@ export class nanoSQLQuery2 {
 
                 if (!nextAction) {
                     complete();
-                } else {
-                    nanoSQLQuery2._stepQuery(nSQL, state, pQuery,  actions, actionIndex + 1, row, i, onRow, complete);
+                    return;
                 }
-                return;
             }
 
             if (nextAction) {
@@ -247,7 +248,7 @@ export class nanoSQLQuery2 {
         const rows = args.table;
         let i = 0;
         while(i < rows.length) {
-            query.nextRow(i, {[query.pQuery.table.as || ""]: rows[i]});
+            query.nextRow(i, rows[i]);
             i++;
         }
         query.nextRow(-1);
@@ -259,7 +260,7 @@ export class nanoSQLQuery2 {
             const rows = query.state.savedTables[args.as];
             let i = 0;
             while(i < rows.length) {
-                query.nextRow(i, {[query.pQuery.table.as || ""]: rows[i]});
+                query.nextRow(i, rows[i]);
                 i++;
             }
             query.nextRow(-1);
@@ -267,7 +268,7 @@ export class nanoSQLQuery2 {
             args.table().then((rows) => {
 
                 if (!Array.isArray(rows)) {
-                    query.nextRow(-1, {}, Error("nSQL: Promise table did not return array!"));
+                    query.nextRow(-1, undefined, Error("nSQL: Promise table did not return array!"));
                     return;
                 }
 
@@ -277,22 +278,22 @@ export class nanoSQLQuery2 {
 
                 let i = 0;
                 while(i < rows.length) {
-                    query.nextRow(i, {[args.as]: rows[i]});
+                    query.nextRow(i, rows[i]);
                     i++;
                 }
                 query.nextRow(-1);
 
             }).catch((err) => {
-                query.nextRow(-1, {}, err);
+                query.nextRow(-1, undefined, err);
             })
         }
     }
 
     static _select_external(query: nanoSQLQueryArgs, args: ActionArgs_select_external) {
         args.query(args.queryArgs, (row, i) => {
-            query.nextRow(i, {[query.pQuery.table.as || ""]: row});
+            query.nextRow(i, row);
         }, (err) => {
-            query.nextRow(-1, {}, err);
+            query.nextRow(-1, undefined, err);
         });
     }
 
@@ -325,6 +326,7 @@ export class nanoSQLQuery2 {
                             keys: []
                         };
                     case "INTERSECT":
+                    case "INTERSECT ANY":
                         return {
                             type: "multi",
                             keys: args.where[2]
@@ -335,6 +337,7 @@ export class nanoSQLQuery2 {
                             keys: args.where[2],
                             intersectAll: true
                         };
+
                 }
             } else { // normal index query
                 switch(args.where[1]) {
@@ -376,30 +379,43 @@ export class nanoSQLQuery2 {
 
         if (indexQuery.type === "single" || indexQuery.type === "multi") {
 
+            const isIntersectAll = indexQuery.intersectAll || false;
+
             const getValues: any[] = indexQuery.keys ? indexQuery.keys : [indexQuery.lower];
             let j = 0;
+
+            let pkObj: {[key: string]: number} = {};
 
             chainAsync(getValues, (indexValue, kk, nextI, errI) => {
 
                 let pks: any[] = [];
                 adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readIndexKey(tableID, args.index.id, indexValue, (rowPK) => {
-                    if (onlyPKs) {
-                        query.nextRow(j, rowPK);
-                        j++;
+                    if (isIntersectAll) {
+                        if (!pkObj[rowPK]) {
+                            pkObj[rowPK] = 1;
+                        } else {
+                            pkObj[rowPK]++;
+                        }
                     } else {
-                        pks.push(rowPK);
+                        if (onlyPKs) {
+                            query.nextRow(j, rowPK);
+                            j++;
+                        } else {
+                            pks.push(rowPK);
+                        }
                     }
+
                 }, () => {
                     if (pks.length) {
                         chainAsync(pks, (pk, i, next, err) => {
                             adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
-                                query.nextRow(j, {[query.pQuery.table.as || ""]: row});
+                                query.nextRow(j, row);
                                 j++;
                                 next();
                             }, err);
                         }).then(() => {
                             nextI();
-                        }).catch(errI)
+                        }).catch(errI);
                     } else {
                         nextI();
                     }
@@ -407,15 +423,89 @@ export class nanoSQLQuery2 {
                 }, errI);
 
             }).then(() => {
-                query.nextRow(-1);
+
+                if (isIntersectAll) {
+
+                    let pks: any[] = [];
+                    let k = 0;
+                    Object.keys(pkObj).forEach((pk) => {
+                        if (pkObj[pk] === getValues.length) {
+                            if (onlyPKs) {
+                                query.nextRow(k, pk as any);
+                                k++;
+                            } else {
+                                pks.push(pk);
+                            }
+                        }
+                    });
+
+                    if (pks.length) {
+                        chainAsync(pks, (pk, i, next, err) => {
+                            adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
+                                query.nextRow(k, row);
+                                k++;
+                                next();
+                            }, err);
+                        }).then(() => {
+                            query.nextRow(-1);
+                        }).catch((err) => {
+                            query.nextRow(-1, undefined, Error(err));
+                        });
+                    } else {
+                        query.nextRow(-1);
+                    }
+                } else {
+                    query.nextRow(-1);
+                }
+
             }).catch((err) => {
                 query.nextRow(-1, undefined, Error(err));
             })
 
         } else {
 
+            let pks: any[] = [];
+            let pkObj: any = {};
+            let i = 0;
 
+            adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readIndexKeys(tableID, args.index.id, indexQuery.type as any, indexQuery.lower, indexQuery.higher, args.reverse || false, (primaryKey, id) => {
 
+                if (pkObj[primaryKey]) return;
+
+                if (onlyPKs) {
+                    query.nextRow(i, primaryKey);
+                    i++;
+                } else {
+                    pks.push(primaryKey);
+                }
+
+                pkObj[primaryKey] = true;
+
+            }, () => {
+
+                pkObj = {};
+
+                if (onlyPKs) {
+
+                    query.nextRow(-1);
+
+                } else {
+
+                    chainAsync(pks, (pk, i, next, err) => {
+                        adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
+                            query.nextRow(i, row);
+                            i++;
+                            next();
+                        }, err);
+                    }).then(() => {
+                        query.nextRow(-1);
+                    }).catch((err) => {
+                        query.nextRow(-1, undefined, Error(err));
+                    });
+                }
+            }, (err) => {
+                query.nextRow(-1, undefined, Error(err));
+            })
         }
     }
 
@@ -443,7 +533,7 @@ export class nanoSQLQuery2 {
             } else {
                 chainAsync(pks, (pk, i, next, error) => {
                     adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
-                        query.nextRow(i, {[query.pQuery.table.as || ""]: row});
+                        query.nextRow(i,  row);
                         next();
                     }, (err) => {
                         error(err);
@@ -482,12 +572,12 @@ export class nanoSQLQuery2 {
             const readRows = onlyPKs ? adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMultiIndex : adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMulti;
 
             readRows(tableID, rangeArgs.type, rangeArgs.lower, rangeArgs.higher, args.reverse || false, (row) => {
-                query.nextRow(i, onlyPKs ? row : {[query.pQuery.table.as || ""]: row});
+                query.nextRow(i, row);
                 i++;
             }, () => {
                 query.nextRow(-1);
             }, (err) => {
-                query.nextRow(-1, {}, err);
+                query.nextRow(-1, undefined, err);
             });
         }
 
@@ -560,7 +650,7 @@ export class nanoSQLQuery2 {
             });
 
         }).catch((err) => {
-            query.nextRow(-1, undefined, err);
+            query.nextRow(-1, undefined, Error(err));
         })
     }
 
@@ -568,14 +658,14 @@ export class nanoSQLQuery2 {
         const doRebuild = args.doRebuild;
 
         if (!query.pQuery.db) {
-            query.nextRow(-1, {}, Error(`nSQL: Database "${query.pQuery.dbId}" not found!`));
+            query.nextRow(-1, undefined, Error(`nSQL: Database "${query.pQuery.dbId}" not found!`));
             return;
         }
 
         const tableID = query.pQuery.db ? query.pQuery.db._tableIds[query.pQuery.table.str || ""] : "";
 
         if (!tableID) {
-            query.nextRow(-1, {}, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
+            query.nextRow(-1, undefined, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
             return;
         }
 
@@ -657,6 +747,14 @@ export class nanoSQLQuery2 {
 
     static _range(query: nanoSQLQueryArgs, args: ActionArgs_range) {
 
+        if (query.inputIndex === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
+        if (query.inputIndex >= args[0] && query.inputIndex < args[1]) {
+            query.nextRow(query.inputIndex - args[0], query.inputRow);
+        }
     }
 
     static _filter_arr(query: nanoSQLQueryArgs, args: ActionArgs_filter_arr) {
@@ -664,7 +762,9 @@ export class nanoSQLQuery2 {
     }
 
     static _filter_fn(query: nanoSQLQueryArgs, args: ActionArgs_filter_fn) {
-
+        if (args(query.inputRow, query.inputIndex)) {
+            query.nextRow(query.inputIndex, query.inputRow);
+        }
     }
 
     static _distinct(query: nanoSQLQueryArgs, args: ActionArgs_distinct) {
@@ -847,7 +947,7 @@ export class nanoSQLQueryUtils {
         return where.type === "date" ? (Array.isArray(value) ? value.map(s => maybeDate(s)) : maybeDate(value)) : value;
     }
 
-    static _compare(where: IWhereCondition, wholeRow: any): boolean {
+    static _compare(where: InanoSQLWhereStatement, wholeRow: any): boolean {
 
         const columnValue = this._getColValue(where, wholeRow);
         const givenValue = where.value as any;
@@ -859,14 +959,6 @@ export class nanoSQLQueryUtils {
             switch (givenValue) {
                 case "NULL": return isEqual ? isNull : !isNull;
                 case "NOT NULL": return isEqual ? !isNull : isNull;
-            }
-        }
-
-        if (["IN", "NOT IN", "BETWEEN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(compare) !== -1) {
-            if (!Array.isArray(givenValue)) {
-                this.query.state = "error";
-                this.error(`WHERE "${compare}" comparison requires an array value!`);
-                return false;
             }
         }
 
@@ -906,7 +998,7 @@ export class nanoSQLQueryUtils {
             case "INCLUDES BETWEEN": return (columnValue || []).filter(v => givenValue[0] <= v && givenValue[1] >= v).length > 0;
             // if single value does not exist in array column
             case "NOT INCLUDES":
-            case "INCLUDES NOT": return (columnValue || []).indexOf(givenValue) === -1;
+            case "DOES NOT INCLUDE": return (columnValue || []).indexOf(givenValue) === -1;
             // if array of values intersects with array column
             case "INTERSECT":
             case "INTERSECT ANY": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length > 0;

@@ -50,6 +50,14 @@ export class QueryAST {
             fn: (isFunction(query.table) ? query.table : undefined) as any,
         };
 
+        if (["total", "upsert", "delete", "describe indexes", "drop", "drop table", "alter table", "rebuild indexes", "conform rows"].indexOf(action) !== -1 && !tableObj.str) {
+            throw new Error(`nSQL: Query ${action} requires a local table to be selected!`);
+        }
+
+        if (action === "upsert" && query.where && Array.isArray(query.actionArgs) && query.actionArgs.length > 1) {
+            throw new Error(`nSQL: Upsert query can only have one data object when using WHERE argument!`);
+        }
+
         return {
             dbId: query.databaseID || "",
             parent: nSQL,
@@ -252,19 +260,19 @@ export class QueryAST {
                 throw new Error(`nSQL: Can't use undefined, null or empty string in WHERE.  Please use 'NULL' string if you're querying for empty rows.`);
             }
 
-            if (["IN", "NOT IN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(whereStatement[1]) !== -1 && !Array.isArray(whereStatement[2])) {
+            if (["IN", "NOT IN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT", "INTERSECT ANY", "INTERSECT NONE", "DOES NOT INCLUDE", "NOT INCLUDES"].indexOf(whereStatement[1]) !== -1 && !Array.isArray(whereStatement[2])) {
                 throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires an array argument on the right side!`);
             }
 
             if (["REGEXP", "REGEX"].indexOf(whereStatement[1]) !== -1 && !(whereStatement[2] instanceof RegExp)) {
-                throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires a regular expression on the right!`);
+                throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires a regular expression on the right side!`);
             }
 
             if (["BETWEEN", "NOT BETWEEN", "INCLUDES BETWEEN"].indexOf(whereStatement[1]) !== -1 && (!Array.isArray(whereStatement[2]) || whereStatement[2].length !== 2)) {
                 throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires an array argument on the right side of length 2!`);
             }
 
-            if (["LIKE"].indexOf(whereStatement[1]) !== -1 && (typeof whereStatement[2] !== "string")) {
+            if (["LIKE", "INCLUDES LIKE", "NOT LIKE"].indexOf(whereStatement[1]) !== -1 && (typeof whereStatement[2] !== "string")) {
                 throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires a string argument!`);
             }
 
