@@ -606,14 +606,17 @@ export class QueryPrepare {
         const tableCnfg = (pQuery.db as InanoSQLDBConfig)._tables[tableId];
 
         const supportedMatches = ["LIKE", "BETWEEN", "=", "IN"];
-        const supportedMatchesArr = ["INCLUDES", "INTERSECT ALL", "INTERSECT", "INCLUDES LIKE"];
+        const supportedMatchesArr = ["INCLUDES", "INCLUDES LIKE", "INCLUDES BETWEEN", "INTERSECT", "INTERSECT ALL"];
 
         if (typeof where[0] === "string") {
+
             const objectPath = resolvePath(where[0]);
             const objectMatchType = where[1];
+
             if (objectsEqual(objectPath, tableCnfg.pkCol) && supportedMatches.indexOf(objectMatchType) !== -1) {
                 return {type: "pk", value: objectPath, where: {STMT: where}};
             }
+
             const index = Object.keys(tableCnfg.indexes).reduce((prev, index) => {
                 const idx = tableCnfg.indexes[index];
                 if (objectsEqual(objectPath, idx.path)) {

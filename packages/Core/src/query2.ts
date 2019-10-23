@@ -247,7 +247,7 @@ export class nanoSQLQuery2 {
         const rows = args.table;
         let i = 0;
         while(i < rows.length) {
-            query.nextRow(i, {[args.as]: rows[i]});
+            query.nextRow(i, {[query.pQuery.table.as || ""]: rows[i]});
             i++;
         }
         query.nextRow(-1);
@@ -259,7 +259,7 @@ export class nanoSQLQuery2 {
             const rows = query.state.savedTables[args.as];
             let i = 0;
             while(i < rows.length) {
-                query.nextRow(i, {[args.as]: rows[i]});
+                query.nextRow(i, {[query.pQuery.table.as || ""]: rows[i]});
                 i++;
             }
             query.nextRow(-1);
@@ -290,7 +290,7 @@ export class nanoSQLQuery2 {
 
     static _select_external(query: nanoSQLQueryArgs, args: ActionArgs_select_external) {
         args.query(args.queryArgs, (row, i) => {
-            query.nextRow(i, {[args.as]: row});
+            query.nextRow(i, {[query.pQuery.table.as || ""]: row});
         }, (err) => {
             query.nextRow(-1, {}, err);
         });
@@ -298,7 +298,125 @@ export class nanoSQLQuery2 {
 
     static _select_index(query: nanoSQLQueryArgs, args: ActionArgs_select_index, onlyPKs?: boolean) {
 
+        const indexQuery = (() => {
 
+            if (!args.where) return {type: "all", keys: []}; // get all values for this index
+
+            if (args.index.isArray) { // array index query
+                switch (args.where[1]) {
+                    case "INCLUDES":
+                        return {
+                            type: "single",
+                            lower: args.where[2],
+                            keys: []
+                        };
+                    case "INCLUDES LIKE":
+                        return {
+                            type: "range",
+                            lower: args.where[2].replace(/\%/gmi, "") + "0",
+                            higher: args.where[2].replace(/\%/gmi, "") + "Z",
+                            keys: []
+                        };
+                    case "INCLUDES BETWEEN":
+                        return {
+                            type: "range",
+                            lower: args.where[2][0],
+                            higher: args.where[2][1],
+                            keys: []
+                        };
+                    case "INTERSECT":
+                        return {
+                            type: "multi",
+                            keys: args.where[2]
+                        };
+                    case "INTERSECT ALL":
+                        return {
+                            type: "multi",
+                            keys: args.where[2],
+                            intersectAll: true
+                        };
+                }
+            } else { // normal index query
+                switch(args.where[1]) {
+                    case "LIKE":
+                        return {
+                            type: "range",
+                            lower: args.where[2].replace(/\%/gmi, "") + "0",
+                            higher: args.where[2].replace(/\%/gmi, "") + "Z",
+                        }
+                    case "BETWEEN":
+                        return {
+                            type: "range",
+                            lower: args.where[2][0],
+                            higher: args.where[2][1],
+                        }
+                    case "=":
+                        return {
+                            type: "single",
+                            lower: args.where[2]
+                        }
+                    case "IN":
+                        return {
+                            type: "multi",
+                            keys: args.where[2]
+                        }
+                }
+            }
+
+            return {type: "all", keys: []}; // get all values for this index
+
+        })();
+
+        const tableID = query.pQuery.db ? query.pQuery.db._tableIds[query.pQuery.table.str || ""] : "";
+
+        if (!tableID) {
+            query.nextRow(-1, undefined, Error(`nSQL: Table "${query.pQuery.table.str}" not found!`));
+            return;
+        }
+
+        if (indexQuery.type === "single" || indexQuery.type === "multi") {
+
+            const getValues: any[] = indexQuery.keys ? indexQuery.keys : [indexQuery.lower];
+            let j = 0;
+
+            chainAsync(getValues, (indexValue, kk, nextI, errI) => {
+
+                let pks: any[] = [];
+                adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readIndexKey(tableID, args.index.id, indexValue, (rowPK) => {
+                    if (onlyPKs) {
+                        query.nextRow(j, rowPK);
+                        j++;
+                    } else {
+                        pks.push(rowPK);
+                    }
+                }, () => {
+                    if (pks.length) {
+                        chainAsync(pks, (pk, i, next, err) => {
+                            adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
+                                query.nextRow(j, {[query.pQuery.table.as || ""]: row});
+                                j++;
+                                next();
+                            }, err);
+                        }).then(() => {
+                            nextI();
+                        }).catch(errI)
+                    } else {
+                        nextI();
+                    }
+
+                }, errI);
+
+            }).then(() => {
+                query.nextRow(-1);
+            }).catch((err) => {
+                query.nextRow(-1, undefined, Error(err));
+            })
+
+        } else {
+
+
+
+        }
     }
 
     static _select_pk(query: nanoSQLQueryArgs, args: ActionArgs_select_pk, onlyPKs?: boolean) {
@@ -325,7 +443,7 @@ export class nanoSQLQuery2 {
             } else {
                 chainAsync(pks, (pk, i, next, error) => {
                     adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).read(tableID, pk, (row) => {
-                        query.nextRow(i, {[args.as || args.table || ""]: row});
+                        query.nextRow(i, {[query.pQuery.table.as || ""]: row});
                         next();
                     }, (err) => {
                         error(err);
@@ -364,7 +482,7 @@ export class nanoSQLQuery2 {
             const readRows = onlyPKs ? adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMultiIndex : adapterFilters(query.pQuery.dbId, query.nSQL, query.pQuery).readMulti;
 
             readRows(tableID, rangeArgs.type, rangeArgs.lower, rangeArgs.higher, args.reverse || false, (row) => {
-                query.nextRow(i, onlyPKs ? row : {[args.as || args.table || ""]: row});
+                query.nextRow(i, onlyPKs ? row : {[query.pQuery.table.as || ""]: row});
                 i++;
             }, () => {
                 query.nextRow(-1);
@@ -784,14 +902,19 @@ export class nanoSQLQueryUtils {
             case "INCLUDES": return (columnValue || []).indexOf(givenValue) !== -1;
             // if LIKE value exists in array column
             case "INCLUDES LIKE": return (columnValue || []).filter(v => this._processLIKE(v, givenValue)).length > 0;
+            // if values in array column are between given values
+            case "INCLUDES BETWEEN": return (columnValue || []).filter(v => givenValue[0] <= v && givenValue[1] >= v).length > 0;
             // if single value does not exist in array column
-            case "NOT INCLUDES": return (columnValue || []).indexOf(givenValue) === -1;
+            case "NOT INCLUDES":
+            case "INCLUDES NOT": return (columnValue || []).indexOf(givenValue) === -1;
             // if array of values intersects with array column
-            case "INTERSECT": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length > 0;
+            case "INTERSECT":
+            case "INTERSECT ANY": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length > 0;
             // if every value in the provided array exists in the array column
             case "INTERSECT ALL": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === givenValue.length;
             // if array of values does not intersect with array column
-            case "NOT INTERSECT": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === 0;
+            case "NOT INTERSECT":
+            case "INTERSECT NONE": return (columnValue || []).filter(l => givenValue.indexOf(l) > -1).length === 0;
             default: return false;
         }
     }

@@ -38,15 +38,16 @@ export class QueryAST {
             fn?: () => Promise<any[]>,
             query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
         } = isObject(query.table) ? {
-            as: (query.table as any).as as any,
-            str: typeof (query.table as any).table === "string" ? (query.table as any).table : undefined,
-            arr: Array.isArray((query.table as any).table) ? (query.table as any).table : undefined,
-            fn: isFunction((query.table as any).table) ? (query.table as any).table : undefined,
-            query: (query.table as any).query
+            as: ((query.table as any).as as any || (typeof (query.table as any).table === "string" ? (query.table as any).table : undefined)) as any,
+            str: (typeof (query.table as any).table === "string" ? (query.table as any).table : undefined) as any,
+            arr: (Array.isArray((query.table as any).table) ? (query.table as any).table : undefined) as any,
+            fn: (isFunction((query.table as any).table) ? (query.table as any).table : undefined) as any,
+            query: (query.table as any).query as any
         } : {
-            str: typeof query.table === "string" ? query.table : undefined,
-            arr: Array.isArray(query.table) ? query.table : undefined,
-            fn: isFunction(query.table) ? query.table : undefined,
+            as: (typeof query.table === "string" ? query.table : undefined) as any,
+            str: (typeof query.table === "string" ? query.table : undefined) as any,
+            arr: (Array.isArray(query.table) ? query.table : undefined) as any,
+            fn: (isFunction(query.table) ? query.table : undefined) as any,
         };
 
         return {
@@ -251,7 +252,7 @@ export class QueryAST {
                 throw new Error(`nSQL: Can't use undefined, null or empty string in WHERE.  Please use 'NULL' string if you're querying for empty rows.`);
             }
 
-            if (["IN", "NOT IN", "INCLUDES", "INCLUDES LIKE", "NOT INCLUDES", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(whereStatement[1]) !== -1 && !Array.isArray(whereStatement[2])) {
+            if (["IN", "NOT IN", "INTERSECT", "INTERSECT ALL", "NOT INTERSECT"].indexOf(whereStatement[1]) !== -1 && !Array.isArray(whereStatement[2])) {
                 throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires an array argument on the right side!`);
             }
 
@@ -259,7 +260,7 @@ export class QueryAST {
                 throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires a regular expression on the right!`);
             }
 
-            if (["BETWEEN", "NOT BETWEEN"].indexOf(whereStatement[1]) !== -1 && (!Array.isArray(whereStatement[2]) || whereStatement[2].length !== 2)) {
+            if (["BETWEEN", "NOT BETWEEN", "INCLUDES BETWEEN"].indexOf(whereStatement[1]) !== -1 && (!Array.isArray(whereStatement[2]) || whereStatement[2].length !== 2)) {
                 throw new Error(`nSQL: '${whereStatement[1]}' WHERE query requires an array argument on the right side of length 2!`);
             }
 
