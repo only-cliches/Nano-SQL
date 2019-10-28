@@ -29,18 +29,18 @@ import {
     customQueryFilter,
     InanoSQLActions,
     InanoSQLFunctionQuery,
-    InanoSQLInstance,
+    InanoSQLInstance, InanoSQLProcessedSort,
     InanoSQLQuery2,
     InanoSQLQueryActions,
     InanoSQLQueryAST,
-    InanoSQLSortBy, InanoSQLWhereStatement,
+    InanoSQLSortBy, InanoSQLWhereQuery, InanoSQLWhereStatement,
     IWhereCondition
 } from "./interfaces";
 import {QueryAST} from "./query2-ast";
 import {QueryPrepare} from "./query2-prepare";
 import {
     adapterFilters,
-    allAsync,
+    allAsync, assign,
     callOnce,
     chainAsync,
     deepGet,
@@ -62,6 +62,9 @@ export interface nanoSQLQueryArgs {
 export interface nanoSQLQueryState {
     perf: {what: string|number, time: number, delta: number, total: number}[],
     savedTables: {[name: string]: any[]};
+    distinctKeys: {[name: string]: boolean};
+    orderByCache: any[];
+    groupByCache: {[key: string]: any};
 }
 
 /**
@@ -87,7 +90,10 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
 
         let queryState: nanoSQLQueryState = {
             perf: [{what: "start", time: Date.now(), delta: 0, total: 0}],
-            savedTables: {}
+            savedTables: {},
+            distinctKeys: {},
+            orderByCache: [],
+            groupByCache: []
         };
 
         const once = callOnce(complete);
@@ -714,11 +720,30 @@ export class nanoSQLQuery2 {
     }
 
     static _describe(query: nanoSQLQueryArgs, args: ActionArgs_describe) {
+        const tableConfig = query.pQuery.db ? query.pQuery.db._tables[query.pQuery.table.str || ""] : undefined;
 
+        if (args) { // describe indexes
+            if (query.pQuery.db && tableConfig) {
+                Object.keys(tableConfig.indexes).forEach((idx, i) => {
+                    query.nextRow(i, tableConfig[idx]);
+                });
+                query.nextRow(-1);
+            }
+        } else { // describe table
+            if (query.pQuery.db && tableConfig) {
+                Object.keys(tableConfig.columns).forEach((idx, i) => {
+                    query.nextRow(i, tableConfig[idx]);
+                });
+                query.nextRow(-1);
+            }
+        }
     }
 
     static _show_tables(query: nanoSQLQueryArgs, args: ActionArgs_show_tables) {
-
+        Object.keys(query.pQuery.db ? query.pQuery.db._tables : {}).forEach((table, i) => {
+            query.nextRow(i, { table: table, id: query.pQuery.db ? query.pQuery.db._tableIds[table] : undefined });
+        });
+        query.nextRow(-1);
     }
 
     static _union(query: nanoSQLQueryArgs, args: ActionArgs_union) {
@@ -734,10 +759,42 @@ export class nanoSQLQuery2 {
     }
 
     static _order(query: nanoSQLQueryArgs, args: ActionArgs_order) {
+        if (!query.pQuery.orderBy) return;
 
+        if (query.inputIndex !== -1) { // load rows before complete
+            query.state.orderByCache.push(query.inputRow);
+        } else { // on complete do orderBy
+            const sorted = nanoSQLQueryUtils.quickSort(query.nSQL, query.pQuery, query.state.orderByCache, args);
+
+            let i = 0;
+            while(i < sorted.length) {
+                query.nextRow(i, sorted[i]);
+                i++;
+            }
+
+            query.state.orderByCache = [];
+
+            query.nextRow(-1);
+        }
     }
 
     static _group(query: nanoSQLQueryArgs, args: ActionArgs_group) {
+
+        if (query.inputIndex !== -1) { // load rows before complete
+            query.state.orderByCache.push(query.inputRow);
+        } else { // on complete do orderBy
+            const sorted = nanoSQLQueryUtils.quickSort(query.nSQL, query.pQuery, query.state.orderByCache, args.groupBy);
+
+            let i = 0;
+            while(i < sorted.length) {
+                query.nextRow(i, sorted[i]);
+                i++;
+            }
+
+            query.state.orderByCache = [];
+
+            query.nextRow(-1);
+        }
 
     }
 
@@ -759,15 +816,41 @@ export class nanoSQLQuery2 {
 
     static _filter_arr(query: nanoSQLQueryArgs, args: ActionArgs_filter_arr) {
 
+        if (query.inputIndex === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
+        if (nanoSQLQueryUtils._where(query.nSQL, query.pQuery, query.inputRow, args)) {
+            query.nextRow(query.inputIndex, query.inputRow);
+        }
     }
 
     static _filter_fn(query: nanoSQLQueryArgs, args: ActionArgs_filter_fn) {
+
+        if (query.inputIndex === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
         if (args(query.inputRow, query.inputIndex)) {
             query.nextRow(query.inputIndex, query.inputRow);
         }
     }
 
     static _distinct(query: nanoSQLQueryArgs, args: ActionArgs_distinct) {
+
+        if (query.inputIndex === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
+        const key = nanoSQLQueryUtils._generateDistinctKey(query.nSQL, query.pQuery, query.inputRow, args);
+
+        if (!query.state.distinctKeys[key]) {
+            query.nextRow(query.inputIndex, query.inputRow);
+            query.state.distinctKeys[key] = true;
+        }
 
     }
 
@@ -814,16 +897,44 @@ export class nanoSQLQueryUtils {
 
     }
 
-    static quickSort(arr: any[], columns: InanoSQLSortBy): any[] {
+    static quickSort(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, arr: any[], columns: InanoSQLProcessedSort[]): any[] {
+
+        // if just 1 column to sort by, we can do standard javascript sort
+        if (columns.length <= 1) return arr.sort((a, b) => {
+            const colVal = columns[0];
+            if (typeof colVal.value !== "string") {
+                const a1 = this._doFunction(nSQL, query, colVal.value, a);
+                const b1 = this._doFunction(nSQL, query, colVal.value, b);
+                if (a1 === b1) return 0;
+                return (a1 > b1 ? 1 : -1) * (colVal.dir === "desc" ? -1 : 1);
+            } else {
+                const a1 = deepGet(colVal.value as string, a);
+                const b1 = deepGet(colVal.value as string, b);
+                if (a1 === b1) return 0;
+                return (a1 > b1 ? 1 : -1) * (colVal.dir === "desc" ? -1 : 1);
+            }
+        });
+
+        // if more than 1 column, need to do quick sort algorithm to get consistent results
 
         if (arr.length < 2) return arr;
 
         const pivotPoint = Math.floor(Math.random() * arr.length);
 
         const getValues = (row): {v: any, d: "ASC"|"DESC"}[] => {
-            return columns.sort.reduce((prev, cur, i) => {
-                const result = cur.fn ? execFunction(this.query, cur.fn, row, { result: undefined }).result : deepGet(cur.path, row);
-                prev.push({v: result, d: String(cur.dir).toUpperCase()});
+            return columns.reduce((prev, cur) => {
+                if (typeof cur.value !== "string" && cur.value._nSQL) { // function on orderby column
+                    prev.push({
+                        d: cur.dir,
+                        v: this._doFunction(nSQL, query, cur.value, row)
+                    })
+                } else { // not a function
+                    prev.push({
+                        d: cur.dir,
+                        v: deepGet(cur.value as string, row)
+                    })
+                }
+
                 return prev;
             }, [] as any[]);
         }
@@ -858,42 +969,28 @@ export class nanoSQLQueryUtils {
             }
         }
 
-        return this.quickSort(left, columns).concat(equal).concat(this.quickSort(right, columns));
+        return this.quickSort(nSQL, query, left, columns).concat(equal).concat(this.quickSort(nSQL, query, right, columns));
     }
 
-    static _sortObj(objA: any, objB: any, columns: InanoSQLSortBy): number {
-        return columns.sort.reduce((prev, cur) => {
-            const A = cur.fn ? execFunction(this.query, cur.fn, objA, { result: undefined }).result : deepGet(cur.path, objA);
-            const B = cur.fn ? execFunction(this.query, cur.fn, objB, { result: undefined }).result : deepGet(cur.path, objB);
+    static _where(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, singleRow: any, where: InanoSQLWhereQuery): boolean {
 
-            if (A === B) return 0;
-            if (!prev) {
-                return (A > B ? 1 : -1) * (cur.dir === "DESC" ? -1 : 1);
-            } else {
-                return prev;
-            }
-        }, 0);
-    }
-
-    static _where(singleRow: any, where: (IWhereCondition | string | (IWhereCondition | string)[])[]): boolean {
-
-        if (where.length > 1) { // compound where statements
-
+        if (where.STMT) { // bottom of nested WHERE
+            return this._compare(nSQL, query, where.STMT, singleRow);
+        } else if (where.NESTED) {
             let prevCondition: string = "AND";
-            let matches = true;
             let idx = 0;
-            while (idx < where.length) {
-                const wArg = where[idx];
-                if (idx % 2 === 1) {
-                    prevCondition = wArg as string;
-                } else {
+            let matches = true;
 
+            while(idx < where.NESTED.length) {
+                if (idx % 2 === 1) { // AND/OR
+                    prevCondition = where.NESTED[idx].ANDOR as string;
+                } else {
                     let compareResult = false;
 
-                    if (Array.isArray(wArg)) { // nested where
-                        compareResult = this._where(singleRow, wArg as any);
+                    if (where.NESTED[idx].NESTED) { // further nesting
+                        compareResult = this._where(nSQL, query, singleRow, where.NESTED[idx]);
                     } else {
-                        compareResult = this._compare(wArg as IWhereCondition, singleRow);
+                        compareResult = this._compare(nSQL, query, where.NESTED[idx].STMT as InanoSQLWhereStatement, singleRow);
                     }
 
                     if (idx === 0) {
@@ -909,10 +1006,27 @@ export class nanoSQLQueryUtils {
                 idx++;
             }
             return matches;
-
-        } else { // single where statement
-            return this._compare(where[0] as IWhereCondition, singleRow);
         }
+
+        return false;
+    }
+
+    static _generateDistinctKey = (nSQL: InanoSQLInstance, query: InanoSQLQueryAST, row: any, arg: ActionArgs_distinct): string => {
+        return arg.reduce((prev, cur) => {
+            if (typeof cur === "string") {
+                return prev + JSON.stringify(deepGet(cur, row) || {});
+            } else {
+                return prev + JSON.stringify(nanoSQLQueryUtils._doFunction(nSQL, query, cur, row) || {});
+            }
+        }, "") as string;
+    }
+
+    static _doFunction(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, call: InanoSQLFunctionQuery, row: any) {
+        const fn = nSQL.functions[call.name];
+        if (!fn) {
+            throw new Error(`nSQL: Function ${call.name} not found!`);
+        }
+        return fn.call(query, row, fn.aggregateStart as any, ...call.args);
     }
 
     static _likeCache: { [likeQuery: string]: RegExp } = {};
@@ -942,16 +1056,23 @@ export class nanoSQLQueryUtils {
         return columnValue.match(this._likeCache[givenValue]) !== null;
     }
 
-    static _getColValue(where: IWhereCondition, wholeRow: any): any {
-        const value = where.fnString ? execFunction(this.query, where.fnString, wholeRow, { result: undefined }).result : deepGet(where.col as string, wholeRow);
-        return where.type === "date" ? (Array.isArray(value) ? value.map(s => maybeDate(s)) : maybeDate(value)) : value;
-    }
+    static _compare(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, where: InanoSQLWhereStatement, wholeRow: any): boolean {
 
-    static _compare(where: InanoSQLWhereStatement, wholeRow: any): boolean {
+        const columnValue = typeof where[0] === "string" ? deepGet(where[0], wholeRow) : this._doFunction(nSQL, query, where[0], wholeRow);
 
-        const columnValue = this._getColValue(where, wholeRow);
-        const givenValue = where.value as any;
-        const compare = where.comp;
+        const givenValue = (() => {
+            // function call
+            if (where[2] && where[2]._nSQL && where[2]._nSQL === nSQL) return this._doFunction(nSQL, query, where[2], wholeRow);
+            if (where[2] && Array.isArray(where[2])) {
+                return where[2].map(v => {
+                    if (v && v._nSQL && v._nSQL === nSQL) return this._doFunction(nSQL, query, v, wholeRow);
+                    return v;
+                });
+            }
+            return where[2];
+        })();
+
+        const compare = where[1];
 
         if (givenValue === "NULL" || givenValue === "NOT NULL") {
             const isNull = [undefined, null, ""].indexOf(columnValue) !== -1;

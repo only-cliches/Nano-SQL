@@ -58,15 +58,20 @@ export class QueryAST {
             throw new Error(`nSQL: Upsert query can only have one data object when using WHERE argument!`);
         }
 
+        const selectArgs = action === "select" && query.actionArgs ? QueryAST.select(nSQL, query.actionArgs) : undefined;
+
+        const hasAggrFn = selectArgs ? this.hasAggrFn(nSQL, selectArgs) : false;
+
         return {
             dbId: query.databaseID || "",
             parent: nSQL,
             table: tableObj,
             db: query.databaseID ? nSQL.getDB(query.databaseID) : (Object.keys(nSQL.dbs).length ? nSQL.dbs[Object.keys(nSQL.dbs)[0]] : undefined),
             action: action,
+            hasAggrFn: hasAggrFn,
             args: {
                 raw: query.actionArgs,
-                select: action === "select" && query.actionArgs ? QueryAST.select(nSQL, query.actionArgs) : undefined,
+                select: selectArgs,
             },
             where: QueryAST.where(nSQL, query.where),
             originalWhere: query.where as any[],
@@ -81,6 +86,31 @@ export class QueryAST {
             updateImmutable: query.updateImmutable,
             union: query.union
         };
+    }
+
+    static hasAggrFn(nSQL: InanoSQLInstance, select: {as?: string, value: (string | InanoSQLFunctionQuery)}[]): boolean {
+
+        // only checks top level of SELECT arguments
+        let hasAggr = false;
+
+        let i = 0;
+        while(i < select.length && hasAggr === false) {
+            const selectArg = select[i];
+            if (typeof selectArg.value !== "string") { // function in SELECT
+                const fnName = selectArg.value.name;
+                const fnOpts = nSQL.functions[fnName];
+                if (!fnOpts) {
+                    throw new Error(`Function ${fnName} not found!`);
+                }
+                if (fnOpts.type === "A") {
+                    hasAggr = true;
+                }
+            }
+            i++;
+        }
+
+        return hasAggr;
+
     }
 
     /**
@@ -180,13 +210,16 @@ export class QueryAST {
         if (typeof functionString !== "string") return "";
 
         const end = functionString.lastIndexOf(")");
-    
-        
-        const start = functionString.indexOf("(")
+
+        const start = functionString.indexOf("(");
     
         // no functions in this string
         if (start === -1 && end === -1) return functionString;
-        
+
+        // escape parentheses
+        if (start !== -1 && functionString[start - 1] === "\\") return functionString;
+        if (end !== -1 && functionString[end - 1] === "\\") return functionString;
+
         // parentheses don't having matching pairs
         if (start === -1 || end === -1) {
             throw new Error("nSQL: " + functionString + " has no matching parentheses!");
@@ -231,7 +264,8 @@ export class QueryAST {
     
         return {
             name: functionName,
-            args: processedArgs
+            args: processedArgs,
+            _nSQL: nSQL
         }
     }
 
@@ -247,7 +281,7 @@ export class QueryAST {
 
         // prevent undefined behavior
         if (Array.isArray(whereStatement) !== true) {
-            throw new Error("Attempted to pass non array value into where array processing!");
+            throw new Error("nSQL: Attempted to pass non array value into where array processing!");
         }
     
         if (typeof whereStatement[0] === "string") { // bottom of nested structure
@@ -280,7 +314,14 @@ export class QueryAST {
                 STMT: [
                     QueryAST.functionString(nSQL, whereStatement[0]), // maybe function or string
                     whereStatement[1], // should be string of LIKE, =, !=, etc
-                    typeof whereStatement[2] === "string" ? QueryAST.functionString(nSQL, whereStatement[2]) : whereStatement[2] // could be string, function string or anything else
+                    (() => { // could be string, function string, array of function strings or anything else
+                        if (typeof whereStatement[2] === "string") {
+                            return QueryAST.functionString(nSQL, whereStatement[2]);
+                        } else if (Array.isArray(whereStatement[2])) {
+                            return whereStatement[2].map(s => typeof s === "string" ? QueryAST.functionString(nSQL, s) : s);
+                        }
+                        return whereStatement[2]
+                    })()
                 ]
             }
         } else {

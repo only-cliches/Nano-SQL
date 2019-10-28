@@ -33,7 +33,7 @@ export class QueryPrepare {
      */
     static prepare(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): InanoSQLQueryActions[] {
 
-        const queryWillSelect = ["select", "upsert", "delete", "rebuild indexes", "conform rows", "clone"].indexOf(pQuery.action) !== -1;
+        const queryWillSelect = ["select", "upsert", "delete", "rebuild indexes", "conform rows", "clone"].indexOf(pQuery.action) !== -1 && !pQuery.union;
         const isSelect = pQuery.action === "select";
 
         const queryProcess: {
@@ -43,8 +43,6 @@ export class QueryPrepare {
         } = queryWillSelect ? this.resolveSelectActions(nSQL, pQuery) : {actions: [], alreadyOrderBy: false, alreadyRange: false};
 
         if (queryWillSelect) {
-
-            const hasAggregateFn: boolean = isSelect && this.hasAggrFn(nSQL, pQuery);
 
             if (isSelect) {
                 if (pQuery.union) {
@@ -72,14 +70,22 @@ export class QueryPrepare {
                 }
 
                 if (pQuery.groupBy) {
-                    queryProcess.actions.push({
-                        do: InanoSQLActions.group,
-                        name: "Group By",
-                        args: {
-                            groupBy: pQuery.groupBy,
-                            reduce: hasAggregateFn && pQuery.args.select ? pQuery.args.select : undefined
-                        }
-                    })
+                    if (pQuery.hasAggrFn && pQuery.args.select) {
+                        queryProcess.actions.push({
+                            do: InanoSQLActions.group,
+                            name: "Group By",
+                            args: {
+                                groupBy: pQuery.groupBy,
+                                reduce: pQuery.args.select
+                            }
+                        })
+                    } else {
+                        queryProcess.actions.push({
+                            do: InanoSQLActions.order,
+                            name: "Order By",
+                            args: pQuery.groupBy
+                        })
+                    }
                 }
 
                 if (pQuery.distinct) {
@@ -653,34 +659,6 @@ export class QueryPrepare {
     }
 
 
-    static hasAggrFn(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): boolean {
-        if (pQuery.args.select && pQuery.args.select.length) {
 
-            // only checks top level of SELECT arguments
-            let hasAggr = false;
-
-            let i = 0;
-            while(i < pQuery.args.select.length && hasAggr === false) {
-                const selectArg = pQuery.args.select[i];
-                if (typeof selectArg.value !== "string") { // function in SELECT
-                    const fnName = selectArg.value.name;
-                    const fnOpts = nSQL.functions[fnName];
-                    if (!fnOpts) {
-                        throw new Error(`Function ${fnName} not found!`);
-                    }
-                    if (fnOpts.type === "A") {
-                        hasAggr = true;
-                    }
-                }
-                i++;
-            }
-
-            return hasAggr;
-
-
-        } else {
-            return false;
-        }
-    }
 
 }

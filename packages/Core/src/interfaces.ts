@@ -1062,6 +1062,7 @@ export interface configTableSystemFilter extends abstractFilter {
 export interface InanoSQLQueryAST {
     dbId: string;
     parent: InanoSQLInstance,
+    hasAggrFn: boolean;
     table: {
         as?: string;
         str?: string,
@@ -1092,6 +1093,7 @@ export interface InanoSQLQueryAST {
 export interface InanoSQLFunctionQuery {
     name: string,
     args: (string | InanoSQLFunctionQuery)[]
+    _nSQL: InanoSQLInstance
 }
 
 export interface InanoSQLProcessedSort {
