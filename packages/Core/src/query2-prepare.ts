@@ -33,25 +33,33 @@ export class QueryPrepare {
      */
     static prepare(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): InanoSQLQueryActions[] {
 
-        const queryWillSelect = ["select", "upsert", "delete", "rebuild indexes", "conform rows", "clone"].indexOf(pQuery.action) !== -1 && !pQuery.union;
+        const queryWillSelect = ["select", "upsert", "delete", "rebuild indexes", "conform rows", "clone"].indexOf(pQuery.action) !== -1;
         const isSelect = pQuery.action === "select";
 
         const queryProcess: {
             actions: InanoSQLQueryActions[];
             alreadyOrderBy: boolean;
             alreadyRange: boolean;
-        } = queryWillSelect ? this.resolveSelectActions(nSQL, pQuery) : {actions: [], alreadyOrderBy: false, alreadyRange: false};
+            alreadyGroupBy: boolean;
+        } = queryWillSelect && !pQuery.union ? this.resolveSelectActions(nSQL, pQuery) : {actions: [], alreadyOrderBy: false, alreadyRange: false, alreadyGroupBy: false};
+
+        if (isSelect && pQuery.union) {
+            queryProcess.actions.push({
+                do: InanoSQLActions.union,
+                name: "Union",
+                args: {
+                    ...pQuery.union,
+                    type: pQuery.union || "distinct"
+                }
+            })
+        }
 
         if (queryWillSelect) {
 
+            let didSelectAS = false;
+            let flatten = true;
+
             if (isSelect) {
-                if (pQuery.union) {
-                    queryProcess.actions.push({
-                        do: InanoSQLActions.union,
-                        name: "Union",
-                        args: pQuery.union
-                    })
-                }
 
                 if (pQuery.graph) {
                     queryProcess.actions.push({
@@ -67,25 +75,41 @@ export class QueryPrepare {
                         name: "Join",
                         args: pQuery.join
                     });
+                    pQuery.join.forEach((j) => {
+                        if (j.flatten === false) {
+                            flatten = false;
+                        }
+                    });
                 }
 
                 if (pQuery.groupBy) {
-                    if (pQuery.hasAggrFn && pQuery.args.select) {
+                    if (!queryProcess.alreadyGroupBy) {
+                        queryProcess.actions.push({
+                            do: InanoSQLActions.order,
+                            name: "Order By (from Group By)",
+                            args: pQuery.groupBy
+                        })
+                    }
+                    if (pQuery.hasAggrFn) {
+                        didSelectAS = true;
                         queryProcess.actions.push({
                             do: InanoSQLActions.group,
                             name: "Group By",
                             args: {
                                 groupBy: pQuery.groupBy,
-                                reduce: pQuery.args.select
+                                reduce: pQuery.args.select || []
                             }
                         })
-                    } else {
-                        queryProcess.actions.push({
-                            do: InanoSQLActions.order,
-                            name: "Order By",
-                            args: pQuery.groupBy
-                        })
                     }
+                }
+
+                if (pQuery.args.select && pQuery.args.select.length && didSelectAS === false) {
+                    didSelectAS = true;
+                    queryProcess.actions.push({
+                        do: InanoSQLActions.functions,
+                        name: "Functions & AS",
+                        args: pQuery.args.select ? pQuery.args.select : undefined
+                    })
                 }
 
                 if (pQuery.distinct) {
@@ -93,14 +117,6 @@ export class QueryPrepare {
                         do: InanoSQLActions.distinct,
                         name: "Distinct",
                         args: pQuery.distinct
-                    })
-                }
-
-                if (pQuery.args.select && pQuery.args.select.length) {
-                    queryProcess.actions.push({
-                        do: InanoSQLActions.functions,
-                        name: "Functions & AS",
-                        args: pQuery.args.select ? pQuery.args.select : undefined
                     })
                 }
 
@@ -127,6 +143,14 @@ export class QueryPrepare {
                         args: pQuery.having.eval
                     })
                 }
+            }
+
+            if (isSelect && pQuery.join && !didSelectAS && flatten) {
+                queryProcess.actions.push({
+                    do: InanoSQLActions.flatten,
+                    name: "Flatten Rows",
+                    args: pQuery.join
+                })
             }
 
             if (pQuery.range && pQuery.range.length && !queryProcess.alreadyRange) {
@@ -256,7 +280,7 @@ export class QueryPrepare {
      * @param nSQL
      * @param pQuery
      */
-    static resolveSelectActions(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): {actions: InanoSQLQueryActions[], alreadyOrderBy: boolean, alreadyRange: boolean} {
+    static resolveSelectActions(nSQL: InanoSQLInstance, pQuery: InanoSQLQueryAST): {actions: InanoSQLQueryActions[], alreadyOrderBy: boolean, alreadyRange: boolean, alreadyGroupBy: boolean} {
 
         if ([pQuery.table.str, pQuery.table.fn, pQuery.table.query].filter(f => f).length > 1) {
             throw new Error("nSQL: Can't select more than one table at a time!");
@@ -299,7 +323,8 @@ export class QueryPrepare {
             return {
                 actions: actions,
                 alreadyOrderBy: false,
-                alreadyRange: false
+                alreadyRange: false,
+                alreadyGroupBy: false
             };
 
         } else if (pQuery.table.query) { // external database reference
@@ -325,14 +350,15 @@ export class QueryPrepare {
             return {
                 actions: actions,
                 alreadyRange: true,
-                alreadyOrderBy: true
+                alreadyOrderBy: true,
+                alreadyGroupBy: false
             }
 
         } else { // local database
 
             const actions: InanoSQLQueryActions[] = [];
 
-            const fullTableScan = (didSort?: boolean, reverse?: boolean, range?: [number, number]) => {
+            const fullTableScan = (didSort?: boolean, didGroupBy?: boolean, reverse?: boolean, range?: [number, number]) => {
                 actions.push({
                     do: InanoSQLActions.select_pk,
                     name: "Select By Primary Key",
@@ -360,7 +386,7 @@ export class QueryPrepare {
                     }
                 }
 
-                return {actions: actions, alreadyOrderBy: didSort || false, alreadyRange: range ? true : false};
+                return {actions: actions, alreadyOrderBy: didSort || false, alreadyRange: range ? true : false, alreadyGroupBy: didGroupBy || false};
             }
 
 
@@ -402,6 +428,7 @@ export class QueryPrepare {
                     }
 
                     let didOrderBy = false;
+                    let didGroupBy = false;
 
                     if (whereIndexes.length === 1) { // single where statement
 
@@ -414,7 +441,7 @@ export class QueryPrepare {
                             }
                         };
 
-                        if (pQuery.orderBy && pQuery.orderBy.length === 1) {
+                        if (pQuery.orderBy && pQuery.orderBy.length === 1) { // can we handle order by on key select?
                             if (typeof pQuery.orderBy[0].value === "string") {
                                 const col = resolvePath(pQuery.orderBy[0].value);
                                 if (objectsEqual(col, whereIndexes[0].value)) {
@@ -424,15 +451,24 @@ export class QueryPrepare {
                                     }
                                 }
                             }
-                        } else if (!pQuery.orderBy) {
-                            didOrderBy = true;
+                        } else if (pQuery.groupBy && pQuery.groupBy.length === 1) { // can we handle group by on key select?
+                            if (typeof pQuery.groupBy[0].value === "string") {
+                                const col = resolvePath(pQuery.groupBy[0].value);
+                                if (objectsEqual(col, whereIndexes[0].value)) {
+                                    didGroupBy = true;
+                                    if (pQuery.groupBy[0].dir === "desc") {
+                                        pkAction.args.reverse = true;
+                                    }
+                                }
+                            }
                         }
 
 
                         return {
                             actions: [pkAction],
                             alreadyRange: false,
-                            alreadyOrderBy: didOrderBy
+                            alreadyOrderBy: didOrderBy,
+                            alreadyGroupBy: didGroupBy
                         };
 
                     } else { // compound where statement
@@ -480,8 +516,16 @@ export class QueryPrepare {
                                                 }
                                             }
                                         }
-                                    } else if (!pQuery.orderBy) {
-                                        didOrderBy = true;
+                                    } else if (pQuery.groupBy && pQuery.groupBy.length === 1) { // can we handle group by on key select?
+                                        if (typeof pQuery.groupBy[0].value === "string") {
+                                            const col = resolvePath(pQuery.groupBy[0].value);
+                                            if (objectsEqual(col, whereIndex.value)) {
+                                                didGroupBy = true;
+                                                if (pQuery.groupBy[0].dir === "desc") {
+                                                    pkAction.args.reverse = true;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 compoundAction.args.where.push(pkAction);
@@ -493,18 +537,20 @@ export class QueryPrepare {
                         return {
                             actions: slowAction.length ? [compoundAction, {do: InanoSQLActions.filter_arr, name: "Filter By Array", args: {NESTED: slowAction}}] : [compoundAction],
                             alreadyRange: false,
-                            alreadyOrderBy: didOrderBy
+                            alreadyOrderBy: didOrderBy,
+                            alreadyGroupBy: didGroupBy
                         };
                     }
                 }
             } else {
                 // no WHERE statement
 
-                if (pQuery.action === "upsert") {
+                if (pQuery.action === "upsert") { // upsert query without WHERE, don't select anything just insert
                     return {
                         actions: [],
                         alreadyOrderBy: false,
-                        alreadyRange: false
+                        alreadyRange: false,
+                        alreadyGroupBy: false
                     }
                 }
 
@@ -516,6 +562,7 @@ export class QueryPrepare {
 
                     let didOrderBy = false;
                     let didRange = false;
+                    let didGroupBy = false;
 
                     if (tableData) {
                         if (pQuery.orderBy && pQuery.orderBy.length === 1) {
@@ -560,16 +607,50 @@ export class QueryPrepare {
                                     })
                                 }
                             }
-                        } else if (!pQuery.orderBy) {
-                            // no order by
-                            selectActions.push({
-                                do: InanoSQLActions.select_pk,
-                                name: "Select by Primary Key",
-                                args: {}
-                            })
-                            didOrderBy = true;
+                        } else if (pQuery.groupBy && pQuery.groupBy.length === 1) {
+                            if (typeof pQuery.groupBy[0].value === "string") {
+                                const col = resolvePath(pQuery.groupBy[0].value);
+                                if (objectsEqual(col, tableData.pkCol)) { // possibly order by primary key
+                                    didGroupBy = true;
+                                    if (pQuery.groupBy[0].dir === "desc") {
+                                        selectActions.push({
+                                            do: InanoSQLActions.select_pk,
+                                            name: "Select by Primary Key",
+                                            args: {reverse: true}
+                                        })
+                                    } else {
+                                        selectActions.push({
+                                            do: InanoSQLActions.select_pk,
+                                            name: "Select by Primary Key",
+                                            args: {}
+                                        })
+                                    }
+                                } else { // possibly group by index
+                                    Object.keys(tableData.indexes).forEach((key) => {
+                                        if (selectActions.length) return;
+
+                                        const index = tableData.indexes[key];
+                                        if (objectsEqual(col, index.path)) { // order by primary key
+                                            didGroupBy = true;
+                                            if ((pQuery.groupBy as any)[0].dir === "desc") {
+                                                selectActions.push({
+                                                    do: InanoSQLActions.select_index,
+                                                    name: "Select by Index",
+                                                    args: {reverse: true, index: index}
+                                                })
+                                            } else {
+                                                selectActions.push({
+                                                    do: InanoSQLActions.select_index,
+                                                    name: "Select by Index",
+                                                    args: {index: index}
+                                                })
+                                            }
+                                        }
+                                    })
+                                }
+                            }
                         } else {
-                            // arbitrary order by
+                            // arbitrary order by or arbitrary group by
                             selectActions.push({
                                 do: InanoSQLActions.select_pk,
                                 name: "Select by Primary Key",
@@ -590,7 +671,8 @@ export class QueryPrepare {
                                 args: {}
                             }],
                             alreadyOrderBy: didOrderBy,
-                            alreadyRange: didRange
+                            alreadyRange: didRange,
+                            alreadyGroupBy: didGroupBy
                         }
                     }
 
@@ -601,7 +683,7 @@ export class QueryPrepare {
 
             }
 
-            return {actions: [], alreadyOrderBy: false, alreadyRange: false};
+            return {actions: [], alreadyOrderBy: false, alreadyRange: false, alreadyGroupBy: false};
         }
     }
 

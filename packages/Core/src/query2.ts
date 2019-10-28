@@ -32,7 +32,7 @@ import {
     InanoSQLInstance, InanoSQLProcessedSort,
     InanoSQLQuery2,
     InanoSQLQueryActions,
-    InanoSQLQueryAST,
+    InanoSQLQueryAST, InanoSQLSelectTable,
     InanoSQLSortBy, InanoSQLWhereQuery, InanoSQLWhereStatement,
     IWhereCondition
 } from "./interfaces";
@@ -43,10 +43,10 @@ import {
     allAsync, assign,
     callOnce,
     chainAsync,
-    deepGet,
-    execFunction,
+    deepGet, deepSet,
+    execFunction, isFunction, isObject,
     maybeDate,
-    objectsEqual
+    objectsEqual, QueryArguments
 } from "./utilities";
 
 
@@ -64,7 +64,9 @@ export interface nanoSQLQueryState {
     savedTables: {[name: string]: any[]};
     distinctKeys: {[name: string]: boolean};
     orderByCache: any[];
-    groupByCache: {[key: string]: any};
+    groupByCache: {[key: string]: {fnValue: any, rowValue: any}[]};
+    groupByLastKey?: string;
+    unionKeyCache: {[key: string]: boolean};
 }
 
 /**
@@ -93,7 +95,9 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
             savedTables: {},
             distinctKeys: {},
             orderByCache: [],
-            groupByCache: []
+            groupByCache: {},
+            groupByLastKey: undefined,
+            unionKeyCache: {}
         };
 
         const once = callOnce(complete);
@@ -154,6 +158,9 @@ export class nanoSQLQuery2 {
         };
 
         switch(action.do) {
+            case InanoSQLActions.flatten:
+                nanoSQLQuery2._flatten(queryArgs, action.args);
+                break;
             case InanoSQLActions.select_arr:
                 nanoSQLQuery2._select_arr(queryArgs, action.args);
                 break;
@@ -707,18 +714,6 @@ export class nanoSQLQuery2 {
         }
     }
 
-    static _drop_table(query: nanoSQLQueryArgs, args: ActionArgs_drop_table) {
-
-    }
-
-    static _create_table(query: nanoSQLQueryArgs, args: ActionArgs_create_table) {
-
-    }
-
-    static _alter_table(query: nanoSQLQueryArgs, args: ActionArgs_alter_table) {
-
-    }
-
     static _describe(query: nanoSQLQueryArgs, args: ActionArgs_describe) {
         const tableConfig = query.pQuery.db ? query.pQuery.db._tables[query.pQuery.table.str || ""] : undefined;
 
@@ -747,7 +742,139 @@ export class nanoSQLQuery2 {
     }
 
     static _union(query: nanoSQLQueryArgs, args: ActionArgs_union) {
+        let k = 0;
+        let j = 0;
+        let hasError = false;
+        let pkCol: string[] = [];
 
+        const getTable = () => {
+            if (hasError) return;
+
+            if (k >= args.tables.length - 1) {
+                query.nextRow(-1);
+                return;
+            }
+
+            const nextTable = args.tables[k] as any;
+
+            if (nextTable && nextTable.parent === query.nSQL) {
+                const table = nextTable as InanoSQLQuery2;
+
+            } else if (nextTable && typeof nextTable === "string") {
+                const table = nextTable as string;
+
+                if (!pkCol.length) {
+                    const tableID = query.pQuery.db ? query.pQuery.db._tableIds[table] : undefined;
+                    const tableConfig = query.pQuery.db ? query.pQuery.db._tables[tableID || ""] : undefined;
+                    if (!tableID || !tableConfig) return;
+
+                    pkCol = tableConfig.pkCol;
+                }
+
+                this._select_pk({
+                    ...query,
+                    nextRow: nextRow
+                }, {
+                    as: table,
+                    table: table
+                });
+
+            } else if (nextTable && Array.isArray(nextTable)) {
+                const table = nextTable as any[];
+
+                this._select_arr({
+                    ...query,
+                    nextRow: nextRow
+                }, {table: nextTable, as: ""});
+
+            } else if (nextTable && isFunction(nextTable)) {
+                const table = nextTable as (() => Promise<any[]>);
+
+                this._select_fn({
+                    ...query,
+                    nextRow: nextRow
+                }, {table: nextTable, as: ""});
+
+            } else if (nextTable && isObject(nextTable)) {
+                const table = nextTable as {as?: string, table?: (string | any[] | (() => Promise<any[]> )), query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void};
+
+                if (table.table && typeof table.table === "string") {
+
+                    if (!pkCol.length) {
+                        const tableID = query.pQuery.db ? query.pQuery.db._tableIds[table.table] : undefined;
+                        const tableConfig = query.pQuery.db ? query.pQuery.db._tables[tableID || ""] : undefined;
+                        if (!tableID || !tableConfig) return;
+
+                        pkCol = tableConfig.pkCol;
+                    }
+
+                    this._select_pk({
+                        ...query,
+                        nextRow: nextRow
+                    }, {
+                        as: table.as || table.table,
+                        table: table.table
+                    });
+
+                } else if (table.table && Array.isArray(table.table)) {
+                    this._select_arr({
+                        ...query,
+                        nextRow: nextRow
+                    }, {table: table.table, as: table.as || ""});
+                } else if (table.table && isFunction(table.table)) {
+                    this._select_fn({
+                        ...query,
+                        nextRow: nextRow
+                    }, {table: table.table as any, as: table.as || ""});
+                } else if (table.query) {
+                    table.query(new QueryArguments(table.as || ""), (row, i) => {
+                        nextRow(i, row);
+                    }, (err) => {
+                        nextRow(-1, undefined, err);
+                    });
+                }
+
+            } else {
+                query.nextRow(-1, undefined, Error(`nSQL: Union not able to resolve table to select!`));
+            }
+
+        }
+
+        getTable();
+
+        const nextRow = (i: number, row: any, err?: Error) => {
+            if (hasError) return;
+
+            if (err) {
+                query.nextRow(-1, undefined, err);
+                hasError = true;
+                return;
+            }
+            if (i === -1) {
+                k++;
+                getTable();
+                return;
+            }
+
+            if (args.type == "all") {
+                query.nextRow(j, row);
+                j++;
+            } else {
+                if (pkCol.length === 0 && !args.distinctKey) {
+                    hasError = true;
+                    query.nextRow(-1, undefined, Error(`nSQL: Union cannot resolve Distinct key path automatically!`));
+                    return;
+                }
+
+                const dKey = String(deepGet(args.distinctKey || pkCol, row));
+
+                if (!query.state.distinctKeys[dKey]) {
+                    query.state.distinctKeys[dKey] = true;
+                    query.nextRow(j, row);
+                    j++;
+                }
+            }
+        }
     }
 
     static _graph(query: nanoSQLQueryArgs, args: ActionArgs_graph) {
@@ -762,8 +889,11 @@ export class nanoSQLQuery2 {
         if (!query.pQuery.orderBy) return;
 
         if (query.inputIndex !== -1) { // load rows before complete
+
             query.state.orderByCache.push(query.inputRow);
+
         } else { // on complete do orderBy
+
             const sorted = nanoSQLQueryUtils.quickSort(query.nSQL, query.pQuery, query.state.orderByCache, args);
 
             let i = 0;
@@ -780,26 +910,123 @@ export class nanoSQLQuery2 {
 
     static _group(query: nanoSQLQueryArgs, args: ActionArgs_group) {
 
-        if (query.inputIndex !== -1) { // load rows before complete
-            query.state.orderByCache.push(query.inputRow);
-        } else { // on complete do orderBy
-            const sorted = nanoSQLQueryUtils.quickSort(query.nSQL, query.pQuery, query.state.orderByCache, args.groupBy);
 
-            let i = 0;
-            while(i < sorted.length) {
-                query.nextRow(i, sorted[i]);
-                i++;
+        if (query.inputIndex !== -1) {
+
+            const groupByKey = args.groupBy.map(k => {
+                return String(typeof k.value === "string" ? deepGet(k.value, query.inputRow) : nanoSQLQueryUtils._doFunction(query.nSQL, query.pQuery, k.value, query.inputRow).result);
+            }).join(".");
+
+            // previous group is finished (We're on a new group now)
+            if (query.state.groupByLastKey !== undefined && groupByKey !== query.state.groupByLastKey) {
+
+                const lastKey = query.state.groupByLastKey;
+
+                query.nextRow(Object.keys(query.state.groupByCache).length - 1, query.state.groupByCache[lastKey].reduce((prev, cur, i) => {
+
+                    const a = args.reduce[i];
+
+                    if (a.as && a.as.length) {
+                        prev[a.as] = cur.fnValue || cur.rowValue;
+                    } else {
+                        prev[a.original] = cur.fnValue || cur.rowValue;
+                    }
+
+                    return prev;
+
+                }, {} as any));
+
+                // clear memory
+                query.state.groupByCache[lastKey] = [];
             }
 
-            query.state.orderByCache = [];
+            query.state.groupByLastKey = groupByKey;
+
+
+            if (!query.state.groupByCache[groupByKey]) {
+
+                query.state.groupByCache[groupByKey] = args.reduce.map(a => {
+                    return {
+                        fnValue: typeof a.value !== "string" ? nanoSQLQueryUtils._doFunction(query.nSQL, query.pQuery, a.value, query.inputRow) : undefined,
+                        rowValue: typeof a.value === "string" ? deepGet(a.value, query.inputRow) : undefined
+                    }
+                })
+            } else {
+                query.state.groupByCache[groupByKey] = query.state.groupByCache[groupByKey].map((v, i) => {
+                    const a = args.reduce[i];
+
+                    return {
+                        fnValue: typeof a.value !== "string" ? nanoSQLQueryUtils._doFunction(query.nSQL, query.pQuery, a.value, query.inputRow, v.fnValue) : undefined,
+                        rowValue: typeof a.value === "string" ? deepGet(a.value, query.inputRow) : undefined
+                    }
+                });
+            }
+
+        } else {
+            // last row
+            if(query.state.groupByLastKey && query.state.groupByCache[query.state.groupByLastKey] && query.state.groupByCache[query.state.groupByLastKey].length) {
+                const lastKey = query.state.groupByLastKey;
+
+                query.nextRow(Object.keys(query.state.groupByCache).length - 1, query.state.groupByCache[lastKey].reduce((prev, cur, i) => {
+
+                    const a = args.reduce[i];
+
+                    if (a.as && a.as.length) {
+                        prev[a.as] = cur.fnValue ? cur.fnValue.result : cur.rowValue;
+                    } else {
+                        prev = deepSet(a.original, prev, cur.fnValue ? cur.fnValue.result : cur.rowValue);
+                    }
+
+                    return prev;
+
+                }, {} as any));
+
+                // clear memory
+                query.state.groupByCache[lastKey] = [];
+            }
 
             query.nextRow(-1);
         }
 
     }
 
+    static _flatten(query: nanoSQLQueryArgs, args: ActionArgs_select_arr) {
+
+        if (query.inputIndex === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
+        query.nextRow(query.inputIndex, Object.keys(query.inputRow).reduce((prev, cur) => {
+            const tableRowData = query.inputRow[cur];
+            Object.keys(tableRowData).forEach((data) => {
+               prev[cur + "." + data] = tableRowData[data];
+            });
+            return prev;
+        }, {} as any));
+
+    }
+
     static _functions(query: nanoSQLQueryArgs, args: ActionArgs_functions) {
 
+        if (query.inputIndex === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
+        query.nextRow(query.inputIndex, args.reduce((prev, cur, i) => {
+
+            const value = typeof cur.value === "string" ? deepGet(cur.value, query.inputRow) : nanoSQLQueryUtils._doFunction(query.nSQL, query.pQuery, cur.value, query.inputRow).resut;
+
+            if (cur.as && cur.as.length) {
+                prev[cur.as] = value;
+            } else {
+                prev = deepSet(cur.original, prev, value);
+            }
+
+            return prev;
+
+        }, {} as any));
     }
 
     static _range(query: nanoSQLQueryArgs, args: ActionArgs_range) {
@@ -841,6 +1068,7 @@ export class nanoSQLQuery2 {
     static _distinct(query: nanoSQLQueryArgs, args: ActionArgs_distinct) {
 
         if (query.inputIndex === -1) {
+            query.state.distinctKeys = {};
             query.nextRow(-1);
             return;
         }
@@ -874,6 +1102,18 @@ export class nanoSQLQuery2 {
 
     }
 
+    static _drop_table(query: nanoSQLQueryArgs, args: ActionArgs_drop_table) {
+
+    }
+
+    static _create_table(query: nanoSQLQueryArgs, args: ActionArgs_create_table) {
+
+    }
+
+    static _alter_table(query: nanoSQLQueryArgs, args: ActionArgs_alter_table) {
+
+    }
+
 }
 
 export class nanoSQLQueryUtils {
@@ -899,7 +1139,7 @@ export class nanoSQLQueryUtils {
 
     static quickSort(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, arr: any[], columns: InanoSQLProcessedSort[]): any[] {
 
-        // if just 1 column to sort by, we can do standard javascript sort
+        // if just 1 column to sort by, we can do faster standard javascript sort
         if (columns.length <= 1) return arr.sort((a, b) => {
             const colVal = columns[0];
             if (typeof colVal.value !== "string") {
@@ -972,6 +1212,10 @@ export class nanoSQLQueryUtils {
         return this.quickSort(nSQL, query, left, columns).concat(equal).concat(this.quickSort(nSQL, query, right, columns));
     }
 
+    static _getTableRows(query: nanoSQLQueryArgs, table: InanoSQLSelectTable) {
+
+    }
+
     static _where(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, singleRow: any, where: InanoSQLWhereQuery): boolean {
 
         if (where.STMT) { // bottom of nested WHERE
@@ -1021,12 +1265,12 @@ export class nanoSQLQueryUtils {
         }, "") as string;
     }
 
-    static _doFunction(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, call: InanoSQLFunctionQuery, row: any) {
+    static _doFunction(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, call: InanoSQLFunctionQuery, row: any, aggregate?: any) {
         const fn = nSQL.functions[call.name];
         if (!fn) {
             throw new Error(`nSQL: Function ${call.name} not found!`);
         }
-        return fn.call(query, row, fn.aggregateStart as any, ...call.args);
+        return fn.call(query, row, aggregate || fn.aggregateStart as any, ...call.args);
     }
 
     static _likeCache: { [likeQuery: string]: RegExp } = {};

@@ -183,7 +183,7 @@ export const adapterFilters = (selectedDB: string | undefined, nSQL: InanoSQLIns
             }, error);
 
         },
-        readMultiIndex: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: { [key: string]: any }, i: number) => void, complete: () => void, error: (err: any) => void) => {
+        readMultiIndex: (table: string, type: "range" | "offset" | "all", offsetOrLow: any, limitOrHigh: any, reverse: boolean, onRow: (row: any, i: number) => void, complete: () => void, error: (err: any) => void) => {
             if (!selectedDB) return;
             offsetOrLow = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, offsetOrLow);
             limitOrHigh = keyToDate(nSQL, nSQL.getDB(selectedDB)._tables[table].pkType, limitOrHigh);

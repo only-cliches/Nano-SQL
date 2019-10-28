@@ -8,7 +8,6 @@ import {
     InanoSQLFunctionQuery,
     InanoSQLWhereQuery,
     InanoSQLProcessedWhere,
-    InanoSQLQuery,
     InanoSQLQuery2,
     InanoSQLInstance
 } from "./interfaces";
@@ -171,6 +170,7 @@ export class QueryAST {
         return args.map(v => {
             const splitVal = String(v).split(/\s+as\s+/gmi).map(s => s.trim());
             return {
+                original: v,
                 value: QueryAST.functionString(nSQL, splitVal[0]),
                 as: splitVal[1],
             }

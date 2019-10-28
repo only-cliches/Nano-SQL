@@ -1,4 +1,13 @@
-import { InanoSQLQueryBuilder, InanoSQLObserverQuery, InanoSQLInstance, InanoSQLQuery, InanoSQLJoinArgs, InanoSQLGraphArgs, TableQueryResult } from "./interfaces";
+import {
+    InanoSQLQueryBuilder,
+    InanoSQLObserverQuery,
+    InanoSQLInstance,
+    InanoSQLQuery,
+    InanoSQLJoinArgs,
+    InanoSQLGraphArgs,
+    TableQueryResult,
+    InanoSQLQuery2
+} from "./interfaces";
 import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign, _nanoSQLQueue, fastID } from "./utilities";
 import * as equal from "fast-deep-equal";
 
@@ -11,7 +20,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
     public _AV: string;
 
-    public _query: InanoSQLQuery;
+    public _query: InanoSQLQuery2;
 
     public static execMap: any;
 
@@ -24,16 +33,12 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
             this._query = {
                 ...buildQuery(databaseID, db, table, queryAction),
                 comments: [],
-                state: "pending",
                 action: queryAction,
                 actionArgs: queryArgs,
-                result: []
             };
         } else {
             this._query = {
                 ...queryAction(db),
-                state: "pending",
-                result: []
             };
         }
     }
@@ -138,7 +143,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return this;
     }
 
-    public emit(): InanoSQLQuery {
+    public emit(): InanoSQLQuery2 {
         return this._query;
     }
 
