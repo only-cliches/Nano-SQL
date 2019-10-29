@@ -47,7 +47,6 @@ describe("Testing Other Features", () => {
                 done();
             } catch (e) {
                 done(e);
-            }
         });
     });
 

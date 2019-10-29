@@ -9,7 +9,7 @@ import {
     InanoSQLWhereQuery,
     InanoSQLProcessedWhere,
     InanoSQLQuery2,
-    InanoSQLInstance
+    InanoSQLInstance, InanoSQLSelectTable, InanoSQLTableAST
 } from "./interfaces";
 import {isFunction, isObject, QueryArguments} from "./utilities";
 
@@ -80,11 +80,75 @@ export class QueryAST {
             orderBy: QueryAST.sortBy(nSQL, query.orderBy),
             groupBy: QueryAST.sortBy(nSQL, query.groupBy),
             distinct: query.distinct && Array.isArray(query.distinct) ? query.distinct.map(q => QueryAST.functionString(nSQL, q)) : undefined,
-            graph: query.graph && !Array.isArray(query.graph) ? [query.graph] : query.graph as InanoSQLGraphArgs[],
-            join: query.join && !Array.isArray(query.join) ? [query.join] : query.join as InanoSQLJoinArgs[],
+            graph: this.processGraph(query.graph && !Array.isArray(query.graph) ? [query.graph] : query.graph as InanoSQLGraphArgs[]),
+            join: this.processJoin(query.join && !Array.isArray(query.join) ? [query.join] : query.join as InanoSQLJoinArgs[]),
             updateImmutable: query.updateImmutable,
-            union: query.union
+            union: this.processUnion(query.union)
         };
+    }
+
+    static processUnion(unionArgs?: InanoSQLUnionArgs) {
+        if (!unionArgs) return undefined;
+        return {
+            ...unionArgs,
+            tables: unionArgs.tables.map(t => this.processTable(t))
+        }
+    }
+
+
+    static processGraph(graphArgs?: InanoSQLGraphArgs[]) {
+        if (!graphArgs) return undefined;
+
+        return graphArgs.map(g => {
+
+            return {
+                ...g,
+                with: this.processTable(g.with),
+                graph: g.graph ? this.processGraph(g.graph && !Array.isArray(g.graph) ? [g.graph] : g.graph as InanoSQLGraphArgs[]) : undefined
+            }
+        })
+    }
+
+    static processTable(select: InanoSQLSelectTable): InanoSQLTableAST {
+
+        if (typeof select === "string") {
+            return {
+                as: select,
+                str: select
+            }
+        } else if (Array.isArray(select)) {
+            return {
+                arr: select
+            }
+        } else if (typeof select === "function") {
+            return {
+                fn: select
+            }
+        } else if (isObject(select) && typeof select !== "function") {
+            return {
+                as: select.as,
+                str: typeof select.table === "string" ? select.table : undefined,
+                arr: Array.isArray(select.table) ? select.table : undefined,
+                fn: typeof select.table === "function" ? select.table : undefined,
+                query: select.query ? select.query : undefined
+            }
+        }
+
+        return {};
+    }
+
+    static processJoin(joinArgs?:InanoSQLJoinArgs[]) {
+        if (!joinArgs) return undefined;
+
+        return joinArgs.map(v => {
+
+            return {
+                flatten: v.flatten !== undefined ? v.flatten : true,
+                on: v.on || [],
+                type: v.type,
+                with: this.processTable(v.with)
+            }
+        })
     }
 
     static hasAggrFn(nSQL: InanoSQLInstance, select: {as?: string, value: (string | InanoSQLFunctionQuery)}[]): boolean {

@@ -572,13 +572,13 @@ export interface InanoSQLGraphArgs {
     orderBy?: string[];
     groupBy?: string[];
     graph?: InanoSQLGraphArgs | InanoSQLGraphArgs[];
-    on?: (row: {[key: string]: any}, idx: number) => boolean | any[];
+    on?: any[];
 }
 
 export interface InanoSQLUnionArgs {
     type: "all" | "distinct",
     distinctKey?: string,
-    tables: (InanoSQLSelectTable | InanoSQLQuery2)[]
+    tables: InanoSQLSelectTable[]
 }
 /*
 export interface InanoSQLQuery {
@@ -734,12 +734,12 @@ export interface extendFilter extends abstractFilter {
 // tslint:disable-next-line
 export interface configTableFilter extends abstractFilter {
     res: InanoSQLTableConfig;
-    query: InanoSQLQuery;
+    query: InanoSQLQuery2;
 }
 
 // tslint:disable-next-line
 export interface queryFilter extends abstractFilter {
-    res: InanoSQLQuery;
+    res: InanoSQLQuery2;
 }
 
 // tslint:disable-next-line
@@ -1044,12 +1044,12 @@ export interface addRowEventFilter extends abstractFilter {
 
 export interface deleteRowEventFilter extends abstractFilter {
     res: InanoSQLDatabaseEvent;
-    query: InanoSQLQuery;
+    query: InanoSQLQuery2;
 }
 
 export interface updateRowEventFilter extends abstractFilter {
     res: InanoSQLDatabaseEvent;
-    query: InanoSQLQuery
+    query: InanoSQLQuery2
 }
 
 export interface InanoSQLupdateIndex {
@@ -1066,27 +1066,55 @@ export interface InanoSQLupdateIndex {
 
 export interface updateIndexFilter extends abstractFilter {
     res: InanoSQLupdateIndex;
-    query: InanoSQLQuery;
+    query: InanoSQLQuery2;
 }
 
 export interface configTableSystemFilter extends abstractFilter {
     res: InanoSQLTable;
-    query: InanoSQLQuery;
+    query: InanoSQLQuery2;
 }
 
 export type InanoSQLQuerySelectAST = {as?: string, original: string, value: (string | InanoSQLFunctionQuery)}[];
+
+export interface InanoSQLTableAST {
+    as?: string;
+    str?: string,
+    arr?: any[],
+    fn?: () => Promise<any[]>,
+    query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
+}
+
+export interface InanoSQLGraphAST {
+    key: string;
+    with: InanoSQLTableAST;
+    select?: string[];
+    single?: boolean;
+    offset?: number;
+    limit?: number;
+    orderBy?: string[];
+    groupBy?: string[];
+    graph?: InanoSQLGraphArgs[];
+    on?: any[];
+}
+
+export interface InanoSQLJoinAST {
+    flatten: boolean,
+    type: "left" | "inner" | "right" | "cross" | "outer",
+    on?: any[];
+    with: InanoSQLTableAST
+}
+
+export interface InanoSQLUnionAST {
+    type: "all" | "distinct",
+    distinctKey?: string,
+    tables: InanoSQLTableAST[]
+}
 
 export interface InanoSQLQueryAST {
     dbId: string;
     parent: InanoSQLInstance,
     hasAggrFn: boolean;
-    table: {
-        as?: string;
-        str?: string,
-        arr?: any[],
-        fn?: () => Promise<any[]>,
-        query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
-    }
+    table: InanoSQLTableAST,
     db?: InanoSQLDBConfig,
     action: string;
     args: {
@@ -1099,10 +1127,10 @@ export interface InanoSQLQueryAST {
     orderBy?: InanoSQLProcessedSort[];
     groupBy?: InanoSQLProcessedSort[];
     distinct?: (InanoSQLFunctionQuery | string)[];
-    graph?: InanoSQLGraphArgs[];
-    join?: InanoSQLJoinArgs[];
+    graph?: InanoSQLGraphAST[];
+    join?: InanoSQLJoinAST[];
     updateImmutable?: boolean;
-    union?: InanoSQLUnionArgs;
+    union?: InanoSQLUnionAST;
     originalWhere?: any[];
     originalHaving?: any[];
 }
@@ -1177,10 +1205,10 @@ export interface InanoSQLQueryActions {
     args: any;
 }
 
-export type ActionArgs_union = InanoSQLUnionArgs;
-export type ActionArgs_graph = InanoSQLGraphArgs[];
-export type ActionArgs_join = InanoSQLJoinArgs[];
-export type ActionArgs_flatten = InanoSQLJoinArgs[];
+export type ActionArgs_union = InanoSQLUnionAST;
+export type ActionArgs_graph = InanoSQLGraphAST[];
+export type ActionArgs_join = InanoSQLJoinAST[];
+export type ActionArgs_flatten = InanoSQLJoinAST[];
 export type ActionArgs_group = {
     groupBy: InanoSQLProcessedSort[],
     reduce: InanoSQLQuerySelectAST

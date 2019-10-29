@@ -33,7 +33,7 @@ import {
     InanoSQLQuery2,
     InanoSQLQueryActions,
     InanoSQLQueryAST, InanoSQLSelectTable,
-    InanoSQLSortBy, InanoSQLWhereQuery, InanoSQLWhereStatement,
+    InanoSQLSortBy, InanoSQLTableAST, InanoSQLWhereQuery, InanoSQLWhereStatement,
     IWhereCondition
 } from "./interfaces";
 import {QueryAST} from "./query2-ast";
@@ -46,7 +46,7 @@ import {
     deepGet, deepSet,
     execFunction, isFunction, isObject,
     maybeDate,
-    objectsEqual, QueryArguments
+    objectsEqual, QueryArguments, resolvePath
 } from "./utilities";
 
 
@@ -755,126 +755,54 @@ export class nanoSQLQuery2 {
                 return;
             }
 
-            const nextTable = args.tables[k] as any;
+            const nextTable = args.tables[k];
 
-            if (nextTable && nextTable.parent === query.nSQL) {
-                const table = nextTable as InanoSQLQuery2;
+            if (nextTable.str && nextTable.str.length && !pkCol.length) {
 
-            } else if (nextTable && typeof nextTable === "string") {
-                const table = nextTable as string;
+                const tableID = query.pQuery.db ? query.pQuery.db._tableIds[nextTable.str] : undefined;
+                const tableConfig = query.pQuery.db ? query.pQuery.db._tables[tableID || ""] : undefined;
+                if (!tableID || !tableConfig) return;
 
-                if (!pkCol.length) {
-                    const tableID = query.pQuery.db ? query.pQuery.db._tableIds[table] : undefined;
-                    const tableConfig = query.pQuery.db ? query.pQuery.db._tables[tableID || ""] : undefined;
-                    if (!tableID || !tableConfig) return;
-
-                    pkCol = tableConfig.pkCol;
-                }
-
-                this._select_pk({
-                    ...query,
-                    nextRow: nextRow
-                }, {
-                    as: table,
-                    table: table
-                });
-
-            } else if (nextTable && Array.isArray(nextTable)) {
-                const table = nextTable as any[];
-
-                this._select_arr({
-                    ...query,
-                    nextRow: nextRow
-                }, {table: nextTable, as: ""});
-
-            } else if (nextTable && isFunction(nextTable)) {
-                const table = nextTable as (() => Promise<any[]>);
-
-                this._select_fn({
-                    ...query,
-                    nextRow: nextRow
-                }, {table: nextTable, as: ""});
-
-            } else if (nextTable && isObject(nextTable)) {
-                const table = nextTable as {as?: string, table?: (string | any[] | (() => Promise<any[]> )), query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void};
-
-                if (table.table && typeof table.table === "string") {
-
-                    if (!pkCol.length) {
-                        const tableID = query.pQuery.db ? query.pQuery.db._tableIds[table.table] : undefined;
-                        const tableConfig = query.pQuery.db ? query.pQuery.db._tables[tableID || ""] : undefined;
-                        if (!tableID || !tableConfig) return;
-
-                        pkCol = tableConfig.pkCol;
-                    }
-
-                    this._select_pk({
-                        ...query,
-                        nextRow: nextRow
-                    }, {
-                        as: table.as || table.table,
-                        table: table.table
-                    });
-
-                } else if (table.table && Array.isArray(table.table)) {
-                    this._select_arr({
-                        ...query,
-                        nextRow: nextRow
-                    }, {table: table.table, as: table.as || ""});
-                } else if (table.table && isFunction(table.table)) {
-                    this._select_fn({
-                        ...query,
-                        nextRow: nextRow
-                    }, {table: table.table as any, as: table.as || ""});
-                } else if (table.query) {
-                    table.query(new QueryArguments(table.as || ""), (row, i) => {
-                        nextRow(i, row);
-                    }, (err) => {
-                        nextRow(-1, undefined, err);
-                    });
-                }
-
-            } else {
-                query.nextRow(-1, undefined, Error(`nSQL: Union not able to resolve table to select!`));
+                pkCol = tableConfig.pkCol;
             }
 
-        }
+            nanoSQLQueryUtils._getTableRows(query, nextTable, (i: number, row: any, err?: Error) => {
+                if (hasError) return;
 
-        getTable();
-
-        const nextRow = (i: number, row: any, err?: Error) => {
-            if (hasError) return;
-
-            if (err) {
-                query.nextRow(-1, undefined, err);
-                hasError = true;
-                return;
-            }
-            if (i === -1) {
-                k++;
-                getTable();
-                return;
-            }
-
-            if (args.type == "all") {
-                query.nextRow(j, row);
-                j++;
-            } else {
-                if (pkCol.length === 0 && !args.distinctKey) {
+                if (err) {
+                    query.nextRow(-1, undefined, err);
                     hasError = true;
-                    query.nextRow(-1, undefined, Error(`nSQL: Union cannot resolve Distinct key path automatically!`));
                     return;
                 }
 
-                const dKey = String(deepGet(args.distinctKey || pkCol, row));
+                if (i === -1) {
+                    k++;
+                    getTable();
+                    return;
+                }
 
-                if (!query.state.distinctKeys[dKey]) {
-                    query.state.distinctKeys[dKey] = true;
+                if (args.type == "all") {
                     query.nextRow(j, row);
                     j++;
+                } else {
+                    if (pkCol.length === 0 && !args.distinctKey) {
+                        hasError = true;
+                        query.nextRow(-1, undefined, Error(`nSQL: Union cannot resolve Distinct key path automatically!`));
+                        return;
+                    }
+
+                    const dKey = String(deepGet(args.distinctKey || pkCol, row));
+
+                    if (!query.state.distinctKeys[dKey]) {
+                        query.state.distinctKeys[dKey] = true;
+                        query.nextRow(j, row);
+                        j++;
+                    }
                 }
-            }
+            })
         }
+
+        getTable();
     }
 
     static _graph(query: nanoSQLQueryArgs, args: ActionArgs_graph) {
@@ -883,6 +811,44 @@ export class nanoSQLQuery2 {
 
     static _join(query: nanoSQLQueryArgs, args: ActionArgs_join) {
 
+        let joinCommands = args;
+        let i = 0;
+
+        const parentTable = query.pQuery.table.as || query.pQuery.table.str;
+
+        if (!parentTable || !parentTable.length) {
+            query.nextRow(-1, undefined, Error("nSQL: Join query requires local table or AS parameter!"));
+            return;
+        }
+
+        let rowData: any = {
+            [parentTable]: query.inputRow
+        };
+
+        const nextJoin = () => {
+            if (!joinCommands[i]) {
+                query.nextRow(query.inputIndex, rowData);
+                return;
+            }
+
+            const join = joinCommands[i];
+
+            if (join.type !== "cross" && !join.on) {
+                query.nextRow(-1, undefined, Error("nSQL: Non 'cross' joins require an 'on' parameter!"));
+                return;
+            }
+
+            if (!join.with.str && !join.with.as) {
+                query.nextRow(-1, undefined, Error("nSQL: Must use 'AS' when joining temporary tables!"));
+                return;
+            }
+
+            const where = join.on ? nanoSQLQueryUtils._buildWhereJoinGraph(join.on, join.with.as || "", query.inputRow) : undefined;
+
+
+
+        }
+        nextJoin();
     }
 
     static _order(query: nanoSQLQueryArgs, args: ActionArgs_order) {
@@ -1124,6 +1090,26 @@ export class nanoSQLQueryUtils {
         }
     } = {};
 
+    static _buildWhereJoinGraph(graphWhere: any[], graphTable: string, rowData: any) {
+
+        return (typeof graphWhere[0] === "string" ? [graphWhere] : graphWhere).map((j: any) => {
+            if (Array.isArray(j[0])) return this._buildWhereJoinGraph(j, graphTable, rowData); // nested where
+            if (j === "AND" || j === "OR") return j;
+
+            const leftWhere: any[] = resolvePath(j[0]);
+            const rightWhere: any[] = resolvePath(j[2]);
+            const swapWhere = leftWhere[0] !== graphTable;
+
+            // swapWhere = true [leftTable.column, =, rightTable.column] => [rightWhere, =, objQuery(leftWhere)]
+            // swapWhere = false [rightTable.column, =, leftTable.column] => [leftWhere, =, objQuery(rightWhere)]
+            return [
+                swapWhere ? rightWhere.slice(1).join(".") : leftWhere.slice(1).join("."),
+                swapWhere ? (j[1].indexOf(">") !== -1 ? j[1].replace(">", "<") : j[1].replace("<", ">")) : j[1],
+                deepGet(swapWhere ? leftWhere : rightWhere, rowData)
+            ];
+        });
+    }
+
     static _maybeResolveFunction(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, fn: any | InanoSQLFunctionQuery) {
         if (fn && fn.name && fn.args) { // function
             const useFn = nSQL.functions[fn.name];
@@ -1212,8 +1198,35 @@ export class nanoSQLQueryUtils {
         return this.quickSort(nSQL, query, left, columns).concat(equal).concat(this.quickSort(nSQL, query, right, columns));
     }
 
-    static _getTableRows(query: nanoSQLQueryArgs, table: InanoSQLSelectTable) {
+    static _getTableRows(query: nanoSQLQueryArgs, table: InanoSQLTableAST, onRow: (i: number, row?: any, error?: Error) => void) {
 
+        if (table.str) {
+
+            nanoSQLQuery2._select_pk({
+                ...query,
+                nextRow: onRow
+            }, {
+                as: table.as || table.str,
+                table: table.str
+            });
+
+        } else if (table.arr) {
+
+            nanoSQLQuery2._select_arr({
+                ...query,
+                nextRow: onRow
+            }, {table: table.arr, as: table.as || ""});
+
+        } else if (table.fn) {
+
+            nanoSQLQuery2._select_fn({
+                ...query,
+                nextRow: onRow
+            }, {table: table.fn, as: table.as || ""});
+
+        } else {
+            query.nextRow(-1, undefined, Error(`nSQL: Union not able to resolve table to select!`));
+        }
     }
 
     static _where(nSQL: InanoSQLInstance, query: InanoSQLQueryAST, singleRow: any, where: InanoSQLWhereQuery): boolean {
