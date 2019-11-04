@@ -2,14 +2,14 @@ import {
     InanoSQLQueryBuilder,
     InanoSQLObserverQuery,
     InanoSQLInstance,
-    InanoSQLQuery,
     InanoSQLJoinArgs,
     InanoSQLGraphArgs,
     TableQueryResult,
-    InanoSQLQuery2
+    InanoSQLQuery2, InanoSQLSelectTable, InanoSQLUnionArgs
 } from "./interfaces";
 import { buildQuery, uuid, noop, throttle, objectsEqual, resolvePath, assign, _nanoSQLQueue, fastID } from "./utilities";
 import * as equal from "fast-deep-equal";
+import {QueryAST} from "./query2-ast";
 
 // tslint:disable-next-line
 export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
@@ -24,7 +24,7 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
     public static execMap: any;
 
-    constructor(public databaseID: string, db: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>), queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), queryArgs?: any, actionOrView?: string) {
+    constructor(public databaseID: string, db: InanoSQLInstance, table: InanoSQLSelectTable, queryAction: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery2), queryArgs?: any, actionOrView?: string) {
         this._db = db;
 
         this._AV = actionOrView || "";
@@ -87,19 +87,6 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
 
 
     public join(args: InanoSQLJoinArgs | InanoSQLJoinArgs[]): _nanoSQLQueryBuilder {
-        const err = "Join commands requires table and type arguments!";
-        if (Array.isArray(args)) {
-            args.forEach((arg) => {
-                if (!arg.with.table || !arg.type) {
-                    this._error = err;
-                }
-            });
-        } else {
-            if (!args.with.table || !args.type) {
-                this._error = err;
-            }
-        }
-
         this._query.join = args;
         return this;
     }
@@ -130,11 +117,8 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return this;
     }
 
-    public union(queries: (() => Promise<any[]>)[], unionAll?: boolean): _nanoSQLQueryBuilder {
-        this._query.union = {
-            queries: queries,
-            type: unionAll ? "all" : "distinct"
-        };
+    public union(args: InanoSQLUnionArgs): _nanoSQLQueryBuilder {
+        this._query.union = args;
         return this;
     }
 
@@ -161,16 +145,8 @@ export class _nanoSQLQueryBuilder implements InanoSQLQueryBuilder {
         return this;
     }
 
-    public from(tableObj: {
-        table: string | any[] | ((where?: any[] | ((row: {[key: string]: any}, i?: number) => boolean)) => Promise<TableQueryResult>);
-        as?: string
-    } | string | any[]): _nanoSQLQueryBuilder {
-        if (typeof tableObj === "string" || Array.isArray(tableObj)) {
-            this._query.table = tableObj;
-        } else {
-            this._query.table = tableObj.table;
-            this._query.tableAS = tableObj.as;
-        }
+    public from(tableObj: InanoSQLSelectTable): _nanoSQLQueryBuilder {
+        this._query.table = tableObj;
         return this;
     }
 
@@ -326,14 +302,15 @@ class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
         }
 
         // detect tables to listen for
+
         this._listenTables.push(query.table as string);
         if (query.join) {
             const join = Array.isArray(query.join) ? query.join : [query.join];
-            this._listenTables.concat(this._getTables(join));
+            this._listenTables.concat(this._getTables(join, []));
         }
         if (query.graph) {
             const graph = Array.isArray(query.graph) ? query.graph : [query.graph];
-            this._listenTables.concat(this._getTables(graph));
+            this._listenTables.concat(this._getTables([], graph));
         }
         // remove duplicate tables
         this._listenTables = this._listenTables.filter((v, i, s) => s.indexOf(v) === i);
@@ -344,18 +321,28 @@ class _nanoSQLObserverQuery implements InanoSQLObserverQuery {
         });
     }
 
-    private _getTables(objects: (InanoSQLGraphArgs | InanoSQLJoinArgs)[]): string[] {
+    private _getTables(joinArgs: InanoSQLJoinArgs[], graphArgs: InanoSQLGraphArgs[]): string[] {
         let tables: string[] = [];
-        objects.forEach((j) => {
-            if (j.with && j.with.table && typeof j.with.table === "string") {
-                tables.push(j.with.table);
+
+        const bothTables  = (object: {with: InanoSQLSelectTable, [key: string]: any}) => {
+            const tableData = QueryAST.processTable(object.with);
+            if (tableData.str) {
+                tables.push(tableData.str);
             }
-            const nestedGraph = (j as InanoSQLGraphArgs).graph;
-            if (nestedGraph) {
-                const graph = Array.isArray(nestedGraph) ? nestedGraph : [nestedGraph];
-                tables.concat(this._getTables(graph));
+        };
+
+        joinArgs.forEach(bothTables);
+
+        graphArgs.forEach((graph) => {
+
+            bothTables(graph);
+
+            if (graph.graph) {
+                const nestedGraph = Array.isArray(graph.graph) ? graph.graph : [graph.graph];
+                tables.concat(this._getTables([], nestedGraph));
             }
         });
+
         return tables;
     }
 

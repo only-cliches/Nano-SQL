@@ -22,7 +22,7 @@ import {
     InanoSQLFunctionResult,
     InanoSQLDataModel,
     InanoSQLTableColumn,
-    InanoSQLAdapter, InanoSQLQueryAST, adapterReadMultiIndexFilter
+    InanoSQLAdapter, InanoSQLQueryAST, adapterReadMultiIndexFilter, InanoSQLQuery2, InanoSQLSelectTable
 } from "./interfaces";
 import { _nanoSQLQuery } from "./query";
 import * as leven from "levenshtein-edit-distance";
@@ -87,15 +87,12 @@ export const slugify = (str: string): string => {
     return String(str).replace(/\s+/g, "-").replace(/[^0-9a-z\-]/gi, "").toLowerCase();
 }
 
-export const buildQuery = (selectedDB: string | undefined, nSQL: InanoSQLInstance, table: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>), action: string): InanoSQLQuery => {
+export const buildQuery = (selectedDB: string | undefined, nSQL: InanoSQLInstance, table: InanoSQLSelectTable, action: string): InanoSQLQuery2 => {
     return {
         databaseID: selectedDB,
         table: table || nSQL.selectedTable,
         parent: nSQL,
         action: action,
-        state: "pending",
-        result: [],
-        time: Date.now(),
         queryID: fastID(),
         extend: [],
         comments: [],

@@ -12,7 +12,7 @@ import {
     InanoSQLDBConfig,
     InanoSQLIndex,
     InanoSQLWhereIndex,
-    InanoSQLTableConfig, InanoSQLQueryActions, InanoSQLActions
+    InanoSQLTableConfig, InanoSQLQueryActions, InanoSQLActions, InanoSQLTableAST, InanoSQLGraphAST
 } from "./interfaces";
 import {objectsEqual, QueryArguments, resolvePath} from "./utilities";
 
@@ -66,7 +66,7 @@ export class QueryPrepare {
                         do: InanoSQLActions.graph,
                         name: "Graph",
                         args: pQuery.graph
-                    })
+                    });
                 }
 
                 if (pQuery.join) {
@@ -78,6 +78,12 @@ export class QueryPrepare {
                     pQuery.join.forEach((j) => {
                         if (j.flatten === false) {
                             flatten = false;
+                        }
+                        if (!j.with.str && !j.with.as) {
+                            throw new Error("nSQL: Cannot use temporary tables with JOIN command without AS!");
+                        }
+                        if (j.type !== "cross" && !j.on) {
+                            throw new Error("nSQL: Non 'cross' JOINs require an 'on' parameter!");
                         }
                     });
                 }

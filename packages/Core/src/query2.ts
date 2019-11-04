@@ -40,7 +40,7 @@ import {QueryAST} from "./query2-ast";
 import {QueryPrepare} from "./query2-prepare";
 import {
     adapterFilters,
-    allAsync, assign,
+    allAsync, assign, buildQuery,
     callOnce,
     chainAsync,
     deepGet, deepSet,
@@ -67,6 +67,7 @@ export interface nanoSQLQueryState {
     groupByCache: {[key: string]: {fnValue: any, rowValue: any}[]};
     groupByLastKey?: string;
     unionKeyCache: {[key: string]: boolean};
+    joinKeyCache: any[][];
 }
 
 /**
@@ -97,7 +98,8 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
             orderByCache: [],
             groupByCache: {},
             groupByLastKey: undefined,
-            unionKeyCache: {}
+            unionKeyCache: {},
+            joinKeyCache: []
         };
 
         const once = callOnce(complete);
@@ -809,6 +811,7 @@ export class nanoSQLQuery2 {
 
     }
 
+    // https://www.interfacett.com/blogs/multiple-joins-work-just-like-single-joins/
     static _join(query: nanoSQLQueryArgs, args: ActionArgs_join) {
 
         let joinCommands = args;
@@ -821,9 +824,16 @@ export class nanoSQLQuery2 {
             return;
         }
 
+        if (query.inputIndex === -1) { // rows of main table completed
+
+            return;
+        }
+
         let rowData: any = {
             [parentTable]: query.inputRow
         };
+
+        let derivedTabled: any[] = [];
 
         const nextJoin = () => {
             if (!joinCommands[i]) {
@@ -838,12 +848,48 @@ export class nanoSQLQuery2 {
                 return;
             }
 
-            if (!join.with.str && !join.with.as) {
-                query.nextRow(-1, undefined, Error("nSQL: Must use 'AS' when joining temporary tables!"));
-                return;
-            }
+            let gotPks: any[] = [];
 
-            const where = join.on ? nanoSQLQueryUtils._buildWhereJoinGraph(join.on, join.with.as || "", query.inputRow) : undefined;
+            query.nSQL.triggerQuery(query.pQuery.dbId, {
+                ...buildQuery(query.pQuery.dbId, query.nSQL, join.originalWith, "select"),
+                where: join.on ? nanoSQLQueryUtils._buildWhereJoinGraph(join.on, join.with.as || "", rowData) : undefined
+            }, (row: any, i: number) => {
+
+                if (join.type === "outer" || join.type === "right") {
+                    const thisPK = deepGet(join.with.pk || "", row);
+                    gotPks.push(thisPK);
+                    if (!query.state.joinKeyCache[i]) {
+                        query.state.joinKeyCache[i] = [];
+                    }
+                    query.state.joinKeyCache[i].push(thisPK);
+                } else {
+                    if (!gotPks.length) { // no need to track actual keys, just need to know we got at least one record
+                        gotPks.push(true);
+                    }
+                }
+/*
+                switch(join.type) {
+                    case "outer":
+
+                        break;
+                    case "left":
+                    case "inner":
+
+                        break;
+                    case "right":
+
+                        break;
+                    case "cross":
+
+                        break;
+                }*/
+
+
+            }, () => {
+
+            }, (err) => {
+
+            });
 
 
 

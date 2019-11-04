@@ -9,9 +9,9 @@ import {
     InanoSQLWhereQuery,
     InanoSQLProcessedWhere,
     InanoSQLQuery2,
-    InanoSQLInstance, InanoSQLSelectTable, InanoSQLTableAST
+    InanoSQLInstance, InanoSQLSelectTable, InanoSQLTableAST, InanoSQLGraphAST
 } from "./interfaces";
-import {isFunction, isObject, QueryArguments} from "./utilities";
+import {fastID, isFunction, isObject, QueryArguments} from "./utilities";
 
 
 
@@ -30,24 +30,7 @@ export class QueryAST {
     
         const action = String(query.action).trim().toLowerCase();
 
-        const tableObj: {
-            as?: string;
-            str?: string,
-            arr?: any[],
-            fn?: () => Promise<any[]>,
-            query?: (args: QueryArguments, onRow: (row: any, i: number) => void, complete: (error?: Error) => void) => void
-        } = isObject(query.table) ? {
-            as: ((query.table as any).as as any || (typeof (query.table as any).table === "string" ? (query.table as any).table : undefined)) as any,
-            str: (typeof (query.table as any).table === "string" ? (query.table as any).table : undefined) as any,
-            arr: (Array.isArray((query.table as any).table) ? (query.table as any).table : undefined) as any,
-            fn: (isFunction((query.table as any).table) ? (query.table as any).table : undefined) as any,
-            query: (query.table as any).query as any
-        } : {
-            as: (typeof query.table === "string" ? query.table : undefined) as any,
-            str: (typeof query.table === "string" ? query.table : undefined) as any,
-            arr: (Array.isArray(query.table) ? query.table : undefined) as any,
-            fn: (isFunction(query.table) ? query.table : undefined) as any,
-        };
+        const tableObj = this.processTable(query.table);
 
         if (["total", "upsert", "delete", "describe indexes", "drop", "drop table", "alter table", "rebuild indexes", "conform rows"].indexOf(action) !== -1 && !tableObj.str) {
             throw new Error(`nSQL: Query ${action} requires a local table to be selected!`);
@@ -72,6 +55,7 @@ export class QueryAST {
                 raw: query.actionArgs,
                 select: selectArgs,
             },
+            cacheID: query.cacheID || fastID(),
             where: QueryAST.where(nSQL, query.where),
             originalWhere: query.where as any[],
             having: QueryAST.where(nSQL, query.having),
@@ -104,7 +88,8 @@ export class QueryAST {
             return {
                 ...g,
                 with: this.processTable(g.with),
-                graph: g.graph ? this.processGraph(g.graph && !Array.isArray(g.graph) ? [g.graph] : g.graph as InanoSQLGraphArgs[]) : undefined
+                originalWith: g.with,
+                graph: g.graph ? this.processGraph(g.graph && !Array.isArray(g.graph) ? [g.graph] : g.graph) : undefined
             }
         })
     }
@@ -127,6 +112,7 @@ export class QueryAST {
         } else if (isObject(select) && typeof select !== "function") {
             return {
                 as: select.as,
+                pk: select.pk,
                 str: typeof select.table === "string" ? select.table : undefined,
                 arr: Array.isArray(select.table) ? select.table : undefined,
                 fn: typeof select.table === "function" ? select.table : undefined,
@@ -146,7 +132,8 @@ export class QueryAST {
                 flatten: v.flatten !== undefined ? v.flatten : true,
                 on: v.on || [],
                 type: v.type,
-                with: this.processTable(v.with)
+                with: this.processTable(v.with),
+                originalWith: v.with
             }
         })
     }

@@ -21,7 +21,6 @@ import {
     InanoSQLConfig,
     InanoSQLFunction,
     InanoSQLActionOrView,
-    InanoSQLQuery,
     disconnectFilter,
     InanoSQLDatabaseEvent,
     extendFilter,
@@ -46,7 +45,7 @@ import {
     InanoSQLV1ConfigFn,
     InanoSQLFKActions,
     uuid,
-    InanoSQLDBConfig
+    InanoSQLDBConfig, InanoSQLSelectTable, InanoSQLQuery2
 } from "./interfaces";
 import { attachDefaultFns } from "./functions";
 import { _nanoSQLQuery } from "./query";
@@ -54,6 +53,7 @@ import { _nanoSQLQueryBuilder } from "./query-builder";
 import * as utils from "./utilities";
 import { resolveMode } from "./adapter-detect";
 import { SyncStorage } from "./adapters/syncStorage";
+import {executeQuery} from "./query2";
 
 export {
     InanoSQLInstance
@@ -87,7 +87,7 @@ export class nanoSQL implements InanoSQLInstance {
 
     public planetRadius: number = 6371;
 
-    public selectedTable: any;
+    public selectedTable: InanoSQLSelectTable;
 
     public txs: {
         [id: string]: {
@@ -292,7 +292,7 @@ export class nanoSQL implements InanoSQLInstance {
         getPage();
     }
 
-    public selectTable(table?: string | any[] | ((where?: any[] | ((row: { [key: string]: any }, i?: number) => boolean)) => Promise<TableQueryResult>)): InanoSQLInstance {
+    public selectTable(table?: InanoSQLSelectTable): InanoSQLInstance {
         if (table) {
             this.selectedTable = table;
         }
@@ -984,7 +984,7 @@ export class nanoSQL implements InanoSQLInstance {
         });
     }
 
-    public query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery), args?: any): InanoSQLQueryBuilder {
+    public query(action: string | ((nSQL: InanoSQLInstance) => InanoSQLQuery2), args?: any): InanoSQLQueryBuilder {
         if (this.selectedDB && typeof this.selectTable === "string") {
             const av = this.getDB().state.activeAV;
             this.getDB().state.activeAV = "";
@@ -994,18 +994,22 @@ export class nanoSQL implements InanoSQLInstance {
         }
     }
 
-    public triggerQuery(databaseID: string|undefined, query: InanoSQLQuery, onRow: (row: any) => void, complete: () => void, error: (err: string) => void): void {
+    public triggerQuery(databaseID: string|undefined, query: InanoSQLQuery2, onRow: (row: any, i: number) => void, complete: () => void, error: (err: Error) => void): void {
 
 
         const execQuery = (setQuery) => {
-            new _nanoSQLQuery(databaseID, this, setQuery.res, (row) => {
-                onRow(row);
-            }, complete, error);
+            executeQuery(this, setQuery.res, onRow, (err) => {
+                if (err) {
+                    error(err);
+                } else {
+                    complete();
+                }
+            })
         };
 
         if (typeof query.table === "string") {
             if (!this.getDB(databaseID).state.connected) {
-                error("nSQL: Can't do a query before the database is connected!");
+                error(Error("nSQL: Can't do a query before the database is connected!"));
                 return;
             } 
             this.doFilter<queryFilter>(databaseID, "query", { res: query }, execQuery, error);
