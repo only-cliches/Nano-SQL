@@ -48,6 +48,7 @@ import {
     maybeDate,
     objectsEqual, QueryArguments, resolvePath
 } from "./utilities";
+import has = Reflect.has;
 
 
 export interface nanoSQLQueryArgs {
@@ -68,6 +69,9 @@ export interface nanoSQLQueryState {
     groupByLastKey?: string;
     unionKeyCache: {[key: string]: boolean};
     joinKeyCache: any[][];
+    joinRowCounter: number;
+    joinComplete: boolean;
+    joinIndex: number;
 }
 
 /**
@@ -99,7 +103,10 @@ export const executeQuery = (nSQL: InanoSQLInstance, query: InanoSQLQuery2, prog
             groupByCache: {},
             groupByLastKey: undefined,
             unionKeyCache: {},
-            joinKeyCache: []
+            joinKeyCache: [],
+            joinRowCounter: 0,
+            joinComplete: false,
+            joinIndex: 0
         };
 
         const once = callOnce(complete);
@@ -811,11 +818,81 @@ export class nanoSQLQuery2 {
 
     }
 
+    static _maybeJoinDone(query: nanoSQLQueryArgs, args: ActionArgs_join) {
+
+        // join queries not complete
+        if (!(query.state.joinComplete && query.state.joinRowCounter === 0)) {
+            return;
+        }
+
+        // join is complete if no right or outer joins
+        const joinTypes = args.map(j => j.type);
+        if (joinTypes.indexOf("right") === -1 && joinTypes.indexOf("outer") === -1) {
+            query.nextRow(-1);
+            return;
+        }
+
+        let hasError = false;
+
+        chainAsync(args, (join, i, next, err) => {
+            if (join.type !== "right" && join.type !== "outer") {
+                next();
+                return;
+            }
+            const rightTable = (join.with.as || join.with.str) as string;
+
+            let rowQueries = 0;
+            let finished = false;
+
+            const maybeDone = () => {
+                if (finished && rowQueries === 0) {
+                    next();
+                }
+            }
+
+            query.nSQL.triggerQuery(query.pQuery.dbId, {
+                ...buildQuery(query.pQuery.dbId, query.nSQL, join.originalWith, "select"),
+                where: [join.with.pk, "NOT IN", query.state.joinKeyCache[i]],
+                cacheID: query.pQuery.cacheID
+            }, (row, k) => {
+                if (hasError) return;
+
+                rowQueries++;
+
+                this._join({
+                    ...query,
+                    inputIndex: k,
+                    inputRow: {
+                        [rightTable]: row
+                    }
+                }, args, i + 1, () => {
+                    rowQueries--;
+                    maybeDone();
+                });
+
+            }, () => {
+                if (hasError) return;
+
+                finished = true;
+                maybeDone();
+
+            }, err);
+
+        }).then(() => {
+
+            // all joins done!
+            query.nextRow(-1);
+        }).catch((err) => {
+            query.nextRow(-1, undefined, Error(err));
+        });
+    }
+
     // https://www.interfacett.com/blogs/multiple-joins-work-just-like-single-joins/
-    static _join(query: nanoSQLQueryArgs, args: ActionArgs_join) {
+    static _join(query: nanoSQLQueryArgs, args: ActionArgs_join, startingJoin?: number, callback?: () => void) {
 
         let joinCommands = args;
-        let i = 0;
+
+        query.state.joinRowCounter++;
 
         const parentTable = query.pQuery.table.as || query.pQuery.table.str;
 
@@ -824,77 +901,104 @@ export class nanoSQLQuery2 {
             return;
         }
 
-        if (query.inputIndex === -1) { // rows of main table completed
-
+        if (query.inputIndex === -1 && startingJoin === undefined) { // rows of main table completed
+            query.state.joinComplete = true;
+            this._maybeJoinDone(query, args);
             return;
         }
 
-        let rowData: any = {
-            [parentTable]: query.inputRow
-        };
+        let hasError = false;
 
-        let derivedTabled: any[] = [];
 
-        const nextJoin = () => {
+        let rowQueries = 0;
+
+        const nextJoin = (i: number, leftRow: any) => {
+
+            if (hasError) return;
+
             if (!joinCommands[i]) {
-                query.nextRow(query.inputIndex, rowData);
+                query.nextRow(query.state.joinIndex++, leftRow);
                 return;
             }
 
             const join = joinCommands[i];
 
             if (join.type !== "cross" && !join.on) {
+                hasError = true;
                 query.nextRow(-1, undefined, Error("nSQL: Non 'cross' joins require an 'on' parameter!"));
                 return;
             }
 
-            let gotPks: any[] = [];
+            let gotRows: boolean = false;
+
+            const rightTable = (join.with.as || join.with.str) as string;
+
+            rowQueries++;
 
             query.nSQL.triggerQuery(query.pQuery.dbId, {
                 ...buildQuery(query.pQuery.dbId, query.nSQL, join.originalWith, "select"),
-                where: join.on ? nanoSQLQueryUtils._buildWhereJoinGraph(join.on, join.with.as || "", rowData) : undefined
-            }, (row: any, i: number) => {
+                where: join.on ? nanoSQLQueryUtils._buildWhereJoinGraph(join.on, join.with.as || "", leftRow) : undefined,
+                cacheID: query.pQuery.cacheID
+            }, (row: any, k: number) => {
+
+                if (hasError) return;
+
+                gotRows = true;
 
                 if (join.type === "outer" || join.type === "right") {
                     const thisPK = deepGet(join.with.pk || "", row);
-                    gotPks.push(thisPK);
+
                     if (!query.state.joinKeyCache[i]) {
                         query.state.joinKeyCache[i] = [];
                     }
-                    query.state.joinKeyCache[i].push(thisPK);
-                } else {
-                    if (!gotPks.length) { // no need to track actual keys, just need to know we got at least one record
-                        gotPks.push(true);
+
+                    if (thisPK !== undefined) {
+                        query.state.joinKeyCache[i].push(thisPK);
                     }
                 }
-/*
-                switch(join.type) {
-                    case "outer":
 
-                        break;
-                    case "left":
-                    case "inner":
-
-                        break;
-                    case "right":
-
-                        break;
-                    case "cross":
-
-                        break;
-                }*/
-
+                nextJoin(i + 1, {
+                    ...leftRow,
+                    [rightTable]: row
+                });
 
             }, () => {
+                if (hasError) return;
+
+                switch(join.type) {
+                    case "outer":
+                    case "left":
+                        if (!gotRows) {
+                            nextJoin(i + 1, leftRow);
+                        }
+                        break;
+                    case "right":
+                    case "inner":
+                    case "cross":
+                        break;
+                }
+
+                rowQueries--;
+
+                // last row query of last join
+                if (rowQueries === 0 && !joinCommands[i + 1] && startingJoin === undefined) {
+                    query.state.joinRowCounter--;
+                    this._maybeJoinDone(query, args);
+
+                    if (callback) {
+                        callback();
+                    }
+                }
 
             }, (err) => {
-
+                hasError = true;
+                query.nextRow(-1, undefined, err);
             });
+        };
 
-
-
-        }
-        nextJoin();
+        nextJoin(startingJoin || 0, {
+            [parentTable]: query.inputRow
+        });
     }
 
     static _order(query: nanoSQLQueryArgs, args: ActionArgs_order) {
@@ -1095,6 +1199,7 @@ export class nanoSQLQuery2 {
     }
 
     static _upsert(query: nanoSQLQueryArgs, args: ActionArgs_upsert) {
+
 
     }
 
