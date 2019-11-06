@@ -39,7 +39,7 @@ Items here are planned but not yet released.
 
 # Help
 
-## [Documentation](https://nanosql.gitbook.io/docs/)
+## [Documentation](https://nanosql.io/welcome.html)
 ## [Github Issues](https://github.com/ClickSimply/Nano-SQL/issues)
 
 # Contributing
