@@ -1,73 +1,92 @@
-# Monorepo for nanoSQL 2.0
-For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree/1.X/).
+# nanoSQL 3
 
-### All links here send you to github source folders.
+High Performance noSQL Application Database
 
-## Packages
-- [Core](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Core)
+- https://bellard.org/quickjs/ (query language)
+- https://github.com/facebook/rocksdb (database backend)
+- https://github.com/uNetworking/uWebSockets (web/client server)
+- https://capnproto.org/ (indexes & keys)
+- https://github.com/nlohmann/json (data format)
+- https://github.com/Tarsnap/scrypt
+- https://microsoft.github.io/monaco-editor/
 
-### Adapters
-- [DynamoDB](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-DynamoDB)
-- [SQLite (NodeJS/Electron)](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-SQLite3)
-- [SQLite (Cordova)](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-SQLite-Cordova)
-- [SQLite (NativeScript)](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-SQLite-NativeScript)
-- [React Native](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-ReactNative)
-- [Redis](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-Redis)
-- [MySQL](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-MySQL)
-- [MongoDB](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-MongoDB)
-- [ScyllaDB/Cassandra](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-ScyllaDB)
+Check out the work in progress API in proposed-api.md.
 
-## Plugins
-- [Redis Index](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-RedisIndex)
-- [Search](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-Search)
+nanoSQL 3 is a complete rewrite of the project with a new set of goals:
 
-# WIP
-Items here are planned but not yet released.
+1. Make Client/Server database communication faster and more secure.
+2. Improve performance and get ACID behavior where possible.
+3. Handle user authentication.
 
-### Plugins
-- [Net](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-Net)
-- [Backups](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-Backups)
-- [Encryption](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-Encryption)
-- [History](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-History)
-- [Date](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-Date)
-- [Map Reduce](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Plugin-MapReduce)
+First, a new server arrangement is proposed.  Typically, the application server provides all access paths for the client and the application server will call the database server when it's needed.  The application server is thus responsible for making sure all database queries are safe and secure before passing them to the database.
 
-### Query Support
-- [GraphQL](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Query-GraphQL)
-- [MongoDB QL](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Query-MongoDB-QL)
-- [SQLite](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Query-SQLite)
+A typical arrangement might look like this:
 
-# Help
+```
+===============================
+      Internet / Clients
+===============================
+             |  ^
+             V  |
+===============================
+  Reverse Proxy (Nginx/Apache)
+===============================
+     |  ^       
+     V  |           
+|=============|    |==========|
+| Application | -> | Database |
+|    Server   | <- |  Server  |
+|=============|    |==========|
+```
 
-## [Documentation](https://nanosql.gitbook.io/docs/)
-## [Github Issues](https://github.com/ClickSimply/Nano-SQL/issues)
+The new proposed arrangement would look like this:
 
-# Contributing
+```
+===============================
+      Internet / Clients
+===============================
+             |  ^
+             V  |
+===============================
+  Reverse Proxy (Nginx/Apache)
+===============================
+     |  ^             |  ^
+     V  |             V  |
+|=============|    |==========|
+| Application | -> | Database |
+|    Server   | <- |  Server  |
+|=============|    |==========|
+```
 
-nanoSQL is an **OPEN Open Source Project**. This means that:
+The database server, written in C, can connect directly to the clients and handle a much larger number of requests without passing any load to the application server.  Additionally, the database server can access the backend RocksDB store directly in native code without being slowed dramatically by calling javascript.
 
-> Individuals making significant and valuable contributions are given commit-access to the project to contribute as they see fit. This project is more like an open wiki than a standard guarded open source project.
+What about authentication (login/logout)?  These request are passed directly to the database server where it generates and handles client security with JSON web tokens.  Through configuration options, the database can optionally perform a POST request (hook) against the application server once a login completes successfully so modifications can be made to the JSON web token.  
 
-Read more details [here](http://openopensource.org/).
+Additional hooks can be configured so that arbitrary requests made to the database server can be authenticated against the JSON web token and passed to the application server for processing, then returned to the client.
 
-# MIT License
+## But I like Javascript!
 
-Copyright (c) 2019 Scott Lott
+New, [lightweight javascript](https://bellard.org/quickjs/) engines make it possible for a majority of the database processing to happen in native code, then we can call out to javascript functions sparingly to process query requests and configurations.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This means we can get the performance benefit of native code while also keeping the query language and configuration easy to write with javascript.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+## Other Benefits
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. The LevelUp/LevelDown API provided in NodeJS with RocksDB is extremely limited.  Once the database server has direct, native access to the RocksDB backend we can make these improvements:
+- No javascript parsing is needed to read and write to the database, MUCH faster writes/reads.
+- Secondary indexes can be updated with a single write instead of a read-serialize-modify-deserialize-write.
+- Indexes no longer need to be stored in memory for pagination.
+- Atomic updates across tables/indexes can be done with excellent performance.
+
+2. Simple SPA program support - It will be possible to run complex SPA apps that exclusively use the database server for their backend and nothing else.  With the database application server and a static file server very complex applications could be written without a dedicated application server.
+
+3. Fast Offline Syncing - The database server can handle a majority of the authentication and processing to sync with offline enabled clients, removing the workload entirely from the application server.
+
+4. Extensibility - It would be easy to add simple javascript application server scripting into the database at a later time.  This means even more complicated applications could exclusively use the database server and nothing else for the backend. 
+
+## The Current Plan
+nanoSQL 3 will start off with four packages:
+1. nanoSQL Server - The server application written mostly in C, designed to run on your server.  Will not depend on NodeJS, express, or anything like that.
+2. Server Control Panel - A user interface that can be used to view and modify the configuration, state, and data in the database server.
+3. Web Client - A client side library designed to work with nanoSQL Server.
+4. Express Plugin - A library designed to make it easy to work with the nanoSQL server using ExpressJS.
