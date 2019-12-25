@@ -73,20 +73,24 @@ This means we can get the performance benefit of native code while also keeping 
 ## Other Benefits
 
 1. The LevelUp/LevelDown API provided in NodeJS with RocksDB is extremely limited.  Once the database server has direct, native access to the RocksDB backend we can make these improvements:
-- No javascript parsing is needed to read and write to the database, MUCH faster writes/reads.
-- Secondary indexes can be updated with a single write instead of a read-serialize-modify-deserialize-write.
+- No javascript is needed to run in order to read and write to the database, MUCH faster writes/reads.
+- Secondary indexes can be updated with a single write instead of a read-deserialize-modify-serialize-write.
 - Indexes no longer need to be stored in memory for pagination.
 - Atomic updates across tables/indexes can be done with excellent performance.
 
-2. Simple SPA program support - It will be possible to run complex SPA apps that exclusively use the database server for their backend and nothing else.  With the database application server and a static file server very complex applications could be written without a dedicated application server.
+2. SPA Support - It will be possible to run complex SPA apps that exclusively use the database server for their backend and nothing else.  SPA apps would only need the database server and a static file server.
 
 3. Fast Offline Syncing - The database server can handle a majority of the authentication and processing to sync with offline enabled clients, removing the workload entirely from the application server.
 
 4. Extensibility - It would be easy to add simple javascript application server scripting into the database at a later time.  This means even more complicated applications could exclusively use the database server and nothing else for the backend. 
 
+5. MapReduce - The database server can handle live map/reduce jobs as updates occur.  Check out the "analytics" section of the `createDatabase` call in `proposed-api.md`.  As rows are updated, the map/reduce process discovers the primary key for each row and performs and performs an aggregation with the previous values.  This means instead of having to process analytics style data in bulk, it gets updated with each upsert query.
+
+6. Job Queue - The database server can offload job queues from the application server.  Later, we'll be able to set it up so that a cluster of nanoSQL servers can split jobs evenly between them.
+
 ## The Current Plan
 nanoSQL 3 will start off with four packages:
-1. nanoSQL Server - The server application written mostly in C, designed to run on your server.  Will not depend on NodeJS, express, or anything like that.
+1. nanoSQL Server - The standalone application written mostly in C with a RocksDB backend, designed to run on your server.  Will not depend on NodeJS, express, or anything like that.
 2. Server Control Panel - A user interface that can be used to view and modify the configuration, state, and data in the database server.
 3. Web Client - A client side library designed to work with nanoSQL Server.
 4. Express Plugin - A library designed to make it easy to work with the nanoSQL server using ExpressJS.

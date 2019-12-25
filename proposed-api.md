@@ -71,10 +71,10 @@ db.table.analyticsTable.index
 .exec("drop");
 
 // quick example
-db.query("users").get({"=": "scott"}).exec("select");
+db.users.get({"=": "scott"}).exec("select");
 // SELECT * FROM users WHERE id = "scott";
 
-db.query("users").exec("upsert", {key: value});
+db.users.exec("upsert", {key: value});
 ``` 
 
 ## Transactions
@@ -93,15 +93,43 @@ db.createDatabase({
     name: "databaseName",
     secretKey: "somethingcrazylongandsecure",
     appURL: "http://localhost:3000",
+    userTable: "users",
     hooks: {
-        login: "/appEndpoint",
         logout: "/appEndpoint",
-        login: (token, userColumn) => {
-
+        login: "/appEndpoint", // slowest
+        login: (token, userData) => { // slow
+            token.email = userData.email;
             return token;
         },
+        login: [ // fast
+            // action, user column, token column
+            ["copy", "{{user.email}}", "{{token.email}}"]
+        ],
+        changePerms: { // call with something like GET databaseURL/databaseName/auth/changePerms
+            auth: (token, user, args) => { // slow
+                return token.userType == "admin";
+            },
+            auth: [ // fast
+                ["{{token.userType}}", "=", "admin"]
+            ],
+            update: (token, user, args) => { // slow
+                token.level = args.level;
+                return token;
+            },
+            update: [ // fast
+                ["copy", "{{args.level}}", "{{token.level}}"]
+            ]
+        },
         anyOtherEndPoint: "/redirect-here"
-    }
+    },
+    jobs: [
+        {
+            name: "send-emails",
+            call: () => {
+
+            },
+        }
+    ]
 })
 
 ```
@@ -146,7 +174,7 @@ db.createTable({
     denormalize: [ // optional
         {
             name: "posts",
-            query: db.query("posts").read("one", {idx: "author", key: "{{row.id}}"}).exec("select"),
+            query: db.posts.get({"=": "{{row.id}}"}).exec("select"),
             onUpsert: (parentRow, childRow) => {
                 return childRow; // modify child row
 
@@ -204,13 +232,14 @@ db.createTable({
                 "id:uuid": {},
                 "email:string": {}
             },
-            auth: "/appEndpoint",
-            auth: [
+            auth: "/appEndpoint", // very slow
+            auth: (token, args) => { // kinda slow
+                return token.userid === args.id;
+            },
+            auth: [ // fast
                 [`{{token.userid}}`, "=", `{{args.id}}`]
             ],
-            call: (args) => {
-                return db.users.find({id: `{{args.id}}`}).exec("upsert", {email: `{{args.email}}`});
-            },
+            call: db.users.get({"=": `{{args.id}}`}).exec("upsert", {email: `{{args.email}}`}),
             before: (userToken, args) => {}, // optional
             onUpdate: (userToken, args, row) => {}, // optional
             after: (userToken, args) => {} // optional
