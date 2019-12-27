@@ -7,10 +7,6 @@
 db.table
 // or
 db.table.index
-// or
-db.table.analyticsTable
-// or
-db.table.analyticsTable.index
  
 // pick one
 .get() // get all
@@ -58,7 +54,7 @@ db.table.analyticsTable.index
 // arguments
 .reverse()
 .limit(50)
-.filter(["{{row.id}}", "=", "something"]) // slow
+.filter(["{{row.id}}", "=", "something"]) // slow, do not use!
 .graph([
     {
         key: "posts",
@@ -94,21 +90,33 @@ Server configuration script:
 ```ts
 module.exports = (db) => {
 
+    // base level configuration
+    db.config({
+        port: 80,
+        host: "localhost",
+        dbPath: "/db" // what URL path does the db live at?
+    })
+
     // create database
-    db.createDatabase({
+    db.createOrReplaceDatabase({
         name: "databaseName",
         secretKey: "somethingcrazylongandsecure",
         appURL: "http://localhost:3000",
         usersTable: "users",
+        session: { // session options (WIP)
+            update: 60, // how often should the session be refreshed? (session refresh is expensive)
+            timeout: 24 * 60 * 60, // how long should each session be active for?
+        },
+        peers: { // sync with other database servers (WIP)
+
+        },
         hooks: {
             logout: "/appEndpoint", // POST URL/databaseName/hooks/logout
-            login: "/appEndpoint", // slowest
-            login: (token, userData) => { // slow 
-                token.email = userData.email;
-                return token;
-            },
             login: [ // fast POST URL/databaseName/hooks/login
-                {do: "copy", from: "{{user.email}}", to: "{{token.email}}"}
+                {do: "copy", from: "{{user.email}}", to: "{{token.email}}"},
+                {do: "query", query: db.otherTable.do("upsert", {time: "{{time()}}", userId: "{{user.id}}"})}
+                {do: "filter", callback: "/appEndpoint", callback: (token, userData) => token}, // waits to complete
+                {do: "event", condition: ["{{user.id}}", "=", "something"], callback: "/appEndpoint", callback: (token, userData) => token} // doesn't wait
             ],
             changePerms: { // call with something like POST URL/databaseName/hooks/changePerms
                 auth: (token, user, args) => { // slow
@@ -117,27 +125,28 @@ module.exports = (db) => {
                 auth: [ // fast
                     ["{{token.userType}}", "=", "admin"]
                 ],
-                update: (token, user, args) => { // slow
-                    token.level = args.level;
-                    return token;
-                },
-                update: [ // fast
+                actions: [ // fast
                     {do: "copy", from: "{{args.level}}", to: "{{token.level}}"}
                 ]
             },
             anyOtherEndPoint: "/redirect-here"
         },
-        channels: { // pub/sub channels
-            anything: {
-                auth: (token) => { // slow
+        channels: { // pub/sub channels (only needed to declare here if AUTH is used)
+            anything: { // specific channel
+                auth: (token, channelName) => { // slow
                     return token.userType == "admin";
                 },
                 auth: [ // fast
                     ["{{token.userType}}", "=", "admin"]
                 ]
+            },
+            "*": { // all channels
+                auth: (token, channelName) => {
+
+                }
             }
         },
-        jobs: [
+        jobs: [ // WIP Job Queue
             {
                 name: "send-emails",
                 call: () => {
@@ -148,26 +157,39 @@ module.exports = (db) => {
     })
 
     // Create Table
-    db.createTable({
+    db.createOrReplaceTable({
         database: "databaseName",
         name: "users",
         type:"lww", // last write wins
         model: {
             "id:uuid": {pk: true}, 
-            "name:string": {immutable: true},
-            "email:string": {},
-            "pass:string": {default: "", hidden: true},
+            "username:string": {immutable: true, login: true},
+            "email:string": {login: true},
+            "pass:string": {default: "", hidden: true, pass: "scrypt"},
             "tags:string[]": {},
-            "age:int": {max: 130, min: 13, default: 0, notNull: tru e},
+            "age:int": {max: 130, min: 13, default: 0, notNull: true},
         },
-        filters: { // optional
-            select: (token, row) => {
+        hooks: { // nested token updates that are scoped to this table, only affects token.users
+            changePerms: ... // POST URL/databaseName/users/hooks/changePerms
+        },
+        channels: { // pub/sub channels (only needed to declare here if AUTH is used)
+            anything: {
+                auth: (token) => { // slow
+                    return token.userType == "admin";
+                },
+                auth: [ // fast
+                    ["{{token.userType}}", "=", "admin"]
+                ]
+            }
+        },
+        onRow: { // optional
+            select: (token, row) => { // slow
                 row.age += 20;
                 return row;
 
                 return false; // stop select 
             },
-            upsert: (token, row) => {
+            upsert: (token, row) => { // slow
                 if (row.value !== "error") return false; // do not insert this row
                 return row;
 
@@ -177,22 +199,32 @@ module.exports = (db) => {
 
                 return false; // do not delete any rows
             },
-            delete:"/appEndpoint"
-        }, 
+            delete: eventArray
+        },
         indexes: [ // optional
             {name: "email", columns: ["email"], caseSensative: false, unique: true}
         ],
         denormalize: [ // optional
             {
                 name: "posts",
-                query: db.posts.get({"=": "{{row.id}}"}).do("select"),
+                query: db.posts.author.get({"=": "{{row.id}}"}).do("select"),
                 onUpsert: (parentRow, childRow) => {
                     return childRow; // modify child row
 
                     return false; // delete child row
                 },
-                onUpsert: [
-                    {do: "copy", from: "{{parent.email}}", to: "{{child.authorEmail}}"}
+                onUpsert: [ // eventArray
+                    {do: "copy", from: "{{parent.email}}", to: "{{child.authorEmail}}"},
+                    {do: "ifelse", if: [...condition], then: [
+                        ...eventArray
+                    ], else: [
+                        ...eventArray
+                    ]},
+                    {do: "switch", value: "{{parent.level}}" case: {
+                        "1": [...eventArray],
+                        "2": [...eventArray],
+                        "default": [...eventArray]
+                    }}
                 ],
                 onDelete: (parentRow, childRow) => {
 
@@ -206,13 +238,9 @@ module.exports = (db) => {
                 onDelete: false // just delete child rows on delete
             }
         ],
-        analytics: [ // optional
+        mapReduce: [ // optional
             {
-                name: "updates",
-                model: {
-                    "date:int": {pk: true},
-                    "count:int": {}
-                },
+                table: "userUpdates",
                 start: {date: 0, count: 0}, // starting value
                 rowKey: (userToken, row) => {
                     var start = new Date();
@@ -226,19 +254,29 @@ module.exports = (db) => {
             }
         ],
         sync: { // optional
-            liveStream: "/appEndpoint",
-            liveStream: false; // no one can!
-            liveSync: "/appEndpoint",
-            liveSync: [
+            read: {
+                auth: true,
+                query: (table) => table.authorId.get({"=": "{{token.userID}}"}).do("select"), // only livestream these rows
+                actions: [
+                    {do: "query", query: db.changesTable.do("upsert", {time: `{{time()}}`, who: "{{token.userID}}", what: "{{event.type}}"}))},
+                    {do: "event", condition: ["{{user.id}}", "=", "something"], callback: "/appEndpoint", callback: (token, userData) => token}
+                ]
+            },
+            write: {
+                auth: [
                     [`{{token.userid}}`, "=", `{{row.id}}`],
                     "OR",
                     [`{{token.superAdmin}}`, "=", true]
+                ],
+                actions: [
+                    {do: "query", query: db.changesTable.do("upsert", {time: `{{time()}}`, who: "{{token.userID}}", what: "{{event.type}}"}))},
+                    {do: "event", condition: ["{{user.id}}", "=", "something"], callback: "/appEndpoint", callback: (token, userData) => token}
                 ]
             }
         },
         actions: [ // optional
             {
-                name: "updateEmail",
+                name: "updateEmail", // POST URL/databaseName/users/actions/updateEmail
                 args: {
                     "id:uuid": {},
                     "email:string": {}
@@ -250,12 +288,13 @@ module.exports = (db) => {
                 auth: [ // fast
                     [`{{token.userid}}`, "=", `{{args.id}}`]
                 ],
-                call: [ // array of queries to execute in parallel
-                    db.users.get({"=": `{{args.id}}`}).do("upsert", {email: `{{args.email}}`})
-                ],
-                before: "/appEndpoint", // optional
-                onRow: "/appEndpoint",
-                after: "/appEndpoint" // optional
+                query: (table) => table.get({"=": `{{args.id}}`}).do("upsert", {email: `{{args.email}}`}),
+                query: { // nested call
+                    email: (table) => table.get({"=": `{{args.id}}`}).do("upsert", {email: `{{args.email}}`})
+                }
+                before: eventArray
+                onRow: eventArray
+                after: eventArray
             }
         ],
         views: // same as views, except just reads data
