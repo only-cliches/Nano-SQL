@@ -2,12 +2,15 @@
 
 High Performance noSQL Application Database
 
-- https://bellard.org/quickjs/ (query language)
-- https://github.com/facebook/rocksdb (database backend)
-- https://libwebsockets.org/ (web/client server)
-- https://capnproto.org/ (indexes & keys)
-- https://github.com/nlohmann/json (data format)
-- https://github.com/Tarsnap/scrypt (password & token hash)
+- https://bellard.org/quickjs/ 
+- https://docs.rs/quick-js/0.3.0/quick_js/ (query language)
+
+- https://docs.rs/rocksdb/0.13.0/rocksdb/ (database backend)
+- https://github.com/actix/actix-web (web/client server)
+- https://github.com/railgun-rs/actix-raft
+- https://google.github.io/flatbuffers/ (indexes & keys)
+- https://docs.rs/bson/0.6.0/bson/index.html (data format)
+- https://docs.rs/scrypt/0.2.0/scrypt/ (password & token hash)
 - https://microsoft.github.io/monaco-editor/ (control panel editor)
 
 Check out the work in progress API in proposed-api.md.
