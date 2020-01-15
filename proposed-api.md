@@ -159,7 +159,7 @@ module.exports = (db) => {
                 ["pass",     "string",         {i: 2, hash: "script", default: "", hidden: true}], // column doesn't return on select statements
                 ["tags",     "string[]",       {i: 3, index: {}}],
                 ["age",      "int",            {i: 4, max: 130, min: 13, default: 0, notNull: true}],
-                ["type",     "enum",           {i: 5, elements: [ 
+                ["type",     "option",           {i: 5, elements: [ 
                     "admin", "user", "none"
                 ]}],
                 ["meta",     "map(string, string)", {i: 6}],
