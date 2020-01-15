@@ -156,7 +156,7 @@ module.exports = (db) => {
             main:  [
                 ["username", "string",         {i: 0, immutable: true, index: {case_sensitive: false, unique: true}}],
                 ["email",    "string",         {i: 1, index: {case_sensitive: false, unique: true}}],
-                ["pass",     "hash(script)",   {i: 2, default: "", hidden: true}], // column doesn't return on select statements
+                ["pass",     "string",         {i: 2, hash: "script", default: "", hidden: true}], // column doesn't return on select statements
                 ["tags",     "string[]",       {i: 3, index: {}}],
                 ["age",      "int",            {i: 4, max: 130, min: 13, default: 0, notNull: true}],
                 ["type",     "enum",           {i: 5, elements: [ 
@@ -190,7 +190,11 @@ module.exports = (db) => {
                     ["pass", "string"]
                 ],
                 auth: true // no auth
-                call: async (args, token) => {
+                call: db.doLogin({
+                    logins: [["{{row.username}}", "=", "{{args.login}}"], "OR", ["{{row.email}}", "=", "{{args.login}}"]],
+                    password: ["{{row.pass}}", "=", "{{args.pass}}"]
+                })
+                /*call: async (args, token) => {
                     const matchedAccounts = await db.users.getUnion([
                         db.users.main.get(["{{row.username}}", "=", args.login]),
                         db.users.main.get(["{{row.email}}", "=", args.login])
@@ -203,7 +207,7 @@ module.exports = (db) => {
                         return true;
                     }
                     return false;
-                }
+                }*/
                 call: "/appEndpoint"
             },
             {
@@ -273,7 +277,7 @@ module.exports = (db) => {
                 onDelete: false // just delete child rows on delete
             }
         ],
-        mapReduce: [ // optional
+        analytics: [ // optional
             {
                 name: "Session Analytics (Hourly)",
                 table: "userUpdates", // push to what table
@@ -285,8 +289,14 @@ module.exports = (db) => {
                     start.setHours(0,0,0,0);
                     return start.getTime();
                 },
-                onUpdate: (userToken, prev, row) => {
+                onInsert: (userToken, prev, row) => {
                     prev.count++;
+                    return prev;
+                },
+                onUpdate: (userToken, prev, row) => {
+                    return prev;
+                },  
+                onDelete: (userToken, prev, row) => {
                     return prev;
                 }
             }
