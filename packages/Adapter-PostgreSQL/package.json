@@ -1,0 +1,37 @@
+{
+  "name": "@nano-sql/adapter-pg",
+  "version": "2.0.4",
+  "description": "Easily Run PostgresSQL with nanoSQL 2!",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "ts-node src/test",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClickSimply/Nano-SQL.git"
+  },
+  "typings": "lib/index.d.ts",
+  "homepage": "https://nanosql.io/",
+  "keywords": [
+    "postgresql",
+    "nosql",
+    "nanosql",
+    "rdbms"
+  ],
+  "author": "Scott Lott <Scott@ClickSimply.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@nano-sql/core": "^2.3.7",
+    "@types/pg": "^7.14.3",
+    "pg": "^8.2.0"
+  },
+  "peerDependencies": {
+    "@nano-sql/core": "^2.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
+  }
+}
