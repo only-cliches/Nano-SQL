@@ -1,0 +1,23 @@
+{
+  "name": "@nano-sql/query-graphql",
+  "version": "2.0.0",
+  "description": "GraphQL query support for nanoSQL 2",
+  "main": "webpack.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "@apollo/federation": "^0.16.0",
+    "@nano-sql/core": "^2.2.4",
+    "apollo-server": "^2.13.1",
+    "apollo-server-core": "^2.13.1"
+  }
+}
