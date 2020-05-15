@@ -14,6 +14,7 @@ For 1.X releases, you can go [here](https://github.com/ClickSimply/Nano-SQL/tree
 - [React Native](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-ReactNative)
 - [Redis](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-Redis)
 - [MySQL](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-MySQL)
+- [PostgreSQL](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-PostgresSQL)
 - [MongoDB](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-MongoDB)
 - [ScyllaDB/Cassandra](https://github.com/ClickSimply/Nano-SQL/tree/master/packages/Adapter-ScyllaDB)
 

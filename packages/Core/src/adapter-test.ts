@@ -610,7 +610,7 @@ export class nanoSQLAdapterTest {
                     model: {
                         "id:int": {pk: true, ai: true},
                         "name:string": {},
-                        "posts:string[]": {}
+                        "posts:int[]": {}
                     },
                     columns: [
                         {
@@ -625,7 +625,7 @@ export class nanoSQLAdapterTest {
                         },
                         {
                             key: "posts",
-                            type: "string[]",
+                            type: "int[]",
                             immutable: false
                         }
                     ],
@@ -650,7 +650,7 @@ export class nanoSQLAdapterTest {
                     adapter.read("test", pk, (row) => {
                         const expectRow = {name: "Test",
                         count: 0,
-                        rowLocks: {}, id: 1, posts: [1, 2]};
+                        rowLocks: {}, id: 1, posts: ['1', '2']};
                         const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Insert Test");
                         condition ? res() : rej({e: expectRow, g: row});
@@ -660,9 +660,9 @@ export class nanoSQLAdapterTest {
         }).then(() => {
             // Make sure existing rows are updated correctly
             return new Promise((res, rej) => {
-                adapter.write("test", 1, {id: 1, name: "Testing", posts: [1, 2]}, (pk) => {
+                adapter.write("test", 1, {id: 1, name: "Testing", posts: ['1', '2']}, (pk) => {
                     adapter.read("test", pk, (row) => {
-                        const expectRow = {name: "Testing", id: 1, posts: [1, 2]};
+                        const expectRow = {name: "Testing", id: 1, posts: ['1', '2']};
                         const condition = objectsEqual(row, expectRow);
                         myConsole.assert(condition, "Update Test");
                         condition ? res() : rej({e: expectRow, g: row});
