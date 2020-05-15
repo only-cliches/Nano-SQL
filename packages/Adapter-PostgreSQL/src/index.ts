@@ -136,7 +136,7 @@ export class PostgreSQL extends nanoSQLMemoryIndex {
     private _getTypename(col : InanoSQLTableColumn, ai: boolean, ...prefix : string[])
     {
         if (col.type)
-            return columnTypemap[col.type];
+            return columnTypemap[col.type] || 'jsonb';
         else if (col.model)
             return this._compositeTypename(col.key, ...prefix);
         else
@@ -184,7 +184,7 @@ END$$;`
                     const makePkDefault = (col : InanoSQLTableColumn[], key?: string, ...keys: string[]) : string =>
                         `ROW(${col.map((c) => c.key == key 
                             ? ((keys && keys.length > 0) ? makePkDefault(c.model!, ...keys) : innerDefault)
-                            : (c.default ? makeDefault[c.type](c.default) : 'null'))})`;
+                            : ((c.default && (typeof c.default != 'function' ) ? (makeDefault[c.type] || makeDefault['obj']) (c.default) : 'null'))})`;
 
                     const def = makePkDefault(col.model, pkKeys[1], ...pkKeys.slice(2));
 
