@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "metaphone": "^1.0.4",
-    "stemmer": "^1.0.3"
+    "stemmer": "^1.0.5"
   },
   "peerDependencies": {
     "@nano-sql/core": "^2.3.1"
