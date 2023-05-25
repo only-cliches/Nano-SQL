@@ -43,7 +43,7 @@
     }
   },
   "dependencies": {
-    "nativescript-sqlite": "^2.3.3",
+    "nativescript-sqlite": "^2.8.6",
     "@nano-sql/core": "^2.3.2"
   },
   "devDependencies": {
