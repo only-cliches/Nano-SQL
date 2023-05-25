@@ -29,7 +29,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "metaphone": "^1.0.4",
+    "metaphone": "^1.0.6",
     "stemmer": "^1.0.3"
   },
   "peerDependencies": {
