@@ -79,7 +79,7 @@
     "dependencies": {
         "@nano-sql/core": "^2.2.4",
         "cordova-plugin-device": "^2.0.2",
-        "cordova-sqlite-storage": "^3.2.0"
+        "cordova-sqlite-storage": "^3.4.1"
     },
     "devDependencies": {
         "@types/node": "^11.12.2",
