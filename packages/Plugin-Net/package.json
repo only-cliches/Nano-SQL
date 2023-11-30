@@ -25,7 +25,7 @@
     "@nano-sql/core": "^2.1.9",
     "@types/bcrypt": "^3.0.0",
     "@types/express": "^4.16.0",
-    "bcrypt": "^3.0.4",
+    "bcrypt": "^5.0.1",
     "express": "^4.16.4",
     "level-rocksdb": "^3.0.1",
     "redis": "^2.8.0"
