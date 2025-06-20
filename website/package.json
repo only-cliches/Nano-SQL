@@ -14,7 +14,7 @@
     "vuepress": "^0.14.10"
   },
   "dependencies": {
-    "typedoc": "^0.14.2",
+    "typedoc": "^0.21.0",
     "typescript": "^3.4.1",
     "webpack-dev-middleware": "^3.6.0"
   }
