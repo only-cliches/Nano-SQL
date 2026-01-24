@@ -21,7 +21,7 @@
   "author": "Scott Lott <Scott@ClickSimply.com>",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^5.4.2"
+    "better-sqlite3": "^7.5.3"
   },
   "peerDependencies": {
     "@nano-sql/core": "^2.3.6"
